@@ -2,3 +2,5 @@
 *.class
 *.jar
 *.[oa]
+build
+.gradle

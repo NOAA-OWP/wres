@@ -1,1 +1,12 @@
 apply plugin: 'java'
+
+sourceSets
+{
+    main
+    {
+        java
+        {
+            srcDirs = ['utilities/src', 'wres/src']
+        }
+    }
+}
