@@ -1,12 +1,42 @@
-apply plugin: 'java'
-
-sourceSets
+subprojects
 {
-    main
+    apply plugin: 'java'
+
+    sourceSets
     {
-        java
+        main
         {
-            srcDirs = ['utilities/src', 'wres/src']
+            java
+            {
+                srcDirs = ['src']
+            }
         }
+    }
+    
+    repositories
+    {
+        mavenLocal()
+        mavenCentral()
+    }
+
+    dependencies
+    {
+        compile 'org.slf4j:slf4j-api:1.7.22'
+    
+        runtime 'ch.qos.logback:logback-classic:1.2.0'
+        runtime 'ch.qos.logback:logback-core:1.2.0'
+
+        testCompile 'junit:junit:4.12'
+    }
+}
+
+project(':wres')
+{
+    apply plugin: 'application'
+    mainClassName = 'wres.HelloWorld'
+
+    dependencies
+    {
+        compile project(':utilities')
     }
 }
