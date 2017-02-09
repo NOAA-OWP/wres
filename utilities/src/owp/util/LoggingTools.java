@@ -2,8 +2,9 @@ package owp.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -207,9 +208,9 @@ public abstract class LoggingTools
      */
     public static void outputStackTraceAsDebug(final Logger log, final Throwable t, final int lineCount)
     {
-        final Object[] outputItems = ArrayUtils.subarray(t.getStackTrace(), 0, lineCount);
+        final List<StackTraceElement> outputItems = Arrays.asList(t.getStackTrace()).subList(0, lineCount);
         LoggingTools.outputDebugLines(log, outputItems);
-        if(outputItems.length < t.getStackTrace().length)
+        if(outputItems.size() < t.getStackTrace().length)
         {
             outputDebugLines(log, "... [additional lines not shown]");
         }
@@ -228,9 +229,9 @@ public abstract class LoggingTools
      */
     public static void outputStackTraceAsInfo(final Logger log, final Throwable t, final int lineCount)
     {
-        final Object[] outputItems = ArrayUtils.subarray(t.getStackTrace(), 0, lineCount);
+        final List<StackTraceElement> outputItems = Arrays.asList(t.getStackTrace()).subList(0, lineCount);
         LoggingTools.outputInfoLines(log, outputItems);
-        if(outputItems.length < t.getStackTrace().length)
+        if(outputItems.size() < t.getStackTrace().length)
         {
             outputInfoLines(log, "... [additional lines not shown]");
         }
@@ -331,6 +332,61 @@ public abstract class LoggingTools
     public static void outputErrorLines(final Logger log, final Object[] lines)
     {
         for(final Object line: lines)
+        {
+            log.error(line.toString());
+        }
+    }
+    /**
+     * Output multiple lines calling {@link Logger#debug(Object)}.
+     * 
+     * @param log The {@link Logger} to use.
+     * @param lines The lines to output.
+     */
+    public static void outputDebugLines(final Logger log, final List<StackTraceElement> lines)
+    {
+        for(final StackTraceElement line: lines)
+        {
+            log.debug(line.toString().replaceAll("\\s+$", ""));
+        }
+    }
+
+    /**
+     * Output multiple lines calling {@link Logger#info(Object)}.
+     * 
+     * @param log The {@link Logger} to use.
+     * @param lines The lines to output.
+     */
+    public static void outputInfoLines(final Logger log, final List<StackTraceElement> lines)
+    {
+        for(final StackTraceElement line: lines)
+        {
+            log.info(line.toString());
+        }
+    }
+
+    /**
+     * Output multiple lines calling {@link Logger#warn(Object)}.
+     * 
+     * @param log The {@link Logger} to use.
+     * @param lines The lines to output.
+     */
+    public static void outputWarnLines(final Logger log, final List<StackTraceElement> lines)
+    {
+        for(final StackTraceElement line: lines)
+        {
+            log.warn(line.toString());
+        }
+    }
+
+    /**
+     * Output multiple lines calling {@link Logger#error(Object)}.
+     * 
+     * @param log The {@link Logger} to use.
+     * @param lines The lines to output.
+     */
+    public static void outputErrorLines(final Logger log, final List<StackTraceElement> lines)
+    {
+        for(final StackTraceElement line: lines)
         {
             log.error(line.toString());
         }

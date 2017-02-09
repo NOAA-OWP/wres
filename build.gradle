@@ -28,10 +28,13 @@ subprojects
 
     dependencies
     {
-        compile 'org.slf4j:slf4j-api:1.7.22'
+        // maybe with some adjustments we can put logback
+        // into runtime with slf4j in compile, but for now:
+        //compile 'org.slf4j:slf4j-api:1.7.22'
     
-        runtime 'ch.qos.logback:logback-classic:1.2.0'
-        runtime 'ch.qos.logback:logback-core:1.2.0'
+        compile 'ch.qos.logback:logback-classic:1.2.0'
+        compile 'ch.qos.logback:logback-core:1.2.0'
+        compile 'org.apache.commons:commons-lang3:3.5'
 
         testCompile 'junit:junit:4.12'
     }
