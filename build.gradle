@@ -15,7 +15,7 @@ subprojects
         {
         	java
         	{
-        		srcDirs = ['test/utilities', 'test/wres']
+        		srcDirs = ['test']
         	}
         }
     }
