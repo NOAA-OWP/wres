@@ -11,6 +11,13 @@ subprojects
                 srcDirs = ['src']
             }
         }
+        test
+        {
+        	java
+        	{
+        		srcDirs = ['test/utilities', 'test/wres']
+        	}
+        }
     }
     
     repositories
