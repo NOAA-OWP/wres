@@ -1,4 +1,4 @@
-package utilities;
+package owp.util;
 
 import static org.junit.Assert.*;
 import org.junit.Test;
