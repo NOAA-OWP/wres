@@ -1,4 +1,4 @@
-package utilities;
+package owp.util;
 
 //EVS dependencies
 import evs.data.*;
@@ -96,7 +96,7 @@ public class EVSIOTest extends TestCase {
         //Print some of the data to standard out
         StringUtilities.printWithDates(0, data,"yyyyMMddHH");
         //Get the double[][]
-        //double[[] d = data.toArray()
+        //double[][] d = data.toArray();
     }
     
     /**
@@ -133,7 +133,7 @@ public class EVSIOTest extends TestCase {
         //Print some of the data to standard out
         StringUtilities.printWithDates(0, data,"yyyyMMddHH");
         //Get the double[][]
-        //double[[] d = data.toArray()
+        //double[][] d = data.toArray();
     }    
     
     /**
@@ -170,7 +170,7 @@ public class EVSIOTest extends TestCase {
         //Print some of the data to standard out
         StringUtilities.printWithDates(0, data,"yyyyMMddHH");
         //Get the double[][]
-        //double[[] d = data.toArray()
+        //double[][] d = data.toArray();
     }
     
     /**
@@ -207,7 +207,7 @@ public class EVSIOTest extends TestCase {
         //Print some of the data to standard out
         StringUtilities.printWithDates(0, data,"yyyyMMddHH");
         //Get the double[][]
-        //double[[] d = data.toArray()
+        //double[][] d = data.toArray();
     }    
     
     /**
@@ -247,7 +247,7 @@ public class EVSIOTest extends TestCase {
         StringUtilities.printWithDates(0, (DoubleMatrix2D)data.
                 getSubmatrixByRow(0, 10),"yyyyMMddHH");
         //Get the double[][]
-        //double[[] d = data.toArray()
+        //double[][] d = data.toArray();
     }
     
     /**
@@ -287,7 +287,7 @@ public class EVSIOTest extends TestCase {
         StringUtilities.printWithDates(0, (DoubleMatrix2D)data.
                 getSubmatrixByRow(0, 10),"yyyyMMddHH");
         //Get the double[][]
-        //double[[] d = data.toArray()
+        //double[][] d = data.toArray();
     }    
     
     /**
@@ -324,7 +324,7 @@ public class EVSIOTest extends TestCase {
         //Print some of the data to standard out
         StringUtilities.printWithDates(0, data,"yyyyMMddHH");
         //Get the double[][]
-        //double[[] d = data.toArray()
+        //double[][] d = data.toArray();
     }
     
     /**
@@ -361,7 +361,7 @@ public class EVSIOTest extends TestCase {
         //Print some of the data to standard out
         StringUtilities.printWithDates(0, data,"yyyyMMddHH");
         //Get the double[][]
-        //double[[] d = data.toArray()
+        //double[][] d = data.toArray();
     }     
     
     
