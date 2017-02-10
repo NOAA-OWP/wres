@@ -1,6 +1,5 @@
 /.project
 *.class
-*.jar
 *.[oa]
 build
 .gradle
