@@ -15,7 +15,7 @@ import java.io.*;
 import java.util.*;
 
 //JUnit dependencies
-import junit.framework.*;
+import org.junit.*;
 
 /**
  * Test class for EVS IO.
@@ -23,44 +23,7 @@ import junit.framework.*;
  * @author evs@hydrosolved.com
  */
 
-public class EVSIOTest extends TestCase {
- 
-    /**
-     * Constructor.
-     * 
-     * @param testName the test name 
-     */
-    public EVSIOTest(final String testName) {
-        super(testName);
-    }
-
-    /**
-     * Build the test suite.
-     * 
-     * @return the test suite
-     */
-    
-    public static Test suite() {
-        final TestSuite suite = new TestSuite(
-                "EVSIOTest");
-        suite.addTest(new EVSIOTest(
-                "readPIObservations"));
-        suite.addTest(new EVSIOTest(
-                "readPIForecasts"));
-        suite.addTest(new EVSIOTest(
-                "readASCIIObservations"));
-        suite.addTest(new EVSIOTest(
-                "readASCIIForecasts"));
-        suite.addTest(new EVSIOTest(
-                "readNetCDFObservations"));   
-        suite.addTest(new EVSIOTest(
-                "readNetCDFForecasts"));          
-        suite.addTest(new EVSIOTest(
-                "readDatacardObservations"));
-        suite.addTest(new EVSIOTest(
-                "readDatacardForecasts"));        
-        return suite;
-    }    
+public class EVSIOTest {
     
     /**
      * Reads a test dataset of observations in PI-XML format and prints them to
@@ -68,7 +31,7 @@ public class EVSIOTest extends TestCase {
      * 
      * @throws IOException
      */
-    
+    @Test
     public void readPIObservations() throws IOException {
         //Locate the test data
         String resource = "CBNK1_MAP.xml";
@@ -105,7 +68,7 @@ public class EVSIOTest extends TestCase {
      * 
      * @throws IOException
      */
-    
+    @Test
     public void readPIForecasts() throws IOException {
         //Locate the test data
         String resource = "1988010112_WALN6DEL_hefs_export.xml";
@@ -142,7 +105,7 @@ public class EVSIOTest extends TestCase {
      * 
      * @throws IOException
      */
-    
+    @Test
     public void readASCIIObservations() throws IOException {
         //Locate the test data
         String resource = "01608500_TEST.OBS";
@@ -179,7 +142,7 @@ public class EVSIOTest extends TestCase {
      * 
      * @throws IOException
      */
-    
+    @Test
     public void readASCIIForecasts() throws IOException {
         //Locate the test data
         String resource = "01608500_TEST.FCST";
@@ -216,7 +179,7 @@ public class EVSIOTest extends TestCase {
      * 
      * @throws IOException
      */
-    
+    @Test
     public void readNetCDFObservations() throws IOException {
         //Locate the test data
         String resource = "2011010312_observed_discharge_timeseries.nc";
@@ -256,7 +219,7 @@ public class EVSIOTest extends TestCase {
      * 
      * @throws IOException
      */
-    
+    @Test
     public void readNetCDFForecasts() throws IOException {
         //Locate the test data
         String resource = "1990110112_AEnKF_discharge_timeseries.nc";
@@ -296,7 +259,7 @@ public class EVSIOTest extends TestCase {
      * 
      * @throws IOException
      */
-    
+    @Test
     public void readDatacardObservations() throws IOException {
         //Locate the test data
         String resource = "QUAO2.MAT.OBS";
@@ -333,7 +296,7 @@ public class EVSIOTest extends TestCase {
      * 
      * @throws IOException
      */
-    
+    @Test
     public void readDatacardForecasts() throws IOException {
         //Locate the test data
         String resource = "20030701QUAO2.MAT";
