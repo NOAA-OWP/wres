@@ -22,7 +22,6 @@ subprojects
 
     repositories
     {
-        mavenLocal()
         mavenCentral()
     }
 }
@@ -39,7 +38,6 @@ project(':utilities')
         compile 'ch.qos.logback:logback-core:1.2.0'
 
         testCompile 'junit:junit:4.12'
-        testCompile files('../libs/external/EVS.jar')
 	}
 }
 
