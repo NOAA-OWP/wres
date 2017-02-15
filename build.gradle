@@ -41,7 +41,7 @@ project(':utilities')
 	}
 }
 
-project(':wres')
+project(':wres-core')
 {
     apply plugin: 'application'
     mainClassName = 'wres.HelloWorld'
