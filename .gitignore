@@ -3,5 +3,4 @@
 *.[oa]
 build
 .gradle
-*.jar
 .settings
