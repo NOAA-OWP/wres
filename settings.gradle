@@ -1,1 +1,1 @@
-include 'utilities', 'wres'
+include 'utilities', 'wres-core'
