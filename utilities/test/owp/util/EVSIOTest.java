@@ -34,7 +34,7 @@ public class EVSIOTest {
     @Test
     public void test1ReadPIObservations() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/test1.xml";
+        String resource = "testdata/evsIOTest/test1.xml";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -65,7 +65,7 @@ public class EVSIOTest {
     @Test
     public void test2ReadPIForecasts() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/test2.xml";
+        String resource = "testdata/evsIOTest/test2.xml";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -96,7 +96,7 @@ public class EVSIOTest {
     @Test
     public void test3ReadASCIIObservations() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/test3.obs";
+        String resource = "testdata/evsIOTest/test3.obs";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -127,7 +127,7 @@ public class EVSIOTest {
     @Test
     public void test4ReadASCIIForecasts() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/test4.fcst";
+        String resource = "testdata/evsIOTest/test4.fcst";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -158,7 +158,7 @@ public class EVSIOTest {
     @Test
     public void test5ReadNetCDFObservations() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/test5.nc";
+        String resource = "testdata/evsIOTest/test5.nc";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -192,7 +192,7 @@ public class EVSIOTest {
     @Test
     public void test6ReadNetCDFForecasts() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/test6.nc";
+        String resource = "testdata/evsIOTest/test6.nc";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -226,7 +226,7 @@ public class EVSIOTest {
     @Test
     public void test7ReadDatacardObservations() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/test7.obs";
+        String resource = "testdata/evsIOTest/test7.obs";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -257,7 +257,7 @@ public class EVSIOTest {
     @Test
     public void test8ReadDatacardForecasts() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/20030701.test8.mat";
+        String resource = "testdata/evsIOTest/20030701.test8.mat";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
