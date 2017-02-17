@@ -179,8 +179,8 @@ public class VerificationProject implements Configurable
     private ConfigurationSet<ConfigurationSequencerUnit> sequenceConfig = new ConfigurationSet<>();
 
     /**
-     * The resources associated with particular verification tasks (i.e. {@link ConfigurationUnit}) and groups of tasks
-     * (i.e. {@link ConfigurationSet}).
+     * The configurations necessary to allocate or constrain the computational resources associated with particular
+     * verification tasks (i.e. {@link ConfigurationUnit}) and groups of tasks (i.e. {@link ConfigurationSet}).
      */
 
     private ConfigurationSet<ResourceConfigurationUnit> resourceConfig = new ConfigurationSet<>();
@@ -189,7 +189,7 @@ public class VerificationProject implements Configurable
      * Constructs a new verification project with a unique identifier.
      * 
      * @param id the project identifier
-     * @throws ConfigurationException if a {@link Identifier#PROJECT_IDENTIFIER} is absent from the project identifier
+     * @throws ConfigurationException if a {@link Identifier#CONFIGURATION_IDENTIFIER} is absent from the identifier
      */
 
     public VerificationProject(final Identifier id)
