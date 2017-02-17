@@ -7,8 +7,10 @@ import java.util.HashMap;
 import java.util.Set;
 
 /**
+ * Deprecated and replaced with {@link wres.configcontrol.config.Identifier} 
+ * 
  * @author ctubbs
- *
+ * @deprecated
  */
 public class Identifier implements Comparable<Identifier> {
 
