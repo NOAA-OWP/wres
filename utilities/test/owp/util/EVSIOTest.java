@@ -32,9 +32,9 @@ public class EVSIOTest {
      * @throws IOException
      */
     @Test
-    public void readPIObservations() throws IOException {
+    public void test1ReadPIObservations() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/CBNK1_MAP.xml";
+        String resource = "testdata/evsiotests/test1.xml";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -63,9 +63,9 @@ public class EVSIOTest {
      * @throws IOException
      */
     @Test
-    public void readPIForecasts() throws IOException {
+    public void test2ReadPIForecasts() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/1988010112_WALN6DEL_hefs_export.xml";
+        String resource = "testdata/evsiotests/test2.xml";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -94,9 +94,9 @@ public class EVSIOTest {
      * @throws IOException
      */
     @Test
-    public void readASCIIObservations() throws IOException {
+    public void test3ReadASCIIObservations() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/01608500_TEST.OBS";
+        String resource = "testdata/evsiotests/test3.obs";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -125,9 +125,9 @@ public class EVSIOTest {
      * @throws IOException
      */
     @Test
-    public void readASCIIForecasts() throws IOException {
+    public void test4ReadASCIIForecasts() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/01608500_TEST.FCST";
+        String resource = "testdata/evsiotests/test4.fcst";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -156,9 +156,9 @@ public class EVSIOTest {
      * @throws IOException
      */
     @Test
-    public void readNetCDFObservations() throws IOException {
+    public void test5ReadNetCDFObservations() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/2011010312_observed_discharge_timeseries.nc";
+        String resource = "testdata/evsiotests/test5.nc";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -190,9 +190,9 @@ public class EVSIOTest {
      * @throws IOException
      */
     @Test
-    public void readNetCDFForecasts() throws IOException {
+    public void test6ReadNetCDFForecasts() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/1990110112_AEnKF_discharge_timeseries.nc";
+        String resource = "testdata/evsiotests/test6.nc";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -224,9 +224,9 @@ public class EVSIOTest {
      * @throws IOException
      */
     @Test
-    public void readDatacardObservations() throws IOException {
+    public void test7ReadDatacardObservations() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/QUAO2.MAT.OBS";
+        String resource = "testdata/evsiotests/test7.obs";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
@@ -255,9 +255,9 @@ public class EVSIOTest {
      * @throws IOException
      */
     @Test
-    public void readDatacardForecasts() throws IOException {
+    public void test8ReadDatacardForecasts() throws IOException {
         //Locate the test data
-        String resource = "testdata/evsiotests/20030701QUAO2.MAT";
+        String resource = "testdata/evsiotests/20030701.test8.mat";
         File f = new File(resource); 
         if(!f.exists()) {
         	throw new IOException("Could not locate test data '"+f+"'.");
