@@ -4,10 +4,10 @@
 package wres.configcontrol.config.project;
 
 // Java net dependencies
-import java.net.*;
+import java.net.URI;
 
-//WRES dependencies
-import wres.configcontrol.config.*;
+// WRES dependencies
+import wres.configcontrol.config.Identifier;
 
 /**
  * An immutable identifier for a unique dataset that is accessible in a particular context. The dataset is identifier by
@@ -15,82 +15,89 @@ import wres.configcontrol.config.*;
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class DataIdentifier implements Comparable<DataIdentifier> {
+public final class DataIdentifier implements Comparable<DataIdentifier>
+{
 
-	/**
-	 * The URI to the data store.
-	 */
+    /**
+     * The URI to the data store.
+     */
 
-	private URI context = null;
+    private URI context = null;
 
-	/**
-	 * A unique identifier for the dataset.
-	 */
+    /**
+     * A unique identifier for the dataset.
+     */
 
-	private Identifier id = null;
+    private Identifier id = null;
 
-	/**
-	 * Construct a data identifier.
-	 * 
-	 * @param id
-	 *            the Identifier
-	 * @param context
-	 *            the URI to the data store that contains the {@link #id}
-	 * @throws ConfigurationException
-	 *             if one or both of the inputs are null
-	 */
+    /**
+     * Construct a data identifier.
+     * 
+     * @param id the Identifier
+     * @param context the URI to the data store that contains the {@link #id}
+     * @throws ConfigurationException if one or both of the inputs are null
+     */
 
-	public DataIdentifier(Identifier id, URI context) {
-		if (id == null) {
-			throw new ConfigurationException("Specify a non-null ID from which to construct the data identifier.");
-		}
-		if (context == null) {
-			throw new ConfigurationException("Specify a non-null URI from which to construct the data identifier.");
-		}
-		this.id = id;
-		this.context = context;
-	}
+    public DataIdentifier(final Identifier id, final URI context)
+    {
+        if(id == null)
+        {
+            throw new ConfigurationException("Specify a non-null ID from which to construct the data identifier.");
+        }
+        if(context == null)
+        {
+            throw new ConfigurationException("Specify a non-null URI from which to construct the data identifier.");
+        }
+        this.id = id;
+        this.context = context;
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		return o != null && o.hashCode()==hashCode();
-	}
-	
-	@Override
-	public int hashCode() {
-		return id.hashCode()+context.hashCode();
-	}
-	
-	@Override 
-	public String toString() {
-		StringBuilder b = new StringBuilder();
-		b.append(id).append(" in ").append(context);
-		return b.toString();
-	}
+    @Override
+    public boolean equals(final Object o)
+    {
+        return o != null && o.hashCode() == hashCode();
+    }
 
-	/**
-	 * Returns the dataset identifier.
-	 * 
-	 * @return the dataset identifier
-	 */
+    @Override
+    public int hashCode()
+    {
+        return id.hashCode() + context.hashCode();
+    }
 
-	public Identifier getID() {
-		return id;
-	}
+    @Override
+    public String toString()
+    {
+        final StringBuilder b = new StringBuilder();
+        b.append(id).append(" in ").append(context);
+        return b.toString();
+    }
 
-	/**
-	 * Returns the context for the dataset, comprising the URI to the data store that contains it.
-	 * 
-	 * @return the URI to the data store
-	 */
+    /**
+     * Returns the dataset identifier.
+     * 
+     * @return the dataset identifier
+     */
 
-	public URI getContext() {
-		return context;
-	}
+    public Identifier getID()
+    {
+        return id;
+    }
 
-	@Override
-	public int compareTo(DataIdentifier o) {
-		return o.id.compareTo(id)+o.context.compareTo(context);
-	}
+    /**
+     * Returns the context for the dataset, comprising the URI to the data store that contains it.
+     * 
+     * @return the URI to the data store
+     */
+
+    public URI getContext()
+    {
+        return context;
+    }
+
+    @Override
+    public int compareTo(final DataIdentifier o)
+    {
+        return o.id.compareTo(id) + o.context.compareTo(context);
+    }
 
 }

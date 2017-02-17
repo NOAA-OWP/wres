@@ -10,37 +10,39 @@ package wres.configcontrol.config.project;
  */
 
 @SuppressWarnings("serial")
-public class ConfigurationException extends RuntimeException {
-    
+public class ConfigurationException extends RuntimeException
+{
+
     /**
      * Constructs an {@link ConfigurationException} with no message.
      */
-    
-    public ConfigurationException() {
+
+    public ConfigurationException()
+    {
         super();
     }
 
     /**
-     * Constructs a {@link ConfigurationException} with the specified message. 
-     * 
+     * Constructs a {@link ConfigurationException} with the specified message.
      * 
      * @param message the message.
      */
-    
-    public ConfigurationException(String message) {
-    	super(message);
+
+    public ConfigurationException(final String message)
+    {
+        super(message);
     }
-    
+
     /**
-     * Constructs a {@link ConfigurationException} with the specified message. 
-     * 
+     * Constructs a {@link ConfigurationException} with the specified message.
      * 
      * @param message the message.
      * @param cause the cause of the exception
      */
-    
-    public ConfigurationException(String message, Throwable cause) {
-    	super(message,cause);    
+
+    public ConfigurationException(final String message, final Throwable cause)
+    {
+        super(message, cause);
     }
-	
+
 }
