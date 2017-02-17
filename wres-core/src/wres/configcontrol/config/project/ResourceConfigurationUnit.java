@@ -8,12 +8,14 @@ package wres.configcontrol.config.project;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class ResourceConfigurationUnit extends ConfigurationUnit<ResourceConfigurationUnit> {
+public class ResourceConfigurationUnit extends ConfigurationUnit<ResourceConfigurationUnit>
+{
 
-	@Override
-	public ResourceConfigurationUnit deepCopy() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public ResourceConfigurationUnit deepCopy()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }

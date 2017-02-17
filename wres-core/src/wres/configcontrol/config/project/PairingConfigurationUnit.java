@@ -9,12 +9,14 @@ package wres.configcontrol.config.project;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class PairingConfigurationUnit extends ConfigurationUnit<PairingConfigurationUnit> {
+public class PairingConfigurationUnit extends ConfigurationUnit<PairingConfigurationUnit>
+{
 
-	@Override
-	public PairingConfigurationUnit deepCopy() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public PairingConfigurationUnit deepCopy()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }

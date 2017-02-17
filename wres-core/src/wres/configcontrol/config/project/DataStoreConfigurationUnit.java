@@ -5,7 +5,6 @@ package wres.configcontrol.config.project;
 
 /**
  * An elementary block of configuration for a data store, including:
- * 
  * <ul>
  * <li>A {@link wres.configcontrol.datamodel.spacetimeobject.SpaceTimeObjectStore}, which stores the elementary
  * space-time datasets for verification;</li>
@@ -16,12 +15,14 @@ package wres.configcontrol.config.project;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class DataStoreConfigurationUnit extends ConfigurationUnit<DataStoreConfigurationUnit> {
+public class DataStoreConfigurationUnit extends ConfigurationUnit<DataStoreConfigurationUnit>
+{
 
-	@Override
-	public DataStoreConfigurationUnit deepCopy() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public DataStoreConfigurationUnit deepCopy()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }
