@@ -376,7 +376,7 @@ public class VerificationProject implements Configurable
     /**
      * Sets the project identifier.
      * 
-     * @param id the project identifier
+     * @param projectID the project identifier
      * @throws ConfigurationException if a {@link Identifier#CONFIGURATION_IDENTIFIER} is absent from the project
      *             identifier
      */
@@ -528,6 +528,7 @@ public class VerificationProject implements Configurable
      * No argument constructor for marshalling.
      */
 
+    @SuppressWarnings("unused")
     private VerificationProject()
     {
     }
