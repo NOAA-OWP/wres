@@ -9,12 +9,14 @@ package wres.configcontrol.config.project;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class InputConfigurationUnit extends ConfigurationUnit<InputConfigurationUnit> {
+public class InputConfigurationUnit extends ConfigurationUnit<InputConfigurationUnit>
+{
 
-	@Override
-	public InputConfigurationUnit deepCopy() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public InputConfigurationUnit deepCopy()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }
