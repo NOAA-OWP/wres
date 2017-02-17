@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.Level;
 import junit.framework.TestCase;
-import owp.util.LoggingTools;
 
 public class LoggingToolsTest extends TestCase
 {
@@ -28,7 +27,7 @@ public class LoggingToolsTest extends TestCase
     /**
      * Creates a log file with level info and sends messages of varying levels to it.
      */
-    public void test2LogFileCreationAndRemoval()
+    public void test2LogFileCreationAndLoggerRemoval()
     {
         try
         {
