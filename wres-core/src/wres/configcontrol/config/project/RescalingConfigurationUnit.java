@@ -8,12 +8,14 @@ package wres.configcontrol.config.project;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class RescalingConfigurationUnit extends ConfigurationUnit<RescalingConfigurationUnit> {
+public class RescalingConfigurationUnit extends ConfigurationUnit<RescalingConfigurationUnit>
+{
 
-	@Override
-	public RescalingConfigurationUnit deepCopy() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public RescalingConfigurationUnit deepCopy()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }
