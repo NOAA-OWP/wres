@@ -1,8 +1,13 @@
 package wres.configcontrol.config;
 
 // Java util dependencies
-import java.util.*;
-import javax.xml.bind.annotation.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * An immutable identifier that comprises {@link String} elements of a prescribed {@link Integer} type.
@@ -10,175 +15,186 @@ import javax.xml.bind.annotation.*;
  * @author james.brown@hydrosolved.com
  */
 @XmlRootElement(name = "identifier")
-@XmlAccessorType (XmlAccessType.FIELD)
-public final class Identifier implements Comparable<Identifier> {
+@XmlAccessorType(XmlAccessType.FIELD)
+public final class Identifier implements Comparable<Identifier>
+{
 
-	/**
-	 * Identifier for a geographic location, area or region/domain that represents an object.
-	 */
+    /**
+     * Identifier for a geographic location, area or region/domain that represents an object.
+     */
 
-	public static final int OBJECT_IDENTIFIER = 101;
+    public static final int OBJECT_IDENTIFIER = 101;
 
-	/**
-	 * Identifier for an attribute.
-	 */
+    /**
+     * Identifier for an attribute.
+     */
 
-	public static final int ATTRIBUTE_IDENTIFIER = 102;
+    public static final int ATTRIBUTE_IDENTIFIER = 102;
 
-	/**
-	 * Identifier for a scenario.
-	 */
+    /**
+     * Identifier for a scenario.
+     */
 
-	public static final int SCENARIO_IDENTIFIER = 103;
+    public static final int SCENARIO_IDENTIFIER = 103;
 
-	/**
-	 * Identifier for a configuration component.
-	 */
+    /**
+     * Identifier for a configuration component.
+     */
 
-	public static final int CONFIGURATION_IDENTIFIER = 104;
+    public static final int CONFIGURATION_IDENTIFIER = 104;
 
-	/**
-	 * Default separator.
-	 */
+    /**
+     * Default separator.
+     */
 
-	public static final String DEFAULT_SEPARATOR = ".";
-	
-	/**
-	 * The composite identifier.
-	 */
+    public static final String DEFAULT_SEPARATOR = ".";
 
-	private String id = null;
+    /**
+     * The composite identifier.
+     */
 
-	/**
-	 * The components of the identifier.
-	 */
+    private String id = null;
 
-	private final Map<Integer, String> elements = new TreeMap<>();
+    /**
+     * The components of the identifier.
+     */
 
-	/**
-	 * Separator character. This is {#DEFAULT_SEPARATOR} by default.
-	 */
+    private final Map<Integer, String> elements = new TreeMap<>();
 
-	private String separator = DEFAULT_SEPARATOR;
-	
-	/**
-	 * Construct the identifier with a single element and the element type.
-	 * 
-	 * @param type
-	 *            the type of element
-	 * @param element
-	 *            the identifier element
-	 */
+    /**
+     * Separator character. This is {#DEFAULT_SEPARATOR} by default.
+     */
 
-	public Identifier(int type, String element) {
-		elements.put(type, element);
-		buildString();
-	}
+    private String separator = DEFAULT_SEPARATOR;
 
-	/**
-	 * Construct the identifier with a map of elements and a separator.
-	 * 
-	 * @param elements
-	 *            the elements of the identifier
-	 * @param separator
-	 *            the separator
-	 */
+    /**
+     * Construct the identifier with a single element and the element type.
+     * 
+     * @param type the type of element
+     * @param element the identifier element
+     */
 
-	public Identifier(Map<Integer, String> elements, String separator) {
-		this.separator = separator;
-		this.elements.putAll(elements);
-		buildString();
-	}
+    public Identifier(final int type, final String element)
+    {
+        elements.put(type, element);
+        buildString();
+    }
 
-	/**
-	 * Construct the identifier with a list of string elements.
-	 * 
-	 * @param elements
-	 *            the elements of the identifier
-	 */
+    /**
+     * Construct the identifier with a map of elements and a separator.
+     * 
+     * @param elements the elements of the identifier
+     * @param separator the separator
+     */
 
-	public Identifier(Map<Integer, String> elements) {
-		this(elements, DEFAULT_SEPARATOR);
-	}
+    public Identifier(final Map<Integer, String> elements, final String separator)
+    {
+        this.separator = separator;
+        this.elements.putAll(elements);
+        buildString();
+    }
 
-	@Override
-	public String toString() {
-		return id;
-	}
+    /**
+     * Construct the identifier with a list of string elements.
+     * 
+     * @param elements the elements of the identifier
+     */
 
-	@Override
-	public boolean equals(Object o) {
-		return o !=null && o.hashCode()==hashCode(); 
-	}
+    public Identifier(final Map<Integer, String> elements)
+    {
+        this(elements, DEFAULT_SEPARATOR);
+    }
 
-	@Override
-	public int hashCode() {
-		return elements.hashCode();
-	}
+    @Override
+    public String toString()
+    {
+        return id;
+    }
 
-	@Override
-	public int compareTo(Identifier compareMe) {
-		int returnMe = 0;
-		Map<Integer, String> in = compareMe.elements;
-		int s1 = in.size();
-		int s2 = elements.size();
-		if (s2 < s1) {
-			return -1;
-		} else if (s2 > s1) {
-			return 1;
-		}
-		Iterator<Integer> i1 = in.keySet().iterator();
-		Iterator<Integer> i2 = elements.keySet().iterator();
-		while (i1.hasNext()) {
-			Integer k1 = i1.next();
-			Integer k2 = i2.next();
-			returnMe += k2.compareTo(k1);
-			returnMe += elements.get(k2).compareTo(in.get(k1));
-		}
-		return returnMe;
-	}
+    @Override
+    public boolean equals(final Object o)
+    {
+        return o != null && o.hashCode() == hashCode();
+    }
 
-	/**
-	 * Returns a prescribed element of the identifier or null if the element does not exist.
-	 * 
-	 * @param element
-	 *            the element
-	 * @return the identifier element or null
-	 */
+    @Override
+    public int hashCode()
+    {
+        return elements.hashCode();
+    }
 
-	public String get(Integer element) {
-		return elements.get(element);
-	}
+    @Override
+    public int compareTo(final Identifier compareMe)
+    {
+        int returnMe = 0;
+        final Map<Integer, String> in = compareMe.elements;
+        final int s1 = in.size();
+        final int s2 = elements.size();
+        if(s2 < s1)
+        {
+            return -1;
+        }
+        else if(s2 > s1)
+        {
+            return 1;
+        }
+        final Iterator<Integer> i1 = in.keySet().iterator();
+        final Iterator<Integer> i2 = elements.keySet().iterator();
+        while(i1.hasNext())
+        {
+            final Integer k1 = i1.next();
+            final Integer k2 = i2.next();
+            returnMe += k2.compareTo(k1);
+            returnMe += elements.get(k2).compareTo(in.get(k1));
+        }
+        return returnMe;
+    }
 
-	/**
-	 * Returns true if the prescribed element is contained in the identifier, false otherwise.
-	 * 
-	 * @param element
-	 *            the element
-	 * @return true if the prescribed elements is contained in the identifier, false otherwise
-	 */
+    /**
+     * Returns a prescribed element of the identifier or null if the element does not exist.
+     * 
+     * @param element the element
+     * @return the identifier element or null
+     */
 
-	public boolean contains(Integer element) {
-		return get(element) != null;
-	}
+    public String get(final Integer element)
+    {
+        return elements.get(element);
+    }
 
-	/**
-	 * No argument constructor for marshalling.
-	 */
+    /**
+     * Returns true if the prescribed element is contained in the identifier, false otherwise.
+     * 
+     * @param element the element
+     * @return true if the prescribed elements is contained in the identifier, false otherwise
+     */
 
-	private Identifier() {}	
-	
-	/**
-	 * Builds a string representation of the identifier.
-	 */
+    public boolean contains(final Integer element)
+    {
+        return get(element) != null;
+    }
 
-	private void buildString() {
-		StringBuilder b = new StringBuilder();
-		for (String s : elements.values()) {
-			b.append(s).append(separator);
-		}
-		b.deleteCharAt(b.length() - 1);
-		id = b.toString();
-	}
-	
+    /**
+     * No argument constructor for marshalling.
+     */
+
+    private Identifier()
+    {
+    }
+
+    /**
+     * Builds a string representation of the identifier.
+     */
+
+    private void buildString()
+    {
+        final StringBuilder b = new StringBuilder();
+        for(final String s: elements.values())
+        {
+            b.append(s).append(separator);
+        }
+        b.deleteCharAt(b.length() - 1);
+        id = b.toString();
+    }
+
 }
