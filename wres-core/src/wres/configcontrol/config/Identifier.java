@@ -178,6 +178,7 @@ public final class Identifier implements Comparable<Identifier>
      * No argument constructor for marshalling.
      */
 
+    @SuppressWarnings("unused")
     private Identifier()
     {
     }
