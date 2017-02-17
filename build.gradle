@@ -51,8 +51,7 @@ project(':wres-core')
     {
         compile project(':utilities')
 
-	//JB @ 02/16/17
-	compile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
-
+        //JB @ 02/16/17
+        testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
     }
 }
