@@ -55,7 +55,7 @@ public final class DataIdentifier implements Comparable<DataIdentifier>
     @Override
     public boolean equals(final Object o)
     {
-        return o != null && o.hashCode() == hashCode();
+        return o != null && o instanceof DataIdentifier && o.hashCode() == hashCode();
     }
 
     @Override

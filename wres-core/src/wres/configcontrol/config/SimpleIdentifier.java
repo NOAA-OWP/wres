@@ -33,7 +33,7 @@ public final class SimpleIdentifier implements Identifier, Comparable<SimpleIden
     @Override
     public boolean equals(final Object o)
     {
-        return o != null && o.hashCode() == hashCode();
+        return o != null && o instanceof SimpleIdentifier && ((SimpleIdentifier)o).id.equals(id);
     }
 
     @Override
