@@ -1,6 +1,3 @@
-/**
- * 
- */
 package wres.configcontrol.config.project;
 
 // Imports
@@ -14,7 +11,7 @@ import org.junit.Test;
 import com.google.common.testing.EqualsTester;
 
 // WRES dependencies
-import wres.configcontrol.config.Identifier;
+import wres.configcontrol.config.CompoundIdentifier;
 
 /**
  * Test class for {@link DataIdentifierSet}
@@ -31,22 +28,22 @@ public class DataIdentifierSetTest
     public void assertEqual()
     {
         final Map<Integer, String> a = new TreeMap<>();
-        a.put(Identifier.OBJECT_IDENTIFIER, "ORDC1");
-        a.put(Identifier.ATTRIBUTE_IDENTIFIER, "SQIN");
-        a.put(Identifier.SCENARIO_IDENTIFIER, "GEFS");
+        a.put(CompoundIdentifier.OBJECT_IDENTIFIER, "ORDC1");
+        a.put(CompoundIdentifier.ATTRIBUTE_IDENTIFIER, "SQIN");
+        a.put(CompoundIdentifier.SCENARIO_IDENTIFIER, "GEFS");
 
         final Map<Integer, String> b = new TreeMap<>();
-        b.put(Identifier.OBJECT_IDENTIFIER, "ORDC1");
-        b.put(Identifier.ATTRIBUTE_IDENTIFIER, "SQIN");
-        b.put(Identifier.SCENARIO_IDENTIFIER, "GEFS");
+        b.put(CompoundIdentifier.OBJECT_IDENTIFIER, "ORDC1");
+        b.put(CompoundIdentifier.ATTRIBUTE_IDENTIFIER, "SQIN");
+        b.put(CompoundIdentifier.SCENARIO_IDENTIFIER, "GEFS");
 
         final Map<Integer, String> c = new TreeMap<>();
-        c.put(Identifier.OBJECT_IDENTIFIER, "ORDC1");
-        c.put(Identifier.ATTRIBUTE_IDENTIFIER, "SQIN");
+        c.put(CompoundIdentifier.OBJECT_IDENTIFIER, "ORDC1");
+        c.put(CompoundIdentifier.ATTRIBUTE_IDENTIFIER, "SQIN");
 
-        final Identifier id1 = new Identifier(a);
-        final Identifier id2 = new Identifier(b);
-        final Identifier id3 = new Identifier(c);
+        final CompoundIdentifier id1 = new CompoundIdentifier(a);
+        final CompoundIdentifier id2 = new CompoundIdentifier(b);
+        final CompoundIdentifier id3 = new CompoundIdentifier(c);
         URI u1 = null;
         URI u2 = null;
         URI u3 = null;
@@ -69,10 +66,10 @@ public class DataIdentifierSetTest
         final DataIdentifierSet y = x.deepCopy();
 
         final Map<Integer, String> d = new TreeMap<>();
-        d.put(Identifier.OBJECT_IDENTIFIER, "FCFM8");
-        d.put(Identifier.ATTRIBUTE_IDENTIFIER, "SQIN");
-        d.put(Identifier.SCENARIO_IDENTIFIER, "GEFS");
-        final Identifier id4 = new Identifier(a);
+        d.put(CompoundIdentifier.OBJECT_IDENTIFIER, "FCFM8");
+        d.put(CompoundIdentifier.ATTRIBUTE_IDENTIFIER, "SQIN");
+        d.put(CompoundIdentifier.SCENARIO_IDENTIFIER, "GEFS");
+        final CompoundIdentifier id4 = new CompoundIdentifier(a);
         final DataIdentifier s = new DataIdentifier(id4, u1);
         final DataIdentifierSet z = new DataIdentifierSet();
         z.add(s);

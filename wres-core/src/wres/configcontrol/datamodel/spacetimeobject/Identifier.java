@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Set;
 
 /**
- * Deprecated and replaced with {@link wres.configcontrol.config.Identifier} 
+ * Deprecated and replaced with {@link wres.configcontrol.config.CompoundIdentifier} 
  * 
  * @author ctubbs
  * @deprecated

@@ -4,7 +4,7 @@ package wres.configcontrol.config;
 import wres.util.DeepCopy;
 
 /**
- * Identifiers a block of configuration with a unique {@link Identifier}.
+ * Identifiers a block of configuration with a unique {@link SimpleIdentifier}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -17,6 +17,6 @@ public interface Configurable extends DeepCopy<Configurable>
      * @return the unique identifier
      */
 
-    Identifier getID();
+    SimpleIdentifier getID();
 
 }
