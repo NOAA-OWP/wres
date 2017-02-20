@@ -7,11 +7,11 @@ package wres.configcontrol.config.project;
 import java.net.URI;
 
 // WRES dependencies
-import wres.configcontrol.config.Identifier;
+import wres.configcontrol.config.CompoundIdentifier;
 
 /**
  * An immutable identifier for a unique dataset that is accessible in a particular context. The dataset is identifier by
- * its {@link Identifier} and the context is given by a {@link URI} to the data store.
+ * its {@link CompoundIdentifier} and the context is given by a {@link URI} to the data store.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -28,7 +28,7 @@ public final class DataIdentifier implements Comparable<DataIdentifier>
      * A unique identifier for the dataset.
      */
 
-    private Identifier id = null;
+    private CompoundIdentifier id = null;
 
     /**
      * Construct a data identifier.
@@ -38,7 +38,7 @@ public final class DataIdentifier implements Comparable<DataIdentifier>
      * @throws ConfigurationException if one or both of the inputs are null
      */
 
-    public DataIdentifier(final Identifier id, final URI context)
+    public DataIdentifier(final CompoundIdentifier id, final URI context)
     {
         if(id == null)
         {
@@ -78,7 +78,7 @@ public final class DataIdentifier implements Comparable<DataIdentifier>
      * @return the dataset identifier
      */
 
-    public Identifier getID()
+    public CompoundIdentifier getID()
     {
         return id;
     }

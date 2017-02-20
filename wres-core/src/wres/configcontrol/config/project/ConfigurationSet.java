@@ -9,11 +9,11 @@ import java.util.TreeMap;
 
 // WRES dependencies
 import wres.configcontrol.config.Configurable;
-import wres.configcontrol.config.Identifier;
+import wres.configcontrol.config.SimpleIdentifier;
 
 /**
  * A set of {@link ConfigurationUnit} of a prescribed type. Each {@link ConfigurationUnit} is stored with a unique
- * {@link Identifier}.
+ * {@link SimpleIdentifier}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -24,13 +24,13 @@ public class ConfigurationSet<T extends ConfigurationUnit<?>> implements Configu
      * The unique identifier associated with the configuration.
      */
 
-    private Identifier id = null;
+    private SimpleIdentifier id = null;
 
     /**
-     * A map of {@link ConfigurationUnit} by unique {@link Identifier}.
+     * A map of {@link ConfigurationUnit} by unique {@link SimpleIdentifier}.
      */
 
-    private final Map<Identifier, T> configs = new TreeMap<>();
+    private final Map<SimpleIdentifier, T> configs = new TreeMap<>();
 
     /**
      * Construct with a default identifier.
@@ -38,7 +38,7 @@ public class ConfigurationSet<T extends ConfigurationUnit<?>> implements Configu
 
     public ConfigurationSet()
     {
-        id = new Identifier(Identifier.CONFIGURATION_IDENTIFIER, System.currentTimeMillis() + "");
+        id = new SimpleIdentifier(System.currentTimeMillis() + "");
     }
 
     /**
@@ -47,21 +47,17 @@ public class ConfigurationSet<T extends ConfigurationUnit<?>> implements Configu
      * @param id the identifier
      */
 
-    public ConfigurationSet(final Identifier id)
+    public ConfigurationSet(final SimpleIdentifier id)
     {
         if(id == null)
         {
             throw new ConfigurationException("Specify a non-null identifier for the configuration.");
         }
-        if(!id.contains(Identifier.CONFIGURATION_IDENTIFIER))
-        {
-            throw new ConfigurationException("Specify a configuration identifier.");
-        }
         this.id = id;
     }
 
     @Override
-    public Identifier getID()
+    public SimpleIdentifier getID()
     {
         return id;
     }
@@ -73,7 +69,7 @@ public class ConfigurationSet<T extends ConfigurationUnit<?>> implements Configu
      * @return a {@link ConfigurationUnit}
      */
 
-    public T get(final Identifier id)
+    public T get(final SimpleIdentifier id)
     {
         return configs.get(id);
     }
@@ -83,7 +79,7 @@ public class ConfigurationSet<T extends ConfigurationUnit<?>> implements Configu
     public Configurable deepCopy()
     {
         final ConfigurationSet<T> returnMe = new ConfigurationSet<>();
-        for(final Identifier next: configs.keySet())
+        for(final SimpleIdentifier next: configs.keySet())
         {
             returnMe.set((T)configs.get(next).deepCopy());
         }
@@ -113,7 +109,7 @@ public class ConfigurationSet<T extends ConfigurationUnit<?>> implements Configu
      * @return the item removed or null
      */
 
-    public T remove(final Identifier id)
+    public T remove(final SimpleIdentifier id)
     {
         return configs.remove(id);
     }

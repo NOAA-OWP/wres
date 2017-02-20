@@ -1,23 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <verificationProject>
-	<projectID>
-		<id>firstProject</id>
-		<elements>
-			<entry>
-				<key>104</key>
-				<value>firstProject</value>
-			</entry>
-		</elements>
-		<separator>.</separator>
-	</projectID>
-	<sourceConfig />
-	<storeConfig />
-	<rescaleConfig />
-	<pairConfig />
-	<conditionConfig />
-	<metricConfig />
-	<productConfig />
-	<outputConfig />
-	<sequenceConfig />
-	<resourceConfig />
+    <projectIdentifier>first.project</projectIdentifier>
+    <sourceConfig/>
+    <storeConfig/>
+    <rescaleConfig/>
+    <pairConfig/>
+    <conditionConfig/>
+    <metricConfig/>
+    <productConfig/>
+    <outputConfig/>
+    <sequenceConfig/>
+    <resourceConfig/>
 </verificationProject>
+

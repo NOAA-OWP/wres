@@ -6,7 +6,7 @@ package wres.configcontrol.config.project;
 // Java net dependencies
 import java.util.LinkedHashSet;
 
-import wres.configcontrol.config.Identifier;
+import wres.configcontrol.config.CompoundIdentifier;
 // WRES dependencies
 import wres.util.DeepCopy;
 
@@ -24,7 +24,7 @@ public final class DataIdentifierSet extends LinkedHashSet<DataIdentifier> imple
      * A unique identifier for the set of data identifiers.
      */
 
-    private Identifier id = null;
+    private CompoundIdentifier id = null;
 
     /**
      * Construct with a default identifier.
@@ -33,7 +33,7 @@ public final class DataIdentifierSet extends LinkedHashSet<DataIdentifier> imple
     public DataIdentifierSet()
     {
         super();
-        id = new Identifier(Identifier.CONFIGURATION_IDENTIFIER, System.currentTimeMillis() + "");
+        id = new CompoundIdentifier(CompoundIdentifier.CONFIGURATION_IDENTIFIER, System.currentTimeMillis() + "");
     }
 
     /**
@@ -43,14 +43,14 @@ public final class DataIdentifierSet extends LinkedHashSet<DataIdentifier> imple
      * @throws ConfigurationException if the identifier is null
      */
 
-    public DataIdentifierSet(final Identifier id)
+    public DataIdentifierSet(final CompoundIdentifier id)
     {
         super();
         if(id == null)
         {
             throw new ConfigurationException("Specify a non-null identifier from which to construct the set of data identifiers.");
         }
-        if(!id.contains(Identifier.CONFIGURATION_IDENTIFIER))
+        if(!id.contains(CompoundIdentifier.CONFIGURATION_IDENTIFIER))
         {
             throw new ConfigurationException("Specify a configuration identifier.");
         }
@@ -108,7 +108,7 @@ public final class DataIdentifierSet extends LinkedHashSet<DataIdentifier> imple
      * 
      * @return the identifier
      */
-    public Identifier getID()
+    public CompoundIdentifier getID()
     {
         return id;
     }

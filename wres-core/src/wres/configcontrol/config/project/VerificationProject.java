@@ -9,7 +9,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 // WRES dependencies
 import wres.configcontrol.config.Configurable;
-import wres.configcontrol.config.Identifier;
+import wres.configcontrol.config.SimpleIdentifier;
 import wres.configcontrol.datamodel.spacetimeobject.PairStore;
 import wres.configcontrol.datamodel.spacetimeobject.SpaceTimeObject;
 import wres.configcontrol.datamodel.spacetimeobject.SpaceTimeObjectStore;
@@ -87,7 +87,7 @@ import wres.configcontrol.datamodel.spacetimeobject.VerificationResultStore;
  * configured, explicitly. A {@link ConfigurationSequencerUnit} is used to schedule a group of (ordered) verification
  * tasks and a {@link ResourceConfigurationUnit} can be used to assign or restrict computational resources to the group
  * of tasks (i.e. to the {@link ConfigurationSequencerUnit}) or to the individual tasks referenced therein. All
- * configurable tasks inherits from {@link Configurable}, which provides a unique {@link Identifier} to track and
+ * configurable tasks inherits from {@link Configurable}, which provides a unique {@link SimpleIdentifier} to track and
  * reference that configuration in a particular context.
  * </p>
  * 
@@ -102,7 +102,7 @@ public class VerificationProject implements Configurable
      * The project identifier.
      */
 
-    private Identifier projectID = null;
+    private SimpleIdentifier projectIdentifier = null;
 
     /**
      * A store of {@link SpaceTimeObject}.
@@ -189,18 +189,18 @@ public class VerificationProject implements Configurable
      * Constructs a new verification project with a unique identifier.
      * 
      * @param id the project identifier
-     * @throws ConfigurationException if a {@link Identifier#CONFIGURATION_IDENTIFIER} is absent from the identifier
+     * @throws ConfigurationException if the project identifier is null
      */
 
-    public VerificationProject(final Identifier id)
+    public VerificationProject(final SimpleIdentifier id)
     {
         setID(id);
     }
 
     @Override
-    public Identifier getID()
+    public SimpleIdentifier getID()
     {
-        return projectID;
+        return projectIdentifier;
     }
 
     /**
@@ -211,7 +211,7 @@ public class VerificationProject implements Configurable
     @Override
     public String toString()
     {
-        return projectID.toString();
+        return projectIdentifier.toString();
     }
 
     /**
@@ -354,7 +354,7 @@ public class VerificationProject implements Configurable
     @Override
     public Configurable deepCopy()
     {
-        final VerificationProject p = new VerificationProject(projectID);
+        final VerificationProject p = new VerificationProject(projectIdentifier);
         // Shallow copy the stores
         p.stoStore = stoStore;
         p.pairStore = pairStore;
@@ -376,22 +376,17 @@ public class VerificationProject implements Configurable
     /**
      * Sets the project identifier.
      * 
-     * @param projectID the project identifier
-     * @throws ConfigurationException if a {@link Identifier#CONFIGURATION_IDENTIFIER} is absent from the project
-     *             identifier
+     * @param projectIdentifier the project identifier
+     * @throws ConfigurationException if the project identifier is null
      */
 
-    public void setID(final Identifier projectID)
+    public void setID(final SimpleIdentifier projectIdentifier)
     {
-        if(projectID == null)
+        if(projectIdentifier == null)
         {
             throw new ConfigurationException("Specify a non-null identifier for the project.");
         }
-        if(!projectID.contains(Identifier.CONFIGURATION_IDENTIFIER))
-        {
-            throw new ConfigurationException("The identifier type must be a configuration identifier.");
-        }
-        this.projectID = projectID;
+        this.projectIdentifier = projectIdentifier;
     }
 
     /**

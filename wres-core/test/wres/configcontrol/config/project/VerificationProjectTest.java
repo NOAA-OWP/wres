@@ -1,6 +1,3 @@
-/**
- * 
- */
 package wres.configcontrol.config.project;
 
 // Imports
@@ -13,7 +10,7 @@ import javax.xml.bind.Unmarshaller;
 import org.junit.Assert;
 import org.junit.Test;
 
-import wres.configcontrol.config.Identifier;
+import wres.configcontrol.config.SimpleIdentifier;
 
 /**
  * Test class for {@link VerificationProject}
@@ -36,8 +33,7 @@ public class VerificationProjectTest
             final Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
             jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             //Construct the test project
-            final VerificationProject p = new VerificationProject(new Identifier(Identifier.CONFIGURATION_IDENTIFIER,
-                                                                                 "firstProject"));
+            final VerificationProject p = new VerificationProject(new SimpleIdentifier("first.project"));
             //Marshal the project to an output file
             final File f = new File("testoutput/wres/configcontrol/config/project/verificationProjectTest/test1.xml");
             jaxbMarshaller.marshal(p, f);
@@ -71,8 +67,7 @@ public class VerificationProjectTest
             final VerificationProject p = (VerificationProject)jaxbUnmarshaller.unmarshal(f);
 
             //Compare for equality with the benchmark
-            final VerificationProject q = new VerificationProject(new Identifier(Identifier.CONFIGURATION_IDENTIFIER,
-                                                                                 "firstProject"));
+            final VerificationProject q = new VerificationProject(new SimpleIdentifier("first.project"));
 
         }
         catch(final Exception e)

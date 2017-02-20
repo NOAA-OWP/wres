@@ -5,18 +5,19 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
+// JAXB dependencies
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * An immutable identifier that comprises {@link String} elements of a prescribed {@link Integer} type.
+ * A compound, immutable, identifier that comprises {@link String} elements of a prescribed {@link Integer} type.
  * 
  * @author james.brown@hydrosolved.com
  */
-@XmlRootElement(name = "identifier")
+@XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
-public final class Identifier implements Comparable<Identifier>
+public final class CompoundIdentifier implements Identifier, Comparable<CompoundIdentifier>
 {
 
     /**
@@ -50,12 +51,6 @@ public final class Identifier implements Comparable<Identifier>
     public static final String DEFAULT_SEPARATOR = ".";
 
     /**
-     * The composite identifier.
-     */
-
-    private String id = null;
-
-    /**
      * The components of the identifier.
      */
 
@@ -74,10 +69,35 @@ public final class Identifier implements Comparable<Identifier>
      * @param element the identifier element
      */
 
-    public Identifier(final int type, final String element)
+    public CompoundIdentifier(final int type, final String element)
     {
         elements.put(type, element);
-        buildString();
+    }
+
+    /**
+     * Construct the identifier with compound elements for a single identifier type.
+     * 
+     * @param type the type of element
+     * @param elements the list of elements
+     */
+
+    public CompoundIdentifier(final int type, final String... elements)
+    {
+        for(final String element: elements)
+        {
+            this.elements.put(type, element);
+        }
+    }
+
+    /**
+     * Construct the identifier with a list of string elements.
+     * 
+     * @param elements the elements of the identifier
+     */
+
+    public CompoundIdentifier(final Map<Integer, String> elements)
+    {
+        this(elements, DEFAULT_SEPARATOR);
     }
 
     /**
@@ -87,28 +107,22 @@ public final class Identifier implements Comparable<Identifier>
      * @param separator the separator
      */
 
-    public Identifier(final Map<Integer, String> elements, final String separator)
+    public CompoundIdentifier(final Map<Integer, String> elements, final String separator)
     {
         this.separator = separator;
         this.elements.putAll(elements);
-        buildString();
-    }
-
-    /**
-     * Construct the identifier with a list of string elements.
-     * 
-     * @param elements the elements of the identifier
-     */
-
-    public Identifier(final Map<Integer, String> elements)
-    {
-        this(elements, DEFAULT_SEPARATOR);
     }
 
     @Override
     public String toString()
     {
-        return id;
+        final StringBuilder b = new StringBuilder();
+        for(final String s: elements.values())
+        {
+            b.append(s).append(separator);
+        }
+        b.deleteCharAt(b.length() - 1);
+        return b.toString();
     }
 
     @Override
@@ -124,7 +138,7 @@ public final class Identifier implements Comparable<Identifier>
     }
 
     @Override
-    public int compareTo(final Identifier compareMe)
+    public int compareTo(final CompoundIdentifier compareMe)
     {
         int returnMe = 0;
         final Map<Integer, String> in = compareMe.elements;
@@ -148,6 +162,12 @@ public final class Identifier implements Comparable<Identifier>
             returnMe += elements.get(k2).compareTo(in.get(k1));
         }
         return returnMe;
+    }
+
+    @Override
+    public String getID()
+    {
+        return toString();
     }
 
     /**
@@ -179,23 +199,8 @@ public final class Identifier implements Comparable<Identifier>
      */
 
     @SuppressWarnings("unused")
-    private Identifier()
+    private CompoundIdentifier()
     {
-    }
-
-    /**
-     * Builds a string representation of the identifier.
-     */
-
-    private void buildString()
-    {
-        final StringBuilder b = new StringBuilder();
-        for(final String s: elements.values())
-        {
-            b.append(s).append(separator);
-        }
-        b.deleteCharAt(b.length() - 1);
-        id = b.toString();
     }
 
 }

@@ -5,7 +5,7 @@ package wres.configcontrol.config.project;
 
 // WRES dependencies
 import wres.configcontrol.config.Configurable;
-import wres.configcontrol.config.Identifier;
+import wres.configcontrol.config.SimpleIdentifier;
 
 /**
  * An elementary block of configuration. The configuration applies to a nominated {@link DataIdentifierSet}. The
@@ -20,7 +20,7 @@ public abstract class ConfigurationUnit<T> implements Configurable
      * A unique identifier for the configuration block.
      */
 
-    private Identifier id = null;
+    private SimpleIdentifier id = null;
 
     /**
      * The context for the configuration, comprising the datasets to which it refers.
@@ -29,37 +29,32 @@ public abstract class ConfigurationUnit<T> implements Configurable
     private final DataIdentifierSet idSet = null;
 
     /**
-     * Constructs a {@link ConfigurationUnit} with a default {@link Identifier}.
+     * Constructs a {@link ConfigurationUnit} with a default {@link SimpleIdentifier}.
      */
 
     public ConfigurationUnit()
     {
-        id = new Identifier(Identifier.CONFIGURATION_IDENTIFIER, System.currentTimeMillis() + "");
+        id = new SimpleIdentifier(System.currentTimeMillis() + "");
     }
 
     /**
-     * Constructs a {@link ConfigurationUnit} with an {@link Identifier}.
+     * Constructs a {@link ConfigurationUnit} with an {@link SimpleIdentifier}.
      * 
      * @param id the unique identifier for the configuration
-     * @throws ConfigurationException if the identifier is null or does not contain an
-     *             {@link Identifier#CONFIGURATION_IDENTIFIER}
+     * @throws ConfigurationException if the identifier is null
      */
 
-    public ConfigurationUnit(final Identifier id)
+    public ConfigurationUnit(final SimpleIdentifier id)
     {
         if(id == null)
         {
             throw new ConfigurationException("Enter a non-null identifier for the configuration.");
         }
-        if(!id.contains(Identifier.CONFIGURATION_IDENTIFIER))
-        {
-            throw new ConfigurationException("Specify a configuration identifier.");
-        }
         this.id = id;
     }
 
     @Override
-    public Identifier getID()
+    public SimpleIdentifier getID()
     {
         return id;
     }
