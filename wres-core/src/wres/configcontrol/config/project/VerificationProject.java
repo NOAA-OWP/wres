@@ -48,9 +48,9 @@ import wres.configcontrol.datamodel.spacetimeobject.VerificationResultStore;
  * may contain a {@link RescalingConfigurationUnit} that implements a temporal aggregation from hourly to daily and
  * another {@link RescalingConfigurationUnit} that implements a temporal aggregation from hourly to weekly. Each
  * {@link ConfigurationUnit} applies to a nominated {@link DataIdentifierSet}, and each {@link DataIdentifierSet}
- * contains one or more {@link DataIdentifier}, which uniquely identifies a dataset within a particular context (data
- * store). Datasets are assigned to configurations, rather than configurations to datasets, because the number of
- * datasets will, in general, greatly exceed the number of configurations (of interest).
+ * contains one or more {@link DataIdentifier}. A {@link DataIdentifier} uniquely identifies one or more datasets in a
+ * single context (data store). Datasets are assigned to configurations, rather than configurations to datasets, because
+ * the number of datasets will, in general, exceed the number of configurations (of interest).
  * </p>
  * <p>
  * A {@link VerificationProject} may contain some or all of the following sets of configurations:
@@ -67,6 +67,8 @@ import wres.configcontrol.datamodel.spacetimeobject.VerificationResultStore;
  * datasets based on location, time and other properties;</li>
  * <li>A {@link ConfigurationSet} containing {@link ConditioningConfigurationUnit}, which configures the selection or
  * sub-setting of data based on prescribed conditions;</li>
+ * <li>A {@link ConfigurationSet} containing {@link TransformationConfigurationUnit}, which transforms data between
+ * ensemble members, probabilities, and single values depending on the requirements for verification;</li>
  * <li>A {@link ConfigurationSet} containing {@link MetricConfigurationUnit}, which configures the verification metrics
  * and the associated paired datasets for which they should be computed;</li>
  * <li>A {@link ConfigurationSet} containing {@link ProductConfigurationUnit}, which identifies the verification product
@@ -89,7 +91,7 @@ import wres.configcontrol.datamodel.spacetimeobject.VerificationResultStore;
  * tasks and a {@link ResourceConfigurationUnit} can be used to assign or restrict computational resources to the group
  * of tasks (i.e. to the {@link ConfigurationSequencerUnit}) or to the individual tasks referenced therein. All
  * configurable tasks inherits from {@link Configurable}, which provides a unique {@link SimpleIdentifier} to track and
- * reference that configuration in a particular context.
+ * reference that configuration within a particular context, such as within a {@link ConfigurationSet}.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
@@ -153,6 +155,12 @@ public class VerificationProject implements Configurable
      */
 
     private ConfigurationSet<ConditioningConfigurationUnit> conditionConfig = new ConfigurationSet<>();
+
+    /**
+     * The configurations associated with transforming datasets between ensembles/single values/probabilities.
+     */
+
+    private ConfigurationSet<TransformationConfigurationUnit> transformConfig = new ConfigurationSet<>();
 
     /**
      * The configurations associated with verification metrics.
@@ -296,6 +304,17 @@ public class VerificationProject implements Configurable
     }
 
     /**
+     * Returns the {@link ConfigurationSet} that configures the transformation of datasets between ensembles, single
+     * values, and probabilities.
+     * 
+     * @return the {@link ConfigurationSet} of {@link TransformationConfigurationUnit}
+     */
+    public ConfigurationSet<TransformationConfigurationUnit> getTransformConfig()
+    {
+        return transformConfig;
+    }
+
+    /**
      * Returns the {@link ConfigurationSet} that configures the verification metrics.
      * 
      * @return the {@link ConfigurationSet} of {@link MetricConfigurationUnit}
@@ -366,6 +385,7 @@ public class VerificationProject implements Configurable
         p.rescaleConfig = (ConfigurationSet<RescalingConfigurationUnit>)rescaleConfig.deepCopy();
         p.pairConfig = (ConfigurationSet<PairingConfigurationUnit>)pairConfig.deepCopy();
         p.conditionConfig = (ConfigurationSet<ConditioningConfigurationUnit>)conditionConfig.deepCopy();
+        p.transformConfig = (ConfigurationSet<TransformationConfigurationUnit>)transformConfig.deepCopy();
         p.metricConfig = (ConfigurationSet<MetricConfigurationUnit>)metricConfig.deepCopy();
         p.productConfig = (ConfigurationSet<ProductConfigurationUnit>)productConfig.deepCopy();
         p.outputConfig = (ConfigurationSet<OutputConfigurationUnit>)outputConfig.deepCopy();
@@ -468,6 +488,17 @@ public class VerificationProject implements Configurable
     public void setConditionConfig(final ConfigurationSet<ConditioningConfigurationUnit> conditionConfig)
     {
         this.conditionConfig = conditionConfig;
+    }
+
+    /**
+     * Sets the {@link ConfigurationSet} that configures the transformation of datasets between ensembles, single
+     * values, and probabilities.
+     * 
+     * @param transformConfig a {@link ConfigurationSet} of {@link TransformationConfigurationUnit}
+     */
+    public void setTransformConfig(final ConfigurationSet<TransformationConfigurationUnit> transformConfig)
+    {
+        this.transformConfig = transformConfig;
     }
 
     /**

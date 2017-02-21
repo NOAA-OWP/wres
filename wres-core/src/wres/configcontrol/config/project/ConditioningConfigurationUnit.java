@@ -1,7 +1,7 @@
-/**
- * 
- */
 package wres.configcontrol.config.project;
+
+// WRES dependencies
+import wres.configcontrol.config.SimpleIdentifier;
 
 /**
  * An elementary block of configuration for applying conditions to data. Conditions are used to subset a large dataset
@@ -14,6 +14,13 @@ public class ConditioningConfigurationUnit extends ConfigurationUnit<Conditionin
 
     @Override
     public ConditioningConfigurationUnit deepCopy()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public ConditioningConfigurationUnit deepCopy(final SimpleIdentifier id)
     {
         // TODO Auto-generated method stub
         return null;

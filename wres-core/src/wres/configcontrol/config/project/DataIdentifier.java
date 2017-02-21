@@ -1,6 +1,3 @@
-/**
- * 
- */
 package wres.configcontrol.config.project;
 
 // Java net dependencies
@@ -10,8 +7,10 @@ import java.net.URI;
 import wres.configcontrol.config.CompoundIdentifier;
 
 /**
- * An immutable identifier for a unique dataset that is accessible in a particular context. The dataset is identifier by
- * its {@link CompoundIdentifier} and the context is given by a {@link URI} to the data store.
+ * An immutable identifier for one or more unique datasets that are accessible in a single context. Each dataset is
+ * identified by its {@link CompoundIdentifier} and the context is given by a {@link URI} to the data store. Use a
+ * {@link DataIdentifier} to reference one or more datasets in a single context and {@link DataIdentifierSet} to
+ * identify multiple datasets in multiple contexts.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -22,13 +21,13 @@ public final class DataIdentifier implements Comparable<DataIdentifier>
      * The URI to the data store.
      */
 
-    private URI context = null;
+    private final URI context;
 
     /**
-     * A unique identifier for the dataset.
+     * The unique identifiers for the datasets.
      */
 
-    private CompoundIdentifier id = null;
+    private final CompoundIdentifier[] ids;
 
     /**
      * Construct a data identifier.
@@ -48,7 +47,7 @@ public final class DataIdentifier implements Comparable<DataIdentifier>
         {
             throw new ConfigurationException("Specify a non-null URI from which to construct the data identifier.");
         }
-        this.id = id;
+        ids = new CompoundIdentifier[]{id};
         this.context = context;
     }
 
@@ -61,26 +60,39 @@ public final class DataIdentifier implements Comparable<DataIdentifier>
     @Override
     public int hashCode()
     {
-        return id.hashCode() + context.hashCode();
+        int hash = 0;
+        for(final CompoundIdentifier id: ids)
+        {
+            hash += id.hashCode();
+        }
+        return hash + context.hashCode();
     }
 
     @Override
     public String toString()
     {
         final StringBuilder b = new StringBuilder();
-        b.append(id).append(" in ").append(context);
+        b.append("<");
+        for(final CompoundIdentifier id: ids)
+        {
+            b.append(id).append(", ");
+        }
+        final int length = b.length();
+        b.delete(length - 2, length);
+        b.append(">");
+        b.append(" in ").append(context);
         return b.toString();
     }
 
     /**
-     * Returns the dataset identifier.
+     * Returns the dataset identifiers.
      * 
-     * @return the dataset identifier
+     * @return the dataset identifiers
      */
 
-    public CompoundIdentifier getID()
+    public CompoundIdentifier[] getIDs()
     {
-        return id;
+        return ids;
     }
 
     /**
@@ -97,7 +109,7 @@ public final class DataIdentifier implements Comparable<DataIdentifier>
     @Override
     public int compareTo(final DataIdentifier o)
     {
-        return o.id.compareTo(id) + o.context.compareTo(context);
+        return o.toString().compareTo(toString());
     }
 
 }
