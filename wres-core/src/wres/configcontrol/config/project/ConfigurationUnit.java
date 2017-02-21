@@ -50,6 +50,14 @@ public abstract class ConfigurationUnit<T> implements Configurable
         this.id = id;
     }
 
+    /**
+     * Create a deep copy of the {@link ConfigurationUnit} with a prescribed identifier.
+     * 
+     * @param id the identifier
+     */
+
+    public abstract T deepCopy(SimpleIdentifier id);
+
     @Override
     public SimpleIdentifier getID()
     {
