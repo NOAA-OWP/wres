@@ -1,6 +1,3 @@
-/**
- * 
- */
 package wres.configcontrol.config.project;
 
 // Java util dependencies
@@ -87,10 +84,11 @@ public class ConfigurationSet<T extends ConfigurationUnit<?>> implements Configu
     }
 
     /**
-     * Sets a {@link ConfigurationUnit}
+     * Sets a {@link ConfigurationUnit}.
      * 
      * @param add the {@link ConfigurationUnit} to add
-     * @throws ConfigurationException if the input is null
+     * @throws ConfigurationException if the input is null or if the {@link ConfigurationUnit#id} already exists in this
+     *             context (use {@link #remove(SimpleIdentifier)} first}.
      */
 
     public void set(final T add)
@@ -99,7 +97,13 @@ public class ConfigurationSet<T extends ConfigurationUnit<?>> implements Configu
         {
             throw new ConfigurationException("Cannot store null configuration.");
         }
-        configs.put(add.getID(), add);
+        final SimpleIdentifier test = add.getID();
+        if(configs.containsKey(test))
+        {
+            throw new ConfigurationException("Configuration with identifier '" + test
+                + "' already exists in this context: " + "remove the existing configuration first.");
+        }
+        configs.put(test, add);
     }
 
     /**

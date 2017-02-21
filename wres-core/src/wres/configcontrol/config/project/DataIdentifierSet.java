@@ -1,12 +1,9 @@
-/**
- * 
- */
 package wres.configcontrol.config.project;
 
 // Java net dependencies
 import java.util.LinkedHashSet;
 
-import wres.configcontrol.config.CompoundIdentifier;
+import wres.configcontrol.config.SimpleIdentifier;
 // WRES dependencies
 import wres.util.DeepCopy;
 
@@ -24,7 +21,7 @@ public final class DataIdentifierSet extends LinkedHashSet<DataIdentifier> imple
      * A unique identifier for the set of data identifiers.
      */
 
-    private CompoundIdentifier id = null;
+    private SimpleIdentifier id = null;
 
     /**
      * Construct with a default identifier.
@@ -33,7 +30,7 @@ public final class DataIdentifierSet extends LinkedHashSet<DataIdentifier> imple
     public DataIdentifierSet()
     {
         super();
-        id = new CompoundIdentifier(CompoundIdentifier.CONFIGURATION_IDENTIFIER, System.currentTimeMillis() + "");
+        id = new SimpleIdentifier(System.currentTimeMillis() + "");
     }
 
     /**
@@ -43,16 +40,13 @@ public final class DataIdentifierSet extends LinkedHashSet<DataIdentifier> imple
      * @throws ConfigurationException if the identifier is null
      */
 
-    public DataIdentifierSet(final CompoundIdentifier id)
+    public DataIdentifierSet(final SimpleIdentifier id)
     {
         super();
         if(id == null)
         {
-            throw new ConfigurationException("Specify a non-null identifier from which to construct the set of data identifiers.");
-        }
-        if(!id.contains(CompoundIdentifier.CONFIGURATION_IDENTIFIER))
-        {
-            throw new ConfigurationException("Specify a configuration identifier.");
+            throw new ConfigurationException("Specify a non-null identifier from which to construct the set of data "
+                + "identifiers.");
         }
         this.id = id;
     }
@@ -108,7 +102,7 @@ public final class DataIdentifierSet extends LinkedHashSet<DataIdentifier> imple
      * 
      * @return the identifier
      */
-    public CompoundIdentifier getID()
+    public SimpleIdentifier getID()
     {
         return id;
     }
