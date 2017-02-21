@@ -1,6 +1,3 @@
-/**
- * 
- */
 package wres.configcontrol.config.project;
 
 // WRES dependencies
@@ -20,13 +17,13 @@ public abstract class ConfigurationUnit<T> implements Configurable
      * A unique identifier for the configuration block.
      */
 
-    private SimpleIdentifier id = null;
+    private final SimpleIdentifier id;
 
     /**
      * The context for the configuration, comprising the datasets to which it refers.
      */
 
-    private final DataIdentifierSet idSet = null;
+    private DataIdentifierSet idSet = null;
 
     /**
      * Constructs a {@link ConfigurationUnit} with a default {@link SimpleIdentifier}.
@@ -72,6 +69,7 @@ public abstract class ConfigurationUnit<T> implements Configurable
         {
             throw new ConfigurationException("Specify a non-null context for the configuration.");
         }
+        this.idSet = idSet;
     }
 
     /**
