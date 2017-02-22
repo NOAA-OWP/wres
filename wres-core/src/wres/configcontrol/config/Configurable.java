@@ -4,7 +4,7 @@ package wres.configcontrol.config;
 import wres.util.DeepCopy;
 
 /**
- * Identifiers a block of configuration with a unique {@link SimpleIdentifier}.
+ * Identifies a block of configuration with a unique {@link SimpleIdentifier}.
  * 
  * @author james.brown@hydrosolved.com
  */

@@ -1,6 +1,3 @@
-/**
- * 
- */
 package wres.configcontrol.config.project;
 
 // JAXB dependencies
@@ -68,15 +65,15 @@ import wres.configcontrol.datamodel.spacetimeobject.VerificationResultStore;
  * <li>A {@link ConfigurationSet} containing {@link ConditioningConfigurationUnit}, which configures the selection or
  * sub-setting of data based on prescribed conditions;</li>
  * <li>A {@link ConfigurationSet} containing {@link TransformationConfigurationUnit}, which transforms data between
- * ensemble members, probabilities, and single values depending on the requirements for verification;</li>
+ * ensemble members, probabilities, and single values, depending on the requirements for verification;</li>
  * <li>A {@link ConfigurationSet} containing {@link MetricConfigurationUnit}, which configures the verification metrics
  * and the associated paired datasets for which they should be computed;</li>
  * <li>A {@link ConfigurationSet} containing {@link ProductConfigurationUnit}, which identifies the verification product
  * configurations (e.g. graphical and tabular outputs) and the datasets to which they apply;</li>
  * <li>A {@link ConfigurationSet} containing {@link OutputConfigurationUnit}, which configures the writing of outputs,
  * such as verification results, to external stores;</li>
- * <li>A {@link ConfigurationSet} containing {@link ConfigurationSequencerUnit}, which provides one or more sequences of
- * tasks and the order in which they should be implemented; and</li>
+ * <li>A {@link ConfigurationSet} containing {@link WorkflowConfigurationUnit}, which provides one or more sequences of
+ * tasks and the order in which they should be implemented in a "verification workflow"; and</li>
  * <li>A {@link ConfigurationSet} containing {@link ResourceConfigurationUnit}, which allocates computational resources
  * to particular instances of {@link ConfigurationSet} or {@link ConfigurationUnit}.</li>
  * </ol>
@@ -87,9 +84,9 @@ import wres.configcontrol.datamodel.spacetimeobject.VerificationResultStore;
  * acquire an external dataset and write this to the {@link SpaceTimeObjectStore} with the appropriate
  * {@link DataIdentifier}. In short, where the inputs to one configuration task depend on the outputs from another task,
  * a sequence must be operated. This sequence may be operated manually (e.g. by a user operating tasks within a GUI), or
- * configured, explicitly. A {@link ConfigurationSequencerUnit} is used to schedule a group of (ordered) verification
+ * configured, explicitly. A {@link WorkflowConfigurationUnit} is used to schedule a group of (ordered) verification
  * tasks and a {@link ResourceConfigurationUnit} can be used to assign or restrict computational resources to the group
- * of tasks (i.e. to the {@link ConfigurationSequencerUnit}) or to the individual tasks referenced therein. All
+ * of tasks (i.e. to the {@link WorkflowConfigurationUnit}) or to the individual tasks referenced therein. All
  * configurable tasks inherits from {@link Configurable}, which provides a unique {@link SimpleIdentifier} to track and
  * reference that configuration within a particular context, such as within a {@link ConfigurationSet}.
  * </p>
@@ -185,7 +182,7 @@ public class VerificationProject implements Configurable
      * (i.e. {@link ConfigurationSet}).
      */
 
-    private ConfigurationSet<ConfigurationSequencerUnit> sequenceConfig = new ConfigurationSet<>();
+    private ConfigurationSet<WorkflowConfigurationUnit> sequenceConfig = new ConfigurationSet<>();
 
     /**
      * The configurations necessary to allocate or constrain the computational resources associated with particular
@@ -347,9 +344,9 @@ public class VerificationProject implements Configurable
     /**
      * Returns the {@link ConfigurationSet} that configures the sequencing of verification tasks.
      * 
-     * @return the {@link ConfigurationSet} of {@link ConfigurationSequencerUnit}
+     * @return the {@link ConfigurationSet} of {@link WorkflowConfigurationUnit}
      */
-    public ConfigurationSet<ConfigurationSequencerUnit> getSequenceConfig()
+    public ConfigurationSet<WorkflowConfigurationUnit> getSequenceConfig()
     {
         return sequenceConfig;
     }
@@ -389,7 +386,7 @@ public class VerificationProject implements Configurable
         p.metricConfig = (ConfigurationSet<MetricConfigurationUnit>)metricConfig.deepCopy();
         p.productConfig = (ConfigurationSet<ProductConfigurationUnit>)productConfig.deepCopy();
         p.outputConfig = (ConfigurationSet<OutputConfigurationUnit>)outputConfig.deepCopy();
-        p.sequenceConfig = (ConfigurationSet<ConfigurationSequencerUnit>)sequenceConfig.deepCopy();
+        p.sequenceConfig = (ConfigurationSet<WorkflowConfigurationUnit>)sequenceConfig.deepCopy();
         p.resourceConfig = (ConfigurationSet<ResourceConfigurationUnit>)resourceConfig.deepCopy();
         return p;
     }
@@ -534,9 +531,9 @@ public class VerificationProject implements Configurable
     /**
      * Sets the {@link ConfigurationSet} that configures the sequencing of verification tasks.
      * 
-     * @param sequenceConfig a {@link ConfigurationSet} of {@link ConfigurationSequencerUnit}
+     * @param sequenceConfig a {@link ConfigurationSet} of {@link WorkflowConfigurationUnit}
      */
-    public void setSequenceConfig(final ConfigurationSet<ConfigurationSequencerUnit> sequenceConfig)
+    public void setSequenceConfig(final ConfigurationSet<WorkflowConfigurationUnit> sequenceConfig)
     {
         this.sequenceConfig = sequenceConfig;
     }
