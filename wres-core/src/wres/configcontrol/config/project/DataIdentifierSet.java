@@ -54,7 +54,7 @@ public final class DataIdentifierSet extends LinkedHashSet<DataIdentifier> imple
     @Override
     public boolean equals(final Object o)
     {
-        return o instanceof DataIdentifierSet && ((DataIdentifierSet)o).id.equals(id) && super.equals(o);
+        return o instanceof DataIdentifierSet && o != null && ((DataIdentifierSet)o).id.equals(id) && super.equals(o);
     }
 
     @Override

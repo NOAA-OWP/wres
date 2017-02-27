@@ -8,7 +8,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 // WRES dependencies
 import wres.configcontrol.config.Configurable;
 import wres.configcontrol.config.SimpleIdentifier;
-import wres.configcontrol.datamodel.spacetimeobject.PairStore;
 import wres.configcontrol.datamodel.spacetimeobject.SpaceTimeObject;
 import wres.configcontrol.datamodel.spacetimeobject.SpaceTimeObjectStore;
 import wres.configcontrol.datamodel.spacetimeobject.VerificationResultStore;
@@ -28,13 +27,12 @@ import wres.configcontrol.datamodel.spacetimeobject.VerificationResultStore;
  * configured within a {@link VerificationProject}. Configurations are added via the instance methods.
  * </p>
  * <p>
- * A {@link VerificationProject} contains references to three separate stores of data upon which verification tasks may
- * be operated, namely:
+ * A {@link VerificationProject} contains references to two separate stores of data upon which verification tasks may be
+ * operated, namely:
  * </p>
  * <ol>
- * <li>A {@link SpaceTimeObjectStore}, which stores the elementary space-time datasets for verification;</li>
- * <li>A {@link PairStore}, which stores paired datasets; and</li>
- * <li>A {@link VerificationResultStore}, which stores verification results.</li>
+ * <li>A {@link SpaceTimeObjectStore}, which stores the input datasets for verification;</li>
+ * <li>A {@link VerificationResultStore}, which stores the output datasets from a verification study.</li>
  * </ol>
  * <p>
  * Similar types of configuration, such as tasks related to the acquisition of data, pairing, rescaling, verification or
@@ -56,8 +54,7 @@ import wres.configcontrol.datamodel.spacetimeobject.VerificationResultStore;
  * <li>A {@link ConfigurationSet} containing {@link InputConfigurationUnit}, which stores the configuration necessary to
  * read external datasets into an internal data store, such as a {@link SpaceTimeObjectStore};</li>
  * <li>A {@link ConfigurationSet} containing {@link DataStoreConfigurationUnit}, which configures the persistent data
- * stores, including the {@link SpaceTimeObjectStore}, the {@link PairStore} and the
- * {@link VerificationResultStore};</li>
+ * stores, including the {@link SpaceTimeObjectStore}, and the {@link VerificationResultStore};</li>
  * <li>A {@link ConfigurationSet} containing {@link RescalingConfigurationUnit}, which configures the rescaling of
  * datasets;</li>
  * <li>A {@link ConfigurationSet} containing {@link PairingConfigurationUnit}, which configures the pairing together of
@@ -109,12 +106,6 @@ public class VerificationProject implements Configurable
      */
 
     private SpaceTimeObjectStore stoStore = null;
-
-    /**
-     * A store of verification pairs.
-     */
-
-    private PairStore pairStore = null;
 
     /**
      * A store of verification results.
@@ -228,16 +219,6 @@ public class VerificationProject implements Configurable
     public SpaceTimeObjectStore getObjectStore()
     {
         return stoStore;
-    }
-
-    /**
-     * Returns the {@link PairStore} associated with the verification project.
-     * 
-     * @return the {@link PairStore}
-     */
-    public PairStore getPairStore()
-    {
-        return pairStore;
     }
 
     /**
@@ -374,7 +355,6 @@ public class VerificationProject implements Configurable
         final VerificationProject p = new VerificationProject(projectIdentifier);
         // Shallow copy the stores
         p.stoStore = stoStore;
-        p.pairStore = pairStore;
         p.resultStore = resultStore;
         // Deep copy the configurations
         p.sourceConfig = (ConfigurationSet<InputConfigurationUnit>)sourceConfig.deepCopy();
@@ -415,16 +395,6 @@ public class VerificationProject implements Configurable
     public void setObjectStore(final SpaceTimeObjectStore stoStore)
     {
         this.stoStore = stoStore;
-    }
-
-    /**
-     * Sets the {@link PairStore} associated with the verification project.
-     * 
-     * @param pairStore the store of paired data
-     */
-    public void setPairStore(final PairStore pairStore)
-    {
-        this.pairStore = pairStore;
     }
 
     /**
