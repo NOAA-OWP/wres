@@ -2,6 +2,7 @@ package wres.configcontrol.config.project;
 
 // Java net dependencies
 import java.net.URI;
+import java.util.Arrays;
 
 // WRES dependencies
 import wres.configcontrol.config.CompoundIdentifier;
@@ -54,7 +55,7 @@ public final class DataIdentifier implements Comparable<DataIdentifier>
     @Override
     public boolean equals(final Object o)
     {
-        return o != null && o instanceof DataIdentifier && o.hashCode() == hashCode();
+        return o != null && o instanceof DataIdentifier && Arrays.equals(((DataIdentifier)o).ids, ids);
     }
 
     @Override
