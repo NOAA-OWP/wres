@@ -128,7 +128,8 @@ public final class CompoundIdentifier implements Identifier, Comparable<Compound
     @Override
     public boolean equals(final Object o)
     {
-        return o != null && o instanceof CompoundIdentifier && o.hashCode() == hashCode();
+        return o != null && o instanceof CompoundIdentifier && ((CompoundIdentifier)o).elements.equals(elements)
+            && ((CompoundIdentifier)o).separator.equals(separator);
     }
 
     @Override
