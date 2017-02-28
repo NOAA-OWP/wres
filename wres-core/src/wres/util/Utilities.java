@@ -23,6 +23,9 @@ public final class Utilities {
 	private static int THREAD_COUNT = 30;
 	private static ExecutorService query_executor = Executors.newFixedThreadPool(THREAD_COUNT);
 	private static Queue<String> query_queue =  new ConcurrentLinkedQueue<String>();
+	private static String DATABASE_URL = "jdbc:postgresql://***REMOVED***eds-dev1.***REMOVED***.***REMOVED***/wres";
+	private static String DATABASE_USERNAME = 
+	private static String DATABASE_PASSWORD = 
 	
 	public static void add_query(String query)
 	{
@@ -39,16 +42,10 @@ public final class Utilities {
 				private String inner_query = "";
 				public void run()
 				{
-					//String url = "jdbc:postgresql://***REMOVED***eds-dev1.***REMOVED***.***REMOVED***/wres";
-					//Properties props = new Properties();
-					//props.setProperty("user", "christopher.tubbs");
-					//props.setProperty("password", "changeme");
-					//Driver driver = new Driver();
 					Connection connection = null;
 					try
 					{
 						connection = create_eds_connection();
-						//connection = driver.connect(url, props);
 						Statement statement = connection.createStatement();
 						statement.execute(inner_query);
 					}
@@ -116,17 +113,16 @@ public final class Utilities {
 	public static Connection create_eds_connection() throws SQLException
 	{
 		Connection connection = null;
-		String url = "jdbc:postgresql://***REMOVED***eds-dev1.***REMOVED***.***REMOVED***/wres";
 		Properties props = new Properties();
-		props.setProperty("user", "christopher.tubbs");
-		props.setProperty("password", "changeme");
+		props.setProperty("user", DATABASE_USERNAME);
+		props.setProperty("password", DATABASE_PASSWORD);
 		int attempt_count = 0;
 		while (connection == null)
 		{
 			try {
 				attempt_count++;
 				Driver driver = new Driver();
-				connection = driver.connect(url, props);
+				connection = driver.connect(DATABASE_URL, props);
 				if (attempt_count > 20)
 				{
 					System.out.println(String.format("Connection granted after %d attempts.", attempt_count));
@@ -147,7 +143,7 @@ public final class Utilities {
 	
 	public static Connection create_connection() throws SQLException
 	{
-
+		// Use for local connections; this is only an example. This will create a connection to my local 'ctubbs' database
 		String url="jdbc:postgresql://localhost:5432/ctubbs";
 		Properties props = new Properties();
 		props.setProperty("user", "ctubbs");
@@ -229,16 +225,14 @@ public final class Utilities {
 			private String inner_query = "";
 			public void run()
 			{
-				String url = "jdbc:postgresql://***REMOVED***eds-dev1.***REMOVED***.***REMOVED***/wres";
 				Properties props = new Properties();
-				props.setProperty("user", "christopher.tubbs");
-				props.setProperty("password", "changeme");
+				props.setProperty("user", DATABASE_USERNAME);
+				props.setProperty("password", DATABASE_PASSWORD);
 				Driver driver = new Driver();
 				Connection connection = null;
 				try
 				{
-					//connection = create_eds_connection();
-					connection = driver.connect(url, props);
+					connection = driver.connect(DATABASE_URL, props);
 					Statement statement = connection.createStatement();
 					statement.execute(inner_query);
 				}
