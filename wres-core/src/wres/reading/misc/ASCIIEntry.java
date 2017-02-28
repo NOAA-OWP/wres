@@ -12,6 +12,7 @@ import wres.reading.BasicSeriesEntry;
  * @author ctubbs
  *
  */
+@Deprecated
 public class ASCIIEntry extends BasicSeriesEntry {
 
 	/**

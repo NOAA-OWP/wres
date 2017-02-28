@@ -120,7 +120,8 @@ public class ASCIISource extends BasicSource {
 	}
 	
 	@Override
-	public void read() {
+	public void read() 
+	{
 		Path path = Paths.get(get_filename());
 		double current_lead_time = -1.0;
 		ASCIISeries series = new ASCIISeries();
@@ -173,48 +174,6 @@ public class ASCIISource extends BasicSource {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-	
-	@Deprecated
-	@Override
-	public void read_and_save() throws SQLException, RewriteRequiredException 
-	{
-		throw new wres.util.exceptions.RewriteRequiredException("ASCIISource.read_and_save was written according to an old design. Please reimplement prior to use.");
-		/*Path path = Paths.get(get_filename());
-		ASCIISeries series = new ASCIISeries();
-		try(BufferedReader reader = Files.newBufferedReader(path))
-		{
-			//ExecutorService executor = Executors.newFixedThreadPool(20);
-			String line = reader.readLine();
-			//String[] ascii = line.split("\\s+");
-			/*String formated_date = String.format("%s %s", ascii[0], ascii[1]);
-			DateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH");
-			Date date = formatter.parse(formated_date);
-			set_forecast_date(date);
-			save_source();
-			series.save(get_model_id(), get_location_id());
-			Runnable first_worker = new ASCIIEntryParser(series.get_modelvariable_id(), ASCIIEntryParser.CLASSIC, line);
-			executor.execute(first_worker);
-			int throttle = 0;
-			while ((line = reader.readLine()) != null)// && throttle < 9000)
-			{
-				/*Runnable worker = new ASCIIEntryParser(series.get_modelvariable_id(), ASCIIEntryParser.CLASSIC, line);
-				executor.execute(worker);
-				throttle++;
-			}
-			System.out.println("Lines distributed. Currently saving to the database...");
-			//executor.shutdown();
-			//while (!executor.isTerminated())
-			//{
-			//}
-		}
-		catch (IOException exception)
-		{
-			System.err.format("IOException: %s%n", exception);
-		} /*catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
 	}
 
 	@Override
@@ -295,6 +254,14 @@ public class ASCIISource extends BasicSource {
 		}		
 	}
 	
+	/**
+	 * Parses a line of Tabular ASCII, transforms it into a SQL statement and sends it to the database
+	 * 
+	 * @param line The line of ASCII that needs to be parsed
+	 * @return The ID of the new forecast
+	 * @throws SQLException A SQLException is thrown if something goes awry when connecting to the database,
+	 * sending the query, or interpretting the result
+	 */
 	private int create_forecast(String line) throws SQLException
 	{
 		int forecast_id = 0;
@@ -347,6 +314,12 @@ public class ASCIISource extends BasicSource {
 		return forecast_id;
 	}
 	
+	/**
+	 * Generates a script to specially save a single forecast to the database. 
+	 * @return The script needed to insert a new forecast
+	 * 
+	 * TODO: Move the script to a separate file so that it is easier to read and may be edited without recompiling
+	 */
 	private String get_save_forecast_script()
 	{
 		Path path = Paths.get(get_filename());
@@ -385,16 +358,19 @@ public class ASCIISource extends BasicSource {
 		return script;
 	}
 
+	// TODO: Implement the process of saving Tabular ASCII as observations
 	@Override
 	public void save_observation() throws SQLException {
 		// TODO Auto-generated method stub
-
+		System.out.println("Tabular ASCII source files don't currently have the ability to save as observation data.");
+		/*
 		String script = "INSERT INTO Observation (source, title, measurementunit_id, observationlocation_id, variable_id, projection_id)";
 		script += System.lineSeparator();
 		// TODO: The following static values need to be evaluated rather than hardcoded
 		script += "VALUES ('%s', '', 1, 1, 1, 1)";
 		script += System.lineSeparator();
 		script += "RETURNING observation_id;";
+		*/
 	}
 
 }

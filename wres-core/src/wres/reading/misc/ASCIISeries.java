@@ -10,6 +10,7 @@ import java.util.Date;
  * @author ctubbs
  *
  */
+@Deprecated
 public class ASCIISeries extends wres.reading.BasicSeries {
 
 	/**

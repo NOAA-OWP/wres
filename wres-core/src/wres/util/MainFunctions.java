@@ -39,7 +39,6 @@ public class MainFunctions {
 		prototypes.put("copywaterdata", copyWaterData());
 		prototypes.put("describenetcdf", describeNetCDF());
 		prototypes.put("connecttodb", connectToDB());
-		prototypes.put("savewaterdata", saveWaterData());
 		prototypes.put("saveforecast", saveForecast());
 		prototypes.put("saveobservation", saveObservation());
 		prototypes.put("printpairs", printPairs());
@@ -80,31 +79,6 @@ public class MainFunctions {
 					BasicSource source = SourceReader.get_source(args[0]);
 					source.read();
 					source.write(filename);
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			else
-			{
-				System.out.println("A path is needed to copy data. Please pass that in as the first argument.");
-				System.out.print("The current directory is:\t");
-				System.out.println(System.getProperty("user.dir"));
-			}
-		};
-	}
-	
-	private static final Consumer<String[]> saveWaterData()
-	{
-		return (String[] args) -> {
-			if (args.length > 0)
-			{
-				try {
-					BasicSource source = SourceReader.get_source(args[0]);
-					//source.read();
-					System.out.println(String.format("Attempting to save '%s' to the database...", args[0]));
-					source.read_and_save();
-					System.out.println("Database save operation completed. Please verify data.");
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -177,17 +151,15 @@ public class MainFunctions {
 	{
 		return (String[] args) -> {
 			try {
-				String url = "jdbc:postgresql://***REMOVED***eds-dev1.***REMOVED***.***REMOVED***/wres";
 				Properties props = new Properties();
-				props.setProperty("user", "christopher.tubbs");
-				props.setProperty("password", "changeme");
+				props.setProperty("user", wres.util.Utilities.DATABASE_USERNAME);
+				props.setProperty("password", wres.util.Utilities.DATABASE_PASSWORD);
 				Driver d = new Driver();
-				Connection conn = d.connect(url, props);
+				Connection conn = d.connect(wres.util.Utilities.DATABASE_URL, props);
 				System.out.println("Successfully connected to the database");
 				conn.close();
 			} catch (SQLException e) {
 				System.out.println("Could not connect to database because:");
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		};

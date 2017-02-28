@@ -17,12 +17,6 @@ public class FEWSSource extends BasicSource {
 	public FEWSSource() {
 		// TODO Auto-generated constructor stub
 	}
-	
-	@Override
-	public void read_and_save()
-	{
-		
-	}
 
 	/* (non-Javadoc)
 	 * @see reading.BasicSource#read()
