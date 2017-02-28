@@ -20,12 +20,26 @@ import java.util.concurrent.Executors;
 import org.postgresql.Driver;
 
 public final class Utilities {
+	// Dictates the number of threads that may be run to execute queries asynchronously
 	private static int THREAD_COUNT = 30;
+	
+	// Executor used to manage threads used to execute database queries
 	private static ExecutorService query_executor = Executors.newFixedThreadPool(THREAD_COUNT);
+	
+	// Contains a queue of queries that may be fired off in batches
 	private static Queue<String> query_queue =  new ConcurrentLinkedQueue<String>();
-	private static String DATABASE_URL = "jdbc:postgresql://***REMOVED***eds-dev1.***REMOVED***.***REMOVED***/wres";
-	private static String DATABASE_USERNAME = 
-	private static String DATABASE_PASSWORD = 
+	
+	// A link to the database in use
+	// TODO: Bake the url into a configuration file
+	public static String DATABASE_URL = "jdbc:postgresql://***REMOVED***eds-dev1.***REMOVED***.***REMOVED***/wres";
+	
+	// The name of the user to use when accessing the database
+	// TODO: Bake the username into a configuration file
+	public static String DATABASE_USERNAME = 
+	
+	// The password used to access the database
+	// TODO: Bake the password into a configuration file
+	public static String DATABASE_PASSWORD = 
 	
 	public static void add_query(String query)
 	{
