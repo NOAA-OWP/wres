@@ -12,8 +12,6 @@ CREATE TABLE MeasurementUnit
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE MeasurementUnit
-  OWNER TO "christopher.tubbs";
 
  INSERT INTO MeasurementUnit (unit_name)
  VALUES ('NONE');

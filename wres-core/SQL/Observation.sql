@@ -24,5 +24,3 @@ CREATE TABLE Observation
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE Observation
-  OWNER TO "christopher.tubbs";

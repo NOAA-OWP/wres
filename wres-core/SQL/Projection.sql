@@ -21,8 +21,6 @@ CREATE TABLE Projection
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE Projection
-  OWNER TO "christopher.tubbs";
 
 INSERT INTO Projection (transform_name)
 VALUES ('UNDEFINED');

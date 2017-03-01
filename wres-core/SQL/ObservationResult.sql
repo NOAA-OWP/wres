@@ -19,5 +19,3 @@ WITH (
   OIDS=FALSE
 );
 CREATE INDEX observationresult_observation_idx ON ObservationResult(observation_id);
-ALTER TABLE ObservationResult
-  OWNER TO "christopher.tubbs";

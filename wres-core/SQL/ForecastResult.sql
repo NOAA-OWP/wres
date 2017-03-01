@@ -16,5 +16,3 @@ WITH (
 );
 CREATE INDEX forecastresult_forecast_idx ON ForecastResult(forecast_id);
 CREATE INDEX forecastresult_lead_idx ON ForecastResult(lead_time);
-ALTER TABLE ForecastResult
-  OWNER TO "ctubbs";

@@ -37,8 +37,8 @@ import java.util.concurrent.Executors;
  */
 public class ASCIISource extends BasicSource {
 
-    private static int THREAD_COUNT = 35;
-    private static int MAX_INSERTS = 1500;
+    private static int THREAD_COUNT = 25;
+    private static int MAX_INSERTS = 800;
 
 	public ASCIISource(String filename)
 	{
@@ -340,7 +340,7 @@ public class ASCIISource extends BasicSource {
 		script += System.lineSeparator();
 		script += "loc.observationlocation_id,";
 		script += System.lineSeparator();
-		script += "2,";
+		script += "V.variable_id,";
 		script += System.lineSeparator();
 		script += "1";
 		script += System.lineSeparator();
@@ -348,11 +348,15 @@ public class ASCIISource extends BasicSource {
 		script += System.lineSeparator();
 		script += "CROSS JOIN ObservationLocation loc";
 		script += System.lineSeparator();
+		script += "CROSS JOIN Variable V";
+		script += System.lineSeparator();
 		script += "WHERE range.timestep = %s";
 		script += System.lineSeparator();
 		script += "AND loc.lid = '";
 		script += location_name;
 		script += "'";
+		script += System.lineSeparator();
+		script += "AND V.variable_name = 'precipitation'";
 		script += System.lineSeparator();
 		script += "RETURNING forecast_id;";
 		return script;
