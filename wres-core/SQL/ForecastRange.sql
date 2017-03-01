@@ -13,8 +13,6 @@ CREATE TABLE ForecastRange
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE ForecastRange
-  OWNER TO "christopher.tubbs";
 
  INSERT INTO ForecastRange (range_name, timestep)
  VALUES ('short', 1),

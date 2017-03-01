@@ -3,76 +3,45 @@
  */
 package wres.reading;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Date;
 import wres.util.RealCollection;
 
 /**
  * @author ctubbs
  *
+ * Represents a collection of values at a specific point in time
+ * 
  */
 public abstract class BasicSeriesEntry implements Comparable<BasicSeriesEntry> {
+	
+	/**
+	 * A collection of real numbered values used to demonstrate all readings for either a forecast or observation at
+	 * this point in time
+	 */
 	public RealCollection values = new RealCollection();
+	
+	/**
+	 * The Date in which the forecast occurred
+	 */
 	public Date date;
+	
+	/**
+	 * The amount of hours the transpired between the basis time and the time of this forecast
+	 */
 	public double lead_time = 0.0;	
 	
+	/**
+	 * Prints information about the forecast entry to the standard output
+	 */
 	public void print()
 	{
 		System.out.println(toString());
 	}
 	
-	public void save(int modelvariable_id)
-	{
-		String entry_script = get_save_variablevalue_script();
-		String value_script = "";
-		Connection connection;
-		try {
-			connection = wres.util.Utilities.create_connection();
-			Statement query = connection.createStatement();
-			for (double value : values)
-			{
-				value_script = String.format(entry_script,
-						 modelvariable_id,
-						 wres.util.Utilities.convert_date_to_string(date),
-						 lead_time,
-						 value);
-				query.execute(value_script);
-			}
-			connection.close();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	private String get_save_variablevalue_script()
-	{
-		String script = "INSERT INTO ModelVariableValue(modelvariable_id,";
-		script += System.lineSeparator();
-		script += "\tvalue_date,";
-		script += System.lineSeparator();
-		script += "\tlead_time,";
-		script += System.lineSeparator();
-		script += "\tvariable_value)";
-		script += System.lineSeparator();
-		
-		script += "VALUES(";
-		script += System.lineSeparator();
-		script += "\t%d,";								// ModelVariable ID
-		script += System.lineSeparator();
-		script += "\t'%s',";							// Value Date
-		script += System.lineSeparator();
-		script += "\t%f,";								// Lead Time
-		script += System.lineSeparator();
-		script += "\t%f)";								// Value
-		script += System.lineSeparator();
-		script += "RETURNING modelvariable_id;";
-		
-		return script;
-	}
-	
+	/**
+	 * Formats the data entry into a string for human readability
+	 * @return A formatted representation of the data entry
+	 */
 	public String toString()
 	{
 		String message = "";

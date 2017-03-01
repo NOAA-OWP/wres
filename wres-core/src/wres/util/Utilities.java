@@ -31,15 +31,15 @@ public final class Utilities {
 	
 	// A link to the database in use
 	// TODO: Bake the url into a configuration file
-	public static String DATABASE_URL = "jdbc:postgresql://***REMOVED***eds-dev1.***REMOVED***.***REMOVED***/wres";
+	public static String DATABASE_URL = "jdbc:postgresql://localhost:5432/WRESDBTEST";
 	
 	// The name of the user to use when accessing the database
 	// TODO: Bake the username into a configuration file
-	public static String DATABASE_USERNAME = 
+	public static String DATABASE_USERNAME = "pguser";
 	
 	// The password used to access the database
 	// TODO: Bake the password into a configuration file
-	public static String DATABASE_PASSWORD = 
+	public static String DATABASE_PASSWORD = "pass";
 	
 	public static void add_query(String query)
 	{

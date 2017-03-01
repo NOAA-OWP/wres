@@ -66,8 +66,8 @@ public class ASCIIEntryParser implements Runnable {
 			}
 
 			expression_builder.append(";");
-			wres.util.Utilities.add_query(expression_builder.toString());
-			//utils.Utilities.execute_eds_query_async(expression_builder.toString());
+			//wres.util.Utilities.add_query(expression_builder.toString());
+			wres.util.Utilities.execute_eds_query_async(expression_builder.toString());
 			
 		/*} catch (SQLException error) {
 			System.err.println("The following query could not be executed:");

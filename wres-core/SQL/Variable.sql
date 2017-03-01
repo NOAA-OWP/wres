@@ -18,8 +18,6 @@ CREATE TABLE Variable
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE Variable
-  OWNER TO "christopher.tubbs";
 
  INSERT INTO Variable (variable_name, variable_type, description, measurementunit_id)
  VALUES ('precipitation', 'double', 'precipitation', 1);

@@ -38,5 +38,7 @@ CREATE TABLE ObservationLocation
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE ObservationLocation
-  OWNER TO "christopher.tubbs";
+
+-- Inserts a default location for BLKO2; All NWS Stations will need to be added
+INSERT INTO ObservationLocation(lid, st, nws_st, nws_name)
+VALUES ('BLKO2', 'OK', 'O2', 'BLKO2');

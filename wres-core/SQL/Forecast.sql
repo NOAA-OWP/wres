@@ -32,5 +32,4 @@ CREATE TABLE Forecast
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE Forecast
-  OWNER TO "christopher.tubbs";
+
