@@ -1,4 +1,6 @@
 ﻿
+-- The valid date on the observation is incremented by 6 hours due to it being recorded in CST instead of UTC
+
 WITH forecasts AS
 (
 	SELECT forecast_id, forecast_date
@@ -11,14 +13,14 @@ WITH forecasts AS
 		AND V.variable_name = 'precipitation'
 		AND OL.lid = 'BLKO2'
 		AND F.forecast_date > '1800-01-01'
-		AND F.forecast_date < '2500-01-01'
+	 	AND F.forecast_date < '2500-01-01'
 )
 SELECT FR.lead_time, AVG(O.measurement - FR.measurement)
 FROM forecasts F
 INNER JOIN ForecastResult FR
 	ON F.forecast_id = FR.forecast_id
 INNER JOIN ObservationResult O
-	ON O.valid_date = (F.forecast_date + (INTERVAL '1 hour' * FR.lead_time))
+	ON (O.valid_date + INTERVAL '1 hour' * 6) = (F.forecast_date + (INTERVAL '1 hour' * FR.lead_time))
 		AND O.observation_id = (
 			SELECT observation_id
 			FROM Observation O
