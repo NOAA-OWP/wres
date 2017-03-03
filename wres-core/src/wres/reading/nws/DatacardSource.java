@@ -413,7 +413,7 @@ public class DatacardSource extends BasicSource {
 			
 			OffsetDateTime datetime = OffsetDateTime.of(get_first_year(), get_first_month(), 1, 0, 0, 0, 0, ZoneOffset.UTC);
 
-			int current_lead = 0;
+			int current_lead = 6;
 
 			ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
 			HashMap<OffsetDateTime, String> dated_values = new HashMap<OffsetDateTime, String>();
