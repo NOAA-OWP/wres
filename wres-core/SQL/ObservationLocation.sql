@@ -4,41 +4,36 @@
 
 CREATE TABLE ObservationLocation
 (
-	observationlocation_id SERIAL,
-	comid text DEFAULT '',
+	observationlocation_id SERIAL 0,
+	comid INTEGER NOT NULL,
 	lid text NOT NULL,
-	gage_id text DEFAULT '',
+	gage_id INTEGER NOT NULL ,
 	huc text DEFAULT '',
 	rfc text DEFAULT '',
 	fcst text DEFAULT '',
 	hsa text DEFAULT '',
 	typ text DEFAULT '',
 	fip text DEFAULT '',
-	st text DEFAULT '',
-	nws_st text DEFAULT '',
-	atv text DEFAULT '',
-	ref text DEFAULT '',
+	st text NOT NULL,
+	nws_st text NOT NULL,
+	atv BOOLEAN DEFAULT TRUE,
+	ref BOOLEAN DEFAULT FALSE,
 	hcdn text DEFAULT '',
-	da text DEFAULT '',
-	nws_lat text DEFAULT '',
-	nws_lon text DEFAULT '',
-	usgs_lat text DEFAULT '',
-	usgs_lon text DEFAULT '',
+	da REAL DEFAULT 0.0,
+	nws_lat REAL DEFAULT 0.0,
+	nws_lon REAL DEFAULT 0.0,
+	usgs_lat REAL DEFAULT 0.0,
+	usgs_lon REAL DEFAULT 0.0,
 	cac text DEFAULT '',
 	coord text DEFAULT '',
-	alt text DEFAULT '',
-	alt_acy text DEFAULT '',
-	datum text DEFAULT '',
-	goes_id text DEFAULT '',
+	alt REAL DEFAULT 0.0,
+	alt_acy REAL DEFAULT 0.0,
+	datum VARCHAR(6) DEFAULT '',
+	goes_id text DEFAULT '0',
 	nws_name text DEFAULT '',
 	usgs_name text DEFAULT '',
-	comid_v1_1 text DEFAULT '',
 	CONSTRAINT observationlocation_pk PRIMARY KEY (observationlocation_id)
 )
 WITH (
   OIDS=FALSE
 );
-
--- Inserts a default location for BLKO2; All NWS Stations will need to be added
-INSERT INTO ObservationLocation(lid, st, nws_st, nws_name)
-VALUES ('BLKO2', 'OK', 'O2', 'BLKO2');

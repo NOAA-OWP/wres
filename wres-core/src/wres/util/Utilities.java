@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.postgresql.Driver;
+import org.postgresql.ds.PGConnectionPoolDataSource;
 
 public final class Utilities {
 	// Dictates the number of threads that may be run to execute queries asynchronously
@@ -28,9 +29,14 @@ public final class Utilities {
 	
 	// Contains a queue of queries that may be fired off in batches
 	private static Queue<String> query_queue =  new ConcurrentLinkedQueue<String>();
-	
 	// A link to the database in use
 	// TODO: Bake the url into a configuration file
+	
+	// This is the EDS connection string
+	//public static String DATABASE_URL = "jdbc:postgresql://***REMOVED***eds-dev1.***REMOVED***.***REMOVED***:5432/wres";
+	
+	// This is the IOEP connection string.
+	// NOTE: You must be running directly from the IOEP vm to use this
 	public static String DATABASE_URL = "jdbc:postgresql://localhost:5432/WRESDBTEST";
 	
 	// The name of the user to use when accessing the database
@@ -145,11 +151,12 @@ public final class Utilities {
 			catch (Exception error)
 			{
 				try {
-					Thread.sleep(800);
+					Thread.sleep(200);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				error.printStackTrace();
 			}
 		}
 		return connection;

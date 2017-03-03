@@ -18,6 +18,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -32,8 +33,8 @@ import wres.reading.SourceType;
  */
 public class DatacardSource extends BasicSource {
 
-    private static int THREAD_COUNT = 70;
-    //private static int MAX_INSERTS = 100;
+    private static int THREAD_COUNT = 50;
+    private static int MAX_INSERTS = 100;
 	/**
 	 * 
 	 */
@@ -408,25 +409,45 @@ public class DatacardSource extends BasicSource {
 				throw new Exception(String.format(message, get_filename()));
 			}					
 			
-			int observation_id = create_observation();
+			String observation_id = create_observation();
 			
 			OffsetDateTime datetime = OffsetDateTime.of(get_first_year(), get_first_month(), 1, 0, 0, 0, 0, ZoneOffset.UTC);
 
 			int current_lead = 0;
 
 			ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
-			
+			HashMap<OffsetDateTime, String> dated_values = new HashMap<OffsetDateTime, String>();
+			int entry_count = 0;
 			while ((line = reader.readLine()) != null)
 			{
 				String[] values = line.substring(20).trim().split("\\s+");
+				
 				for (int row_index = 0; row_index < values.length; ++row_index)
 				{
-					Runnable worker = new DatacardEntryParser(observation_id, datetime.plusHours((long)current_lead), values[row_index]);
-					executor.execute(worker);
+					if (missing_data_symbol != values[row_index] && accumulated_data_symbol != values[row_index])
+					{
+						dated_values.put(datetime.plusHours((long)current_lead), values[row_index]);
+						entry_count++;
+					}
+					
+					if (entry_count >= MAX_INSERTS)
+					{
+						Runnable worker = new DatacardEntryParser(observation_id, dated_values);
+						executor.execute(worker);
+						dated_values = new HashMap<OffsetDateTime, String>();
+						entry_count = 0;
+					}
 					
 					current_lead += get_time_interval();
 				}
 			}
+			
+			if (entry_count > 0)
+			{
+				Runnable worker = new DatacardEntryParser(observation_id, dated_values);
+				executor.execute(worker);
+			}
+			
 			System.out.println("Lines distributed. Currently saving to the database...");
 			executor.shutdown();
 			while (!executor.isTerminated())
@@ -440,7 +461,7 @@ public class DatacardSource extends BasicSource {
 		}		
 	}
 	
-	private int create_observation() throws SQLException
+	private String create_observation() throws SQLException
 	{
 		int observation_id = 0;
 		Connection connection = null;
@@ -474,7 +495,7 @@ public class DatacardSource extends BasicSource {
 				connection.close();
 			}
 		}
-		return observation_id;
+		return String.valueOf(observation_id);
 	}
 	
 	private String get_save_observation_script()

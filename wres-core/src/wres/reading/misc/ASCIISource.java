@@ -6,7 +6,6 @@ package wres.reading.misc;
 import wres.reading.BasicSource;
 import wres.reading.BasicSeries;
 import wres.reading.SourceType;
-import wres.util.exceptions.RewriteRequiredException;
 import wres.reading.BasicSeriesEntry;
 
 import java.io.BufferedReader;
@@ -35,10 +34,11 @@ import java.util.concurrent.Executors;
  * @author ctubbs
  *
  */
-public class ASCIISource extends BasicSource {
+public class ASCIISource extends BasicSource 
+{
 
-    private static int THREAD_COUNT = 25;
-    private static int MAX_INSERTS = 800;
+    private static int THREAD_COUNT = 40;
+    private static int MAX_INSERTS = 75;
 
 	public ASCIISource(String filename)
 	{
@@ -186,58 +186,59 @@ public class ASCIISource extends BasicSource {
 			stopwatch.start();
 			System.out.println("Removing all previous data for this datasource...");
 			String absolute_path = path.toAbsolutePath().toString();
-			String clear_statement = "DELETE FROM ForecastResult USING Forecast WHERE Forecast.forecast_id = ForecastResult.forecast_id AND source = '%s'; ";
-			clear_statement += "DELETE FROM Forecast WHERE source = '%s';";
+			//String clear_statement = "DELETE FROM ForecastResult USING Forecast WHERE Forecast.forecast_id = ForecastResult.forecast_id AND source = '%s'; ";
+			String clear_statement = "DELETE FROM Forecast WHERE source = '%s';";
 			clear_statement = String.format(clear_statement, absolute_path, absolute_path);
 			wres.util.Utilities.execute_eds_query(clear_statement);
 			
 			System.out.println("All previous data for this data source has been removed. Now saving forecast... (" + stopwatch.get_formatted_duration() + ")");
 			
 			ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+
 			float current_step = 99999999.9f;
 			String line = "";
 
 			int forecast_id = 0;
             int insert_count = 0;
+            HashMap<Integer, HashMap<String, String[]>> forecasted_values = new HashMap<Integer, HashMap<String, String[]>>();
 			HashMap<String, String[]> hourly_values = null;
 			while ((line = reader.readLine()) != null)
 			{
 				String[] ascii = line.split(" ");
 				float step = Float.parseFloat(ascii[2]);
 				if (current_step > step)
-				{
-					if (hourly_values == null)
+				{									
+					if (hourly_values != null)
 					{
-						hourly_values = new HashMap<String, String[]>();
+						forecasted_values.put(forecast_id, hourly_values);
+						insert_count++;
+						
+						if (MAX_INSERTS <= insert_count)
+						{
+							insert_count = 0;
+							Runnable worker = new ASCIIEntryParser(forecasted_values);
+							executor.execute(worker);
+		                    forecasted_values = new HashMap<Integer, HashMap<String, String[]>>();
+						}
+						
 					}
-					else
-					{
-						Runnable worker = new ASCIIEntryParser(forecast_id, hourly_values);
-						executor.execute(worker);
-						hourly_values = new HashMap<String, String[]>();
-					}
+					
+					hourly_values = new HashMap<String, String[]>();
 					forecast_id = create_forecast(line);
 				}
-                else if (MAX_INSERTS <= insert_count)
-                {
-                    insert_count = 0;
-                    Runnable worker = new ASCIIEntryParser(forecast_id, hourly_values);
-                    executor.execute(worker);
-                    hourly_values = new HashMap<String, String[]>();
-                }
 				current_step = step;
 				//String[] array_copy = Arrays.copyOfRange(ascii, 3, ascii.length);
 				hourly_values.put(ascii[2].replace(".0", ""), Arrays.copyOfRange(ascii, 3, ascii.length));
 				//value_count += array_copy.length;
 				//Runnable worker = new ASCIIEntryParser(forecast_id, ASCIIEntryParser.FORECAST, line);
 				//executor.execute(worker);
-				insert_count++;
 			}
 			
 			if (hourly_values.size() > 0)
 			{
-                Runnable worker = new ASCIIEntryParser(forecast_id, hourly_values);
-                executor.execute(worker);
+				forecasted_values.put(forecast_id, hourly_values);
+				Runnable worker = new ASCIIEntryParser(forecasted_values);
+				executor.execute(worker);
 			}
 			
 			System.out.println("All threads used to create insert statements have been created... (" + stopwatch.get_formatted_duration() + ")");
@@ -246,7 +247,6 @@ public class ASCIISource extends BasicSource {
 			{
 			}
 			System.out.println("Lines distributed. Currently saving to the database... (" + stopwatch.get_formatted_duration() + ")");
-			wres.util.Utilities.execute_queries();
 		}
 		catch (IOException exception)
 		{
