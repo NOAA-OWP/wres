@@ -33,3 +33,12 @@ WITH (
   OIDS=FALSE
 );
 
+CREATE INDEX forecast_forecast_date_idx
+  ON public.forecast
+  USING btree
+  (forecast_date);
+
+CREATE INDEX forecast_source_idx
+  ON public.forecast
+  USING btree
+  (source COLLATE pg_catalog."default");

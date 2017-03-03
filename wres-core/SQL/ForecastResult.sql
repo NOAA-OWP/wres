@@ -9,7 +9,7 @@ CREATE TABLE ForecastResult
   measurement REAL NOT NULL,
   CONSTRAINT forecastresult_forecast_fk FOREIGN KEY (forecast_id)
 	REFERENCES Forecast (forecast_id) MATCH SIMPLE
-	ON UPDATE NO ACTION ON DELETE NO ACTION
+	ON UPDATE NO ACTION ON DELETE CASCADE
 )
 WITH (
   OIDS=FALSE

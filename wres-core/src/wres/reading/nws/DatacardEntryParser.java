@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 
 /**
  * @author ctubbs
@@ -18,13 +19,12 @@ public class DatacardEntryParser implements Runnable {
 	/**
 	 * 
 	 */
-	public DatacardEntryParser(int variable_id,
-							   OffsetDateTime date,
-							   String value) 
+	public DatacardEntryParser(String observation_id,
+							   HashMap<OffsetDateTime, String> dated_values) 
 	{
-		this.variable_id = variable_id;
-		format_date(date);
-		this.value = value;
+		this.observation_id = observation_id;
+		this.dated_values = dated_values;
+		this.expression = new StringBuilder("INSERT INTO ObservationResult (observation_id, valid_date, measurement) VALUES ");
 	}
 
 	/* (non-Javadoc)
@@ -44,36 +44,41 @@ public class DatacardEntryParser implements Runnable {
 	
 	private void save() throws SQLException
 	{
-		Connection connection = null;
-		String command = String.format(save_observation, variable_id, date, value);
 		try {
-			connection = wres.util.Utilities.create_eds_connection();
-			Statement query = connection.createStatement();
-			query.execute(command);
+			boolean first_value = true;
+			
+			for (OffsetDateTime valid_time : dated_values.keySet())
+			{
+				if (!first_value)
+				{
+					expression.append(", ");
+				}
+				else
+				{
+					first_value = false; 
+				}
+				
+				expression.append("(");
+				expression.append(observation_id);
+				expression.append(", '");
+				expression.append(wres.util.Utilities.convert_date_to_string(valid_time));
+				expression.append("', ");
+				expression.append(dated_values.get(valid_time));
+				expression.append(")");
+			}
+			
+			expression.append(";");
+			
+			wres.util.Utilities.execute_eds_query(expression.toString());
 		} catch (SQLException error) {
 			System.err.println("The following query could not be executed:");
 			System.err.println();
-			System.err.println(command);
+			System.err.println(expression.toString());
 			throw error;
 		}
-		finally
-		{
-			if (connection != null)
-			{
-				connection.close();
-			}
-		}
-	}
-	
-	private void format_date(OffsetDateTime datetime)
-	{
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-		date = datetime.format(formatter);
 	}
 
-	private int variable_id;
-	private String date;
-	private String value;
-	private static String save_observation = "INSERT INTO ObservationResult (observation_id, valid_date, measurement) " +
-			"VALUES (%d, '%s', %s);";
+	private String observation_id;
+	private HashMap<OffsetDateTime, String> dated_values;
+	private StringBuilder expression;
 }

@@ -6,17 +6,17 @@ package wres.reading.misc;
 import java.sql.SQLException;
 import java.util.HashMap;
 
+import com.google.common.base.Stopwatch;
+
 /**
  * @author ctubbs
  *
  */
 public class ASCIIEntryParser implements Runnable {
 	
-	public ASCIIEntryParser(int variable_id, HashMap<String, String[]> hourly_values)
+	public ASCIIEntryParser(HashMap<Integer, HashMap<String, String[]>> forecasted_values)
 	{
-		this.forecast_id = String.valueOf(variable_id);
-		this.hourly_values = hourly_values;
-		expression_builder = new StringBuilder("INSERT INTO ForecastResult(forecast_id, lead_time, measurement) VALUES ");
+		this.forecasted_values = forecasted_values;
 	}
 
 	/* (non-Javadoc)
@@ -40,35 +40,41 @@ public class ASCIIEntryParser implements Runnable {
 		//try {
 
 			boolean add_comma = false;
+			int insert_count = 0;
 
-			for (String key : hourly_values.keySet())
+			for (int forecast : forecasted_values.keySet())
 			{
-
-				for (String value : hourly_values.get(key))
+				for (String hour : forecasted_values.get(forecast).keySet())
 				{
-					if (add_comma)
+	
+					for (String value : forecasted_values.get(forecast).get(hour))
 					{
+						if (add_comma)
+						{
+							expression_builder.append(", ");
+						}
+						else
+						{
+							add_comma = true;
+						}
+						
+						expression_builder.append("(");
+						expression_builder.append(forecast);
 						expression_builder.append(", ");
+						expression_builder.append(hour);
+						expression_builder.append(", ");
+						expression_builder.append(value);
+						expression_builder.append(")");
+						insert_count++;
 					}
-					else
-					{
-						add_comma = true;
-					}
-					
-					expression_builder.append("(");
-					expression_builder.append(forecast_id);
-					expression_builder.append(", ");
-					expression_builder.append(key);
-					expression_builder.append(", ");
-					expression_builder.append(value);
-					expression_builder.append(")");
 				}
 			}
 
 			expression_builder.append(";");
 			//wres.util.Utilities.add_query(expression_builder.toString());
-			wres.util.Utilities.execute_eds_query_async(expression_builder.toString());
-			
+
+			//System.err.println("Now inserting " + String.valueOf(insert_count) + " values for " + forecasted_values.size() + " forecasts...");
+			wres.util.Utilities.execute_eds_query(expression_builder.toString());
 		/*} catch (SQLException error) {
 			System.err.println("The following query could not be executed:");
 			System.err.println();
@@ -78,7 +84,6 @@ public class ASCIIEntryParser implements Runnable {
 
 	}
 	
-	private String forecast_id;
-	private HashMap<String, String[]> hourly_values;
-	private StringBuilder expression_builder;
+	private HashMap<Integer, HashMap<String, String[]>> forecasted_values;
+	private StringBuilder expression_builder = new StringBuilder("INSERT INTO ForecastResult(forecast_id, lead_time, measurement) VALUES ");;
 }
