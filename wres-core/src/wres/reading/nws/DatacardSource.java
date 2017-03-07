@@ -424,7 +424,7 @@ public class DatacardSource extends BasicSource {
 				
 				for (int row_index = 0; row_index < values.length; ++row_index)
 				{
-					if (missing_data_symbol != values[row_index] && accumulated_data_symbol != values[row_index])
+					if (!values[row_index].startsWith(missing_data_symbol) && !values[row_index].startsWith(accumulated_data_symbol))
 					{
 						dated_values.put(datetime.plusHours((long)current_lead), values[row_index]);
 						entry_count++;

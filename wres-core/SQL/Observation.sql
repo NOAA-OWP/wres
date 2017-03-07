@@ -1,6 +1,6 @@
 ﻿-- Table: Observation
 
--- DROP TABLE Observation;
+--DROP TABLE Observation;
 
 CREATE TABLE Observation
 (
@@ -24,3 +24,8 @@ CREATE TABLE Observation
 WITH (
   OIDS=FALSE
 );
+  
+CREATE INDEX observation_variable_idx
+  ON observation
+  USING btree
+  (variable_id);
