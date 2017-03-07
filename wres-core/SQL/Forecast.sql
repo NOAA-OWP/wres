@@ -39,6 +39,5 @@ CREATE INDEX forecast_forecast_date_idx
   (forecast_date);
 
 CREATE INDEX forecast_source_idx
-  ON public.forecast
-  USING btree
-  (source COLLATE pg_catalog."default");
+  ON public.forecast 
+  USING btree (source);

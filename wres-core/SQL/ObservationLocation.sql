@@ -4,7 +4,7 @@
 
 CREATE TABLE ObservationLocation
 (
-	observationlocation_id SERIAL 0,
+	observationlocation_id SERIAL,
 	comid INTEGER NOT NULL,
 	lid text NOT NULL,
 	gage_id text NOT NULL ,
@@ -30,6 +30,8 @@ CREATE TABLE ObservationLocation
 	alt_acy REAL DEFAULT 0.0,
 	datum text DEFAULT '',
 	goes_id text DEFAULT '0',
+	in_model_one BOOLEAN DEFAULT TRUE,
+	in_model_one_one BOOLEAN DEFAULT TRUE,
 	nws_name text DEFAULT '',
 	usgs_name text DEFAULT '',
 	CONSTRAINT observationlocation_pk PRIMARY KEY (observationlocation_id)

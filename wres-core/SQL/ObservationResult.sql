@@ -19,3 +19,4 @@ WITH (
   OIDS=FALSE
 );
 CREATE INDEX observationresult_observation_idx ON ObservationResult(observation_id);
+CREATE INDEX observationresult_valid_date_idx ON ObservationResult(valid_date);
