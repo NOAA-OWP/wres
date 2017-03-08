@@ -20,7 +20,7 @@ FROM forecasts F
 INNER JOIN ForecastResult FR
 	ON F.forecast_id = FR.forecast_id
 INNER JOIN ObservationResult O
-	ON (O.valid_date + INTERVAL '1 hour' * 6) = (F.forecast_date + (INTERVAL '1 hour' * FR.lead_time))	-- The CST adjustment = the lead time adjustment
+	ON O.valid_date = (F.forecast_date + (INTERVAL '1 hour' * FR.lead_time))	-- The CST adjustment = the lead time adjustment
 		AND O.observation_id = (									-- Results belong to Observations for that location and variable
 			SELECT observation_id
 			FROM Observation O
