@@ -3,7 +3,6 @@ package gov.noaa.wres.io;
 import java.util.Arrays;
 import java.util.List;
 
-
 import java.util.function.Function;
 
 import java.time.LocalDateTime;
@@ -13,15 +12,16 @@ import java.time.temporal.ChronoField;
 import java.time.format.FormatStyle;
 import java.time.format.DateTimeFormatter;
 
-import gov.noaa.wres.datamodel.Event;
-import gov.noaa.wres.datamodel.ForecastEvent;
+//import gov.noaa.wres.datamodel.Event;
+//import gov.noaa.wres.datamodel.ForecastEvent;
+import gov.noaa.wres.datamodel.EnsembleForecastEvent;
 
 import static java.util.stream.Collectors.*;
 
 /**
  * Tricky: how do we do error handling while implementing Function?
  */
-public class AscLineReader implements Function<String,List<Event>>
+public class AscLineReader implements Function<String,EnsembleForecastEvent>
 {
     private final ZoneOffset offset;
 
@@ -40,7 +40,7 @@ public class AscLineReader implements Function<String,List<Event>>
         return this.offset;
     }
 
-    public List<Event> apply(String ascLine)
+    public EnsembleForecastEvent apply(String ascLine)
     {
         // Sample Line here:
         // 01/02/1985 18 30.0 0.013 0.016 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.067 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -69,9 +69,19 @@ public class AscLineReader implements Function<String,List<Event>>
         double leadTimeInSeconds = 3600.0 * Double.parseDouble(ascLineParts[2]);
         Duration leadTime = Duration.parse("PT" + leadTimeInSeconds + "S");
 
+/*
         return Arrays.stream(ascLineParts)
             .skip(3) // skip date, hour, and lead time
             .map(v -> ForecastEvent.of(dateTime, leadTime, Double.valueOf(v)))
             .collect(toList());
+*/
+        // instead of collecting to a list of ForecastEvents,
+        // create a single EnsembleForecastEvent holding an array of values.
+        return EnsembleForecastEvent.of(dateTime,
+                                        leadTime,
+                                        Arrays.stream(ascLineParts)
+                                        .skip(3) // skip date,hour,leadtime
+                                        .mapToDouble(Double::valueOf)
+                                        .toArray());
     }
 }

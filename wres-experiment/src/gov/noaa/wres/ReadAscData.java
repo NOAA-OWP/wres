@@ -10,11 +10,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 import java.util.function.Predicate;
-import java.util.function.ToDoubleFunction;
+import java.util.function.Function;
 
 import java.time.ZoneOffset;
 
@@ -36,13 +37,16 @@ public class ReadAscData
     {
 
         List<Predicate<Event>> stuffToTest = new ArrayList<>();
-        stuffToTest.add(new Predicate<Event>()
+/*        stuffToTest.add(new Predicate<Event>()
                         {
                             public boolean test(Event t)
                             {
                                 return t.getValue() != -999.0;
                             }
                         });
+CANNOT DO THIS TEST ANYMORE AT THIS LEVEL due to complication of arrays.
+*/
+                        
 /*        stuffToTest.add(new Predicate<Event>()
                         {
                             public boolean test(Event t)
@@ -121,16 +125,20 @@ public class ReadAscData
 
         millis = System.currentTimeMillis();
 
-        ToDoubleFunction<PairEvent> errorFunc = new SimpleError();
+        //ToDoubleFunction<PairEvent> errorFunc = new SimpleError();
+        Function<PairEvent,double[]> errorFunc = new SimpleError();
         System.out.println(
             byLeadTime.entrySet()
             .stream()
             .collect(toMap(
                          Map.Entry::getKey,    // same key (lead time)
-                         e -> e.getValue()     
+                         e -> e.getValue()
                          .stream()             // work with stream on PairEvents
-                         .mapToDouble(errorFunc) // calculate error
-                         .average()))         // mean error
+                         //.mapToDouble(errorFunc) // calculate error
+                         .map(errorFunc)       // get calculated error array
+                         .flatMapToDouble(Arrays::stream) // flatten
+                         .filter(v -> v != -999.0) // cheating: filtering ndv here
+                         .average()))          // mean error
             );
         System.out.println("MeanError calculation time: " 
                            + (System.currentTimeMillis() - millis)

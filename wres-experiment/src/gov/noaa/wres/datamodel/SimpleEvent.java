@@ -26,9 +26,13 @@ public class SimpleEvent implements Event
         return this.dateTime;
     }
 
-    public double getValue()
+    public double getValue(int index)
     {
-        return this.value;
+        if (index == 0)
+        {
+            return this.value;
+        }
+        throw new IndexOutOfBoundsException("A SimpleEvent has one value.");
     }
 
     /* A simple event has no lead time, return 0 lead time */
@@ -41,5 +45,15 @@ public class SimpleEvent implements Event
     public LocalDateTime getIssuedDateTime()
     {
         return this.dateTime;
+    }
+
+    public int getLength()
+    {
+        return 1;
+    }
+
+    public double[] getValues()
+    {
+        return new double[] {this.getValue(0)};
     }
 }
