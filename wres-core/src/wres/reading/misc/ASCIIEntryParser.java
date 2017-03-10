@@ -7,6 +7,9 @@ import java.sql.SQLException;
 import java.util.HashMap;
 
 import com.google.common.base.Stopwatch;
+import com.sun.corba.se.impl.javax.rmi.CORBA.Util;
+
+import wres.util.Utilities;
 
 /**
  * @author ctubbs
@@ -46,27 +49,23 @@ public class ASCIIEntryParser implements Runnable {
 			{
 				for (String hour : forecasted_values.get(forecast).keySet())
 				{
-	
-					for (String value : forecasted_values.get(forecast).get(hour))
+					if (add_comma)
 					{
-						if (add_comma)
-						{
-							expression_builder.append(", ");
-						}
-						else
-						{
-							add_comma = true;
-						}
-						
-						expression_builder.append("(");
-						expression_builder.append(forecast);
 						expression_builder.append(", ");
-						expression_builder.append(hour);
-						expression_builder.append(", ");
-						expression_builder.append(value);
-						expression_builder.append(")");
-						insert_count++;
 					}
+					else
+					{
+						add_comma = true;
+					}
+					
+					String values = Utilities.toString(forecasted_values.get(forecast).get(hour));
+					expression_builder.append("(");
+					expression_builder.append(forecast);
+					expression_builder.append(", ");
+					expression_builder.append(hour);
+					expression_builder.append(", '{");
+					expression_builder.append(values);
+					expression_builder.append("}')");
 				}
 			}
 
@@ -85,5 +84,5 @@ public class ASCIIEntryParser implements Runnable {
 	}
 	
 	private HashMap<Integer, HashMap<String, String[]>> forecasted_values;
-	private StringBuilder expression_builder = new StringBuilder("INSERT INTO ForecastResult(forecast_id, lead_time, measurement) VALUES ");;
+	private StringBuilder expression_builder = new StringBuilder("INSERT INTO ForecastResult(forecast_id, lead_time, measurements) VALUES ");;
 }

@@ -322,4 +322,26 @@ public final class Utilities {
 		
 		return success;
 	}
+	
+	public static String toString(String[] strings)
+	{
+		String concat = "";
+		boolean add_comma = false;
+		
+		for (String string : strings)
+		{
+			if (add_comma)
+			{
+				concat += ", ";
+			}
+			else
+			{
+				add_comma = true;
+			}
+			
+			concat += string;
+		}		
+		
+		return concat;
+	}
 }
