@@ -6,7 +6,7 @@ CREATE TABLE ForecastResult
 (
   forecast_id INT NOT NULL,
   lead_time SMALLINT NOT NULL,
-  measurement REAL NOT NULL,
+  measurements REAL[] NOT NULL,
   CONSTRAINT forecastresult_forecast_fk FOREIGN KEY (forecast_id)
 	REFERENCES Forecast (forecast_id) MATCH SIMPLE
 	ON UPDATE NO ACTION ON DELETE CASCADE
