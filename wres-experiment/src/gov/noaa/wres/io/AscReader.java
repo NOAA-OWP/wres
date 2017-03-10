@@ -22,7 +22,7 @@ import java.util.function.Function;
 
 import gov.noaa.wres.datamodel.Event;
 import gov.noaa.wres.datamodel.TimeSeries;
-import gov.noaa.wres.datamodel.ForecastEvent;
+import gov.noaa.wres.datamodel.EnsembleForecastEvent;
 import gov.noaa.wres.datamodel.SeriesInfo;
 
 import gov.noaa.wres.io.AscLineReader;
@@ -35,7 +35,9 @@ public class AscReader
                                            ZoneOffset offset,
                                            List<Predicate<Event>> tests)
     {
-        List<List<Event>> events = new ArrayList<>();
+        // moving to Ensemble events
+        //List<List<Event>> events = new ArrayList<>();
+        List<EnsembleForecastEvent> events = new ArrayList<>();
         List<TimeSeries> result = new ArrayList<>();
 
         try(Stream<String> fileLines = Files.lines(source,
@@ -51,7 +53,6 @@ public class AscReader
             System.err.println("While reading " + source + ": " + ioe);
             return result;
         }
-
         // There are multiple forecasts put in here. Each forecast/ensembleid
         // combination should be a separate timeseries. Group by forecast
         // datetime.
@@ -74,6 +75,9 @@ public class AscReader
         // ...
         // }
            
+/*
+        // <ORIGINAL WAY>
+
         // Transpose from rows based on time to rows based on ensemble id
         // This is stateful, avoid streams?
 
@@ -147,7 +151,41 @@ public class AscReader
                                                          .reduce(Predicate::and).orElse(p->true))
                                                  .collect(toList())))
                      .forEach(result::add));
-    
         return result;
+        // </ORIGINAL WAY>
+*/    
+
+
+
+
+
+        // <10 MARCH 2017 WAY>
+
+
+        // Ensemble id is implicit now per event.
+
+        // wait, why not just go straight to a list of timeseries?
+
+        // Create the resulting TimeSerieses (and conditioning)
+        // Unfortunate we can't condition while doing file io
+        // because this format has data inferred by position... or can we?
+
+
+        // Finally create the TimeSeries List.
+
+        return events.stream()
+            .collect(groupingBy(EnsembleForecastEvent::getIssuedDateTime)) // map by forecast
+            .entrySet()
+            .stream()
+//            .peek(System.out::println)
+            .map(byForecast -> TimeSeries.of(SeriesInfo.of(byForecast.getKey()),
+                                             byForecast.getValue()
+                                             .stream() // filter while creating.
+                                             .filter(tests.stream()
+                                                     .reduce(Predicate::and).orElse(p->true))
+                                             .collect(toList())))
+            .collect(toList());
+
+        // </10 MARCH 2017 WAY>
     }
 }

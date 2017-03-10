@@ -10,27 +10,30 @@ public class PairEvent implements Event
 {
     private final LocalDateTime dateTime;
     private final Duration forecastLeadTime;
-    private final double forecast;
+    private final double[] forecasts;
     private final double observation;
 
     // Use .of to construct?
     private PairEvent(LocalDateTime dateTime,
                       Duration forecastLeadTime,
-                      double forecast,
+                      double[] forecasts,
                       double observation)
     {
         this.dateTime = dateTime;
         this.forecastLeadTime = forecastLeadTime;
-        this.forecast = forecast;
+        this.forecasts = forecasts;
         this.observation = observation;
     }
 
     public static PairEvent of(LocalDateTime dateTime,
                                Duration forecastLeadTime,
-                               double forecast,
+                               double[] forecasts,
                                double observation)
     {
-        return new PairEvent(dateTime, forecastLeadTime, forecast, observation);
+        return new PairEvent(dateTime,
+                             forecastLeadTime,
+                             forecasts,
+                             observation);
     }
 
     public LocalDateTime getDateTime()
@@ -38,9 +41,9 @@ public class PairEvent implements Event
         return this.dateTime;
     }
 
-    public double getForecast()
+    public double[] getForecasts()
     {
-        return this.forecast;
+        return this.forecasts;
     }
 
     public Duration getLeadTime()
@@ -53,9 +56,25 @@ public class PairEvent implements Event
         return this.observation;
     }
 
-    public double getValue()
+    /** Since the interface assumes array,
+     *  go for the forecast side.
+     */
+    public double getValue(int index) throws IndexOutOfBoundsException
     {
-        return getObservation();
+        return this.forecasts[index];
+    }
+
+    /**
+     * go for the forecasts again
+     */
+    public double[] getValues()
+    {
+        return this.getForecasts();
+    }
+
+    public int getLength()
+    {
+        return this.getForecasts().length;
     }
 
     public LocalDateTime getIssuedDateTime()

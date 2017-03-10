@@ -41,8 +41,8 @@ public class Pair
             {
                 pairedData.add(PairEvent.of(obs.getDateTime(),
                                             fc.getLeadTime(),
-                                            fc.getValue(),
-                                            obs.getValue()));
+                                            fc.getValues(),
+                                            obs.getValue(0)));
                 //System.out.println("Successfully paired");
             }
             else

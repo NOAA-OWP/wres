@@ -50,6 +50,16 @@ public class SeriesInfo
         return SeriesInfo.of(forecastDateTime, ensembleId.toString());
     }
 
+    /**
+     * Factory to create SeriesInfo with Zulu ZoneId
+     * for when forecastDateTime is all that is known.
+     */
+    public static SeriesInfo of(LocalDateTime forecastDateTime)
+    {
+        Map<String,Object> metadata = new ConcurrentHashMap<>();
+        return SeriesInfo.of(forecastDateTime, ZoneId.of("Z"), metadata);
+    }
+
     public LocalDateTime getForecastDateTime()
     {
         return this.forecastDateTime;

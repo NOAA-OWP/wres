@@ -29,7 +29,7 @@ public class ForecastEvent implements Event
     {
         return new ForecastEvent(getDateTime(),
                                  leadTime,
-                                 getValue());
+                                 getValue(0));
     }
 
     public ForecastEvent with(double value)
@@ -44,7 +44,7 @@ public class ForecastEvent implements Event
     {
         return new ForecastEvent(event.getDateTime(),
                                  leadTime,
-                                 event.getValue());
+                                 event.getValue(0));
     }
 
     public LocalDateTime getDateTime()
@@ -52,9 +52,23 @@ public class ForecastEvent implements Event
         return this.dateTime;
     }
 
-    public double getValue()
+    public double getValue(int index) throws IndexOutOfBoundsException
     {
-        return this.value;
+        if (index == 0)
+        {
+            return this.value;
+        }
+        throw new IndexOutOfBoundsException("A ForecastEvent has one value.");
+    }
+
+    public int getLength()
+    {
+        return 1;
+    }
+
+    public double[] getValues()
+    {
+        return new double[] {this.getValue(0)};
     }
 
     public Duration getLeadTime()
