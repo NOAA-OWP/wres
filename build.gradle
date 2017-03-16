@@ -34,7 +34,8 @@ subprojects
 
     test
     {
-        maxHeapSize = "2048m"
+        maxHeapSize = "3072m"
+        testLogging.showStandardStreams = true
     }
 }
 
