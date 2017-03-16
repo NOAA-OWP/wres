@@ -1,6 +1,6 @@
 ﻿SELECT L.*
-FROM "Coordinate" C
-INNER JOIN "NWSLocationCoordinate" NLC
+FROM Coordinate C
+INNER JOIN NWSLocationCoordinate NLC
 	ON NLC.coordinate_id = C.coordinate_id
 INNER JOIN ObservationLocation L
 	ON L.observationlocation_id = NLC.observationlocation_id
