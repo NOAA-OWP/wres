@@ -26,6 +26,10 @@ subprojects
     repositories
     {
         mavenCentral()
+        maven 
+        {
+            url "http://repo.boundlessgeo.com/main/"
+        }
     }
 }
 
@@ -39,9 +43,10 @@ project(':utilities')
 
         compile 'ch.qos.logback:logback-classic:1.2.0'
         compile 'ch.qos.logback:logback-core:1.2.0'
+        compile group: 'edu.ucar', name: 'cdm', version: '4.6.8'
 
         testCompile 'junit:junit:4.12'
-	testCompile files('../libs/external/EVS.jar')
+        testCompile files('../libs/external/EVS.jar')
 	}
 }
 
@@ -56,5 +61,17 @@ project(':wres-core')
 
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
+    }
+}
+
+project(':wres-experiment')
+{
+    dependencies
+    {
+        compile group: 'edu.ucar', name: 'cdm', version: '4.6.8'
+        compile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
+        
+        //JB @ 02/16/17
+        testCompile 'junit:junit:4.12'
     }
 }
