@@ -3,15 +3,24 @@
  */
 package wres.util;
 
-import java.sql.Connection;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
+import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import org.postgresql.Driver;
 import wres.reading.BasicSource;
 import wres.reading.SourceReader;
+import wres.collections.Pair;
+import java.util.concurrent.Future;
+import wres.concurrency.FunctionRunner;
+import wres.concurrency.Metrics;;
 /**
  * @author ctubbs
  *
@@ -41,9 +50,26 @@ public class MainFunctions {
 		prototypes.put("connecttodb", connectToDB());
 		prototypes.put("saveforecast", saveForecast());
 		prototypes.put("saveobservation", saveObservation());
-		prototypes.put("printpairs", printPairs());
+		prototypes.put("getpairs", getPairs());
+		prototypes.put("querynetcdf", queryNetCDF());
+		prototypes.put("commands", print_commands());
+		prototypes.put("--help", print_commands());
+		prototypes.put("-h", print_commands());
+		prototypes.put("meanerror", meanError());
+		prototypes.put("concurrentmeanerror", concurrentMeanError());
 		
 		return prototypes;
+	}
+	
+	private static final Consumer<String[]> print_commands()
+	{
+		return (String[] args) -> {
+			System.out.println("Available commands are:");
+			for (String command : functions.keySet())
+			{
+				System.out.println("\t" + command);
+			}
+		};
 	}
 	
 	private static final Consumer<String[]> loadWaterData()
@@ -151,13 +177,9 @@ public class MainFunctions {
 	{
 		return (String[] args) -> {
 			try {
-				Properties props = new Properties();
-				props.setProperty("user", wres.util.Utilities.DATABASE_USERNAME);
-				props.setProperty("password", wres.util.Utilities.DATABASE_PASSWORD);
-				Driver d = new Driver();
-				Connection conn = d.connect(wres.util.Utilities.DATABASE_URL, props);
+				ResultSet result = Database.execute_for_result("SELECT version();");
+				System.out.println(result.getString("version"));
 				System.out.println("Successfully connected to the database");
-				conn.close();
 			} catch (SQLException e) {
 				System.out.println("Could not connect to database because:");
 				e.printStackTrace();
@@ -165,76 +187,257 @@ public class MainFunctions {
 		};
 	}
 	
-	private static final Consumer<String[]> printPairs()
+	private static final Consumer<String[]> getPairs()
 	{
 		return (String[] args) -> {
-			System.out.println("'printPairs' is an incomplete function and therefore cannot be called yet. Please try again after implementation.");
-			/*if (args.length > 2)
+			if (args.length > 0)
 			{
 				String variable = args[0];
-				String location = args[1];
 				
-				StringBuilder script_builder = new StringBuilder();
-				script_builder.append("WITH forecast_measurements AS (");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("SELECT DISTINCT forecast_id, lead_time, array_agg(FR.measurement) OVER (PARTITION BY forecast_id, lead_time) AS measurements");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("FROM ForecastResult FR");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("ORDER BY lead_time");
-				script_builder.append(System.lineSeparator());
-				script_builder.append(")");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("SELECT (F.forecast_date + (INTERVAL '1 hour' * FM.lead_time)) AS forecast_date, FM.lead_time, O.measurement, FM.measurements");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("FROM Forecast F");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("INNER JOIN forecast_measurements FM");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("ON FM.forecast_id = F.forecast_id");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("INNER JOIN ObservationResult O");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("ON O.valid_date = (F.forecast_date + (INTERVAL '1 hour' * FM.lead_time))");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("AND O.variable_id = F.variable_id");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("AND O.observationlocation_id = F.observationlocation_id");
-				script_builder.append(System.lineSeparator());
-				script_builder.append("INNER JOIN Variable V");
-				script_builder.append(System.lineSeparator());
+				String script = "SELECT F.forecast_date + INTERVAL '1 hour' * FR.lead_time AS forecast_time,\n"
+								+ "		lead_time,\n"
+								+ "		R.measurement,\n"
+								+ "		FR.measurements\n"
+								+ "FROM Forecast F\n"
+								+ "INNER JOIN ForecastResult FR\n"
+								+ "		ON FR.forecast_id = F.forecast_id\n"
+								+ "INNER JOIN Observation O\n"
+								+ "		ON O.variable_id = F.variable_id\n"
+								+ "INNER JOIN ObservationResult R\n"
+								+ "		ON R.observation_id = O.observation_id\n"
+								+ "			AND R.valid_date = F.forecast_date + INTERVAL '1 hour' * FR.lead_time\n"
+								+ "INNER JOIN Variable V\n"
+								+ "		ON V.variable_id = F.variable_id\n"
+								+ "WHERE V.variable_name = '" + variable + "'\n";
 				
-				/*WITH forecast_measurements AS (
-						SELECT DISTINCT forecast_id, lead_time, array_agg(FR.measurement) OVER (PARTITION BY forecast_id, lead_time) AS measurements
-						FROM ForecastResult FR
-						ORDER BY lead_time
-					)
-					SELECT (F.forecast_date + (INTERVAL '1 hour' * FM.lead_time)) AS forecast_date, FM.lead_time, O.measurement, FM.measurements
-					FROM Forecast F
-					INNER JOIN forecast_measurements FM
-						ON FM.forecast_id = F.forecast_id
-					INNER JOIN ObservationResult O
-						ON O.valid_date = (F.forecast_date + (INTERVAL '1 hour' * FM.lead_time))
-					INNER JOIN Observation OBS
-						ON O.observation_id = OBS.observation_id
-							AND OBS.variable_id = F.variable_id
-							AND OBS.observationlocation_id = F.observationlocation_id
-					INNER JOIN ObservationLocation OL
-						ON OL.observationlocation_id = OBS.observationlocation_id
-					INNER JOIN Variable V
-						ON V.variable_id = OBS.variable_id
-					WHERE V.variable_name = variable
-						AND OL.location_name = location
-						
-					ORDER BY F.forecast_date, lead_time
+				if (args.length > 1)
+				{
+					Path path = Paths.get(args[1]);
+					script += "		AND F.source = '" + path.toAbsolutePath().toString() + "'\n";
+				}
+				
+				script += "ORDER BY forecast_time, FR.lead_time;";
+				
+				try {
+					ResultSet results = Database.execute_for_result(script);
+					System.out.println("Pair data is now in memory!");
+					
+					while (results.next())
+					{
+
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
 			}
 			else
 			{
 				System.out.println("Not enough arguments were passed.");
-				System.out.println("Prototype.jar printpairs <location name> <variable name>");
-			}*/
+				System.out.println("*.jar getPairs <variable name> [<source name>]");
+			}
 		};
 	}
+	
+	private static final Consumer<String[]> meanError()
+	{
+		return (String[] args) -> {
+			if (args.length > 0)
+			{
+				String variable = args[0];
+				
+				String script = "SELECT F.forecast_date + INTERVAL '1 hour' * FR.lead_time AS forecast_time,\n"
+								+ "		lead_time,\n"
+								+ "		R.measurement,\n"
+								+ "		FR.measurements\n"
+								+ "FROM Forecast F\n"
+								+ "INNER JOIN ForecastResult FR\n"
+								+ "		ON FR.forecast_id = F.forecast_id\n"
+								+ "INNER JOIN Observation O\n"
+								+ "		ON O.variable_id = F.variable_id\n"
+								+ "INNER JOIN ObservationResult R\n"
+								+ "		ON R.observation_id = O.observation_id\n"
+								+ "			AND R.valid_date + INTERVAL '1 hour' * 6 = F.forecast_date + INTERVAL '1 hour' * FR.lead_time\n"
+								+ "INNER JOIN Variable V\n"
+								+ "		ON V.variable_id = F.variable_id\n"
+								+ "WHERE V.variable_name = '" + variable + "'\n";
+				
+				if (args.length > 1)
+				{
+					Path path = Paths.get(args[1]);
+					script += "		AND F.source = '" + path.toAbsolutePath().toString() + "'\n";
+				}
+				
+				script += "ORDER BY forecast_time, FR.lead_time;";
+				
+				try {
+					ResultSet results = Database.execute_for_result(script);
+					System.out.println("Pair data is now in memory!");
+					TreeMap<Integer, Pair<Double, Integer>> errors = new TreeMap<Integer, Pair<Double, Integer>>();
+					TreeMap<Integer, Double> mean = new TreeMap<Integer, Double>();
+					Double total = 0.0;
+					Integer lead_time = 0;
+					Float[] raw_ensembles = null;
+					while (results.next())
+					{
+						raw_ensembles = (Float[])results.getArray("measurements").getArray();
+
+						float observed_value = results.getFloat("measurement");
+						lead_time = results.getInt("lead_time");
+						
+						for (int ensemble_index = 0; ensemble_index < raw_ensembles.length; ++ensemble_index)
+						{
+							total += (raw_ensembles[ensemble_index]*25.4) - (observed_value*25.4);
+						}
+						
+						if (errors.containsKey(lead_time))
+						{
+							errors.get(lead_time).item_one += total;
+							errors.get(lead_time).item_two += raw_ensembles.length;
+						}
+						else
+						{							
+							errors.put(lead_time, new Pair<Double, Integer>(total, raw_ensembles.length));
+							mean.put(lead_time, 0.0);
+						}
+						
+						total = 0.0;
+					}
+					
+					System.out.println("Data has been distributed...");
+					
+					
+					for (Integer lead : errors.keySet()) 
+					{
+						Pair<Double, Integer> error = errors.get(lead);
+						mean.put(lead, error.item_one/error.item_two);
+					}
+					
+					System.out.println("Mean errors computed.");
+					
+					System.out.println("Mean Error:");
+					for (int time : errors.keySet())
+					{
+						System.out.print("\t");
+						System.out.print(time);
+						System.out.print(" |\t");
+						System.out.println(mean.get(time));
+					}
+					
+					
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			else
+			{
+				System.out.println("Not enough arguments were passed.");
+				System.out.println("*.jar getPairs <variable name> [<source name>]");
+			}
+		};
+	}
+	
+	private static final Consumer<String[]> concurrentMeanError()
+	{
+		return (String[] args) -> {
+			if (args.length > 0)
+			{
+				String variable = args[0];
+				String start_date = "'1/1/1800'";
+				String end_date = "'12/1/2400'";
+				int lead = 0;
+				String lead_script = "";
+				
+				TreeMap<Integer, Future<Double>> computed_errors = new TreeMap<Integer, Future<Double>>();
+				TreeMap<Integer, Double> errors = new TreeMap<Integer, Double>();
+				
+				String script = "SELECT FR.lead_time\n"
+								+ "FROM Forecast F\n"
+								+ "INNER JOIN ForecastResult FR\n"
+								+ "		ON FR.forecast_id = F.forecast_id\n"
+								+ "INNER JOIN Variable V\n"
+								+ "		ON V.variable_id = F.variable_id\n"
+								+ "WHERE V.variable_name = '" + variable + "'\n"
+								+ "		AND F.forecast_date >= " + start_date + "\n"
+								+ "		AND F.forecast_date <= " + end_date + "\n";
+				
+				if (args.length > 1)
+				{
+					Path path = Paths.get(args[1]);
+					script += "		AND F.source = '" + path.toAbsolutePath().toString() + "'\n";
+				}
+				
+				script += "GROUP BY FR.lead_time;";
+				
+				try {
+					ResultSet results = Database.execute_for_result(script);
+					ExecutorService executor = Executors.newFixedThreadPool(5);
+
+					script = "SELECT R.measurement, FR.measurements\n"
+							+ "FROM Forecast F\n"
+							+ "INNER JOIN Variable V\n"
+							+ "		ON V.variable_id = F.variable_id\n"
+							+ "INNER JOIN Observation O\n"
+							+ "		ON O.variable_id = F.variable_id\n"
+							+ "INNER JOIN ForecastResult FR\n"
+							+ "		ON F.forecast_id = FR.forecast_id\n"
+							+ "INNER JOIN ObservationResult R\n"
+							+ "		ON R.observation_id = O.observation_id\n"
+							+ "			AND R.valid_date + INTERVAL '1 hour' * 6 = F.forecast_date + (INTERVAL '1 hour' * FR.lead_time)\n"
+							+ "WHERE V.variable_name = '" + variable + "'\n"
+							+ "		AND F.forecast_date >= " + start_date + "\n"
+							+ "		AND F.forecast_date <= " + end_date + "\n";
+					
+					if (args.length > 1)
+					{
+						Path path = Paths.get(args[1]);
+						script += "		AND F.source = '" + path.toAbsolutePath().toString() + "'\n";
+					}
+							
+					System.out.println("Farming out computations...");
+					while (results.next())
+					{
+						lead = results.getInt("lead_time");
+						lead_script = script + "		AND FR.lead_time = " + String.valueOf(lead) + ";";
+						Callable<Double> computation = new FunctionRunner<Double, Double>(lead_script, 
+																				  Metrics.calculateMeanError(), 
+																				  (Double value) -> { 
+																					  return value * 25.4;
+																				  }); 
+						Future<Double> future_computation = executor.submit(computation);
+						computed_errors.put(lead, future_computation);
+					}					
+					
+					for (Integer lead_time : computed_errors.keySet())
+					{
+						errors.put(lead_time, computed_errors.get(lead_time).get());
+					}
+					
+					
+					System.out.println("Mean errors computed.");
+					System.out.println("Mean Error:");
+					for (Integer lead_time : errors.keySet())
+					{
+						System.out.print("\t");
+						System.out.print(lead_time);
+						System.out.print(" |\t");
+						System.out.println(errors.get(lead_time));
+					}
+
+					executor.shutdown();
+					while (!executor.isTerminated()) {}
+					
+				} catch (SQLException | InterruptedException | ExecutionException e) {
+					e.printStackTrace();
+				}
+			}
+			else
+			{
+				System.out.println("Not enough arguments were passed.");
+				System.out.println("*.jar getPairs <variable name> [<source name>]");
+			}
+		};
+	}
+	
 	
 	private static final Consumer<String[]> describeNetCDF()
 	{
@@ -249,6 +452,29 @@ public class MainFunctions {
 				System.out.println("A path is needed to describe the data. Please pass that in as the first argument.");
 				System.out.print("The current directory is:\t");
 				System.out.println(System.getProperty("user.dir"));
+			}
+		};
+	}
+	
+	private static final Consumer<String[]> queryNetCDF()
+	{
+		return (String[] args) -> {
+			if (args.length > 1)
+			{
+				String filename = args[0];
+				String variable_name = args[1];
+				int[] variable_args = new int[args.length - 2];
+				for (int index = 2; index < args.length; ++index)
+				{
+					variable_args[index-2] = Integer.parseInt(args[index]);
+				}
+				NetCDFReader reader = new NetCDFReader(filename);
+				reader.print_query(variable_name, variable_args);
+			}
+			else
+			{
+				System.out.println("There are not enough parameters to query the netcdf.");
+				System.out.println("usage: queryNetCDF <filename> <variable> [index0, index1,...indexN]");
 			}
 		};
 	}

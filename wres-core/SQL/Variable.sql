@@ -5,7 +5,7 @@ DROP TABLE Variable;
 CREATE TABLE Variable
 (
 	variable_id SERIAL,
-	variable_name text NOT NULL,
+	variable_name text UNIQUE NOT NULL,
 	variable_type text,
 	description text,
 	measurementunit_id INT,
@@ -18,6 +18,6 @@ CREATE TABLE Variable
 WITH (
   OIDS=FALSE
 );
-
+CREATE INDEX variable_variable_name_idx ON Variable(variable_name);
  INSERT INTO Variable (variable_name, variable_type, description, measurementunit_id)
  VALUES ('precipitation', 'double', 'precipitation', 1);
