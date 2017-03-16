@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 import java.util.function.Predicate;
@@ -338,7 +339,9 @@ public class ReadFewsDataStream
                            .getEvents()
                            .stream()
                            .filter(e -> e.getDateTime().getYear() < 2001)
-                           .mapToDouble(e -> e.getValue())
+//                           .mapToDouble(e -> e.getValue())
+                           .map(e -> e.getValues())
+                           .flatMapToDouble(Arrays::stream) // flatten arrays
                            .average()
                            .getAsDouble());
 
@@ -369,7 +372,8 @@ public class ReadFewsDataStream
         System.out.println("Calculating mean error:");
         SimpleError errorFunc = new SimpleError();
         System.out.println(myPairs.stream()
-                                  .mapToDouble(errorFunc)
+                                  .map(errorFunc)
+                                  .flatMapToDouble(Arrays::stream)
                                   .average());
 
 //        Thread.sleep(30000);
@@ -399,7 +403,8 @@ public class ReadFewsDataStream
                          Map.Entry::getKey,    // same key (lead time)
                          e -> e.getValue()     
                          .stream()             // work with stream on PairEvents
-                         .mapToDouble(errorFunc) // calculate error
+                         .map(errorFunc) // calculate error
+                         .flatMapToDouble(Arrays::stream)
                          .average()))         // mean error
             );
     }
