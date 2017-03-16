@@ -1,6 +1,6 @@
-﻿DELETE FROM "Coordinte";
+﻿DELETE FROM Coordinte;
 
-INSERT INTO "Coordinate" (geographic_coordinate)
+INSERT INTO Coordinate (geographic_coordinate)
 WITH coordinates AS
 (
 	SELECT DISTINCT nws_lat AS lat, nws_lon AS lon
@@ -17,4 +17,4 @@ SELECT point(lon, lat)
 FROM coordinates;
 
 SELECT *
-FROM "Coordinate";
+FROM Coordinate;
