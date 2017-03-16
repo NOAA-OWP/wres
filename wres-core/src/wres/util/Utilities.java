@@ -12,94 +12,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Properties;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.postgresql.Driver;
 
 public final class Utilities {
-	// Dictates the number of threads that may be run to execute queries asynchronously
-	private static int THREAD_COUNT = 30;
-	
-	// Executor used to manage threads used to execute database queries
-	private static ExecutorService query_executor = Executors.newFixedThreadPool(THREAD_COUNT);
-	
-	// Contains a queue of queries that may be fired off in batches
-	private static Queue<String> query_queue =  new ConcurrentLinkedQueue<String>();
-	// A link to the database in use
-	// TODO: Bake the url into a configuration file
-	
-	// This is the EDS connection string
-	public static String DATABASE_URL = "jdbc:postgresql://***REMOVED***eds-dev1.***REMOVED***.***REMOVED***:5432/wres";
-	
-	// This is the IOEP connection string.
-	// NOTE: You must be running directly from the IOEP vm to use this
-	//public static String DATABASE_URL = "jdbc:postgresql://localhost:5432/WRESDBTEST";
-	
-	// The name of the user to use when accessing the database
-	// TODO: Bake the username into a configuration file
-	public static String DATABASE_USERNAME = "christopher.tubbs";
-	//public static String DATABASE_USERNAME = "pguser";
-	
-	// The password used to access the database
-	// TODO: Bake the password into a configuration file
-	public static String DATABASE_PASSWORD = "changeme";
-	//public static String DATABASE_PASSWORD = "pass";
-	
-	public static void add_query(String query)
-	{
-		query_queue.add(query);
-	}
-	
-	public static void execute_queries()
-	{
-		ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
-		String query = null;
-		while((query = query_queue.poll()) != null)
-		{
-			executor.execute(new Runnable() {
-				private String inner_query = "";
-				public void run()
-				{
-					Connection connection = null;
-					try
-					{
-						connection = create_eds_connection();
-						Statement statement = connection.createStatement();
-						statement.execute(inner_query);
-					}
-					catch (Exception e)
-					{
-						e.printStackTrace();
-					}
-					finally
-					{
-						if (connection != null)
-						{
-							try {
-								connection.close();
-							} catch (SQLException e) {
-								System.err.println("The connection could not be closed.");
-								e.printStackTrace();
-							}
-						}
-					}
-				}
-				
-				private Runnable init(String inner_query)
-				{
-					this.inner_query = inner_query;
-					return this;
-				}
-			}.init(query));
-		}
-		executor.shutdown();
-		while (!executor.isTerminated())
-		{
-		}
-	}
 	
 	@SuppressWarnings("unchecked")
 	public static <T> T[] removeIndexFromArray(T[] array, Class<T> arrayType, int index)
@@ -129,50 +45,6 @@ public final class Utilities {
 		}
 		
 		return (T[])copy;
-	}
-	
-	public static Connection create_eds_connection() throws SQLException
-	{
-		Connection connection = null;
-		Properties props = new Properties();
-		props.setProperty("user", DATABASE_USERNAME);
-		props.setProperty("password", DATABASE_PASSWORD);
-		int attempt_count = 0;
-		while (connection == null)
-		{
-			try {
-				attempt_count++;
-				Driver driver = new Driver();
-				connection = driver.connect(DATABASE_URL, props);
-				if (attempt_count > 20)
-				{
-					System.out.println(String.format("Connection granted after %d attempts.", attempt_count));
-				}
-			}
-			catch (Exception error)
-			{
-				try {
-					Thread.sleep(200);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				error.printStackTrace();
-			}
-		}
-		return connection;
-	}
-	
-	public static Connection create_connection() throws SQLException
-	{
-		// Use for local connections; this is only an example. This will create a connection to my local 'ctubbs' database
-		String url="jdbc:postgresql://localhost:5432/ctubbs";
-		Properties props = new Properties();
-		props.setProperty("user", "ctubbs");
-		props.setProperty("password", "");
-		Driver driver = new Driver();
-
-		return driver.connect(url, props);
 	}
 	
 	public static int milliseconds_to_seconds(int millliseconds)
@@ -224,103 +96,94 @@ public final class Utilities {
 		return (year % 400) == 0 || ( (year % 4) == 0 && (year % 100) != 0);
 	}
 	
-	public static void execute_eds_query(String query) throws SQLException
+	public static int[] parse_integer_array(final String[] array)
 	{
-		Connection connection = create_eds_connection();
-		Statement statement = connection.createStatement();
-		statement.execute(query);
-		connection.close();
-	}
-	
-	public static ResultSet get_results(String query) throws SQLException
-	{
-		Connection connection = create_eds_connection();
-		Statement statement = connection.createStatement();
-		ResultSet results = statement.executeQuery(query);
-		results.next();
-		return results;
-	}
-	
-	public static void execute_eds_query_async(String query)
-	{
-		query_executor.execute(new Runnable() {
-			private String inner_query = "";
-			public void run()
-			{
-				Properties props = new Properties();
-				props.setProperty("user", DATABASE_USERNAME);
-				props.setProperty("password", DATABASE_PASSWORD);
-				Driver driver = new Driver();
-				Connection connection = null;
-				try
-				{
-					connection = driver.connect(DATABASE_URL, props);
-					Statement statement = connection.createStatement();
-					statement.execute(inner_query);
-				}
-				catch (SQLException sql)
-				{
-					execute_eds_query_async(inner_query);
-				}
-				catch (Exception e)
-				{
-					e.printStackTrace();
-				}
-				finally
-				{
-					if (connection != null)
-					{
-						try {
-							connection.close();
-						} catch (SQLException e) {
-							System.err.println("The connection could not be closed.");
-							e.printStackTrace();
-						}
-					}
-				}
-			}
-			
-			private Runnable init(String inner_query)
-			{
-				this.inner_query = inner_query;
-				return this;
-			}
-		}.init(query));
-	}
-	
-	public static boolean execute_query(String query) throws SQLException
-	{
-		boolean success = false;
-		Connection connection = null;
+		int[] int_array = new int[array.length];
 		
-		try
+		for (int index = 0; index < array.length; ++index)
 		{
-			connection = create_connection();
-			connection.setAutoCommit(false);
-			Statement statement = connection.createStatement();			
-			success = statement.execute(query);
-			connection.commit();
-		}
-		catch (SQLException error)
-		{
-			if (connection != null)
+			try
 			{
-				connection.rollback();
+				int_array[index] = Integer.parseInt(array[index].replace(".0", ""));
 			}
-			System.err.println("The following query could not be executed:");
-			System.err.println();
-			System.err.println(query);
-			throw error;
-		}
-		finally
-		{
-			if (connection != null)
+			catch (NumberFormatException error)
 			{
-				connection.close();
+				System.err.print("The value '"); 
+				System.err.print(array[index]); 
+				System.err.print("' at index ");
+				System.err.print(index); 
+				System.err.println(" could not be converted into an int.");
+				throw error;
 			}
 		}
 		
-		return success;
+		return int_array;
+	}
+	
+	public static float[] parse_float_array(final String[] array)
+	{
+		float[] float_array = new float[array.length];
+		
+		for (int index = 0; index < array.length; ++index)
+		{
+			try
+			{
+				float_array[index] = Float.parseFloat(array[index]);
+			}
+			catch (NumberFormatException error)
+			{
+				System.err.print("The value '"); 
+				System.err.print(array[index]); 
+				System.err.print("' at index ");
+				System.err.print(index); 
+				System.err.println(" could not be converted into an int.");
+				throw error;
+			}
+		}
+		
+		return float_array;
+	}
+	
+	public static double[] parse_double_array(final String[] array)
+	{
+		double[] double_array = new double[array.length];
+		
+		for (int index = 0; index < array.length; ++index)
+		{
+			try
+			{
+				double_array[index] = Double.parseDouble(array[index]);
+			}
+			catch (NumberFormatException error)
+			{
+				System.err.print("The value '"); 
+				System.err.print(array[index]); 
+				System.err.print("' at index ");
+				System.err.print(index); 
+				System.err.println(" could not be converted into an int.");
+				throw error;
+			}
+		}
+		
+		return double_array;
+	}
+
+	public static Float[] combine(Float[] left, Float[] right)
+	{
+		int length = left.length + right.length;
+		Float[] result = new Float[length];
+		System.arraycopy(left,  0, result, 0, left.length);
+		System.arraycopy(right, 0, result, left.length, right.length);
+		return result;
+	}
+	
+	public static Double[] combine(Double[] left, Double[] right)
+	{
+		int length = left.length + right.length;
+		Double[] result = new Double[length];
+		System.arraycopy(left,  0, result, 0, left.length);
+		System.arraycopy(right, 0, result, left.length, right.length);
+		return result;
 	}
 	
 	public static String toString(String[] strings)
@@ -343,5 +206,79 @@ public final class Utilities {
 		}		
 		
 		return concat;
+	}
+	
+	public static String toString(float[] values)
+	{
+		String concat = "{";
+		boolean add_comma = false;
+		
+		for (float value : values)
+		{
+			if (add_comma)
+			{
+				concat += ", ";
+			}
+			else
+			{
+				add_comma = true;
+			}
+			
+			concat += String.valueOf(value);
+		}
+		
+		concat += "}";
+		return concat;
+	}
+	
+	public static int sum(Integer[] values)
+	{
+		int total = 0;
+		
+		for (int index = 0; index < values.length; ++index)
+		{
+			total += values[index];
+		}
+		
+		return total;
+	}
+	
+	public static float sum(Float[] values)
+	{
+		float total = 0.0f;
+		
+		for (int index = 0; index < values.length; ++index)
+		{
+			total += values[index];
+		}
+		
+		return total;
+	}
+	
+	public static double sum(Double[] values)
+	{
+		double total = 0.0f;
+		
+		for (int index = 0; index < values.length; ++index)
+		{
+			total += values[index];
+		}
+		
+		return total;
+	}
+	
+	public static float mean(Integer[] values)
+	{
+		return (float)sum(values)/values.length;
+	}
+	
+	public static float mean(Float[] values)
+	{
+		return sum(values)/values.length;
+	}
+	
+	public static double mean(Double[] values)
+	{
+		return sum(values)/values.length;
 	}
 }

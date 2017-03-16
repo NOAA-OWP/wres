@@ -9,8 +9,6 @@ CREATE TABLE ObservationResult
   observation_id INT,
   valid_date TIMESTAMP NOT NULL,
   measurement DOUBLE PRECISION NOT NULL,
-  revision SMALLINT DEFAULT 1,
-  approval_date TIMESTAMP,
   CONSTRAINT observationresult_observation_fk FOREIGN KEY (observation_id)
 	REFERENCES Observation (observation_id) MATCH SIMPLE
 	ON UPDATE NO ACTION ON DELETE NO ACTION

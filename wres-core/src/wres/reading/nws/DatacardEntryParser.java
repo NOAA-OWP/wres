@@ -3,12 +3,10 @@
  */
 package wres.reading.nws;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import wres.util.Database;
 
 /**
  * @author ctubbs
@@ -32,12 +30,9 @@ public class DatacardEntryParser implements Runnable {
 	 */
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
-		//utils.Utilities.execute_eds_query(String.format(save_observation, variable_id, date, value));
 		try {
 			save();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -69,7 +64,7 @@ public class DatacardEntryParser implements Runnable {
 			
 			expression.append(";");
 			
-			wres.util.Utilities.execute_eds_query(expression.toString());
+			Database.execute(expression.toString());
 		} catch (SQLException error) {
 			System.err.println("The following query could not be executed:");
 			System.err.println();

@@ -3,7 +3,9 @@
  */
 package wres.util;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.io.IOException;
 import ucar.nc2.Variable;
 import ucar.nc2.Attribute;
@@ -30,8 +32,6 @@ public final class NetCDFReader {
 	{
 		try (NetcdfFile ncfile = NetcdfFile.open(get_path())) 
 		{
-			int x = 3000;
-			int y = 3000;
 			List<Variable> observed_variables = ncfile.getVariables();
 			System.out.print("Information about this NetCDF: \n\t");
 			System.out.println(ncfile.getDetailInfo());
@@ -70,6 +70,8 @@ public final class NetCDFReader {
 				System.out.print("\tThe datatype is: ");
 				System.out.println(var.getDataType());
 				System.out.println("\tThe description is: " + var.getDescription());
+				System.out.print("\tIs coordinate Variable: ");
+				System.out.println(var.isCoordinateVariable());
 				System.out.print("\tThere are ");
 				System.out.print(var.getDimensions().size());
 				System.out.println(" dimensions in this variable.\n");
@@ -87,33 +89,50 @@ public final class NetCDFReader {
 					}
 				}
 				
-				System.out.println("");
+				Map<String, Object> annotations = var.getAnnotations();
 				
-				if (var.getDimensions().size() == 3 && var.getDataType() == DataType.INT) {
-                    int[] origin = new int[] {0, x, y};
-                    int[] size = new int[] {1, 5, 5};
-                    Array data = var.read();//origin, size);
+				if (annotations.size() > 0)
+				{
+					System.out.print("\nThe annotations are:");
+					
+					for (String key : annotations.keySet())
+					{
+						System.out.print("\t");
+						System.out.print(key);
+						System.out.print(" : ");
+						System.out.println(annotations.get(key));
+					}
+				}
+				
+				System.out.println("");
+				if (var.getDimensions().size() > 0) {
+                    int[] origin = new int[var.getDimensions().size()];
+                    int[] size = new int[var.getDimensions().size()];
+                    
+                    Arrays.fill(origin, 0);
+                    
+                    for (int i = 0; i < var.getDimensions().size(); ++i)
+                    {
+                    	Dimension dim = var.getDimension(i);
+                    	size[i] = Math.min(5, dim.getLength());
+                    }
+                    
                     System.out.println("Some data are: ");
-                    int nullValue = data.getInt(0);
                     //System.out.println(data.getObject(0));
                     try {
                 		int counter = 0;
-                    	Array section = data.section(origin, size);
-                    	while (section.hasNext())
+                        Array data = var.read(origin, size);
+                    	while (data.hasNext())
                     	{
-                    		int next_val = section.nextInt();
-                    		if (nullValue != next_val)
-                    		{
-                    			//System.out.print("\tAn acceptable value is: ");
-                    			System.out.print("\t");
-                    			System.out.print(next_val);
-                    			System.out.print(" " + unit);
-                    			counter = counter + 1;
-                    			if (counter >= 5) {
-                    				System.out.println("");
-                    				counter = 0;
-                    			}                    			
-                    		}                    		
+                			//System.out.print("\tAn acceptable value is: ");
+                			System.out.print("\t");
+                			System.out.print(data.next());
+                			System.out.print(" " + unit);
+                			counter = counter + 1;
+                			if (counter >= 5) {
+                				System.out.println();
+                				counter = 0;
+                			}                    		
                     	}
 						//System.out.println(data.section(origin, size));
 					} catch (InvalidRangeException e) {
@@ -129,6 +148,38 @@ public final class NetCDFReader {
             System.out.println("Something went wrong while reading file named " + path + " : " + error);
 			error.printStackTrace();
 		}
+	}
+	
+	public void print_query(String variable_name, int... args)
+	{
+			NetcdfFile nc;
+			try {
+				nc = NetcdfFile.open(get_path());			
+				Variable var = nc.findVariable(variable_name);
+				int[] origin = new int[var.getRank()];
+				Arrays.fill(origin, 0);
+				int[] size = new int[var.getRank()];
+				Arrays.fill(size, 1);
+				
+				for (int i = 0; i < Math.min(args.length, var.getRank()); ++i)
+				{
+					origin[i] = args[i];
+				}
+				
+				System.out.print(var.read(origin, size).getObject(0));
+				if (var.getUnitsString() != "null")
+				{
+					System.out.print(" " + var.getUnitsString());
+				}
+				System.out.println("");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidRangeException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
 	}
 	
 	private String get_path()

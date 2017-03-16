@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 
 import wres.reading.BasicSource;
 import wres.reading.SourceType;
+import wres.util.Database;
 
 /**
  * @author ctubbs
@@ -464,18 +465,12 @@ public class DatacardSource extends BasicSource {
 	private String create_observation() throws SQLException
 	{
 		int observation_id = 0;
-		Connection connection = null;
 		ResultSet results = null;
 		String save_script = get_save_observation_script();
+		
 		try {
-			connection = wres.util.Utilities.create_eds_connection();
-			Statement query = connection.createStatement();
-			if (query.execute(save_script))
-			{
-				results = query.getResultSet();
-				results.next();
-				observation_id = results.getInt("observation_id");
-			}
+			results = Database.execute_for_result(save_script);
+			observation_id = results.getInt("observation_id");
 		}
 		catch (SQLException error)
 		{
@@ -489,43 +484,25 @@ public class DatacardSource extends BasicSource {
 			{
 				results.close();
 			}
-			
-			if (connection != null)
-			{
-				connection.close();
-			}
 		}
 		return String.valueOf(observation_id);
 	}
 	
 	private String get_save_observation_script()
 	{
-		Path path = Paths.get(get_filename());
-		path = path.getFileName();
-		String location_name = path.toString().replace(".MAP06", "");
-		String script = "INSERT INTO Observation (source, observationlocation_id, variable_id, measurementunit_id, projection_id)";
+		String script = "INSERT INTO Observation (source, variable_id, measurementunit_id)";
 		script += System.lineSeparator();
 		script += "SELECT '";
 		script += get_filename();
 		script += "',";
 		script += System.lineSeparator();
-		script += "loc.observationlocation_id,";
-		script += System.lineSeparator();
 		script += "v.variable_id,";
-		script += System.lineSeparator();
-		script += "1,";
 		script += System.lineSeparator();
 		script += "1";
 		script += System.lineSeparator();
-		script += "FROM ObservationLocation loc";
+		script += "FROM Variable V";
 		script += System.lineSeparator();
-		script += "CROSS JOIN Variable V";
-		script += System.lineSeparator();
-		script += "WHERE loc.lid = '";
-		script += location_name;
-		script += "'";
-		script += System.lineSeparator();
-		script += "AND v.variable_name = 'precipitation'";
+		script += "WHERE v.variable_name = 'precipitation'";
 		script += System.lineSeparator();
 		script += "RETURNING observation_id;";
 		return script;
