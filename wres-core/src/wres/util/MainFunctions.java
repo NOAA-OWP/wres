@@ -370,7 +370,7 @@ public class MainFunctions {
 				
 				try {
 					ResultSet results = Database.execute_for_result(script);
-					ExecutorService executor = Executors.newFixedThreadPool(5);
+					ExecutorService executor = Executors.newFixedThreadPool(10);
 
 					script = "SELECT R.measurement, FR.measurements\n"
 							+ "FROM Forecast F\n"
@@ -382,7 +382,7 @@ public class MainFunctions {
 							+ "		ON F.forecast_id = FR.forecast_id\n"
 							+ "INNER JOIN ObservationResult R\n"
 							+ "		ON R.observation_id = O.observation_id\n"
-							+ "			AND R.valid_date + INTERVAL '1 hour' * 6 = F.forecast_date + (INTERVAL '1 hour' * FR.lead_time)\n"
+							+ "			AND R.valid_date = F.forecast_date + (INTERVAL '1 hour' * FR.lead_time)\n"
 							+ "WHERE V.variable_name = '" + variable + "'\n"
 							+ "		AND F.forecast_date >= " + start_date + "\n"
 							+ "		AND F.forecast_date <= " + end_date + "\n";

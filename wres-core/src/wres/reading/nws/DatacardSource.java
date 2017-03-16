@@ -427,7 +427,8 @@ public class DatacardSource extends BasicSource {
 				{
 					if (!values[row_index].startsWith(missing_data_symbol) && !values[row_index].startsWith(accumulated_data_symbol))
 					{
-						dated_values.put(datetime.plusHours((long)current_lead), values[row_index]);
+						// TODO: Remove hard coded CST -> UTC time conversion
+						dated_values.put(datetime.plusHours((long)current_lead + 6), values[row_index]);
 						entry_count++;
 					}
 					
