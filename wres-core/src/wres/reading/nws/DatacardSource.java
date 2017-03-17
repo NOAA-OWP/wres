@@ -8,10 +8,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
 import java.sql.ResultSet;
+import wres.concurrency.Executor;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
@@ -416,7 +415,7 @@ public class DatacardSource extends BasicSource {
 
 			int current_lead = 6;
 
-			ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+			//ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
 			HashMap<OffsetDateTime, String> dated_values = new HashMap<OffsetDateTime, String>();
 			int entry_count = 0;
 			while ((line = reader.readLine()) != null)
@@ -435,7 +434,7 @@ public class DatacardSource extends BasicSource {
 					if (entry_count >= MAX_INSERTS)
 					{
 						Runnable worker = new DatacardEntryParser(observation_id, dated_values);
-						executor.execute(worker);
+						Executor.execute(worker);
 						dated_values = new HashMap<OffsetDateTime, String>();
 						entry_count = 0;
 					}
@@ -447,14 +446,14 @@ public class DatacardSource extends BasicSource {
 			if (entry_count > 0)
 			{
 				Runnable worker = new DatacardEntryParser(observation_id, dated_values);
-				executor.execute(worker);
+				Executor.execute(worker);
 			}
 			
 			System.out.println("Lines distributed. Currently saving to the database...");
-			executor.shutdown();
-			while (!executor.isTerminated())
+			//Executor.shutdown();
+			/*while (!executor.isTerminated())
 			{
-			}
+			}*/
 		}
 		catch (IOException exception)
 		{
@@ -470,6 +469,7 @@ public class DatacardSource extends BasicSource {
 		String save_script = get_save_observation_script();
 		
 		try {
+			clear_stale_observations();
 			results = Database.execute_for_result(save_script);
 			observation_id = results.getInt("observation_id");
 		}
@@ -487,6 +487,12 @@ public class DatacardSource extends BasicSource {
 			}
 		}
 		return String.valueOf(observation_id);
+	}
+	
+	private void clear_stale_observations() throws SQLException
+	{
+		String clear_script = "DELETE FROM Observation WHERE source = '" + get_filename() + "';";
+		Database.execute(clear_script);
 	}
 	
 	private String get_save_observation_script()

@@ -2,10 +2,9 @@
 
 if [ $# -eq 0 ]; then
     echo ''
-    echo 'usage: ./wres.sh <prototype function name>'
+    echo 'usage: ./wres <prototype function name>'
     echo ''
     java -Xmx3500m -jar wres-core.jar commands
-    echo ''
 else
     java -Xmx3500m -jar wres-core.jar $@
 fi

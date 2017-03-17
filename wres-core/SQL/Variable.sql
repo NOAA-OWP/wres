@@ -1,6 +1,6 @@
 ﻿-- Table: Variable
 
-DROP TABLE Variable;
+-- DROP TABLE Variable;
 
 CREATE TABLE Variable
 (

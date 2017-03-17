@@ -1,0 +1,80 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    echo 'usage: ./BuildDatabase <IOEP Database username> <database name>'
+else
+    echo 'Droping old tables and data...'
+    psql -U $1 -d $2 -f DropTables.sql >/dev/null
+
+    echo ''
+    echo 'Adding the ObservationLocation table...'
+    psql -U $1 -d $2 -f ObservationLocation.sql >/dev/null
+
+    echo ''
+    echo 'Loading location data...'
+    psql -U $1 -d $2 -f location_backup.sql >/dev/null
+
+    echo ''
+    echo 'Copying location data into ObservationLocation...'
+    psql -U $1 -d $2 -f copy_to_observationlocation.sql >/dev/null
+
+    echo ''
+    echo 'Adding the MeasurementUnit table...'
+    psql -U $1 -d $2 -f MeasurementUnit.sql >/dev/null
+
+    echo ''
+    echo 'Adding the Coordinate table...'
+    psql -U $1 -d $2 -f Coordinate.sql >/dev/null
+
+    echo ''
+    echo 'Adding the Projection table...'
+    psql -U $1 -d $2 -f Projection.sql >/dev/null
+
+    echo ''
+    echo 'Adding the Variable table...'
+    psql -U $1 -d $2 -f Variable.sql >/dev/null
+
+    echo ''
+    echo 'Adding the ForecastRange table...'
+    psql -U $1 -d $2 -f ForecastRange.sql >/dev/null
+
+    echo ''
+    echo 'Adding the Observation table...'
+    psql -U $1 -d $2 -f Observation.sql >/dev/null
+
+    echo ''
+    echo 'Adding the ObservationResult table...'
+    psql -U $1 -d $2 -f ObservationResult.sql >/dev/null
+
+    echo ''
+    echo 'Adding the Forecast table...'
+    psql -U $1 -d $2 -f Forecast.sql >/dev/null
+
+    echo ''
+    echo 'Adding the ForecastResult table...'
+    psql -U $1 -d $2 -f ForecastResult.sql >/dev/null
+
+    echo ''
+    echo 'Adding the USGSLocationCoordinate table...'
+    psql -U $1 -d $2 -f USGSLocationCoordinate.sql >/dev/null
+
+    echo ''
+    echo 'Adding the NWSLocationCoordinate table...'
+    psql -U $1 -d $2 -f NWSLocationCoordinate.sql >/dev/null
+
+    echo ''
+    echo 'Adding the UnitConversion table...'
+    psql -U $1 -d $2 -f UnitConversion.sql >/dev/null
+
+    echo ''
+    echo 'Adding the Forecast Coordinate table...'
+    psql -U $1 -d $2 -f ForecastCoordinate.sql >/dev/null
+
+    echo ''
+    echo 'Adding the ObservationCoordinate table...'
+    psql -U $1 -d $2 -f ObservationCoordinate.sql >/dev/null
+
+    echo ''
+    echo '\nInserting Coordinates for stations...'
+    psql -U $1 -d $2 -f InsertStationCoordinates.sql >/dev/null
+fi

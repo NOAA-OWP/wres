@@ -1,4 +1,5 @@
 package wres;
+import wres.concurrency.Executor;
 import wres.util.MainFunctions;
 
 /**
@@ -53,6 +54,8 @@ public class Main {
 				System.out.print("' took ");
 				System.out.print(String.valueOf(duration));
 				System.out.println(time_unit);
+				
+				Executor.shutdown();
 			}
 			else
 			{

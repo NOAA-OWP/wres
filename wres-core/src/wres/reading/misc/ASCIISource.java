@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import wres.concurrency.Executor;
 
 /**
  * @author ctubbs
@@ -193,7 +194,7 @@ public class ASCIISource extends BasicSource
 			System.out.println("All previous data for this data source has been removed. Now saving forecast... (" + stopwatch.get_formatted_duration() + ")");
 			
 			// TODO: Implement Global Thread Pool
-			ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+			//ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
 
 			float current_step = 99999999.9f;
 			String line = "";
@@ -217,7 +218,7 @@ public class ASCIISource extends BasicSource
 						{
 							insert_count = 0;
 							Runnable worker = new ASCIIEntryParser(forecasted_values);
-							executor.execute(worker);
+							Executor.execute(worker);
 		                    forecasted_values = new HashMap<Integer, HashMap<String, String[]>>();
 						}
 						
@@ -234,14 +235,14 @@ public class ASCIISource extends BasicSource
 			{
 				forecasted_values.put(forecast_id, hourly_values);
 				Runnable worker = new ASCIIEntryParser(forecasted_values);
-				executor.execute(worker);
+				Executor.execute(worker);
 			}
 			
 			System.out.println("All threads used to create insert statements have been created... (" + stopwatch.get_formatted_duration() + ")");
-			executor.shutdown();
-			while (!executor.isTerminated())
+			Executor.shutdown();
+			/*while (!executor.isTerminated())
 			{
-			}
+			}*/
 			System.out.println("Lines distributed. Currently saving to the database... (" + stopwatch.get_formatted_duration() + ")");
 		}
 		catch (IOException exception)
