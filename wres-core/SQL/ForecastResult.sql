@@ -6,7 +6,6 @@
 CREATE TABLE ForecastResult
 (
   forecast_id INT NOT NULL,
-  forecasted_time timestamp WITHOUT time zone NOT NULL,
   lead_time SMALLINT NOT NULL,
   measurements REAL[] NOT NULL,
   CONSTRAINT forecastresult_forecast_fk FOREIGN KEY (forecast_id)
@@ -18,4 +17,3 @@ WITH (
 );
 CREATE INDEX forecastresult_forecast_idx ON ForecastResult(forecast_id);
 CREATE INDEX forecastresult_lead_idx ON ForecastResult(lead_time);
-CREATE INDEX forecastresult_time_idx ON ForecastResult(forecasted_time);

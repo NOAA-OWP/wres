@@ -11,7 +11,7 @@ CREATE TABLE ObservationResult
   measurement DOUBLE PRECISION NOT NULL,
   CONSTRAINT observationresult_observation_fk FOREIGN KEY (observation_id)
 	REFERENCES Observation (observation_id) MATCH SIMPLE
-	ON UPDATE NO ACTION ON DELETE NO ACTION
+	ON UPDATE NO ACTION ON DELETE CASCADE
 )
 WITH (
   OIDS=FALSE

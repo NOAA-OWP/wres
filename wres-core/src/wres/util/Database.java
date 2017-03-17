@@ -74,7 +74,14 @@ public class Database extends ObjectPool<Connection> {
 			}
 			
 			System.err.println("The following SQL call failed:");
-			System.err.println(query);
+			if (query.length() > 1000)
+			{
+				System.err.println(query.substring(0, 1000));
+			}
+			else
+			{
+				System.err.println(query);
+			}
 			System.err.println();
 			
 			error.printStackTrace();
@@ -117,7 +124,14 @@ public class Database extends ObjectPool<Connection> {
 			}
 			
 			System.err.println("The following SQL call failed:");
-			System.err.println(query);
+			if (query.length() > 1000)
+			{
+				System.err.println(query.substring(0, 1000));
+			}
+			else
+			{
+				System.err.println(query);
+			}
 			System.err.println();
 			
 			error.printStackTrace();
@@ -163,7 +177,14 @@ public class Database extends ObjectPool<Connection> {
 			}
 			
 			System.err.println("The following SQL call failed:");
-			System.err.println(current_query);
+			if (current_query.length() > 1000)
+			{
+				System.err.println(current_query.substring(0, 1000));
+			}
+			else
+			{
+				System.err.println(current_query);
+			}
 			System.err.println();
 			
 			error.printStackTrace();
@@ -216,7 +237,14 @@ public class Database extends ObjectPool<Connection> {
 			}
 			
 			System.err.println("The following SQL call failed:");
-			System.err.println(current_query);
+			if (current_query.length() > 1000)
+			{
+				System.err.println(current_query.substring(0, 1000));
+			}
+			else
+			{
+				System.err.println(query);
+			}
 			System.err.println();
 			
 			error.printStackTrace();

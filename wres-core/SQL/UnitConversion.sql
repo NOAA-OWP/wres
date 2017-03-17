@@ -17,7 +17,4 @@ CREATE INDEX unitconversion_measurementunit_idx
 	(from_unit, to_unit);
 
 INSERT INTO UnitConversion(from_unit, to_unit, factor)
-VALUES (1, 1, 1),
-	(1, 2, 1),
-	(2, 1, 1),
-	(2, 2, 1);
+VALUES (1, 1, 1);

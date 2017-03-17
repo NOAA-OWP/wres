@@ -1,4 +1,4 @@
-﻿DELETE FROM Coordinte;
+﻿DELETE FROM Coordinate;
 
 INSERT INTO Coordinate (geographic_coordinate)
 WITH coordinates AS

@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import wres.concurrency.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -57,6 +58,7 @@ public class MainFunctions {
 		prototypes.put("-h", print_commands());
 		prototypes.put("meanerror", meanError());
 		prototypes.put("concurrentmeanerror", concurrentMeanError());
+		prototypes.put("systemmetrics", systemMetrics());
 		
 		return prototypes;
 	}
@@ -370,7 +372,7 @@ public class MainFunctions {
 				
 				try {
 					ResultSet results = Database.execute_for_result(script);
-					ExecutorService executor = Executors.newFixedThreadPool(10);
+					//ExecutorService executor = Executors.newFixedThreadPool(4);
 
 					script = "SELECT R.measurement, FR.measurements\n"
 							+ "FROM Forecast F\n"
@@ -403,7 +405,8 @@ public class MainFunctions {
 																				  (Double value) -> { 
 																					  return value * 25.4;
 																				  }); 
-						Future<Double> future_computation = executor.submit(computation);
+						//Future<Double> future_computation = executor.submit(computation);
+						Future<Double> future_computation = Executor.submit(computation);
 						computed_errors.put(lead, future_computation);
 					}					
 					
@@ -423,8 +426,8 @@ public class MainFunctions {
 						System.out.println(errors.get(lead_time));
 					}
 
-					executor.shutdown();
-					while (!executor.isTerminated()) {}
+					Executor.shutdown();
+					//while (!executor.isTerminated()) {}
 					
 				} catch (SQLException | InterruptedException | ExecutionException e) {
 					e.printStackTrace();
@@ -435,6 +438,29 @@ public class MainFunctions {
 				System.out.println("Not enough arguments were passed.");
 				System.out.println("*.jar getPairs <variable name> [<source name>]");
 			}
+		};
+	}
+	
+	private static final Consumer<String[]> systemMetrics()
+	{
+		return (String[] args) -> {
+			  /* Total number of processors or cores available to the JVM */
+			  System.out.println("Available processors (cores): " + 
+			  Runtime.getRuntime().availableProcessors());
+
+			  /* Total amount of free memory available to the JVM */
+			  System.out.println("Free memory (bytes): " + 
+			  Runtime.getRuntime().freeMemory());
+
+			  /* This will return Long.MAX_VALUE if there is no preset limit */
+			  long maxMemory = Runtime.getRuntime().maxMemory();
+			  /* Maximum amount of memory the JVM will attempt to use */
+			  System.out.println("Maximum memory (bytes): " + 
+			  (maxMemory == Long.MAX_VALUE ? "no limit" : maxMemory));
+
+			  /* Total memory currently in use by the JVM */
+			  System.out.println("Total memory (bytes): " + 
+			  Runtime.getRuntime().totalMemory());
 		};
 	}
 	
