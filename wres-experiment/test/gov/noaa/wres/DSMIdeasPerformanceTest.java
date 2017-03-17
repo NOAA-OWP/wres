@@ -15,6 +15,20 @@ import ucar.ma2.ArrayDouble;
 
 /**
  * Test class for performance of population and computation for different schemes of storing observed and forecast data.
+ * This has been written to, hopefully, allow for easily plugging in and testing different models. Within each test
+ * case, just implement the structure to use, wrap it in a {@link TestDataStore} translating calls to put and get for
+ * your specific structure. See the existing tests for examples.<br>
+ * <br>
+ * The observed and forecast data are populated via
+ * {@link #generateWhiteNoiseForecast(TestDataProvider, TestDataReceiver)} and
+ * {@link #generateWhiteNoiseObservations(TestDataReceiver)} noting that both are tracked via indices, not dates.
+ * Further, note that the calls make use of an issuance time, not valid time, meaning it may not match how WRES will
+ * store the data. Still, it will exercise the data structure assuming a one dimensional array of observations and a
+ * three dimensional array of forecasts (though your structure could implement it differently) wherein (issuance time
+ * index + lead time index) for a forecast will map to the corresponding paired observed value.<br>
+ * <br>
+ * Adjust the constants at the top of the class if you wish to modify the constraints of the test, specifically the
+ * number of issuance times, lead times, and ensemble members.
  * 
  * @author Hank.Herr
  */
@@ -22,7 +36,7 @@ import ucar.ma2.ArrayDouble;
 public class DSMIdeasPerformanceTest extends TestCase
 {
     //All sizes are communicated by these constants!!!
-    private final static int NUMBER_OF_ISSUETIMES = 1000;
+    private final static int NUMBER_OF_ISSUETIMES = 1000;//Only about three years of daily forecasts
     private final static int NUMBER_OF_LEADTIMES = 1400; //About one year of 6-hour forecasts
     private final static int NUMBER_OF_ENSEMBLE_MEMBERS = 50;
 
@@ -169,6 +183,7 @@ public class DSMIdeasPerformanceTest extends TestCase
             System.out.println("time to create Brownian motion ensemble forecast data: "
                 + watch.stop().elapsed(TimeUnit.MILLISECONDS) + " millis");
 
+            //Compute the mean error.
             watch.reset().start();
             final double meanError =
                                    computeMeanErrorBruteForce(observedValuesStore,
