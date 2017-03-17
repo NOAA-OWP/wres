@@ -196,7 +196,7 @@ public class MainFunctions {
 			{
 				String variable = args[0];
 				
-				String script = "SELECT F.forecast_date + INTERVAL '1 hour' * FR.lead_time AS forecast_time,\n"
+				String script = "SELECT F.forecast_date,\n"	
 								+ "		lead_time,\n"
 								+ "		R.measurement,\n"
 								+ "		FR.measurements\n"
@@ -218,7 +218,8 @@ public class MainFunctions {
 					script += "		AND F.source = '" + path.toAbsolutePath().toString() + "'\n";
 				}
 				
-				script += "ORDER BY forecast_time, FR.lead_time;";
+				script += "ORDER BY forecast_date, FR.lead_time\n"
+						+ "LIMIT 100;";
 				
 				try {
 					ResultSet results = Database.execute_for_result(script);
@@ -226,7 +227,13 @@ public class MainFunctions {
 					
 					while (results.next())
 					{
-
+						System.out.print("\t\t");
+						System.out.print(results.getInt("lead_time"));
+						System.out.print(" |\t\t");
+						System.out.print(results.getFloat("measurement"));
+						System.out.print(" |\t");
+						System.out.println(Utilities.toString((Float[])results.getArray("measurements").getArray()));
+						System.out.println();
 					}
 				} catch (SQLException e) {
 					e.printStackTrace();
@@ -426,7 +433,7 @@ public class MainFunctions {
 						System.out.println(errors.get(lead_time));
 					}
 
-					Executor.shutdown();
+					//Executor.shutdown();
 					//while (!executor.isTerminated()) {}
 					
 				} catch (SQLException | InterruptedException | ExecutionException e) {

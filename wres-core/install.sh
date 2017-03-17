@@ -6,5 +6,6 @@ if [ $# -lt 2 ]; then
     echo ''
 else
     ant
-    SQL/BuildDatabase $1 $2
+    cd SQL
+    ./BuildDatabase $1 $2
 fi

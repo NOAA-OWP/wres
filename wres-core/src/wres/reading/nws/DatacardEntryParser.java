@@ -22,7 +22,7 @@ public class DatacardEntryParser implements Runnable {
 	{
 		this.observation_id = observation_id;
 		this.dated_values = dated_values;
-		this.expression = new StringBuilder("INSERT INTO ObservationResult (observation_id, valid_date, measurement) VALUES ");
+		this.expression = new StringBuilder("INSERT INTO ObservationResult (observation_id, valid_date, measurement, observationlocation_id) VALUES ");
 	}
 
 	/* (non-Javadoc)
@@ -59,7 +59,7 @@ public class DatacardEntryParser implements Runnable {
 				expression.append(wres.util.Utilities.convert_date_to_string(valid_time));
 				expression.append("', ");
 				expression.append(dated_values.get(valid_time));
-				expression.append(")");
+				expression.append(", 1)");
 			}
 			
 			expression.append(";");

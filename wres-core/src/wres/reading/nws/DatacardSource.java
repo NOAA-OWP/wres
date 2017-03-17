@@ -450,10 +450,7 @@ public class DatacardSource extends BasicSource {
 			}
 			
 			System.out.println("Lines distributed. Currently saving to the database...");
-			//Executor.shutdown();
-			/*while (!executor.isTerminated())
-			{
-			}*/
+			Executor.shutdown();
 		}
 		catch (IOException exception)
 		{

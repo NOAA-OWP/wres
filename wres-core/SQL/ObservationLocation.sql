@@ -39,3 +39,14 @@ CREATE TABLE ObservationLocation
 WITH (
   OIDS=FALSE
 );
+
+CREATE INDEX observationlocation_comid_idx
+  ON public.observationlocation
+  USING btree
+  (comid);
+
+ CREATE INDEX observationlocation_latlon_idx
+  ON public.observationlocation
+  USING btree
+  (nws_lat, nws_lon);
+
