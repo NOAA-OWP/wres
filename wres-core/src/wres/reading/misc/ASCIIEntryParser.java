@@ -60,7 +60,7 @@ public class ASCIIEntryParser implements Runnable {
 				expression_builder.append(hour);
 				expression_builder.append(", '{");
 				expression_builder.append(values);
-				expression_builder.append("}')");
+				expression_builder.append("}', 1)");
 			}
 		}
 		
@@ -72,5 +72,5 @@ public class ASCIIEntryParser implements Runnable {
 	}
 	
 	private HashMap<Integer, HashMap<String, String[]>> forecasted_values;
-	private StringBuilder expression_builder = new StringBuilder("INSERT INTO ForecastResult(forecast_id, lead_time, measurements) VALUES ");;
+	private StringBuilder expression_builder = new StringBuilder("INSERT INTO ForecastResult(forecast_id, lead_time, measurements, observationlocation_id) VALUES ");
 }

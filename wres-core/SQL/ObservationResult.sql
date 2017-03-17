@@ -9,8 +9,12 @@ CREATE TABLE ObservationResult
   observation_id INT,
   valid_date TIMESTAMP NOT NULL,
   measurement DOUBLE PRECISION NOT NULL,
+  observationlocation_id INT NOT NULL,
   CONSTRAINT observationresult_observation_fk FOREIGN KEY (observation_id)
 	REFERENCES Observation (observation_id) MATCH SIMPLE
+	ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT observationresult_observationlocation_fk FOREIGN KEY (observationlocation_id)
+	REFERENCES ObservationLocation (observationlocation_id) MATCH SIMPLE
 	ON UPDATE NO ACTION ON DELETE CASCADE
 )
 WITH (
@@ -18,3 +22,4 @@ WITH (
 );
 CREATE INDEX observationresult_observation_idx ON ObservationResult(observation_id);
 CREATE INDEX observationresult_valid_date_idx ON ObservationResult(valid_date);
+CREATE INDEX observationresult_location_idx ON ObservationResult(observationlocation_id);

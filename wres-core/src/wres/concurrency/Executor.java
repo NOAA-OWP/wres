@@ -49,9 +49,8 @@ public class Executor {
 	{
 		if (!service.isShutdown())
 		{
-			service.shutdownNow();
-			//service.shutdown();
-			//while (!service.isTerminated());
+			service.shutdown();
+			while (!service.isTerminated());
 		}
 	}
 

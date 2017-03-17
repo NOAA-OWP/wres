@@ -231,6 +231,29 @@ public final class Utilities {
 		return concat;
 	}
 	
+	public static String toString(Float[] values)
+	{
+		String concat = "{";
+		boolean add_comma = false;
+		
+		for (float value : values)
+		{
+			if (add_comma)
+			{
+				concat += ", ";
+			}
+			else
+			{
+				add_comma = true;
+			}
+			
+			concat += String.valueOf(value);
+		}
+		
+		concat += "}";
+		return concat;
+	}
+	
 	public static int sum(Integer[] values)
 	{
 		int total = 0;
