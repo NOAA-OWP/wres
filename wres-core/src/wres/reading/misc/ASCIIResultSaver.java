@@ -11,12 +11,13 @@ import wres.util.Utilities;
  * @author ctubbs
  *
  */
-public class ASCIIEntryParser implements Runnable {
+public class ASCIIResultSaver implements Runnable {
 	
-	public ASCIIEntryParser(HashMap<Integer, HashMap<String, String[]>> forecasted_values)
+	public ASCIIResultSaver(HashMap<Integer, HashMap<String, String[]>> forecasted_values, Integer observationlocation_id)
 	{
 		//System.err.println("Thread created...");
 		this.forecasted_values = forecasted_values;
+		this.observationlocation_id = observationlocation_id;
 	}
 
 	/* (non-Javadoc)
@@ -58,17 +59,18 @@ public class ASCIIEntryParser implements Runnable {
 				expression_builder.append(hour);
 				expression_builder.append(", '{");
 				expression_builder.append(values);
-				expression_builder.append("}', 1)");
+				expression_builder.append("}', ");
+				expression_builder.append(observationlocation_id);
+				expression_builder.append(")");
 			}
 		}
 		
-
-		expression_builder.append(";");
-		
+		expression_builder.append(";");		
 		Database.execute(expression_builder.toString());
 
 	}
 	
 	private HashMap<Integer, HashMap<String, String[]>> forecasted_values;
+	private Integer observationlocation_id;
 	private StringBuilder expression_builder = new StringBuilder("INSERT INTO ForecastResult(forecast_id, lead_time, measurements, observationlocation_id) VALUES ");
 }

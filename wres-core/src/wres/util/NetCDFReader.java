@@ -12,7 +12,6 @@ import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFile;
 import ucar.ma2.Array;
-import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
 
 /**
