@@ -4,31 +4,20 @@
 package wres.reading.misc;
 
 import wres.reading.BasicSource;
-import wres.reading.BasicSeries;
 import wres.reading.SourceType;
 import wres.util.Database;
-import wres.reading.BasicSeriesEntry;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import wres.concurrency.Executor;
+import wres.data.Variable;
 
 /**
  * @author ctubbs
@@ -36,30 +25,48 @@ import wres.concurrency.Executor;
  */
 public class ASCIISource extends BasicSource 
 {
-
-    private static int THREAD_COUNT = 100;
     private static int MAX_INSERTS = 100;
+    private Integer observationlocation_id;
+    private String absolute_path;
+    private String variable_name;
 
 	public ASCIISource(String filename)
 	{
+		//TODO: Remove variable_name hardcoding
+		set_variable_name("precipitation");
 		set_filename(filename);
 		set_source_type(SourceType.ASCII);
 	}
 	
-	private String next_member_id()
+	private Integer get_observationlocation_id() throws SQLException
 	{
-		return String.valueOf(time_series.size());
+		if (observationlocation_id == null)
+		{
+			String location_name = Paths.get(get_filename()).getFileName().toString().split("_")[0];
+			String load_script = String.format(get_observationlocation_id_script, location_name);
+			ResultSet result = Database.execute_for_result(load_script);
+			observationlocation_id = result.getInt("observationlocation_id");
+		}
+		return observationlocation_id;
 	}
 	
-	@Override
-	public Date get_forecast_date()
+	private void set_variable_name(String variable_name)
 	{
-		Date forecasted_date = super.get_forecast_date();
-		if (time_series.size() > 0)
+		this.variable_name = variable_name;
+	}
+	
+	private String get_variable_name()
+	{
+		return variable_name;
+	}
+	
+	private String get_absolute_path()
+	{
+		if (absolute_path == null)
 		{
-			forecasted_date = time_series.get(0).get_forecast_date();
+			absolute_path = Paths.get(get_filename()).toAbsolutePath().toString();
 		}
-		return forecasted_date;
+		return absolute_path;
 	}
 
 	public void save_forecast() throws SQLException {
@@ -77,9 +84,6 @@ public class ASCIISource extends BasicSource
 			Database.execute(clear_statement);
 			
 			System.out.println("All previous data for this data source has been removed. Now saving forecast... (" + stopwatch.get_formatted_duration() + ")");
-			
-			// TODO: Implement Global Thread Pool
-			//ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
 
 			float current_step = 99999999.9f;
 			String line = "";
@@ -102,7 +106,7 @@ public class ASCIISource extends BasicSource
 						if (MAX_INSERTS <= insert_count)
 						{
 							insert_count = 0;
-							Runnable worker = new ASCIIEntryParser(forecasted_values);
+							Runnable worker = new ASCIIResultSaver(forecasted_values, get_observationlocation_id());
 							Executor.execute(worker);
 		                    forecasted_values = new HashMap<Integer, HashMap<String, String[]>>();
 						}
@@ -119,15 +123,11 @@ public class ASCIISource extends BasicSource
 			if (hourly_values.size() > 0)
 			{
 				forecasted_values.put(forecast_id, hourly_values);
-				Runnable worker = new ASCIIEntryParser(forecasted_values);
+				Runnable worker = new ASCIIResultSaver(forecasted_values, get_observationlocation_id());
 				Executor.execute(worker);
 			}
 			
-			System.out.println("All threads used to create insert statements have been created... (" + stopwatch.get_formatted_duration() + ")");
 			Executor.shutdown();
-			/*while (!executor.isTerminated())
-			{
-			}*/
 			System.out.println("Lines distributed. Currently saving to the database... (" + stopwatch.get_formatted_duration() + ")");
 		}
 		catch (IOException exception)
@@ -147,7 +147,7 @@ public class ASCIISource extends BasicSource
 	private int create_forecast(String line) throws SQLException
 	{
 		int forecast_id = 0;
-		String save_script = get_save_forecast_script();
+		String save_script = "No SQL statement has been written yet.";
 		String[] ascii = line.split("\\s+");
 		ResultSet results = null;
 
@@ -164,7 +164,7 @@ public class ASCIISource extends BasicSource
 			String formatted_date = ascii[0] + " " + hour + ":00:00.00";
 
 
-			save_script = String.format(save_script, formatted_date, lead);
+			save_script = get_save_forecast_script(formatted_date);
 
 			results = Database.execute_for_result(save_script);
 			
@@ -192,34 +192,21 @@ public class ASCIISource extends BasicSource
 	 * 
 	 * TODO: Move the script to a separate file so that it is easier to read and may be edited without recompiling
 	 */
-	private String get_save_forecast_script()
+	private String get_save_forecast_script(String formatted_date)
 	{
-		String script = "INSERT INTO Forecast (forecast_date, source, measurementunit_id, variable_id)";
-		script += System.lineSeparator();
-		// TODO: The following static values need to be evaluated rather than hardcoded
-		script += "SELECT '%s',";
-		script += System.lineSeparator();
-		script += "'";
-		script += Paths.get(get_filename()).toAbsolutePath().toString();
-		script += "',";
-		script += System.lineSeparator();
-		script += "1,";
-		script += System.lineSeparator();
-		script += "V.variable_id";
-		script += System.lineSeparator();
-		script += "FROM Variable V";
-		script += System.lineSeparator();
-		script += "WHERE V.variable_name = 'precipitation'";
-		script += System.lineSeparator();
-		script += "RETURNING forecast_id;";
-		
+		String script = save_forecast_script;
+		script = String.format(script, 
+							   formatted_date, 
+							   get_absolute_path(), 
+							   Variable.get_variable_id(get_variable_name()));		
 		return script;
 	}
-
-	// TODO: Implement the process of saving Tabular ASCII as observations
-	@Override
-	public void save_observation() throws SQLException {
-		System.err.println("Tabular ASCII source files don't currently have the ability to save as observation data.");
-	}
-
+	
+	private final String save_forecast_script = "INSERT INTO Forecast(forecast_date, source, measurementunit_id, variable_id)\n" +
+												"VALUES ('%s', '%s', 1, %d)\n" +
+												"RETURNING forecast_id;";
+	
+	private final String get_observationlocation_id_script = "SELECT observationlocation_id\n" +
+															 "FROM ObservationLocation\n" +
+															 "WHERE location_name = '%s';";
 }

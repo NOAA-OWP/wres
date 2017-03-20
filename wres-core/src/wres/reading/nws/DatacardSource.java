@@ -11,15 +11,9 @@ import java.nio.file.Paths;
 import java.sql.ResultSet;
 import wres.concurrency.Executor;
 import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,8 +27,8 @@ import wres.util.Database;
  */
 public class DatacardSource extends BasicSource {
 
-    private static int THREAD_COUNT = 50;
     private static int MAX_INSERTS = 100;
+    
 	/**
 	 * 
 	 */
@@ -218,14 +212,6 @@ public class DatacardSource extends BasicSource {
 	{
 		time_series_identifier = identifier.trim();
 	}
-	
-	@Override
-	public Date get_forecast_date()
-	{
-		Calendar cal = Calendar.getInstance();
-		cal.set(get_first_year(), get_first_month(), 1);
-		return cal.getTime();
-	}
 		
 	private String datatype_code = "";
 	private String data_dimensions_code = "";
@@ -241,11 +227,6 @@ public class DatacardSource extends BasicSource {
 	private String data_format = "";
 	private String missing_data_symbol = "-999.00";
 	private String accumulated_data_symbol = "-998.00";
-	@Override
-	public void save_forecast() {
-		// TODO Auto-generated method stub
-		
-	}
 
 	@Override
 	public void save_observation() throws Exception {

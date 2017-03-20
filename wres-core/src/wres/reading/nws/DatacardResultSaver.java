@@ -12,12 +12,12 @@ import wres.util.Database;
  * @author ctubbs
  *
  */
-public class DatacardEntryParser implements Runnable {
+public class DatacardResultSaver implements Runnable {
 
 	/**
 	 * 
 	 */
-	public DatacardEntryParser(String observation_id,
+	public DatacardResultSaver(String observation_id,
 							   HashMap<OffsetDateTime, String> dated_values) 
 	{
 		this.observation_id = observation_id;
