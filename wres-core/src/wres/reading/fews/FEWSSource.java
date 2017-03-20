@@ -18,21 +18,6 @@ public class FEWSSource extends BasicSource {
 		// TODO Auto-generated constructor stub
 	}
 
-	/* (non-Javadoc)
-	 * @see reading.BasicSource#read()
-	 */
-	@Override
-	public void read() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void write(String path) {
-		// TODO Auto-generated method stub
-		
-	}
-
 	@Override
 	public void save_forecast() {
 		// TODO Auto-generated method stub

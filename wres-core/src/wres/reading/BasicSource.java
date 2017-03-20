@@ -17,30 +17,14 @@ import wres.reading.nws.DatacardSource;
  */
 public abstract class BasicSource {
 	
-	public abstract void read() throws Exception;
-	public abstract void write(String path);
-	public abstract void save_forecast() throws SQLException;
-	public abstract void save_observation() throws Exception;
-	
-	@Deprecated
-	public static void write(BasicSource source, String path)
+	public void save_forecast() throws Exception
 	{
-		source.write(path);
+		throw new Exception("Forecasts may not be saved using this type of source.");
 	}
 	
-	@Deprecated
-	public final static void write(SourceType type, BasicSource source, String path)
+	public void save_observation() throws Exception
 	{
-		switch(type)
-		{
-		case DATACARD:
-			DatacardSource.write(source, path);
-		case ASCII:
-			ASCIISource.write(source, path);
-			break;
-		default:
-			write(source, path);
-		}
+		throw new Exception("Observations may not be saved using this type of source.");
 	}
 	
 	public void print()

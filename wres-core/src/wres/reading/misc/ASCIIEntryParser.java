@@ -26,9 +26,7 @@ public class ASCIIEntryParser implements Runnable {
 	public void run() {
 		// TODO Auto-generated method stub
 		try {
-			//System.err.println("Thread running...");
 			save_mapping();
-			//System.err.println("Thread completed...");
 		} 
 		catch (SQLException e) {
 			// TODO Auto-generated catch block

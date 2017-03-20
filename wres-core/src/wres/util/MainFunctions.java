@@ -45,8 +45,6 @@ public class MainFunctions {
 	{
 		Map<String, Consumer<String[]>> prototypes = new HashMap<String, Consumer<String[]>>();
 		
-		prototypes.put("loadwaterdata", loadWaterData());
-		prototypes.put("copywaterdata", copyWaterData());
 		prototypes.put("describenetcdf", describeNetCDF());
 		prototypes.put("connecttodb", connectToDB());
 		prototypes.put("saveforecast", saveForecast());
@@ -70,53 +68,6 @@ public class MainFunctions {
 			for (String command : functions.keySet())
 			{
 				System.out.println("\t" + command);
-			}
-		};
-	}
-	
-	private static final Consumer<String[]> loadWaterData()
-	{
-		return (String[] args) ->
-		{
-			if (args.length > 0)
-			{
-				try {
-					BasicSource source = SourceReader.get_source(args[0]);
-					source.read();
-					source.print();
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			else
-			{
-				System.out.println("A path is needed to load data. Please pass that in as the first argument.");
-				System.out.print("The current directory is:\t");
-				System.out.println(System.getProperty("user.dir"));
-			}
-		};
-	}
-
-	private static final Consumer<String[]> copyWaterData()
-	{
-		return (String[] args) ->{
-			if (args.length > 0)
-			{	String filename = args[0].replaceFirst("\\.", "_copy.");
-				try {
-					BasicSource source = SourceReader.get_source(args[0]);
-					source.read();
-					source.write(filename);
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			else
-			{
-				System.out.println("A path is needed to copy data. Please pass that in as the first argument.");
-				System.out.print("The current directory is:\t");
-				System.out.println(System.getProperty("user.dir"));
 			}
 		};
 	}
