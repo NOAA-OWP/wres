@@ -51,63 +51,6 @@ public class ASCIISource extends BasicSource
 		return String.valueOf(time_series.size());
 	}
 	
-	public static void write(BasicSource source, String path)
-	{
-		File file = new File(path);
-		
-		try {
-			file.createNewFile();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		try {
-			BufferedWriter writer = null;
-			String line = "";
-			DateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH");
-			Iterator<BasicSeries> time_series = source.get_series();
-			BasicSeries series = null;
-			while (time_series.hasNext())
-			{
-				series = time_series.next();
-				
-				if (writer == null)
-				{
-					writer = new BufferedWriter(new FileWriter(file));
-				}
-				
-				Iterator<BasicSeriesEntry> entry_iterator = series.get_entries();
-				
-				while (entry_iterator.hasNext())
-				{
-					BasicSeriesEntry entry = entry_iterator.next();
-					line = formatter.format(entry.date);
-					line += " ";
-					line += String.valueOf(entry.lead_time);
-					
-					for (Double value : entry.values)
-					{
-						line += " ";
-						line += String.valueOf(value);
-					}
-					
-					line += System.lineSeparator();
-					writer.write(line);
-				}
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	@Override
-	public void write(String path) {
-		write(this, path);
-		
-	}
-	
 	@Override
 	public Date get_forecast_date()
 	{
@@ -118,65 +61,7 @@ public class ASCIISource extends BasicSource
 		}
 		return forecasted_date;
 	}
-	
-	@Override
-	public void read() 
-	{
-		Path path = Paths.get(get_filename());
-		double current_lead_time = -1.0;
-		ASCIISeries series = new ASCIISeries();
-		try(BufferedReader reader = Files.newBufferedReader(path))
-		{
-			String line = null;
-			String[] ascii;
-			ASCIIEntry entry;
 
-			DateFormat formatter = new SimpleDateFormat("MM/dd/yyyy HH");
-			while ((line = reader.readLine()) != null)
-			{
-				entry = new ASCIIEntry();
-				ascii = line.split(" ");
-
-				entry.date = formatter.parse(ascii[0] + " " + ascii[1]);				
-				
-				if (series.get_ensemble_member_id().isEmpty())
-				{
-					series.set_ensemble_member_id(next_member_id());
-				}
-				
-				entry.lead_time = Double.parseDouble(ascii[2]);
-				
-				for (int i = 3; i < ascii.length; ++i)
-				{
-					entry.values.add(Double.parseDouble(ascii[i]));
-				}
-				
-				if (series.length() > 0 && entry.lead_time <= current_lead_time)
-				{
-					time_series.add(series);
-					current_lead_time = 0;
-					series = new ASCIISeries();
-				}
-				else if (series.length() > 0 && entry.lead_time > current_lead_time)
-				{
-					series.set_aggregation_period(entry.lead_time - current_lead_time);
-				}
-
-				current_lead_time = entry.lead_time;
-				series.add_entry(entry);
-			}			
-			time_series.add(series);
-		}
-		catch (IOException exception)
-		{
-			System.err.format("IOException: %s%n", exception);
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	@Override
 	public void save_forecast() throws SQLException {
 		Path path = Paths.get(get_filename());
 		
