@@ -28,7 +28,7 @@ subprojects
         mavenCentral()
         maven 
         {
-            url "http://repo.boundlessgeo.com/main/"
+            url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/"
         }
     }
 

@@ -73,16 +73,16 @@ public class DSMIdeasPerformanceTest extends TestCase
     }
 
     /**
-     * Populates the provided {@link TestDataStore} with Brownian motion time series generated for each issuance time
-     * (T0) starting with the observed value at the corresponding index from the provided {@link TestDataProvider}.
+     * Populates a 3-dimensional array of doubles with Brownian motion time series generated for each issuance time (T0)
+     * starting with the observed value at the corresponding index from the provided {@link TestDataProvider}.
      * 
      * @param observedData A {@link TestDataProvider} for which it is assumed the observed data is provided for each
      *            issuance time index with the the lead time and member indices both 0.
-     * @param dataStore The data store to record the fake forecasts.
      */
-    public void generateWhiteNoiseForecast(final TestDataProvider observedData,
-                                           final TestDataReceiver dataStore)
+    public double[][][] generateWhiteNoiseForecast(final TestDataProvider observedData)
     {
+        final double[][][] fcsts =
+                                 new double[NUMBER_OF_ISSUETIMES][NUMBER_OF_LEADTIMES][NUMBER_OF_ENSEMBLE_MEMBERS];
 
         //Index tracks the current T0.
         for(int issuanceTimeIndex =
@@ -101,10 +101,28 @@ public class DSMIdeasPerformanceTest extends TestCase
                                       0; leadTimeIndex < NUMBER_OF_LEADTIMES; leadTimeIndex++)
                 {
                     value = value + numberGen.nextGaussian();
-                    dataStore.putValue(issuanceTimeIndex,
-                                       leadTimeIndex,
-                                       memberIndex,
-                                       value);
+                    fcsts[issuanceTimeIndex][leadTimeIndex][memberIndex] =
+                                                                         value;
+                }
+            }
+        }
+        return fcsts;
+    }
+
+    /**
+     * @param data Primitive array of data to copy.
+     * @param dataStore The data store in which to copy the data.
+     */
+    public void copyDataIntoReceiver(final double[][][] data,
+                                     final TestDataReceiver dataStore)
+    {
+        for(int i = 0; i < data.length; i++)
+        {
+            for(int j = 0; j < data[i].length; j++)
+            {
+                for(int k = 0; k < data[i][j].length; k++)
+                {
+                    dataStore.putValue(i, j, k, data[i][j][k]);
                 }
             }
         }
@@ -178,9 +196,13 @@ public class DSMIdeasPerformanceTest extends TestCase
             System.out.println("time to create Brownian motion observed data: "
                 + watch.stop().elapsed(TimeUnit.MILLISECONDS) + " millis.");
             watch.reset().start();
-            generateWhiteNoiseForecast(observedValuesStore,
-                                       forecastValuesStore);
+            final double[][][] fcsts =
+                                     generateWhiteNoiseForecast(observedValuesStore);
             System.out.println("time to create Brownian motion ensemble forecast data: "
+                + watch.stop().elapsed(TimeUnit.MILLISECONDS) + " millis");
+            watch.reset().start();
+            copyDataIntoReceiver(fcsts, forecastValuesStore);
+            System.out.println("time to copy fcst data into store: "
                 + watch.stop().elapsed(TimeUnit.MILLISECONDS) + " millis");
 
             //Compute the mean error.
