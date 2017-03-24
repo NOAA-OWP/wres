@@ -23,6 +23,9 @@ public class SourceFactory {
 		case ASCII:
 			source = new wres.reading.misc.ASCIISource(filename);
 			break;
+		case NETCDF:
+			source = new wres.reading.ucar.NetCDFSource(filename);
+			break;
 		default:
 			String message = "The file '%s' is not a valid data file.";
 			throw new Exception(String.format(message, filename));
@@ -40,9 +43,13 @@ public class SourceFactory {
 		{
 			type = SourceType.ASCII;
 		}
-		if (filename.endsWith("map06"))
+		else if (filename.endsWith("map06"))
 		{
 			type = SourceType.DATACARD;
+		}
+		else if (filename.endsWith(".nc") || filename.endsWith(".gz"))
+		{
+			type = SourceType.NETCDF;
 		}
 
 		return type;

@@ -10,16 +10,26 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.Vector;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+
+import wres.concurrency.AsyncBatchExecutor;
 import wres.concurrency.Executor;
 import java.util.function.Consumer;
+
+import ucar.ma2.Array;
+import ucar.nc2.NetcdfFile;
 import wres.reading.BasicSource;
 import wres.reading.SourceReader;
 import wres.collections.Pair;
 import java.util.concurrent.Future;
 import wres.concurrency.FunctionRunner;
-import wres.concurrency.Metrics;;
+import wres.concurrency.Metrics;
+import wres.concurrency.SQLExecutor;
+import wres.data.Variable;;
 /**
  * @author ctubbs
  *
@@ -55,6 +65,7 @@ public class MainFunctions {
 		prototypes.put("meanerror", meanError());
 		prototypes.put("concurrentmeanerror", concurrentMeanError());
 		prototypes.put("systemmetrics", systemMetrics());
+		prototypes.put("loadxy", loadXYCoordinates());
 		
 		return prototypes;
 	}
@@ -328,12 +339,9 @@ public class MainFunctions {
 				
 				try {
 					ResultSet results = Database.execute_for_result(script);
-					//ExecutorService executor = Executors.newFixedThreadPool(4);
-
+					String variable_id = String.valueOf(Variable.get_variable_id(variable));
 					script = "SELECT R.measurement, FR.measurements\n"
 							+ "FROM Forecast F\n"
-							+ "INNER JOIN Variable V\n"
-							+ "		ON V.variable_id = F.variable_id\n"
 							+ "INNER JOIN Observation O\n"
 							+ "		ON O.variable_id = F.variable_id\n"
 							+ "INNER JOIN ForecastResult FR\n"
@@ -341,7 +349,7 @@ public class MainFunctions {
 							+ "INNER JOIN ObservationResult R\n"
 							+ "		ON R.observation_id = O.observation_id\n"
 							+ "			AND R.valid_date = F.forecast_date + (INTERVAL '1 hour' * FR.lead_time)\n"
-							+ "WHERE V.variable_name = '" + variable + "'\n"
+							+ "WHERE F.variable_id = '" + variable_id + "'\n"
 							+ "		AND F.forecast_date >= " + start_date + "\n"
 							+ "		AND F.forecast_date <= " + end_date + "\n";
 					
@@ -361,7 +369,7 @@ public class MainFunctions {
 																				  (Double value) -> { 
 																					  return value * 25.4;
 																				  }); 
-						//Future<Double> future_computation = executor.submit(computation);
+
 						Future<Double> future_computation = Executor.submit(computation);
 						computed_errors.put(lead, future_computation);
 					}					
@@ -457,6 +465,111 @@ public class MainFunctions {
 			{
 				System.out.println("There are not enough parameters to query the netcdf.");
 				System.out.println("usage: queryNetCDF <filename> <variable> [index0, index1,...indexN]");
+			}
+		};
+	}
+	
+	private static final Consumer<String[]> loadXYCoordinates()
+	{
+		return (String[] args) -> {
+			if (args.length > 0)
+			{
+				final String path = args[0];
+				int run_count = 1;
+				final String save_lat_lon_script = "INSERT INTO CoordinateIndex (\n"
+												+ "		x_position,\n"
+												+ "		y_position,\n"
+												+ "		resolution,\n"
+												+ "		x_coordinate,\n"
+												+ "		y_coordinate\n"
+												+ ")\n"
+												+ "VALUES ";
+				StringBuilder builder = new StringBuilder("--Run: ");
+				builder.append(run_count);
+				builder.append("\n");
+				builder.append(save_lat_lon_script);
+				
+				try
+				{
+					Database.execute("DELETE FROM CoordinateIndex;");
+					NetcdfFile ncdf = NetcdfFile.open(path);
+					ucar.nc2.Variable x_variable = ncdf.findVariable("x");
+					ucar.nc2.Variable y_variable = ncdf.findVariable("y");
+					
+					int x_length = x_variable.getDimension(0).getLength();
+					int y_length = y_variable.getDimension(0).getLength();
+					int resolution = x_variable.findAttribute("resolution").getNumericValue().intValue();
+					
+					int number_per_insert = 800;
+					int insert_count = 0;
+					
+					int x_index = 0;
+					int y_index = 0;
+					boolean add_comma = false;
+					
+					//int chunk_length = 500;
+					//int[] origin = null;
+					//int[] size;
+					Array y_vals = y_variable.read();
+					Array x_vals = x_variable.read();
+					
+					List<List<Object>> parameters = new Vector<List<Object>>();
+					List<Future<?>> database_queries = new ArrayList<Future<?>>();
+					for (x_index = 0; x_index < x_length; ++x_index)
+					{
+						for (y_index = 0; y_index < y_length; ++y_index)
+						{
+							if (insert_count > 0)
+							{
+								builder.append(", ");
+							}
+							
+							builder.append("(");
+							builder.append(x_index);
+							builder.append(", ");
+							builder.append(y_index);
+							builder.append(", ");
+							builder.append(resolution);
+							builder.append(", ");
+							builder.append(x_vals.getDouble(x_index));
+							builder.append(", ");
+							builder.append(y_vals.getDouble(y_index));
+							builder.append(")");
+							insert_count++;
+							if (insert_count >= number_per_insert)
+							{
+								builder.append(";");
+								Executor.submit(new SQLExecutor(builder.toString()));
+								//builder = new StringBuilder(save_lat_lon_script);
+								//add_comma = false;
+								insert_count = 0;
+								run_count++;
+								builder = new StringBuilder("--Run: ");
+								builder.append(run_count);
+								builder.append("\n");
+								builder.append(save_lat_lon_script);
+							}
+						}
+					}
+					
+					if (insert_count > 0)
+					{
+						builder.append(";");
+						Executor.submit(new SQLExecutor(builder.toString()));
+					}
+					
+					Executor.shutdown();
+					System.out.println("New coordinate data should have been added. Please double check.");
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+			else
+			{
+				System.out.println("There are not enough parameters to query the netcdf.");
+				System.out.println("usage: loadXYCoordiantes <filename>");
 			}
 		};
 	}

@@ -36,13 +36,13 @@ public class Executor {
 		return service.submit(task);
 	}
 	
-	public static void execute(Runnable task)
+	public static Future<?> execute(Runnable task)
 	{
 		if (service == null || service.isShutdown())
 		{
 			service = createService();
 		}
-		service.execute(task);
+		return service.submit(task);
 	}
 	
 	public static void shutdown()

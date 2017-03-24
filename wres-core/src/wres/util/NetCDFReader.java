@@ -7,6 +7,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import ucar.nc2.Variable;
 import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
@@ -117,13 +120,12 @@ public final class NetCDFReader {
                     }
                     
                     System.out.println("Some data are: ");
-                    //System.out.println(data.getObject(0));
+
                     try {
                 		int counter = 0;
                         Array data = var.read(origin, size);
                     	while (data.hasNext())
                     	{
-                			//System.out.print("\tAn acceptable value is: ");
                 			System.out.print("\t");
                 			System.out.print(data.next());
                 			System.out.print(" " + unit);
@@ -133,12 +135,18 @@ public final class NetCDFReader {
                 				counter = 0;
                 			}                    		
                     	}
-						//System.out.println(data.section(origin, size));
 					} catch (InvalidRangeException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-                    System.out.println("");
+                    
+                    if (get_path().endsWith(".gz"))
+                    {
+	                    // Removes the unpacked netcdf file from the file system
+	                    Files.deleteIfExists(Paths.get(get_path().replaceAll(".gz", "")));
+                    }
+                    
+                    System.out.println();
                 }
 			}
 		} 

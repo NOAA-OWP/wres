@@ -7,7 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
+import wres.data.definition.VariableDef;
 import wres.collections.RecentUseList;
 import wres.util.Database;
 
@@ -19,7 +19,7 @@ public class Variable {
 
 	private static final int MAX_DEFINITIONS = 10;
 	
-	private static Map<Integer, Definition> definitions = new ConcurrentHashMap<Integer, Definition>();
+	private static Map<Integer, VariableDef> definitions = new ConcurrentHashMap<Integer, VariableDef>();
 	private static Map<String, Integer> name_index = new ConcurrentHashMap<String, Integer>();
 	private static RecentUseList<Integer> recently_used_ids = new RecentUseList<Integer>();
 	
@@ -71,35 +71,37 @@ public class Variable {
 		return definitions.get(id).get_measurementunit_id();
 	}
 	
-	private static synchronized void load_by_id(int id)
+	private static synchronized boolean load_by_id(int id)
 	{
+		boolean loaded = false;
 		if (!definitions.containsKey(id))
 		{
 			String load_script = load_by_id + String.valueOf(id) + ";";
 			try {
-				Definition new_variable = new Definition(Database.execute_for_result(load_script));
+				VariableDef new_variable = new VariableDef(Database.execute_for_result(load_script));
 				String variable_name = new_variable.get_name();
 				name_index.put(variable_name, id);
 				definitions.put(id, new_variable);
-				
+				update_recently_used(id);
+				loaded = true;
 			} catch (SQLException e) {
 				System.err.println("The variable with id: '" + String.valueOf(id) + "' could not be loaded...");
 				e.printStackTrace();
 			}
 		}
 		
-		update_recently_used(id);
-		
+		return loaded;
 	}
 	
-	private static synchronized void load_by_name(String variable_name)
+	private static synchronized boolean load_by_name(String variable_name)
 	{
 		Integer id = null;
+		boolean loaded = false;
 		if (!name_index.containsKey(variable_name))
 		{
 			String load_script = load_by_name + variable_name + "';";
 			try {
-				Definition new_variable = new Definition(Database.execute_for_result(load_script));
+				VariableDef new_variable = new VariableDef(Database.execute_for_result(load_script));
 				id = new_variable.get_variable_id();
 				name_index.put(variable_name, id);
 				definitions.put(id, new_variable);
@@ -113,7 +115,10 @@ public class Variable {
 		if (id != null)
 		{
 			update_recently_used(id);
+			loaded = true;
 		}		
+		
+		return loaded;
 	}
 	
 	private static synchronized void update_recently_used(int id)
@@ -122,64 +127,33 @@ public class Variable {
 		if (recently_used_ids.size() >= MAX_DEFINITIONS)
 		{
 			int last_id = recently_used_ids.drop_last();
-			Definition last = definitions.get(last_id);
+			VariableDef last = definitions.get(last_id);
 			definitions.remove(last_id);
 			name_index.remove(last.get_name());
 		}
 	}
 	
-	private static class Definition
+	public static synchronized void add(VariableDef new_definition) throws Exception
 	{
-		public Definition(ResultSet result) throws SQLException
-		{
-			if (result.isBeforeFirst())
-			{
-				result.next();
-			}
-			
-			this.variable_id = result.getInt("variable_id");
-			this.variable_name = result.getString("variable_name");
-			this.variable_type = result.getString("variable_type");
-			this.description = result.getString("description");
-			this.measurementunit_id = result.getInt("measurementunit_id");
-		}
+		new_definition.validate();
 		
-		public int get_variable_id()
+		if (!load_by_name(new_definition.get_name()))
 		{
-			return variable_id;
+			String add = String.format(add_script,
+									   new_definition.get_name(),
+									   new_definition.get_type(),
+									   new_definition.get_description(),
+									   new_definition.get_measurementunit_id());
+			Database.execute(add);
+			load_by_name(new_definition.get_name());
 		}
-		
-		public String get_name()
-		{
-			return variable_name;
-		}
-		
-		public String get_type()
-		{
-			return variable_type;
-		}
-		
-		public String get_description()
-		{
-			return description;
-		}
-		
-		public int get_measurementunit_id()
-		{
-			return measurementunit_id;
-		}
-		
-		private int variable_id;
-		private String variable_name;
-		private String variable_type;
-		private String description;
-		private int measurementunit_id;
 	}
 	
 	private static final String load_by_id = "SELECT variable_name,\n"
 											  + "	variable_type,\n"
 											  + "	description,\n"
-											  + "	measurementunit_id\n"
+											  + "	measurementunit_id,\n"
+											  + "	variable_id\n"
 											  + "FROM Variable\n"
 											  + "WHERE variable_id = ";
 	
@@ -187,6 +161,20 @@ public class Variable {
 											   + "	variable_type,\n"
 											   + "	description,\n"
 											   + "	measurementunit_id,\n"
+											   + "	variable_name\n"
 											   + "FROM Variable\n"
 											   + "WHERE variable_name = '";
+	
+	private static final String add_script = "INSERT INTO Variable (\n"
+											+ "		variable_name,\n"
+											+ "		variable_type,\n"
+											+ "		description,\n"
+											+ "		measurementunit_id\n"
+											+ ")\n"
+											+ "SELECT '%s', '%s', '%s', %d\n"
+											+ "WHERE NOT EXISTS (\n"
+											+ "		SELECT 1\n"
+											+ "		FROM Variable\n"
+											+ "		WHERE variable_name == '%s'\n"
+											+ ");";
 }

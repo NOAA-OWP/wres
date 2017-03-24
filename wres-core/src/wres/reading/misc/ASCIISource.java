@@ -27,12 +27,12 @@ public class ASCIISource extends BasicSource
 {
     private static int MAX_INSERTS = 100;
     private Integer observationlocation_id;
-    private String absolute_path;
     private String variable_name;
+    private Integer variable_id;
 
 	public ASCIISource(String filename)
 	{
-		//TODO: Remove variable_name hardcoding
+		//TODO: Remove variable_name hard coding
 		set_variable_name("precipitation");
 		set_filename(filename);
 		set_source_type(SourceType.ASCII);
@@ -50,6 +50,15 @@ public class ASCIISource extends BasicSource
 		return observationlocation_id;
 	}
 	
+	private Integer get_variable_id()
+	{
+		if (variable_id == null)
+		{
+			variable_id = Variable.get_variable_id(get_variable_name());
+		}
+		return variable_id;
+	}
+	
 	private void set_variable_name(String variable_name)
 	{
 		this.variable_name = variable_name;
@@ -58,15 +67,6 @@ public class ASCIISource extends BasicSource
 	private String get_variable_name()
 	{
 		return variable_name;
-	}
-	
-	private String get_absolute_path()
-	{
-		if (absolute_path == null)
-		{
-			absolute_path = Paths.get(get_filename()).toAbsolutePath().toString();
-		}
-		return absolute_path;
 	}
 
 	public void save_forecast() throws SQLException {
@@ -142,7 +142,7 @@ public class ASCIISource extends BasicSource
 	 * @param line The line of ASCII that needs to be parsed
 	 * @return The ID of the new forecast
 	 * @throws SQLException A SQLException is thrown if something goes awry when connecting to the database,
-	 * sending the query, or interpretting the result
+	 * sending the query, or interpreting the result
 	 */
 	private int create_forecast(String line) throws SQLException
 	{
@@ -197,8 +197,8 @@ public class ASCIISource extends BasicSource
 		String script = save_forecast_script;
 		script = String.format(script, 
 							   formatted_date, 
-							   get_absolute_path(), 
-							   Variable.get_variable_id(get_variable_name()));		
+							   get_absolute_filename(), 
+							   get_variable_id());		
 		return script;
 	}
 	
@@ -208,5 +208,5 @@ public class ASCIISource extends BasicSource
 	
 	private final String get_observationlocation_id_script = "SELECT observationlocation_id\n" +
 															 "FROM ObservationLocation\n" +
-															 "WHERE location_name = '%s';";
+															 "WHERE lid = '%s';";
 }
