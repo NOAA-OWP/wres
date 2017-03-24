@@ -7,6 +7,8 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class Utilities {
 	
@@ -296,5 +298,37 @@ public final class Utilities {
 	public static double mean(Double[] values)
 	{
 		return sum(values)/values.length;
+	}
+	
+	public static String extract_word(String source, String pattern)
+	{
+		String matched_string = null;
+		Pattern regex = Pattern.compile(pattern);
+		Matcher match = regex.matcher(source);
+		
+		if (match.find())
+		{
+			matched_string = match.group();
+		}
+		return matched_string;
+	}
+	
+	public static String[] extract_words(String source, String pattern)
+	{
+		String[] matches = null;
+		
+		Pattern regex = Pattern.compile(pattern);
+		Matcher match = regex.matcher(source);
+		
+		if (match.find())
+		{
+			matches = new String[match.groupCount() + 1];
+			for (int match_index = 0; match_index <= match.groupCount(); ++match_index)
+			{
+				matches[match_index] = match.group(match_index);
+			}
+		}
+				
+		return matches;
 	}
 }

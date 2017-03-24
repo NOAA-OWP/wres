@@ -3,6 +3,8 @@
  */
 package wres.reading;
 
+import java.nio.file.Paths;
+
 /**
  * @author ctubbs
  *
@@ -29,6 +31,15 @@ public abstract class BasicSource {
 		filename = name;
 	}
 	
+	protected String get_absolute_filename()
+	{
+		if (absolute_filename == null)
+		{
+			absolute_filename = Paths.get(get_filename()).toAbsolutePath().toString();
+		}
+		return absolute_filename;
+	}
+	
 	public SourceType get_source_type()
 	{
 		return source_type;
@@ -40,6 +51,6 @@ public abstract class BasicSource {
 	}
 	
 	private String filename = "";
-	
+	private String absolute_filename;
 	private SourceType source_type = SourceType.UNDEFINED;
 }

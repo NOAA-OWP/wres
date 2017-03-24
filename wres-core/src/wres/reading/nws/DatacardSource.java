@@ -10,6 +10,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import wres.concurrency.Executor;
+import wres.data.Variable;
+
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -33,6 +35,8 @@ public class DatacardSource extends BasicSource {
 	 * 
 	 */
 	public DatacardSource(String filename) {
+		// TODO: Remove hard coding for variable name
+		set_variable_name("precipitation");
 		set_filename(filename);
 		set_source_type(SourceType.DATACARD);
 	}
@@ -45,26 +49,6 @@ public class DatacardSource extends BasicSource {
 	public void set_datatype_code(String code)
 	{
 		datatype_code = code.trim();
-	}
-	
-	public String get_data_dimensions_code()
-	{
-		return data_dimensions_code;
-	}
-	
-	public void set_data_dimensions_code(String code)
-	{
-		data_dimensions_code = code.trim();
-	}
-	
-	public String get_data_units_code()
-	{
-		return data_units_code;
-	}
-	
-	public void set_data_units_code(String code)
-	{
-		data_units_code = code.trim();
 	}
 	
 	public int get_time_interval()
@@ -162,26 +146,11 @@ public class DatacardSource extends BasicSource {
 		return values_per_record;
 	}
 	
-	public void set_values_per_record(int amount)
-	{
-		values_per_record = amount;
-	}
-	
 	public void set_values_per_record(String amount)
 	{
 		amount = amount.trim();
-		set_values_per_record(Integer.parseInt(amount));
+		values_per_record = Integer.parseInt(amount);
 	}
-	
-	public String get_data_format()
-	{
-		return data_format;
-	}
-	
-	public void set_data_format(String format)
-	{
-		data_format = format.trim();
-	}	
 	
 	public String get_missing_data_symbol()
 	{
@@ -212,21 +181,11 @@ public class DatacardSource extends BasicSource {
 	{
 		time_series_identifier = identifier.trim();
 	}
-		
-	private String datatype_code = "";
-	private String data_dimensions_code = "";
-	private String data_units_code = "";
-	private int time_interval = 0;
-	private String time_series_identifier = "";
-	private String series_description = "";
-	private int first_month = 0;
-	private int first_year = 0;
-	private int last_month = 0;
-	private int last_year = 0;
-	private int values_per_record = 0;
-	private String data_format = "";
-	private String missing_data_symbol = "-999.00";
-	private String accumulated_data_symbol = "-998.00";
+	
+	private Integer get_variable_id()
+	{
+		return Variable.get_variable_id(get_variable_name());
+	}
 
 	@Override
 	public void save_observation() throws Exception {
@@ -258,8 +217,6 @@ public class DatacardSource extends BasicSource {
 			if ((line = reader.readLine()) != null)
 			{
 				set_datatype_code(line.substring(14, 18));
-				set_data_dimensions_code(line.substring(19, 23));
-				set_data_units_code(line.substring(24, 28));
 				set_time_interval(line.substring(29, 31));
 				set_time_series_identifier(line.substring(34, 46));
 				set_series_description(line.substring(49, 69));
@@ -277,7 +234,6 @@ public class DatacardSource extends BasicSource {
 				set_last_month(line.substring(9, 12));
 				set_last_year(line.substring(14, 18));
 				set_values_per_record(line.substring(19, 21));
-				set_data_format(line.substring(24, 32));
 			}
 			else
 			{
@@ -309,7 +265,7 @@ public class DatacardSource extends BasicSource {
 					
 					if (entry_count >= MAX_INSERTS)
 					{
-						Runnable worker = new DatacardEntryParser(observation_id, dated_values);
+						Runnable worker = new DatacardResultSaver(observation_id, dated_values);
 						Executor.execute(worker);
 						dated_values = new HashMap<OffsetDateTime, String>();
 						entry_count = 0;
@@ -321,7 +277,7 @@ public class DatacardSource extends BasicSource {
 			
 			if (entry_count > 0)
 			{
-				Runnable worker = new DatacardEntryParser(observation_id, dated_values);
+				Runnable worker = new DatacardResultSaver(observation_id, dated_values);
 				Executor.execute(worker);
 			}
 			
@@ -364,27 +320,43 @@ public class DatacardSource extends BasicSource {
 	
 	private void clear_stale_observations() throws SQLException
 	{
-		String clear_script = "DELETE FROM Observation WHERE source = '" + get_filename() + "';";
+		String clear_script = "DELETE FROM Observation WHERE source = '" + get_absolute_filename() + "';";
 		Database.execute(clear_script);
 	}
 	
 	private String get_save_observation_script()
 	{
-		String script = "INSERT INTO Observation (source, variable_id, measurementunit_id)";
-		script += System.lineSeparator();
-		script += "SELECT '";
-		script += get_filename();
-		script += "',";
-		script += System.lineSeparator();
-		script += "v.variable_id,";
-		script += System.lineSeparator();
-		script += "1";
-		script += System.lineSeparator();
-		script += "FROM Variable V";
-		script += System.lineSeparator();
-		script += "WHERE v.variable_name = 'precipitation'";
-		script += System.lineSeparator();
-		script += "RETURNING observation_id;";
-		return script;
+		//TODO: Stop hard coding the measurement unit id
+		return String.format(save_observation_script, 
+							 get_absolute_filename(),
+							 get_variable_id(),
+							 1);
 	}
+	
+	private void set_variable_name(String variable_name)
+	{
+		this.variable_name = variable_name;
+	}
+	
+	private String get_variable_name() 
+	{
+		return variable_name;
+	}
+
+	private final String save_observation_script = "INSERT INTO Observation (source, variable_id, measurementunit_id)\n" +
+			   									   "VALUES ('%s', %d, %d)\n" +
+			   									   "RETURNING observation_id;";
+
+	private String variable_name;
+	private String datatype_code = "";
+	private int time_interval = 0;
+	private String time_series_identifier = "";
+	private String series_description = "";
+	private int first_month = 0;
+	private int first_year = 0;
+	private int last_month = 0;
+	private int last_year = 0;
+	private int values_per_record = 0;
+	private String missing_data_symbol = "-999.00";
+	private String accumulated_data_symbol = "-998.00";
 }

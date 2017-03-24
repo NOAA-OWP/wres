@@ -1,9 +1,11 @@
 package wres.util;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
@@ -97,6 +99,58 @@ public class Database extends ObjectPool<Connection> {
 		}
 		
 		return success;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <T> T get_result(final String query, String label) throws SQLException
+	{
+		ResultSet results = null;
+		Connection connection = null;
+		Statement statement = null;
+		T result = null;
+		
+		try
+		{
+			connection = pool().check_out();
+			statement = connection.createStatement();
+			results = statement.executeQuery(query);
+			
+			if (results.isBeforeFirst())
+			{
+				results.next();
+				result = (T) results.getObject(label);
+			}
+		}
+		catch (SQLException error)
+		{
+			if (connection != null)
+			{
+				connection.rollback();
+			}
+			
+			System.err.println("The following SQL call failed:");
+			if (query.length() > 1000)
+			{
+				System.err.println(query.substring(0, 1000));
+			}
+			else
+			{
+				System.err.println(query);
+			}
+			System.err.println();
+			
+			error.printStackTrace();
+			throw error;
+		}
+		finally
+		{			
+			if (connection != null)
+			{
+				connection_pool.checkIn(connection);
+			}
+		}
+		
+		return result;
 	}
 	
 	public static ResultSet execute_for_result(final String query) throws SQLException
@@ -201,6 +255,108 @@ public class Database extends ObjectPool<Connection> {
 		}
 	}
 	
+	public static void execute_prepared(String script, Object...params) throws SQLException
+	{
+		Connection connection = null;
+		try
+		{
+			connection = pool().check_out();
+			connection.setAutoCommit(false);
+			
+			PreparedStatement statement = connection.prepareStatement(script);
+			for (int param_index = 1; param_index <= params.length; ++param_index)
+			{
+				statement.setObject(param_index, params[param_index - 1]);
+			}
+			statement.execute();
+			connection.commit();
+		}
+		catch (SQLException error)
+		{
+			if (connection != null)
+			{
+				connection.rollback();
+			}
+			
+			System.err.println("The following SQL call failed:");
+			if (script.length() > 1000)
+			{
+				System.err.println(script.substring(0, 1000));
+			}
+			else
+			{
+				System.err.println(script);
+			}
+			System.err.println();
+			
+			error.printStackTrace();
+			throw error;
+		}
+		finally
+		{
+			
+			if (connection != null)
+			{
+				connection.setAutoCommit(true);
+				connection_pool.checkIn(connection);
+			}
+		}
+	}
+	
+	public static void batch_execute_prepared(String script, List<List<Object>> params) throws SQLException
+	{
+		Connection connection = null;
+		try
+		{
+			connection = pool().check_out();
+			
+			PreparedStatement statement = connection.prepareStatement(script);
+			for (List<Object> param_set : params)
+			{
+				for (int param_index = 1; param_index <= param_set.size(); ++param_index)
+				{
+					statement.setObject(param_index, param_set.get(param_index - 1));
+				}
+				statement.addBatch();
+			}
+			statement.executeBatch();
+		}
+		catch (SQLException error)
+		{
+			if (connection != null)
+			{
+				connection.rollback();
+			}
+			
+			System.err.println("The following SQL call failed:");
+			if (script.length() > 1000)
+			{
+				System.err.println(script.substring(0, 1000));
+			}
+			else
+			{
+				System.err.println(script);
+			}
+			System.err.println();
+			
+			error.printStackTrace();
+			
+			if (error.getMessage().toLowerCase().contains("call getnextexception"))
+			{
+				error.getNextException().printStackTrace();
+			}
+			throw error;
+		}
+		finally
+		{
+			
+			if (connection != null)
+			{
+				connection_pool.checkIn(connection);
+			}
+		}
+	}
+	
 	public static Map<String, ResultSet> execute_for_results(final Map<String, String> queries) throws SQLException
 	{
 		Map<String, ResultSet> results = new TreeMap<String, ResultSet>();
@@ -211,7 +367,6 @@ public class Database extends ObjectPool<Connection> {
 		try
 		{
 			connection = pool().check_out();
-			connection.setAutoCommit(false);
 			
 			for (String query_name : queries.keySet())
 			{
@@ -243,7 +398,7 @@ public class Database extends ObjectPool<Connection> {
 			}
 			else
 			{
-				System.err.println(query);
+				System.err.println(current_query);
 			}
 			System.err.println();
 			
