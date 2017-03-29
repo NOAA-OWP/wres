@@ -54,6 +54,7 @@ public abstract class ConfigurationUnit<T> implements Configurable
      * Create a deep copy of the {@link ConfigurationUnit} with a prescribed identifier.
      * 
      * @param id the identifier
+     * @return a deep copy of the {@link ConfigurationUnit}
      */
 
     public abstract T deepCopy(SimpleIdentifier id);

@@ -1,7 +1,6 @@
 package wres.configcontrol.config.project;
 
 import java.net.URI;
-// Imports
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -10,7 +9,6 @@ import org.junit.Test;
 
 import com.google.common.testing.EqualsTester;
 
-// WRES dependencies
 import wres.configcontrol.config.CompoundIdentifier;
 
 /**

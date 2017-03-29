@@ -5,22 +5,24 @@ package wres.configcontrol.datamodel.spacetimeobject;
 
 /**
  * @author ctubbs
- *
  */
-public abstract class SpaceTimeVector extends SpaceTimeObject {
+public abstract class SpaceTimeVector extends SpaceTimeObject
+{
 
-	/**
-	 * @param identifier
-	 */
-	public SpaceTimeVector(String identifier) {
-		super(identifier);
-	}
+    /**
+     * @param identifier the identifier
+     */
+    public SpaceTimeVector(final String identifier)
+    {
+        super(identifier);
+    }
 
-	/**
-	 * 
-	 */
-	public SpaceTimeVector() {
-		super();
-	}
+    /**
+     * 
+     */
+    public SpaceTimeVector()
+    {
+        super();
+    }
 
 }
