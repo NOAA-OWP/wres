@@ -33,8 +33,8 @@ public final class DataIdentifier implements Comparable<DataIdentifier>
     /**
      * Construct a data identifier.
      * 
-     * @param id the Identifier
-     * @param context the URI to the data store that contains the {@link #id}
+     * @param id the identifier
+     * @param context the URI to the data store that contains the identifier
      * @throws ConfigurationException if one or both of the inputs are null
      */
 

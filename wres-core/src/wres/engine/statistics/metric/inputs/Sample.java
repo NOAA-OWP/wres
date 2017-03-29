@@ -1,0 +1,21 @@
+package wres.engine.statistics.metric.inputs;
+
+/**
+ * Identifies a dataset that represents a statistical sample.
+ * 
+ * @author james.brown@hydrosolved.com
+ */
+
+public interface Sample<U>
+{
+
+    /**
+     * Returns the sample size associated with the dataset. For a skill score, this comprises the sample size used in
+     * the numerator, in case the denominator has a different sample size.
+     * 
+     * @return the sample size
+     */
+
+    U getSampleSize();
+
+}

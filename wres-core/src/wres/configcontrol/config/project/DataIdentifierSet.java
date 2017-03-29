@@ -8,7 +8,7 @@ import wres.configcontrol.config.SimpleIdentifier;
 import wres.util.DeepCopy;
 
 /**
- * A set of {@link DataIdentifier} in insertion order. Use {@link this#fluentAdd(DataIdentifier)} to add
+ * A set of {@link DataIdentifier} in insertion order. Use {@link #fluentAdd(DataIdentifier)} to add
  * {@link DataIdentifier} fluently.
  * 
  * @author james.brown@hydrosolved.com
