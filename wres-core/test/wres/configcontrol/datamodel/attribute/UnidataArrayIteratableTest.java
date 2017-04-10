@@ -25,7 +25,8 @@ public class UnidataArrayIteratableTest extends TestCase
                 data.set(i, j, i * 10 + j);
             }
         }
-        final UnidataArrayIterable<Double> iterator = new UnidataArrayIterable<Double>(data);
+        final UnidataArrayIterable<Double> iterator =
+                                                    new UnidataArrayIterable<Double>(data);
 
         double checkValue = 0.0;
         for(final Double d: iterator)
@@ -40,8 +41,8 @@ public class UnidataArrayIteratableTest extends TestCase
     }
 
     /**
-     * Confirm error when instantiating an {@link ArrayDouble} and attempting to use it within an {@link UnidataArrayIterable}
-     * of type {@link String}.
+     * Confirm error when instantiating an {@link ArrayDouble} and attempting to use it within an
+     * {@link UnidataArrayIterable} of type {@link String}.
      */
     public void test2ErrorTestOfMappingArrayDoubleToStringIterable()
     {
@@ -57,26 +58,28 @@ public class UnidataArrayIteratableTest extends TestCase
         try
         {
             final UnidataArrayIterable<String> iterator =
-                                                 new UnidataArrayIterable<String>(data);
+                                                        new UnidataArrayIterable<String>(data);
             for(final String d: iterator)
             {
                 System.out.println("Did not expect success..." + d);
             }
             fail("Expected to fail while attempting to access ArrayDouble.D2 through Strings, but it didn't fail.");
         }
-        catch(final Throwable t)
+        catch(final ClassCastException e)
         {
             //Failure expected due to attempt at mapping an ArrayDouble to a String iterator.
+            System.out.println("Expected error was received: "
+                + e.getMessage());
         }
     }
 
     /**
-     * Confirm error when instantiating an {@link ArrayInt} and attempting to use it within an {@link UnidataArrayIterable} of
-     * type {@link Double}.
+     * Confirm error when instantiating an {@link ArrayInt} and attempting to use it within an
+     * {@link UnidataArrayIterable} of type {@link Double}.
      */
     public void test3ErrorTestOfMappingArrayDoubleToIntegerIterable()
     {
-        final ArrayInt.D2 data = new ArrayInt.D2(10, 10);
+        final ArrayDouble.D2 data = new ArrayDouble.D2(10, 10);
 
         for(int i = 0; i < 10; i++)
         {
@@ -88,16 +91,18 @@ public class UnidataArrayIteratableTest extends TestCase
         try
         {
             final UnidataArrayIterable<Integer> iterator =
-                                                  new UnidataArrayIterable<Integer>(data);
+                                                         new UnidataArrayIterable<Integer>(data);
             for(final Integer d: iterator)
             {
                 System.out.println("Did not expect success..." + d);
             }
             fail("Expected to fail while attempting to access ArrayDouble.D2 through Integers, but it didn't fail.");
         }
-        catch(final Throwable t)
+        catch(final ClassCastException e)
         {
             //Failure expected due to attempt at mapping an ArrayDouble to a String iterator.
+            System.out.println("Expected error was received: "
+                + e.getMessage());
         }
     }
 }
