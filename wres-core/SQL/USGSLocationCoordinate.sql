@@ -1,21 +1,30 @@
-﻿-- Table: public.USGSLocationCoordinate
+﻿-- Table: public.usgslocationcoordinate
 
--- DROP TABLE public.USGSLocationCoordinate;
+DROP TABLE IF EXISTS public.usgslocationcoordinate CASCADE;
 
-CREATE TABLE public.USGSLocationCoordinate
+CREATE TABLE IF NOT EXISTS public.usgslocationcoordinate
 (
-	coordinate_id INT,
-	observationlocation_id INT,
-	CONSTRAINT usgslocationcoordinate_coordinate_fk FOREIGN KEY (coordinate_id)
-		REFERENCES Coordinate (coordinate_id) MATCH SIMPLE
-		ON UPDATE NO ACTION ON DELETE CASCADE,
-	CONSTRAINT usgslocationcoordinate_observationlocation_fk FOREIGN KEY (observationlocation_id)
-		REFERENCES ObservationLocation (observationlocation_id) MATCH SIMPLE
-		ON UPDATE NO ACTION ON DELETE CASCADE
+  coordinate_id integer,
+  observationlocation_id integer,
+  CONSTRAINT usgslocationcoordinate_coordinate_fk FOREIGN KEY (coordinate_id)
+      REFERENCES public.coordinate (coordinate_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE
+      DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT usgslocationcoordinate_observationlocation_fk FOREIGN KEY (observationlocation_id)
+      REFERENCES public.observationlocation (observationlocation_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE
+      DEFERRABLE INITIALLY DEFERRED
 )
 WITH (
   OIDS=FALSE
 );
 
-CREATE INDEX usgslocationcoordinate_coordinate_idx
-ON USGSLocationCoordinate(coordinate_id);
+-- Index: public.usgslocationcoordinate_coordinate_idx
+
+DROP INDEX IF EXISTS public.usgslocationcoordinate_coordinate_idx;
+
+CREATE INDEX IF NOT EXISTS usgslocationcoordinate_coordinate_idx
+  ON public.usgslocationcoordinate
+  USING btree
+  (coordinate_id);
+

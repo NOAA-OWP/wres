@@ -61,7 +61,7 @@
     <target name="build_jar" depends="build">
         <jar destfile="${dir.jarfile}/wres-core.jar" filesetmanifest="mergewithoutmain">
             <manifest>
-                <attribute name="Main-Class" value="wres.Main"/>
+                <attribute name="Main-Class" value="Main"/>
                 <attribute name="Class-Path" value="."/>
             </manifest>
             <fileset dir="${dir.jarfile}/bin"/>
