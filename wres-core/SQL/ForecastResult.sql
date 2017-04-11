@@ -1,24 +1,42 @@
-﻿-- Table: ForecastResult
+﻿-- Table: public.forecastresult
 
---DELETE FROM Forecast;
---DROP TABLE ForecastResult;
+DROP TABLE IF EXISTS public.forecastresult CASCADE;
 
-CREATE TABLE ForecastResult
+CREATE TABLE IF NOT EXISTS public.forecastresult
 (
-  forecast_id INT NOT NULL,
-  lead_time SMALLINT NOT NULL,
-  measurements REAL[] NOT NULL,
-  observationlocation_id INT not null,
-  CONSTRAINT forecastresult_forecast_fk FOREIGN KEY (forecast_id)
-	REFERENCES Forecast (forecast_id) MATCH SIMPLE
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT forecastresult_observationlocation_fk FOREIGN KEY (observationlocation_id)
-	REFERENCES ObservationLocation (observationlocation_id) MATCH SIMPLE
-	ON UPDATE NO ACTION ON DELETE CASCADE
+  forecast_id integer NOT NULL,
+  lead_time smallint NOT NULL,
+  measurements real[] NOT NULL,
+  observationlocation_id integer NOT NULL
 )
 WITH (
   OIDS=FALSE
 );
-CREATE INDEX forecastresult_forecast_idx ON ForecastResult(forecast_id);
-CREATE INDEX forecastresult_lead_idx ON ForecastResult(lead_time);
-CREATE INDEX forecastresult_location_idx ON ForecastResult(observationlocation_id);
+
+-- Index: public.forecastresult_forecast_idx
+
+DROP INDEX IF EXISTS public.forecastresult_forecast_idx;
+
+CREATE INDEX IF NOT EXISTS forecastresult_forecast_idx
+  ON public.forecastresult
+  USING btree
+  (forecast_id);
+
+-- Index: public.forecastresult_lead_idx
+
+DROP INDEX IF EXISTS public.forecastresult_lead_idx;
+
+CREATE INDEX IF NOT EXISTS forecastresult_lead_idx
+  ON public.forecastresult
+  USING btree
+  (lead_time);
+
+-- Index: public.forecastresult_location_idx
+
+DROP INDEX IF EXISTS public.forecastresult_location_idx;
+
+CREATE INDEX IF NOT EXISTS forecastresult_location_idx
+  ON public.forecastresult
+  USING btree
+  (observationlocation_id);
+

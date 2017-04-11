@@ -1,17 +1,19 @@
 ﻿-- Table: public.variablenetcdfsource
 
--- DROP TABLE public.variablenetcdfsource;
+DROP TABLE IF EXISTS public.variablenetcdfsource CASCADE;
 
-CREATE TABLE public.variablenetcdfsource
+CREATE TABLE IF NOT EXISTS public.variablenetcdfsource
 (
   variable_id integer NOT NULL,
-  netcdfsource_id INTEGER NOT NULL,
-  CONSTRAINT variablenetcdfsource_variable_fk FOREIGN KEY (variable_id)
-	REFERENCES public.variable (variable_id)
-	ON UPDATE NO ACTION ON DELETE CASCADE,
+  netcdfsource_id integer NOT NULL,
   CONSTRAINT variablenetcdfsource_netcdfsource_fk FOREIGN KEY (netcdfsource_id)
-	REFERENCES public.netcdfsource (netcdfsource_id)
-	ON UPDATE NO ACTION ON DELETE CASCADE
+      REFERENCES public.netcdfsource (netcdfsource_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE
+      DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT variablenetcdfsource_variable_fk FOREIGN KEY (variable_id)
+      REFERENCES public.variable (variable_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE
+      DEFERRABLE INITIALLY DEFERRED
 )
 WITH (
   OIDS=FALSE
@@ -19,18 +21,18 @@ WITH (
 
 -- Index: public.variablenetcdfsouce_netcdfsource_idx
 
--- DROP INDEX public.variablenetcdfsouce_netcdfsource_idx;
+DROP INDEX IF EXISTS public.variablenetcdfsouce_netcdfsource_idx;
 
-CREATE INDEX variablenetcdfsouce_netcdfsource_idx
+CREATE INDEX IF NOT EXISTS variablenetcdfsouce_netcdfsource_idx
   ON public.variablenetcdfsource
   USING btree
   (netcdfsource_id);
 
--- Index: public.variable_variable_name_idx
+-- Index: public.variablenetcdfsouce_variable_idx
 
--- DROP INDEX public.variable_variable_name_idx;
+DROP INDEX IF EXISTS public.variablenetcdfsouce_variable_idx;
 
-CREATE INDEX variablenetcdfsouce_variable_idx
+CREATE INDEX IF NOT EXISTS variablenetcdfsouce_variable_idx
   ON public.variablenetcdfsource
   USING btree
   (variable_id);

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 3 ]; then
     echo ''
-    echo 'usage: ./install.sh <database username> <database name>'
+    echo 'usage: ./install.sh <database username> <database host> <database name>'
     echo ''
 else
     ant
     cd SQL
-    ./BuildDatabase $1 $2
+    ./BuildDatabase $1 $2 $3
 fi

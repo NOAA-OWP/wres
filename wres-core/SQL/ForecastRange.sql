@@ -1,20 +1,20 @@
-﻿-- Table: ForecastRange
+﻿-- Table: public.forecastrange
 
--- DROP TABLE ForecastRange;
+DROP TABLE IF EXISTS public.forecastrange CASCADE;
 
-CREATE TABLE ForecastRange
+CREATE TABLE IF NOT EXISTS public.forecastrange
 (
-  forecastrange_id serial,
+  forecastrange_id SERIAL,
   range_name text NOT NULL,
-  timestep SMALLINT NOT NULL,
-  added_date TIMESTAMP DEFAULT now(),
+  timestep smallint NOT NULL,
+  added_date timestamp without time zone DEFAULT now(),
   CONSTRAINT forecastrange_pk PRIMARY KEY (forecastrange_id)
 )
 WITH (
   OIDS=FALSE
 );
 
- INSERT INTO ForecastRange (range_name, timestep)
- VALUES ('short', 1),
-	('medium', 6),
-	('long', 24);
+INSERT INTO public.ForecastRange (range_name, timestep)
+VALUES	('short',1),
+	('medium',6),
+	('long',24);

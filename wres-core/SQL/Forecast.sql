@@ -1,31 +1,35 @@
-﻿-- Table: Forecast
+﻿-- Table: public.forecast
 
--- DROP TABLE Forecast;
+DROP TABLE IF EXISTS public.forecast CASCADE;
 
-CREATE TABLE Forecast
+CREATE TABLE IF NOT EXISTS public.forecast
 (
-  forecast_id serial,
-  forecast_date TIMESTAMP NOT NULL,
+  forecast_id SERIAL,
+  forecast_date timestamp without time zone NOT NULL,
   source text NOT NULL,
   measurementunit_id smallint NOT NULL,
-  variable_id SMALLINT NOT NULL,
-  CONSTRAINT forecast_pk PRIMARY KEY (forecast_id),
-  CONSTRAINT forecast_measurementunit_fk FOREIGN KEY (measurementunit_id)
-	REFERENCES MeasurementUnit (measurementunit_id) MATCH SIMPLE
-	ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT forecast_variable_fk FOREIGN KEY (variable_id)
-	REFERENCES Variable (variable_id) MATCH SIMPLE
-	ON UPDATE NO ACTION ON DELETE NO ACTION
+  variable_id smallint NOT NULL,
+  CONSTRAINT forecast_pk PRIMARY KEY (forecast_id)
 )
 WITH (
   OIDS=FALSE
 );
 
-CREATE INDEX forecast_forecast_date_idx
+-- Index: public.forecast_forecast_date_idx
+
+DROP INDEX IF EXISTS public.forecast_forecast_date_idx;
+
+CREATE INDEX IF NOT EXISTS forecast_forecast_date_idx
   ON public.forecast
   USING btree
   (forecast_date);
 
-CREATE INDEX forecast_source_idx
-  ON public.forecast 
-  USING btree (source);
+-- Index: public.forecast_source_idx
+
+DROP INDEX IF EXISTS public.forecast_source_idx;
+
+CREATE INDEX IF NOT EXISTS forecast_source_idx
+  ON public.forecast
+  USING btree
+  (source COLLATE pg_catalog."default");
+
