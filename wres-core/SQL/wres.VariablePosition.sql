@@ -1,0 +1,31 @@
+﻿-- Table: wres.variableposition
+
+CREATE SCHEMA IF NOT EXISTS wres;
+
+DROP TABLE IF EXISTS wres.variableposition CASCADE;
+
+CREATE TABLE IF NOT EXISTS wres.variableposition
+(
+  variableposition_id serial NOT NULL,
+  variable_id integer,
+  x_position integer,
+  y_position integer,
+  CONSTRAINT variableposition_pk PRIMARY KEY (variableposition_id),
+  CONSTRAINT variableposition_variable_fk FOREIGN KEY (variable_id)
+      REFERENCES wres.variable (variable_id)
+      ON DELETE CASCADE
+      DEFERRABLE INITIALLY DEFERRED
+)
+WITH (
+  OIDS=FALSE
+);
+
+-- Index: wres.variableposition_variable_idx
+
+-- DROP INDEX IF EXISTS wres.variableposition_variable_idx;
+
+CREATE INDEX IF NOT EXISTS variableposition_variable_idx
+  ON wres.variableposition
+  USING btree
+  (variable_id);
+

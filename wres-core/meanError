@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    echo ''
+    echo 'usage: ./meanError <variable name>'
+    echo ''
+else
+    java -Xmx3500m -jar wres-core.jar meanError $@
+fi
