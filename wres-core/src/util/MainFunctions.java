@@ -54,7 +54,8 @@ public final class MainFunctions {
 	public static final void call(String operation, String[] args)
 	{
 		operation = operation.toLowerCase();
-		functions.get(operation).accept(args);		
+		functions.get(operation).accept(args);
+		//Database.commit();	
 		Executor.complete();
 	}
 	
@@ -308,7 +309,12 @@ public final class MainFunctions {
 				{
 					if (connection != null)
 					{
-						Database.return_connection(connection);
+						try {
+							Database.return_connection(connection);
+						} catch (SQLException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 				}
 			}
@@ -422,7 +428,12 @@ public final class MainFunctions {
 				{
 					if (connection != null)
 					{
-						Database.return_connection(connection);
+						try {
+							Database.return_connection(connection);
+						} catch (SQLException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 				}
 			}

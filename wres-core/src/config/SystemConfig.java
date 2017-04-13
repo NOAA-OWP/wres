@@ -7,6 +7,8 @@ import java.sql.SQLException;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+
 import config.DatabaseConfig;
 
 /**
@@ -88,6 +90,14 @@ public final class SystemConfig extends reading.XMLReader {
 				{
 					maximum_inserts = Integer.parseInt(tag_value(reader));
 				}
+				else if (reader.getLocalName().equalsIgnoreCase("maximum_copies"))
+				{
+					maximum_copies = Integer.parseInt(tag_value(reader));
+				}
+				else if (reader.getLocalName().equalsIgnoreCase("project_directory"))
+				{
+					project_directory = tag_value(reader);
+				}
 			}
 		}
 		catch (Exception error)
@@ -142,6 +152,26 @@ public final class SystemConfig extends reading.XMLReader {
 		return Configuration.maximum_inserts;
 	}
 	
+	public static int maximum_copies()
+	{
+		return Configuration.maximum_copies;
+	}
+	
+	public static String project_directory()
+	{
+		return Configuration.project_directory;
+	}
+	
+	public static String get_database_type()
+	{
+		return Configuration.database_configuration.get_database_type();
+	}
+	
+	public static ComboPooledDataSource get_connection_pool()
+	{
+		return Configuration.database_configuration.create_datasource();
+	}
+	
 	@Override
 	/**
 	 * Returns a multiline description of all set values for the configuration
@@ -163,6 +193,9 @@ public final class SystemConfig extends reading.XMLReader {
 		string_rep += "Maximum number of inserts into the database at any given time:\t";
 		string_rep += String.valueOf(maximum_inserts);
 		string_rep += System.lineSeparator();
+		string_rep += "Project XML is stored in:\t";
+		string_rep += String.valueOf(project_directory);
+		string_rep += System.lineSeparator();
 		
 		if (database_configuration != null)
 		{
@@ -179,4 +212,6 @@ public final class SystemConfig extends reading.XMLReader {
 	private int pool_object_lifespan = 30000;
 	private int fetch_size = 100;
 	private int maximum_inserts = 5000;
+	private int maximum_copies = 200;
+	private String project_directory = "projects";
 }

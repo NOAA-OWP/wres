@@ -66,8 +66,8 @@ project(':wres-core')
     {
         compile project(':utilities')
 
-        runtime 'edu.ucar:cdm:4.6.8'
-        runtime 'org.postgresql:postgresql:42.0.0'
+        compile 'edu.ucar:cdm:4.6.8'
+        compile 'org.postgresql:postgresql:42.0.0'
 
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
