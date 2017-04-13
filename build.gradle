@@ -37,6 +37,7 @@ subprojects
         maxHeapSize = "3072m"
         testLogging.showStandardStreams = true
     }
+
 }
 
 project(':utilities')
@@ -59,7 +60,7 @@ project(':utilities')
 project(':wres-core')
 {
     apply plugin: 'application'
-    mainClassName = 'wres.HelloWorld'
+    mainClassName = 'Main'
 
     dependencies
     {
@@ -70,6 +71,16 @@ project(':wres-core')
 
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
+    }
+
+    # Allows this:
+    # gradlew run -PappArgs="['saveForecast','/path/to/file']"
+    run
+    {
+        if (project.hasProperty("appArgs"))
+        {
+            args Eval.me(appArgs)
+        }
     }
 }
 
