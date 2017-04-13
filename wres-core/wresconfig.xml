@@ -7,11 +7,16 @@
         <name>ctubbs</name>
 		<port>5432</port>
 		<database_type>postgresql</database_type>
+        <max_idle_time>40</max_idle_time>
+        <!-- Warning: Default max connections is 100; approaching
+             that will cause deadlocks-->
+        <max_pool_size>80</max_pool_size>
 	</database>
-	<maximum_thread_count>30</maximum_thread_count>
-	<pool_object_lifespan>20000</pool_object_lifespan>
+	<maximum_thread_count>80</maximum_thread_count>
 	<fetch_size>500</fetch_size>
-    <maximum_inserts>5000</maximum_inserts>
+    <maximum_inserts>900</maximum_inserts>
+    <maximum_copies>400</maximum_copies>
+    <project_directory>projects</project_directory>
     <!--IOEP Username: pguser-->
     <!--IOEP Password: pass-->
     <!--IOEP database name: WRESDBTEST-->

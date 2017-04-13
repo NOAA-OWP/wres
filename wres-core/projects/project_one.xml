@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projects>
+    <project>
+        <name>Example Project</name>
+        <observations lazy_load="true">
+            <directories>
+                <directory load_all="false">
+                    <path>/resources/</path>
+                    <file file_type="PIXML">DRRC2SQIN.xml</file>
+                </directory>
+            </directories>
+            <conditions>
+                <dates earliest="NA" latest="NA"/>
+                <values minimum="-infinity" maximum="infinity"/>
+            </conditions>
+            <variables>
+                <variable name="QINE" />
+            </variables>
+        </observations>
+        <forecasts lazy_load="true">
+            <directories>
+                <directory load_all="false">
+                    <path>/resources/forecasts/</path>
+                    <file file_type="PIXML">
+                        1985010112_DRRC2_SQIN_case_gefs_climatology_export.xml
+                    </file>
+                </directory>
+            </directories>
+            <conditions>
+                <dates earliest="NA" latest="NA"/>
+                <values minimum="-infinity" maximum="infinity" />
+            </conditions>
+            <variable name="SQIN" />
+            <ensembles all="true">
+            </ensembles>
+        </forecasts>
+        <metrics>
+            <metric type="mean_error" join_on_feature="false" measurement="CFS">
+                <name>Complete Mean Error</name>
+                <output combine_output="false">
+                    <graphic output="false" path="" format=""/>
+                    <numeric output="true" path="numeric_output" format="xml" />
+                </output>
+                <observation>
+                    <conditions>
+                        <dates earliest="NA" latest="NA" />
+                        <values minimum="-infinity" maximum="infinity"/>
+                    </conditions>
+                    <aggregation aggregate="false" range="1" unit="hour" mode="mean" />
+                    <variable name="QINE" />
+                    <features all="false">
+                        <feature>
+                            <lid>DRRC2HLF</lid>
+                            <comid></comid>
+                            <gage_id></gage_id>
+                            <huc></huc>
+                            <name>DOLORES - RICO, BLO</name>
+                        </feature>
+                        <!--<polygon>
+                            <point x="92" y="89"/>
+                            <point x="3032" y="2901"/>
+                            <point x="1000" y="1548"/>
+                        </polygon>-->
+                        <!--<range index_1="42" index_2="20000"/>-->
+                    </features>
+                </observation>
+                <forecast>
+                    <conditions>
+                        <dates earliest="NA" latest="NA" />
+                        <values minimum="-infinity" maximum="infinity" />
+                    </conditions>
+                    <aggregation aggregate="false" range="1" unit="hour" mode="mean" />
+                    <variable name="SQIN" />
+                    <features all="false">
+                        <feature>
+                            <lid>DCCR2HSF</lid>
+                            <comid></comid>
+                            <gage_id></gage_id>
+                            <huc></huc>
+                            <name>DOLORES - RICO, BLO</name>
+                        </feature>
+                        <!--<polygon>
+                            <point x="92" y="89"/>
+                            <point x="3032" y="2901"/>
+                            <point x="1000" y="1548"/>
+                        </polygon>-->
+                        <!--<range index_1="42" index_2="20000"/>-->
+                    </features>
+                    <ensembles all="true">
+                        <ensemble name="MEFP" qualifier="SIM1" member_id="1961"/>
+                    </ensembles>
+                </forecast>
+            </metric>
+        </metrics>
+    </project>
+</projects>

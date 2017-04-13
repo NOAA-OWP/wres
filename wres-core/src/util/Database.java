@@ -1,34 +1,39 @@
 package util;
 
+import java.io.IOException;
+import java.io.PushbackReader;
+import java.io.StringReader;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import com.mchange.v2.c3p0.C3P0ProxyConnection;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyManager;
+
 import config.SystemConfig;
 
-public class Database extends ObjectPool<Connection> {
+public class Database {
 		
-	private static Database connection_pool = null;
+	private static ComboPooledDataSource pool = SystemConfig.get_connection_pool();
 	
-	private static synchronized Database pool()
+	public static void close()
 	{
-		if (connection_pool == null)
-		{
-			connection_pool = new Database();
-		}
-		
-		return connection_pool;
+		pool.close();
 	}
 	
-	public static Connection get_connection()
+	public static Connection get_connection() throws SQLException
 	{
-		return pool().check_out();
+		return pool.getConnection();
 	}
 	
-	public static void return_connection(Connection conn)
+	public static void return_connection(Connection conn) throws SQLException
 	{
-		pool().checkIn(conn);
+		conn.close();
 	}
 	
 	public static boolean execute(final String query) throws SQLException
@@ -39,7 +44,7 @@ public class Database extends ObjectPool<Connection> {
 		
 		try
 		{
-			connection = pool().check_out();
+			connection = get_connection();
 			statement = connection.createStatement();
 			success = statement.execute(query);
 		}
@@ -69,21 +74,76 @@ public class Database extends ObjectPool<Connection> {
 			
 			if (connection != null)
 			{
-				connection_pool.checkIn(connection);
+				return_connection(connection);
 			}
 		}
 		
 		return success;
 	}
 	
-	@Override
-	public synchronized void checkIn(Connection connection) {
-		try {
-			connection.commit();
-		} catch (SQLException e) {
-			e.printStackTrace();
+	public static boolean copy(final String table_definition, final String values, String delimiter) throws Exception
+	{
+		if (!SystemConfig.get_database_type().equalsIgnoreCase("postgresql"))
+		{
+			return translate_copy_to_insert(table_definition, values, delimiter);
 		}
-		super.checkIn(connection);
+		
+		Connection connection = null;
+		boolean success = false;
+		
+		
+		try
+		{
+			connection = get_connection();
+			C3P0ProxyConnection proxy = (C3P0ProxyConnection)connection;
+			Method get_copy_api = PGConnection.class.getMethod("getCopyAPI", new Class[]{});
+			Object[] arg = new Object[]{};
+			CopyManager manager = (CopyManager)proxy.rawConnectionOperation(get_copy_api, 
+																			C3P0ProxyConnection.RAW_CONNECTION, arg);
+			
+			String copy_definition = "COPY " + table_definition + " FROM STDIN WITH DELIMITER ";
+			if (!delimiter.startsWith("'")){
+				delimiter = "'" + delimiter;
+			}
+			
+			if (!delimiter.endsWith("'"))
+			{
+				delimiter += "'";
+			}
+			
+			copy_definition += delimiter;
+
+			PushbackReader reader = new PushbackReader(new StringReader(""), values.length() + 1000);
+			reader.unread(values.toCharArray());
+			manager.copyIn(copy_definition, reader);
+
+			success = true;
+		}
+		catch (SQLException | IOException error)
+		{
+			System.err.println("Data could not be copied to the database:" + System.lineSeparator());
+			System.err.println(values);
+			System.err.println();
+			
+			throw error;
+		}
+		finally
+		{
+			
+			if (connection != null)
+			{
+				return_connection(connection);
+			}
+		}
+		
+		return success;
+	}
+	
+	private static boolean translate_copy_to_insert(final String table_definition, final String values, String delimiter) throws SQLException
+	{
+		boolean success = false;
+		
+		return success;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -96,7 +156,7 @@ public class Database extends ObjectPool<Connection> {
 		
 		try
 		{
-			connection = pool().check_out();
+			connection = get_connection();
 			statement = connection.createStatement();
 			statement.setFetchSize(1);
 			results = statement.executeQuery(query);
@@ -108,12 +168,7 @@ public class Database extends ObjectPool<Connection> {
 			}
 		}
 		catch (SQLException error)
-		{
-			if (connection != null)
-			{
-				connection.rollback();
-			}
-			
+		{			
 			System.err.println("The following SQL call failed:");
 			if (query.length() > 1000)
 			{
@@ -132,7 +187,7 @@ public class Database extends ObjectPool<Connection> {
 		{			
 			if (connection != null)
 			{
-				connection_pool.checkIn(connection);
+				return_connection(connection);
 			}
 		}
 		
@@ -147,7 +202,7 @@ public class Database extends ObjectPool<Connection> {
 		
 		try
 		{
-			connection = pool().check_out();
+			connection = get_connection();
 			
 			for (String query : queries)
 			{
@@ -158,12 +213,7 @@ public class Database extends ObjectPool<Connection> {
 			}
 		}
 		catch (SQLException error)
-		{
-			if (connection != null)
-			{
-				connection.rollback();
-			}
-			
+		{			
 			System.err.println("The following SQL call failed:");
 			if (current_query.length() > 1000)
 			{
@@ -183,54 +233,9 @@ public class Database extends ObjectPool<Connection> {
 			
 			if (connection != null)
 			{
-				connection_pool.checkIn(connection);
+				return_connection(connection);
 			}
 		}
-	}
-	
-	@Override
-	public boolean validate(Connection o) {
-		boolean valid = false;
-		
-		try
-		{
-			valid = !o.isClosed();
-		}
-		catch (SQLException error)
-		{
-			error.printStackTrace();
-		}
-		
-		return valid;
-	}
-
-	@Override
-	public void expire(Connection o) {
-		try
-		{
-			o.commit();
-			o.close();
-		}
-		catch (SQLException error)
-		{
-			error.printStackTrace();
-		}
-		
-	}
-
-	@Override
-	protected Connection create() {
-		Connection connection = null;
-		try
-		{
-			connection = SystemConfig.get_database_connection();
-		}
-		catch (SQLException error)
-		{
-			error.printStackTrace();
-		}
-		
-		return connection;
 	}
 
 }
