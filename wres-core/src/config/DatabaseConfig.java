@@ -3,6 +3,7 @@
  */
 package config;
 
+import java.beans.PropertyVetoException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -12,6 +13,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
 import javax.xml.stream.XMLStreamReader;
+
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.mchange.v2.c3p0.cfg.C3P0Config;
+import com.mchange.v2.log.MLog;
 
 /**
  * Contains access to configured settings and objects for accessing the database
@@ -65,6 +70,27 @@ public final class DatabaseConfig {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public ComboPooledDataSource create_datasource()
+	{
+		ComboPooledDataSource datasource = new ComboPooledDataSource();
+		
+		try {
+			datasource.setDriverClass(driver_mapping.get(get_database_type()));
+			datasource.setJdbcUrl(get_connection_string());
+			datasource.setUser(username);
+			datasource.setPassword(password);
+			datasource.setAutoCommitOnClose(true);
+			datasource.setMaxIdleTime(max_idle_time);
+			datasource.setMaxPoolSize(max_pool_size);
+			datasource.setMinPoolSize(max_pool_size);
+		} catch (PropertyVetoException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return datasource;
 	}
 	
 	/**
@@ -221,11 +247,22 @@ public final class DatabaseConfig {
 				case "username":
 					set_username(value);
 					break;
+				case "max_pool_size":
+					max_pool_size = Integer.parseInt(value);
+					break;
+				case "max_idle_time":
+					max_idle_time = Integer.parseInt(value);
+					break;
 				default:
 					System.err.println("Tag of type: '" + tag_name + "' is not valid for database configuration.");
 				}
 			}
 		}
+	}
+	
+	public String get_database_type()
+	{
+		return this.database_type;
 	}
 	
 	@Override
@@ -271,4 +308,6 @@ public final class DatabaseConfig {
 	private String database_name = null;
 	private String database_type = null;
 	private String connection_string = null;
+	private int max_pool_size = 10;
+	private int max_idle_time = 30;
 }

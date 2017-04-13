@@ -14,7 +14,8 @@ import java.io.FileReader;
  * @author Tubbs
  *
  */
-public class XMLReader {
+public class XMLReader 
+{
 
 	/**
 	 * 
@@ -55,8 +56,6 @@ public class XMLReader {
 		
 		if (reader.isStartElement() && (reader.next() == XMLStreamConstants.CHARACTERS))
 		{
-			//int begin_index = reader.getTextStart();
-			//int end_index = reader.getTextLength();
 			value = reader.getText().trim();
 		}
 		

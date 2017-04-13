@@ -5,6 +5,8 @@ package util;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import config.SystemConfig;
 
@@ -30,6 +32,11 @@ public abstract class ObjectPool<T> {
 	protected final int object_count()
 	{
 		return locked.size() + unlocked.size();
+	}
+	
+	protected synchronized final void for_all(BiConsumer<T, Long> all_func)
+	{
+		unlocked.forEach(all_func);
 	}
 	
 	protected abstract T create();
