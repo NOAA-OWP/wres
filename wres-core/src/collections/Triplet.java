@@ -6,7 +6,7 @@ package collections;
 /**
  * A mutable grouping of three values
  */
-public class Triplet<T, U, V> {
+public class Triplet<T extends Comparable<T>, U extends Comparable<U>, V extends Comparable<V>> implements Comparable<Triplet<T, U, V>> {
 
 	/**
 	 * Creates a grouping of three null values
@@ -24,6 +24,12 @@ public class Triplet<T, U, V> {
 		this.item_one = item_one;
 		this.item_two = item_two;
 		this.item_three = item_three;
+	}
+
+	@Override
+	public int compareTo(Triplet<T, U, V> o) {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 	
 	// The first item in the grouping
