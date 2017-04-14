@@ -73,8 +73,8 @@ project(':wres-core')
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
     }
 
-    # Allows this:
-    # gradlew run -PappArgs="['saveForecast','/path/to/file']"
+    // Allows this:
+    // gradlew run -PappArgs="['saveForecast','/path/to/file']"
     run
     {
         if (project.hasProperty("appArgs"))
