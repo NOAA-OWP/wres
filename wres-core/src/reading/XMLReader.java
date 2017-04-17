@@ -5,6 +5,10 @@ package reading;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamConstants;
 import java.io.FileNotFoundException;
@@ -16,6 +20,9 @@ import java.io.FileReader;
  */
 public class XMLReader 
 {
+    private final String filename;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(XMLReader.class);
 
 	/**
 	 * 
@@ -23,33 +30,47 @@ public class XMLReader
 	public XMLReader(String filename) {
 		this.filename = filename;		
 	}
-	
+
 	protected String get_filename()
 	{
 		return filename;
 	}
-	
+
 	public void parse()
 	{
+	    XMLStreamReader reader = null;
 		try
 		{
-			XMLStreamReader reader = create_reader();
+			reader = create_reader();
 			
 			while (reader.hasNext())
 			{
 				parse_element(reader);
 				reader.next();
 			}
-			
-			reader.close();
-			
 		}
 		catch (XMLStreamException | FileNotFoundException error)
 		{
-			error.printStackTrace();
+			LOGGER.error(error.getMessage());
+		}
+		finally
+		{
+		    if (reader != null)
+		    {
+		        try
+		        {
+		            reader.close();
+		        }
+		        catch (XMLStreamException xse)
+		        {
+		            // not much we can do at this point
+		            LOGGER.warn("Exception while closing file {}: {}",
+		                        this.filename, xse);
+		        }
+		    }
 		}
 	}
-	
+
 	protected String tag_value(XMLStreamReader reader) throws XMLStreamException
 	{
 		String value = null;
@@ -61,13 +82,13 @@ public class XMLReader
 		
 		return value;
 	}
-	
+
 	protected XMLStreamReader create_reader() throws FileNotFoundException, XMLStreamException
 	{
 		XMLInputFactory factory = XMLInputFactory.newFactory();
 		return factory.createXMLStreamReader(new FileReader(get_filename()));
 	}
-	
+
 	protected void parse_element(XMLStreamReader reader)
 	{
 		switch (reader.getEventType())
@@ -100,6 +121,4 @@ public class XMLReader
 			break;
 		}
 	}
-
-	private String filename = "";
 }

@@ -24,7 +24,7 @@ public abstract class ObjectPool<T> {
 	 * 
 	 */
 	public ObjectPool() {
-		expirationTime = SystemConfig.pool_object_lifespan();
+		expirationTime = SystemConfig.instance().get_pool_object_lifespan();
 		locked = new Hashtable<T, Long>();
 		unlocked = new Hashtable<T, Long>();
 	}
