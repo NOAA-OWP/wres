@@ -7,6 +7,9 @@ import java.sql.SQLException;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import config.DatabaseConfig;
@@ -14,38 +17,54 @@ import config.DatabaseConfig;
 /**
  * The reader and container for all system settings
  */
-public final class SystemConfig extends reading.XMLReader {
+public final class SystemConfig extends reading.XMLReader
+{
 
 	// The global, static system configuration
-	private static final SystemConfig Configuration = new SystemConfig();
-	
+    private static final SystemConfig INSTANCE = new SystemConfig();
+
+    private DatabaseConfig database_configuration = null;
+    private int maximum_thread_count = 0;
+    private int pool_object_lifespan = 30000;
+    private int fetch_size = 100;
+    private int maximum_inserts = 5000;
+    private int maximum_copies = 200;
+    private String project_directory = "projects";
+
 	// The static path to the configuration path
-	private final static String config_path()
-	{
-		return "wresconfig.xml";
-	}
-	
+    private final static String config_path = "wresconfig.xml";
+
+    private final Logger LOGGER = LoggerFactory.getLogger(SystemConfig.class);
+
 	/**
 	 * The Default constructor
 	 * 
 	 * Creates a new XMLReader and parses the System Configuration document
 	 */
-	public SystemConfig() {
-		super(config_path());
-		parse();
-	}
-	
+    public SystemConfig()
+    {
+        super(config_path);
+        LOGGER.debug("Created SystemConfig using default constructor");
+        parse();
+    }
+
 	/**
 	 * Creates a System Configuration collection reading from the alternate location
 	 * 
 	 * @param alternate_config_location An alternate path to the System Configuration
 	 */
-	public SystemConfig(String alternate_config_location)
-	{
-		super(alternate_config_location);
-		parse();
-	}
-	
+    public SystemConfig(String alternate_config_location)
+    {
+        super(alternate_config_location);
+        LOGGER.debug("Created SystemConfig using String constructor");
+        parse();
+    }
+
+    public static SystemConfig instance()
+    {
+        return INSTANCE;
+    }
+
 	@Override
 	/**
 	 * Parses all system settings and objects from the XML
@@ -54,10 +73,12 @@ public final class SystemConfig extends reading.XMLReader {
 	 */
 	protected void parse_element(XMLStreamReader reader)
 	{
+	    LOGGER.trace("parsing element");
+
 		try
 		{
 			String value = null;
-			
+
 			if (reader.getEventType() == XMLStreamConstants.START_ELEMENT)
 			{
 				if (reader.getLocalName().equalsIgnoreCase("database"))
@@ -111,67 +132,81 @@ public final class SystemConfig extends reading.XMLReader {
 	 * @return An open connection to the configured database
 	 * @throws SQLException An exception is thrown if a connection cannot be created to the database
 	 */
-	public static Connection get_database_connection() throws SQLException
+	public Connection get_database_connection() throws SQLException
 	{
-		return Configuration.database_configuration.create_connection();
+		return this.database_configuration.create_connection();
 	}
-	
+
 	/**
 	 * Returns the maximum number of allowable threads dictated via the configuration
 	 * @return The number of allowable threads
 	 */
-	public static int maximum_thread_count()
+	public int get_maximum_thread_count()
 	{
-		return Configuration.maximum_thread_count;
+		return this.maximum_thread_count;
 	}
-	
+
 	/**
 	 * Returns the amount of time (in milliseconds) that an object may live in an object pool without being used 
 	 * @return The maximum life span for an object in an object pool
 	 */
-	public static int pool_object_lifespan()
+	public int get_pool_object_lifespan()
 	{
-		return Configuration.pool_object_lifespan;
+		return this.pool_object_lifespan;
 	}
-	
+
 	/**
 	 * Returns the maximum number of rows that may be fetched from the database at any given time
 	 * @return The maximum number of rows to retrieve
 	 */
-	public static int fetch_size()
+	public int get_fetch_size()
 	{
-		return Configuration.fetch_size;
+		return this.fetch_size;
 	}
-	
+
 	/**
 	 * Returns the maximum number of values that may be inserted into the database at any given time
 	 * @return The maximum number of insert values
 	 */
-	public static int maximum_inserts()
+	public int get_maximum_inserts()
 	{
-		return Configuration.maximum_inserts;
+		return this.maximum_inserts;
 	}
-	
-	public static int maximum_copies()
+
+	public int get_maximum_copies()
 	{
-		return Configuration.maximum_copies;
+		return this.maximum_copies;
 	}
-	
-	public static String project_directory()
+
+	public String get_project_directory()
 	{
-		return Configuration.project_directory;
+		return this.project_directory;
 	}
-	
-	public static String get_database_type()
+
+	public String get_database_type()
 	{
-		return Configuration.database_configuration.get_database_type();
+	    if (this.database_configuration != null)
+	    {
+	        return this.database_configuration.get_database_type();
+	    }
+	    else
+	    {
+	        return null;
+	    }
 	}
-	
-	public static ComboPooledDataSource get_connection_pool()
+
+	public ComboPooledDataSource get_connection_pool()
 	{
-		return Configuration.database_configuration.create_datasource();
+	    if (this.database_configuration != null)
+	    {
+	        return this.database_configuration.create_datasource();
+	    }
+	    else
+	    {
+	        return null;
+	    }
 	}
-	
+
 	@Override
 	/**
 	 * Returns a multiline description of all set values for the configuration
@@ -206,12 +241,4 @@ public final class SystemConfig extends reading.XMLReader {
 		
 		return string_rep;
 	}
-	
-	private DatabaseConfig database_configuration = null;
-	private int maximum_thread_count = 0;
-	private int pool_object_lifespan = 30000;
-	private int fetch_size = 100;
-	private int maximum_inserts = 5000;
-	private int maximum_copies = 200;
-	private String project_directory = "projects";
 }

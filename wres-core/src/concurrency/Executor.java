@@ -28,7 +28,7 @@ public final class Executor
 		{
 			service.shutdown();
 		}
-		return Executors.newFixedThreadPool(SystemConfig.maximum_thread_count());
+		return Executors.newFixedThreadPool(SystemConfig.instance().get_maximum_thread_count());
 	}
 	
 	/**

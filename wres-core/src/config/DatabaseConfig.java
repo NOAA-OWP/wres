@@ -85,6 +85,7 @@ public final class DatabaseConfig {
 			datasource.setMaxIdleTime(max_idle_time);
 			datasource.setMaxPoolSize(max_pool_size);
 			datasource.setMinPoolSize(max_pool_size);
+			datasource.setInitialPoolSize(max_pool_size);
 		} catch (PropertyVetoException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -206,10 +207,10 @@ public final class DatabaseConfig {
 	public ResultSet get_results(final Connection connection, String query) throws SQLException
 	{
 		Statement statement = connection.createStatement();
-		statement.setFetchSize(SystemConfig.fetch_size());
+		statement.setFetchSize(SystemConfig.instance().get_fetch_size());
 		return statement.executeQuery(query);
 	}
-	
+
 	/**
 	 * Parses out settings from the passed in XML 
 	 * @param reader The XML reader containing XML data describing the database settings

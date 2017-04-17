@@ -289,7 +289,7 @@ public final class MainFunctions {
 					connection = Database.get_connection();
 					Statement query = connection.createStatement();
 					ResultSet results = query.executeQuery(script);
-					query.setFetchSize(SystemConfig.fetch_size());
+					query.setFetchSize(SystemConfig.instance().get_fetch_size());
 					System.out.println("Pair data is now in memory!");
 					
 					while (results.next())
@@ -369,7 +369,7 @@ public final class MainFunctions {
 				try {
 					connection = Database.get_connection();
 					Statement query = connection.createStatement();
-					query.setFetchSize(SystemConfig.fetch_size());
+					query.setFetchSize(SystemConfig.instance().get_fetch_size());
 					ResultSet results = query.executeQuery(script);
 					String variable_id = String.valueOf(Variable.get_variable_id(variable));
 					script = "SELECT R.measurement, FR.measurements\n"
