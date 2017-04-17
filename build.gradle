@@ -67,7 +67,12 @@ project(':wres-core')
         compile project(':utilities')
 
         compile 'edu.ucar:cdm:4.6.8'
+
+        // to use native postgres copy, need this on compile
         compile 'org.postgresql:postgresql:42.0.0'
+
+		// connection pooling:
+		compile 'com.mchange:c3p0:0.9.5.2'
 
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
@@ -81,6 +86,11 @@ project(':wres-core')
         {
             args Eval.me(appArgs)
         }
+        // If you wish to profile while doing gradlew run:
+        //jvmArgs '-agentlib:hprof=cpu=samples,interval=5,depth=15'
+
+        // Allows setting the logging levels, etc:
+        jvmArgs '-Dlogback.configurationFile=./logback.xml'
     }
 }
 
