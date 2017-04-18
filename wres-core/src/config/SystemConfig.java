@@ -32,7 +32,7 @@ public final class SystemConfig extends reading.XMLReader
     private String project_directory = "projects";
 
 	// The static path to the configuration path
-    private final static String config_path = "wresconfig.xml";
+    private static final String config_path = "wresconfig.xml";
 
     private final Logger LOGGER = LoggerFactory.getLogger(SystemConfig.class);
 
@@ -40,10 +40,11 @@ public final class SystemConfig extends reading.XMLReader
 	 * The Default constructor
 	 * 
 	 * Creates a new XMLReader and parses the System Configuration document
+	 * Looks on the classpath for the default filename
 	 */
     public SystemConfig()
     {
-        super(config_path);
+        super(config_path, true);
         LOGGER.debug("Created SystemConfig using default constructor");
         parse();
     }
@@ -55,7 +56,7 @@ public final class SystemConfig extends reading.XMLReader
 	 */
     public SystemConfig(String alternate_config_location)
     {
-        super(alternate_config_location);
+        super(alternate_config_location, false);
         LOGGER.debug("Created SystemConfig using String constructor");
         parse();
     }

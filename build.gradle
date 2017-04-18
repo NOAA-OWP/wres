@@ -13,6 +13,12 @@ subprojects
             {
                 srcDirs = ['src']
             }
+            // The downside with resources is that xml ends up INSIDE jar file
+            // (haven't found simple workaround yet)
+            resources
+            {
+                srcDirs = ['nonsrc']
+            }
         }
         test
         {
@@ -50,7 +56,11 @@ project(':utilities')
 
         compile 'ch.qos.logback:logback-classic:1.2.0'
         compile 'ch.qos.logback:logback-core:1.2.0'
-        compile group: 'edu.ucar', name: 'cdm', version: '4.6.8'
+        compile(group: 'edu.ucar', name: 'cdm', version: '4.6.9')
+        {
+            // because we are getting a later version from diff group:
+            exclude group: 'c3p0', module: 'c3p0'
+        }
 
         testCompile 'junit:junit:4.12'
         testCompile files('../libs/external/EVS.jar')
@@ -62,11 +72,17 @@ project(':wres-core')
     apply plugin: 'application'
     mainClassName = 'Main'
 
+    applicationDefaultJvmArgs = ['-Xmx3500m']
+
     dependencies
     {
         compile project(':utilities')
 
-        compile 'edu.ucar:cdm:4.6.8'
+        compile('edu.ucar:cdm:4.6.8')
+        {
+            // because we are getting a later version from diff group:
+            exclude group: 'c3p0', module: 'c3p0'
+        }
 
         // to use native postgres copy, need this on compile
         compile 'org.postgresql:postgresql:42.0.0'
@@ -86,12 +102,10 @@ project(':wres-core')
         {
             args Eval.me(appArgs)
         }
-        // If you wish to profile while doing gradlew run:
-        //jvmArgs '-agentlib:hprof=cpu=samples,interval=5,depth=15'
-
-        // Allows setting the logging levels, etc:
-        jvmArgs '-Dlogback.configurationFile=./logback.xml'
+        // Allow profiling during run
+        //jvmArgs = ['-agentlib:hprof=cpu=samples,interval=5,depth=25']
     }
+
 }
 
 project(':wres-experiment')
