@@ -11,8 +11,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamConstants;
+
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.InputStream;
 
 /**
  * @author Tubbs
@@ -21,19 +23,33 @@ import java.io.FileReader;
 public class XMLReader 
 {
     private final String filename;
+    private final boolean find_on_classpath;
+    private XMLInputFactory factory = null;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(XMLReader.class);
 
 	/**
 	 * 
 	 */
-	public XMLReader(String filename) {
-		this.filename = filename;		
+	public XMLReader(String filename)
+	{
+		this(filename, false);
+	}
+
+	public XMLReader(String filename, boolean find_on_classpath)
+	{
+	    this.filename = filename;
+	    this.find_on_classpath = find_on_classpath;
 	}
 
 	protected String get_filename()
 	{
 		return filename;
+	}
+
+	protected InputStream get_file()
+	{
+	    return ClassLoader.getSystemResourceAsStream(filename);
 	}
 
 	public void parse()
@@ -85,7 +101,15 @@ public class XMLReader
 
 	protected XMLStreamReader create_reader() throws FileNotFoundException, XMLStreamException
 	{
-		XMLInputFactory factory = XMLInputFactory.newFactory();
+	    if (factory == null)
+	    {
+	        factory = XMLInputFactory.newFactory();
+	    }
+
+		if (find_on_classpath)
+		{
+		    return factory.createXMLStreamReader(get_file());
+		}
 		return factory.createXMLStreamReader(new FileReader(get_filename()));
 	}
 
