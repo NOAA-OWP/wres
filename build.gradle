@@ -13,6 +13,12 @@ subprojects
             {
                 srcDirs = ['src']
             }
+            // The downside with resources is that xml ends up INSIDE jar file
+            // (haven't found simple workaround yet)
+            resources
+            {
+                srcDirs = ['nonsrc']
+            }
         }
         test
         {
@@ -37,6 +43,7 @@ subprojects
         maxHeapSize = "3072m"
         testLogging.showStandardStreams = true
     }
+
 }
 
 project(':utilities')
@@ -49,7 +56,11 @@ project(':utilities')
 
         compile 'ch.qos.logback:logback-classic:1.2.0'
         compile 'ch.qos.logback:logback-core:1.2.0'
-        compile group: 'edu.ucar', name: 'cdm', version: '4.6.8'
+        compile(group: 'edu.ucar', name: 'cdm', version: '4.6.9')
+        {
+            // because we are getting a later version from diff group:
+            exclude group: 'c3p0', module: 'c3p0'
+        }
 
         testCompile 'junit:junit:4.12'
         testCompile files('../libs/external/EVS.jar')
@@ -59,18 +70,42 @@ project(':utilities')
 project(':wres-core')
 {
     apply plugin: 'application'
-    mainClassName = 'wres.HelloWorld'
+    mainClassName = 'Main'
+
+    applicationDefaultJvmArgs = ['-Xmx3500m']
 
     dependencies
     {
         compile project(':utilities')
 
-        compile 'edu.ucar:cdm:4.6.8'
+        compile('edu.ucar:cdm:4.6.8')
+        {
+            // because we are getting a later version from diff group:
+            exclude group: 'c3p0', module: 'c3p0'
+        }
+
+        // to use native postgres copy, need this on compile
         compile 'org.postgresql:postgresql:42.0.0'
+
+		// connection pooling:
+		compile 'com.mchange:c3p0:0.9.5.2'
 
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
     }
+
+    // Allows this:
+    // gradlew run -PappArgs="['saveForecast','/path/to/file']"
+    run
+    {
+        if (project.hasProperty("appArgs"))
+        {
+            args Eval.me(appArgs)
+        }
+        // Allow profiling during run
+        //jvmArgs = ['-agentlib:hprof=cpu=samples,interval=5,depth=25']
+    }
+
 }
 
 project(':wres-experiment')

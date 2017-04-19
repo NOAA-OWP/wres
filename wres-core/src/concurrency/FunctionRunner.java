@@ -71,7 +71,7 @@ public class FunctionRunner<V, U> implements Callable<V> {
 		{
 			connection = Database.get_connection();
 			Statement query = connection.createStatement();
-			query.setFetchSize(SystemConfig.fetch_size());
+			query.setFetchSize(SystemConfig.instance().get_fetch_size());
 			ResultSet result = query.executeQuery(data_select);
 			function_result = func.apply(result, transform);	
 		}

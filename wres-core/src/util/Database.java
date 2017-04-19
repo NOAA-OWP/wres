@@ -18,8 +18,8 @@ import org.postgresql.copy.CopyManager;
 import config.SystemConfig;
 
 public class Database {
-		
-	private static ComboPooledDataSource pool = SystemConfig.get_connection_pool();
+
+    private static ComboPooledDataSource pool = SystemConfig.instance().get_connection_pool();
 	
 	public static void close()
 	{
@@ -83,7 +83,7 @@ public class Database {
 	
 	public static boolean copy(final String table_definition, final String values, String delimiter) throws Exception
 	{
-		if (!SystemConfig.get_database_type().equalsIgnoreCase("postgresql"))
+		if (!SystemConfig.instance().get_database_type().equalsIgnoreCase("postgresql"))
 		{
 			return translate_copy_to_insert(table_definition, values, delimiter);
 		}

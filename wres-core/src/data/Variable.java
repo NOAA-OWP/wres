@@ -82,7 +82,7 @@ public class Variable {
 			try {
 				Connection connection = Database.get_connection();
 				Statement query = connection.createStatement();
-				query.setFetchSize(SystemConfig.fetch_size());
+				query.setFetchSize(SystemConfig.instance().get_fetch_size());
 				VariableDef new_variable = new VariableDef(query.executeQuery(load_script));
 				query.close();
 				Database.return_connection(connection);
@@ -110,11 +110,11 @@ public class Variable {
 			try {
 				Connection connection = Database.get_connection();
 				Statement query = connection.createStatement();
-				query.setFetchSize(SystemConfig.fetch_size());
+				query.setFetchSize(SystemConfig.instance().get_fetch_size());
 				VariableDef new_variable = new VariableDef(query.executeQuery(load_script));
 				query.close();
 				Database.return_connection(connection);
-				
+
 				id = new_variable.get_variable_id();
 				name_index.put(variable_name, id);
 				definitions.put(id, new_variable);

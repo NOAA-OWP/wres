@@ -20,6 +20,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import javax.xml.stream.XMLStreamReader;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author Tubbs
  *
@@ -41,7 +44,9 @@ public final class PIXMLReader extends XMLReader
 		
 		return mapping;
 	}
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(PIXMLReader.class);
+
 	/**
 	 * @param filename
 	 */
@@ -151,8 +156,9 @@ public final class PIXMLReader extends XMLReader
 			}
 		}
 		
-		if (insert_count >= SystemConfig.maximum_copies())
+		if (insert_count >= SystemConfig.instance().get_maximum_copies())
 		{
+		    LOGGER.debug("Insert count greater than maximum copies, saving.");
 			save_entries();
 		}
 	}

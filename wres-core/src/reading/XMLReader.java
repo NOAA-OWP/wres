@@ -7,11 +7,13 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
 import util.Utilities;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamConstants;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.InputStream;
 
 /**
  * @author Tubbs
@@ -19,24 +21,42 @@ import java.io.FileReader;
  */
 public class XMLReader 
 {
+    private String filename;
+    private final boolean find_on_classpath;
+    private XMLInputFactory factory = null;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(XMLReader.class);
 
 	/**
 	 * 
 	 */
-	public XMLReader(String filename) {
-		this.filename = filename;		
+	public XMLReader(String filename)
+	{
+		this(filename, false);
+	}
+
+	public XMLReader(String filename, boolean find_on_classpath)
+	{
+	    this.filename = filename;
+	    this.find_on_classpath = find_on_classpath;
 	}
 	
 	protected String get_filename()
 	{
 		return filename;
 	}
-	
+
+	protected InputStream get_file()
+	{
+	    return ClassLoader.getSystemResourceAsStream(filename);
+	}
+
 	public void parse()
 	{
+	    XMLStreamReader reader = null;
 		try
 		{
-			XMLStreamReader reader = create_reader();
+			reader = create_reader();
 			
 			while (reader.hasNext())
 			{
@@ -52,7 +72,23 @@ public class XMLReader
 		}
 		catch (XMLStreamException | FileNotFoundException error)
 		{
-			error.printStackTrace();
+			LOGGER.error(error.getMessage());
+		}
+		finally
+		{
+		    if (reader != null)
+		    {
+		        try
+		        {
+		            reader.close();
+		        }
+		        catch (XMLStreamException xse)
+		        {
+		            // not much we can do at this point
+		            LOGGER.warn("Exception while closing file {}: {}",
+		                        this.filename, xse);
+		        }
+		    }
 		}
 	}
 	
@@ -68,7 +104,15 @@ public class XMLReader
 	
 	protected XMLStreamReader create_reader() throws FileNotFoundException, XMLStreamException
 	{
-		XMLInputFactory factory = XMLInputFactory.newFactory();
+	    if (factory == null)
+	    {
+	        factory = XMLInputFactory.newFactory();
+	    }
+
+		if (find_on_classpath)
+		{
+		    return factory.createXMLStreamReader(get_file());
+		}
 		return factory.createXMLStreamReader(new FileReader(get_filename()));
 	}
 	
@@ -109,6 +153,4 @@ public class XMLReader
 			break;
 		}
 	}
-
-	private String filename = "";
 }
