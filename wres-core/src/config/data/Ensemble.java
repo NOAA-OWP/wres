@@ -8,18 +8,32 @@ public final class Ensemble extends ThreeTuple<String, String, String>
 		super(ensemble_name, ensemblemember_id, qualifier);
 	}
 	
-	public String get_ensemble_name()
+	public String getEnsembleName()
 	{
 		return get_item_one();
 	}
 	
-	public String get_ensemblemember_id()
+	public String getEnsemblememberID()
 	{
 		return get_item_two();
 	}
 	
-	public String get_qualifier()
+	public String getQualifier()
 	{
 		return get_item_three();
+	}
+	
+	@Override
+	public String toString() {
+		String description = "Ensemble - Name: '";
+		description += getEnsembleName();
+		description += "', Member ID: ";
+		description += getEnsemblememberID();
+		description += ", Qualifier: '";
+		description += getQualifier();
+		description += "'";
+		description += System.lineSeparator();
+		
+		return description;
 	}
 }

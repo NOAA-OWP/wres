@@ -4,10 +4,11 @@
 package config.data;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.TreeMap;
 
 import javax.xml.stream.XMLStreamReader;
-import collections.Pair;
 
 /**
  * @author ctubbs
@@ -20,39 +21,58 @@ public final class Polygon extends ClauseConfig {
 	}
 
 	@Override
-	public String get_condition(TreeMap<String, String> aliases) {
+	public String getCondition(TreeMap<String, String> aliases) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	protected void interpret(XMLStreamReader reader) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	public ArrayList<Pair<String, String>> get_points()
+	protected void interpret(XMLStreamReader reader) 
 	{
-		return this.points;
-	}
-	
-	public Pair<String, String> get_point(int index)
-	{
-		Pair<String, String> point = null;
-		
-		if (points != null && points.size() > index)
+		if (reader.getLocalName().equalsIgnoreCase("point"))
 		{
-			point = points.get(index);
+			addPoint(new Point(reader));
+		}
+	}
+
+	@Override
+	protected List<String> tagNames() {
+		return Arrays.asList("polygon");
+	}
+	
+	private void addPoint(Point point)
+	{
+		if (point == null)
+		{
+			return;
 		}
 		
-		return point;
-	}
-
-	@Override
-	protected String tag_name() {
-		// TODO Auto-generated method stub
-		return null;
+		if (this.points == null)
+		{
+			this.points = new ArrayList<Point>();
+		}
+		
+		this.points.add(point);
 	}
 	
-	private ArrayList<Pair<String, String>> points = null;
+	@Override
+	public String toString() 
+	{
+		String description = "Polygon:";
+		description += System.lineSeparator();
+		
+		for (Point point : points)
+		{
+			description += "\tVertex: (";
+			description += point.x();
+			description += ", ";
+			description += point.y();
+			description += ")";
+			description += System.lineSeparator();
+		}
+		
+		return description;
+	}
+	
+	private ArrayList<Point> points;
 }

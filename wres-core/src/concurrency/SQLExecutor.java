@@ -19,12 +19,6 @@ public class SQLExecutor implements Runnable {
 	public SQLExecutor(String script) {
 		this.script = script;
 	}
-	
-	public SQLExecutor(String script, boolean commit)
-	{
-		this.script = script;
-		this.commit = commit;
-	}
 
 	@Override
 	/**
@@ -32,7 +26,7 @@ public class SQLExecutor implements Runnable {
 	 */
 	public void run() {
 		try {
-			Database.execute(this.script/*, commit*/);
+			Database.execute(this.script);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -40,5 +34,4 @@ public class SQLExecutor implements Runnable {
 	}
 
 	private String script = null;
-	private boolean commit = true;
 }

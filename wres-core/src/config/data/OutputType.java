@@ -12,13 +12,49 @@ import collections.ThreeTuple;
 public class OutputType extends ThreeTuple<Boolean, String, String> {
 
 	/**
-	 * @param item_one
-	 * @param item_two
-	 * @param item_three
+	 * 
+	 * @param shouldSave Whether or not this type of output should be saved out
+	 * @param path The path to write to
+	 * @param fileFormat the format to save the file to
 	 */
-	public OutputType(Boolean item_one, String item_two, String item_three) {
-		super(item_one, item_two, item_three);
-		// TODO Auto-generated constructor stub
+	public OutputType(Boolean shouldSave, String path, String fileFormat) {
+		super(shouldSave, path, fileFormat);
 	}
 
+	public Boolean shouldSave()
+	{
+		return get_item_one();
+	}
+	
+	public String path()
+	{
+		return get_item_two();
+	}
+	
+	public String fileFormat()
+	{
+		return get_item_three();
+	}
+	
+	@Override
+	public String toString() {
+		String description = "Format: ";
+		description += fileFormat();
+		description += ", ";
+		
+		if (shouldSave())
+		{
+			description += "Saving at: '";
+			description += path();
+			description += "'";
+		}
+		else
+		{
+			description += "Not Saving";
+		}
+		
+		description += System.lineSeparator();
+		
+		return description;
+	}
 }

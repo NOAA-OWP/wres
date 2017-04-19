@@ -14,7 +14,7 @@
                 <values minimum="-infinity" maximum="infinity"/>
             </conditions>
             <variables>
-                <variable name="QINE" />
+                <variable name="QINE" unit="CFS"/>
             </variables>
         </observations>
         <forecasts lazy_load="true">
@@ -30,8 +30,13 @@
                 <dates earliest="NA" latest="NA"/>
                 <values minimum="-infinity" maximum="infinity" />
             </conditions>
-            <variable name="SQIN" />
+            <variables>
+                <variable name="SQIN" unit="CMS"/>
+            </variables>
             <ensembles all="true">
+                <!--
+                <ensemble name="" member_id="" qualifier="" />
+                -->
             </ensembles>
         </forecasts>
         <metrics>
@@ -41,13 +46,15 @@
                     <graphic output="false" path="" format=""/>
                     <numeric output="true" path="numeric_output" format="xml" />
                 </output>
-                <observation>
+                <observations>
                     <conditions>
                         <dates earliest="NA" latest="NA" />
                         <values minimum="-infinity" maximum="infinity"/>
                     </conditions>
                     <aggregation aggregate="false" range="1" unit="hour" mode="mean" />
-                    <variable name="QINE" />
+                    <variables>
+                        <variable name="QINE" unit="CFS"/>
+                    </variables>
                     <features all="false">
                         <feature>
                             <lid>DRRC2HLF</lid>
@@ -61,16 +68,18 @@
                             <point x="3032" y="2901"/>
                             <point x="1000" y="1548"/>
                         </polygon>-->
-                        <!--<range index_1="42" index_2="20000"/>-->
+                        <!--<range x_minimum="42" x_maximum="20000"/>-->
                     </features>
-                </observation>
-                <forecast>
+                </observations>
+                <forecasts>
                     <conditions>
                         <dates earliest="NA" latest="NA" />
                         <values minimum="-infinity" maximum="infinity" />
                     </conditions>
                     <aggregation aggregate="false" range="1" unit="hour" mode="mean" />
-                    <variable name="SQIN" />
+                    <variables>
+                        <variable name="SQIN" unit="CFS"/>
+                    </variables>
                     <features all="false">
                         <feature>
                             <lid>DCCR2HSF</lid>
@@ -84,12 +93,12 @@
                             <point x="3032" y="2901"/>
                             <point x="1000" y="1548"/>
                         </polygon>-->
-                        <!--<range index_1="42" index_2="20000"/>-->
+                        <!--<range x_minimum="42" x_maximum="20000"/>-->
                     </features>
                     <ensembles all="true">
                         <ensemble name="MEFP" qualifier="SIM1" member_id="1961"/>
                     </ensembles>
-                </forecast>
+                </forecasts>
             </metric>
         </metrics>
     </project>

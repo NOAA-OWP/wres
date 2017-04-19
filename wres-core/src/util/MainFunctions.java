@@ -20,7 +20,10 @@ import concurrency.ForecastSaver;
 import java.util.function.Consumer;
 import reading.BasicSource;
 import reading.SourceReader;
+import config.ProjectConfig;
 import config.SystemConfig;
+import config.data.Project;
+
 import java.util.concurrent.Future;
 import concurrency.FunctionRunner;
 import concurrency.Metrics;
@@ -79,6 +82,7 @@ public final class MainFunctions {
 		prototypes.put("systemmetrics", systemMetrics());
 		prototypes.put("saveobservations", saveObservations());
 		prototypes.put("saveforecasts", saveForecasts());
+		prototypes.put("describeprojects", describeProjects());
 		
 		return prototypes;
 	}
@@ -524,4 +528,18 @@ public final class MainFunctions {
 		};
 	}
 	
+	private static final Consumer<String[]> describeProjects()
+	{
+		return (String[] args) -> {
+			System.out.println();
+			System.out.println();
+			System.out.println("The configured projects are:");
+			System.out.println();
+			System.out.println();
+			for (Project project : ProjectConfig.get_projects())
+			{
+				System.out.println(project.toString());
+			}
+		};
+	}
 }

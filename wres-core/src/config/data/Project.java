@@ -4,9 +4,14 @@
 package config.data;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
+import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+
+import util.Utilities;
 
 /**
  * @author ctubbs
@@ -21,54 +26,170 @@ public class Project extends ConfigElement {
 	public Project(XMLStreamReader reader) throws Exception 
 	{
 		super(reader);
-		validate();
 	}
 
 	/* (non-Javadoc)
 	 * @see config.data.ConfigElement#interpret(javax.xml.stream.XMLStreamReader)
 	 */
 	@Override
-	protected void interpret(XMLStreamReader reader) throws XMLStreamException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	protected String tag_name() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	private void validate() throws Exception
-	{
-		if (metric_count() == 0)
+	protected void interpret(XMLStreamReader reader) throws Exception {
+		if (tagIs(reader, "name"))
 		{
-			String message = "The project with the name '";
-			
-			if (this.name == null)
-			{
-				this.name = "[unnamed project]";
-			}
-			
-			message = "The project with the name '" + this.name;
-			message += "' is invalid because there are not metrics configured to execute.";
-			message += " Metrics must be added for this project to be valid.";
-			throw new Exception(message);
+			this.name = tagValue(reader);
+		}
+		else if (tagIs(reader, "observations"))
+		{
+			this.observations = new ProjectDataSource(reader);
+		}
+		else if (tagIs(reader, "forecasts"))
+		{
+			this.forecasts = new ProjectDataSource(reader);
+		}
+		else if (tagIs(reader, "metrics"))
+		{
+			parseMetrics(reader);
 		}
 	}
 
-	public Metric get_metrics(int index)
-	{
-		return metrics.get(index);
+	@Override
+	protected List<String> tagNames() {
+		return Arrays.asList("project");
 	}
 	
-	public int metric_count()
+	private void parseMetrics(XMLStreamReader reader) throws Exception
 	{
-		return metrics.size();
+		while (reader.hasNext())
+		{
+			reader.next();
+			
+			if (Utilities.xmlTagClosed(reader, tagNames()))
+			{
+				break;
+			}
+
+			if (tagIs(reader, "metric"))
+			{
+				addMetric(new Metric(reader));
+			}
+		}
+	}
+	
+	public void addMetric(Metric metric)
+	{
+		if (metric == null)
+		{
+			return;
+		}
+		
+		if (metrics == null)
+		{
+			metrics = new ArrayList<Metric>();
+		}
+		
+		metrics.add(metric);
 	}
 
-	private ArrayList<Metric> metrics = new ArrayList<Metric>();
-	private ProjectDataSource observations = null;
-	private ProjectDataSource forecasts = null;
+	public Metric getMetrics(int index)
+	{
+		Metric metric = null;
+		
+		if (index < metricCount())
+		{
+			metric = metrics.get(index);
+		}
+		
+		return metric;
+	}
+	
+	public int metricCount()
+	{
+		if (metrics == null)
+		{
+			metrics = new ArrayList<Metric>();
+		}
+		
+		return metrics.size();
+	}
+	
+	public ProjectDataSource getObservations()
+	{
+		return observations;
+	}
+	
+	public ProjectDataSource getForecasts()
+	{
+		return forecasts;
+	}
+	
+	@Override
+	public String toString() {
+		String description = "-----------------------------------";
+		description += System.lineSeparator();
+		description += System.lineSeparator();
+		description += "Project: ";
+		
+		if (name == null)
+		{
+			description += "[Unnamed Project]";
+		}
+		else
+		{
+			description += name;
+		}
+		description += System.lineSeparator();
+		description += System.lineSeparator();
+		
+		description += "-----------------------------------";
+		description += System.lineSeparator();
+		description += System.lineSeparator();
+		
+		description += "Observations:";
+		description += System.lineSeparator();
+		description += System.lineSeparator();
+		description += observations.toString();
+		description += System.lineSeparator();
+		
+		description += "-----------------------------------";
+		description += System.lineSeparator();
+		description += System.lineSeparator();
+		
+		description += "Forecasts:";
+		description += System.lineSeparator();
+		description += System.lineSeparator();
+		description += forecasts.toString();
+		description += System.lineSeparator();
+		
+		description += "-----------------------------------";
+		description += System.lineSeparator();
+		description += System.lineSeparator();
+		
+		description += "Metrics:";
+		description += System.lineSeparator();
+		description += System.lineSeparator();
+		description += "\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/";
+		description += System.lineSeparator();
+		description += System.lineSeparator();
+		if (metricCount() > 0)
+		{
+			for (Metric metric : metrics)
+			{
+				description += metric.toString();
+				description += System.lineSeparator();
+				description += "*  *  *  *  *  *  *  *  *  *  *  *  *";
+				description += System.lineSeparator();
+			}
+		}
+		else {
+			description += "[NONE]";
+			description += System.lineSeparator();
+		}
+		description += "\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/";
+		
+		return description;
+	}
+
+	private ArrayList<Metric> metrics;
+	private ProjectDataSource observations;
+	private ProjectDataSource forecasts;
 	private String name;
 }
