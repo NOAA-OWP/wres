@@ -38,4 +38,27 @@ public class Aggregation extends FourTuple<Boolean, Byte, String, String> {
 	{
 		return get_item_four();
 	}
+	
+	@Override
+	public String toString() {
+		String description = "Aggregation: ";
+		description += System.lineSeparator();
+		
+		description += "\tAggregate Data: ";
+		description += String.valueOf(get_aggregate());
+		description += System.lineSeparator();
+		
+		description += "\tRange: ";
+		description += String.valueOf(get_range());
+		description += " ";
+		description += String.valueOf(get_unit());
+		description += System.lineSeparator();
+		
+		description += "\tAggregation Mode: ";
+		description += get_mode();
+		description += System.lineSeparator();
+		
+		
+		return description;
+	}
 }

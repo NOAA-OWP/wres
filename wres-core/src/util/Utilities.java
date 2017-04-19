@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -13,6 +14,10 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 
 public final class Utilities {
 	
@@ -26,12 +31,17 @@ public final class Utilities {
 	 */
 	private final static String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSSSS";
 	
+	public static final List<String> POSSIBLE_TRUE_VALUES = Arrays.asList("true", "True", "TRUE", "T", "t", "y", "yes", "Yes", "YES", "Y");
+	
 	@SuppressWarnings("unchecked")
 	/**
 	 * Creates a new array without the value at the indicated index
 	 * @param array The array to remove the element from
 	 * @param index The index of the element to remove
 	 * @return A new array without the item at the given index
+	 * 
+	 * TODO: Modify to take advantage of Arrays.copyOfRange to copy the
+	 * array from before and after and combine the two
 	 */
 	public static <T> T[] removeIndexFromArray(T[] array, int index)
 	{
@@ -43,7 +53,7 @@ public final class Utilities {
 		}
 		
 		T[] copy = (T[])Array.newInstance(array[index].getClass(), array.length - 1);
-		
+
 		for (int i = 0; i < array.length; i++)
 		{
 			if (i != index)
@@ -402,6 +412,11 @@ public final class Utilities {
 		return found_element;
 	}
 	
+	public static boolean isNumeric(String possibleNumber)
+	{
+		return possibleNumber.matches("[-]?\\d*\\.?\\d+");
+	}
+	
 	public static <U> List<U> where(List<U> source, Predicate<U> expression)
 	{
 		return source.stream().filter(expression).collect(Collectors.toCollection(()->source.subList(0, 0)));
@@ -417,5 +432,105 @@ public final class Utilities {
 		}
 		
 		return val;
+	}
+	
+	/**
+	 * Determines if the passed in array contains the indicated value
+	 * 
+	 * Equality is determined by using o.equals rather than ==
+	 * @param array The array to search
+	 * @param value The value to find
+	 * @return Boolean indicating whether or not the indicated value exists within the
+	 * indicated array
+	 */
+	public static <U> boolean contains(U[] array, U value)
+	{
+		boolean has_object = false;
+		
+		for (int index = 0; index < array.length; ++index)
+		{
+			if (array[index].equals(value))
+			{
+				has_object = true;
+				break;
+			}
+		}
+		
+		return has_object;
+	}
+	
+	/**
+	 * Gets the text within an xml element
+	 * <br/>
+	 * <b>The stream will attempt to move forward within the source</b>
+	 * @param reader The reader for the XML data
+	 * @return The trimed text within the xml node. Null is returned if no text is found
+	 * @throws XMLStreamException
+	 */
+	public static String getXMLText(XMLStreamReader reader) throws XMLStreamException
+	{
+		String value = null;
+		
+		if (reader.isStartElement() && (reader.next() == XMLStreamConstants.CHARACTERS))
+		{
+			value = reader.getText().trim();
+		}
+		
+		return value;
+	}
+
+	/**
+	 * Determines if the xml tag is closed and is one of n possible tag names
+	 * 
+	 * @param reader The reader for the XML data
+	 * @param tag_names A list of names to check against
+	 * @return Returns true if the current tag is a closed tag with one of the possible names
+	 */
+	public static boolean xmlTagClosed(XMLStreamReader reader, List<String> tag_names)
+	{
+		if (!reader.isEndElement())
+		{
+			return false;
+		}
+		boolean has_tag_name = false;
+		String tag_name = reader.getLocalName();
+
+		// List.contains is not used because we want to ignore casing
+		for (String name : tag_names)
+		{
+			if (name.equalsIgnoreCase(tag_name))
+			{
+				has_tag_name = true;
+				break;
+			}
+		}
+		
+		return reader.isEndElement() && has_tag_name;
+	}
+	
+	/**
+	 * Searches for and finds the value for the given attribute on the passed in XML node
+	 * @param reader The stream containing the XML data
+	 * @param attribute_name The name of the attribute to search for
+	 * @return The value of the attribute on the XML node. Null is returned if the attribute isn't found.
+	 */
+	public static String get_attribute_value(XMLStreamReader reader, String attribute_name)
+	{
+		String value = null;
+		
+		for (int attribute_index = 0; attribute_index < reader.getAttributeCount(); ++attribute_index)
+		{
+			if (reader.getAttributeLocalName(attribute_index).equalsIgnoreCase(attribute_name))
+			{
+				value = reader.getAttributeValue(attribute_index);
+			}
+		}
+		
+		return value;
+	}
+	
+	public static boolean tagIs(XMLStreamReader reader, String tag_name)
+	{
+		return reader.hasName() && reader.getLocalName().equalsIgnoreCase(tag_name);
 	}
 }

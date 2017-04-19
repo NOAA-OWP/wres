@@ -20,7 +20,7 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 	 * Returns the first value
 	 * @return The first value
 	 */
-	public T get_item_one()
+	public T itemOne()
 	{
 		return item_one;
 	}
@@ -29,7 +29,7 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 	 * Returns the second value
 	 * @return The second value
 	 */
-	public U get_item_two()
+	public U itemTwo()
 	{
 		return item_two;
 	}

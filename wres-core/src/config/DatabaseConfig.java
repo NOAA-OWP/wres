@@ -84,9 +84,10 @@ public final class DatabaseConfig {
 			datasource.setAutoCommitOnClose(true);
 			datasource.setMaxIdleTime(max_idle_time);
 			datasource.setMaxPoolSize(max_pool_size);
-			datasource.setMinPoolSize(max_pool_size);
-		} catch (PropertyVetoException e) {
-			// TODO Auto-generated catch block
+			//datasource.setMinPoolSize(40);
+			datasource.setInitialPoolSize(40);
+		} 
+		catch (PropertyVetoException e) {
 			e.printStackTrace();
 		}
 		

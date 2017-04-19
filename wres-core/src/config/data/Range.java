@@ -3,6 +3,8 @@
  */
 package config.data;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.TreeMap;
 
 import javax.xml.stream.XMLStreamReader;
@@ -19,57 +21,74 @@ public class Range extends ClauseConfig {
 
 	@Override
 	protected void interpret(XMLStreamReader reader) {
-		// TODO Auto-generated method stub
-		
+		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
+		{
+			String attribute_name = reader.getAttributeLocalName(attributeIndex);
+			if (attribute_name.equalsIgnoreCase("x_minimum"))
+			{
+				this.xMinimum = reader.getAttributeValue(attributeIndex);
+			}
+			else if (attribute_name.equalsIgnoreCase("x_maximum"))
+			{
+				this.xMaximum = reader.getAttributeValue(attributeIndex);
+			}
+			else if (attribute_name.equalsIgnoreCase("y_minimum"))
+			{
+				this.yMinimum = reader.getAttributeValue(attributeIndex);
+			}
+			else if (attribute_name.equalsIgnoreCase("y_maximum"))
+			{
+				this.yMaximum = reader.getAttributeValue(attributeIndex);
+			}
+		}
 	}
 
 	@Override
-	protected String tag_name() {
-		// TODO Auto-generated method stub
-		return null;
+	protected List<String> tagNames() {
+		return Arrays.asList("range");
 	}
 	
 	/* (non-Javadoc)
 	 * @see config.data.Feature#get_condition()
 	 */
 	@Override
-	public String get_condition(TreeMap<String, String> aliases) {
-		boolean append_and = false;
+	public String getCondition(TreeMap<String, String> aliases) {
+		boolean appendAnd = false;
 		String condition = "";
 		
-		if (x_minimum != null)
+		if (xMinimum != null)
 		{
-			condition += aliases.get("variableposition_alias") + ".x_position >= '" + x_minimum;
-			append_and = true;
+			condition += aliases.get("variableposition_alias") + ".x_position >= '" + xMinimum;
+			appendAnd = true;
 		}
 		
-		if (x_maximum != null)
+		if (xMaximum != null)
 		{
-			if (append_and)
+			if (appendAnd)
 			{
 				condition += " AND ";
 			}
-			condition += aliases.get("variableposition_alias") + ".x_position <= " + x_maximum;
-			append_and = true;
+			condition += aliases.get("variableposition_alias") + ".x_position <= " + xMaximum;
+			appendAnd = true;
 		}
 		
-		if (y_minimum != null)
+		if (yMinimum != null)
 		{
-			if (append_and)
+			if (appendAnd)
 			{
 				condition += " AND ";
 			}
-			condition += aliases.get("variableposition_alias") + ".y_position >= " + y_minimum;
-			append_and = true;
+			condition += aliases.get("variableposition_alias") + ".y_position >= " + yMinimum;
+			appendAnd = true;
 		}
 		
-		if (y_maximum != null)
+		if (yMaximum != null)
 		{
-			if (append_and)
+			if (appendAnd)
 			{
 				condition += " AND ";
 			}
-			condition += aliases.get("variableposition_alias") + ".y_position <= " + y_maximum;
+			condition += aliases.get("variableposition_alias") + ".y_position <= " + yMaximum;
 		}
 		
 		if (!condition.isEmpty()){
@@ -79,28 +98,81 @@ public class Range extends ClauseConfig {
 		return condition;
 	}
 	
-	public String x_minimum()
+	public String xMinimum()
 	{
-		return x_minimum;
+		return xMinimum;
 	}
 	
-	public String x_maximum()
+	public String xMaximum()
 	{
-		return x_maximum;
+		return xMaximum;
 	}
 	
-	public String y_minimum()
+	public String yMinimum()
 	{
-		return y_minimum;
+		return yMinimum;
 	}
 	
-	public String y_maximum()
+	public String yMaximum()
 	{
-		return y_maximum;
+		return yMaximum;
+	}
+	
+	@Override
+	public String toString() 
+	{
+		String description = "Range:";
+		description += System.lineSeparator();
+		
+		description += "\tAll values with x indices starting at ";
+		
+		if (xMinimum == null)
+		{
+			description += "-1";
+		}
+		else
+		{
+			description += xMinimum;
+		}
+		
+		description += " and ending at ";
+				
+		if (xMaximum == null)
+		{
+			description += "infinity";
+		}
+		else
+		{
+			description += xMaximum;
+		}
+		
+		description += ", and y indices starting at ";
+		
+		if (yMinimum == null)
+		{
+			description += "-1";
+		}
+		else
+		{
+			description += yMinimum;
+		}
+		
+		description += " and ending at ";
+		
+		if (yMaximum == null)
+		{
+			description += "infinity";
+		}
+		else
+		{
+			description += yMaximum;
+		}
+		
+		return description;
 	}
 
-	private String x_minimum = null;
-	private String x_maximum = null;
-	private String y_minimum = null;
-	private String y_maximum = null;
+	private String xMinimum = null;
+	private String xMaximum = null;
+	private String yMinimum = null;
+	private String yMaximum = null;
 }

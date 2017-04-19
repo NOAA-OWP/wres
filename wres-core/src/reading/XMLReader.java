@@ -5,6 +5,9 @@ package reading;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
+
+import util.Utilities;
+
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamConstants;
 import java.io.FileNotFoundException;
@@ -38,7 +41,10 @@ public class XMLReader
 			while (reader.hasNext())
 			{
 				parse_element(reader);
-				reader.next();
+				if (reader.hasNext())
+				{
+					reader.next();
+				}
 			}
 			
 			reader.close();
@@ -50,22 +56,25 @@ public class XMLReader
 		}
 	}
 	
+	protected void set_filename(String filename)
+	{
+		this.filename = filename;
+	}
+	
 	protected String tag_value(XMLStreamReader reader) throws XMLStreamException
 	{
-		String value = null;
-		
-		if (reader.isStartElement() && (reader.next() == XMLStreamConstants.CHARACTERS))
-		{
-			value = reader.getText().trim();
-		}
-		
-		return value;
+		return Utilities.getXMLText(reader);
 	}
 	
 	protected XMLStreamReader create_reader() throws FileNotFoundException, XMLStreamException
 	{
 		XMLInputFactory factory = XMLInputFactory.newFactory();
 		return factory.createXMLStreamReader(new FileReader(get_filename()));
+	}
+	
+	protected boolean tag_is(XMLStreamReader reader, String tag_name)
+	{
+		return Utilities.tagIs(reader, tag_name);
 	}
 	
 	protected void parse_element(XMLStreamReader reader)

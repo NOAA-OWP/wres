@@ -16,5 +16,5 @@ public abstract class ClauseConfig extends ConfigElement{
 		super(reader);
 	}
 
-	public abstract String get_condition(TreeMap<String, String> aliases);
+	public abstract String getCondition(TreeMap<String, String> aliases);
 }

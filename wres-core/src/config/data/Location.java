@@ -3,8 +3,11 @@
  */
 package config.data;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.TreeMap;
 
+import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 /**
@@ -18,19 +21,38 @@ public final class Location extends ClauseConfig {
 	}
 	
 	@Override
-	protected void interpret(XMLStreamReader reader) {
-		// TODO Auto-generated method stub
+	protected void interpret(XMLStreamReader reader) throws XMLStreamException {
+		String tag_name = reader.getLocalName();
 		
+		if (tag_name.equalsIgnoreCase("lid"))
+		{
+			this.lid = tagValue(reader);
+		}
+		else if (tag_name.equalsIgnoreCase("comid"))
+		{
+			this.comid = tagValue(reader);
+		}
+		else if (tag_name.equalsIgnoreCase("gage_id"))
+		{
+			this.gage_id = tagValue(reader);
+		}
+		else if (tag_name.equalsIgnoreCase("huc"))
+		{
+			this.huc = tagValue(reader);
+		}
+		else if (tag_name.equalsIgnoreCase("name"))
+		{
+			this.name = tagValue(reader);
+		}
 	}
 
 	@Override
-	protected String tag_name() {
-		// TODO Auto-generated method stub
-		return null;
+	protected List<String> tagNames() {
+		return Arrays.asList("feature");
 	}
 
 	@Override
-	public String get_condition(TreeMap<String, String> aliases) {
+	public String getCondition(TreeMap<String, String> aliases) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -60,9 +82,48 @@ public final class Location extends ClauseConfig {
 		return name;
 	}
 	
-	private String lid = null;
-	private String comid = null;
-	private String gage_id = null;
-	private String huc = null;
-	private String name = null;
+	@Override
+	public String toString() {
+		String description = "Location: ";
+		description += System.lineSeparator();
+		
+		if (name != null)
+		{
+			description += "\tname: ";
+			description += name;
+			description += System.lineSeparator();
+		}
+		
+		if (lid != null) {
+			description += "\tlid: ";
+			description += lid;
+			description += System.lineSeparator();
+		}
+		
+		if (comid != null) {
+			description += "\tcomid: ";
+			description += String.valueOf(comid);
+			description += System.lineSeparator();
+		}
+		
+		if (gage_id != null) {
+			description += "\tgage id: ";
+			description += String.valueOf(gage_id);
+			description += System.lineSeparator();
+		}
+		
+		if (huc != null)
+		{
+			description += "\thuc: ";
+			description += huc;
+		}
+		
+		return description;
+	}
+	
+	private String lid;
+	private String comid;
+	private String gage_id;
+	private String huc;
+	private String name;
 }
