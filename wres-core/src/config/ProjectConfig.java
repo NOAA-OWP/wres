@@ -25,7 +25,7 @@ public class ProjectConfig extends XMLReader {
 	 * 
 	 */
 	public ProjectConfig() {
-		super(SystemConfig.project_directory());
+		super(SystemConfig.instance().get_project_directory());
 		load_projects();
 	}
 	

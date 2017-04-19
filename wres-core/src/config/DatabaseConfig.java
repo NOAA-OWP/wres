@@ -84,7 +84,6 @@ public final class DatabaseConfig {
 			datasource.setAutoCommitOnClose(true);
 			datasource.setMaxIdleTime(max_idle_time);
 			datasource.setMaxPoolSize(max_pool_size);
-			//datasource.setMinPoolSize(40);
 			datasource.setInitialPoolSize(40);
 		} 
 		catch (PropertyVetoException e) {
@@ -207,7 +206,7 @@ public final class DatabaseConfig {
 	public ResultSet get_results(final Connection connection, String query) throws SQLException
 	{
 		Statement statement = connection.createStatement();
-		statement.setFetchSize(SystemConfig.fetch_size());
+		statement.setFetchSize(SystemConfig.instance().get_fetch_size());
 		return statement.executeQuery(query);
 	}
 	

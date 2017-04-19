@@ -427,7 +427,7 @@ public class NetCDFSource extends BasicSource {
 		Connection connection = Database.get_connection();
 		connection.setAutoCommit(false);
 		Statement query = connection.createStatement();
-		query.setFetchSize(SystemConfig.fetch_size());
+		query.setFetchSize(SystemConfig.instance().get_fetch_size());
 		
 		ResultSet position_set = query.executeQuery(String.format(load_variablepositions_script, 
 																		   get_forecast_id(), 
