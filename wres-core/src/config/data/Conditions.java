@@ -22,23 +22,11 @@ public final class Conditions extends ClauseConfig {
 	{
 		super(reader);
 		
-		if (earliest_date == null)
-		{
-			earliest_date = "1900-01-01 00:00:00.0000";
-		}
-		
-		if (latest_date == null) {
-			latest_date = "2100-12-31 11:59:59.9999";
-		}
-		
-		if (minimum_value == null) {
-			minimum_value = "-infinity";
-		}
-		
-		if (maximum_value == null)
-		{
-			maximum_value = "infinity";
-		}
+		// Ensure that values are set for the constraints
+		setEarliestDate(earliest_date);
+		setLatestDate(latest_date);
+		setMinimumValue(minimum_value);
+		setMaximumValue(maximum_value);
 	}
 	
 	@Override
@@ -91,12 +79,36 @@ public final class Conditions extends ClauseConfig {
 	
 	private void setMinimumValue(String minimum)
 	{
-		if (minimum == null || Utilities.contains(new String[]{"NA",  "na", "none", "Na", "N\\A", "n\\a", "None", "NONE"}, minimum))
+		if (!Utilities.isNumeric(minimum))
 		{
 			minimum = "-infinity";
 		}
 		
 		this.minimum_value = minimum;
+	}
+	
+	private void setMaximumValue(String maximum)
+	{
+		if (!Utilities.isNumeric(maximum))
+		{
+			maximum = "infinity";
+		}
+		this.maximum_value = maximum;
+	}
+	
+	private void setEarliestDate(String earliest) {
+		if (!Utilities.isTimestamp(earliest)) {
+			earliest = "-infinity";
+		}
+		this.earliest_date = earliest;
+	}
+	
+	private void setLatestDate(String latest)
+	{
+		if (!Utilities.isTimestamp(latest)) {
+			latest = "infinity";
+		}
+		this.latest_date = latest;
 	}
 	
 	private String earliest_date;
