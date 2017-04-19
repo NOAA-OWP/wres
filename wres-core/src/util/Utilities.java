@@ -414,7 +414,14 @@ public final class Utilities {
 	
 	public static boolean isNumeric(String possibleNumber)
 	{
-		return possibleNumber.matches("[-]?\\d*\\.?\\d+");
+		return possibleNumber != null && possibleNumber.matches("[-]?\\d*\\.?\\d+");
+	}
+	
+	public static boolean isTimestamp(String possibleTimestamp)
+	{
+		return possibleTimestamp != null && (
+				possibleTimestamp.matches("\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d-\\d\\d-\\d\\d\\.?\\d*") ||
+				Arrays.asList("epoch", "infinity", "-infinity", "now", "today", "tomorrow", "yesterday").contains(possibleTimestamp));
 	}
 	
 	public static <U> List<U> where(List<U> source, Predicate<U> expression)
