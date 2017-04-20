@@ -20,7 +20,7 @@ import config.SystemConfig;
 public class Database {
 
     private static ComboPooledDataSource pool = SystemConfig.instance().get_connection_pool();
-	
+	private static boolean close_pool = false;
 	public static void close()
 	{
 		pool.close();
@@ -28,7 +28,17 @@ public class Database {
 	
 	public static Connection get_connection() throws SQLException
 	{
-		return pool.getConnection();
+		Connection connection = null;
+		
+		try {
+			connection = pool.getConnection();
+		} catch (SQLException error) {
+			System.err.println();
+			System.err.println("A connection to the database could not be created");
+			System.err.println();
+			throw error;
+		}
+		return connection;
 	}
 	
 	public static void return_connection(Connection conn) throws SQLException
@@ -142,7 +152,7 @@ public class Database {
 	private static boolean translate_copy_to_insert(final String table_definition, final String values, String delimiter) throws SQLException
 	{
 		boolean success = false;
-		
+
 		return success;
 	}
 	
@@ -237,5 +247,4 @@ public class Database {
 			}
 		}
 	}
-
 }

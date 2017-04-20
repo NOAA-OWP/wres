@@ -45,9 +45,21 @@ public class ThreeTuple<T extends Comparable<T>, U extends Comparable<U>, V exte
 	}
 
 	@Override
-	public int compareTo(ThreeTuple<T, U, V> o) {
-		// TODO Auto-generated method stub
-		return 0;
+	public int compareTo(ThreeTuple<T, U, V> other) {
+		int comparison = -1;
+		comparison = other.item_one.compareTo(this.item_one);
+		
+		if (comparison == 0)
+		{
+			comparison = other.item_two.compareTo(item_two);
+		}
+		
+		if (comparison == 0)
+		{
+			comparison = other.item_three.compareTo(item_three);
+		}
+		
+		return comparison;
 	}
 	
 	private final T item_one;

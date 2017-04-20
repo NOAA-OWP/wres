@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -35,6 +36,9 @@ import data.Variable;;
  */
 public final class MainFunctions {
 
+	// Clean definition of the newline character for the system
+	private static final String newline = System.lineSeparator();
+	
 	// Mapping of String names to corresponding methods
 	private static final Map<String, Consumer<String[]>> functions = createMap();
 	
@@ -57,8 +61,7 @@ public final class MainFunctions {
 	public static final void call(String operation, String[] args)
 	{
 		operation = operation.toLowerCase();
-		functions.get(operation).accept(args);
-		//Database.commit();	
+		functions.get(operation).accept(args);	
 		Executor.complete();
 	}
 	
@@ -83,6 +86,9 @@ public final class MainFunctions {
 		prototypes.put("saveobservations", saveObservations());
 		prototypes.put("saveforecasts", saveForecasts());
 		prototypes.put("describeprojects", describeProjects());
+		prototypes.put("flushdatabase", flushDatabase());
+		prototypes.put("flushforecasts", flushForecasts());
+		prototypes.put("flushobservations", flushObservations());
 		
 		return prototypes;
 	}
@@ -147,10 +153,19 @@ public final class MainFunctions {
 					String directory = args[0];
 					File[] files = new File(directory).listFiles();
 					System.out.println(String.format("Attempting to save all files in '%s' as forecasts to the database...", args[0]));
+					ArrayList<Future<?>> tasks = new ArrayList<Future<?>>();
+					
 					for (File file : files)
 					{
-						Executor.execute(new ForecastSaver(file.getAbsolutePath()));
+						tasks.add(Executor.execute(new ForecastSaver(file.getAbsolutePath())));
 					}
+					
+					for (Future<?> task : tasks)
+					{
+						task.get();
+					}
+					
+					Database.close();
 					Executor.complete();
 					System.out.println("All forecast saving operations complete. Please verify data.");
 				}
@@ -211,11 +226,18 @@ public final class MainFunctions {
 				{
 					String directory = args[0];
 					File[] files = new File(directory).listFiles();
+					ArrayList<Future<?>> tasks = new ArrayList<Future<?>>();
 					System.out.println(String.format("Attempting to save all files in '%s' as observations to the database...", args[0]));
 					for (File file : files)
 					{
-						Executor.execute(new ObservationSaver(file.getAbsolutePath()));
+						tasks.add(Executor.execute(new ObservationSaver(file.getAbsolutePath())));
 					}
+					
+					for (Future<?> task : tasks)
+					{
+						task.get();
+					}
+					
 					Executor.complete();
 					System.out.println("All observation saving operations complete. Please verify data.");
 				}
@@ -316,7 +338,6 @@ public final class MainFunctions {
 						try {
 							Database.return_connection(connection);
 						} catch (SQLException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}
@@ -435,7 +456,6 @@ public final class MainFunctions {
 						try {
 							Database.return_connection(connection);
 						} catch (SQLException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}
@@ -528,6 +548,11 @@ public final class MainFunctions {
 		};
 	}
 	
+	/**
+	 * Creates the "describeProjects" method
+	 * @return A method that will print out details about every found project in the path indicated by the system
+	 * configuration in a more human readable format.
+	 */
 	private static final Consumer<String[]> describeProjects()
 	{
 		return (String[] args) -> {
@@ -539,6 +564,81 @@ public final class MainFunctions {
 			for (Project project : ProjectConfig.get_projects())
 			{
 				System.out.println(project.toString());
+			}
+		};
+	}
+	
+	/**
+	 * Creates the "flushDatabase" method
+	 * @return A method that will remove all dynamic forecast, observation, and variable data from the database. Prepares the
+	 * database for a cold start.
+	 */
+	private static final Consumer<String[]> flushDatabase()
+	{
+		return (String[] args) -> {
+			String script = "";
+			script += "DELETE FROM wres.ForecastValue;" + newline;
+			script += "DELETE FROM wres.ForecastEnsemble;" + newline;
+			script += "DELETE FROM wres.Ensemble;" + newline;
+			script += "DELETE FROM wres.Forecast;" + newline;
+			script += "DELETE FROM wres.Observation;" + newline;
+			script += "DELETE FROM wres.FeaturePosition;" + newline;
+			script += "DELETE FROM wres.VariablePosition;" + newline;
+			script += "DELETE FROM wres.Variable;" + newline;
+			
+			try {
+				Database.execute(script);
+			} catch (SQLException e) {
+				System.err.println("WRES data could not be removed from the database." + newline);
+				System.err.println();
+				System.err.println(script);
+				System.err.println();
+				e.printStackTrace();
+			}
+		};
+	}
+	
+	/**
+	 * Creates the "flushForecasts" method
+	 * @return A method that will remove all forecast data from the database.
+	 */
+	private static final Consumer<String[]> flushForecasts()
+	{
+		return (String[] args) -> {
+			String script = "";
+			script += "DELETE FROM wres.ForecastValue;" + newline;
+			script += "DELETE FROM wres.ForecastEnsemble;" + newline;
+			script += "DELETE FROM wres.Forecast;" + newline;
+			
+			try {
+				Database.execute(script);
+			} catch (SQLException e) {
+				System.err.println("WRES forecast data could not be removed from the database." + newline);
+				System.err.println();
+				System.err.println(script);
+				System.err.println();
+				e.printStackTrace();
+			}
+		};
+	}
+	
+	/**
+	 * Creates the "flushObservations" method
+	 * @return A method that will remove all observation data from the database.
+	 */
+	private static final Consumer<String[]> flushObservations()
+	{
+		return (String[] args) -> {
+			String script = "DELETE FROM wres.Observation;" + newline;
+			
+			try {
+				Database.execute(script);
+			} catch (SQLException e) {
+				System.err.println("WRES Observation data could not be removed from the database." + newline);
+				System.err.println();
+				System.err.println(script);
+				System.err.println();
+				e.printStackTrace();
 			}
 		};
 	}

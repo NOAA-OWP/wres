@@ -11,7 +11,7 @@ import java.util.function.Predicate;
 /**
  * A set of values ordered by their order of addition
  */
-public class RecentUseList<U> 
+public class RecentUseList<U extends Comparable<U>> 
 {
 	/**
 	 * Creates the list with an infinite capacity
