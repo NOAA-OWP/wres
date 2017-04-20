@@ -30,7 +30,6 @@ public class ForecastSaver implements Runnable {
 		try
 		{
 			BasicSource source = SourceReader.get_source(this.filepath);
-			//System.out.println(String.format("Attempting to save '%s' to the database...", this.filepath));
 			source.save_forecast();
 			System.out.println(this.filepath + " saved to the database as a forecast. Please verify data.");
 		}
