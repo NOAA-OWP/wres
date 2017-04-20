@@ -196,12 +196,10 @@ public final class PIXMLReader extends XMLReader
 		}
 		else
 		{
-			//current_script = get_insert_observation_header();
 			current_table_definition = get_insert_observation_header();
 			current_script = "";
 		}
 		
-		//current_script += "(" + get_variableposition_id() + ", '" + observed_time + "', " + observed_value + ", " + get_measurement_id() + ")";
 		current_script += get_variableposition_id() + delimiter + "'" + observed_time + "'" + delimiter + observed_value + delimiter + get_measurement_id();
 		
 		insert_count++;
@@ -212,8 +210,7 @@ public final class PIXMLReader extends XMLReader
 		if (insert_count > 0)
 		{
 			insert_count = 0;
-			//Executor.execute(new SQLExecutor(current_script, false));
-			/*tasks.add(*/Executor.execute(new CopyExecutor(current_table_definition, current_script, delimiter));//);
+			Executor.execute(new CopyExecutor(current_table_definition, current_script, delimiter));
 			current_script = null;
 		}
 	}
@@ -363,36 +360,13 @@ public final class PIXMLReader extends XMLReader
 	
 	private String get_insert_forecast_header()
 	{
-		String script = "wres.ForecastValue(forecastensemble_id, lead, forecasted_value)";
-		
-		//script +=	"INSERT INTO wres.forecastvalue(forecastensemble_id, lead, forecasted_value)" + newline;
-		//script +=	"VALUES ";
-		
-		return script;
+		return "wres.ForecastValue(forecastensemble_id, lead, forecasted_value)";
 	}
 	
 	private String get_insert_observation_header()
 	{
-		String script = "wres.Observation(variableposition_id, observation_time, observed_value, measurementunit_id)";
-		
-		//script +=	"INSERT INTO wres.observation(variableposition_id, observation_time, observed_value, measurementunit_id)" + newline;
-		//script +=	"VALUES ";
-		
-		return script;
+		return "wres.Observation(variableposition_id, observation_time, observed_value, measurementunit_id)";
 	}
-	
-	/*@Override
-	protected void completeParsing() {
-		for (Future<?> task : tasks)
-		{
-			try {
-				task.get();
-			} catch (InterruptedException | ExecutionException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}*/
 	
 	private boolean save_forecast = true;
 	private EnsembleDetails current_ensemble = null;
