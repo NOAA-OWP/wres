@@ -4,6 +4,12 @@
           <pattern>%d{YYYY-MM-dd'T'HH:mm:ss.SSSZ} [%thread] %level %logger - %msg%n</pattern>
         </encoder>
     </appender>
+
+    <!-- Quiet the connection pooling library with level "warn" or "error" -->
+    <logger name="com.mchange.v2">
+        <level value="warn" />
+    </logger>
+
     <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
