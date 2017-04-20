@@ -15,7 +15,7 @@
 	<maximum_thread_count>60</maximum_thread_count>
 	<fetch_size>500</fetch_size>
     <maximum_inserts>900</maximum_inserts>
-    <maximum_copies>400</maximum_copies>
+    <maximum_copies>200</maximum_copies>
     <project_directory>projects</project_directory>
     <!--IOEP Username: pguser-->
     <!--IOEP Password: pass-->
