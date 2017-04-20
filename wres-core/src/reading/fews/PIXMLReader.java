@@ -16,8 +16,14 @@ import data.details.VariableDetails;
 import reading.XMLReader;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 import javax.xml.stream.XMLStreamReader;
 
 import org.slf4j.Logger;
@@ -207,7 +213,7 @@ public final class PIXMLReader extends XMLReader
 		{
 			insert_count = 0;
 			//Executor.execute(new SQLExecutor(current_script, false));
-			Executor.execute(new CopyExecutor(current_table_definition, current_script, delimiter));
+			/*tasks.add(*/Executor.execute(new CopyExecutor(current_table_definition, current_script, delimiter));//);
 			current_script = null;
 		}
 	}
@@ -375,6 +381,19 @@ public final class PIXMLReader extends XMLReader
 		return script;
 	}
 	
+	/*@Override
+	protected void completeParsing() {
+		for (Future<?> task : tasks)
+		{
+			try {
+				task.get();
+			} catch (InterruptedException | ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}*/
+	
 	private boolean save_forecast = true;
 	private EnsembleDetails current_ensemble = null;
 	private FeatureDetails current_location = null;
@@ -389,4 +408,5 @@ public final class PIXMLReader extends XMLReader
 	private int insert_count = 0;
 	private int lead_time = 0;
 	private final String delimiter = "|"; 
+	ArrayList<Future<?>> tasks = new ArrayList<Future<?>>();
 }

@@ -68,7 +68,7 @@ public class XMLReader
 			}
 			
 			reader.close();
-			
+			completeParsing();
 		}
 		catch (XMLStreamException | FileNotFoundException error)
 		{
@@ -91,6 +91,8 @@ public class XMLReader
 		    }
 		}
 	}
+	
+	protected void completeParsing(){}
 	
 	protected void set_filename(String filename)
 	{

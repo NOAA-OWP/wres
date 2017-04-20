@@ -165,7 +165,8 @@ public final class MainFunctions {
 						task.get();
 					}
 					
-					Database.close();
+					System.out.println(tasks.size() + " files were theoretically saved to the database. Closing now...");
+					//Database.close();
 					Executor.complete();
 					System.out.println("All forecast saving operations complete. Please verify data.");
 				}

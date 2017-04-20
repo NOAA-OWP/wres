@@ -20,7 +20,7 @@ import config.SystemConfig;
 public class Database {
 
     private static ComboPooledDataSource pool = SystemConfig.instance().get_connection_pool();
-	private static boolean close_pool = false;
+
 	public static void close()
 	{
 		pool.close();
@@ -132,7 +132,14 @@ public class Database {
 		catch (SQLException | IOException error)
 		{
 			System.err.println("Data could not be copied to the database:" + System.lineSeparator());
-			System.err.println(values);
+			if (values.length() > 1000)
+			{
+				System.err.println(values.substring(0, 1000) + "...");
+			}
+			else
+			{
+				System.err.println(values);
+			}
 			System.err.println();
 			
 			throw error;
