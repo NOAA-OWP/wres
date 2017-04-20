@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wresconfig>
 	<database>
-        <!--
-        <url>localhost</url>
-		<username>ctubbs</username>
-		<password></password>
-        <name>ctubbs</name>
-        -->
         <url>***REMOVED***eds-dev1.***REMOVED***.***REMOVED***</url>
         <username>christopher.tubbs</username>
         <password>changeme</password>
@@ -16,9 +10,6 @@
         <max_idle_time>80</max_idle_time>
         <!-- Warning: Default max connections is 100; approaching
              that will cause deadlocks-->
-        <!--
-        <max_pool_size>80</max_pool_size>
-        -->
         <max_pool_size>40</max_pool_size>
 	</database>
 	<maximum_thread_count>60</maximum_thread_count>

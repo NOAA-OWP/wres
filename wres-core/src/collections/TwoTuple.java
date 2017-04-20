@@ -11,9 +11,9 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 	/**
 	 * Creates the immutable pair of two values
 	 */
-	public TwoTuple(T item_one, U item_two) {
-		this.item_one = item_one;
-		this.item_two = item_two;
+	public TwoTuple(T itemOne, U itemTwo) {
+		this.itemOne = itemOne;
+		this.itemTwo = itemTwo;
 	}
 	
 	/**
@@ -22,24 +22,30 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 	 */
 	public T itemOne()
 	{
-		return item_one;
+		return itemOne;
 	}
 	
 	/**
 	 * Returns the second value
 	 * @return The second value
 	 */
-	public U itemTwo()
-	{
-		return item_two;
+	public U itemTwo() {
+		return itemTwo;
 	}
 
 	@Override
-	public int compareTo(TwoTuple<T, U> arg0) {
-		// TODO Auto-generated method stub
-		return 0;
+	public int compareTo(TwoTuple<T, U> other) {
+		int comparison = -1;
+		comparison = other.itemOne.compareTo(this.itemOne);
+		
+		if (comparison == 0)
+		{
+			comparison = other.itemTwo.compareTo(itemTwo);
+		}
+		
+		return comparison;
 	}
 	
-	private final T item_one;
-	private final U item_two;
+	private final T itemOne;
+	private final U itemTwo;
 }

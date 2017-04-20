@@ -17,13 +17,26 @@ public class FourTuple<T extends Comparable<T>, U extends Comparable<U>, V exten
 		this.item_two = item_two;
 		this.item_three = item_three;
 		this.item_four = item_four;
-		// TODO Auto-generated constructor stub
 	}
 
 	@Override
-	public int compareTo(FourTuple<T, U, V, W> o) {
-		// TODO Auto-generated method stub
-		return 0;
+	public int compareTo(FourTuple<T, U, V, W> other) {
+		int comparison = -1;
+		comparison = other.item_one.compareTo(this.item_one);
+		
+		if (comparison == 0) {
+			comparison = other.item_two.compareTo(item_two);
+		}
+		
+		if (comparison == 0) {
+			comparison = other.item_three.compareTo(item_three);
+		}
+		
+		if (comparison == 0) {
+			comparison = other.item_four.compareTo(item_four);
+		}
+		
+		return comparison;
 	}
 	
 	public T get_item_one()

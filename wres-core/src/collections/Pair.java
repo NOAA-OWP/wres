@@ -40,10 +40,11 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements C
 	public int compareTo(Pair<T, U> other) {
 		int comparison = -1;
 		comparison = other.item_one.compareTo(this.item_one);
-		if (comparison == 0)
-		{
+		
+		if (comparison == 0) {
 			comparison = other.item_two.compareTo(item_two);
 		}
+		
 		return comparison;
 	}
 }
