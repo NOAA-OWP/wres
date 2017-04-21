@@ -11,7 +11,7 @@ import util.Database;
  * @author ctubbs
  *
  */
-public final class FeatureDetails 
+public final class FeatureDetails implements Comparable<FeatureDetails>
 {
 	private final static String newline = System.lineSeparator();
 
@@ -100,6 +100,18 @@ public final class FeatureDetails
 		script = "SELECT wres.get_variableposition_id(" + feature_id + ", " + variable_id + ") AS variableposition_id;";
 
 		variableposition_id = Database.get_result(script, "variableposition_id");
+	}
+
+	@Override
+	public int compareTo(FeatureDetails other) {
+		Integer id = this.feature_id;
+		
+		if (id == null)
+		{
+			id = -1;
+		}
+
+		return id.compareTo(other.feature_id);
 	}
 
 }
