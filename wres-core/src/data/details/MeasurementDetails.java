@@ -5,15 +5,11 @@ package data.details;
 
 import java.sql.SQLException;
 
-import util.Database;
-
 /**
  * @author ctubbs
  *
  */
-public final class MeasurementDetails {
-	private final static String newline = System.lineSeparator();
-	
+public final class MeasurementDetails extends Detail<MeasurementDetails, String> {	
 	private String unit = null;
 	private Integer measurementunit_id = null;
 	
@@ -34,9 +30,34 @@ public final class MeasurementDetails {
 		}
 		return measurementunit_id;
 	}
-	
-	public void save() throws SQLException
-	{
+
+	@Override
+	public int compareTo(MeasurementDetails other) {
+		return this.unit.compareTo(other.unit);
+	}
+
+	@Override
+	public String getKey() {
+		return this.unit;
+	}
+
+	@Override
+	public Integer getId() {
+		return this.measurementunit_id;
+	}
+
+	@Override
+	protected String getIDName() {
+		return "measurementunit_id";
+	}
+
+	@Override
+	public void setID(Integer id) {
+		this.measurementunit_id = id;		
+	}
+
+	@Override
+	protected String getInsertSelectStatement() {
 		String script = "";
 
 		script += "WITH new_measurementunit_id AS" + newline;
@@ -58,7 +79,7 @@ public final class MeasurementDetails {
 		script += "SELECT measurementunit_id" + newline;
 		script += "FROM wres.MeasurementUnit" + newline;
 		script += "WHERE unit_name = '" + unit + "';";
-		
-		measurementunit_id = Database.get_result(script, "measurementunit_id");
+
+		return script;
 	}
 }

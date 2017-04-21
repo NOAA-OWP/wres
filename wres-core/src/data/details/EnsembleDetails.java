@@ -5,51 +5,48 @@ package data.details;
 
 import java.sql.SQLException;
 
-import util.Database;
+import collections.Triplet;
 
 /**
  * Describes basic information used to define 
  */
-public final class EnsembleDetails implements Comparable<EnsembleDetails>
-{
-	// System specific representation of a newline
-	private final static String newline = System.lineSeparator();
+public final class EnsembleDetails extends Detail<EnsembleDetails, Triplet<String, String, String>>{
 	
 	// The name of the ensemble being represented
 	private String ensemble_name = null;
 	
 	// The "numeric" id of the member of the ensemble
-	private String ensemblemember_id = null;
+	private String ensembleMemberID = null;
 	
 	// The serial id of the ensemble in the database
-	private Integer ensemble_id = null;
+	private Integer ensembleID = null;
 
 	// The qualifier for the ensemble
-	public String qualifier_id = null;
+	public String qualifierID = null;
 	
 	/**
 	 * Updates the ensemble name if necessary. If the update occurs, the serial id is reset
 	 * @param ensemble_name The new name for the ensemble
 	 */
-	public void set_ensemble_name(String ensemble_name)
+	public void setEnsembleName(String ensemble_name)
 	{
 		if (this.ensemble_name == null || !this.ensemble_name.equalsIgnoreCase(ensemble_name))
 		{
 			this.ensemble_name = ensemble_name;
-			this.ensemble_id = null;
+			this.ensembleID = null;
 		}
 	}
 	
 	/**
 	 * Updates the ensemble member id if necessary. If the update occurs, the serial id is reset
-	 * @param ensemblemember_id The new id for the ensemble member
+	 * @param ensembleMemberID The new id for the ensemble member
 	 */
-	public void set_ensemblemember_id(String ensemblemember_id)
+	public void setEnsembleMemberID(String ensembleMemberID)
 	{
-		if (this.ensemblemember_id == null || !this.ensemblemember_id.equalsIgnoreCase(ensemblemember_id))
+		if (this.ensembleMemberID == null || !this.ensembleMemberID.equalsIgnoreCase(ensembleMemberID))
 		{
-			this.ensemblemember_id = ensemblemember_id;
-			this.ensemble_id = null;
+			this.ensembleMemberID = ensembleMemberID;
+			this.ensembleID = null;
 		}
 	}
 	
@@ -60,29 +57,29 @@ public final class EnsembleDetails implements Comparable<EnsembleDetails>
 	 */
 	public int get_ensemble_id() throws SQLException
 	{
-		if (ensemble_id == null)
+		if (ensembleID == null)
 		{
 			save();
 		}
 		
-		return ensemble_id;
+		return ensembleID;
 	}
 	
 	/**
 	 * Returns the proper string representation of the qualifier ID of the ensemble
 	 * @return The qualifier id wrapped in single quotes or the unwrapped String stating null
 	 */
-	private String get_qualifier_id()
+	private String getQualifierID()
 	{
 		String id = null;
 		
-		if (qualifier_id == null)
+		if (qualifierID == null)
 		{
 			id = "null";
 		}
 		else
 		{
-			id = "'" + qualifier_id + "'";
+			id = "'" + qualifierID + "'";
 		}
 		
 		return id;
@@ -92,49 +89,16 @@ public final class EnsembleDetails implements Comparable<EnsembleDetails>
 	 * Returns a sanitized version of the ensemblemember id for saving and loading values
 	 * @return The id of the ensemble member if one exists, "0" otherwise
 	 */
-	private String get_ensemblemember_id()
+	private String getEnsembleMemberID()
 	{
 		String id = "0";
 		
-		if (ensemblemember_id != null)
+		if (ensembleMemberID != null)
 		{
-			id = this.ensemblemember_id;
+			id = this.ensembleMemberID;
 		}
 		
 		return id;
-	}
-	
-	/**
-	 * Generates a SQL statement that will insert the ensemble and/or return the id of the ensemble
-	 * @throws SQLException Throws a SQLException if there was an error thrown in the Database
-	 */
-	private void save() throws SQLException
-	{
-		String script = "";
-		
-		script += "WITH new_ensemble AS" + newline;
-		script += "(" + newline;
-		script += "		INSERT INTO wres.Ensemble(ensemble_name, qualifier_id, ensemblemember_id)" + newline;
-		script += "		SELECT '" + ensemble_name + "', " + get_qualifier_id() + ", " + get_ensemblemember_id() + newline;
-		script += "		WHERE NOT EXISTS (" + newline;
-		script += "			SELECT 1" + newline;
-		script += "			FROM wres.Ensemble" + newline;
-		script += "			WHERE ensemble_name = '" + ensemble_name + "'" + newline;
-		script += "				AND ensemblemember_id = " + get_ensemblemember_id() + newline;
-		script += "		)" + newline;
-		script += "		RETURNING ensemble_id" + newline;
-		script += ")" + newline;
-		script += "SELECT ensemble_id" + newline;
-		script += "FROM new_ensemble" + newline + newline;
-		script += "";
-		script += "UNION" + newline + newline;
-		script += "";
-		script += "SELECT ensemble_id" + newline;
-		script += "FROM wres.Ensemble" + newline;
-		script += "WHERE ensemble_name = '" + ensemble_name + "'" + newline;
-		script += "		AND ensemblemember_id = " + get_ensemblemember_id() + ";";
-		
-		ensemble_id = Database.get_result(script, "ensemble_id");
 	}
 
 	@Override
@@ -146,9 +110,57 @@ public final class EnsembleDetails implements Comparable<EnsembleDetails>
 		
 		if (comparison == 0)
 		{
-			comparison = this.ensemblemember_id.compareTo(other.ensemblemember_id);
+			comparison = this.ensembleMemberID.compareTo(other.ensembleMemberID);
 		}
 
 		return comparison;
+	}
+
+	@Override
+	public Triplet<String, String, String> getKey() {
+		return new Triplet<String, String, String>(this.ensemble_name, this.ensembleMemberID, this.qualifierID);
+	}
+
+	@Override
+	public Integer getId() {
+		return this.ensembleID;
+	}
+
+	@Override
+	protected String getIDName() {
+		return "ensemble_id";
+	}
+
+	@Override
+	public void setID(Integer id) {
+		this.ensembleID = id;
+	}
+
+	@Override
+	protected String getInsertSelectStatement() {
+		String script = "";
+		
+		script += "WITH new_ensemble AS" + newline;
+		script += "(" + newline;
+		script += "		INSERT INTO wres.Ensemble(ensemble_name, qualifier_id, ensemblemember_id)" + newline;
+		script += "		SELECT '" + ensemble_name + "', " + getQualifierID() + ", " + getEnsembleMemberID() + newline;
+		script += "		WHERE NOT EXISTS (" + newline;
+		script += "			SELECT 1" + newline;
+		script += "			FROM wres.Ensemble" + newline;
+		script += "			WHERE ensemble_name = '" + ensemble_name + "'" + newline;
+		script += "				AND ensemblemember_id = " + getEnsembleMemberID() + newline;
+		script += "		)" + newline;
+		script += "		RETURNING ensemble_id" + newline;
+		script += ")" + newline;
+		script += "SELECT ensemble_id" + newline;
+		script += "FROM new_ensemble" + newline + newline;
+		script += "";
+		script += "UNION" + newline + newline;
+		script += "";
+		script += "SELECT ensemble_id" + newline;
+		script += "FROM wres.Ensemble" + newline;
+		script += "WHERE ensemble_name = '" + ensemble_name + "'" + newline;
+		script += "		AND ensemblemember_id = " + getEnsembleMemberID() + ";";
+		return script;
 	}
 }

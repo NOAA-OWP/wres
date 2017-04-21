@@ -19,6 +19,8 @@ import java.util.concurrent.ExecutionException;
 import concurrency.Executor;
 import concurrency.ForecastSaver;
 import java.util.function.Consumer;
+import java.util.function.Function;
+
 import reading.BasicSource;
 import reading.SourceReader;
 import config.ProjectConfig;
@@ -478,23 +480,69 @@ public final class MainFunctions {
 	private static final Consumer<String[]> systemMetrics()
 	{
 		return (String[] args) -> {
-			  /* Total number of processors or cores available to the JVM */
-			  System.out.println("Available processors (cores): " + 
-			  Runtime.getRuntime().availableProcessors());
+			Runtime runtime = Runtime.getRuntime();
+		
+			// Add white space
+			System.out.println();
+			
+			/* Total number of processors or cores available to the JVM */
+			System.out.println("Available processors (cores):\t" + 
+			runtime.availableProcessors());
+			
+			/**
+			 * Function to whittle down and describe the memory in a human readable format
+			 * (i.e. not represented in raw number of bytes
+			 */
+			Function<Long, String> describeMemory = (Long memory) -> {
+				String memoryUnit = " bytes";
+				Double floatingMemory = memory.doubleValue();
+				
+				// Convert to KB if necessary
+				if (floatingMemory > 1000)
+				{
+					floatingMemory = floatingMemory / 1000.0;
+					memoryUnit = " KB";
+				}
+				
+				// Convert to MB if Necessary
+				if (floatingMemory > 1000)
+				{
+					floatingMemory = floatingMemory / 1000.0;
+					memoryUnit = " MB";
+				}
+				
+				// Convert to GB if necessary
+				if (floatingMemory > 1000)
+				{
+					floatingMemory = floatingMemory / 1000.0;
+					memoryUnit = " GB";
+				}
+				
+				// Convert to TB if necessary
+				if (floatingMemory > 1000)
+				{
+					floatingMemory = floatingMemory / 1000.0;
+					memoryUnit = " TB";
+				}
+				
+				return floatingMemory + memoryUnit;
+			};
+			
+			// Theoretical amount of free memory
+			System.out.println("Free memory:\t\t\t" + describeMemory.apply(runtime.freeMemory()));
+			
+			/* This will return Long.MAX_VALUE if there is no preset limit */
+			long maxMemory = runtime.maxMemory();
+			
+			/* Maximum amount of memory the JVM will attempt to use */
+			System.out.println("Maximum available memory:\t" + 
+							   (maxMemory == Long.MAX_VALUE ? "no limit" : describeMemory.apply(maxMemory)));
+			
+			/* Total memory currently in use by the JVM */
+			System.out.println("Total memory in use:\t\t" + describeMemory.apply(runtime.totalMemory()));
 
-			  /* Total amount of free memory available to the JVM */
-			  System.out.println("Free memory (bytes): " + 
-			  Runtime.getRuntime().freeMemory());
-
-			  /* This will return Long.MAX_VALUE if there is no preset limit */
-			  long maxMemory = Runtime.getRuntime().maxMemory();
-			  /* Maximum amount of memory the JVM will attempt to use */
-			  System.out.println("Maximum memory (bytes): " + 
-			  (maxMemory == Long.MAX_VALUE ? "no limit" : maxMemory));
-
-			  /* Total memory currently in use by the JVM */
-			  System.out.println("Total memory (bytes): " + 
-			  Runtime.getRuntime().totalMemory());
+			// Add white space
+			System.out.println();
 		};
 	}
 	

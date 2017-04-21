@@ -5,20 +5,17 @@ package data.details;
 
 import java.sql.SQLException;
 
-import util.Database;
-
 /**
  * @author ctubbs
  *
  */
-public final class VariableDetails {
-	private static final String newline = System.lineSeparator();
+public final class VariableDetails extends Detail<VariableDetails, String>{
 	
 	private String variable_name = null;
 	public Integer measurementunit_id = null;
 	private Integer variable_id = null;
 	
-	public void set_variable_name(String variable_name)
+	public void setVariableName(String variable_name)
 	{
 		if (this.variable_name == null || !this.variable_name.equalsIgnoreCase(variable_name))
 		{
@@ -27,7 +24,7 @@ public final class VariableDetails {
 		}
 	}
 	
-	public Integer get_variable_id() throws SQLException
+	public Integer getVariableID() throws SQLException
 	{
 		if (variable_id == null)
 		{
@@ -36,9 +33,31 @@ public final class VariableDetails {
 		
 		return variable_id;
 	}
-	
-	public void save() throws SQLException
-	{
+
+	@Override
+	public int compareTo(VariableDetails other) {
+		Integer id = this.variable_id;
+		
+		if (id == null)
+		{
+			id = -1;
+		}
+		
+		return id.compareTo(other.variable_id);
+	}
+
+	@Override
+	public String getKey() {
+		return this.variable_name;
+	}
+
+	@Override
+	public Integer getId() {
+		return this.variable_id;
+	}
+
+	@Override
+	public String getInsertSelectStatement() {
 		String script = "";
 		
 		script += "WITH new_variable_id AS" + newline;
@@ -63,6 +82,17 @@ public final class VariableDetails {
 		script += "FROM wres.Variable" + newline;
 		script += "WHERE variable_name = '" + variable_name + "';";
 		
-		variable_id = Database.get_result(script, "variable_id");
+		return script;
+	}
+
+	@Override
+	protected String getIDName() {
+		return "variable_id";
+	}
+
+	@Override
+	public void setID(Integer id) {
+		this.variable_id = id;
+		
 	}
 }

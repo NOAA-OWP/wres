@@ -13,9 +13,11 @@ import config.SystemConfig;
 import collections.RecentUseList;
 import util.Database;
 
+@Deprecated
 /**
  * @author ctubbs
  *
+ * @deprecated: Relies on the old schema
  */
 public class Variable {
 

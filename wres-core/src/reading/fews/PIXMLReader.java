@@ -5,7 +5,6 @@ package reading.fews;
 
 import concurrency.CopyExecutor;
 import concurrency.Executor;
-import concurrency.SQLExecutor;
 import config.SystemConfig;
 import data.details.EnsembleDetails;
 import data.details.FeatureDetails;
@@ -19,9 +18,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import javax.xml.stream.XMLStreamReader;
@@ -173,16 +169,14 @@ public final class PIXMLReader extends XMLReader
 	{
 		if (insert_count > 0)
 		{
-			current_script += /*"," +*/ newline;
+			current_script += newline;
 		}
 		else if(insert_count == 0)
 		{
-			//current_script = get_insert_forecast_header();
 			current_table_definition = get_insert_forecast_header();
 			current_script = "";
 		}
 		
-		//current_script += "(" + get_forecastensemble_id() + ", " + lead_time + ", " + forecasted_value + ")";
 		current_script += get_forecastensemble_id() + delimiter + lead_time + delimiter + forecasted_value;
 		
 		insert_count++;
@@ -192,7 +186,7 @@ public final class PIXMLReader extends XMLReader
 	{
 		if (insert_count > 0)
 		{
-			current_script += /*"," +*/ newline;
+			current_script += newline;
 		}
 		else
 		{
@@ -250,17 +244,17 @@ public final class PIXMLReader extends XMLReader
 				else if(local_name.equalsIgnoreCase("ensembleId"))
 				{
 					//	If we are at the tag for the name of the ensemble, save it to the ensemble
-					current_ensemble.set_ensemble_name(tag_value(reader));
+					current_ensemble.setEnsembleName(tag_value(reader));
 				}
 				else if(local_name.equalsIgnoreCase("qualifierId"))
 				{
 					//	If we are at the tag for the ensemble qualifier, save it to the ensemble
-					current_ensemble.qualifier_id = tag_value(reader);
+					current_ensemble.qualifierID = tag_value(reader);
 				}
 				else if(local_name.equalsIgnoreCase("ensembleMemberIndex"))
 				{
 					//	If we are at the tag for the ensemble member, save it to the ensemble
-					current_ensemble.set_ensemblemember_id(tag_value(reader));
+					current_ensemble.setEnsembleMemberID(tag_value(reader));
 				}
 				else if(local_name.equalsIgnoreCase("forecastDate"))
 				{
@@ -315,7 +309,7 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if (local_name.equalsIgnoreCase("parameterId"))
 				{
-					current_variable.set_variable_name(tag_value(reader));
+					current_variable.setVariableName(tag_value(reader));
 				}
 			}
 			reader.next();
@@ -355,7 +349,7 @@ public final class PIXMLReader extends XMLReader
 	private int get_variable_id() throws SQLException
 	{
 		current_variable.measurementunit_id = get_measurement_id();		
-		return current_variable.get_variable_id();
+		return current_variable.getVariableID();
 	}
 	
 	private String get_insert_forecast_header()
