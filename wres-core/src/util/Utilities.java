@@ -8,6 +8,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Predicate;
@@ -424,12 +425,12 @@ public final class Utilities {
 				Arrays.asList("epoch", "infinity", "-infinity", "now", "today", "tomorrow", "yesterday").contains(possibleTimestamp));
 	}
 	
-	public static <U> List<U> where(List<U> source, Predicate<U> expression)
+	public static <U> List<U> where(Collection<U> source, Predicate<U> expression)
 	{
-		return source.stream().filter(expression).collect(Collectors.toCollection(()->source.subList(0, 0)));
+		return source.stream().filter(expression).collect(Collectors.toList());
 	}
 	
-	public static <U> U find(List<U> source, Predicate<U> expression)
+	public static <U> U find(Collection<U> source, Predicate<U> expression)
 	{
 		U val = null;
 		List<U> collection = where(source, expression);

@@ -60,11 +60,11 @@ public class NetCDFSource extends BasicSource {
 													parameter.item_two, 
 													parameter.item_three));*/
 				script_builder.append("(");
-				script_builder.append(parameter.item_one);
+				script_builder.append(parameter.itemOne);
 				script_builder.append(", ");
-				script_builder.append(parameter.item_two);
+				script_builder.append(parameter.itemTwo);
 				script_builder.append(", ");
-				script_builder.append(parameter.item_three);
+				script_builder.append(parameter.itemThree);
 				script_builder.append(")");
 			}
 			
@@ -424,7 +424,7 @@ public class NetCDFSource extends BasicSource {
 	{
 		System.out.println("Loading a new set of value positions for " + variable_name);
 		this.variable_positions = new AssociatedPair<Integer, Integer, Integer>();
-		Connection connection = Database.get_connection();
+		Connection connection = Database.getConnection();
 		connection.setAutoCommit(false);
 		Statement query = connection.createStatement();
 		query.setFetchSize(SystemConfig.instance().get_fetch_size());
@@ -440,7 +440,7 @@ public class NetCDFSource extends BasicSource {
 										position_set.getInt("forecastensemble_id"));
 		}
 		
-		Database.return_connection(connection);
+		Database.returnConnection(connection);
 		System.out.println("Positions loaded.");
 	}
 	

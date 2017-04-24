@@ -6,63 +6,78 @@ package collections;
 /**
  * An immutable pairing of three values
  */
-public class ThreeTuple<T extends Comparable<T>, U extends Comparable<U>, V extends Comparable<V>> implements Comparable<ThreeTuple<T, U, V>>{
+public class ThreeTuple<T extends Comparable<T>, U extends Comparable<U>, V extends Comparable<V>> implements Group<ThreeTuple<T, U, V>>{
 
 	/**
 	 * Creates the immutable triplet of two values
 	 */
-	public ThreeTuple(T item_one, U item_two, V item_three) {
-		this.item_one = item_one;
-		this.item_two = item_two;
-		this.item_three = item_three;
+	public ThreeTuple(T itemOne, U itemTwo, V itemThree) {
+		this.itemOne = itemOne;
+		this.itemTwo = itemTwo;
+		this.itemThree = itemThree;
 	}
 	
 	/**
 	 * Returns the first value
 	 * @return The first value
 	 */
-	public T get_item_one()
+	public T getItemOne()
 	{
-		return item_one;
+		return itemOne;
 	}
 	
 	/**
 	 * Returns the second value
 	 * @return The second value
 	 */
-	public U get_item_two()
+	public U getItemTwo()
 	{
-		return item_two;
+		return itemTwo;
 	}
 	
 	/**
 	 * Returns the third value
 	 * @return The third value
 	 */
-	public V get_item_three()
+	public V getItemThree()
 	{
-		return item_three;
+		return itemThree;
 	}
 
 	@Override
 	public int compareTo(ThreeTuple<T, U, V> other) {
 		int comparison = -1;
-		comparison = other.item_one.compareTo(this.item_one);
+		comparison = other.itemOne.compareTo(this.itemOne);
 		
 		if (comparison == 0)
 		{
-			comparison = other.item_two.compareTo(item_two);
+			comparison = other.itemTwo.compareTo(itemTwo);
 		}
 		
 		if (comparison == 0)
 		{
-			comparison = other.item_three.compareTo(item_three);
+			comparison = other.itemThree.compareTo(itemThree);
 		}
 		
 		return comparison;
 	}
 	
-	private final T item_one;
-	private final U item_two;
-	private final V item_three;
+	private final T itemOne;
+	private final U itemTwo;
+	private final V itemThree;
+	
+	@Override
+	public boolean isFull() {
+		return itemOne != null && itemTwo != null && itemThree != null;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return itemOne == null && itemTwo == null && itemThree == null;
+	}
+
+	@Override
+	public ThreeTuple<T, U, V> copy() {
+		return new ThreeTuple<T, U, V>(itemOne, itemTwo, itemThree);
+	}
 }

@@ -34,8 +34,8 @@ public class AssociatedPair<U extends Comparable<U>, V extends Comparable<V>, W>
 			indexer = new Pair<U, V>();
 		}
 		
-		indexer.item_one = item_one;
-		indexer.item_two = item_two;
+		indexer.itemOne = item_one;
+		indexer.itemTwo = item_two;
 		
 		return this.get(indexer);
 	}

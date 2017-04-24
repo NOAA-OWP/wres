@@ -110,15 +110,15 @@ public final class SystemConfig extends reading.XMLReader
 				}
 				else if (reader.getLocalName().equalsIgnoreCase("maximum_inserts"))
 				{
-					maximum_inserts = Integer.parseInt(tag_value(reader));
+					maximum_inserts = Integer.parseInt(tagValue(reader));
 				}
 				else if (reader.getLocalName().equalsIgnoreCase("maximum_copies"))
 				{
-					maximum_copies = Integer.parseInt(tag_value(reader));
+					maximum_copies = Integer.parseInt(tagValue(reader));
 				}
 				else if (reader.getLocalName().equalsIgnoreCase("project_directory"))
 				{
-					project_directory = tag_value(reader);
+					project_directory = tagValue(reader);
 				}
 			}
 		}

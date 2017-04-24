@@ -10,17 +10,17 @@ public final class Ensemble extends ThreeTuple<String, String, String>
 	
 	public String getEnsembleName()
 	{
-		return get_item_one();
+		return getItemOne();
 	}
 	
 	public String getEnsemblememberID()
 	{
-		return get_item_two();
+		return getItemTwo();
 	}
 	
 	public String getQualifier()
 	{
-		return get_item_three();
+		return getItemThree();
 	}
 	
 	@Override

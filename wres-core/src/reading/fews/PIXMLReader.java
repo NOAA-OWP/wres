@@ -6,6 +6,10 @@ package reading.fews;
 import concurrency.CopyExecutor;
 import concurrency.Executor;
 import config.SystemConfig;
+import data.EnsembleCache;
+import data.FeatureCache;
+import data.MeasurementCache;
+import data.VariableCache;
 import data.details.EnsembleDetails;
 import data.details.FeatureDetails;
 import data.details.ForecastDetails;
@@ -13,6 +17,7 @@ import data.details.ForecastEnsembleDetails;
 import data.details.MeasurementDetails;
 import data.details.VariableDetails;
 import reading.XMLReader;
+import util.Database;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -33,9 +38,9 @@ public final class PIXMLReader extends XMLReader
 {	
 	private static String newline = System.lineSeparator();
 	
-	private final static Map<String, Double> in_hours = map_time_to_hours();
+	private final static Map<String, Double> hourConversion = mapTimeToHours();
 	
-	private static Map<String, Double> map_time_to_hours() 
+	private static Map<String, Double> mapTimeToHours() 
 	{
 		Map<String, Double> mapping = new TreeMap<String, Double>();
 		
@@ -59,7 +64,7 @@ public final class PIXMLReader extends XMLReader
 	public PIXMLReader(String filename, boolean is_forecast)
 	{
 		super(filename);
-		this.save_forecast = is_forecast;
+		this.saveForecast = is_forecast;
 	}
 	
 	@Override
@@ -71,7 +76,7 @@ public final class PIXMLReader extends XMLReader
 			if (local_name.equalsIgnoreCase("series"))
 			{
 				try {
-					parse_series(reader);
+					parseSeries(reader);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -79,7 +84,7 @@ public final class PIXMLReader extends XMLReader
 		}
 	}
 
-	private void parse_series(XMLStreamReader reader) throws Exception
+	private void parseSeries(XMLStreamReader reader) throws Exception
 	{
 		//	If the current tag is the series tag itself, move on to the next tag
 		if (reader.isStartElement() && reader.getLocalName().equalsIgnoreCase("series"))
@@ -87,15 +92,15 @@ public final class PIXMLReader extends XMLReader
 			reader.next();
 		}
 		
-		String local_name = null;
+		String localName = null;
 		
 		//	Create new metadata records for the new header (inefficient; refactor later)
-		current_ensemble = new EnsembleDetails();
-		current_location = new FeatureDetails();
-		current_measurement = new MeasurementDetails();
-		current_forecast = new ForecastDetails();
-		current_forecastensemble = new ForecastEnsembleDetails();
-		current_variable = new VariableDetails();
+		//current_ensemble = new EnsembleDetails();
+		//current_location = new FeatureDetails();
+		//current_measurement = new MeasurementDetails();
+		currentForecast = new ForecastDetails();
+		currentForecastEnsemble = new ForecastEnsembleDetails();
+		//current_variable = new VariableDetails();
 		
 		//	Loop through every element in a series (header -> entry -> entry -> ... )
 		while (reader.hasNext())
@@ -107,117 +112,124 @@ public final class PIXMLReader extends XMLReader
 			}
 			else if (reader.isStartElement())
 			{
-				local_name = reader.getLocalName();
-				if (local_name.equalsIgnoreCase("header"))
+				localName = reader.getLocalName();
+				if (localName.equalsIgnoreCase("header"))
 				{
-					parse_header(reader);
+					parseHeader(reader);
 				}
-				else if(local_name.equalsIgnoreCase("event"))
+				else if(localName.equalsIgnoreCase("event"))
 				{
-					parse_event(reader);
+					parseEvent(reader);
 				}
 			}
 		}
 		
-		save_entries();
+		saveEntries();
 	}
 	
-	private void parse_event(XMLStreamReader reader) throws Exception
+	private void parseEvent(XMLStreamReader reader) throws Exception
 	{
-		lead_time = lead_time + time_step;
+		leadTime = leadTime + timeStep;
 		Float value = null;
 		String time = "";
-		String local_name = null;
+		String localName = null;
 		
-		for (int attribute_index = 0; attribute_index < reader.getAttributeCount(); ++attribute_index)
+		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
 		{
-			local_name = reader.getAttributeLocalName(attribute_index);
-			if (local_name.equalsIgnoreCase("value"))
+			localName = reader.getAttributeLocalName(attributeIndex);
+			if (localName.equalsIgnoreCase("value"))
 			{
-				value = Float.parseFloat(reader.getAttributeValue(attribute_index));
+				value = Float.parseFloat(reader.getAttributeValue(attributeIndex));
 			}
-			else if (local_name.equalsIgnoreCase("date"))
+			else if (localName.equalsIgnoreCase("date"))
 			{
-				time = reader.getAttributeValue(attribute_index) + time;
+				time = reader.getAttributeValue(attributeIndex) + time;
 			}
-			else if (local_name.equalsIgnoreCase("time"))
+			else if (localName.equalsIgnoreCase("time"))
 			{
-				time += " " + reader.getAttributeValue(attribute_index);
+				time += " " + reader.getAttributeValue(attributeIndex);
 			}
 		}
 		
-		if (value != current_missing_value)
+		if (value != currentMissingIndex)
 		{			
-			if (save_forecast)
+			if (saveForecast)
 			{
-				add_forecast_event(value);
+				addForecastEvent(value);
 			}
 			else
 			{
-				add_observed_event(time, value);
+				addObservedEvent(time, value);
 			}
 		}
 		
-		if (insert_count >= SystemConfig.instance().get_maximum_copies())
+		if (insertCount >= SystemConfig.instance().get_maximum_copies())
 		{
 		    LOGGER.debug("Insert count greater than maximum copies, saving.");
-			save_entries();
+			saveEntries();
 		}
 	}
 	
-	private void add_forecast_event(Float forecasted_value) throws SQLException
+	private void addForecastEvent(Float forecastedValue) throws Exception
 	{
-		if (insert_count > 0)
+		if (insertCount > 0)
 		{
-			current_script += newline;
+			currentScript += newline;
 		}
-		else if(insert_count == 0)
+		else if(insertCount == 0)
 		{
-			current_table_definition = get_insert_forecast_header();
-			current_script = "";
+			currentTableDefinition = getInsertForecastHeader();
+			currentScript = "";
 		}
 		
-		current_script += get_forecastensemble_id() + delimiter + lead_time + delimiter + forecasted_value;
+		currentScript += getForecastEnsembleID() + delimiter + leadTime + delimiter + forecastedValue;
 		
-		insert_count++;
+		insertCount++;
 	}
 	
-	private void add_observed_event(String observed_time, Float observed_value) throws SQLException
+	private void addObservedEvent(String observedTime, Float observedValue) throws Exception
 	{
-		if (insert_count > 0)
+		if (insertCount > 0)
 		{
-			current_script += newline;
+			currentScript += newline;
 		}
 		else
 		{
-			current_table_definition = get_insert_observation_header();
-			current_script = "";
+			currentTableDefinition = getInsertObservationHeader();
+			currentScript = "";
 		}
 		
-		current_script += get_variableposition_id() + delimiter + "'" + observed_time + "'" + delimiter + observed_value + delimiter + get_measurement_id();
+		currentScript += currentVariablePositionID;
+		currentScript += delimiter;
+		currentScript += "'" + observedTime + "'";
+		currentScript += delimiter;
+		currentScript += observedValue;
+		currentScript += delimiter;
+		currentScript += getMeasurementID();
 		
-		insert_count++;
+		insertCount++;
 	}
 	
-	private void save_entries()
+	private void saveEntries()
 	{
-		if (insert_count > 0)
+		if (insertCount > 0)
 		{
-			insert_count = 0;
-			Executor.execute(new CopyExecutor(current_table_definition, current_script, delimiter));
-			current_script = null;
+			insertCount = 0;
+			//Executor.execute(new CopyExecutor(currentTableDefinition, currentScript, delimiter));
+			Database.execute(new CopyExecutor(currentTableDefinition, currentScript, delimiter));
+			currentScript = null;
 		}
 	}
 	
-	private void parse_header(XMLStreamReader reader) throws Exception
+	private void parseHeader(XMLStreamReader reader) throws Exception
 	{
 		//	If the current tag is the header tag itself, move on to the next tag
 		if (reader.isStartElement() && reader.getLocalName().equalsIgnoreCase("header"))
 		{
 			reader.next();
 		}
-		String local_name = null;
-		lead_time = 0;
+		String localName = null;
+		leadTime = 0;
 				
 		//	Scrape all pertinent information from the header
 		while (reader.hasNext())
@@ -230,151 +242,197 @@ public final class PIXMLReader extends XMLReader
 			}
 			else if (reader.isStartElement())
 			{
-				local_name = reader.getLocalName();
-				if (local_name.equalsIgnoreCase("locationId"))
+				localName = reader.getLocalName();
+				if (localName.equalsIgnoreCase("locationId"))
 				{
+					//currentFeatureID = null;
+					
 					//	If we are at the tag for the location id, save it to the location metadata
-					current_location.set_lid(tag_value(reader));
+					//current_location.set_lid(tag_value(reader));
+					currentLID = tagValue(reader);
 				}
-				else if (local_name.equalsIgnoreCase("stationName"))
+				else if (localName.equalsIgnoreCase("stationName"))
 				{
 					//	If we are at the tag for the name of the station, save it to the location
-					current_location.station_name = tag_value(reader);
+					//current_location.station_name = tag_value(reader);
+					currentStationName = tagValue(reader);
 				}
-				else if(local_name.equalsIgnoreCase("ensembleId"))
+				else if(localName.equalsIgnoreCase("ensembleId"))
 				{
+					currentEnsembleID = null;
 					//	If we are at the tag for the name of the ensemble, save it to the ensemble
-					current_ensemble.setEnsembleName(tag_value(reader));
+					//current_ensemble.setEnsembleName(tag_value(reader));
+					currentEnsembleName = tagValue(reader);
 				}
-				else if(local_name.equalsIgnoreCase("qualifierId"))
+				else if(localName.equalsIgnoreCase("qualifierId"))
 				{
+					currentEnsembleID = null;
+					
 					//	If we are at the tag for the ensemble qualifier, save it to the ensemble
-					current_ensemble.qualifierID = tag_value(reader);
+					//current_ensemble.qualifierID = tag_value(reader);
+					currentQualifierID = tagValue(reader);
 				}
-				else if(local_name.equalsIgnoreCase("ensembleMemberIndex"))
+				else if(localName.equalsIgnoreCase("ensembleMemberIndex"))
 				{
+					currentEnsembleID = null;
+					
 					//	If we are at the tag for the ensemble member, save it to the ensemble
-					current_ensemble.setEnsembleMemberID(tag_value(reader));
+					//current_ensemble.setEnsembleMemberID(tag_value(reader));
+					currentEnsembleMemberID = tagValue(reader);
 				}
-				else if(local_name.equalsIgnoreCase("forecastDate"))
+				else if(localName.equalsIgnoreCase("forecastDate"))
 				{
 					String date = null;
 					String time = null;
 					
-					for (int attribute_index = 0; attribute_index < reader.getAttributeCount(); ++attribute_index)
+					for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
 					{
-						local_name = reader.getAttributeLocalName(attribute_index);
+						localName = reader.getAttributeLocalName(attributeIndex);
 
-						if (local_name.equalsIgnoreCase("date"))
+						if (localName.equalsIgnoreCase("date"))
 						{
-							date = reader.getAttributeValue(attribute_index);
+							date = reader.getAttributeValue(attributeIndex);
 						}
-						else if (local_name.equalsIgnoreCase("time"))
+						else if (localName.equalsIgnoreCase("time"))
 						{
-							time = reader.getAttributeValue(attribute_index);
+							time = reader.getAttributeValue(attributeIndex);
 						}
 					}
 					//	If we are at the tag for the forecast date, save it to the forecast
-					current_forecast.set_forecast_date(date + " " + time);
+					currentForecast.set_forecast_date(date + " " + time);
 				}
-				else if(local_name.equalsIgnoreCase("units"))
+				else if(localName.equalsIgnoreCase("units"))
 				{
 					//	If we are at the tag for the units, save it to the measurement units
-					current_measurement.set_unit(tag_value(reader));
+					//current_measurement.set_unit(tag_value(reader));
+					currentMeasurementUnit = tagValue(reader);
+					currentMeasurementUnitID = MeasurementCache.getMeasurementUnitID(currentMeasurementUnit);
 				}
-				else if(local_name.equalsIgnoreCase("missVal"))
+				else if(localName.equalsIgnoreCase("missVal"))
 				{
 					// If we are at the tag for the missing value definition, record it
-					current_missing_value = Float.parseFloat(tag_value(reader));
+					currentMissingIndex = Float.parseFloat(tagValue(reader));
 				}
-				else if(local_name.equalsIgnoreCase("timeStep"))
+				else if(localName.equalsIgnoreCase("timeStep"))
 				{
 					String unit = null;
 					Integer multiplier = null;
-					for (int attribute_index = 0; attribute_index < reader.getAttributeCount(); ++attribute_index)
+					for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
 					{
-						local_name = reader.getAttributeLocalName(attribute_index);
+						localName = reader.getAttributeLocalName(attributeIndex);
 
-						if (local_name.equalsIgnoreCase("unit"))
+						if (localName.equalsIgnoreCase("unit"))
 						{
-							unit = reader.getAttributeValue(attribute_index);
+							unit = reader.getAttributeValue(attributeIndex);
 						}
-						else if (local_name.equalsIgnoreCase("multiplier"))
+						else if (localName.equalsIgnoreCase("multiplier"))
 						{
-							multiplier = Integer.parseInt(reader.getAttributeValue(attribute_index));
+							multiplier = Integer.parseInt(reader.getAttributeValue(attributeIndex));
 						}
 					}
 					
-					time_step = (int) (in_hours.get(unit) * multiplier);
+					timeStep = (int) (hourConversion.get(unit) * multiplier);
 				}
-				else if (local_name.equalsIgnoreCase("parameterId"))
+				else if (localName.equalsIgnoreCase("parameterId"))
 				{
-					current_variable.setVariableName(tag_value(reader));
+					//current_variable.setVariableName(tag_value(reader));
+					currentVariableName = tagValue(reader);
+					currentVariableID = VariableCache.getVariableID(currentVariableName, currentMeasurementUnitID);
 				}
 			}
 			reader.next();
 		}
 	}
 	
-	private int get_ensemble_id() throws SQLException
+	private int getEnsembleID() throws Exception
 	{
-		return current_ensemble.get_ensemble_id();
+		if (currentEnsembleID == null)
+		{
+			currentEnsembleID = EnsembleCache.getEnsembleID(currentEnsembleName, currentEnsembleMemberID, currentQualifierID);
+		}
+		return currentEnsembleID;
 	}
+	
+	private int getMeasurementID() throws SQLException
+	{
+		return this.currentMeasurementUnitID;
+	}
+	
+	private int getForecastID() throws SQLException
+	{
+		return currentForecast.get_forecast_id();
+	}
+	
+	private int getVariablePositionID() throws Exception {
+		if (currentVariablePositionID == null)
+		{
+			currentVariablePositionID = FeatureCache.getVariablePositionID(currentLID, currentStationName, getVariableID());
+		}
+		return currentVariablePositionID;
+	}
+	
+	private int getForecastEnsembleID() throws Exception
+	{
 		
-	private int get_variableposition_id() throws SQLException
-	{
-		current_location.set_variable_id(get_variable_id());
-		return current_location.get_variableposition_id();
+		if (currentForecastEnsembleID == null)
+		{
+			currentForecastEnsemble.setEnsembleID(getEnsembleID());
+			currentForecastEnsemble.setForecastID(getForecastID());
+			currentForecastEnsemble.setMeasurementUnitID(getMeasurementID());
+			currentForecastEnsemble.setVariablePositionID(getVariablePositionID());
+			currentForecastEnsembleID = currentForecastEnsemble.getForecastEnsembleID();
+		}
+		return currentForecastEnsembleID;
 	}
 	
-	private int get_measurement_id() throws SQLException
-	{
-		return current_measurement.get_measurementunit_id();
+	private int getVariableID() throws Exception
+	{		
+		if (currentVariableID == null)
+		{
+			this.currentVariableID = VariableCache.getVariableID(currentVariableName, currentMeasurementUnit);
+		}
+		//current_variable.measurementunit_id = get_measurement_id();		
+		//return current_variable.getVariableID();
+		return this.currentVariableID;
 	}
 	
-	private int get_forecast_id() throws SQLException
-	{
-		return current_forecast.get_forecast_id();
-	}
-	
-	private int get_forecastensemble_id() throws SQLException
-	{
-		current_forecastensemble.set_ensemble_id(get_ensemble_id());
-		current_forecastensemble.set_forecast_id(get_forecast_id());
-		current_forecastensemble.set_measurementunit_id(get_measurement_id());
-		current_forecastensemble.set_variableposition_id(get_variableposition_id());
-		return current_forecastensemble.get_forecastensemble_id();
-	}
-	
-	private int get_variable_id() throws SQLException
-	{
-		current_variable.measurementunit_id = get_measurement_id();		
-		return current_variable.getVariableID();
-	}
-	
-	private String get_insert_forecast_header()
+	private String getInsertForecastHeader()
 	{
 		return "wres.ForecastValue(forecastensemble_id, lead, forecasted_value)";
 	}
 	
-	private String get_insert_observation_header()
+	private String getInsertObservationHeader()
 	{
 		return "wres.Observation(variableposition_id, observation_time, observed_value, measurementunit_id)";
 	}
 	
-	private boolean save_forecast = true;
-	private EnsembleDetails current_ensemble = null;
-	private FeatureDetails current_location = null;
-	private MeasurementDetails current_measurement = null;
-	private ForecastDetails current_forecast = null;
-	private ForecastEnsembleDetails current_forecastensemble = null;
-	private VariableDetails current_variable = null;
-	private Float current_missing_value = null;
-	private Integer time_step = null;
-	private String current_script = "";
-	private String current_table_definition = null;
-	private int insert_count = 0;
-	private int lead_time = 0;
+	private boolean saveForecast = true;
+	//private EnsembleDetails current_ensemble = null;
+	//private FeatureDetails current_location = null;
+	//private MeasurementDetails current_measurement = null;
+	private ForecastDetails currentForecast = null;
+	private ForecastEnsembleDetails currentForecastEnsemble = null;
+	//private VariableDetails current_variable = null;
+	private Float currentMissingIndex = null;
+	private Integer timeStep = null;
+	private String currentScript = "";
+	private String currentTableDefinition = null;
+	private int insertCount = 0;
+	private int leadTime = 0;
 	private final String delimiter = "|"; 
-	ArrayList<Future<?>> tasks = new ArrayList<Future<?>>();
+	
+	private Integer currentMeasurementUnitID = null;
+	private Integer currentVariableID = null;
+	private Integer currentEnsembleID = null;
+	//private Integer currentFeatureID = null;
+	private Integer currentForecastEnsembleID = null;
+	private Integer currentVariablePositionID = null;
+	
+	private String currentQualifierID = null;
+	private String currentLID = null;
+	private String currentStationName = null;
+	private String currentEnsembleName = null;
+	private String currentEnsembleMemberID = null;
+	private String currentMeasurementUnit = null;
+	private String currentVariableName = null;
 }

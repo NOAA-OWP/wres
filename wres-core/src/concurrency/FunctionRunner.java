@@ -69,7 +69,7 @@ public class FunctionRunner<V, U> implements Callable<V> {
 		Connection connection = null;
 		try
 		{
-			connection = Database.get_connection();
+			connection = Database.getConnection();
 			Statement query = connection.createStatement();
 			query.setFetchSize(SystemConfig.instance().get_fetch_size());
 			ResultSet result = query.executeQuery(data_select);
@@ -86,7 +86,7 @@ public class FunctionRunner<V, U> implements Callable<V> {
 		{
 			if (connection != null)
 			{
-				Database.return_connection(connection);
+				Database.returnConnection(connection);
 			}
 		}
 		return function_result;

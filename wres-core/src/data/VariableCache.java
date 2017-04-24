@@ -15,7 +15,7 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 	private static VariableCache internalCache = new VariableCache();
 	
 	public static Integer getVariableID(String variableName, String measurementUnit) throws Exception {
-		return internalCache.getVarId(variableName, measurementUnit);
+		return internalCache.getID(variableName, measurementUnit);
 	}
 	
 	public static Integer getVariableID(VariableDetails detail) throws Exception
@@ -23,7 +23,11 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 		return internalCache.getID(detail);
 	}
 	
-	public Integer getVarId(String variableName, String measurementUnit) throws Exception
+	public static Integer getVariableID(String variableName, Integer measurementUnitID) throws Exception {
+		return internalCache.getID(variableName, measurementUnitID);
+	}
+	
+	public Integer getID(String variableName, String measurementUnit) throws Exception
 	{
 		if (!keyIndex.containsKey(variableName))
 		{
@@ -33,6 +37,18 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 			addElement(detail);
 		}
 
+		return this.keyIndex.get(variableName);
+	}
+	
+	public Integer getID(String variableName, Integer measurementUnitID) throws Exception
+	{
+		if (!keyIndex.containsKey(variableName))
+		{
+			VariableDetails detail = new VariableDetails();
+			detail.setVariableName(variableName);
+			detail.measurementunit_id = measurementUnitID;
+			addElement(detail);
+		}
 		return this.keyIndex.get(variableName);
 	}
 

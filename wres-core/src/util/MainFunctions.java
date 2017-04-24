@@ -65,6 +65,7 @@ public final class MainFunctions {
 		operation = operation.toLowerCase();
 		functions.get(operation).accept(args);	
 		Executor.complete();
+		Database.shutdown();
 	}
 	
 	/**
@@ -91,6 +92,7 @@ public final class MainFunctions {
 		prototypes.put("flushdatabase", flushDatabase());
 		prototypes.put("flushforecasts", flushForecasts());
 		prototypes.put("flushobservations", flushObservations());
+		prototypes.put("refreshforecasts", refreshForecasts());
 		
 		return prototypes;
 	}
@@ -153,8 +155,14 @@ public final class MainFunctions {
 				try
 				{
 					String directory = args[0];
-					File[] files = new File(directory).listFiles();
-					System.out.println(String.format("Attempting to save all files in '%s' as forecasts to the database...", args[0]));
+					File[] files = new File(directory).listFiles((File file) -> {
+						return file.isFile() && file.getName().endsWith(".xml");
+					});
+					
+					System.out.println();
+					System.out.println(String.format("Attempting to save all files in '%s' as forecasts to the database... (This might take a little while)", args[0]));
+					System.out.println();
+					
 					ArrayList<Future<?>> tasks = new ArrayList<Future<?>>();
 					
 					for (File file : files)
@@ -167,9 +175,12 @@ public final class MainFunctions {
 						task.get();
 					}
 					
-					System.out.println(tasks.size() + " files were theoretically saved to the database. Closing now...");
-					//Database.close();
+					System.out.println();
+					System.out.println(tasks.size() + " files were theoretically saved to the database. Closing now... (This might take a little while)");
+					System.out.println();
+
 					Executor.complete();
+					Database.shutdown();
 					System.out.println("All forecast saving operations complete. Please verify data.");
 				}
 				catch (Exception e)
@@ -242,6 +253,7 @@ public final class MainFunctions {
 					}
 					
 					Executor.complete();
+					Database.shutdown();
 					System.out.println("All observation saving operations complete. Please verify data.");
 				}
 				catch (Exception e)
@@ -315,7 +327,7 @@ public final class MainFunctions {
 						+ "LIMIT 100;";
 				
 				try {
-					connection = Database.get_connection();
+					connection = Database.getConnection();
 					Statement query = connection.createStatement();
 					ResultSet results = query.executeQuery(script);
 					query.setFetchSize(SystemConfig.instance().get_fetch_size());
@@ -339,7 +351,7 @@ public final class MainFunctions {
 					if (connection != null)
 					{
 						try {
-							Database.return_connection(connection);
+							Database.returnConnection(connection);
 						} catch (SQLException e) {
 							e.printStackTrace();
 						}
@@ -350,6 +362,44 @@ public final class MainFunctions {
 			{
 				System.out.println("Not enough arguments were passed.");
 				System.out.println("*.jar getPairs <variable name> [<source name>]");
+			}
+		};
+	}
+	
+	private static final Consumer<String[]> refreshForecasts()
+	{
+		return (String[] args) -> {
+			try {
+				System.out.println("");
+				System.out.println("Cleaning up the Forecast table...");
+				Database.execute("VACUUM FULL ANALYZE wres.Forecast;");
+				Database.execute("REINDEX TABLE wres.Forecast;");
+				System.out.println("The Forecast table has been refreshed.");
+				System.out.println("");
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			
+			try {
+				System.out.println("");
+				System.out.println("Cleaning up the ForecastEnsemble table...");
+				Database.execute("VACUUM FULL ANALYZE wres.ForecastEnsemble;");
+				Database.execute("REINDEX TABLE wres.ForecastEnsemble;");
+				System.out.println("The ForecastEnsemble table has been refreshed.");
+				System.out.println("");
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			
+			try {
+				System.out.println("");
+				System.out.println("Cleaning up the ForecastValue table...");
+				Database.execute("VACUUM FULL ANALYZE wres.ForecastValue;");
+				Database.execute("REINDEX TABLE wres.ForecastValue;");
+				System.out.println("The ForecastValue table has been refreshed.");
+				System.out.println("");
+			} catch (SQLException e) {
+				e.printStackTrace();
 			}
 		};
 	}
@@ -395,7 +445,7 @@ public final class MainFunctions {
 				script += "GROUP BY FR.lead_time;";
 				
 				try {
-					connection = Database.get_connection();
+					connection = Database.getConnection();
 					Statement query = connection.createStatement();
 					query.setFetchSize(SystemConfig.instance().get_fetch_size());
 					ResultSet results = query.executeQuery(script);
@@ -457,7 +507,7 @@ public final class MainFunctions {
 					if (connection != null)
 					{
 						try {
-							Database.return_connection(connection);
+							Database.returnConnection(connection);
 						} catch (SQLException e) {
 							e.printStackTrace();
 						}
@@ -655,9 +705,9 @@ public final class MainFunctions {
 	{
 		return (String[] args) -> {
 			String script = "";
-			script += "DELETE FROM wres.ForecastValue;" + newline;
-			script += "DELETE FROM wres.ForecastEnsemble;" + newline;
-			script += "DELETE FROM wres.Forecast;" + newline;
+			script += "TRUNCATE wres.ForecastValue RESTART IDENTITY CASCADE;" + newline;
+			script += "TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;" + newline;
+			script += "TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;" + newline;
 			
 			try {
 				Database.execute(script);
@@ -678,7 +728,7 @@ public final class MainFunctions {
 	private static final Consumer<String[]> flushObservations()
 	{
 		return (String[] args) -> {
-			String script = "DELETE FROM wres.Observation;" + newline;
+			String script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + newline;
 			
 			try {
 				Database.execute(script);

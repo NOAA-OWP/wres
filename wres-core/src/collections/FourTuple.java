@@ -7,60 +7,75 @@ package collections;
  * @author ctubbs
  *
  */
-public class FourTuple<T extends Comparable<T>, U extends Comparable<U>, V extends Comparable<V>, W extends Comparable<W>> implements Comparable<FourTuple<T, U, V, W>>{
+public class FourTuple<T extends Comparable<T>, U extends Comparable<U>, V extends Comparable<V>, W extends Comparable<W>> implements Group<FourTuple<T, U, V, W>>{
 
 	/**
 	 * 
 	 */
-	public FourTuple(T item_one, U item_two, V item_three, W item_four) {
-		this.item_one = item_one;
-		this.item_two = item_two;
-		this.item_three = item_three;
-		this.item_four = item_four;
+	public FourTuple(T itemOne, U itemTwo, V itemThree, W itemFour) {
+		this.itemOne = itemOne;
+		this.itemTwo = itemTwo;
+		this.itemThree = itemThree;
+		this.itemFour = itemFour;
 	}
 
 	@Override
 	public int compareTo(FourTuple<T, U, V, W> other) {
 		int comparison = -1;
-		comparison = other.item_one.compareTo(this.item_one);
+		comparison = other.itemOne.compareTo(this.itemOne);
 		
 		if (comparison == 0) {
-			comparison = other.item_two.compareTo(item_two);
+			comparison = other.itemTwo.compareTo(itemTwo);
 		}
 		
 		if (comparison == 0) {
-			comparison = other.item_three.compareTo(item_three);
+			comparison = other.itemThree.compareTo(itemThree);
 		}
 		
 		if (comparison == 0) {
-			comparison = other.item_four.compareTo(item_four);
+			comparison = other.itemFour.compareTo(itemFour);
 		}
 		
 		return comparison;
 	}
 	
-	public T get_item_one()
+	public T getItemOne()
 	{
-		return this.item_one;
+		return this.itemOne;
 	}
 	
-	public U get_item_two()
+	public U getItemTwo()
 	{
-		return this.item_two;
+		return this.itemTwo;
 	}
 	
-	public V get_item_three()
+	public V getItemThree()
 	{
-		return this.item_three;
+		return this.itemThree;
 	}
 	
-	public W get_item_four()
+	public W getItemFour()
 	{
-		return this.item_four;
+		return this.itemFour;
 	}
 
-	private final T item_one;
-	private final U item_two;
-	private final V item_three;
-	private final W item_four;
+	private final T itemOne;
+	private final U itemTwo;
+	private final V itemThree;
+	private final W itemFour;
+	
+	@Override
+	public boolean isFull() {
+		return itemOne != null && itemTwo != null && itemThree != null && itemFour != null;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return itemOne == null && itemTwo == null && itemThree == null && itemFour == null;
+	}
+
+	@Override
+	public FourTuple<T, U, V, W> copy() {
+		return new FourTuple<T, U, V, W>(itemOne, itemTwo, itemThree, itemFour);
+	}
 }

@@ -60,7 +60,7 @@ public class RecentUseList<U extends Comparable<U>>
 			}
 		}		
 		
-		if (maximum_capacity <= this.size())
+		if (maximum_capacity != null && maximum_capacity <= this.size())
 		{
 			drop_last();
 		}
@@ -187,10 +187,13 @@ public class RecentUseList<U extends Comparable<U>>
 	 */
 	private void promote(Node promotee)
 	{
-		promotee.get_previous().set_next(promotee.get_next());
-		promotee.set_previous(null);
-		promotee.set_next(head);
-		head = promotee;
+		if (promotee != head)
+		{
+			promotee.get_previous().set_next(promotee.get_next());
+			promotee.set_previous(null);
+			promotee.set_next(head);
+			head = promotee;
+		}
 	}
 	
 	/**

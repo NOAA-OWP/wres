@@ -20,7 +20,7 @@ public final class ForecastEnsembleDetails {
 	private Integer measurementunit_id = null;
 	private Integer forecastensemble_id = null;
 	
-	public void set_forecast_id(int forecast_id)
+	public void setForecastID(int forecast_id)
 	{
 		if (this.forecast_id == null || this.forecast_id != forecast_id)
 		{
@@ -29,7 +29,7 @@ public final class ForecastEnsembleDetails {
 		}
 	}
 	
-	public void set_ensemble_id(int ensemble_id)
+	public void setEnsembleID(int ensemble_id)
 	{
 		if (this.ensemble_id == null || this.ensemble_id != ensemble_id)
 		{
@@ -38,7 +38,7 @@ public final class ForecastEnsembleDetails {
 		}
 	}
 	
-	public void set_variableposition_id(int variableposition_id)
+	public void setVariablePositionID(int variableposition_id)
 	{
 		if (this.variableposition_id == null || this.variableposition_id != variableposition_id)
 		{
@@ -47,7 +47,7 @@ public final class ForecastEnsembleDetails {
 		}
 	}
 	
-	public void set_measurementunit_id(int measurementunit_id)
+	public void setMeasurementUnitID(int measurementunit_id)
 	{
 		if (this.measurementunit_id == null || this.measurementunit_id != measurementunit_id)
 		{
@@ -56,7 +56,7 @@ public final class ForecastEnsembleDetails {
 		}
 	}
 	
-	public int get_forecastensemble_id() throws SQLException 
+	public int getForecastEnsembleID() throws SQLException 
 	{
 		if (forecastensemble_id == null)
 		{
