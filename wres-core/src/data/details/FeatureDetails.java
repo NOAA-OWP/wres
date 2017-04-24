@@ -19,11 +19,35 @@ import util.Database;
 public final class FeatureDetails extends Detail<FeatureDetails, String>
 {
 
+	// TODO: Remove reliance on storing the variable id
+	private Integer variable_id = null;
+	private Integer variableposition_id = null;
+	
 	private String lid = null;
 	public String station_name = null;
 	private Integer feature_id = null;
 	
 	private ConcurrentSkipListMap<Integer, Integer> variablePositions = new ConcurrentSkipListMap<Integer, Integer>();
+	
+	public void set_variable_id(int variable_id)
+	{
+		if (this.variable_id == null || this.variable_id != variable_id)
+		{
+			this.variable_id = variable_id;
+			this.feature_id = null;
+		}
+	}
+	
+	public int get_variableposition_id() throws SQLException
+	{
+		if (variableposition_id == null) {
+			save();
+			String script = "SELECT wres.get_variableposition_id(" + this.feature_id + ", " + variable_id + ") AS variableposition_id;";
+
+			variableposition_id = Database.get_result(script, "variableposition_id");
+		}
+		return variableposition_id;
+	}
 	
 	/**
 	 * Finds the variable position id of the feature for a given variable. A position is

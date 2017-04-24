@@ -264,5 +264,9 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 			internalCache.details.put(detail.getId(), detail);
 			internalCache.keyIndex.put(detail.getKey(), detail.getId());
 		}
+		
+		ensembles.close();
+		ensembleQuery.close();
+		Database.returnConnection(connection);
 	}
 }

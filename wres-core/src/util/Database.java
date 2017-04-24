@@ -264,6 +264,10 @@ public class Database {
 		}
 		finally
 		{			
+			if (statement != null)
+			{
+				statement.close();
+			}
 			if (connection != null)
 			{
 				returnConnection(connection);

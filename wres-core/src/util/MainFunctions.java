@@ -154,7 +154,7 @@ public final class MainFunctions {
 			{
 				try
 				{
-					Utilities.initializeCaches();
+					//Utilities.initializeCaches();
 					String directory = args[0];
 					File[] files = new File(directory).listFiles((File file) -> {
 						return file.isFile() && file.getName().endsWith(".xml");
