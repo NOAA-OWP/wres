@@ -3,12 +3,18 @@
  */
 package data;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
 
 import collections.Triplet;
+import config.SystemConfig;
 import data.details.EnsembleDetails;
+import util.Database;
 import util.Utilities;
 
 /**
@@ -234,5 +240,29 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 		}
 		
 		return similarity;
+	}
+	
+	public synchronized static void initialize() throws SQLException
+	{
+		Connection connection = Database.getConnection();
+		Statement ensembleQuery = connection.createStatement();
+		
+		String loadScript = "SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id" + System.lineSeparator();
+		loadScript += "FROM wres.ensemble;";
+		
+		ResultSet ensembles = ensembleQuery.executeQuery(loadScript);
+		
+		EnsembleDetails detail = null;
+		
+		while (ensembles.next()) {
+			detail = new EnsembleDetails();
+			detail.setEnsembleName(ensembles.getString("ensemble_name"));
+			detail.setEnsembleMemberID(String.valueOf(ensembles.getInt("ensemblemember_id")));
+			detail.qualifierID = ensembles.getString("qualifier_id");
+			detail.setID(ensembles.getInt("ensemble_id"));
+			
+			internalCache.details.put(detail.getId(), detail);
+			internalCache.keyIndex.put(detail.getKey(), detail.getId());
+		}
 	}
 }

@@ -215,8 +215,8 @@ public final class PIXMLReader extends XMLReader
 		if (insertCount > 0)
 		{
 			insertCount = 0;
-			//Executor.execute(new CopyExecutor(currentTableDefinition, currentScript, delimiter));
-			Database.execute(new CopyExecutor(currentTableDefinition, currentScript, delimiter));
+			Executor.execute(new CopyExecutor(currentTableDefinition, currentScript, delimiter));
+			//Database.execute(new CopyExecutor(currentTableDefinition, currentScript, delimiter));
 			currentScript = null;
 		}
 	}

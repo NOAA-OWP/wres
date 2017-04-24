@@ -146,6 +146,14 @@ public final class SystemConfig extends reading.XMLReader
 	{
 		return this.maximum_thread_count;
 	}
+	
+	/**
+	 * Returns the maximum number of threads that may be reserved for database calls
+	 * @return The number of allowable database threads
+	 */
+	public int getMaximumDatabaseThreads() {
+		return database_configuration.getMaximumThreads();
+	}
 
 	/**
 	 * Returns the amount of time (in milliseconds) that an object may live in an object pool without being used 

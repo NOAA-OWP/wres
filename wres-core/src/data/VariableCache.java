@@ -3,7 +3,13 @@
  */
 package data;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 import data.details.VariableDetails;
+import util.Database;
 
 /**
  * @author ctubbs
@@ -55,5 +61,29 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 	@Override
 	protected Integer getMaxDetails() {
 		return 100;
+	}
+	
+	public static void initialize() throws SQLException {
+		Connection connection = Database.getConnection();
+		Statement variableQuery = connection.createStatement();
+		String loadScript = "SELECT variable_id, variable_name, measurementunit_id" + System.lineSeparator();
+		loadScript += "FROM wres.variable;";
+		
+		ResultSet variables = variableQuery.executeQuery(loadScript);
+		VariableDetails detail = null;
+		
+		while (variables.next()) {
+			detail = new VariableDetails();
+			detail.setVariableName(variables.getString("variable_name"));
+			detail.measurementunit_id = variables.getInt("measurementunit_id");
+			detail.setID(variables.getInt("variable_id"));
+			
+			internalCache.details.put(detail.getId(), detail);
+			internalCache.keyIndex.put(detail.getKey(), detail.getId());
+		}
+		
+		variables.close();
+		variableQuery.close();
+		Database.returnConnection(connection);
 	}
 }

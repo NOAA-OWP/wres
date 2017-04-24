@@ -3,7 +3,13 @@
  */
 package data;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 import data.details.MeasurementDetails;
+import util.Database;
 
 /**
  * @author ctubbs
@@ -44,4 +50,29 @@ public class MeasurementCache extends Cache<MeasurementDetails, String> {
 		return 100;
 	}
 
+	public synchronized static void initialize() throws SQLException {
+		Connection connection = Database.getConnection();
+		Statement measurementQuery = connection.createStatement();
+		measurementQuery.setFetchSize(100);
+		
+		String loadScript = "SELECT measurementunit_id, unit_name" + System.lineSeparator();
+		loadScript += "FROM wres.measurementunit;";
+		
+		ResultSet measurements = measurementQuery.executeQuery(loadScript);
+		
+		MeasurementDetails detail = null;
+		
+		while (measurements.next()) {
+			detail = new MeasurementDetails();
+			detail.set_unit(measurements.getString("unit_name"));
+			detail.setID(measurements.getInt("measurementunit_id"));
+			
+			internalCache.details.put(detail.getId(), detail);
+			internalCache.keyIndex.put(detail.getKey(), detail.getId());
+		}
+		
+		measurements.close();
+		measurementQuery.close();
+		Database.returnConnection(connection);
+	}
 }

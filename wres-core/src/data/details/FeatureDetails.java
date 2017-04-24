@@ -3,7 +3,10 @@
  */
 package data.details;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -162,4 +165,25 @@ public final class FeatureDetails extends Detail<FeatureDetails, String>
 		return script;
 	}
 
+	public void loadVariablePositionIDs() throws SQLException {
+		Connection connection = Database.getConnection();
+		Statement loadQuery = connection.createStatement();
+		loadQuery.setFetchSize(100);
+		
+		String loadScript = "SELECT VP.variable_id, VP.variableposition_id" + System.lineSeparator();
+		loadScript += "FROM wres.FeaturePosition FP" + System.lineSeparator();
+		loadScript += "INNER JOIN wres.VariablePosition VP" + System.lineSeparator();
+		loadScript += "	ON VP.variableposition_id = FP.variableposition_id" + System.lineSeparator();
+		loadScript += "WHERE FP.feature_id = " + this.getId();
+		
+		ResultSet variablePositions = loadQuery.executeQuery(loadScript);
+		
+		while (variablePositions.next()) {
+			this.variablePositions.put(variablePositions.getInt("variable_id"), variablePositions.getInt("variableposition_id"));
+		}
+		
+		variablePositions.close();
+		loadQuery.close();
+		Database.returnConnection(connection);
+	}
 }
