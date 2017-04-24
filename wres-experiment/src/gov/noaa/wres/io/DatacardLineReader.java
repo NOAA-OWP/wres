@@ -6,13 +6,8 @@ import java.util.ArrayList;
 import java.util.function.Function;
 
 import java.time.LocalDateTime;
-import java.time.Duration;
-import java.time.Year;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoField;
-import java.time.format.FormatStyle;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 
 import gov.noaa.wres.datamodel.Event;
 import gov.noaa.wres.datamodel.SimpleEvent;
