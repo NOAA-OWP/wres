@@ -2,7 +2,7 @@ package gov.noaa.wres.datamodel;
 
 import gov.noaa.wres.datamodel.LocationSingleTimeManyNonRasterData;
 
-public class DataFactoryImpl
+public class PairFactoryImpl
 {
     static LocationSingleTimeManyNonRasterData getLocationSingleTimeManyNonRasterData()
     {

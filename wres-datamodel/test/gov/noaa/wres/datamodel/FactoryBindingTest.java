@@ -1,7 +1,7 @@
 package gov.noaa.wres.datamodel;
 
 import gov.noaa.wres.datamodel.LocationSingleTimeManyNonRasterData;
-import gov.noaa.wres.datamodel.DataFactory;
+import gov.noaa.wres.datamodel.PairFactory;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -12,7 +12,7 @@ public class FactoryBindingTest
     public void useDataFactoryTest()
     {
         LocationSingleTimeManyNonRasterData timeseries = 
-            DataFactory.getLocationSingleTimeManyNonRasterData();
+            PairFactory.getLocationSingleTimeManyNonRasterData();
         assertNotNull(timeseries);
         assertNotNull(timeseries.getWresPoint());
         assertEquals(timeseries.getWresPoint().getX(), 0);
