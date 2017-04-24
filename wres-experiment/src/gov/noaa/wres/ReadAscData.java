@@ -4,15 +4,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 import java.util.function.Predicate;
 import java.util.function.Function;
@@ -20,9 +17,7 @@ import java.util.function.Function;
 import java.time.ZoneOffset;
 
 import gov.noaa.wres.datamodel.Event;
-import gov.noaa.wres.datamodel.ForecastEvent;
 import gov.noaa.wres.datamodel.PairEvent;
-import gov.noaa.wres.datamodel.SimpleEvent;
 import gov.noaa.wres.datamodel.TimeSeries;
 
 import gov.noaa.wres.io.AscReader;

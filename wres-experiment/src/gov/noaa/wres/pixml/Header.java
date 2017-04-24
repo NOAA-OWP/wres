@@ -2,7 +2,6 @@ package gov.noaa.wres.pixml;
 
 import javax.xml.bind.annotation.*;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import java.util.List;
 import java.time.LocalDate;
 import java.time.LocalTime;
 

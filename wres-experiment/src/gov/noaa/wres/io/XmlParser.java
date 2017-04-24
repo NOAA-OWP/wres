@@ -1,14 +1,11 @@
 package gov.noaa.wres.io;
 
 import java.util.List;
-import java.util.Map;
 import java.util.ArrayList;
 
 import java.util.function.Predicate;
 import java.util.function.Function;
 import java.util.function.BiFunction;
-
-import java.io.ByteArrayInputStream;
 
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.JAXBContext;
@@ -17,7 +14,6 @@ import javax.xml.bind.JAXBException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.events.XMLEvent;
 
 import javax.xml.transform.stream.StreamSource;

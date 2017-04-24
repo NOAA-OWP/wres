@@ -2,7 +2,6 @@ package gov.noaa.wres.datamodel;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.lang.Short;
 
 public class SimpleEvent implements Event
 {

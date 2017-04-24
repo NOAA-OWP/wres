@@ -1,23 +1,17 @@
 package gov.noaa.wres;
 
 import javax.xml.bind.*;
-import javax.xml.stream.*;
 import javax.xml.transform.stream.StreamSource;
-import javax.xml.stream.events.*;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 import java.util.function.Predicate;
-import java.util.function.BiFunction;
 
 import gov.noaa.wres.io.XmlParser;
 import gov.noaa.wres.pixml.Header;
@@ -25,9 +19,7 @@ import gov.noaa.wres.pixml.DelftEvent;
 import gov.noaa.wres.pixml.ReadPiIntoEvent;
 import gov.noaa.wres.pixml.ReadPiIntoHeader;
 import gov.noaa.wres.datamodel.Event;
-import gov.noaa.wres.datamodel.ForecastEvent;
 import gov.noaa.wres.datamodel.PairEvent;
-import gov.noaa.wres.datamodel.SimpleEvent;
 import gov.noaa.wres.datamodel.TimeSeries;
 
 import gov.noaa.wres.metric.SimpleError;
