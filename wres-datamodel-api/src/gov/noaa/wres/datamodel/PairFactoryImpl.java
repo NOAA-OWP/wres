@@ -7,7 +7,7 @@ package gov.noaa.wres.datamodel;
  * @author jesse
  *
  */
-public class DataFactoryImpl
+public class PairFactoryImpl
 {
     static LocationSingleTimeManyNonRasterData getLocationSingleTimeManyNonRasterData()
     {

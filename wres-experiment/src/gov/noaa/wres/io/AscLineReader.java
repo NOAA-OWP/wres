@@ -1,7 +1,6 @@
 package gov.noaa.wres.io;
 
 import java.util.Arrays;
-import java.util.List;
 
 import java.util.function.Function;
 
@@ -9,14 +8,11 @@ import java.time.LocalDateTime;
 import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoField;
-import java.time.format.FormatStyle;
 import java.time.format.DateTimeFormatter;
 
 //import gov.noaa.wres.datamodel.Event;
 //import gov.noaa.wres.datamodel.ForecastEvent;
 import gov.noaa.wres.datamodel.EnsembleForecastEvent;
-
-import static java.util.stream.Collectors.*;
 
 /**
  * Tricky: how do we do error handling while implementing Function?

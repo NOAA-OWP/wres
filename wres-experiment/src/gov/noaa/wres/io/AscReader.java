@@ -6,19 +6,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import java.util.stream.Stream;
 import java.util.function.Predicate;
-import java.util.function.Function;
 
 import gov.noaa.wres.datamodel.Event;
 import gov.noaa.wres.datamodel.TimeSeries;

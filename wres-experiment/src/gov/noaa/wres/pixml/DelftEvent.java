@@ -4,7 +4,6 @@ import javax.xml.bind.annotation.*;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlRootElement(name="event")
