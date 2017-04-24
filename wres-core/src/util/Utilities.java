@@ -1,6 +1,7 @@
 package util;
 
 import java.lang.reflect.Array;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalTime;
@@ -19,6 +20,11 @@ import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+
+import data.EnsembleCache;
+import data.FeatureCache;
+import data.MeasurementCache;
+import data.VariableCache;
 
 public final class Utilities {
 	
@@ -540,5 +546,12 @@ public final class Utilities {
 	public static boolean tagIs(XMLStreamReader reader, String tag_name)
 	{
 		return reader.hasName() && reader.getLocalName().equalsIgnoreCase(tag_name);
+	}
+	
+	public static void initializeCaches() throws SQLException {
+		MeasurementCache.initialize();
+		FeatureCache.initialize();
+		EnsembleCache.initialize();
+		VariableCache.initialize();
 	}
 }

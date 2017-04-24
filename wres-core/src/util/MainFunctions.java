@@ -65,7 +65,7 @@ public final class MainFunctions {
 		operation = operation.toLowerCase();
 		functions.get(operation).accept(args);	
 		Executor.complete();
-		Database.shutdown();
+		//Database.shutdown();
 	}
 	
 	/**
@@ -154,6 +154,7 @@ public final class MainFunctions {
 			{
 				try
 				{
+					Utilities.initializeCaches();
 					String directory = args[0];
 					File[] files = new File(directory).listFiles((File file) -> {
 						return file.isFile() && file.getName().endsWith(".xml");
@@ -180,7 +181,7 @@ public final class MainFunctions {
 					System.out.println();
 
 					Executor.complete();
-					Database.shutdown();
+					//Database.shutdown();
 					System.out.println("All forecast saving operations complete. Please verify data.");
 				}
 				catch (Exception e)
@@ -253,7 +254,7 @@ public final class MainFunctions {
 					}
 					
 					Executor.complete();
-					Database.shutdown();
+					//Database.shutdown();
 					System.out.println("All observation saving operations complete. Please verify data.");
 				}
 				catch (Exception e)

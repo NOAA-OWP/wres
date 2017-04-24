@@ -253,6 +253,9 @@ public final class DatabaseConfig {
 				case "max_idle_time":
 					max_idle_time = Integer.parseInt(value);
 					break;
+				case "maximum_threads":
+					maximumThreads = Integer.parseInt(value);
+					break;
 				default:
 					System.err.println("Tag of type: '" + tag_name + "' is not valid for database configuration.");
 				}
@@ -263,6 +266,10 @@ public final class DatabaseConfig {
 	public String get_database_type()
 	{
 		return this.database_type;
+	}
+	
+	public int getMaximumThreads() {
+		return this.maximumThreads;
 	}
 	
 	@Override
@@ -308,6 +315,7 @@ public final class DatabaseConfig {
 	private String database_name = null;
 	private String database_type = null;
 	private String connection_string = null;
+	private int maximumThreads = 40;
 	private int max_pool_size = 10;
 	private int max_idle_time = 30;
 }
