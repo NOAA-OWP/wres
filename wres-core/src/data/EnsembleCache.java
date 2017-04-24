@@ -3,8 +3,13 @@
  */
 package data;
 
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
+
 import collections.Triplet;
 import data.details.EnsembleDetails;
+import util.Utilities;
 
 /**
  * @author ctubbs
@@ -18,29 +23,216 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 		return internalCache.getID(detail);
 	}
 	
+	public static Integer getEnsembleID(String name) throws Exception {
+		return internalCache.getID(name);
+	}
+	
+	public static Integer getEnsembleID(String name, String memberID) throws Exception {
+		return internalCache.getID(name, memberID);
+	}
+	
+	public static Integer getEnsembleID(String name, String memberID, String qualifierID) throws Exception {
+		return internalCache.getID(name, memberID, qualifierID);
+	}
+	
+	public static Integer getEnsembleID(Triplet<String, String, String> grouping) throws Exception
+	{
+		return internalCache.getID(grouping);
+	}
+	
 	@Override
 	protected Integer getMaxDetails() {
 		return 500;
 	}
 	
-	public Integer getID(String name)
+	public Integer getID(String name) throws Exception
 	{
 		return getID(new Triplet<String, String, String>(name, null, null));
 	}
 	
-	public Integer getID(String name, String memberID)
+	public Integer getID(String name, String memberID) throws Exception
 	{
 		return getID(new Triplet<String, String, String>(name, memberID, null));
 	}
+	
+	public Integer getID(String name, String memberID, String qualifierID) throws Exception {
+		return getID(new Triplet<String, String, String>(name, memberID, qualifierID));
+	}
+	
+	@Override
+	public Integer getID(EnsembleDetails detail) throws Exception {
+		return getID(detail.getKey());
+	}
 
-	public Integer getID(Triplet<String, String, String> grouping)
+	@Override
+	/**
+	 * Attempts to find the correct ID based on the given triplet (item one = name, item two = member id, item three = qualifier).
+	 * Since the source might not always supply all three values, we have to attempt to find the loaded key that is closest to the one
+	 * requested. If there aren't any values similar enough to match, a new ensemble is added.
+	 */
+	public Integer getID(Triplet<String, String, String> grouping) throws Exception
 	{
-		/**
-		 *  TODO: This needs to perform a fuzzy search; it needs to group on itemOne (name),
-		 *  itemTwo(member id), and itemThree(qualifier). If any are null, it needs to try and
-		 *  find the closest approximation. 
-		 */
+		// Maps keys to the number of similarities between them and the passed in grouping
+		Map<Byte, ArrayList<Triplet<String, String, String>>> possibleKeys = null;
 		
-		return 0;
+		// Listing of keys with the same amount of similarities
+		ArrayList<Triplet<String, String, String>> similarKeys = null;		
+
+		// The closest existing key to what we are trying to retrieve
+		Triplet<String, String, String> mostSimilar = null;
+		
+		if (details.size() > 0)
+		{
+			// Attempt to find a key with all matching values from the grouping
+			mostSimilar = Utilities.find(keyIndex.keySet(), (Triplet<String, String, String> key) -> {
+				return key.itemOne.equalsIgnoreCase(grouping.itemOne) && 
+					   key.itemTwo.equalsIgnoreCase(grouping.itemTwo) && 
+					   key.itemThree.equalsIgnoreCase(grouping.itemThree);
+			});
+		}
+		
+		// If no identical groupings are found and the grouping isn't full, attempt to find a similar one
+		if (details.size() > 0 && mostSimilar == null && !grouping.isFull())
+		{
+			for (Triplet<String, String, String> key : keyIndex.keySet())
+			{
+				byte similarity = keySimilarity(grouping, key);
+				if (similarity == 3)
+				{
+					mostSimilar = grouping;
+					break;
+				}
+				if (similarity > 0)
+				{
+					
+					if (possibleKeys == null)
+					{
+						possibleKeys = new TreeMap<Byte, ArrayList<Triplet<String, String, String>>>();
+					}
+					
+					if (!possibleKeys.containsKey(similarity))
+					{
+						possibleKeys.put(similarity, new ArrayList<Triplet<String, String, String>>());
+					}
+					
+					possibleKeys.get(similarity).add(key);
+				}
+			}
+			
+			if (possibleKeys.containsKey(2))
+			{
+				similarKeys = possibleKeys.get(2);
+				
+				mostSimilar = Utilities.find(similarKeys, (Triplet<String, String, String> key) -> {
+					return key.itemOne == grouping.itemOne && key.itemTwo == grouping.itemTwo;
+				});
+				
+				if (mostSimilar == null)
+				{
+					mostSimilar = Utilities.find(similarKeys, (Triplet<String, String, String> key) -> {
+						return key.itemOne == grouping.itemOne && key.itemThree == grouping.itemThree;
+					});
+				}
+				
+				if (mostSimilar == null)
+				{
+					mostSimilar = Utilities.find(similarKeys, (Triplet<String, String, String> key) -> {
+						return key.itemTwo == key.itemTwo;
+					});
+				}
+			}
+			else if (possibleKeys.containsKey(1)) {
+				similarKeys = possibleKeys.get(1);
+				
+				mostSimilar = Utilities.find(similarKeys, (Triplet<String, String, String> key) -> {
+					return key.itemOne == grouping.itemOne;
+				});
+				
+				if (mostSimilar == null)
+				{
+					mostSimilar = Utilities.find(similarKeys, (Triplet<String, String, String> key) -> {
+						return key.itemTwo == grouping.itemTwo;
+					});
+				}
+				
+				if (mostSimilar == null)
+				{
+					mostSimilar = Utilities.find(similarKeys, (Triplet<String, String, String> key) -> {
+						return key.itemThree == grouping.itemThree;
+					});
+				}
+			}
+		}
+		
+		// If a similar key wasn't found, insert a new element based on the grouping
+		if (mostSimilar == null)
+		{
+			mostSimilar = grouping;
+			EnsembleDetails detail = new EnsembleDetails();
+			detail.setEnsembleName(grouping.itemOne);
+			detail.setEnsembleMemberID(grouping.itemTwo);
+			detail.qualifierID = grouping.itemThree;
+			addElement(detail);
+		}
+
+		return keyIndex.get(mostSimilar);
+	}
+	
+	/**
+	 * Determines if two keys for the ensemble are similar and counts the number of similarities
+	 * @param possibleMatch
+	 * @param target
+	 * @return
+	 */
+	private byte keySimilarity(Triplet<String, String, String> possibleMatch, Triplet<String, String, String> target)
+	{
+		if (possibleMatch.equals(target))
+		{
+			return 3;
+		}
+		else if (possibleMatch.isEmpty())
+		{
+			return -1;
+		}
+		
+		byte similarity = 0;
+		
+		if (possibleMatch.itemOne != null && target.itemOne != null)
+		{
+			if( possibleMatch.itemOne.equalsIgnoreCase(target.itemTwo))
+			{
+				similarity++;
+			}
+			else
+			{
+				similarity--;
+			}
+		}
+		
+		if (target.itemTwo != null && possibleMatch.itemTwo != null && similarity >= 0)
+		{
+			if (possibleMatch.itemTwo.equalsIgnoreCase(target.itemTwo))
+			{
+				similarity++;
+			}
+			else
+			{
+				similarity = -1;
+			}
+		}
+		
+		if (possibleMatch.itemThree != null && target.itemThree != null && similarity >= 0)
+		{
+			if (possibleMatch.itemThree.equalsIgnoreCase(target.itemThree))
+			{
+				similarity++;
+			}
+			else
+			{
+				similarity = -1;
+			}
+		}
+		
+		return similarity;
 	}
 }

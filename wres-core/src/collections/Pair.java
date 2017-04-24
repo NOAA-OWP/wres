@@ -9,7 +9,7 @@ package collections;
  * @author ctubbs
  *
  */
-public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements Comparable<Pair<T, U>> {
+public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements Group<Pair<T, U>> {
 
 	/**
 	 * Creates a pair of null values
@@ -19,17 +19,16 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements C
 	/**
 	 * Creates a pair containing the two passed in values
 	 * 
-	 * @param item_one
-	 * @param item_two
+	 * @param itemOne
+	 * @param itemTwo
 	 */
-	public Pair(T item_one, U item_two)
-	{
-		this.item_one = item_one;
-		this.item_two = item_two;
+	public Pair(T itemOne, U itemTwo) {
+		this.itemOne = itemOne;
+		this.itemTwo = itemTwo;
 	}
 	
-	public T item_one = null;
-	public U item_two = null;
+	public T itemOne = null;
+	public U itemTwo = null;
 
 	@Override
 	/**
@@ -39,12 +38,27 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements C
 	 */
 	public int compareTo(Pair<T, U> other) {
 		int comparison = -1;
-		comparison = other.item_one.compareTo(this.item_one);
+		comparison = other.itemOne.compareTo(this.itemOne);
 		
 		if (comparison == 0) {
-			comparison = other.item_two.compareTo(item_two);
+			comparison = other.itemTwo.compareTo(itemTwo);
 		}
 		
 		return comparison;
+	}
+
+	@Override
+	public boolean isFull() {
+		return itemOne != null && itemTwo != null;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return itemOne == null && itemTwo == null;
+	}
+
+	@Override
+	public Pair<T, U> copy() {
+		return new Pair<T, U>(itemOne, itemTwo);
 	}
 }

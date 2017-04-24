@@ -4,6 +4,8 @@
 package data.details;
 
 import java.sql.SQLException;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import util.Database;
 
@@ -11,23 +13,64 @@ import util.Database;
  * @author ctubbs
  *
  */
-public final class FeatureDetails implements Comparable<FeatureDetails>
+public final class FeatureDetails extends Detail<FeatureDetails, String>
 {
-	private final static String newline = System.lineSeparator();
 
-	private Integer variable_id = null;
 	private String lid = null;
 	public String station_name = null;
 	private Integer feature_id = null;
-	private Integer variableposition_id = null;
 	
-	public void set_variable_id(int variable_id)
+	private ConcurrentSkipListMap<Integer, Integer> variablePositions = new ConcurrentSkipListMap<Integer, Integer>();
+	
+	/**
+	 * Finds the variable position id of the feature for a given variable. A position is
+	 * added if there is not one for this pair of variable and feature
+	 * @param variableID The ID of the variable to look for
+	 * @return The id of the variable position mapping the feature to the variable
+	 * @throws SQLException 
+	 */
+	public Integer getVariablePositionID(Integer variableID) throws SQLException
 	{
-		if (this.variable_id == null || this.variable_id != variable_id)
-		{
-			this.variable_id = variable_id;
-			this.feature_id = null;
+		if (!variablePositions.containsKey(variableID))
+		{			
+			String script = "SELECT wres.get_variableposition_id(" + getId() + ", " + variableID + ") AS variableposition_id;";
+
+			variablePositions.put(variableID, Database.get_result(script, "variableposition_id"));
 		}
+		
+		return variablePositions.get(variableID);
+	}
+	
+	@Deprecated
+	/**
+	 * Finds the variable position id of the feature for a given variable. A position is
+	 * added if there is not one for this pair of variable and feature
+	 * 
+	 *  DEPRECATED: Replace with getVariablePositionID(variableID) once caching is fully implemented
+	 * @param lid
+	 * @param stationName
+	 * @param variableID
+	 * @return
+	 * @throws SQLException
+	 */
+	public Integer getVariablePositionID(String lid, String stationName, Integer variableID) throws SQLException
+	{
+		if (this.lid == null)
+		{
+			this.lid = lid;
+		}
+		
+		if (this.station_name == null)
+		{
+			this.station_name = stationName;
+		}
+		
+		if (this.feature_id == null)
+		{
+			this.save();
+		}
+		
+		return getVariablePositionID(variableID);
 	}
 	
 	public void set_lid(String lid)
@@ -37,16 +80,6 @@ public final class FeatureDetails implements Comparable<FeatureDetails>
 			this.lid = lid;
 			this.feature_id = null;
 		}
-	}
-	
-	public int get_variableposition_id() throws SQLException
-	{
-		if (variableposition_id == null)
-		{
-			save();
-		}
-		
-		return variableposition_id;
 	}
 	
 	private String get_station_name()
@@ -64,9 +97,41 @@ public final class FeatureDetails implements Comparable<FeatureDetails>
 		
 		return name;
 	}
-	
-	private void save() throws SQLException
-	{
+
+	@Override
+	public int compareTo(FeatureDetails other) {
+		Integer id = this.feature_id;
+		
+		if (id == null)
+		{
+			id = -1;
+		}
+
+		return id.compareTo(other.feature_id);
+	}
+
+	@Override
+	public String getKey() {
+		return this.lid;
+	}
+
+	@Override
+	public Integer getId() {
+		return this.feature_id;
+	}
+
+	@Override
+	protected String getIDName() {
+		return "comid";
+	}
+
+	@Override
+	public void setID(Integer id) {
+		this.feature_id = id;		
+	}
+
+	@Override
+	protected String getInsertSelectStatement() {
 		String script = "";
 		
 		script += "WITH new_feature AS" + newline;
@@ -94,24 +159,7 @@ public final class FeatureDetails implements Comparable<FeatureDetails>
 		script += "FROM wres.feature" + newline;
 		script += "WHERE lid = '" + lid + "'" + newline;
 		script += "LIMIT 1;";
-		
-		feature_id = Database.get_result(script, "comid");
-		
-		script = "SELECT wres.get_variableposition_id(" + feature_id + ", " + variable_id + ") AS variableposition_id;";
-
-		variableposition_id = Database.get_result(script, "variableposition_id");
-	}
-
-	@Override
-	public int compareTo(FeatureDetails other) {
-		Integer id = this.feature_id;
-		
-		if (id == null)
-		{
-			id = -1;
-		}
-
-		return id.compareTo(other.feature_id);
+		return script;
 	}
 
 }

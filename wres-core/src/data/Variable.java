@@ -82,12 +82,12 @@ public class Variable {
 		{
 			String load_script = load_by_id + String.valueOf(id) + ";";
 			try {
-				Connection connection = Database.get_connection();
+				Connection connection = Database.getConnection();
 				Statement query = connection.createStatement();
 				query.setFetchSize(SystemConfig.instance().get_fetch_size());
 				VariableDef new_variable = new VariableDef(query.executeQuery(load_script));
 				query.close();
-				Database.return_connection(connection);
+				Database.returnConnection(connection);
 				String variable_name = new_variable.get_name();
 				name_index.put(variable_name, id);
 				definitions.put(id, new_variable);
@@ -110,12 +110,12 @@ public class Variable {
 		{
 			String load_script = load_by_name + variable_name + "';";
 			try {
-				Connection connection = Database.get_connection();
+				Connection connection = Database.getConnection();
 				Statement query = connection.createStatement();
 				query.setFetchSize(SystemConfig.instance().get_fetch_size());
 				VariableDef new_variable = new VariableDef(query.executeQuery(load_script));
 				query.close();
-				Database.return_connection(connection);
+				Database.returnConnection(connection);
 
 				id = new_variable.get_variable_id();
 				name_index.put(variable_name, id);

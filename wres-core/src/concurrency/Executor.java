@@ -42,7 +42,7 @@ public final class Executor
 		{
 			service = createService();
 		}
-		//print_status();
+
 		return service.submit(task);
 	}
 	
@@ -57,7 +57,7 @@ public final class Executor
 		{
 			service = createService();
 		}
-		//print_status();
+
 		return service.submit(task);
 	}
 	

@@ -23,17 +23,17 @@ public class OutputType extends ThreeTuple<Boolean, String, String> {
 
 	public Boolean shouldSave()
 	{
-		return get_item_one();
+		return getItemOne();
 	}
 	
 	public String path()
 	{
-		return get_item_two();
+		return getItemTwo();
 	}
 	
 	public String fileFormat()
 	{
-		return get_item_three();
+		return getItemThree();
 	}
 	
 	@Override

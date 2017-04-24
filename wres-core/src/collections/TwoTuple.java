@@ -6,7 +6,7 @@ package collections;
 /**
  * An immutable pairing of two values
  */
-public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implements Comparable<TwoTuple<T, U>>{
+public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implements Group<TwoTuple<T, U>>{
 
 	/**
 	 * Creates the immutable pair of two values
@@ -48,4 +48,19 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 	
 	private final T itemOne;
 	private final U itemTwo;
+	
+	@Override
+	public boolean isFull() {
+		return itemTwo != null && itemOne != null;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return itemTwo == null && itemOne == null;
+	}
+
+	@Override
+	public TwoTuple<T, U> copy() {
+		return new TwoTuple<T, U>(itemOne, itemTwo);
+	}
 }

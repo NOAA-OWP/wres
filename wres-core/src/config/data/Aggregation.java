@@ -21,22 +21,22 @@ public class Aggregation extends FourTuple<Boolean, Byte, String, String> {
 
 	public Boolean get_aggregate()
 	{
-		return get_item_one();
+		return getItemOne();
 	}
 	
 	public Byte get_range()
 	{
-		return get_item_two();
+		return getItemTwo();
 	}
 	
 	public String get_unit()
 	{
-		return get_item_three();
+		return getItemThree();
 	}
 	
 	public String get_mode()
 	{
-		return get_item_four();
+		return getItemFour();
 	}
 	
 	@Override

@@ -99,7 +99,7 @@ public class XMLReader
 		this.filename = filename;
 	}
 	
-	protected String tag_value(XMLStreamReader reader) throws XMLStreamException
+	protected String tagValue(XMLStreamReader reader) throws XMLStreamException
 	{
 		return Utilities.getXMLText(reader);
 	}
