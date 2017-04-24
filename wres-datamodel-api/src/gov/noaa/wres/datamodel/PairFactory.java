@@ -1,6 +1,11 @@
 package gov.noaa.wres.datamodel;
 
-public class DataFactory
+/**
+ * Returns data in ready-for-metrics-computation form.
+ * @author jesse
+ *
+ */
+public class PairFactory
 {
     /**
      * A common case: a timeseries for a fixed location, such as a hydrograph.
@@ -8,7 +13,7 @@ public class DataFactory
      */    
     public static LocationSingleTimeManyNonRasterData getLocationSingleTimeManyNonRasterData()
     {
-        return DataFactoryImpl.getLocationSingleTimeManyNonRasterData();
+        return PairFactoryImpl.getLocationSingleTimeManyNonRasterData();
     }
 
     /**
@@ -17,7 +22,7 @@ public class DataFactory
      */
     public static LocationSingleTimeSingleRasterData getLocationSingleTimeSingleRasterData()
     {
-        return DataFactoryImpl.getLocationSingleTimeSingleRasterData();
+        return PairFactoryImpl.getLocationSingleTimeSingleRasterData();
     }
 
     /**
@@ -26,7 +31,7 @@ public class DataFactory
      */
     public static LocationSingleTimeManyRasterData getLocationSingleTimeManyRasterData()
     {
-        return DataFactoryImpl.getLocationSingleTimeManyRasterData();
+        return PairFactoryImpl.getLocationSingleTimeManyRasterData();
     }
 
     /**
@@ -35,6 +40,6 @@ public class DataFactory
      */
     public static LocationManyTimeSingleNonRasterData getLocationManyTimeSingleNonRasterData()
     {
-        return DataFactoryImpl.getLocationManyTimeSingleNonRasterData();
+        return PairFactoryImpl.getLocationManyTimeSingleNonRasterData();
     }
 }
