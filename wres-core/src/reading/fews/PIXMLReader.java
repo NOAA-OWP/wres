@@ -95,12 +95,12 @@ public final class PIXMLReader extends XMLReader
 		String localName = null;
 		
 		//	Create new metadata records for the new header (inefficient; refactor later)
-		current_ensemble = new EnsembleDetails();
-		current_location = new FeatureDetails();
-		current_measurement = new MeasurementDetails();
+		//current_ensemble = new EnsembleDetails();
+		//current_location = new FeatureDetails();
+		//current_measurement = new MeasurementDetails();
 		currentForecast = new ForecastDetails();
 		currentForecastEnsemble = new ForecastEnsembleDetails();
-		current_variable = new VariableDetails();
+		//current_variable = new VariableDetails();
 		
 		//	Loop through every element in a series (header -> entry -> entry -> ... )
 		while (reader.hasNext())
@@ -215,8 +215,8 @@ public final class PIXMLReader extends XMLReader
 		if (insertCount > 0)
 		{
 			insertCount = 0;
-			Executor.execute(new CopyExecutor(currentTableDefinition, currentScript, delimiter));
-			//Database.execute(new CopyExecutor(currentTableDefinition, currentScript, delimiter));
+			//Executor.execute(new CopyExecutor(currentTableDefinition, currentScript, delimiter));
+			Database.execute(new CopyExecutor(currentTableDefinition, currentScript, delimiter));
 			currentScript = null;
 		}
 	}
@@ -245,40 +245,40 @@ public final class PIXMLReader extends XMLReader
 				localName = reader.getLocalName();
 				if (localName.equalsIgnoreCase("locationId"))
 				{
-					currentFeatureID = null;
+					//currentFeatureID = null;
 					
 					//	If we are at the tag for the location id, save it to the location metadata
-					current_location.set_lid(tagValue(reader));
-					currentLID = current_location.getKey();// tagValue(reader);
+					//current_location.set_lid(tag_value(reader));
+					currentLID = tagValue(reader);
 				}
 				else if (localName.equalsIgnoreCase("stationName"))
 				{
 					//	If we are at the tag for the name of the station, save it to the location
-					current_location.station_name = tagValue(reader);
-					currentStationName = current_location.station_name;// tagValue(reader);
+					//current_location.station_name = tag_value(reader);
+					currentStationName = tagValue(reader);
 				}
 				else if(localName.equalsIgnoreCase("ensembleId"))
 				{
 					currentEnsembleID = null;
 					//	If we are at the tag for the name of the ensemble, save it to the ensemble
-					current_ensemble.setEnsembleName(tagValue(reader));
-					currentEnsembleName = current_ensemble.getKey().itemOne;// tagValue(reader);
+					//current_ensemble.setEnsembleName(tag_value(reader));
+					currentEnsembleName = tagValue(reader);
 				}
 				else if(localName.equalsIgnoreCase("qualifierId"))
 				{
 					currentEnsembleID = null;
 					
 					//	If we are at the tag for the ensemble qualifier, save it to the ensemble
-					current_ensemble.qualifierID = tagValue(reader);
-					currentQualifierID = current_ensemble.qualifierID;// tagValue(reader);
+					//current_ensemble.qualifierID = tag_value(reader);
+					currentQualifierID = tagValue(reader);
 				}
 				else if(localName.equalsIgnoreCase("ensembleMemberIndex"))
 				{
 					currentEnsembleID = null;
 					
 					//	If we are at the tag for the ensemble member, save it to the ensemble
-					current_ensemble.setEnsembleMemberID(tagValue(reader));
-					currentEnsembleMemberID = current_ensemble.getKey().itemTwo;// tagValue(reader);
+					//current_ensemble.setEnsembleMemberID(tag_value(reader));
+					currentEnsembleMemberID = tagValue(reader);
 				}
 				else if(localName.equalsIgnoreCase("forecastDate"))
 				{
@@ -304,9 +304,9 @@ public final class PIXMLReader extends XMLReader
 				else if(localName.equalsIgnoreCase("units"))
 				{
 					//	If we are at the tag for the units, save it to the measurement units
-					current_measurement.set_unit(tagValue(reader));
-					//currentMeasurementUnit = current_measurement.getKey();// tagValue(reader);
-					//currentMeasurementUnitID = MeasurementCache.getMeasurementUnitID(currentMeasurementUnit);
+					//current_measurement.set_unit(tag_value(reader));
+					currentMeasurementUnit = tagValue(reader);
+					currentMeasurementUnitID = MeasurementCache.getMeasurementUnitID(currentMeasurementUnit);
 				}
 				else if(localName.equalsIgnoreCase("missVal"))
 				{
@@ -335,9 +335,9 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
-					current_variable.setVariableName(tagValue(reader));
-					currentVariableName = current_variable.getKey();// tagValue(reader);
-					//currentVariableID = VariableCache.getVariableID(currentVariableName, currentMeasurementUnitID);
+					//current_variable.setVariableName(tag_value(reader));
+					currentVariableName = tagValue(reader);
+					currentVariableID = VariableCache.getVariableID(currentVariableName, currentMeasurementUnitID);
 				}
 			}
 			reader.next();
@@ -346,18 +346,16 @@ public final class PIXMLReader extends XMLReader
 	
 	private int getEnsembleID() throws Exception
 	{
-		/*if (currentEnsembleID == null)
+		if (currentEnsembleID == null)
 		{
 			currentEnsembleID = EnsembleCache.getEnsembleID(currentEnsembleName, currentEnsembleMemberID, currentQualifierID);
 		}
-		return currentEnsembleID;*/
-		return current_ensemble.get_ensemble_id();
+		return currentEnsembleID;
 	}
 	
 	private int getMeasurementID() throws SQLException
 	{
-		return current_measurement.get_measurementunit_id();
-		//return this.currentMeasurementUnitID;
+		return this.currentMeasurementUnitID;
 	}
 	
 	private int getForecastID() throws SQLException
@@ -368,9 +366,7 @@ public final class PIXMLReader extends XMLReader
 	private int getVariablePositionID() throws Exception {
 		if (currentVariablePositionID == null)
 		{
-			current_location.set_variable_id(getVariableID());
-			currentVariablePositionID = current_location.get_variableposition_id();
-			//currentVariablePositionID = FeatureCache.getVariablePositionID(currentLID, currentStationName, getVariableID());
+			currentVariablePositionID = FeatureCache.getVariablePositionID(currentLID, currentStationName, getVariableID());
 		}
 		return currentVariablePositionID;
 	}
@@ -391,13 +387,13 @@ public final class PIXMLReader extends XMLReader
 	
 	private int getVariableID() throws Exception
 	{		
-		/*if (currentVariableID == null)
+		if (currentVariableID == null)
 		{
 			this.currentVariableID = VariableCache.getVariableID(currentVariableName, currentMeasurementUnit);
-		}*/
-		current_variable.measurementunit_id = getMeasurementID();		
-		return current_variable.getVariableID();
-		//return this.currentVariableID;
+		}
+		//current_variable.measurementunit_id = get_measurement_id();		
+		//return current_variable.getVariableID();
+		return this.currentVariableID;
 	}
 	
 	private String getInsertForecastHeader()
@@ -411,12 +407,12 @@ public final class PIXMLReader extends XMLReader
 	}
 	
 	private boolean saveForecast = true;
-	private EnsembleDetails current_ensemble = null;
-	private FeatureDetails current_location = null;
-	private MeasurementDetails current_measurement = null;
+	//private EnsembleDetails current_ensemble = null;
+	//private FeatureDetails current_location = null;
+	//private MeasurementDetails current_measurement = null;
 	private ForecastDetails currentForecast = null;
 	private ForecastEnsembleDetails currentForecastEnsemble = null;
-	private VariableDetails current_variable = null;
+	//private VariableDetails current_variable = null;
 	private Float currentMissingIndex = null;
 	private Integer timeStep = null;
 	private String currentScript = "";
@@ -428,7 +424,7 @@ public final class PIXMLReader extends XMLReader
 	private Integer currentMeasurementUnitID = null;
 	private Integer currentVariableID = null;
 	private Integer currentEnsembleID = null;
-	private Integer currentFeatureID = null;
+	//private Integer currentFeatureID = null;
 	private Integer currentForecastEnsembleID = null;
 	private Integer currentVariablePositionID = null;
 	

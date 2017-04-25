@@ -11,9 +11,8 @@
         <!-- Warning: Default max connections is 100; approaching
              that will cause deadlocks-->
         <max_pool_size>40</max_pool_size>
-        <maximum_threads>40</maximum_threads>
 	</database>
-	<maximum_thread_count>40</maximum_thread_count>
+	<maximum_thread_count>60</maximum_thread_count>
 	<fetch_size>500</fetch_size>
     <maximum_inserts>900</maximum_inserts>
     <maximum_copies>200</maximum_copies>
