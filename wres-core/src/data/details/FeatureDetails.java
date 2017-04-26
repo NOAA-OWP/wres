@@ -16,7 +16,7 @@ import util.Database;
  * @author ctubbs
  *
  */
-public final class FeatureDetails extends Detail<FeatureDetails, String>
+public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 {
 
 	private String lid = null;

@@ -11,7 +11,7 @@ import util.Database;
  * @author ctubbs
  *
  */
-public abstract class Detail<U, V extends Comparable<V>> implements Comparable<U> {
+public abstract class CachedDetail<U, V extends Comparable<V>> implements Comparable<U> {
 	static final String newline = System.lineSeparator();
 	
 	public abstract V getKey();
