@@ -10,7 +10,7 @@ import collections.Triplet;
 /**
  * Describes basic information used to define 
  */
-public final class EnsembleDetails extends Detail<EnsembleDetails, Triplet<String, String, String>>{
+public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Triplet<String, String, String>>{
 	
 	// The name of the ensemble being represented
 	private String ensemble_name = null;

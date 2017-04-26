@@ -60,7 +60,7 @@ public class XMLReader
 			
 			while (reader.hasNext())
 			{
-				parse_element(reader);
+				parseElement(reader);
 				if (reader.hasNext())
 				{
 					reader.next();
@@ -123,7 +123,7 @@ public class XMLReader
 		return Utilities.tagIs(reader, tag_name);
 	}
 	
-	protected void parse_element(XMLStreamReader reader)
+	protected void parseElement(XMLStreamReader reader)
 	{
 		switch (reader.getEventType())
 		{

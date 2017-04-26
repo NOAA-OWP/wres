@@ -54,7 +54,7 @@ public class ProjectConfig extends XMLReader {
 	}
 	
 	@Override
-	protected void parse_element(XMLStreamReader reader)
+	protected void parseElement(XMLStreamReader reader)
 	{
 		if (tag_is(reader, "project"))
 		{

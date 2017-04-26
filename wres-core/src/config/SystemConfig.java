@@ -72,7 +72,7 @@ public final class SystemConfig extends reading.XMLReader
 	 * 
 	 * @param reader The reader containing the XML data 
 	 */
-	protected void parse_element(XMLStreamReader reader)
+	protected void parseElement(XMLStreamReader reader)
 	{
 	    LOGGER.trace("parsing element");
 
