@@ -72,7 +72,7 @@ public final class SystemConfig extends reading.XMLReader
 	 * 
 	 * @param reader The reader containing the XML data 
 	 */
-	protected void parse_element(XMLStreamReader reader)
+	protected void parseElement(XMLStreamReader reader)
 	{
 	    LOGGER.trace("parsing element");
 
@@ -145,14 +145,6 @@ public final class SystemConfig extends reading.XMLReader
 	public int get_maximum_thread_count()
 	{
 		return this.maximum_thread_count;
-	}
-	
-	/**
-	 * Returns the maximum number of threads that may be reserved for database calls
-	 * @return The number of allowable database threads
-	 */
-	public int getMaximumDatabaseThreads() {
-		return database_configuration.getMaximumThreads();
 	}
 
 	/**

@@ -9,7 +9,7 @@ import java.sql.SQLException;
  * @author ctubbs
  *
  */
-public final class MeasurementDetails extends Detail<MeasurementDetails, String> {	
+public final class MeasurementDetails extends CachedDetail<MeasurementDetails, String> {	
 	private String unit = null;
 	private Integer measurementunit_id = null;
 	
