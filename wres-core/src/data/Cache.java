@@ -6,7 +6,7 @@ package data;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import collections.RecentUseList;
-import data.details.Detail;
+import data.details.CachedDetail;
 
 /**
  * @author ctubbs
@@ -14,7 +14,7 @@ import data.details.Detail;
  * @param <U>
  *
  */
-abstract class Cache<T extends Detail<T, U>, U extends Comparable<U>> {
+abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	protected ConcurrentSkipListMap<Integer, T> details = new ConcurrentSkipListMap<Integer, T>();
 	protected ConcurrentSkipListMap<U, Integer> keyIndex = new ConcurrentSkipListMap<U, Integer>();
 	protected RecentUseList<Integer> recentlyUsedIDs = new RecentUseList<Integer>();

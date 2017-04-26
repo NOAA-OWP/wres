@@ -26,27 +26,27 @@ public class Database {
     private static ComboPooledDataSource pool = SystemConfig.instance().get_connection_pool();
 
 	// A thread executor specifically for SQL calls
-	//private static ExecutorService sqlTasks = createService();
+	private static ExecutorService sqlTasks = createService();
 	
 	/**
 	 * Creates a new thread executor
 	 * @return A new thread executor that may run the maximum number of configured threads
 	 */
-	/*private static final ExecutorService createService()
+	private static final ExecutorService createService()
 	{
 		if (sqlTasks != null)
 		{
 			sqlTasks.shutdown();
 		}
-		return Executors.newFixedThreadPool(SystemConfig.instance().get_maximum_thread_count());//.getMaximumDatabaseThreads());
-	}*/
+		return Executors.newFixedThreadPool(SystemConfig.instance().get_maximum_thread_count());
+	}
 	
 	/**
 	 * Submits the passed in runnable task for execution
 	 * @param task The thread whose task to execute
 	 * @return An object containing an empty value generated at the end of thread execution
 	 */
-	/*public static void execute(Runnable task)
+	public static void execute(Runnable task)
 	{
 		if (sqlTasks == null || sqlTasks.isShutdown())
 		{
@@ -54,20 +54,20 @@ public class Database {
 		}
 
 		sqlTasks.execute(task);
-	}*/
+	}
 	
 	/**
 	 * Waits until all passed in jobs have executed.
 	 */
-	/*public static void shutdown()
+	public static void shutdown()
 	{
 		if (!sqlTasks.isShutdown())
 		{
 			sqlTasks.shutdown();
 			while (!sqlTasks.isTerminated());
-			//close();
+			close();
 		}
-	}*/
+	}
 
 	public static void close() {
 		pool.close();

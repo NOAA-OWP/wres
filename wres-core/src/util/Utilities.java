@@ -24,6 +24,7 @@ import javax.xml.stream.XMLStreamReader;
 import data.EnsembleCache;
 import data.FeatureCache;
 import data.MeasurementCache;
+import data.SourceCache;
 import data.VariableCache;
 
 public final class Utilities {
@@ -553,5 +554,6 @@ public final class Utilities {
 		FeatureCache.initialize();
 		EnsembleCache.initialize();
 		VariableCache.initialize();
+		SourceCache.initialize();
 	}
 }

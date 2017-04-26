@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import collections.Triplet;
-import config.SystemConfig;
 import data.details.EnsembleDetails;
 import util.Database;
 import util.Utilities;
@@ -241,7 +240,7 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 		
 		return similarity;
 	}
-	
+
 	public synchronized static void initialize() throws SQLException
 	{
 		Connection connection = Database.getConnection();
