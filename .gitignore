@@ -1,6 +1,7 @@
-/.project
+**/.project
 *.class
 *.[oa]
-build
-.gradle
-.settings
+**/build
+**/.gradle
+**/.settings
+**/.classpath
