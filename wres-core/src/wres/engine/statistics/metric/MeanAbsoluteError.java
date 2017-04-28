@@ -15,17 +15,6 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
 public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends ScalarOutput> extends DoubleErrorScore<S, T>
 {
 
-    /**
-     * Return a default {@link MeanAbsoluteError} function.
-     * 
-     * @return a default {@link MeanAbsoluteError} function.
-     */
-
-    public static MeanAbsoluteError<SingleValuedPairs, ScalarOutput> newInstance()
-    {
-        return new MeanAbsoluteError();
-    }
-
     @Override
     public T apply(final S s)
     {
@@ -58,10 +47,10 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
     }
 
     /**
-     * Prevent direct construction.
+     * Protected constructor.
      */
 
-    private MeanAbsoluteError()
+    protected MeanAbsoluteError()
     {
         super(FunctionFactory.absError());
     }

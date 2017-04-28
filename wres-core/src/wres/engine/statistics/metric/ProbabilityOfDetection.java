@@ -3,6 +3,7 @@ package wres.engine.statistics.metric;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutput;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
@@ -16,19 +17,8 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
 public final class ProbabilityOfDetection<S extends DichotomousPairs, T extends ScalarOutput>
 extends
     ContingencyTable<S, T>
-implements Score, Collectable<S, MetricOutput, T>
+implements Score, Collectable<S, MetricOutput<?, ?>, T>
 {
-
-    /**
-     * Return a default {@link ProbabilityOfDetection} function.
-     * 
-     * @return a default {@link ProbabilityOfDetection} function.
-     */
-
-    public static ProbabilityOfDetection<DichotomousPairs, ScalarOutput> newInstance()
-    {
-        return new ProbabilityOfDetection();
-    }
 
     @Override
     public T apply(final S s)
@@ -62,16 +52,18 @@ implements Score, Collectable<S, MetricOutput, T>
     }
 
     @Override
-    public T apply(final MetricOutput output)
+    public T apply(final MetricOutput<?, ?> output)
     {
         is2x2ContingencyTable(output, this);
         final MatrixOutput v = (MatrixOutput)output;
-        final double[][] cm = v.getValues();
-        return (T)new ScalarOutput(cm[0][0] / (cm[0][0] + cm[1][0]), v.getSampleSize());
+        final double[][] cm = v.getData().getValues();
+        return MetricOutputFactory.getExtendsScalarOutput(cm[0][0] / (cm[0][0] + cm[1][0]),
+                                                          v.getSampleSize().valueOf(),
+                                                          output.getDimension());
     }
 
     @Override
-    public MetricOutput getCollectionInput(final S input)
+    public MetricOutput<?, ?> getCollectionInput(final S input)
     {
         return super.apply(input); //2x2 contingency table
     }
@@ -83,10 +75,10 @@ implements Score, Collectable<S, MetricOutput, T>
     }
 
     /**
-     * Prevent direct construction.
+     * Protected constructor.
      */
 
-    private ProbabilityOfDetection()
+    protected ProbabilityOfDetection()
     {
         super();
     }

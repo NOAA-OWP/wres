@@ -18,20 +18,11 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class BrierScore<S extends DiscreteProbabilityPairs, T extends MetricOutput> extends MeanSquareError<S, T>
+public final class BrierScore<S extends DiscreteProbabilityPairs, T extends MetricOutput<?, ?>>
+extends
+    MeanSquareError<S, T>
 implements ProbabilityScore
 {
-
-    /**
-     * Return a default {@link BrierScore} function.
-     * 
-     * @return a default {@link BrierScore} function.
-     */
-
-    public static BrierScore<DiscreteProbabilityPairs, MetricOutput> newInstance()
-    {
-        return new BrierScore();
-    }
 
     @Override
     public T apply(final S s)
@@ -72,10 +63,10 @@ implements ProbabilityScore
     }
 
     /**
-     * Prevent direct construction.
+     * Protected constructor.
      */
 
-    private BrierScore()
+    protected BrierScore()
     {
         super();
     }

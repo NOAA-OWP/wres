@@ -16,7 +16,7 @@ public class DiscreteProbabilityPairs extends SingleValuedPairs
      * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
      */
 
-    public DiscreteProbabilityPairs(final double[][] pairs)
+    protected DiscreteProbabilityPairs(final double[][] pairs)
     {
         super(pairs, null);
         // TODO Auto-generated constructor stub
@@ -32,7 +32,7 @@ public class DiscreteProbabilityPairs extends SingleValuedPairs
      * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
      */
 
-    public DiscreteProbabilityPairs(final double[][] pairs, final double[][] basePairs)
+    protected DiscreteProbabilityPairs(final double[][] pairs, final double[][] basePairs)
     {
         super(pairs, basePairs, null);
         // TODO Auto-generated constructor stub

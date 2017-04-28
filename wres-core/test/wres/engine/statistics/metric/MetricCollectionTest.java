@@ -7,8 +7,8 @@ import org.junit.Test;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputCollection;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
@@ -36,9 +36,9 @@ public class MetricCollectionTest
         final MetricCollection<SingleValuedPairs, ScalarOutput> n = MetricCollection.ofSingleValuedScalar();
 
         //Add some appropriate metrics to the collection
-        n.add(MeanError.newInstance()); //Should be -200.55
-        n.add(MeanAbsoluteError.newInstance()); //Should be 201.37
-        n.add(RootMeanSquareError.newInstance()); //Should be 632.4586381732801
+        n.add(MetricFactory.ofMeanError()); //Should be -200.55
+        n.add(MetricFactory.ofMeanAbsoluteError()); //Should be 201.37
+        n.add(MetricFactory.ofRootMeanSquareError()); //Should be 632.4586381732801
 
         //Compute them
         final MetricOutputCollection<ScalarOutput> d = n.apply(input);
@@ -47,9 +47,9 @@ public class MetricCollectionTest
         //d.stream().forEach(g -> System.out.println(g.valueOf()));
 
         //Check them
-        assertTrue(d.get(0).equals(new ScalarOutput(-200.55, 10)));
-        assertTrue(d.get(1).equals(new ScalarOutput(201.37, 10)));
-        assertTrue(d.get(2).equals(new ScalarOutput(632.4586381732801, 10)));
+        assertTrue(d.get(0).equals(MetricOutputFactory.getScalarOutput(-200.55, 10, null)));
+        assertTrue(d.get(1).equals(MetricOutputFactory.getScalarOutput(201.37, 10, null)));
+        assertTrue(d.get(2).equals(MetricOutputFactory.getScalarOutput(632.4586381732801, 10, null)));
     }
 
     /**
@@ -69,11 +69,11 @@ public class MetricCollectionTest
         final MetricCollection<DichotomousPairs, ScalarOutput> m = MetricCollection.ofDichotomousScalar();
 
         //Add some appropriate metrics to the collection
-        m.add(CriticalSuccessIndex.newInstance()); //Should be 0.5734265734265734
-        m.add(ProbabilityOfDetection.newInstance()); //Should be 0.780952380952381
-        m.add(ProbabilityOfFalseDetection.newInstance()); //Should be 0.14615384615384616
-        m.add(PeirceSkillScore.newInstance()); //Should be 0.6347985347985348
-        m.add(EquitableThreatScore.newInstance()); //Should be 0.43768152544513195
+        m.add(MetricFactory.ofCriticalSuccessIndex()); //Should be 0.5734265734265734
+        m.add(MetricFactory.ofProbabilityOfDetection()); //Should be 0.780952380952381
+        m.add(MetricFactory.ofProbabilityOfFalseDetection()); //Should be 0.14615384615384616
+        m.add(MetricFactory.ofPeirceSkillScore()); //Should be 0.6347985347985348
+        m.add(MetricFactory.ofEquitableThreatScore()); //Should be 0.43768152544513195
 
         //Compute them
         final MetricOutputCollection<ScalarOutput> c = m.apply(input);
@@ -82,11 +82,11 @@ public class MetricCollectionTest
         //c.stream().forEach(g -> System.out.println(g.valueOf()));
 
         //Check them
-        assertTrue(c.get(0).equals(new ScalarOutput(0.5734265734265734, 365)));
-        assertTrue(c.get(1).equals(new ScalarOutput(0.780952380952381, 365)));
-        assertTrue(c.get(2).equals(new ScalarOutput(0.14615384615384616, 365)));
-        assertTrue(c.get(3).equals(new ScalarOutput(0.6347985347985348, 365)));
-        assertTrue(c.get(4).equals(new ScalarOutput(0.43768152544513195, 365)));
+        assertTrue(c.get(0).equals(MetricOutputFactory.getScalarOutput(0.5734265734265734, 365, null)));
+        assertTrue(c.get(1).equals(MetricOutputFactory.getScalarOutput(0.780952380952381, 365, null)));
+        assertTrue(c.get(2).equals(MetricOutputFactory.getScalarOutput(0.14615384615384616, 365, null)));
+        assertTrue(c.get(3).equals(MetricOutputFactory.getScalarOutput(0.6347985347985348, 365, null)));
+        assertTrue(c.get(4).equals(MetricOutputFactory.getScalarOutput(0.43768152544513195, 365, null)));
     }
 
     /**
@@ -101,21 +101,21 @@ public class MetricCollectionTest
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         //Create a collection metrics that consume probabilistic pairs and produce varying outputs (in principle)
-        final MetricCollection<DiscreteProbabilityPairs, MetricOutput> n =
-                                                                         MetricCollection.ofDiscreteProbabilityOutput();
+        final MetricCollection<DiscreteProbabilityPairs, ScalarOutput> n =
+                                                                         MetricCollection.ofDiscreteProbabilityScalarOutput();
         //Add some appropriate metrics to the collection
-        n.add(BrierScore.newInstance()); //Should be 0.26
-        n.add(BrierSkillScore.newInstance()); //Should be 0.0
+        n.add(MetricFactory.ofBrierScoreNoDecomp()); //Should be 0.26
+        n.add(MetricFactory.ofBrierSkillScoreNoDecomp()); //Should be 0.0
 
         //Compute them
-        final MetricOutputCollection<MetricOutput> d = n.apply(input);
+        final MetricOutputCollection<ScalarOutput> d = n.apply(input);
 
         //Print them
         //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).valueOf()));
 
         //Check them
-        assertTrue(d.get(0).equals(new ScalarOutput(0.26, 6)));
-        assertTrue(d.get(1).equals(new ScalarOutput(0.0, 6)));
+        assertTrue(d.get(0).equals(MetricOutputFactory.getScalarOutput(0.26, 6, null)));
+        assertTrue(d.get(1).equals(MetricOutputFactory.getScalarOutput(0.0, 6, null)));
     }
 
 }

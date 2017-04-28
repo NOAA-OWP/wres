@@ -35,7 +35,7 @@ public class MulticategoryPairs implements MetricInput<BooleanVector>
      * @throws MetricInputException if the input is null or empty or contains an odd number of columns
      */
 
-    public MulticategoryPairs(final boolean[][] pairs)
+    protected MulticategoryPairs(final boolean[][] pairs)
     {
         this(pairs, null);
     }
@@ -54,7 +54,7 @@ public class MulticategoryPairs implements MetricInput<BooleanVector>
      * @throws MetricInputException if the inputs are unexpected
      */
 
-    public MulticategoryPairs(final boolean[][] pairs, final boolean[][] basePairs)
+    protected MulticategoryPairs(final boolean[][] pairs, final boolean[][] basePairs)
     {
         //Bounds check
         Objects.requireNonNull(pairs, "Specify non-null input for the multicategory pairs.");

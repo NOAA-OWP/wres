@@ -2,11 +2,11 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.inputs.MetricInputException;
 import wres.engine.statistics.metric.inputs.MulticategoryPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutput;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
@@ -21,30 +21,8 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * @since 0.1
  */
 public final class PeirceSkillScore<S extends MulticategoryPairs, T extends ScalarOutput> extends ContingencyTable<S, T>
-implements Score, Collectable<S, MetricOutput, T>
+implements Score, Collectable<S, MetricOutput<?, ?>, T>
 {
-
-    /**
-     * Return a default {@link PeirceSkillScore} function for a dichotomous event.
-     * 
-     * @return a default {@link PeirceSkillScore} function for a dichotomous event.
-     */
-
-    public static PeirceSkillScore<DichotomousPairs, ScalarOutput> newInstance()
-    {
-        return new PeirceSkillScore();
-    }
-
-    /**
-     * Return a default {@link PeirceSkillScore} function for a multi-category event.
-     * 
-     * @return a default {@link PeirceSkillScore} function for a multi-category event.
-     */
-
-    public static PeirceSkillScore<MulticategoryPairs, ScalarOutput> newInstanceOfMulti()
-    {
-        return new PeirceSkillScore();
-    }
 
     @Override
     public T apply(final S s)
@@ -78,7 +56,7 @@ implements Score, Collectable<S, MetricOutput, T>
     }
 
     @Override
-    public T apply(final MetricOutput output)
+    public T apply(final MetricOutput<?, ?> output)
     {
         Objects.requireNonNull(output, "Specify non-null input for the '" + toString() + "'.");
         if(!(output instanceof MatrixOutput))
@@ -87,13 +65,13 @@ implements Score, Collectable<S, MetricOutput, T>
                 + "computing the '" + this + "'.");
         }
         final MatrixOutput v = (MatrixOutput)output;
-        final double[][] cm = v.getValues();
+        final double[][] cm = v.getData().getValues();
 
         //Dichotomous predictand
-        if(v.size() == 4)
+        if(v.getData().size() == 4)
         {
-            return (T)new ScalarOutput((cm[0][0] / (cm[0][0] + cm[1][0])) - (cm[0][1] / (cm[0][1] + cm[1][1])),
-                                       v.getSampleSize());
+            return MetricOutputFactory.getExtendsScalarOutput((cm[0][0] / (cm[0][0] + cm[1][0]))
+                - (cm[0][1] / (cm[0][1] + cm[1][1])), v.getSampleSize().valueOf(), output.getDimension());
         }
 
         //Multicategory predictand
@@ -123,11 +101,11 @@ implements Score, Collectable<S, MetricOutput, T>
         //Compose the result
         final double nSquared = n * n;
         final double result = ((diag / n) - (sumProd / nSquared)) / (1.0 - (uniProd / nSquared));
-        return (T)new ScalarOutput(result, v.getSampleSize());
+        return MetricOutputFactory.getExtendsScalarOutput(result, v.getSampleSize().valueOf(), output.getDimension());
     }
 
     @Override
-    public MetricOutput getCollectionInput(final S input)
+    public MetricOutput<?, ?> getCollectionInput(final S input)
     {
         return super.apply(input); //Contingency table
     }
@@ -139,10 +117,10 @@ implements Score, Collectable<S, MetricOutput, T>
     }
 
     /**
-     * Prevent direct construction.
+     * Protected constructor.
      */
 
-    private PeirceSkillScore()
+    protected PeirceSkillScore()
     {
         super();
     }

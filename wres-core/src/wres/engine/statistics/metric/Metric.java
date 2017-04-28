@@ -26,7 +26,7 @@ import wres.engine.statistics.metric.parameters.MetricParameterException;
  * @version 0.1
  * @since 0.1
  */
-public abstract class Metric<S extends MetricInput, T extends MetricOutput> implements Function<S, T>
+public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?, ?>> implements Function<S, T>
 {
 
     /**
@@ -86,7 +86,7 @@ public abstract class Metric<S extends MetricInput, T extends MetricOutput> impl
     @Override
     public boolean equals(final Object o)
     {
-        return o != null && o instanceof Metric && ((Metric)o).getName().equals(getName());
+        return o != null && o instanceof Metric && ((Metric<?, ?>)o).getName().equals(getName());
     }
 
     /**

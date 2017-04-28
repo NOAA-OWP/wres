@@ -20,7 +20,7 @@ public class DichotomousPairs extends MulticategoryPairs
      * @throws MetricInputException if either input is null or empty.
      */
 
-    public DichotomousPairs(final boolean[][] pairs)
+    protected DichotomousPairs(final boolean[][] pairs)
     {
         this(pairs, null);
     }
@@ -37,7 +37,7 @@ public class DichotomousPairs extends MulticategoryPairs
      *             contain two columns.
      */
 
-    public DichotomousPairs(final boolean[][] pairs, final boolean[][] basePairs)
+    protected DichotomousPairs(final boolean[][] pairs, final boolean[][] basePairs)
     {
         super(checkPairs(pairs), basePairs);
     }

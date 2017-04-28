@@ -5,7 +5,7 @@ import java.util.function.DoubleBinaryOperator;
 import wres.engine.statistics.metric.inputs.DoubleVector;
 
 /**
- * A factory class for constructing elementary functions. Cannot be instantiated.
+ * A factory class for constructing elementary functions.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
