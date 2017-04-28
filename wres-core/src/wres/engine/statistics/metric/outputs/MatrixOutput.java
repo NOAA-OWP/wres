@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.outputs;
 
 import wres.engine.statistics.metric.inputs.Dimension;
 import wres.engine.statistics.metric.inputs.DoubleMatrix;
+import wres.engine.statistics.metric.inputs.IntegerScalar;
 
 /**
  * <p>
@@ -11,8 +12,14 @@ import wres.engine.statistics.metric.inputs.DoubleMatrix;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MatrixOutput extends DoubleMatrix implements MetricOutput
+public class MatrixOutput implements MetricOutput<DoubleMatrix, IntegerScalar>
 {
+
+    /**
+     * The output data.
+     */
+
+    private final DoubleMatrix output;
 
     /**
      * The dimension associated with the output or null for dimensionless output.
@@ -24,7 +31,7 @@ public class MatrixOutput extends DoubleMatrix implements MetricOutput
      * The sample size associated with the output.
      */
 
-    private final int sampleSize;
+    private final IntegerScalar sampleSize;
 
     /**
      * Construct a dimensionless output with a sample size.
@@ -33,7 +40,7 @@ public class MatrixOutput extends DoubleMatrix implements MetricOutput
      * @param sampleSize the sample size
      */
 
-    public MatrixOutput(final double[][] output, final int sampleSize)
+    public MatrixOutput(final DoubleMatrix output, final IntegerScalar sampleSize)
     {
         this(output, sampleSize, null);
     }
@@ -46,9 +53,9 @@ public class MatrixOutput extends DoubleMatrix implements MetricOutput
      * @param dim the dimension.
      */
 
-    public MatrixOutput(final double[][] output, final int sampleSize, final Dimension dim)
+    public MatrixOutput(final DoubleMatrix output, final IntegerScalar sampleSize, final Dimension dim)
     {
-        super(output); //Bounds check in super
+        this.output = output;
         this.sampleSize = sampleSize;
         this.dim = dim;
     }
@@ -66,9 +73,15 @@ public class MatrixOutput extends DoubleMatrix implements MetricOutput
     }
 
     @Override
-    public Integer getSampleSize()
+    public IntegerScalar getSampleSize()
     {
         return sampleSize;
+    }
+
+    @Override
+    public DoubleMatrix getData()
+    {
+        return output;
     }
 
 }

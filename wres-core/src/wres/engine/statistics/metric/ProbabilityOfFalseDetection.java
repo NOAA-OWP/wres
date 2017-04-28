@@ -3,6 +3,7 @@ package wres.engine.statistics.metric;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutput;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
@@ -16,19 +17,8 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
 public final class ProbabilityOfFalseDetection<S extends DichotomousPairs, T extends ScalarOutput>
 extends
     ContingencyTable<S, T>
-implements Score, Collectable<S, MetricOutput, T>
+implements Score, Collectable<S, MetricOutput<?, ?>, T>
 {
-
-    /**
-     * Return a default {@link ProbabilityOfFalseDetection} function.
-     * 
-     * @return a default {@link ProbabilityOfFalseDetection} function.
-     */
-
-    public static ProbabilityOfFalseDetection<DichotomousPairs, ScalarOutput> newInstance()
-    {
-        return new ProbabilityOfFalseDetection();
-    }
 
     @Override
     public T apply(final S s)
@@ -62,12 +52,14 @@ implements Score, Collectable<S, MetricOutput, T>
     }
 
     @Override
-    public T apply(final MetricOutput output)
+    public T apply(final MetricOutput<?, ?> output)
     {
         is2x2ContingencyTable(output, this);
         final MatrixOutput v = (MatrixOutput)output;
-        final double[][] cm = v.getValues();
-        return (T)new ScalarOutput(cm[0][1] / (cm[0][1] + cm[1][1]), v.getSampleSize());
+        final double[][] cm = v.getData().getValues();
+        return MetricOutputFactory.getExtendsScalarOutput(cm[0][1] / (cm[0][1] + cm[1][1]),
+                                                          v.getSampleSize().valueOf(),
+                                                          output.getDimension());
     }
 
     @Override
@@ -83,10 +75,10 @@ implements Score, Collectable<S, MetricOutput, T>
     }
 
     /**
-     * Prevent direct construction.
+     * Protected constructor.
      */
 
-    private ProbabilityOfFalseDetection()
+    protected ProbabilityOfFalseDetection()
     {
         super();
     }

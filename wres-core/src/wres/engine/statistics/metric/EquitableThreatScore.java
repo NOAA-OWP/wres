@@ -5,6 +5,7 @@ import java.util.Objects;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutput;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
@@ -19,7 +20,7 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
 public final class EquitableThreatScore<S extends DichotomousPairs, T extends ScalarOutput>
 extends
     ContingencyTable<S, T>
-implements Score, Collectable<S, MetricOutput, T>
+implements Score, Collectable<S, MetricOutput<?, ?>, T>
 {
 
     /**
@@ -30,7 +31,7 @@ implements Score, Collectable<S, MetricOutput, T>
 
     public static EquitableThreatScore<DichotomousPairs, ScalarOutput> newInstance()
     {
-        return new EquitableThreatScore();
+        return new EquitableThreatScore<DichotomousPairs, ScalarOutput>();
     }
 
     @Override
@@ -66,18 +67,20 @@ implements Score, Collectable<S, MetricOutput, T>
     }
 
     @Override
-    public T apply(final MetricOutput output)
+    public T apply(final MetricOutput<?, ?> output)
     {
         is2x2ContingencyTable(output, this);
         final MatrixOutput v = (MatrixOutput)output;
-        final double[][] cm = v.getValues();
+        final double[][] cm = v.getData().getValues();
         final double t = cm[0][0] + cm[0][1] + cm[1][0];
         final double hitsRandom = ((cm[0][0] + cm[1][0]) * (cm[0][0] + cm[0][1])) / (t + cm[1][1]);
-        return (T)new ScalarOutput((cm[0][0] - hitsRandom) / (t - hitsRandom), v.getSampleSize());
+        return MetricOutputFactory.getExtendsScalarOutput((cm[0][0] - hitsRandom) / (t - hitsRandom),
+                                                          v.getSampleSize().valueOf(),
+                                                          null);
     }
 
     @Override
-    public MetricOutput getCollectionInput(final S input)
+    public MetricOutput<?, ?> getCollectionInput(final S input)
     {
         return super.apply(input); //2x2 contingency table
     }
@@ -92,7 +95,7 @@ implements Score, Collectable<S, MetricOutput, T>
      * Prevent direct construction.
      */
 
-    private EquitableThreatScore()
+    protected EquitableThreatScore()
     {
         super();
     }

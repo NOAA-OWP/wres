@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutput;
-import wres.engine.statistics.metric.outputs.VectorOutput;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 
 /**
  * A generic implementation of an error metric that applies a {@link DoubleErrorFunction} to each pair within a
@@ -14,7 +14,7 @@ import wres.engine.statistics.metric.outputs.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public abstract class DoubleErrorMetric<S extends SingleValuedPairs, T extends MetricOutput> extends Metric<S, T>
+public abstract class DoubleErrorMetric<S extends SingleValuedPairs, T extends MetricOutput<?, ?>> extends Metric<S, T>
 {
     /**
      * The error function.
@@ -39,7 +39,9 @@ public abstract class DoubleErrorMetric<S extends SingleValuedPairs, T extends M
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         //Compute the atomic errors in a parallel stream
-        return (T)new VectorOutput(s.getData().parallelStream().mapToDouble(f).toArray(), s.size());
+        return MetricOutputFactory.getVectorExtendsMetricOutput(s.getData().parallelStream().mapToDouble(f).toArray(),
+                                                                s.size(),
+                                                                null);
     }
 
 }

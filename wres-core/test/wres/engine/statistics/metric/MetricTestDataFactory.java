@@ -2,6 +2,7 @@ package wres.engine.statistics.metric;
 
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
+import wres.engine.statistics.metric.inputs.MetricInputFactory;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 
 /**
@@ -25,7 +26,7 @@ public final class MetricTestDataFactory
         //Construct some single-valued pairs
         final double[][] dData = new double[][]{{22.9, 22.8}, {75.2, 80}, {63.2, 65}, {29, 30}, {5, 2}, {2.1, 3.1},
             {35000, 37000}, {8, 7}, {12, 12}, {93, 94}};
-        return new SingleValuedPairs(dData, null);
+        return MetricInputFactory.ofSingleValuedPairs(dData, null);
     }
 
     /**
@@ -55,7 +56,7 @@ public final class MetricTestDataFactory
         {
             bData[i][0] = true;
         }
-        return new DichotomousPairs(bData); //Construct the pairs
+        return MetricInputFactory.ofDichotomousPairs(bData); //Construct the pairs
     }
 
     /**
@@ -69,7 +70,7 @@ public final class MetricTestDataFactory
         //Construct some probabilistic pairs, and use the same pairs as a reference for skill (i.e. skill = 0.0)
         final double[][] pData = new double[][]{{0, 3.0 / 5.0}, {0, 1.0 / 5.0}, {1, 2.0 / 5.0}, {1, 3.0 / 5.0},
             {0, 0.0 / 5.0}, {1, 1.0 / 5.0}};
-        return new DiscreteProbabilityPairs(pData, pData);
+        return MetricInputFactory.ofDiscreteProbabilityPairs(pData, pData);
     }
 
 }

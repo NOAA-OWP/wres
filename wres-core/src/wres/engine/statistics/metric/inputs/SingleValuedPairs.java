@@ -40,7 +40,7 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * @throws MetricInputException if the pairs are invalid
      */
 
-    public SingleValuedPairs(final double[][] pairs, final Dimension dim)
+    protected SingleValuedPairs(final double[][] pairs, final Dimension dim)
     {
         this(pairs, null, dim);
     }
@@ -55,7 +55,7 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * @throws MetricInputException if the pairs are invalid
      */
 
-    public SingleValuedPairs(final double[][] pairs, final double[][] basePairs, final Dimension dim)
+    protected SingleValuedPairs(final double[][] pairs, final double[][] basePairs, final Dimension dim)
     {
         //Bounds check
         Objects.requireNonNull(pairs, "Specify non-null input for the single-valued pairs.");

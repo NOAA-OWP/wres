@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.outputs;
 
 import wres.engine.statistics.metric.inputs.Dimension;
 import wres.engine.statistics.metric.inputs.DoubleScalar;
+import wres.engine.statistics.metric.inputs.IntegerScalar;
 
 /**
  * A scalar outputs associated with a metric.
@@ -9,8 +10,14 @@ import wres.engine.statistics.metric.inputs.DoubleScalar;
  * @author james.brown@hydrosolved.com
  */
 
-public class ScalarOutput extends DoubleScalar implements MetricOutput
+public class ScalarOutput implements MetricOutput<DoubleScalar, IntegerScalar>
 {
+
+    /**
+     * The output.
+     */
+
+    private final DoubleScalar output;
 
     /**
      * The dimension associated with the output or null for dimensionless output.
@@ -22,7 +29,7 @@ public class ScalarOutput extends DoubleScalar implements MetricOutput
      * The sample size associated with the output.
      */
 
-    private final int sampleSize;
+    private final IntegerScalar sampleSize;
 
     /**
      * Construct a dimensionless output with a sample size.
@@ -31,7 +38,7 @@ public class ScalarOutput extends DoubleScalar implements MetricOutput
      * @param sampleSize the sample size
      */
 
-    public ScalarOutput(final double output, final int sampleSize)
+    public ScalarOutput(final DoubleScalar output, final IntegerScalar sampleSize)
     {
         this(output, sampleSize, null);
     }
@@ -44,11 +51,11 @@ public class ScalarOutput extends DoubleScalar implements MetricOutput
      * @param dim the dimension.
      */
 
-    public ScalarOutput(final double output, final int sampleSize, final Dimension dim)
+    public ScalarOutput(final DoubleScalar output, final IntegerScalar sampleSize, final Dimension dim)
     {
-        super(output);
-        this.dim = dim;
+        this.output = output;
         this.sampleSize = sampleSize;
+        this.dim = dim;
     }
 
     @Override
@@ -64,28 +71,36 @@ public class ScalarOutput extends DoubleScalar implements MetricOutput
     }
 
     @Override
-    public Integer getSampleSize()
-    {
-        return sampleSize;
-    }
-
-    @Override
     public boolean equals(final Object o)
     {
-        final boolean start = o != null && o instanceof ScalarOutput && ((ScalarOutput)o).valueOf() == valueOf()
-            && ((ScalarOutput)o).sampleSize == sampleSize && (((ScalarOutput)o).dim == null) == (dim == null);
+        final boolean start = o != null && o instanceof ScalarOutput
+            && ((ScalarOutput)o).getData().valueOf() == output.valueOf()
+            && ((ScalarOutput)o).sampleSize.valueOf() == sampleSize.valueOf()
+            && (((ScalarOutput)o).dim == null) == (dim == null);
         return (dim != null) ? start && ((ScalarOutput)o).dim.equals(dim) : start;
     }
 
     @Override
     public int hashCode()
     {
-        int returnMe = Double.hashCode(valueOf()) + Integer.hashCode(sampleSize);
+        int returnMe = Double.hashCode(output.valueOf()) + Integer.hashCode(sampleSize.valueOf());
         if(dim != null)
         {
             returnMe = returnMe + dim.hashCode();
         }
         return returnMe;
+    }
+
+    @Override
+    public IntegerScalar getSampleSize()
+    {
+        return sampleSize;
+    }
+
+    @Override
+    public DoubleScalar getData()
+    {
+        return output;
     }
 
 }

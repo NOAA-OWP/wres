@@ -13,21 +13,8 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * @version 0.1
  * @since 0.1
  */
-public class MeanSquareError<S extends SingleValuedPairs, T extends MetricOutput> extends DoubleErrorScore<S, T>
+public class MeanSquareError<S extends SingleValuedPairs, T extends MetricOutput<?, ?>> extends DoubleErrorScore<S, T>
 {
-
-    /**
-     * Return a default {@link MeanSquareError} function.
-     * 
-     * @param <X> the single-valued pairs
-     * @param <Y> the metric output
-     * @return a default {@link MeanSquareError} function.
-     */
-
-    public static <X extends SingleValuedPairs, Y extends MetricOutput> MeanSquareError<X, Y> newInstance()
-    {
-        return new MeanSquareError();
-    }
 
     @Override
     public T apply(final S s)
@@ -62,7 +49,7 @@ public class MeanSquareError<S extends SingleValuedPairs, T extends MetricOutput
     }
 
     /**
-     * Prevent direct construction.
+     * Protected constructor.
      */
 
     protected MeanSquareError()

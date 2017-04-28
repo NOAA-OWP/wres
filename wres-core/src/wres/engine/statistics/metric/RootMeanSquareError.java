@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
@@ -18,21 +19,13 @@ extends
     MeanSquareError<S, T>
 {
 
-    /**
-     * Return a default {@link RootMeanSquareError} function.
-     * 
-     * @return a default {@link RootMeanSquareError} function.
-     */
-
-    public static RootMeanSquareError<SingleValuedPairs, ScalarOutput> newInstance()
-    {
-        return new RootMeanSquareError();
-    }
-
     @Override
     public T apply(final S t)
     {
-        return (T)new ScalarOutput(Math.pow(((ScalarOutput)super.apply(t)).valueOf(), 0.5), t.size(), t.getDimension());
+        return MetricOutputFactory.getExtendsScalarOutput(Math.pow(((ScalarOutput)super.apply(t)).getData().valueOf(),
+                                                                   0.5),
+                                                          t.size(),
+                                                          t.getDimension());
     }
 
     @Override
@@ -55,10 +48,10 @@ extends
     }
 
     /**
-     * Prevent direct construction.
+     * Protected constructor.
      */
 
-    private RootMeanSquareError()
+    protected RootMeanSquareError()
     {
         super();
     }

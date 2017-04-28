@@ -6,7 +6,7 @@ package wres.engine.statistics.metric.inputs;
  * @author james.brown@hydrosolved.com
  */
 
-public interface Sample<U>
+public interface Sample<U extends Dataset<?>>
 {
 
     /**

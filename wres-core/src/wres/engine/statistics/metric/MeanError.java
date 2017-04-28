@@ -15,17 +15,6 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
 public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput> extends DoubleErrorScore<S, T>
 {
 
-    /**
-     * Return a default {@link MeanError} function.
-     * 
-     * @return a default {@link MeanError} function.
-     */
-
-    public static MeanError<SingleValuedPairs, ScalarOutput> newInstance()
-    {
-        return new MeanError();
-    }
-
     @Override
     public T apply(final S s)
     {
@@ -58,10 +47,10 @@ public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput
     }
 
     /**
-     * Prevent direct construction.
+     * Protected constructor.
      */
 
-    private MeanError()
+    protected MeanError()
     {
         super(FunctionFactory.error());
     }

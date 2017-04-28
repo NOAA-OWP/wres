@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutput;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.VectorOutput;
 
 /**
@@ -15,7 +15,7 @@ import wres.engine.statistics.metric.outputs.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public abstract class DoubleErrorScore<S extends SingleValuedPairs, T extends MetricOutput>
+public abstract class DoubleErrorScore<S extends SingleValuedPairs, T extends MetricOutput<?, ?>>
 extends
     DoubleErrorMetric<S, T>
 implements Score
@@ -34,9 +34,10 @@ implements Score
     @Override
     public T apply(final S s)
     {
-        return (T)new ScalarOutput(Arrays.stream(((VectorOutput)super.apply(s)).getValues()).sum() / s.size(),
-                                   s.size(),
-                                   s.getDimension());
+        return MetricOutputFactory.getScalarExtendsMetricOutput((Arrays.stream(((VectorOutput)super.apply(s)).getData()
+                                                                                                             .getValues())
+                                                                       .sum()
+            / s.size()), s.size(), s.getDimension());
     }
 
 }

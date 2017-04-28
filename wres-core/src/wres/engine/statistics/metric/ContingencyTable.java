@@ -9,6 +9,7 @@ import wres.engine.statistics.metric.inputs.MetricInputException;
 import wres.engine.statistics.metric.inputs.MulticategoryPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutput;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
@@ -29,21 +30,8 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * @since 0.1
  */
 
-public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutput> extends Metric<S, T>
+public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutput<?, ?>> extends Metric<S, T>
 {
-
-    /**
-     * Return a default {@link ContingencyTable} function.
-     * 
-     * @param <X> the single-valued pairs
-     * @param <Y> the metric output
-     * @return a default {@link ContingencyTable} function.
-     */
-
-    public static <X extends MulticategoryPairs, Y extends MetricOutput> ContingencyTable<X, Y> newInstance()
-    {
-        return new ContingencyTable();
-    }
 
     @Override
     public T apply(final S s)
@@ -65,7 +53,7 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
         };
         //Increment the count in a serial stream as the lambda is stateful
         s.getData().stream().forEach(f);
-        return (T)new MatrixOutput(returnMe, s.size());
+        return MetricOutputFactory.getMatrixExtendsMetricOutput(returnMe, s.size(), null);
     }
 
     @Override
@@ -90,7 +78,7 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
      * @throws MetricInputException if the output is not a valid input for an intermediate calculation
      */
 
-    protected void is2x2ContingencyTable(final MetricOutput output, final Metric metric)
+    protected void is2x2ContingencyTable(final MetricOutput<?, ?> output, final Metric<?, ?> metric)
     {
         Objects.requireNonNull(output, "Specify non-null input for the '" + toString() + "'.");
         final String message = "Expected an intermediate result with the 2x2 Contingency Table when "
@@ -100,14 +88,14 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
             throw new MetricInputException(message);
         }
         final MatrixOutput v = (MatrixOutput)output;
-        if(v.size() != 4)
+        if(v.getData().size() != 4)
         {
             throw new MetricInputException(message);
         }
     }
 
     /**
-     * Prevent direct construction.
+     * Protected constructor.
      */
 
     protected ContingencyTable()

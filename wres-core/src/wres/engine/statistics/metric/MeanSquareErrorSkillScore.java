@@ -5,6 +5,7 @@ import java.util.Objects;
 import wres.engine.statistics.metric.inputs.MetricInputException;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutput;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
@@ -16,23 +17,10 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * @version 0.1
  * @since 0.1
  */
-public class MeanSquareErrorSkillScore<S extends SingleValuedPairs, T extends MetricOutput>
+public class MeanSquareErrorSkillScore<S extends SingleValuedPairs, T extends MetricOutput<?, ?>>
 extends
     MeanSquareError<S, T>
 {
-
-    /**
-     * Return a default {@link MeanSquareErrorSkillScore} function.
-     * 
-     * @param <X> the single-valued pairs
-     * @param <Y> the metric output
-     * @return a default {@link MeanSquareErrorSkillScore} function.
-     */
-
-    public static <X extends SingleValuedPairs, Y extends MetricOutput> MeanSquareErrorSkillScore<X, Y> newInstance()
-    {
-        return new MeanSquareErrorSkillScore();
-    }
 
     @Override
     public T apply(final S s)
@@ -45,9 +33,13 @@ extends
         //TODO: implement any required decompositions, based on the instance parameters  
         final ScalarOutput numerator = (ScalarOutput)super.apply(s);
         final ScalarOutput denominator = (ScalarOutput)super.apply((S)s.getBaseline());
-        return (T)new ScalarOutput(FunctionFactory.skill().applyAsDouble(numerator.valueOf(), denominator.valueOf()),
-                                   s.size(),
-                                   s.getDimension());
+        return MetricOutputFactory.getScalarExtendsMetricOutput(FunctionFactory.skill()
+                                                                               .applyAsDouble(numerator.getData()
+                                                                                                       .valueOf(),
+                                                                                              denominator.getData()
+                                                                                                         .valueOf()),
+                                                                s.size(),
+                                                                s.getDimension());
     }
 
     @Override
