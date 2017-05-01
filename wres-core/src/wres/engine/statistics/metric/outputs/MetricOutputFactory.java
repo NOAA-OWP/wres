@@ -7,7 +7,7 @@ import wres.engine.statistics.metric.inputs.DoubleVector;
 import wres.engine.statistics.metric.inputs.IntegerScalar;
 
 /**
- * A factory class for producing metric outputs.
+ * A factory class for producing metric outputs. TODO: revisit the suppressed warnings.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
