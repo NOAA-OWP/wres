@@ -31,7 +31,7 @@ public interface Group<T> extends Comparable<T> {
 	 * Returns the percentage of how similar the two groups are
 	 * @param other The other group
 	 * @return The percentage of similarity. Having a similarity of 1.0 indicates
-	 * equivalency
+	 * Equivalence
 	 */
 	public float similarity(T other);
 }

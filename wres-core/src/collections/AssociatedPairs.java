@@ -13,7 +13,7 @@ import java.util.TreeMap;
  * @author Christopher Tubbs
  *
  */
-public class AssociatedPair<U extends Comparable<U>, V extends Comparable<V>, W> extends TreeMap<Pair<U, V>, W> {
+public class AssociatedPairs<U extends Comparable<U>, V extends Comparable<V>, W> extends TreeMap<Pair<U, V>, W> {
 
 	/**
 	 * The serialization version id of this interation of the class
@@ -32,8 +32,8 @@ public class AssociatedPair<U extends Comparable<U>, V extends Comparable<V>, W>
 			indexer = new Pair<U, V>();
 		}
 		
-		indexer.itemOne = itemOne;
-		indexer.itemTwo = itemTwo;
+		indexer.setItemOne(itemOne);
+		indexer.setItemTwo(itemTwo);
 		
 		return this.get(indexer);
 	}

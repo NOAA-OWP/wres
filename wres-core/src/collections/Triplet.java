@@ -26,32 +26,99 @@ public class Triplet<T extends Comparable<T>, U extends Comparable<U>, V extends
 		this.itemTwo = item_two;
 		this.itemThree = item_three;
 	}
+    
+    /**
+     * @return The first value
+     */
+    public T getItemOne()
+    {
+        return this.itemOne;
+    }
+    
+    /**
+     * @return The second value
+     */
+    public U getItemTwo()
+    {
+        return this.itemTwo;
+    }
+    
+    /**
+     * @return The third value
+     */
+    public V getItemThree()
+    {
+        return this.itemThree;
+    }
+    
+    /**
+     * Updates the value of the first item
+     * @param itemOne The new value
+     */
+    public void setItemOne(T itemOne) {
+        this.itemOne = getItemOne();
+    }
+    
+    /**
+     * Updates the value of the second item
+     * @param itemTwo The new value
+     */
+    public void setItemTwo(U itemTwo) {
+        this.itemTwo = itemTwo;
+    }
+    
+    /**
+     * Updates the value of the third item
+     * @param itemThree The new value
+     */
+    public void setItemThree(V itemThree) {
+        this.itemThree = itemThree;
+    }
 
 	@Override
 	public int compareTo(Triplet<T, U, V> other) {
-		int comparison = -1;
-		comparison = other.itemOne.compareTo(this.itemOne);
-		
-		if (comparison == 0)
-		{
-			comparison = other.itemTwo.compareTo(itemTwo);
-		}
-		
-		if (comparison == 0)
-		{
-			comparison = other.itemThree.compareTo(itemThree);
-		}
-		return comparison;
+        int comparison = 0;
+        
+        if (this.getItemOne() == null && other.getItemOne() != null) {
+            comparison = -1;
+        } else if (this.getItemOne() != null && other.getItemOne() == null) {
+            comparison = 1;
+        } else if (this.getItemOne() != null && other.getItemOne() != null){
+            comparison = this.getItemOne().compareTo(other.getItemOne());
+        }
+        
+        
+        if (comparison == 0) {          
+            if (this.getItemTwo() == null && other.getItemTwo() != null) {
+                comparison = -1;
+            } else if (this.getItemTwo() != null && other.getItemTwo() == null) {
+                comparison = 1;
+            } else if (this.getItemTwo() != null && other.getItemTwo() != null){
+                comparison = this.getItemTwo().compareTo(other.getItemTwo());
+            }
+        }
+        
+        if (comparison == 0) {       
+            if (this.getItemThree() == null && other.getItemThree() != null) {
+                comparison = -1;
+            } else if (this.getItemThree() != null && other.getItemThree() == null) {
+                comparison = 1;
+            } else if (this.getItemThree() != null && other.getItemThree() != null){
+                comparison = this.getItemThree().compareTo(other.getItemThree());
+            }
+        }
+        
+        return comparison;
 	}
 	
 	// The first item in the grouping
-	public T itemOne = null;
+	private T itemOne = null;
 	
 	// The second item in the grouping
-	public U itemTwo = null;
+	private U itemTwo = null;
 	
 	// The third item in the grouping
-	public V itemThree = null;
+	private V itemThree = null;
 	
 	@Override
     public boolean isFull()

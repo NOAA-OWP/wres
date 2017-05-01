@@ -24,36 +24,74 @@ public class FourTuple<T extends Comparable<T>, U extends Comparable<U>, V exten
 	 * Compares in the order of: itemOne, itemTwo, itemThree, itemFour
 	 */
 	public int compareTo(FourTuple<T, U, V, W> other) {
-		int comparison = this.itemOne().compareTo(other.itemOne());
+		int comparison = 0;
+        
+        if (this.getItemOne() == null && other.getItemOne() != null) {
+            comparison = -1;
+        } else if (this.getItemOne() != null && other.getItemOne() == null) {
+            comparison = 1;
+        } else if (this.getItemOne() != null && other.getItemOne() != null){
+            comparison = this.getItemOne().compareTo(other.getItemOne());
+        }
 		
-		if (comparison == 0) {
-			comparison = this.itemTwo().compareTo(other.itemTwo());
+		if (comparison == 0) {      
+            if (this.getItemTwo() == null && other.getItemTwo() != null) {
+                comparison = -1;
+            } else if (this.getItemTwo() != null && other.getItemTwo() == null) {
+                comparison = 1;
+            } else if (this.getItemTwo() != null && other.getItemTwo() != null){
+                comparison = this.getItemTwo().compareTo(other.getItemTwo());
+            }
 		}
 		
-		if (comparison == 0) {
-			comparison = this.itemThree().compareTo(other.itemThree());
+		if (comparison == 0) {      
+            if (this.getItemThree() == null && other.getItemThree() != null) {
+                comparison = -1;
+            } else if (this.getItemThree() != null && other.getItemThree() == null) {
+                comparison = 1;
+            } else if (this.getItemThree() != null && other.getItemThree() != null){
+                comparison = this.getItemOne().compareTo(other.getItemOne());
+            }
 		}
 		
-		if (comparison == 0) {
-			comparison = this.itemFour().compareTo(other.itemFour());
+		if (comparison == 0) {      
+            if (this.getItemFour() == null && other.getItemFour() != null) {
+                comparison = -1;
+            } else if (this.getItemFour() != null && other.getItemFour() == null) {
+                comparison = 1;
+            } else if (this.getItemFour() != null && other.getItemFour() != null){
+                comparison = this.getItemFour().compareTo(other.getItemFour());
+            }
 		}
 		
 		return comparison;
 	}
 	
-	public T itemOne() {
+	/**
+	 * @return The first item
+	 */
+	public T getItemOne() {
 		return this.itemOne;
 	}
 	
-	public U itemTwo() {
+	/**
+	 * @return The second item
+	 */
+	public U getItemTwo() {
 		return this.itemTwo;
 	}
 	
-	public V itemThree() {
+	/**
+	 * @return The third item
+	 */
+	public V getItemThree() {
 		return this.itemThree;
 	}
 	
-	public W itemFour() {
+	/**
+	 * @return The fourth item
+	 */
+	public W getItemFour() {
 		return this.itemFour;
 	}
 
@@ -81,26 +119,35 @@ public class FourTuple<T extends Comparable<T>, U extends Comparable<U>, V exten
     public float similarity(FourTuple<T, U, V, W> other) {
         byte similarity = 0;
         
-        if ((this.itemOne() == null && other.itemOne() == null) ||
-            (this.itemOne() != null && this.itemOne().equals(other.itemOne()))) {
+        if ((this.getItemOne() == null && other.getItemOne() == null) ||
+            (this.getItemOne() != null && this.getItemOne().equals(other.getItemOne()))) {
             similarity++;
         }
         
-        if ((this.itemTwo() == null && other.itemTwo() == null) || 
-            (this.itemTwo() != null && this.itemTwo().equals(other.itemTwo()))) {
+        if ((this.getItemTwo() == null && other.getItemTwo() == null) || 
+            (this.getItemTwo() != null && this.getItemTwo().equals(other.getItemTwo()))) {
             similarity++;
         }
         
-        if ((this.itemThree() == null && other.itemThree() == null) ||
-            (this.itemThree().equals(other.itemThree()))) {
+        if ((this.getItemThree() == null && other.getItemThree() == null) ||
+            (this.getItemThree().equals(other.getItemThree()))) {
             similarity++;
         }
         
-        if ((this.itemFour() == null && other.itemFour() == null) || 
-            (this.itemFour().equals(other.itemFour()))) {
+        if ((this.getItemFour() == null && other.getItemFour() == null) || 
+            (this.getItemFour().equals(other.getItemFour()))) {
             similarity++;
         }
 
         return similarity / 4F;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "(" + String.valueOf(this.getItemOne()) + ", " + 
+                     String.valueOf(this.getItemTwo()) + ", " + 
+                     String.valueOf(this.getItemThree()) + ", " + 
+                     String.valueOf(this.getItemFour()) + ")";
     }
 }
