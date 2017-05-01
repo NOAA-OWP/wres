@@ -44,7 +44,7 @@ public class MetricCollectionTest
         final MetricOutputCollection<ScalarOutput> d = n.apply(input);
 
         //Print them
-        //d.stream().forEach(g -> System.out.println(g.valueOf()));
+        d.stream().forEach(g -> System.out.println(g.getData().valueOf()));
 
         //Check them
         assertTrue(d.get(0).equals(MetricOutputFactory.getScalarOutput(-200.55, 10, null)));
@@ -79,7 +79,7 @@ public class MetricCollectionTest
         final MetricOutputCollection<ScalarOutput> c = m.apply(input);
 
         //Print them
-        //c.stream().forEach(g -> System.out.println(g.valueOf()));
+        //c.stream().forEach(g -> System.out.println(g.getData().valueOf()));
 
         //Check them
         assertTrue(c.get(0).equals(MetricOutputFactory.getScalarOutput(0.5734265734265734, 365, null)));
@@ -111,7 +111,7 @@ public class MetricCollectionTest
         final MetricOutputCollection<ScalarOutput> d = n.apply(input);
 
         //Print them
-        //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).valueOf()));
+        //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
 
         //Check them
         assertTrue(d.get(0).equals(MetricOutputFactory.getScalarOutput(0.26, 6, null)));
