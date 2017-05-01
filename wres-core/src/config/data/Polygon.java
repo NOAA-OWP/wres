@@ -11,10 +11,15 @@ import java.util.TreeMap;
 import javax.xml.stream.XMLStreamReader;
 
 /**
- * @author ctubbs
+ * Specifications for selecting features based on a polygon drawn around gridded indices
  *
+ * @author Christopher Tubbs
  */
 public final class Polygon extends ClauseConfig {
+    /**
+     * Constructor
+     * @param reader The XML Reader containing details about the polygon to draw
+     */
 	public Polygon(XMLStreamReader reader)
 	{
 		super(reader);
@@ -40,6 +45,10 @@ public final class Polygon extends ClauseConfig {
 		return Arrays.asList("polygon");
 	}
 	
+	/**
+	 * Adds a point to the polygon
+	 * @param point Point that will act as another vertex for the polygon
+	 */
 	private void addPoint(Point point)
 	{
 		if (point == null)

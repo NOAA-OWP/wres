@@ -6,14 +6,19 @@ package data.details;
 import java.sql.SQLException;
 
 /**
- * @author ctubbs
- *
+ * Details defining a unit of measurement within the database (i.e. CFS (cubic feet per second),
+ * M (meter), etc)
+ * @author Christopher Tubbs
  */
 public final class MeasurementDetails extends CachedDetail<MeasurementDetails, String> {	
 	private String unit = null;
 	private Integer measurementunit_id = null;
 	
-	public void set_unit(String unit)
+	/**
+	 * Sets the name of the unit of measurement
+	 * @param unit The new name of the unit of measurement
+	 */
+	public void setUnit(String unit)
 	{
 		if (this.unit == null || !this.unit.equalsIgnoreCase(unit))
 		{
@@ -22,7 +27,11 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 		}
 	}
 	
-	public int get_measurementunit_id() throws SQLException
+	/**
+	 * @return The ID for this particular unit of measurement
+	 * @throws SQLException Thrown if the ID could not be retrieved from the database
+	 */
+	public int getMeasurementUnitID() throws SQLException
 	{
 		if (measurementunit_id == null)
 		{

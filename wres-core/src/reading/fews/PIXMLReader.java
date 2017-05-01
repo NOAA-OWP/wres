@@ -8,7 +8,9 @@ import config.SystemConfig;
 import data.EnsembleCache;
 import data.FeatureCache;
 import data.MeasurementCache;
-import data.SourceCache;
+
+// TODO: Uncomment when work on the SourceCache continues
+//import data.SourceCache;
 import data.VariableCache;
 import data.details.ForecastDetails;
 import data.details.ForecastEnsembleDetails;
@@ -16,7 +18,6 @@ import reading.XMLReader;
 import util.Database;
 import util.Utilities;
 
-import java.sql.SQLException;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -26,15 +27,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author Tubbs
- *
+ * @author Christopher Tubbs
+ * Loads a PIXML file, iterates through it, and saves all data to the database, whether it is
+ * forecast or observation data
  */
 public final class PIXMLReader extends XMLReader 
 {	
-	private static String newline = System.lineSeparator();
+    /**
+     * Alias for the system agnostic newline separator
+     */
+	private final static String newline = System.lineSeparator();
 	
+	/**
+	 * General mapping for calculations used to convert temporal units to hours
+	 */
 	private final static Map<String, Double> hourConversion = mapTimeToHours();
 	
+	/**
+	 * @return The mapping for calculations between temporal units and hours 
+	 */
 	private static Map<String, Double> mapTimeToHours() 
 	{
 		Map<String, Double> mapping = new TreeMap<String, Double>();
@@ -47,19 +58,28 @@ public final class PIXMLReader extends XMLReader
 		return mapping;
 	}
 
+	/**
+	 * Message logger for the PIXMLReader class
+	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(PIXMLReader.class);
 
 	/**
-	 * @param filename
+	 * Constructor for a reader for forecast data
+	 * @param filename The path to the file to read
 	 */
 	public PIXMLReader(String filename) {
 		super(filename);
 	}
 	
-	public PIXMLReader(String filename, boolean is_forecast)
+	/**
+	 * Constructor for a reader that may be for forecasts or observations
+	 * @param filename The path to the file to read
+	 * @param isForecast Whether or not the reader is for forecast data
+	 */
+	public PIXMLReader(String filename, boolean isForecast)
 	{
 		super(filename);
-		this.isForecast = is_forecast;
+		this.isForecast = isForecast;
 	}
 	
 	@Override
@@ -79,6 +99,11 @@ public final class PIXMLReader extends XMLReader
 		}
 	}
 
+	/**
+	 * Interprets information within PIXML "series" tags
+	 * @param reader The XML reader, positioned at a "series" tag
+	 * @throws Exception Thrown if the XML could not be properly read or interpreted
+	 */
 	private void parseSeries(XMLStreamReader reader) throws Exception
 	{
 		//	If the current tag is the series tag itself, move on to the next tag
@@ -89,8 +114,10 @@ public final class PIXMLReader extends XMLReader
 		
 		String localName = null;
 		
-		currentForecast = new ForecastDetails(this.get_filename());
-		currentForecastEnsemble = new ForecastEnsembleDetails();
+		if (isForecast) {
+		    currentForecast = new ForecastDetails(this.getFilename());
+		    currentForecastEnsemble = new ForecastEnsembleDetails();
+		}
 		
 		//	Loop through every element in a series (header -> entry -> entry -> ... )
 		while (reader.hasNext())
@@ -117,6 +144,12 @@ public final class PIXMLReader extends XMLReader
 		saveEntries();
 	}
 	
+	/**
+	 * Removes information about a measurement from an "event" tag. If a sufficient number of events have been
+	 * parsed, they are sent to the database to be saved.
+	 * @param reader The reader containing the current event tag
+	 * @throws Exception Any possible error thrown while attempting to read the database
+	 */
 	private void parseEvent(XMLStreamReader reader) throws Exception
 	{
 		leadTime = leadTime + timeStep;
@@ -124,50 +157,44 @@ public final class PIXMLReader extends XMLReader
 		String time = "";
 		String localName = null;
 		
-		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
-		{
+		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex) {
 			localName = reader.getAttributeLocalName(attributeIndex);
-			if (localName.equalsIgnoreCase("value"))
-			{
+			
+			if (localName.equalsIgnoreCase("value")) {
+			    
+			    // The value is parsed so that we can compare it to the missing value
 				value = Float.parseFloat(reader.getAttributeValue(attributeIndex));
-			}
-			else if (localName.equalsIgnoreCase("date"))
-			{
+			} else if (localName.equalsIgnoreCase("date")) {
 				time = reader.getAttributeValue(attributeIndex) + time;
-			}
-			else if (localName.equalsIgnoreCase("time"))
-			{
+			} else if (localName.equalsIgnoreCase("time")) {
 				time += " " + reader.getAttributeValue(attributeIndex);
 			}
 		}
 		
-		if (value != currentMissingIndex)
-		{			
-			if (isForecast)
-			{
+		if (value != currentMissingIndex) {			
+			if (isForecast) {
 				addForecastEvent(value);
-			}
-			else
-			{
+			} else {
 				addObservedEvent(time, value);
 			}
 		}
 		
-		if (insertCount >= SystemConfig.instance().get_maximum_copies())
-		{
+		if (insertCount >= SystemConfig.getMaximumCopies()) {
 		    LOGGER.debug("Insert count greater than maximum copies, saving.");
 			saveEntries();
 		}
 	}
 	
+	/**
+	 * Adds measurement information to the current insert script in the form of forecast data
+	 * @param forecastedValue The value parsed out of the XML
+	 * @throws Exception Any possible error encountered while trying to collect the forecast ensemble ID
+	 */
 	private void addForecastEvent(Float forecastedValue) throws Exception
 	{
-		if (insertCount > 0)
-		{
+		if (insertCount > 0) {
 			currentScript += newline;
-		}
-		else if(insertCount == 0)
-		{
+		} else if(insertCount == 0) {
 			currentTableDefinition = getInsertForecastHeader();
 			currentScript = "";
 		}
@@ -177,8 +204,13 @@ public final class PIXMLReader extends XMLReader
 		insertCount++;
 	}
 	
-	private void addObservedEvent(String observedTime, Float observedValue) throws Exception
-	{
+	/**
+	 * Adds measurement information to the current insert script in the form of observation data
+	 * @param observedTime The time when the measurement was taken
+	 * @param observedValue The value retrieved from the XML
+	 * @throws Exception Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
+	 */
+	private void addObservedEvent(String observedTime, Float observedValue) throws Exception {
 		if (insertCount > 0)
 		{
 			currentScript += newline;
@@ -200,6 +232,9 @@ public final class PIXMLReader extends XMLReader
 		insertCount++;
 	}
 	
+	/**
+	 * Saves the currently built up save script to the database
+	 */
 	private void saveEntries()
 	{
 		if (insertCount > 0)
@@ -210,6 +245,11 @@ public final class PIXMLReader extends XMLReader
 		}
 	}
 	
+	/**
+	 * Interprets the information within PIXML "header" tags
+	 * @param reader The XML reader, positioned at a "header" tag
+	 * @throws Exception Thrown if the XML could not be read or interpreted properly
+	 */
 	private void parseHeader(XMLStreamReader reader) throws Exception
 	{
 		//	If the current tag is the header tag itself, move on to the next tag
@@ -239,18 +279,18 @@ public final class PIXMLReader extends XMLReader
 					//currentFeatureID = null;
 					
 					//	If we are at the tag for the location id, save it to the location metadata
-					currentLID = tagValue(reader);
+					currentLID = Utilities.getXMLText(reader);
 				}
 				else if (localName.equalsIgnoreCase("stationName"))
 				{
 					//	If we are at the tag for the name of the station, save it to the location
-					currentStationName = tagValue(reader);
+					currentStationName = Utilities.getXMLText(reader);
 				}
 				else if(localName.equalsIgnoreCase("ensembleId"))
 				{
 					currentEnsembleID = null;
 					//	If we are at the tag for the name of the ensemble, save it to the ensemble
-					currentEnsembleName = tagValue(reader);
+					currentEnsembleName = Utilities.getXMLText(reader);
 				}
 				else if(localName.equalsIgnoreCase("qualifierId"))
 				{
@@ -258,35 +298,36 @@ public final class PIXMLReader extends XMLReader
 					
 					//	If we are at the tag for the ensemble qualifier, save it to the ensemble
 					//current_ensemble.qualifierID = tag_value(reader);
-					currentQualifierID = tagValue(reader);
+					currentQualifierID = Utilities.getXMLText(reader);
 				}
 				else if(localName.equalsIgnoreCase("ensembleMemberIndex"))
 				{
 					currentEnsembleID = null;
 					
 					//	If we are at the tag for the ensemble member, save it to the ensemble
-					currentEnsembleMemberID = tagValue(reader);
+					currentEnsembleMemberID = Utilities.getXMLText(reader);
 				}
 				else if(localName.equalsIgnoreCase("forecastDate"))
 				{
 					//	If we are at the tag for the forecast date, save it to the forecast
-					currentForecast.set_forecast_date(parseDateTime(reader));
+					currentForecast.setForecastDate(parseDateTime(reader));
 				}
 				else if(localName.equalsIgnoreCase("units"))
 				{
 					//	If we are at the tag for the units, save it to the measurement units
-					currentMeasurementUnit = tagValue(reader);
+					currentMeasurementUnit = Utilities.getXMLText(reader);
 					currentMeasurementUnitID = MeasurementCache.getMeasurementUnitID(currentMeasurementUnit);
 				}
 				else if(localName.equalsIgnoreCase("missVal"))
 				{
 					// If we are at the tag for the missing value definition, record it
-					currentMissingIndex = Float.parseFloat(tagValue(reader));
+					currentMissingIndex = Float.parseFloat(Utilities.getXMLText(reader));
 				}
-				else if (localName.equalsIgnoreCase("startDate"))
+				// TODO: Uncomment when work on the source saving continues
+				/*else if (localName.equalsIgnoreCase("startDate"))
 				{				
 					startDate = parseDateTime(reader);
-				}
+				}*/
 				else if (Utilities.tagIs(reader, endDate))
 				{
 					endDate = parseDateTime(reader);
@@ -300,7 +341,7 @@ public final class PIXMLReader extends XMLReader
 				else if(localName.equalsIgnoreCase("timeStep"))
 				{
 					String unit = null;
-					Integer multiplier = null;
+					int multiplier = 1;
 					for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
 					{
 						localName = reader.getAttributeLocalName(attributeIndex);
@@ -319,7 +360,7 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
-					currentVariableName = tagValue(reader);
+					currentVariableName = Utilities.getXMLText(reader);
 					currentVariableID = VariableCache.getVariableID(currentVariableName, currentMeasurementUnitID);
 				}
 			}
@@ -327,7 +368,7 @@ public final class PIXMLReader extends XMLReader
 		}
 		
 		if (isForecast && this.creationDate != null && this.creationTime != null) {
-			this.currentForecast.set_forecast_date(this.creationDate + " " + this.creationTime);
+			this.currentForecast.setForecastDate(this.creationDate + " " + this.creationTime);
 		}
 	}
 	
@@ -336,7 +377,7 @@ public final class PIXMLReader extends XMLReader
 	 * Create a source for observations and attach it to all recorded values
 	 */
 	protected void completeParsing() {
-		// Uncomment when it is time to restart testing
+		// TODO: Uncomment when it is time to restart testing
 		/*if (!isForecast) {
 			Integer sourceID = null;
 			String massSave = "";
@@ -375,6 +416,11 @@ public final class PIXMLReader extends XMLReader
 		}*/
 	}
 
+	/**
+	 * Reads the date and time from an XML reader that stores the date and time in separate attributes
+	 * @param reader The XML Reader positioned at a node containing date and time attributes
+	 * @return A string of the format "{date} {time}"
+	 */
 	public static String parseDateTime(XMLStreamReader reader) {
 		String date = null;
 		String time = null;
@@ -397,6 +443,10 @@ public final class PIXMLReader extends XMLReader
 		return date + " " + time;
 	}
 	
+	/**
+	 * @return The ID of the current ensemble
+	 * @throws Exception Thrown if the ensemble ID could not be retrieved from the cache
+	 */
 	private int getEnsembleID() throws Exception {
 		if (currentEnsembleID == null) {
 			currentEnsembleID = EnsembleCache.getEnsembleID(currentEnsembleName, currentEnsembleMemberID, currentQualifierID);
@@ -404,27 +454,39 @@ public final class PIXMLReader extends XMLReader
 		return currentEnsembleID;
 	}
 	
-	private int getMeasurementID() throws SQLException {
+	/**
+	 * @return The ID of the unit of measurement that the current variable is being measured in
+	 */
+	private int getMeasurementID() {
 		return this.currentMeasurementUnitID;
 	}
 	
+	/**
+	 * @return The ID of the forecast that is currently being parsed
+	 * @throws Exception Thrown if the forecast could not be retrieved properly
+	 */
 	private int getForecastID() throws Exception {
-		return currentForecast.get_forecast_id();
+		return currentForecast.getForecastID();
 	}
 	
+	/**
+	 * @return The ID of the position for the variable being parsed
+	 * @throws Exception Thrown if the ID of the position could not be loaded from the cache
+	 */
 	private int getVariablePositionID() throws Exception {
-		if (currentVariablePositionID == null)
-		{
+		if (currentVariablePositionID == null) {
 			currentVariablePositionID = FeatureCache.getVariablePositionID(currentLID, currentStationName, getVariableID());
 		}
 		return currentVariablePositionID;
 	}
 	
-	private int getForecastEnsembleID() throws Exception
-	{
-		
-		if (currentForecastEnsembleID == null)
-		{
+	/**
+	 * @return The ID of the ensemble for the forecast that is tied to a specific variable
+	 * @throws Exception Thrown if intermediary values could not be loaded from their own caches or if interaction
+	 * with the database failed.
+	 */
+	private int getForecastEnsembleID() throws Exception {
+		if (currentForecastEnsembleID == null) {
 			currentForecastEnsemble.setEnsembleID(getEnsembleID());
 			currentForecastEnsemble.setForecastID(getForecastID());
 			currentForecastEnsemble.setMeasurementUnitID(getMeasurementID());
@@ -434,6 +496,10 @@ public final class PIXMLReader extends XMLReader
 		return currentForecastEnsembleID;
 	}
 	
+	/**
+	 * @return The ID of the variable currently being measured
+	 * @throws Exception Thrown if interaction with the database failed.
+	 */
 	private int getVariableID() throws Exception
 	{		
 		if (currentVariableID == null)
@@ -443,15 +509,19 @@ public final class PIXMLReader extends XMLReader
 		return this.currentVariableID;
 	}
 	
-	private int getSourceID() throws Exception
+	// TODO: Uncomment when the above source saving is uncommented
+	/**
+	 * @return A valid ID for the source of this PIXML file from the database
+	 * @throws Exception Thrown if an ID could not be retrieved from the database
+	 */
+	/*private int getSourceID() throws Exception
 	{
 		if (currentSourceID == null)
 		{
 			String output_time = null;
 			if (this.creationDate != null) {
 				output_time = this.creationDate;
-				if (this.creationTime != null)
-				{
+				if (this.creationTime != null) {
 					output_time += " " + this.creationTime;
 				}
 			}
@@ -461,45 +531,158 @@ public final class PIXMLReader extends XMLReader
 			currentSourceID = SourceCache.getSourceID(get_filename(), output_time);
 		}
 		return currentSourceID;
-	}
+	}*/
 	
-	private String getInsertForecastHeader()
+	/**
+	 * @return The String header for the copy statement for forecasts
+	 */
+	private static String getInsertForecastHeader()
 	{
 		return "wres.ForecastValue(forecastensemble_id, lead, forecasted_value)";
 	}
 	
-	private String getInsertObservationHeader()
+	/**
+	 * @return The String header for the copy statement for observations
+	 */
+	private static String getInsertObservationHeader()
 	{
 		return "wres.Observation(variableposition_id, observation_time, observed_value, measurementunit_id)";
 	}
 	
+	/**
+	 * The date for when the source was created
+	 */
 	private String creationDate = null;
+	
+	/**
+	 * The time on the date that the source was created
+	 */
 	private String creationTime = null;
-	private String startDate = null;
+	
+	// TODO: Uncomment when source saving work continues
+	/**
+	 * The date that data in the source first started being captured
+	 */
+	//private String startDate = null;
+	
+	/**
+	 * The date that data generation/collection ended
+	 */
 	private String endDate = null;
+	
+	/**
+	 * Indicates whether or not the data is for forecasts. Default is True
+	 */
 	private boolean isForecast = true;
+	
+	/**
+	 * Basic details about any current forecast
+	 */
 	private ForecastDetails currentForecast = null;
+	
+	/**
+	 * Basic details about the current ensemble for a current forecast
+	 */
 	private ForecastEnsembleDetails currentForecastEnsemble = null;
+	
+	/**
+	 * The value which indicates a null or invalid value from the source
+	 */
 	private Float currentMissingIndex = null;
+	
+	/**
+	 * Indicates the amount of time in hours between measurements
+	 */
 	private Integer timeStep = null;
+	
+	/**
+	 * The current state of a script that will be sent to the database
+	 */
 	private String currentScript = "";
+	
+	/**
+	 * The current definition of the table in which the data will be saved
+	 */
 	private String currentTableDefinition = null;
+	
+	/**
+	 * The number of values that will be inserted in the next sql call
+	 */
 	private int insertCount = 0;
+	
+	/**
+	 * The current amount of hours into the forecast
+	 */
 	private int leadTime = 0;
+	
+	/**
+	 * The delimiter between values for copy statements
+	 */
 	private final String delimiter = "|"; 
 	
+	/**
+	 * The ID for the unit of measurement for the variable that is currently being parsed
+	 */
 	private Integer currentMeasurementUnitID = null;
-	private Integer currentVariableID = null;
-	private Integer currentEnsembleID = null;
-	private Integer currentForecastEnsembleID = null;
-	private Integer currentVariablePositionID = null;
-	private Integer currentSourceID = null;
 	
+	/**
+	 * The ID for the variable that is currently being parsed
+	 */
+	private Integer currentVariableID = null;
+	
+	/**
+	 * The ID for the Ensemble that is currently being parsed
+	 */
+	private Integer currentEnsembleID = null;
+	
+	/**
+	 * The ID for the Ensemble for the forecast that is currently being parsed
+	 */
+	private Integer currentForecastEnsembleID = null;
+	
+	/**
+	 * The ID for the position for the variable that is currently being parsed
+	 */
+	private Integer currentVariablePositionID = null;
+	
+	// TODO: Uncomment when source saving work continues
+	/**
+	 * The ID for the current source file
+	 */
+	//private Integer currentSourceID = null;
+	
+	/**
+	 * The qualifier for the current ensemble
+	 */
 	private String currentQualifierID = null;
+	
+	/**
+	 * The LID for the feature that the forecast/observation is for
+	 */
 	private String currentLID = null;
+	
+	/**
+	 * The name of the station tied to the feature that the forecast/observation is for
+	 */
 	private String currentStationName = null;
+	
+	/**
+	 * The name of the ensemble currently being parsed
+	 */
 	private String currentEnsembleName = null;
+	
+	/**
+	 * The member ID of the current ensemble
+	 */
 	private String currentEnsembleMemberID = null;
+	
+	/**
+	 * The name of the unit of measurement that the current variable is measured in
+	 */
 	private String currentMeasurementUnit = null;
+	
+	/**
+	 * The name of the variable whose values are currently being parsed 
+	 */
 	private String currentVariableName = null;
 }

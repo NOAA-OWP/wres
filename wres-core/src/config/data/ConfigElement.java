@@ -11,10 +11,14 @@ import javax.xml.stream.XMLStreamReader;
 import util.Utilities;
 
 /**
- * @author ctubbs
- *
+ * An element within a configuration file
+ * @author Christopher Tubbs
  */
 public abstract class ConfigElement {
+    /**
+     * The Constructor
+     * @param reader The XML Reader containing the configuration elements
+     */
 	public ConfigElement(XMLStreamReader reader)
 	{
 		try 
@@ -39,31 +43,32 @@ public abstract class ConfigElement {
 			e.printStackTrace();
 		}
 	}
-	
-	protected String tagValue(XMLStreamReader reader) throws XMLStreamException
-	{
-		return Utilities.getXMLText(reader);
-	}
 
+	/**
+	 * Assigns parameters from the XML node to the element
+     * @param reader The reader to pull attributes from 
+     */
 	protected void getAttributes(XMLStreamReader reader){}
 
+	/**
+	 * Indicates whether or not the end of the element has been reached
+	 * @param reader The XML Reader containing the XML information
+	 * @return True if the reader is currently on its closing node
+	 */
 	protected boolean hasEnded(XMLStreamReader reader)
 	{
 		return Utilities.xmlTagClosed(reader, tagNames());
 	}
 	
-	protected boolean tagIs(XMLStreamReader reader, String tag_name)
-	{
-		return Utilities.tagIs(reader, tag_name);
-	}
-	
-	protected void next(XMLStreamReader reader) throws XMLStreamException
-	{
-		if (reader.hasNext())
-		{
+	/**
+	 * Moves the reader to the next node if possible (skips whitespace)
+	 * @param reader The reader to move
+	 * @throws XMLStreamException An exception is thrown if the reader cannot be moved
+	 */
+	protected static void next(XMLStreamReader reader) throws XMLStreamException {
+		if (reader.hasNext()) {
 			reader.next();
-			if (reader.isWhiteSpace() && reader.hasNext())
-			{
+			if (reader.isWhiteSpace() && reader.hasNext()) {
 				reader.next();
 			}
 		}
@@ -76,6 +81,11 @@ public abstract class ConfigElement {
 	 * @throws Exception 
 	 */
 	protected abstract void interpret(XMLStreamReader reader) throws XMLStreamException, Exception;
+	
+	/**
+	 * Details a list of possible tag names describing this type of element
+	 * @return
+	 */
 	protected abstract List<String> tagNames();
 	
 	@Override

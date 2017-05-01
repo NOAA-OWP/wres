@@ -2,8 +2,8 @@
 <wresconfig>
 	<database>
         <url>***REMOVED***eds-dev1.***REMOVED***.***REMOVED***</url>
-        <username>christopher.tubbs</username>
-        <password>changeme</password>
+        <username>wres_user</username>
+        <password>EvalWaterRes</password>
         <name>wres</name>
         <port>5432</port>
 		<database_type>postgresql</database_type>

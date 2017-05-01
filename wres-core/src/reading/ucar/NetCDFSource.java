@@ -9,19 +9,16 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import ucar.ma2.Array;
-import ucar.ma2.Index;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import collections.AssociatedPair;
 import collections.Triplet;
 import concurrency.Executor;
-import config.SystemConfig;
 import reading.BasicSource;
 import util.Database;
 import util.Utilities;
@@ -71,20 +68,7 @@ public class NetCDFSource extends BasicSource {
 			script_builder.append(";");
 			
 			try {
-				/*Executor.execute(new Runnable() {
-					@Override
-					public void run() {
-						try {*/
-							Database.execute(script_builder.toString());
-							//System.out.println("Values added!");
-						/*} catch (SQLException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}						
-					}					
-				});*/
-				//Executor.submit(new SQLExecutor(script_builder.toString()));
-				//Database.execute(script_builder.toString());
+				Database.execute(script_builder.toString());
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -99,7 +83,6 @@ public class NetCDFSource extends BasicSource {
 										   + "		forecasted_value\n"
 										   + ")\n"
 										   + "VALUES\n";
-		private final String value_template = "(%d, %d, %f)";
 		private StringBuilder script_builder;
 	}
 	
@@ -112,7 +95,7 @@ public class NetCDFSource extends BasicSource {
 		@Override
 		public void run() {
 			try {
-				boolean exists = Database.get_result(String.format(variable_exists_script, variable_to_insert.getShortName()), "variable_exists");
+				boolean exists = Database.getResult(String.format(variable_exists_script, variable_to_insert.getShortName()), "variable_exists");
 				if (!exists)
 				{
 					System.out.println("Adding the " + variable_to_insert.getShortName() + " variable to the database...");
@@ -131,7 +114,7 @@ public class NetCDFSource extends BasicSource {
 					
 					script = String.format(get_variable_id_script, variable_to_insert.getShortName(), variable_to_insert.getDescription());
 					
-					Integer variable_id = Database.get_result(script, "variable_id");
+					Integer variable_id = Database.getResult(script, "variable_id");
 
 					
 					System.out.println(variable_to_insert.getShortName() + " successfully added to the database.");
@@ -209,27 +192,6 @@ public class NetCDFSource extends BasicSource {
 		private void fire_query(String query) throws SQLException
 		{
 			Database.execute(query);
-			/*Executor.execute(new Runnable() {
-				
-				@Override
-				public void run() {
-					try {
-						Database.execute(query);
-					} catch (SQLException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					
-				}
-				
-				public Runnable set_query(String query)
-				{
-					this.query = query;
-					return this;
-				}
-				
-				private String query = "";
-			}.set_query(query));*/
 		}
 		
 		private Variable variable_to_insert = null;
@@ -275,15 +237,13 @@ public class NetCDFSource extends BasicSource {
 		}
 	}
 	
-	private void save_values() throws Exception
+	protected void save_values() throws Exception
 	{
 		NetcdfFile source = get_source();
 		int insert_limit = 10000;
 		List<Triplet<Integer, Integer, Double>> values_to_insert;
 		int dimension_count;
 		Double found_value = null;
-		Index index = null;
-
 		for (Variable var : source.getVariables())
 		{
 			dimension_count = var.getDimensions().size();
@@ -300,19 +260,18 @@ public class NetCDFSource extends BasicSource {
 				}
 				
 				values_to_insert = new ArrayList<Triplet<Integer, Integer, Double>>();
-				load_variable_positions(var.getShortName());
+				loadVariablePositions(var.getShortName());
 				
 				int x_length = get_x_length(var);
 				
-				int x_position = 0;
 				int y_position = -1;
 				
 				switch (dimension_count)
 				{
 				case 2:
 					y_position = 1;
+					break;
 				case 3:
-					x_position = 1;
 					y_position = 2;
 				}
 				
@@ -354,61 +313,9 @@ public class NetCDFSource extends BasicSource {
 					}
 				}
 				
-				/*for (int x_index = 0; x_index < x_length; ++x_index)
-				{
-					origin[x_position] = x_index;
-					Array block = var.read(origin, shape);
-
-					index = block.getIndex();
-					block.reduce();
-					
-					if (dimension_count > 1)
-					{
-						for (int y_index = 0; y_index < shape[y_position]; ++y_index)
-						{
-							//value_accessor[y_position] = y_index;
-							//index.set(value_accessor);
-							index.set(x_index, y_index);
-							found_value = block.getDouble(index);
-							
-							if (found_value != fill_value)
-							{
-								values_to_insert.add(new Triplet<Integer, Integer, Double>(get_position(x_index, y_index), get_lead(), found_value));
-							}
-							
-							if (values_to_insert.size() >= insert_limit)
-							{
-								System.out.println("Dispatching job to save values...");
-								//Executor.execute(new ValueInserter(values_to_insert));
-								values_to_insert = new ArrayList<Triplet<Integer, Integer, Double>>();
-							}
-						}
-					}
-					else
-					{
-						//index.set(x_index);
-						found_value = block.getDouble(0);
-						//found_value = block.getDouble(index);
-						
-						if (found_value != fill_value)
-						{
-							values_to_insert.add(new Triplet<Integer, Integer, Double>(get_position(x_index, 0), get_lead(), found_value));
-						}
-						
-						if (values_to_insert.size() >= insert_limit)
-						{
-							//Executor.execute(new ValueInserter(values_to_insert));
-							System.out.println("Dispatching job to save values...");
-							values_to_insert = new ArrayList<Triplet<Integer, Integer, Double>>();
-						}
-					}
-				}*/
-				
 				if (values_to_insert.size() > 0)
 				{
-					//Executor.execute(new ValueInserter(values_to_insert));
 					System.out.println("Dispatching one last job to save values...");
-					//values_to_insert = new ArrayList<Triplet<Integer, Integer, Double>>();
 				}
 			}
 		}
@@ -420,28 +327,38 @@ public class NetCDFSource extends BasicSource {
 		return this.variable_positions.get(x_index, y_index);
 	}
 	
-	private void load_variable_positions(String variable_name) throws SQLException
-	{
+	/**
+	 * Populates the variablePositions collection with the position of each for forecast ensemble based on the variable name
+	 * @param variable_name The name of the variable for whose variable positions to load
+	 * @throws SQLException Any possible issue that was encountered upon trying to interact with the database
+	 */
+	private void loadVariablePositions(String variable_name) throws SQLException {
 		System.out.println("Loading a new set of value positions for " + variable_name);
 		this.variable_positions = new AssociatedPair<Integer, Integer, Integer>();
-		Connection connection = Database.getConnection();
-		connection.setAutoCommit(false);
-		Statement query = connection.createStatement();
-		query.setFetchSize(SystemConfig.instance().get_fetch_size());
+		Connection connection = null;
 		
-		ResultSet position_set = query.executeQuery(String.format(load_variablepositions_script, 
-																		   get_forecast_id(), 
-																		   variable_name, 
-																		   this.ensemble_name));
-		while (position_set.next())
-		{
-			this.variable_positions.put(position_set.getInt("x_position"), 
-										position_set.getInt("y_position"), 
-										position_set.getInt("forecastensemble_id"));
-		}
-		
-		Database.returnConnection(connection);
-		System.out.println("Positions loaded.");
+		try {
+	        connection = Database.getConnection();
+	        String variablePositionLoad = String.format(load_variablepositions_script, 
+                                                        get_forecast_id(), 
+                                                        variable_name, 
+                                                        this.ensemble_name);
+	        
+	        ResultSet positionSet = Database.getResults(connection, variablePositionLoad);
+	        while (positionSet.next())
+	        {
+	            this.variable_positions.put(positionSet.getInt("x_position"), 
+	                                        positionSet.getInt("y_position"), 
+	                                        positionSet.getInt("forecastensemble_id"));
+	        }
+	        System.out.println("Positions loaded.");
+		} catch (Exception error) {
+		    throw error;
+		} finally {
+		    if (connection != null) {
+		        Database.returnConnection(connection);
+		    }
+		}		
 	}
 	
 	private void save_variables() throws IOException, SQLException
@@ -452,61 +369,13 @@ public class NetCDFSource extends BasicSource {
 		{
 			if (var.getDimensions().size() > 1 || var.getDimension(0).getLength() > 1)
 			{
-				/*boolean exists = Database.get_result(String.format(variable_exists_script, var.getShortName()), "variable_exists");
-				
-				if (!exists)
-				{
-					System.out.println("Adding the " + var.getShortName() + " variable to the database...");
-					Database.execute(String.format(save_measurement_script, var.getUnitsString(), var.getUnitsString()));
-					String script = String.format(save_variable_script,
-					  					   		  var.getShortName(),
-					  					   		  var.getDescription(),
-					  					   		  var.getShortName(),
-					  					   		  var.getDataType().toString(),
-					  					   		  var.getDescription(),
-					  					   		  var.getUnitsString(),
-					  					   		  var.getShortName(),
-					  					   		  var.getDescription());
-					
-					Database.execute(script);
-					
-					script = String.format(get_variable_id_script, var.getShortName(), var.getDescription());
-					
-					Integer variable_id = Database.get_result(script, "variable_id");
-					
-					int x_length = get_x_length(var);
-					int y_length = get_y_length(var);
-					
-					System.out.println("Adding positions for all " + var.getShortName() + " values.");
-					Database.execute(String.format(save_variableposition_script,
-												   variable_id,
-												   x_length,
-												   y_length,
-												   variable_id));
-				}*/
 				
 				Executor.execute(new VariableInserter(var));
-
-				/*exists = Database.get_result(String.format(forecastensemble_exists_script, 
-														   get_forecast_id(), 
-														   this.ensemble_name, 
-														   var.getShortName()), 
-											 "forecastensemble_exists");
-				
-				if (!exists)
-				{
-					System.out.println("Adding the " + var.getShortName() + " variable to this forecast...");
-					Database.execute(String.format(populate_forecastensemble_script, 
-												   this.get_forecast_id(), 
-												   var.getShortName(), 
-												   "default", 
-												   var.getUnitsString()));
-				}*/
 			}
 		}
 	}
 	
-	private int get_x_length(Variable var)
+	private static int get_x_length(Variable var)
 	{
 		int length = 0;
 		
@@ -526,7 +395,7 @@ public class NetCDFSource extends BasicSource {
 		return length;
 	}
 	
-	private int get_y_length(Variable var)
+	private static int get_y_length(Variable var)
 	{
 		int length = 0;
 		
@@ -559,11 +428,11 @@ public class NetCDFSource extends BasicSource {
 		return this.lead == 0;
 	}
 	
-	private Integer get_forecast_hour()
+	protected Integer get_forecast_hour()
 	{
 		if (this.forecast_hour == null)
 		{
-			String description = Utilities.where(get_file_parts(), (String possibility) -> {
+			String description = Utilities.find(get_file_parts(), (String possibility) -> {
 				return possibility.endsWith("z");
 			});
 			
@@ -577,7 +446,7 @@ public class NetCDFSource extends BasicSource {
 	{
 		if (this.lead == null)
 		{
-			String description = Utilities.where(get_file_parts(), (String possibility) -> {
+			String description = Utilities.find(get_file_parts(), (String possibility) -> {
 				return possibility.startsWith("f") || possibility.startsWith("tm");
 			});
 			
@@ -591,18 +460,18 @@ public class NetCDFSource extends BasicSource {
 	{
 		if (this.range == null)
 		{
-			this.range = Utilities.where(get_file_parts(), (String possibility) -> {
+			this.range = Utilities.find(get_file_parts(), (String possibility) -> {
 				return possibility.endsWith("range") || possibility.endsWith("assim");
 			});
 		}
 		return this.range;
 	}
 	
-	private String get_data_category()
+	protected String get_data_category()
 	{
 		if (this.data_category == null)
 		{
-			String category = Utilities.where(get_file_parts(), (String possibility) -> {
+			String category = Utilities.find(get_file_parts(), (String possibility) -> {
 				return possibility.contains("land") || possibility.contains("reservoir");
 			});
 			
@@ -640,7 +509,7 @@ public class NetCDFSource extends BasicSource {
 			Database.execute(script);
 			
 			script = "SELECT forecast_id FROM wres.forecast WHERE forecast_date = '" + this.model_initialization_time + "';";
-			this.forecast_id = Database.get_result(String.format(get_forecast_id_script, 
+			this.forecast_id = Database.getResult(String.format(get_forecast_id_script, 
 																 this.model_initialization_time, 
 																 type), 
 													"forecast_id");
@@ -658,31 +527,7 @@ public class NetCDFSource extends BasicSource {
 	
 	private String model_initialization_time;
 	private Double missing_value = null;
-	private String model_valid_output_time;
 	private Integer forecast_id = null;
-	
-	private final String save_source_script = " DO $$\n"
-											+ " BEGIN\n"
-											+ "		IF EXISTS (\n"
-											+ "			SELECT 1\n"
-											+ "			FROM wres.Source\n"
-											+ "			WHERE path = '%s'\n"
-											+ "		) THEN\n"
-											+ "			UPDATE wres.Source\n"
-											+ "				SET output_time = '%s'\n"
-											+ "			WHERE path = '%s';\n"
-											+ "		ELSE\n"
-											+ "			INSERT INTO wres.Source\n"
-											+ "			(\n"
-											+ "				path,\n"
-											+ "				output_time\n"
-											+ "			)\n"
-											+ "			VALUES (\n"
-											+ "				'%s',\n"
-											+ "				'%s'\n"
-											+ "			);\n"	
-											+ "		END IF;\n"
-											+ "END $$;";
 	
 	private final String save_forecast_script = "INSERT INTO wres.Forecast (forecast_date, forecasttype_id)\n"
 											  + "SELECT '%s',\n"
@@ -727,20 +572,6 @@ public class NetCDFSource extends BasicSource {
 											  + "	END IF;\n"
 											  + "END $$;";
 	
-	private final String forecastensemble_exists_script = "SELECT EXISTS (\n"
-														+ "		SELECT 1\n"
-														+ "		FROM wres.ForecastEnsemble FE\n"
-														+ "		INNER JOIN wres.VariablePosition VP\n"
-														+ "			ON VP.variableposition_id = FE.variableposition_id\n"
-														+ "		INNER JOIN wres.Variable V\n"
-														+ "			ON V.variable_id = VP.variable_id\n"
-														+ "		INNER JOIN wres.Ensemble E\n"
-														+ "			ON E.ensemble_id = FE.ensemble_id\n"
-														+ "		WHERE FE.forecast_id = %d\n"
-														+ "			AND E.ensemble_name = '%s'\n"
-														+ "			AND V.variable_name = '%s'\n"
-														+ ") AS forecastensemble_exists;";
-	
 	private final String get_variable_id_script = "SELECT variable_id\n"
 												+ "FROM wres.Variable\n"
 												+ "WHERE variable_name = '%s'\n"
@@ -757,33 +588,6 @@ public class NetCDFSource extends BasicSource {
 													  + "		AND x_position = X\n"
 													  + "		AND y_position = Y\n"
 													  + ");";
-	
-	private final String populate_forecastensemble_script = "INSERT INTO wres.forecastensemble\n"
-														  + "(\n"
-														  + "	forecast_id,\n"
-														  + "	variableposition_id,\n"
-														  + "	ensemble_id,\n"
-														  + "	measurementunit_id\n"
-														  + ")\n"
-														  + "SELECT %d,\n"
-														  + "	VP.variableposition_id,\n"
-														  + "	E.ensemble_id,\n"
-														  + "	M.measurementunit_id\n"
-														  + "FROM wres.variableposition VP\n"
-														  + "INNER JOIN wres.variable V\n"
-														  + "	ON V.variable_id = VP.variable_id\n"
-														  + "CROSS JOIN wres.Ensemble E\n"
-														  + "CROSS JOIN wres.measurementunit M\n"
-														  + "WHERE V.variable_name = '%s'\n"
-														  + "	AND E.ensemble_name = '%s'\n"
-														  + "	AND M.unit_name = '%s'\n"
-														  + "	AND NOT EXISTS (\n"
-														  + "		SELECT 1\n"
-														  + "		FROM wres.forecastensemble FE\n"
-														  + "		WHERE FE.variableposition_id = VP.variableposition_id\n"
-														  + "			AND FE.ensemble_id = E.ensemble_id\n"
-														  + "			AND FE.measurementunit_id = M.measurementunit_id\n"
-														  + "	);";
 	
 	private final String load_variablepositions_script = "SELECT x_position, y_position, forecastensemble_id\n"
 													   + "FROM wres.ForecastEnsemble FE\n"

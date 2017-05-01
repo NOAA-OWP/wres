@@ -7,16 +7,20 @@ import reading.BasicSource;
 import reading.XMLReader;
 
 /**
- * @author ctubbs
- *
+ * @author Christopher Tubbs
+ * Interprets a FEWS (PIXML) source into either forecast or observation data and stores them in the database
  */
 public class FEWSSource extends BasicSource {
 
 	/**
-	 * 
+	 * Constructor
 	 */
 	public FEWSSource() {}
 	
+	/**
+	 * Constructor that sets the filename 
+	 * @param filename The name of the source file
+	 */
 	public FEWSSource(String filename)
 	{
 		this.set_filename(filename);

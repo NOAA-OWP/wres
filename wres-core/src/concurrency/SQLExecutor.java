@@ -9,6 +9,8 @@ import util.Database;
 
 /**
  * A thread that will execute a passed in SQL script
+ * 
+ * @author Christopher Tubbs
  */
 public class SQLExecutor implements Runnable {
 
@@ -28,7 +30,6 @@ public class SQLExecutor implements Runnable {
 		try {
 			Database.execute(this.script);
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}		
 	}

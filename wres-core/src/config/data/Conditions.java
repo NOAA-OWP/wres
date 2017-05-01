@@ -13,20 +13,24 @@ import javax.xml.stream.XMLStreamReader;
 import util.Utilities;
 
 /**
- * @author ctubbs
- *
+ * Details conditions to place on selected rows from the database based upon date and value
+ * @author Christopher Tubbs
  */
 public final class Conditions extends ClauseConfig {
 
+    /**
+     * Creates and parses the condition
+     * @param reader The XML node(s) containing the definitions for the conditions
+     */
 	public Conditions(XMLStreamReader reader)
 	{
 		super(reader);
 		
 		// Ensure that values are set for the constraints
-		setEarliestDate(earliest_date);
-		setLatestDate(latest_date);
-		setMinimumValue(minimum_value);
-		setMaximumValue(maximum_value);
+		setEarliestDate(earliestDate);
+		setLatestDate(latestDate);
+		setMinimumValue(minimumValue);
+		setMaximumValue(maximumValue);
 	}
 	
 	@Override
@@ -40,43 +44,61 @@ public final class Conditions extends ClauseConfig {
 			
 			if (attribute_name.equalsIgnoreCase("earliest"))
 			{
-				this.latest_date = reader.getAttributeValue(attribute_index);
+				this.latestDate = reader.getAttributeValue(attribute_index);
 			}
 			else if (attribute_name.equalsIgnoreCase("latest"))
 			{
-				this.earliest_date = reader.getAttributeValue(attribute_index);
+				this.earliestDate = reader.getAttributeValue(attribute_index);
 			}
 			else if (attribute_name.equalsIgnoreCase("minimum"))
 			{
-				this.minimum_value = reader.getAttributeValue(attribute_index);
+				this.minimumValue = reader.getAttributeValue(attribute_index);
 			}
 			else if (attribute_name.equalsIgnoreCase("maximum"))
 			{
-				this.maximum_value = reader.getAttributeValue(attribute_index);
+				this.maximumValue = reader.getAttributeValue(attribute_index);
 			}
 		}
 	}
 	
-	public String get_earliest_date()
+	/**
+	 * @return Representation of the earliest date that may be selected, formatted in such a way that it may inserted into
+	 * a SQL statement
+	 */
+	public String getEarliestDate()
 	{
-		return "'" + this.earliest_date + "'";
+		return "'" + this.earliestDate + "'";
 	}
 	
-	public String get_latest_date()
+	/**
+	 * @return Representation of the latest date that may be selected, formatted in such a way that it may be inserted into
+	 * a SQL statement
+	 */
+	public String getLatestDate()
 	{
-		return "'" + this.latest_date + "'";
+		return "'" + this.latestDate + "'";
 	}
 	
-	public String get_minimum_value()
+	/**
+	 * @return Representation of the minimum value for a measurement that may be selected
+	 */
+	public String getMinimumValue()
 	{
-		return this.minimum_value;
+		return this.minimumValue;
 	}
 	
-	public String get_maximum_value()
+	/**
+	 * @return Representation of the maximum value for a measurement that may be selected
+	 */
+	public String getMaximumValue()
 	{
-		return this.maximum_value;
+		return this.maximumValue;
 	}
 	
+	/**
+	 * Sets the minimum possible value for the condition
+	 * @param minimum The minimum possible value for the condition. If the value isn't valid, it is defaulted to -infinity
+	 */
 	private void setMinimumValue(String minimum)
 	{
 		if (!Utilities.isNumeric(minimum))
@@ -84,37 +106,49 @@ public final class Conditions extends ClauseConfig {
 			minimum = "-infinity";
 		}
 		
-		this.minimum_value = minimum;
+		this.minimumValue = minimum;
 	}
 	
+	/**
+	 * Sets the maximum possible value for the condition
+	 * @param maximum The maximum possible value for the condition. If the value isn't valid, it is defaulted to infinity
+	 */
 	private void setMaximumValue(String maximum)
 	{
 		if (!Utilities.isNumeric(maximum))
 		{
 			maximum = "infinity";
 		}
-		this.maximum_value = maximum;
+		this.maximumValue = maximum;
 	}
 	
+	/**
+	 * Sets the earliest possible date for the condition
+	 * @param earliest The earliest possible date. If the date isn't valid, it is set to -infinity
+	 */
 	private void setEarliestDate(String earliest) {
 		if (!Utilities.isTimestamp(earliest)) {
 			earliest = "-infinity";
 		}
-		this.earliest_date = earliest;
+		this.earliestDate = earliest;
 	}
 	
+	/**
+	 * Sets the latest possible date for the condition
+	 * @param latest The latest possible date. If the date isn't valid, it is set to infinity
+	 */
 	private void setLatestDate(String latest)
 	{
 		if (!Utilities.isTimestamp(latest)) {
 			latest = "infinity";
 		}
-		this.latest_date = latest;
+		this.latestDate = latest;
 	}
 	
-	private String earliest_date;
-	private String latest_date;
-	private String minimum_value;
-	private String maximum_value;
+	private String earliestDate;
+	private String latestDate;
+	private String minimumValue;
+	private String maximumValue;
 	
 	@Override
 	public String getCondition(TreeMap<String, String> aliases) {
@@ -130,13 +164,13 @@ public final class Conditions extends ClauseConfig {
 	@Override
 	public String toString() {
 		String description = "Relevant data is from '";
-		description += earliest_date;
+		description += earliestDate;
 		description += "' to '";
-		description += latest_date;
+		description += latestDate;
 		description += "', with a minimum value of ";
-		description += minimum_value;
+		description += minimumValue;
 		description += " up to ";
-		description += maximum_value;
+		description += maximumValue;
 		description += System.lineSeparator();
 				
 		return description;

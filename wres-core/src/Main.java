@@ -6,8 +6,8 @@ import util.MainFunctions;
 import util.Utilities;
 
 /**
- * @author ctubbs
- *
+ * @author Christopher Tubbs
+ * Provides the entry point for prototyping development
  */
 public class Main {
 	

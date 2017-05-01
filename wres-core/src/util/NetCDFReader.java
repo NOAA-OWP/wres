@@ -18,21 +18,25 @@ import ucar.ma2.Array;
 import ucar.ma2.InvalidRangeException;
 
 /**
- * @author ctubbs
- *
+ * @author Christopher Tubbs
+ * The initial draft of the NetCDF reader
+ * Useful for sample code
  */
 public final class NetCDFReader {
 
 	/**
-	 * 
+	 * Constructor
 	 */
 	public NetCDFReader(String path) {
 		this.path = path;
 	}
 	
+	/**
+	 * Prints variable information to the terminal
+	 */
 	public void output_variables()
 	{
-		try (NetcdfFile ncfile = NetcdfFile.open(get_path())) 
+		try (NetcdfFile ncfile = NetcdfFile.open(path)) 
 		{
 			List<Variable> observed_variables = ncfile.getVariables();
 			System.out.print("Information about this NetCDF: \n\t");
@@ -140,10 +144,10 @@ public final class NetCDFReader {
 						e.printStackTrace();
 					}
                     
-                    if (get_path().endsWith(".gz"))
+                    if (path.endsWith(".gz"))
                     {
 	                    // Removes the unpacked netcdf file from the file system
-	                    Files.deleteIfExists(Paths.get(get_path().replaceAll(".gz", "")));
+	                    Files.deleteIfExists(Paths.get(path.replaceAll(".gz", "")));
                     }
                     
                     System.out.println();
@@ -157,11 +161,16 @@ public final class NetCDFReader {
 		}
 	}
 	
+	/**
+	 * prints data from an indicated location for a variable
+	 * @param variable_name The name of the variable to retrieve data from
+	 * @param args coordinates for finding variable values 
+	 */
 	public void print_query(String variable_name, int... args)
 	{
 			NetcdfFile nc;
 			try {
-				nc = NetcdfFile.open(get_path());			
+				nc = NetcdfFile.open(path);			
 				Variable var = nc.findVariable(variable_name);
 				int[] origin = new int[var.getRank()];
 				Arrays.fill(origin, 0);
@@ -187,11 +196,6 @@ public final class NetCDFReader {
 				e.printStackTrace();
 			}
 
-	}
-	
-	private String get_path()
-	{
-		return path;
 	}
 	
 	private String path = "";

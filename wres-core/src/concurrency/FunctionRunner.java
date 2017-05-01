@@ -5,16 +5,16 @@ package concurrency;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import config.SystemConfig;
 import util.Database;
 
 /**
  * A callable thread that will perform a passed in function on a set of values that will be returned from the database
+ * 
+ * @author Christopher Tubbs
  */
 public class FunctionRunner<V, U> implements Callable<V> {
 
@@ -26,7 +26,7 @@ public class FunctionRunner<V, U> implements Callable<V> {
 	 */
 	public FunctionRunner(String data_select, BiFunction<ResultSet, Function<U, U>, V> func)
 	{
-		this.data_select = data_select;
+		this.dataSelect = data_select;
 		this.func = func;
 		this.transform = (U value) -> {
 			return value;
@@ -42,18 +42,17 @@ public class FunctionRunner<V, U> implements Callable<V> {
 	 * @param transform A function receiving the indicated type and returning a modified version of the passed in value
 	 */
 	public FunctionRunner(String data_select, BiFunction<ResultSet, Function<U, U>, V> func, Function<U, U> transform) {
-		this.data_select = data_select;
+		this.dataSelect = data_select;
 		this.func = func;
-		if (transform == null)
-		{
-			this.transform = (U value) -> {
+		
+		// If there is no transform, set it to the identity function
+		if (transform == null) {
+			transform = (U value) -> {
 				return value;
 			};
 		}
-		else
-		{
-			this.transform = transform;
-		}
+
+        this.transform = transform;
 	}
 
 	@Override
@@ -65,34 +64,20 @@ public class FunctionRunner<V, U> implements Callable<V> {
 	 * passed in transform.
 	 */
 	public V call() throws Exception {
-		V function_result = null;
+		V functionResult = null;
 		Connection connection = null;
-		try
-		{
+		
+		try {
 			connection = Database.getConnection();
-			Statement query = connection.createStatement();
-			query.setFetchSize(SystemConfig.instance().get_fetch_size());
-			ResultSet result = query.executeQuery(data_select);
-			function_result = func.apply(result, transform);	
+			ResultSet result = Database.getResults(connection, dataSelect);
+			functionResult = func.apply(result, transform);	
+		} finally {
+			Database.returnConnection(connection);
 		}
-		catch (Exception error)
-		{
-			if (connection != null)
-			{
-				connection.rollback();
-			}
-		}
-		finally
-		{
-			if (connection != null)
-			{
-				Database.returnConnection(connection);
-			}
-		}
-		return function_result;
+		return functionResult;
 	}
 	
-	private String data_select;
+	private String dataSelect;
 	private BiFunction<ResultSet, Function<U, U>, V> func;
 	private Function<U, U> transform;
 

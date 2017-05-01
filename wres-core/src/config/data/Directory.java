@@ -13,11 +13,16 @@ import javax.xml.stream.XMLStreamReader;
 import util.Utilities;
 
 /**
- * @author ctubbs
+ * Configuration information detailing files of interest inside of a directory
  *
+ * @author Christopher Tubbs
  */
 public class Directory extends ConfigElement
 {
+    /**
+     * The Constructor
+     * @param reader The XML Reader describing the directory
+     */
 	public Directory(XMLStreamReader reader)
 	{
 		super(reader);
@@ -30,12 +35,12 @@ public class Directory extends ConfigElement
 		
 		if (tag_name.equalsIgnoreCase("path"))
 		{
-			this.path = tagValue(reader);
+			this.path = Utilities.getXMLText(reader);
 		}
 		else if (tag_name.equalsIgnoreCase("file"))
 		{
-			String file_type = Utilities.get_attribute_value(reader, "file_type");
-			String file_path = tagValue(reader);
+			String file_type = Utilities.getAttributeValue(reader, "file_type");
+			String file_path = Utilities.getXMLText(reader);
 			
 			if (!(file_type == null || file_path == null || file_type.isEmpty() || file_path.isEmpty()))
 			{
@@ -51,7 +56,7 @@ public class Directory extends ConfigElement
 		{
 			if (reader.getAttributeLocalName(attribute_index).equalsIgnoreCase("load_all"))
 			{
-				this.load_all = Boolean.valueOf(reader.getAttributeValue(attribute_index));
+				this.loadAll = Boolean.valueOf(reader.getAttributeValue(attribute_index));
 			}
 		}
 	}
@@ -61,11 +66,19 @@ public class Directory extends ConfigElement
 		return Arrays.asList("Directory");
 	}
 	
+	/**
+	 * Returns a list of files in interest inside of the directory
+	 * @return A list of file specifications
+	 */
 	public List<File> get_files()
 	{
-		return files;
+		return this.files;
 	}
 	
+	/**
+	 * Adds a file specification to the list of contained files
+	 * @param file
+	 */
 	private void add_file(File file)
 	{
 		if (this.files == null)
@@ -86,7 +99,7 @@ public class Directory extends ConfigElement
 		description += System.lineSeparator();
 		
 		description += "\tAll files should be loaded: ";
-		description += String.valueOf(load_all);
+		description += String.valueOf(loadAll);
 		description += System.lineSeparator();
 		
 		if (files.size() > 0)
@@ -104,34 +117,46 @@ public class Directory extends ConfigElement
 	}
 	
 	private List<File> files;
-	private boolean load_all;
+	
+	/**
+	 * Indicates whether or not to load all files within the current level of the directory
+	 */
+	private boolean loadAll;
 	private String path;
 	
-	public final class File extends collections.TwoTuple<String, String>
-	{
-		public File(String file_type, String path) {
-			super(file_type, path);
+	/**
+	 * Specifications about files within a directory
+	 * @author Christopher Tubbs
+	 *
+	 */
+	public final class File {
+		public File(String fileType, String path) {
+		    this.fileType = fileType;
+		    this.path = path;
 		}
 
-		public String get_file_type()
+		public String getFileType()
 		{
-			return itemOne();
+			return this.fileType;
 		}
 		
-		public String get_path()
+		public String getPath()
 		{
-			return itemTwo();
+		    return this.path;
 		}
 		
 		@Override
 		public String toString() {
 			String description = "\tFile: ";
-			description += get_path();
+			description += getPath();
 			description += ", Type: ";
-			description += get_file_type();
+			description += getFileType();
 			description += System.lineSeparator();
 			
 			return description;
 		}
+		
+		private final String fileType;
+		private final String path;
 	}
 }

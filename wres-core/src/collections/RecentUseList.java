@@ -10,6 +10,8 @@ import java.util.function.Predicate;
 
 /**
  * A set of values ordered by their order of addition
+ * 
+ * @author Christopher Tubbs
  */
 public class RecentUseList<U extends Comparable<U>> 
 {
@@ -35,11 +37,20 @@ public class RecentUseList<U extends Comparable<U>>
 	}
 	
 	/**
+	 * Clears all values from the collection
+	 */
+	public synchronized void clear() {
+	    while (this.size() > 0) {
+	        this.drop_last();
+	    }
+	}
+	
+	/**
 	 * Adds the value to the top of the list. If the value is already contained, if is promoted to the top of the list
 	 * If the maximum number of allowable values is reached, the least recently used item is removed from the list
 	 * @param value The value to add
 	 */
-	public void add(U value)
+	public synchronized void add(U value)
 	{
 		if (contained_values.contains(value))
 		{
@@ -275,10 +286,8 @@ public class RecentUseList<U extends Comparable<U>>
 			this.previous = previous;
 		}
 		
-		/**
-		 * Returns the String representation of the contained value
-		 */
-		public String toString()
+		@Override
+        public String toString()
 		{
 			return value.toString() + " ";
 		}

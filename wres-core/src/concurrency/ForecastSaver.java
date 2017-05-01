@@ -8,11 +8,14 @@ import reading.SourceReader;
 
 /**
  * Saves the forecast at the indicated path asynchronously
+ * 
+ * @author Christopher Tubbs
  */
 public class ForecastSaver implements Runnable {
 
 	/**
 	 * Creates the saver with the given path to a file containing observation data
+	 * @param filepath The path to the file to save as a forecast
 	 */
 	public ForecastSaver(String filepath) 
 	{

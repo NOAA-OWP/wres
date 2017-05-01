@@ -1,9 +1,5 @@
-/**
- * Contains Accessors for global system settings
- */
 package config;
-import java.sql.Connection;
-import java.sql.SQLException;
+
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 
@@ -13,9 +9,11 @@ import org.slf4j.LoggerFactory;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import config.DatabaseConfig;
+import util.Utilities;
 
 /**
- * The reader and container for all system settings
+ * The cache for all configured system settings
+ * @author Christopher Tubbs
  */
 public final class SystemConfig extends reading.XMLReader
 {
@@ -23,13 +21,13 @@ public final class SystemConfig extends reading.XMLReader
 	// The global, static system configuration
     private static final SystemConfig INSTANCE = new SystemConfig();
 
-    private DatabaseConfig database_configuration = null;
-    private int maximum_thread_count = 0;
-    private int pool_object_lifespan = 30000;
-    private int fetch_size = 100;
-    private int maximum_inserts = 5000;
-    private int maximum_copies = 200;
-    private String project_directory = "projects";
+    private DatabaseConfig databaseConfiguration = null;
+    private int maximumThreadCount = 0;
+    private int poolObjectLifespan = 30000;
+    private int fetchSize = 100;
+    private int maximumInserts = 5000;
+    private int maximumCopies = 200;
+    private String projectDirectory = "projects";
 
 	// The static path to the configuration path
     private static final String config_path = "wresconfig.xml";
@@ -41,29 +39,15 @@ public final class SystemConfig extends reading.XMLReader
 	 * 
 	 * Creates a new XMLReader and parses the System Configuration document
 	 * Looks on the classpath for the default filename
+	 * <br/><br/>
+	 * Private because only one SystemConfig should exist as it is the global cache
+	 * of configured system settings
 	 */
-    public SystemConfig()
+    private SystemConfig()
     {
         super(config_path, true);
         LOGGER.debug("Created SystemConfig using default constructor");
         parse();
-    }
-
-	/**
-	 * Creates a System Configuration collection reading from the alternate location
-	 * 
-	 * @param alternate_config_location An alternate path to the System Configuration
-	 */
-    public SystemConfig(String alternate_config_location)
-    {
-        super(alternate_config_location, false);
-        LOGGER.debug("Created SystemConfig using String constructor");
-        parse();
-    }
-
-    public static SystemConfig instance()
-    {
-        return INSTANCE;
     }
 
 	@Override
@@ -84,7 +68,7 @@ public final class SystemConfig extends reading.XMLReader
 			{
 				if (reader.getLocalName().equalsIgnoreCase("database"))
 				{
-					database_configuration = new DatabaseConfig(reader);
+					databaseConfiguration = new DatabaseConfig(reader);
 				}				
 				else if (reader.getLocalName().equalsIgnoreCase("maximum_thread_count"))
 				{
@@ -94,7 +78,7 @@ public final class SystemConfig extends reading.XMLReader
 						int begin_index = reader.getTextStart();
 						int end_index = reader.getTextLength();
 						value = new String(reader.getTextCharacters(), begin_index, end_index).trim();
-						maximum_thread_count = Integer.parseInt(value);
+						maximumThreadCount = Integer.parseInt(value);
 					}
 				}
 				else if (reader.getLocalName().equalsIgnoreCase("pool_object_lifespan"))
@@ -105,20 +89,20 @@ public final class SystemConfig extends reading.XMLReader
 						int begin_index = reader.getTextStart();
 						int end_index = reader.getTextLength();
 						value = new String(reader.getTextCharacters(), begin_index, end_index).trim();
-						pool_object_lifespan = Integer.parseInt(value);
+						poolObjectLifespan = Integer.parseInt(value);
 					}
 				}
 				else if (reader.getLocalName().equalsIgnoreCase("maximum_inserts"))
 				{
-					maximum_inserts = Integer.parseInt(tagValue(reader));
+					maximumInserts = Integer.parseInt(Utilities.getXMLText(reader));
 				}
 				else if (reader.getLocalName().equalsIgnoreCase("maximum_copies"))
 				{
-					maximum_copies = Integer.parseInt(tagValue(reader));
+					maximumCopies = Integer.parseInt(Utilities.getXMLText(reader));
 				}
 				else if (reader.getLocalName().equalsIgnoreCase("project_directory"))
 				{
-					project_directory = tagValue(reader);
+					projectDirectory = Utilities.getXMLText(reader);
 				}
 			}
 		}
@@ -129,83 +113,68 @@ public final class SystemConfig extends reading.XMLReader
 	}
 
 	/**
-	 * Uses the database configuration to create a connection to the configured database
-	 * @return An open connection to the configured database
-	 * @throws SQLException An exception is thrown if a connection cannot be created to the database
-	 */
-	public Connection get_database_connection() throws SQLException
-	{
-		return this.database_configuration.create_connection();
-	}
-
-	/**
-	 * Returns the maximum number of allowable threads dictated via the configuration
 	 * @return The number of allowable threads
 	 */
-	public int get_maximum_thread_count()
+	public static int maximumThreadCount()
 	{
-		return this.maximum_thread_count;
+		return INSTANCE.maximumThreadCount;
 	}
 
 	/**
-	 * Returns the amount of time (in milliseconds) that an object may live in an object pool without being used 
 	 * @return The maximum life span for an object in an object pool
 	 */
-	public int get_pool_object_lifespan()
+	public static int poolObjectLifespan()
 	{
-		return this.pool_object_lifespan;
+		return INSTANCE.poolObjectLifespan;
 	}
 
 	/**
-	 * Returns the maximum number of rows that may be fetched from the database at any given time
 	 * @return The maximum number of rows to retrieve
 	 */
-	public int get_fetch_size()
+	public static int fetchSize()
 	{
-		return this.fetch_size;
+		return INSTANCE.fetchSize;
 	}
 
 	/**
-	 * Returns the maximum number of values that may be inserted into the database at any given time
-	 * @return The maximum number of insert values
+	 * @return The maximum number of values that may be inserted into the database at once
 	 */
-	public int get_maximum_inserts()
-	{
-		return this.maximum_inserts;
+	public static int maximumDatabaseInsertStatements() {
+		return INSTANCE.maximumInserts;
 	}
 
-	public int get_maximum_copies()
-	{
-		return this.maximum_copies;
+	/**
+	 * @return The maximum number of values that may be copied into the database at once
+	 */
+	public static int getMaximumCopies() {
+		return INSTANCE.maximumCopies;
 	}
 
-	public String get_project_directory()
-	{
-		return this.project_directory;
+	/**
+	 * @return The directory of the project configuration files
+	 */
+	public static String getProjectDirectory() {
+		return INSTANCE.projectDirectory;
 	}
 
-	public String get_database_type()
-	{
-	    if (this.database_configuration != null)
-	    {
-	        return this.database_configuration.get_database_type();
-	    }
-	    else
-	    {
-	        return null;
-	    }
+	/**
+	 * @return The type of database to build queries for
+	 * <br/><br/>
+	 * <b>Acceptable Values are:</b>
+	 * <ul>
+	 *     <li>PostgreSQL</li>
+	 *     <li>MySQL</li>
+	 * </ul>
+	 */
+	public static String getDatabaseType() {
+	    return INSTANCE.databaseConfiguration.getDatabaseType();
 	}
 
-	public ComboPooledDataSource get_connection_pool()
-	{
-	    if (this.database_configuration != null)
-	    {
-	        return this.database_configuration.create_datasource();
-	    }
-	    else
-	    {
-	        return null;
-	    }
+	/**
+	 * @return A new instance of a connection pool that is built for the system wide configuration
+	 */
+	public static ComboPooledDataSource getConnectionPool() {
+        return INSTANCE.databaseConfiguration.createDatasource();
 	}
 
 	@Override
@@ -218,25 +187,25 @@ public final class SystemConfig extends reading.XMLReader
 		string_rep += System.lineSeparator();
 		string_rep += System.lineSeparator();
 		string_rep += "Maximum # of Threads:\t";
-		string_rep += String.valueOf(maximum_thread_count);
+		string_rep += String.valueOf(maximumThreadCount);
 		string_rep += System.lineSeparator();
 		string_rep += "Lifespan of pooled objects (in ms):\t";
-		string_rep += String.valueOf(pool_object_lifespan);
+		string_rep += String.valueOf(poolObjectLifespan);
 		string_rep += System.lineSeparator();
 		string_rep += "Most amount of rows that can be loaded from the database at once:\t";
-		string_rep += String.valueOf(fetch_size);
+		string_rep += String.valueOf(fetchSize);
 		string_rep += System.lineSeparator();
 		string_rep += "Maximum number of inserts into the database at any given time:\t";
-		string_rep += String.valueOf(maximum_inserts);
+		string_rep += String.valueOf(maximumInserts);
 		string_rep += System.lineSeparator();
 		string_rep += "Project XML is stored in:\t";
-		string_rep += String.valueOf(project_directory);
+		string_rep += String.valueOf(projectDirectory);
 		string_rep += System.lineSeparator();
 		
-		if (database_configuration != null)
+		if (databaseConfiguration != null)
 		{
 			string_rep += System.lineSeparator();
-			string_rep += database_configuration.toString();
+			string_rep += databaseConfiguration.toString();
 			string_rep += System.lineSeparator();
 		}
 		

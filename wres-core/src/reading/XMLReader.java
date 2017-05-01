@@ -6,7 +6,6 @@ package reading;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
-import util.Utilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.xml.stream.XMLStreamException;
@@ -41,7 +40,7 @@ public class XMLReader
 	    this.find_on_classpath = find_on_classpath;
 	}
 	
-	protected String get_filename()
+	protected String getFilename()
 	{
 		return filename;
 	}
@@ -99,11 +98,6 @@ public class XMLReader
 		this.filename = filename;
 	}
 	
-	protected String tagValue(XMLStreamReader reader) throws XMLStreamException
-	{
-		return Utilities.getXMLText(reader);
-	}
-	
 	protected XMLStreamReader create_reader() throws FileNotFoundException, XMLStreamException
 	{
 	    if (factory == null)
@@ -115,15 +109,11 @@ public class XMLReader
 		{
 		    return factory.createXMLStreamReader(get_file());
 		}
-		return factory.createXMLStreamReader(new FileReader(get_filename()));
+		return factory.createXMLStreamReader(new FileReader(getFilename()));
 	}
 	
-	protected boolean tag_is(XMLStreamReader reader, String tag_name)
-	{
-		return Utilities.tagIs(reader, tag_name);
-	}
-	
-	protected void parseElement(XMLStreamReader reader)
+	@SuppressWarnings("static-method")
+    protected void parseElement(XMLStreamReader reader)
 	{
 		switch (reader.getEventType())
 		{

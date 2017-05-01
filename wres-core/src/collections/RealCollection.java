@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 /**
  * A collection of real numbers
  * 
- * @author ctubbs
+ * @author Christopher Tubbs
  *
  */
 public class RealCollection extends ArrayList<Double> {
@@ -23,11 +23,9 @@ public class RealCollection extends ArrayList<Double> {
 	/**
 	 * Returns the simple mean of the numbers in the collection
 	 */
-	public Double mean()
-	{
+	public Double mean() {
 		Double mean = null;
-		if (this.size() > 0)
-		{
+		if (this.size() > 0) {
 			mean = sum()/this.size();
 		}
 		return mean;
@@ -36,11 +34,9 @@ public class RealCollection extends ArrayList<Double> {
 	/**
 	 * Returns the sum of all values in the collection
 	 */
-	public double sum()
-	{
+	public double sum() {
 		double summation = 0.0;
-		for (int i = 0; i < this.size(); ++i)
-		{
+		for (int i = 0; i < this.size(); ++i) {
 			summation += get(i);
 		}
 		return summation;
@@ -53,8 +49,7 @@ public class RealCollection extends ArrayList<Double> {
 	 * @param maximum The largest acceptable number to add
 	 * @return The sum of all numbers between the minimum and maximum, inclusive
 	 */
-	public double sum_range(double minimum, double maximum)
-	{
+	public double sum_range(double minimum, double maximum) {
 		RealCollection sorted_values = where((Double value) -> {
 			return value >= minimum && value <= maximum;
 		});
@@ -67,21 +62,19 @@ public class RealCollection extends ArrayList<Double> {
 	 * @param expression A mathematical function taking a Double and returning a Double
 	 * @return The summation of all results from the function
 	 */
-	public double sigma(DoubleFunction<Double> expression)
-	{
+	public double sigma(DoubleFunction<Double> expression) {
 		double summation = 0.0;
-		for (int i = 0; i < this.size(); ++i)
-		{
+		for (int i = 0; i < this.size(); ++i) {
 			summation = expression.apply(get(i));
 		}
 		return summation;
 	}
 	
 	/**
-	 * Returns a copy of all values in this collection
+	 * Returns a new RealCollection with identical values
+	 * @return a new, identical RealCollection
 	 */
-	public RealCollection copy()
-	{
+	public RealCollection copy() {
 		RealCollection copied_collection = new RealCollection();
 		stream().collect(Collectors.toCollection(()->copied_collection));
 		return copied_collection;
@@ -92,8 +85,7 @@ public class RealCollection extends ArrayList<Double> {
 	 * @param expression A function accepting a Double as a parameter and returning a boolean value
 	 * @return A subset of the collection adhering to the passed in function
 	 */
-	public RealCollection where(Predicate<? super Double> expression)
-	{
+	public RealCollection where(Predicate<? super Double> expression) {
 		RealCollection copy = new RealCollection();
 		stream().filter(expression).collect(Collectors.toCollection(()->copy));
 		copy.sort(null);
@@ -105,38 +97,38 @@ public class RealCollection extends ArrayList<Double> {
 	 * @param expression A mathematical function taking a Double and returning a Double
 	 * @return The summation of all results from the function
 	 */
-	public double sigma(Function<Double, Double> expression)
-	{
+	public double sigma(Function<Double, Double> expression) {
 		double summation = 0.0;
-		for (int i = 0; i < this.size(); ++i)
-		{
+		for (int i = 0; i < this.size(); ++i) {
 			summation = expression.apply(get(i));
 		}
 		return summation;
 	}
 	
-	public double sigma(BiFunction<Double, List<Double>, Double> expression)
-	{
+	/**
+	 * Performs a summation by passing in each value with a copy of the collection
+	 * @param expression The mathematical function to perform
+	 * @return The result 
+	 */
+	public double sigma(BiFunction<Double, List<Double>, Double> expression) {
 		double summation = 0.0;
-		for (int i = 0; i < this.size(); ++i)
-		{
-			summation += expression.apply(get(i), copy());
+		final RealCollection copiedCollection = this.copy();
+		
+		for (int i = 0; i < this.size(); ++i) {
+			summation += expression.apply(get(i), copiedCollection);
 		}
 		
 		return summation;
 	}
 	
-	public double median()
-	{
+	public double median() {
 		double middle = 0.0;
 		
-		if (this.size() > 0)
-		{
-			int middle_position = (int)this.size() / 2;
+		if (this.size() > 0) {
+			int middle_position = this.size() / 2;
 			middle = get(middle_position);
 			
-			if (this.size() % 2 == 0)
-			{
+			if (this.size() % 2 == 0) {
 				middle += get(middle_position - 1);
 				middle = middle / 2;
 			}

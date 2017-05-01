@@ -4,11 +4,11 @@ if [ $# -eq 0 ]; then
     echo ''
     echo 'usage: ./bwres <prototype function name>'
     echo ''
-    ./wres commands
+    scripts/wres commands
     echo ''
 else
     echo 'Building WRES...'
     ../gradlew installDist &>/dev/null
     echo 'WRES Built, now running...'
-    ./wres $@
+    scripts/wres $@
 fi

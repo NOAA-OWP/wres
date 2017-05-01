@@ -56,7 +56,7 @@ public class DatacardResultSaver implements Runnable {
 				expression.append("(");
 				expression.append(observation_id);
 				expression.append(", '");
-				expression.append(util.Utilities.convert_date_to_string(valid_time));
+				expression.append(util.Utilities.convertDateToString(valid_time));
 				expression.append("', ");
 				expression.append(dated_values.get(valid_time));
 				expression.append(", 1)");

@@ -7,8 +7,8 @@ import java.sql.SQLException;
 import collections.TwoTuple;
 
 /**
- * @author ctubbs
- *
+ * Details about a source of observation or forecast data
+ * @author Christopher Tubbs
  */
 public class SourceDetails extends CachedDetail<SourceDetails, TwoTuple<String, String>> {
 
@@ -16,32 +16,57 @@ public class SourceDetails extends CachedDetail<SourceDetails, TwoTuple<String, 
 	private String outputTime = null;
 	private Integer sourceID = null;
 	
+	/**
+	 * Constructor
+	 */
 	public SourceDetails() {
-		this.sourceID = null;
-		this.outputTime = null;
-		this.sourcePath = null;
+		this.setSourcePath(null);
+		this.setOutputTime(null);
+		this.setID(null);
 	}
 	
+	/**
+	 * Constructor
+	 * @param sourcePath The path on the file system to the source file
+	 * @param outputTime The time that the file was generated
+	 */
 	public SourceDetails(String sourcePath, String outputTime) {
-		this.sourcePath = sourcePath;
-		this.outputTime = outputTime;
-		this.sourceID = null;
+		this.setSourcePath(sourcePath);
+		this.setOutputTime(outputTime);
+		this.setID(null);
 	}
 	
+	/**
+	 * Constructor
+	 * @param key A TwoTuple containing, first, the path to the source file and, second, the time
+	 * that the source file was generated
+	 */
 	public SourceDetails(TwoTuple<String, String> key) {
-		this.sourcePath = key.itemOne();
-		this.outputTime = key.itemTwo();
-		this.sourceID = null;
+		this.setSourcePath(key.itemOne());
+		this.setOutputTime(key.itemTwo());
+		this.setID(null);
 	}
 	
+	/**
+	 * Sets the path to the source file
+	 * @param path The path to the source file on the file system
+	 */
 	public void setSourcePath(String path) {
 		this.sourcePath = path;
 	}
 	
+	/**
+	 * Sets the time that the file was generated
+	 * @param outputTime
+	 */
 	public void setOutputTime(String outputTime) {
 		this.outputTime = outputTime;
 	}
 	
+	/**
+	 * @return The ID of the information about the source in the database
+	 * @throws SQLException Thrown if the data in the database could not be retrieved
+	 */
 	public Integer getSourceID() throws SQLException {
 		if (this.sourceID == null) {
 			save();

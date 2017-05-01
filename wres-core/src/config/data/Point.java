@@ -11,12 +11,13 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 /**
- * @author ctubbs
- *
+ * Specification for a point in gridded data that should be selected
+ * @author Christopher Tubbs
  */
 public class Point extends ClauseConfig {
 
 	/**
+	 * Constructor
 	 * @param reader The XML Stream containing the point data
 	 */
 	public Point(XMLStreamReader reader) {
@@ -29,7 +30,7 @@ public class Point extends ClauseConfig {
 		
 		if (y == null)
 		{
-			y = "0";
+			y = "null";
 		}
 	}
 	
@@ -59,11 +60,17 @@ public class Point extends ClauseConfig {
 		return Arrays.asList("point");
 	}
 	
+	/**
+	 * @return String representation of the x index of the point to select
+	 */
 	public String x()
 	{
 		return x;
 	}
 	
+	/**
+	 * @return String representation of the y index of the point to select
+	 */
 	public String y()
 	{
 		return y;

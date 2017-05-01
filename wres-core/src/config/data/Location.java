@@ -10,11 +10,17 @@ import java.util.TreeMap;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import util.Utilities;
+
 /**
- * @author ctubbs
- *
+ * Details a location to query based on information in the configuration
+ * @author Christopher Tubbs
  */
 public final class Location extends ClauseConfig {
+    /**
+     * Constructor
+     * @param reader The XML Reader containing the specification for the Location
+     */
 	public Location(XMLStreamReader reader)
 	{
 		super(reader);
@@ -26,23 +32,23 @@ public final class Location extends ClauseConfig {
 		
 		if (tag_name.equalsIgnoreCase("lid"))
 		{
-			this.lid = tagValue(reader);
+			this.lid = Utilities.getXMLText(reader);
 		}
 		else if (tag_name.equalsIgnoreCase("comid"))
 		{
-			this.comid = tagValue(reader);
+			this.comid = Utilities.getXMLText(reader);
 		}
 		else if (tag_name.equalsIgnoreCase("gage_id"))
 		{
-			this.gage_id = tagValue(reader);
+			this.gage_id = Utilities.getXMLText(reader);
 		}
 		else if (tag_name.equalsIgnoreCase("huc"))
 		{
-			this.huc = tagValue(reader);
+			this.huc = Utilities.getXMLText(reader);
 		}
 		else if (tag_name.equalsIgnoreCase("name"))
 		{
-			this.name = tagValue(reader);
+			this.name = Utilities.getXMLText(reader);
 		}
 	}
 
@@ -57,26 +63,41 @@ public final class Location extends ClauseConfig {
 		return null;
 	}
 	
+	/**
+	 * @return The location id of the indicated feature
+	 */
 	public String lid()
 	{
 		return lid;
 	}
 	
+	/**
+	 * @return The comid of the indicated feature
+	 */
 	public String comid()
 	{
 		return comid;
 	}
 	
-	public String gage_id()
+	/**
+	 * @return The id of the gage for the indicated feature
+	 */
+	public String gageID()
 	{
 		return gage_id;
 	}
 	
+	/**
+	 * @return The HUC code for the indicated feature
+	 */
 	public String huc()
 	{
 		return huc;
 	}
 	
+	/**
+	 * @return The human friendly name for the feature
+	 */
 	public String name()
 	{
 		return name;

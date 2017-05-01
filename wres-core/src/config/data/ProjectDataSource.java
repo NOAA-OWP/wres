@@ -12,13 +12,15 @@ import javax.xml.stream.XMLStreamReader;
 import util.Utilities;
 
 /**
- * @author ctubbs
- *
+ * Specifies information about where to load data for a project
+ * 
+ * @author Christopher Tubbs
  */
 public class ProjectDataSource extends ConfigElement {
 
 	/**
-	 * @param reader
+	 * Constructor
+	 * @param reader The xml reader that contains the specifications for the data source
 	 */
 	public ProjectDataSource(XMLStreamReader reader) 
 	{
@@ -47,7 +49,7 @@ public class ProjectDataSource extends ConfigElement {
 	@Override
 	protected void interpret(XMLStreamReader reader) throws XMLStreamException 
 	{		
-		if (tagIs(reader, "directories"))
+		if (Utilities.tagIs(reader, "directories"))
 		{
 			while (reader.hasNext())
 			{
@@ -63,11 +65,11 @@ public class ProjectDataSource extends ConfigElement {
 				}
 			}
 		}
-		else if(tagIs(reader, "conditions"))
+		else if(Utilities.tagIs(reader, "conditions"))
 		{
 			conditions = new Conditions(reader);
 		}
-		else if (tagIs(reader, "variable"))
+		else if (Utilities.tagIs(reader, "variable"))
 		{
 			String variableName = null;
 			String variableUnit = null;
@@ -84,16 +86,21 @@ public class ProjectDataSource extends ConfigElement {
 			}	
 			addVariable(new Variable(variableName, variableUnit));
 		}
-		else if (tagIs(reader, "ensembles"))
+		else if (Utilities.tagIs(reader, "ensembles"))
 		{
 			parseEnsembles(reader);
 		}
-		else if (tagIs(reader, "features"))
+		else if (Utilities.tagIs(reader, "features"))
 		{
 			parseFeatures(reader);
 		}
 	}
 	
+	/**
+	 * Parses data relevant to identifying features to load
+	 * @param reader The XML Reader describing the features
+	 * @throws XMLStreamException An exception is thrown if there is trouble reading the database
+	 */
 	private void parseFeatures(XMLStreamReader reader) throws XMLStreamException 
 	{
 		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
@@ -118,19 +125,19 @@ public class ProjectDataSource extends ConfigElement {
 			
 			ClauseConfig feature = null;			
 			
-			if (tagIs(reader, "feature"))
+			if (Utilities.tagIs(reader, "feature"))
 			{
 				feature = new Location(reader);
 			}
-			else if (tagIs(reader, "range"))
+			else if (Utilities.tagIs(reader, "range"))
 			{
 				feature = new Range(reader);
 			}
-			else if (tagIs(reader, "polygon"))
+			else if (Utilities.tagIs(reader, "polygon"))
 			{
 				feature = new Polygon(reader);
 			}
-			else if (tagIs(reader, "point"))
+			else if (Utilities.tagIs(reader, "point"))
 			{
 				feature = new Point(reader);
 			}
@@ -139,6 +146,11 @@ public class ProjectDataSource extends ConfigElement {
 		}	
 	}
 
+	/**
+	 * Parses data detailing what ensembles to work with
+	 * @param reader The XML Reader containing the information to parse
+	 * @throws XMLStreamException An error will be thrown if the XML can't be properly read
+	 */
 	private void parseEnsembles(XMLStreamReader reader) throws XMLStreamException
 	{
 		for (int attribute_index = 0; attribute_index < reader.getAttributeCount(); ++attribute_index)
@@ -185,6 +197,10 @@ public class ProjectDataSource extends ConfigElement {
 		}
 	}
 	
+	/**
+	 * Adds a directory specification to the datasource
+	 * @param directory The directory to add
+	 */
 	private void addDirectory(Directory directory)
 	{
 		if (directory == null)
@@ -200,10 +216,14 @@ public class ProjectDataSource extends ConfigElement {
 		this.directories.add(directory);
 	}
 	
+	/**
+	 * Adds an ensemble specification to the data source
+	 * @param ensemble The ensemble specification to add
+	 */
 	private void addEnsemble(Ensemble ensemble)
 	{
-		if (ensemble == null || (ensemble.getEnsembleName().isEmpty() && 
-								 ensemble.getEnsemblememberID().isEmpty() && 
+		if (ensemble == null || (ensemble.getName().isEmpty() && 
+								 ensemble.getMemberID().isEmpty() && 
 								 ensemble.getQualifier().isEmpty()))
 		{
 			return;
@@ -217,11 +237,18 @@ public class ProjectDataSource extends ConfigElement {
 		this.ensembles.add(ensemble);
 	}
 	
+	/**
+	 * @return The number of specified ensembles
+	 */
 	public int ensembleCount()
 	{
 		return getEnsembles().size();
 	}
 	
+	/**
+	 * Adds specifications for a feature to identify
+	 * @param feature The specification for the feature to add
+	 */
 	private void addFeature(ClauseConfig feature)
 	{
 		if (feature == null)
@@ -237,6 +264,9 @@ public class ProjectDataSource extends ConfigElement {
 		this.features.add(feature);
 	}
 	
+	/**
+	 * @return The number of specified features
+	 */
 	public int featureCount()
 	{
 		if (this.features == null)
@@ -247,6 +277,9 @@ public class ProjectDataSource extends ConfigElement {
 		return this.features.size();
 	}
 	
+	/**
+	 * @return A list of stored directory specifications
+	 */
 	public List<Directory> getDirectories()
 	{
 		if (this.directories == null)
@@ -256,11 +289,17 @@ public class ProjectDataSource extends ConfigElement {
 		return directories;
 	}
 	
+	/**
+	 * @return The number of specified directories
+	 */
 	public int directoryCount()
 	{
 		return getDirectories().size();
 	}
 	
+	/**
+	 * @return A list of feature specifications
+	 */
 	public List<ClauseConfig> getFeatures()
 	{
 		if (this.features == null)
@@ -270,26 +309,41 @@ public class ProjectDataSource extends ConfigElement {
 		return this.features;
 	}
 	
+	/**
+	 * @return The conditions imposed upon this data
+	 */
 	public Conditions conditions()
 	{
 		return conditions;
 	}
 	
+	/**
+	 * @return Whether or not all features should be loaded
+	 */
 	public boolean loadAllFeatures()
 	{
 		return loadAllFeatures;
 	}
 	
+	/**
+	 * @return Whether or not all ensembles should be loaded
+	 */
 	public boolean loadAllEnsembles()
 	{
 		return loadAllEnsembles;
 	}
 	
+	/**
+	 * @return Whether or not to only load data if it doesn't exist
+	 */
 	public boolean loadLazily()
 	{
 		return lazyLoad;
 	}
 	
+	/**
+	 * @return A list of all ensemble specification
+	 */
 	public List<Ensemble> getEnsembles()
 	{
 		if (this.ensembles == null)
@@ -299,6 +353,9 @@ public class ProjectDataSource extends ConfigElement {
 		return ensembles;
 	}
 	
+	/**
+	 * @return A list of all variable specifications
+	 */
 	public List<Variable> getVariables()
 	{
 		if (this.variables == null)
@@ -308,11 +365,18 @@ public class ProjectDataSource extends ConfigElement {
 		return this.variables;
 	}
 	
+	/**
+	 * @return Returns the number of specified variables
+	 */
 	public int variableCount()
 	{
 		return getVariables().size();
 	}
 	
+	/**
+	 * Adds a specification for a variable for use in verification
+	 * @param variable The specification to add
+	 */
 	public void addVariable(Variable variable)
 	{
 		if (variable == null)
@@ -331,7 +395,7 @@ public class ProjectDataSource extends ConfigElement {
 		{
 			Variable variable = this.variables.get(0);
 			description = "Variable: ";
-			description += String.valueOf(variable.getName());
+			description += String.valueOf(variable.name());
 			description += ", measured in ";
 			description += String.valueOf(variable.getUnit());
 			description += System.lineSeparator();
@@ -344,7 +408,7 @@ public class ProjectDataSource extends ConfigElement {
 			for (Variable variable : this.variables)
 			{
 				description += "\tVariable: ";
-				description += String.valueOf(variable.getName());
+				description += String.valueOf(variable.name());
 				description += ", measured in ";
 				description += String.valueOf(variable.getUnit());
 				description += System.lineSeparator();

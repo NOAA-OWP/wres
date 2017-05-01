@@ -3,29 +3,36 @@
  */
 package config.data;
 
-import collections.TwoTuple;
-
 /**
- * @author ctubbs
- *
+ * A specification for a variable to perform queries against
+ * @author Christopher Tubbs
  */
-public class Variable extends TwoTuple<String, String> {
+public class Variable {
 
 	/**
-	 * @param name
-	 * @param unit
+	 * Constructor
+	 * @param name The name of the specified variable
+	 * @param unit The unit that the specified variable should be measured in
 	 */
 	public Variable(String name, String unit) {
-		super(name, unit);
+		this.variableName = name;
+		this.unitOfMeasurement = unit;
 	}
 
-	public String getName()
-	{
-		return this.itemOne();
+	/**
+	 * @return The name of the specified variable
+	 */
+	public String name() {
+		return this.variableName;
 	}
 	
-	public String getUnit()
-	{
-		return this.itemTwo();
+	/**
+	 * @return The unit that the specified variable is measured in
+	 */
+	public String getUnit() {
+		return this.unitOfMeasurement;
 	}
+	
+	private final String variableName;
+	private final String unitOfMeasurement;
 }

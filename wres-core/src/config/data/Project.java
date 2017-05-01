@@ -7,21 +7,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import util.Utilities;
 
 /**
- * @author ctubbs
- *
+ * Specification for what metrics to run on what data
+ * 
+ * @author Christopher Tubbs
  */
 public class Project extends ConfigElement {
 
 	/**
-	 * @param reader
-	 * @throws Exception 
+	 * Constructor
+	 * @param reader The XML reader containing the details about the project specification
+	 * @throws Exception An error is thrown if there is trouble reading the detabase
 	 */
 	public Project(XMLStreamReader reader) throws Exception 
 	{
@@ -33,19 +33,19 @@ public class Project extends ConfigElement {
 	 */
 	@Override
 	protected void interpret(XMLStreamReader reader) throws Exception {
-		if (tagIs(reader, "name"))
+		if (Utilities.tagIs(reader, "name"))
 		{
-			this.name = tagValue(reader);
+			this.name = Utilities.getXMLText(reader);
 		}
-		else if (tagIs(reader, "observations"))
+		else if (Utilities.tagIs(reader, "observations"))
 		{
 			this.observations = new ProjectDataSource(reader);
 		}
-		else if (tagIs(reader, "forecasts"))
+		else if (Utilities.tagIs(reader, "forecasts"))
 		{
 			this.forecasts = new ProjectDataSource(reader);
 		}
-		else if (tagIs(reader, "metrics"))
+		else if (Utilities.tagIs(reader, "metrics"))
 		{
 			parseMetrics(reader);
 		}
@@ -56,6 +56,11 @@ public class Project extends ConfigElement {
 		return Arrays.asList("project");
 	}
 	
+	/**
+	 * Pieces together information about metrics that are found within the specification
+	 * @param reader The XML Node containing information about metrics
+	 * @throws Exception An error is thrown if the XML could not be read correctly
+	 */
 	private void parseMetrics(XMLStreamReader reader) throws Exception
 	{
 		while (reader.hasNext())
@@ -67,13 +72,17 @@ public class Project extends ConfigElement {
 				break;
 			}
 
-			if (tagIs(reader, "metric"))
+			if (Utilities.tagIs(reader, "metric"))
 			{
 				addMetric(new Metric(reader));
 			}
 		}
 	}
 	
+	/**
+	 * Adds a created metric to the metric collection
+	 * @param metric The metric specification to add
+	 */
 	public void addMetric(Metric metric)
 	{
 		if (metric == null)
@@ -89,7 +98,12 @@ public class Project extends ConfigElement {
 		metrics.add(metric);
 	}
 
-	public Metric getMetrics(int index)
+	/**
+	 * Retrieves a specific metric
+	 * @param index The index of the metric to retrieve
+	 * @return A metric specification. Null is returned if the index was not valid
+	 */
+	public Metric getMetric(int index)
 	{
 		Metric metric = null;
 		
@@ -101,6 +115,9 @@ public class Project extends ConfigElement {
 		return metric;
 	}
 	
+	/**
+	 * @return The number of metrics to be run on the project
+	 */
 	public int metricCount()
 	{
 		if (metrics == null)
@@ -111,11 +128,19 @@ public class Project extends ConfigElement {
 		return metrics.size();
 	}
 	
+	/**
+	 * Details about the observation data that needs to be present to execute a project
+	 * @return Information about the data required for the project's observations
+	 */
 	public ProjectDataSource getObservations()
 	{
 		return observations;
 	}
 	
+	/**
+	 * Details about the forecast data that needs to be present to execute a project
+	 * @return Information about the data required for the project's forecasts
+	 */
 	public ProjectDataSource getForecasts()
 	{
 		return forecasts;

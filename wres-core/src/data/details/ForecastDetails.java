@@ -3,14 +3,13 @@
  */
 package data.details;
 
-import java.sql.SQLException;
-
-import data.SourceCache;
+// TODO: Uncomment once development on source saving/caching resumes
+//import data.SourceCache;
 import util.Database;
 
 /**
- * @author ctubbs
- *
+ * Important details about a forecast that predicted values for different variables over some span of time
+ * @author Christopher Tubbs
  */
 public final class ForecastDetails {
 	private final static String newline = System.lineSeparator();
@@ -19,19 +18,31 @@ public final class ForecastDetails {
 	private String forecast_date = null;
 	private Integer forecast_id = null;
 	
+	/**
+	 * The path to the file that contains data for the forecast
+	 * @param path The path to the forecast file on the file system
+	 */
 	public ForecastDetails(String path) {
 		this.sourcePath = path;
 	}
 	
-	public void set_forecast_date(String forecast_date)
+	/**
+	 * Sets the date of when the forecast was generated
+	 * @param forecastDate The value to update the current forecast date with
+	 */
+	public void setForecastDate(String forecastDate)
 	{
-		if (this.forecast_date == null || !this.forecast_date.equalsIgnoreCase(forecast_date))
+		if (this.forecast_date == null || !this.forecast_date.equalsIgnoreCase(forecastDate))
 		{
-			this.forecast_date = forecast_date;
+			this.forecast_date = forecastDate;
 			forecast_id = null;
 		}
 	}
 	
+	/**
+	 * Sets the path to the forecast file
+	 * @param path The path to the forecast file on the file system
+	 */
 	public void setSourcePath(String path) {
 		if (this.sourcePath == null || !this.sourcePath.equalsIgnoreCase(path)) {
 			this.sourcePath = path;
@@ -39,7 +50,11 @@ public final class ForecastDetails {
 		}
 	}
 	
-	public int get_forecast_id() throws Exception
+	/**
+	 * @return The ID of the forecast stored in the database
+	 * @throws Exception Thrown if the ID could not be loaded from the database
+	 */
+	public int getForecastID() throws Exception
 	{
 		if (forecast_id == null)
 		{
@@ -49,6 +64,11 @@ public final class ForecastDetails {
 		return forecast_id;
 	}
 	
+	/**
+	 * Saves the ID of the Forecast to the Forecast Details. The Forecast is added to the
+	 * database if it does not currently exist
+	 * @throws Exception Thrown if the ID could not be retrieved from the database
+	 */
 	public void save() throws Exception
 	{
 		String script = "";
@@ -73,23 +93,32 @@ public final class ForecastDetails {
 		script += "FROM wres.Forecast" + newline;
 		script += "WHERE forecast_date = '" + forecast_date + "';";
 		
-		forecast_id = Database.get_result(script, "forecast_id");	
+		forecast_id = Database.getResult(script, "forecast_id");
 		
-		// Uncomment when it is time to resume testing on ingest + source linking
-		
-		/*int sourceID = SourceCache.getSourceID(sourcePath, forecast_date);
-		
-		// Link the source to the forecast if there isn't one already
-		script = "";
-		script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + newline;
-		script += "SELECT " + this.forecast_id + ", " + sourceID + newline;
-		script += "WHERE NOT EXISTS (" + newline;
-		script += "		SELECT 1" + newline;
-		script += "		FROM wres.ForecastSource" + newline;
-		script += "		WHERE forecast_id = " + this.forecast_id + newline;
-		script += "			AND source_id = " + sourceID + newline;
-		script += ");";
-		
-		Database.execute(script);*/
+		saveForecastSource();
+	}
+	
+	/**
+	 * Links the forecast the information about the source of its data in the database
+	 * @throws Exception Thrown if the Forecast and its source could not be properly linked
+	 */
+	private void saveForecastSource() throws Exception {
+        
+        // Uncomment when it is time to resume testing on ingest + source linking
+        /*
+        int sourceID = SourceCache.getSourceID(sourcePath, forecast_date);
+                
+        // Link the source to the forecast if there isn't one already
+        String script = "";
+        script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + newline;
+        script += "SELECT " + this.forecast_id + ", " + sourceID + newline;
+        script += "WHERE NOT EXISTS (" + newline;
+        script += "     SELECT 1" + newline;
+        script += "     FROM wres.ForecastSource" + newline;
+        script += "     WHERE forecast_id = " + this.forecast_id + newline;
+        script += "         AND source_id = " + sourceID + newline;
+        script += ");";
+        
+        Database.execute(script);*/
 	}
 }

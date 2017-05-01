@@ -3,37 +3,48 @@
  */
 package config.data;
 
-import collections.ThreeTuple;
-
 /**
- * @author ctubbs
- *
+ * Specifications for how results need to be output
+ * @author Christopher Tubbs
  */
-public class OutputType extends ThreeTuple<Boolean, String, String> {
+public class OutputType {
 
 	/**
-	 * 
+	 * Constructor
 	 * @param shouldSave Whether or not this type of output should be saved out
 	 * @param path The path to write to
 	 * @param fileFormat the format to save the file to
 	 */
 	public OutputType(Boolean shouldSave, String path, String fileFormat) {
-		super(shouldSave, path, fileFormat);
+		this.shouldSave = shouldSave;
+		this.path = path;
+		this.fileFormat = fileFormat;
 	}
 
+	/**
+	 * @return Whether or not this output should be save to the file system on the next run
+	 */
 	public Boolean shouldSave()
 	{
-		return getItemOne();
+		return this.shouldSave && 
+		       this.path != null && !this.path.isEmpty() && 
+		       this.fileFormat != null && !this.fileFormat.isEmpty();
 	}
 	
+	/**
+	 * @return The path where the output should be saved
+	 */
 	public String path()
 	{
-		return getItemTwo();
+		return this.path;
 	}
 	
+	/**
+	 * @return The format in which the file should be saved
+	 */
 	public String fileFormat()
 	{
-		return getItemThree();
+		return this.fileFormat;
 	}
 	
 	@Override
@@ -57,4 +68,8 @@ public class OutputType extends ThreeTuple<Boolean, String, String> {
 		
 		return description;
 	}
+	
+	private final boolean shouldSave;
+	private final String path;
+	private final String fileFormat;
 }

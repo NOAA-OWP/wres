@@ -10,6 +10,8 @@ import java.util.function.Function;
 
 /**
  * A collection of Metrics that may be performed on selected data
+ * 
+ * @author Christopher Tubbs
  */
 public final class Metrics {
 	
@@ -52,4 +54,30 @@ public final class Metrics {
 		};
 	}
 
+	/**
+	 * Creates the "meanError" function to run on selected data
+	 * @return The function to perform mean error calculations on a set of data containing the columns
+	 * "forecast" and "observation".
+	 */
+	public static BiFunction<ResultSet, Function<Double, Double>, Double> meanError() {
+	    return (ResultSet dataset, Function<Double, Double> scaleFunc) -> {
+	        Double sum = 0.0;
+	        Double intermediateSum = 0.0;
+	        int valueCount = 0;
+	        
+	        try {
+	            while (dataset.next()) {
+	                intermediateSum = (dataset.getFloat("forecast") * 1.0) - (dataset.getFloat("observation") * 1.0);
+	                sum += scaleFunc.apply(intermediateSum);
+	                valueCount++;
+	            }
+	        } catch (SQLException error) {
+	            error.printStackTrace();
+	        }
+	        
+	        
+	        
+	        return sum / valueCount;
+	    };
+	}
 }

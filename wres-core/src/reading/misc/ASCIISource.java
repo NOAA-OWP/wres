@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,6 +22,7 @@ import data.Variable;
  * @author ctubbs
  *
  */
+@SuppressWarnings("deprecation")
 public class ASCIISource extends BasicSource 
 {
     private static int MAX_INSERTS = 100;
@@ -44,12 +44,12 @@ public class ASCIISource extends BasicSource
 		{
 			String location_name = Paths.get(get_filename()).getFileName().toString().split("_")[0];
 			String load_script = String.format(get_observationlocation_id_script, location_name);
-			observationlocation_id = Database.get_result(load_script, "observationlocation_id");
+			observationlocation_id = Database.getResult(load_script, "observationlocation_id");
 		}
 		return observationlocation_id;
 	}
-	
-	private Integer get_variable_id()
+
+    private Integer get_variable_id() throws SQLException
 	{
 		if (variable_id == null)
 		{
@@ -68,6 +68,7 @@ public class ASCIISource extends BasicSource
 		return variable_name;
 	}
 
+	@Override
 	public void save_forecast() throws SQLException {
 		Path path = Paths.get(get_filename());
 		
@@ -82,7 +83,7 @@ public class ASCIISource extends BasicSource
 			clear_statement = String.format(clear_statement, absolute_path, absolute_path);
 			Database.execute(clear_statement);
 			
-			System.out.println("All previous data for this data source has been removed. Now saving forecast... (" + stopwatch.get_formatted_duration() + ")");
+			System.out.println("All previous data for this data source has been removed. Now saving forecast... (" + stopwatch.getFormattedDuration() + ")");
 
 			float current_step = 99999999.9f;
 			String line = "";
@@ -90,14 +91,14 @@ public class ASCIISource extends BasicSource
 			int forecast_id = 0;
             int insert_count = 0;
             HashMap<Integer, HashMap<String, String[]>> forecasted_values = new HashMap<Integer, HashMap<String, String[]>>();
-			HashMap<String, String[]> hourly_values = null;
+			HashMap<String, String[]> hourly_values = new HashMap<String, String[]>();
 			while ((line = reader.readLine()) != null)
 			{
 				String[] ascii = line.split(" ");
 				float step = Float.parseFloat(ascii[2]);
 				if (current_step > step)
 				{									
-					if (hourly_values != null)
+					if (hourly_values.size() > 0)
 					{
 						forecasted_values.put(forecast_id, hourly_values);
 						insert_count++;
@@ -127,7 +128,7 @@ public class ASCIISource extends BasicSource
 			}
 			
 			Executor.complete();
-			System.out.println("Lines distributed. Currently saving to the database... (" + stopwatch.get_formatted_duration() + ")");
+			System.out.println("Lines distributed. Currently saving to the database... (" + stopwatch.getFormattedDuration() + ")");
 		}
 		catch (IOException exception)
 		{
@@ -148,7 +149,6 @@ public class ASCIISource extends BasicSource
 		int forecast_id = 0;
 		String save_script = "No SQL statement has been written yet.";
 		String[] ascii = line.split("\\s+");
-		ResultSet results = null;
 
 		try {
 			String lead = ascii[2].replace(".0", "");
@@ -164,7 +164,7 @@ public class ASCIISource extends BasicSource
 
 
 			save_script = get_save_forecast_script(formatted_date);
-			forecast_id = Database.get_result(save_script, "forecast_id");
+			forecast_id = Database.getResult(save_script, "forecast_id");
 		} 
 		catch (SQLException error)
 		{
@@ -172,13 +172,7 @@ public class ASCIISource extends BasicSource
 			System.out.println(save_script);
 			throw error;
 		}
-		finally
-		{
-			if (results != null)
-			{
-				results.close();
-			}
-		}
+		
 		return forecast_id;
 	}
 	
@@ -187,8 +181,9 @@ public class ASCIISource extends BasicSource
 	 * @return The script needed to insert a new forecast
 	 * 
 	 * TODO: Move the script to a separate file so that it is easier to read and may be edited without recompiling
+	 * @throws SQLException An exception is thrown if the id for the variable could not be loaded
 	 */
-	private String get_save_forecast_script(String formatted_date)
+	private String get_save_forecast_script(String formatted_date) throws SQLException
 	{
 		String script = save_forecast_script;
 		script = String.format(script, 
