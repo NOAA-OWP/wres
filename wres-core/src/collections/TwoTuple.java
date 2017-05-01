@@ -5,6 +5,8 @@ package collections;
 
 /**
  * An immutable pairing of two values
+ * 
+ * @author Christopher Tubbs
  */
 public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implements Group<TwoTuple<T, U>>{
 
@@ -63,4 +65,22 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 	public TwoTuple<T, U> copy() {
 		return new TwoTuple<T, U>(itemOne, itemTwo);
 	}
+
+    @Override
+    public float similarity(TwoTuple<T, U> other)
+    {
+        byte similarity = 0;
+        
+        if ((this.itemOne() == null && other.itemOne() == null) ||
+            (this.itemOne() != null && this.itemOne().equals(other.itemOne()))) {
+            similarity++;
+        }
+        
+        if ((this.itemTwo() == null && other.itemTwo() == null) || 
+            (this.itemTwo() != null && this.itemTwo().equals(other.itemTwo()))) {
+            similarity++;
+        }
+
+        return similarity / 2F;
+    }
 }

@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory;
 import util.Database;
 
 /**
- * @author ctubbs
- *
+ * Executes the database copy operation for every value in the passed in string
+ * @author Christopher Tubbs
  */
 public class CopyExecutor implements Runnable
 {
@@ -20,9 +20,12 @@ public class CopyExecutor implements Runnable
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CopyExecutor.class);
 
-	/**
-	 * 
-	 */
+    /**
+     * The Constructor
+     * @param table_definition The definition of the table and values to insert and in what order
+     * @param values Newline delimited string containing values delimited by the delimiter that adheres to the table definition
+     * @param delimiter The symbol separating each value in each line of the values
+     */
 	public CopyExecutor(String table_definition, String values, String delimiter) 
 	{
 		this.table_definition = table_definition;
@@ -40,7 +43,6 @@ public class CopyExecutor implements Runnable
 		                 table_definition, values, delimiter);
 			Database.copy(table_definition, values, delimiter);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}		
 	}

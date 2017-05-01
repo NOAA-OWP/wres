@@ -3,40 +3,57 @@
  */
 package config.data;
 
-import collections.FourTuple;
-
 /**
- * @author ctubbs
- *
+ * Specification for how to aggregate values in a metric
+ * @author Christopher Tubbs
  */
-public class Aggregation extends FourTuple<Boolean, Byte, String, String> {
+public class Aggregation {
 
 	/**
-	 * 
+	 * Constructor
+	 * @param aggregate Whether or not to aggregate values
+	 * @param range The span of the following unit to aggregate
+	 * @param unit The unit with which to aggregate over
+	 * @param mode Identifier for the method of aggregation
 	 */
 	public Aggregation(Boolean aggregate, Byte range, String unit, String mode) 
 	{
-		super(aggregate, range, unit, mode);
+	    this.performAggregation = aggregate;
+	    this.aggregationRange = range;
+	    this.aggregationUnit = unit;
+	    this.aggregationMode = mode;
 	}
 
-	public Boolean get_aggregate()
+	/**
+	 * @return Whether or not to perform an aggregation
+	 */
+	public Boolean performAggregation()
 	{
-		return getItemOne();
+		return this.performAggregation;
 	}
 	
-	public Byte get_range()
+	/**
+	 * @return The range of aggregation
+	 */
+	public Byte aggregationRange()
 	{
-		return getItemTwo();
+		return this.aggregationRange;
 	}
 	
-	public String get_unit()
+	/**
+	 * @return The unit of the range for the aggregation
+	 */
+	public String aggregationUnit()
 	{
-		return getItemThree();
+		return this.aggregationUnit;
 	}
 	
-	public String get_mode()
+	/**
+	 * @return The method to use for aggregation
+	 */
+	public String aggregationMode()
 	{
-		return getItemFour();
+		return this.aggregationMode;
 	}
 	
 	@Override
@@ -45,20 +62,25 @@ public class Aggregation extends FourTuple<Boolean, Byte, String, String> {
 		description += System.lineSeparator();
 		
 		description += "\tAggregate Data: ";
-		description += String.valueOf(get_aggregate());
+		description += String.valueOf(performAggregation());
 		description += System.lineSeparator();
 		
 		description += "\tRange: ";
-		description += String.valueOf(get_range());
+		description += String.valueOf(aggregationMode());
 		description += " ";
-		description += String.valueOf(get_unit());
+		description += String.valueOf(aggregationUnit());
 		description += System.lineSeparator();
 		
 		description += "\tAggregation Mode: ";
-		description += get_mode();
+		description += String.valueOf(aggregationMode());
 		description += System.lineSeparator();
 		
 		
 		return description;
 	}
+	
+	private final boolean performAggregation;
+	private final byte aggregationRange;
+	private final String aggregationUnit;
+	private final String aggregationMode;
 }

@@ -1,34 +1,38 @@
 package config.data;
 
-import collections.ThreeTuple;
-
-public final class Ensemble extends ThreeTuple<String, String, String>
-{
+/**
+ * Represents information about an Ensemble from the configuration
+ * @author Christopher Tubbs
+ *
+ */
+public final class Ensemble {
 	public Ensemble(String ensemble_name, String ensemblemember_id, String qualifier) {
-		super(ensemble_name, ensemblemember_id, qualifier);
+		this.name = ensemble_name;
+		this.memberID = ensemblemember_id;
+		this.qualifier = qualifier;
 	}
 	
-	public String getEnsembleName()
+	public String getName()
 	{
-		return getItemOne();
+		return this.name;
 	}
 	
-	public String getEnsemblememberID()
+	public String getMemberID()
 	{
-		return getItemTwo();
+		return this.memberID;
 	}
 	
 	public String getQualifier()
 	{
-		return getItemThree();
+		return this.qualifier;
 	}
 	
 	@Override
 	public String toString() {
 		String description = "Ensemble - Name: '";
-		description += getEnsembleName();
+		description += getName();
 		description += "', Member ID: ";
-		description += getEnsemblememberID();
+		description += getMemberID();
 		description += ", Qualifier: '";
 		description += getQualifier();
 		description += "'";
@@ -36,4 +40,8 @@ public final class Ensemble extends ThreeTuple<String, String, String>
 		
 		return description;
 	}
+	
+	private final String name;
+	private final String memberID;
+	private final String qualifier;
 }

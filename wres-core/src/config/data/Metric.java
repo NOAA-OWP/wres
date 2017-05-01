@@ -10,19 +10,22 @@ import java.util.TreeMap;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import util.Utilities;
+
 /**
- * @author ctubbs
- *
+ * The specification for a metric and the information necessary to retrieve details
+ * for it from the database
+ * @author Christopher Tubbs
  */
 public class Metric extends ClauseConfig {
 
 	/**
-	 * @param reader
+	 * Constructor
+	 * @param reader The XML Node containing data about the metric
 	 * @throws Exception 
 	 */
 	public Metric(XMLStreamReader reader) throws Exception {
 		super(reader);
-		//validate();
 	}
 
 	/* (non-Javadoc)
@@ -35,7 +38,7 @@ public class Metric extends ClauseConfig {
 		
 		if (tag_name.equalsIgnoreCase("name"))
 		{
-			this.name = tagValue(reader);
+			this.name = Utilities.getXMLText(reader);
 		}
 		else if (tag_name.equalsIgnoreCase("output"))
 		{
@@ -61,25 +64,6 @@ public class Metric extends ClauseConfig {
 	@Override
 	protected List<String> tagNames() {
 		return Arrays.asList("metric");
-	}
-	
-	private void validate() throws Exception
-	{
-		if (metric_output == null || forecasts == null || observations == null)
-		{
-			String message = "The project with the name '";
-			if (name == null)
-			{
-				message += "[unnamed project]";
-			}
-			else
-			{
-				message += name;
-			}
-			
-			message += "' has not been properly configured and cannot be completed. Please reconfigure.";
-			throw new Exception(message);
-		}
 	}
 	
 	@Override

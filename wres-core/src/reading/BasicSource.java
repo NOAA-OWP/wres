@@ -11,12 +11,14 @@ import java.nio.file.Paths;
  */
 public abstract class BasicSource {
 	
-	public void save_forecast() throws Exception
+	@SuppressWarnings("static-method")
+    public void save_forecast() throws Exception
 	{
 		throw new Exception("Forecasts may not be saved using this type of source.");
 	}
 	
-	public void save_observation() throws Exception
+	@SuppressWarnings("static-method")
+    public void save_observation() throws Exception
 	{
 		throw new Exception("Observations may not be saved using this type of source.");
 	}

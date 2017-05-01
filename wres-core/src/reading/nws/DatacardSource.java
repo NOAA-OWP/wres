@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
 import concurrency.Executor;
 import data.Variable;
 
@@ -27,6 +26,7 @@ import util.Database;
  * @author ctubbs
  *
  */
+@SuppressWarnings("deprecation")
 public class DatacardSource extends BasicSource {
 
     private static int MAX_INSERTS = 100;
@@ -162,7 +162,7 @@ public class DatacardSource extends BasicSource {
 		missing_data_symbol = symbol;
 	}
 	
-	public String get_accumulated_data_symbol(String symbol)
+	public String get_accumulated_data_symbol()
 	{
 		return accumulated_data_symbol;
 	}
@@ -182,7 +182,7 @@ public class DatacardSource extends BasicSource {
 		time_series_identifier = identifier.trim();
 	}
 	
-	private Integer get_variable_id()
+	private Integer get_variable_id() throws SQLException
 	{
 		return Variable.get_variable_id(get_variable_name());
 	}
@@ -241,7 +241,7 @@ public class DatacardSource extends BasicSource {
 				throw new Exception(String.format(message, get_filename()));
 			}					
 			
-			String observation_id = create_observation();
+			String observation_id = createObservation();
 			
 			OffsetDateTime datetime = OffsetDateTime.of(get_first_year(), get_first_month(), 1, 0, 0, 0, 0, ZoneOffset.UTC);
 
@@ -291,15 +291,14 @@ public class DatacardSource extends BasicSource {
 		}		
 	}
 	
-	private String create_observation() throws SQLException
+	private String createObservation() throws SQLException
 	{
 		int observation_id = 0;
-		ResultSet results = null;
 		String save_script = get_save_observation_script();
 		
 		try {
-			clear_stale_observations();
-			observation_id = Database.get_result(save_script, "observation_id");
+			clearStaleObservations();
+			observation_id = Database.getResult(save_script, "observation_id");
 		}
 		catch (SQLException error)
 		{
@@ -307,23 +306,22 @@ public class DatacardSource extends BasicSource {
 			System.out.println(save_script);
 			throw error;
 		}
-		finally
-		{
-			if (results != null)
-			{
-				results.close();
-			}
-		}
+
 		return String.valueOf(observation_id);
 	}
 	
-	private void clear_stale_observations() throws SQLException
+	private void clearStaleObservations() throws SQLException
 	{
 		String clear_script = "DELETE FROM Observation WHERE source = '" + get_absolute_filename() + "';";
 		Database.execute(clear_script);
 	}
 	
-	private String get_save_observation_script()
+	/**
+	 * Returns a specialized script used to save the observation
+	 * @return The script to save the observation
+	 * @throws SQLException
+	 */
+	private String get_save_observation_script() throws SQLException
 	{
 		//TODO: Stop hard coding the measurement unit id
 		return String.format(save_observation_script, 

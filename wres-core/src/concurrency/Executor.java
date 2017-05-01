@@ -12,9 +12,10 @@ import config.SystemConfig;
 
 /**
  * The static thread executor 
+ * 
+ * @author Christopher Tubbs
  */
-public final class Executor 
-{
+public final class Executor {
 	// The underlying thread executor
 	private static ExecutorService service = createService();
 	
@@ -22,13 +23,12 @@ public final class Executor
 	 * Creates a new thread executor
 	 * @return A new thread executor that may run the maximum number of configured threads
 	 */
-	private static final ExecutorService createService()
-	{
+	private static final ExecutorService createService() {
 		if (service != null)
 		{
 			service.shutdown();
 		}
-		return Executors.newFixedThreadPool(SystemConfig.instance().get_maximum_thread_count());
+		return Executors.newFixedThreadPool(SystemConfig.maximumThreadCount());
 	}
 	
 	/**

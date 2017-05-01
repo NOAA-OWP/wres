@@ -8,63 +8,92 @@ import java.sql.SQLException;
 import util.Database;
 
 /**
- * @author ctubbs
- *
+ * Defines details about an Ensemble linked to a specific forecast
+ * @author Christopher Tubbs
  */
 public final class ForecastEnsembleDetails {
 	private static final String newline = System.lineSeparator();
 	
-	private Integer forecast_id = null;
-	private Integer ensemble_id = null;
-	private Integer variableposition_id = null;
-	private Integer measurementunit_id = null;
-	private Integer forecastensemble_id = null;
+	private Integer forecastID = null;
+	private Integer ensembleID = null;
+	private Integer variablePositionID = null;
+	private Integer measurementUnitID = null;
+	private Integer forecastEnsembleID = null;
 	
-	public void setForecastID(int forecast_id)
+	/**
+	 * Sets the ID of the forecast. The ID of the ForecastEnsemble is invalidated if the 
+	 * the ForecastEnsemble's forecast changes
+	 * @param forecast_id The ID of the new Forecast
+	 */
+	public void setForecastID(Integer forecast_id)
 	{
-		if (this.forecast_id == null || this.forecast_id != forecast_id)
+		if (this.forecastID != null && this.forecastID != forecast_id)
 		{
-			this.forecast_id = forecast_id;
-			this.forecastensemble_id = null;
+			this.forecastEnsembleID = null;
 		}
+        this.forecastID = forecast_id;
 	}
 	
-	public void setEnsembleID(int ensemble_id)
+	/**
+	 * Sets the ID of the Ensemble that the ForecastEnsemble is linked to. The ID of the ForecastEnsemble
+	 * is invalidated if the ID of the Ensemble it is linked to changes
+	 * @param ensemble_id The ID of the new ensemble
+	 */
+	public void setEnsembleID(Integer ensemble_id)
 	{
-		if (this.ensemble_id == null || this.ensemble_id != ensemble_id)
+		if (this.ensembleID != null && this.ensembleID != ensemble_id)
 		{
-			this.ensemble_id = ensemble_id;
-			this.forecastensemble_id = null;
+			this.forecastEnsembleID = null;
 		}
+        this.ensembleID = ensemble_id;
 	}
 	
+	/**
+	 * Sets the ID of the variable position for the ForecastEnsemble. The ID of the ForecastEnsemble is
+	 * invalidated if the ID of the linked VariablePosition changes
+	 * @param variableposition_id The ID of the new variable position
+	 */
 	public void setVariablePositionID(int variableposition_id)
 	{
-		if (this.variableposition_id == null || this.variableposition_id != variableposition_id)
+		if (this.variablePositionID != null && this.variablePositionID != variableposition_id)
 		{
-			this.variableposition_id = variableposition_id;
-			this.forecastensemble_id = null;
+			this.forecastEnsembleID = null;
 		}
+        this.variablePositionID = variableposition_id;
 	}
 	
+	/**
+	 * Sets the ID of the unit of measurement connected to the ensemble for this forecast. The ID of the ForecastEnsemble
+	 * is invalidated if the ID of the linked Measurement Unit changes
+	 * @param measurementunit_id The ID of the new unit of measurement
+	 */
 	public void setMeasurementUnitID(int measurementunit_id)
 	{
-		if (this.measurementunit_id == null || this.measurementunit_id != measurementunit_id)
+		if (this.measurementUnitID != null && this.measurementUnitID != measurementunit_id)
 		{
-			this.measurementunit_id = measurementunit_id;
-			this.forecastensemble_id = null;
+			this.forecastEnsembleID = null;
 		}
+        this.measurementUnitID = measurementunit_id;
 	}
 	
+	/**
+	 * @return Returns the ID in the database corresponding to this combination of Forecast Ensemble details 
+	 * @throws SQLException Thrown if the value could not be retrieved from the database
+	 */
 	public int getForecastEnsembleID() throws SQLException 
 	{
-		if (forecastensemble_id == null)
+		if (forecastEnsembleID == null)
 		{
 			save();
 		}
-		return forecastensemble_id;
+		return forecastEnsembleID;
 	}
 	
+	/**
+	 * Updates the ID for the ensemble for the forecast from the database. If it doesn't exist, it is added and the new ID is
+	 * saved.
+	 * @throws SQLException Thrown if the value could not be loaded from the database
+	 */
 	public void save() throws SQLException
 	{
 		String script = "";
@@ -72,17 +101,17 @@ public final class ForecastEnsembleDetails {
 		script += "WITH new_forecastensemble AS" + newline;
 		script += "(" + newline;
 		script += "		INSERT INTO wres.forecastensemble (forecast_id, variableposition_id, ensemble_id, measurementunit_id)" + newline;
-		script += "		SELECT " + forecast_id + "," + newline;
-		script += "			" + variableposition_id + "," + newline;
-		script += "			" + ensemble_id + "," + newline;
-		script += "			" + measurementunit_id + newline;
+		script += "		SELECT " + forecastID + "," + newline;
+		script += "			" + variablePositionID + "," + newline;
+		script += "			" + ensembleID + "," + newline;
+		script += "			" + measurementUnitID + newline;
 		script += "		WHERE NOT EXISTS (" + newline;
 		script += "			SELECT 1" + newline;
 		script += "			FROM wres.forecastensemble" + newline;
-		script += "			WHERE forecast_id = " + forecast_id + newline;
-		script += "				AND variableposition_id = " + variableposition_id + newline;
-		script += "				AND ensemble_id = " + ensemble_id + newline;
-		script += "				AND measurementunit_id = " + measurementunit_id + newline;
+		script += "			WHERE forecast_id = " + forecastID + newline;
+		script += "				AND variableposition_id = " + variablePositionID + newline;
+		script += "				AND ensemble_id = " + ensembleID + newline;
+		script += "				AND measurementunit_id = " + measurementUnitID + newline;
 		script += "		)" + newline;
 		script += "		RETURNING forecastensemble_id" + newline;
 		script += ")" + newline;
@@ -93,11 +122,11 @@ public final class ForecastEnsembleDetails {
 		script += "";
 		script += "SELECT forecastensemble_id" + newline;
 		script += "FROM wres.forecastensemble" + newline;
-		script += "WHERE forecast_id = " + forecast_id + newline;
-		script += "		AND variableposition_id = " + variableposition_id + newline;
-		script += "		AND ensemble_id = " + ensemble_id + newline;
-		script += "		AND measurementunit_id = " + measurementunit_id + ";";
+		script += "WHERE forecast_id = " + forecastID + newline;
+		script += "		AND variableposition_id = " + variablePositionID + newline;
+		script += "		AND ensemble_id = " + ensembleID + newline;
+		script += "		AND measurementunit_id = " + measurementUnitID + ";";
 		
-		forecastensemble_id = Database.get_result(script, "forecastensemble_id");
+		forecastEnsembleID = Database.getResult(script, "forecastensemble_id");
 	}
 }

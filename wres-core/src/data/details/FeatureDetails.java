@@ -7,14 +7,13 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import util.Database;
 
 /**
- * @author ctubbs
- *
+ * Defines the important details of a feature as stored in the database
+ * @author Christopher Tubbs
  */
 public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 {
@@ -23,6 +22,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 	public String station_name = null;
 	private Integer feature_id = null;
 	
+	// A concurrent mapping of the feature to its index for a variable
 	private ConcurrentSkipListMap<Integer, Integer> variablePositions = new ConcurrentSkipListMap<Integer, Integer>();
 	
 	/**
@@ -38,7 +38,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		{			
 			String script = "SELECT wres.get_variableposition_id(" + getId() + ", " + variableID + ") AS variableposition_id;";
 
-			variablePositions.put(variableID, Database.get_result(script, "variableposition_id"));
+			variablePositions.put(variableID, Database.getResult(script, "variableposition_id"));
 		}
 		
 		return variablePositions.get(variableID);
@@ -76,7 +76,11 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		return getVariablePositionID(variableID);
 	}
 	
-	public void set_lid(String lid)
+	/**
+	 * Sets the LID of the Feature
+	 * @param lid The value used to update the current LID with
+	 */
+	public void setLID(String lid)
 	{
 		if (this.lid == null || !this.lid.equalsIgnoreCase(lid))
 		{
@@ -85,7 +89,11 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		}
 	}
 	
-	private String get_station_name()
+	/**
+	 * @return The name of this Feature's corresponding station in a format that may be used
+	 * to query the database
+	 */
+	private String stationName()
 	{
 		String name = null;
 		
@@ -145,7 +153,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		script += "				FROM wres.Feature" + newline;
 		script += "			), 0)," + newline;
 		script += "			'" + lid + "'," + newline;
-		script += "			" + get_station_name() + newline;
+		script += "			" + stationName() + newline;
 		script += "		WHERE NOT EXISTS (" + newline;
 		script += "			SELECT 1" + newline;
 		script += "			FROM wres.Feature" + newline;
@@ -165,6 +173,10 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		return script;
 	}
 
+	/**
+	 * Loads all variable positions from the database and stores them in the store of all positions mapped to IDs of variables
+	 * @throws SQLException Thrown if the database cannot adequately load values from the database
+	 */
 	public void loadVariablePositionIDs() throws SQLException {
 		Connection connection = Database.getConnection();
 		Statement loadQuery = connection.createStatement();

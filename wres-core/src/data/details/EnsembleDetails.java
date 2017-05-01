@@ -8,7 +8,8 @@ import java.sql.SQLException;
 import collections.Triplet;
 
 /**
- * Describes basic information used to define 
+ * Describes basic information used to define an Ensemble from the database
+ * @author Christopher Tubbs
  */
 public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Triplet<String, String, String>>{
 	

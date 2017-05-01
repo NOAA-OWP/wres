@@ -9,6 +9,8 @@ import util.Stopwatch;
 
 /**
  * Saves the observation at the given location
+ * 
+ * @author Christopher Tubbs
  */
 public class ObservationSaver implements Runnable {
 
@@ -35,7 +37,7 @@ public class ObservationSaver implements Runnable {
 			System.out.println(String.format("Attempting to save '%s' to the database...", this.filepath));
 			source.save_observation();
 			watch.stop();
-			System.out.println("'" + this.filepath + "' has been saved to the database after " + watch.get_formatted_duration());
+			System.out.println("'" + this.filepath + "' has been saved to the database after " + watch.getFormattedDuration());
 		} catch (Exception e) {
 			System.err.println("Failed to save '" + String.valueOf(filepath) + " as an observation.");
 			e.printStackTrace();

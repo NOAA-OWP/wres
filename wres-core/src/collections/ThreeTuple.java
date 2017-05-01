@@ -5,6 +5,8 @@ package collections;
 
 /**
  * An immutable pairing of three values
+ * 
+ * @author Christopher Tubbs
  */
 public class ThreeTuple<T extends Comparable<T>, U extends Comparable<U>, V extends Comparable<V>> implements Group<ThreeTuple<T, U, V>>{
 
@@ -21,27 +23,27 @@ public class ThreeTuple<T extends Comparable<T>, U extends Comparable<U>, V exte
 	 * Returns the first value
 	 * @return The first value
 	 */
-	public T getItemOne()
+	public T itemOne()
 	{
-		return itemOne;
+		return this.itemOne;
 	}
 	
 	/**
 	 * Returns the second value
 	 * @return The second value
 	 */
-	public U getItemTwo()
+	public U itemTwo()
 	{
-		return itemTwo;
+		return this.itemTwo;
 	}
 	
 	/**
 	 * Returns the third value
 	 * @return The third value
 	 */
-	public V getItemThree()
+	public V itemThree()
 	{
-		return itemThree;
+		return this.itemThree;
 	}
 
 	@Override
@@ -80,4 +82,27 @@ public class ThreeTuple<T extends Comparable<T>, U extends Comparable<U>, V exte
 	public ThreeTuple<T, U, V> copy() {
 		return new ThreeTuple<T, U, V>(itemOne, itemTwo, itemThree);
 	}
+
+    @Override
+    public float similarity(ThreeTuple<T, U, V> other)
+    {
+        byte similarity = 0;
+        
+        if ((this.itemOne() == null && other.itemOne() == null) ||
+            (this.itemOne() != null && this.itemOne().equals(other.itemOne()))) {
+            similarity++;
+        }
+        
+        if ((this.itemTwo() == null && other.itemTwo() == null) || 
+            (this.itemTwo() != null && this.itemTwo().equals(other.itemTwo()))) {
+            similarity++;
+        }
+        
+        if ((this.itemThree() == null && other.itemThree() == null) ||
+            (this.itemThree().equals(other.itemThree()))) {
+            similarity++;
+        }
+
+        return similarity / 3F;
+    }
 }

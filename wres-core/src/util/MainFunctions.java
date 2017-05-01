@@ -9,7 +9,6 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +23,6 @@ import java.util.function.Function;
 import reading.BasicSource;
 import reading.SourceReader;
 import config.ProjectConfig;
-import config.SystemConfig;
 import config.data.Project;
 
 import java.util.concurrent.Future;
@@ -36,6 +34,7 @@ import data.Variable;;
  * @author ctubbs
  *
  */
+@SuppressWarnings("deprecation")
 public final class MainFunctions {
 
 	// Clean definition of the newline character for the system
@@ -79,7 +78,6 @@ public final class MainFunctions {
 		prototypes.put("connecttodb", connectToDB());
 		prototypes.put("saveforecast", saveForecast());
 		prototypes.put("saveobservation", saveObservation());
-		prototypes.put("getpairs", getPairs());
 		prototypes.put("querynetcdf", queryNetCDF());
 		prototypes.put("commands", print_commands());
 		prototypes.put("--help", print_commands());
@@ -277,91 +275,12 @@ public final class MainFunctions {
 	{
 		return (String[] args) -> {
 			try {
-				String version = Database.get_result("Select version() AS version_detail", "version_detail"); 
+				String version = Database.getResult("Select version() AS version_detail", "version_detail"); 
 				System.out.println(version);
 				System.out.println("Successfully connected to the database");
 			} catch (SQLException e) {
 				System.out.println("Could not connect to database because:");
 				e.printStackTrace();
-			}
-		};
-	}
-	
-	@Deprecated
-	/**
-	 * Creates the "getPairs" method
-	 * @deprecated The query involved retrieves data from an outdated schema. Considering that pairing operations are more complicated now,
-	 * pairing definitions will need to be defined within a separate project file.
-	 * @return A method that will gather and pair every value for a given variable
-	 */
-	private static final Consumer<String[]> getPairs()
-	{
-		return (String[] args) -> {
-			if (args.length > 0)
-			{
-				String variable = args[0];
-				Connection connection = null;
-				String script = "SELECT F.forecast_date,\n"	
-								+ "		lead_time,\n"
-								+ "		R.measurement,\n"
-								+ "		FR.measurements\n"
-								+ "FROM Forecast F\n"
-								+ "INNER JOIN ForecastResult FR\n"
-								+ "		ON FR.forecast_id = F.forecast_id\n"
-								+ "INNER JOIN Observation O\n"
-								+ "		ON O.variable_id = F.variable_id\n"
-								+ "INNER JOIN ObservationResult R\n"
-								+ "		ON R.observation_id = O.observation_id\n"
-								+ "			AND R.valid_date = F.forecast_date + INTERVAL '1 hour' * FR.lead_time\n"
-								+ "INNER JOIN Variable V\n"
-								+ "		ON V.variable_id = F.variable_id\n"
-								+ "WHERE V.variable_name = '" + variable + "'\n";
-				
-				if (args.length > 1)
-				{
-					Path path = Paths.get(args[1]);
-					script += "		AND F.source = '" + path.toAbsolutePath().toString() + "'\n";
-				}
-				
-				script += "ORDER BY forecast_date, FR.lead_time\n"
-						+ "LIMIT 100;";
-				
-				try {
-					connection = Database.getConnection();
-					Statement query = connection.createStatement();
-					ResultSet results = query.executeQuery(script);
-					query.setFetchSize(SystemConfig.instance().get_fetch_size());
-					System.out.println("Pair data is now in memory!");
-					
-					while (results.next())
-					{
-						System.out.print("\t\t");
-						System.out.print(results.getInt("lead_time"));
-						System.out.print(" |\t\t");
-						System.out.print(results.getFloat("measurement"));
-						System.out.print(" |\t");
-						System.out.println(Utilities.toString((Float[])results.getArray("measurements").getArray()));
-						System.out.println();
-					}
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-				finally
-				{
-					if (connection != null)
-					{
-						try {
-							Database.returnConnection(connection);
-						} catch (SQLException e) {
-							e.printStackTrace();
-						}
-					}
-				}
-			}
-			else
-			{
-				System.out.println("Not enough arguments were passed.");
-				System.out.println("*.jar getPairs <variable name> [<source name>]");
 			}
 		};
 	}
@@ -446,9 +365,7 @@ public final class MainFunctions {
 				
 				try {
 					connection = Database.getConnection();
-					Statement query = connection.createStatement();
-					query.setFetchSize(SystemConfig.instance().get_fetch_size());
-					ResultSet results = query.executeQuery(script);
+					ResultSet results = Database.getResults(connection, script);
 					String variable_id = String.valueOf(Variable.get_variable_id(variable));
 					script = "SELECT R.measurement, FR.measurements\n"
 							+ "FROM Forecast F\n"
@@ -660,7 +577,7 @@ public final class MainFunctions {
 			System.out.println("The configured projects are:");
 			System.out.println();
 			System.out.println();
-			for (Project project : ProjectConfig.get_projects())
+			for (Project project : ProjectConfig.getProjects())
 			{
 				System.out.println(project.toString());
 			}

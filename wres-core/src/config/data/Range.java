@@ -10,11 +10,27 @@ import java.util.TreeMap;
 import javax.xml.stream.XMLStreamReader;
 
 /**
- * @author ctubbs
- *
+ * Specification for a range of indices for a vector or gridded variable to load from the
+ * database. Provides support for bounding box selection
+ * <br/><br/>
+ * All possible values for any variable in the database for any given location is stored in the
+ * database as infinite gridded information indicated by x and y coordinates. One dimensional 
+ * Vector data is stored in a conceptual 2 dimensional array where all y values are stored as
+ * <b>null</b>. When using ranges for this vector data, only the x values will be considered in
+ * the actual select statements since the y coordinates will forever be <b>null</b>. For gridded
+ * data, bounding boxes may be drawn by indicating the inclusive box vertices selecting data
+ * between (<b>xMinimum</b>, <b>yMinimum</b>) and (<b>xMaximum</b>, <b>yMaximum</b>). 
+ * 
+ * @author Christopher Tubbs
+ * 
  */
 public class Range extends ClauseConfig {
 	
+    /**
+     * Constructor
+     * @param reader The XML Node containing the specification for the range of values
+     * to select.
+     */
 	public Range(XMLStreamReader reader) {
 		super(reader);
 	}
@@ -98,21 +114,33 @@ public class Range extends ClauseConfig {
 		return condition;
 	}
 	
+	/**
+	 * @return The first index to use for the x dimension for the range
+	 */
 	public String xMinimum()
 	{
 		return xMinimum;
 	}
 	
+	/**
+	 * @return The last index to use for the x dimension for the range
+	 */
 	public String xMaximum()
 	{
 		return xMaximum;
 	}
 	
+	/**
+	 * @return The first index to use for the y dimension for the range
+	 */
 	public String yMinimum()
 	{
 		return yMinimum;
 	}
 	
+	/**
+	 * @return The last index to use for the y dimension for the range
+	 */
 	public String yMaximum()
 	{
 		return yMaximum;

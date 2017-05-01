@@ -6,20 +6,16 @@ package config;
 import java.beans.PropertyVetoException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
 import javax.xml.stream.XMLStreamReader;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import com.mchange.v2.c3p0.cfg.C3P0Config;
-import com.mchange.v2.log.MLog;
 
 /**
  * Contains access to configured settings and objects for accessing the database
+ * @author Christopher Tubbs
  */
 public final class DatabaseConfig {
 
@@ -72,12 +68,12 @@ public final class DatabaseConfig {
 		}
 	}
 	
-	public ComboPooledDataSource create_datasource()
+	public ComboPooledDataSource createDatasource()
 	{
 		ComboPooledDataSource datasource = new ComboPooledDataSource();
 		
 		try {
-			datasource.setDriverClass(driver_mapping.get(get_database_type()));
+			datasource.setDriverClass(driver_mapping.get(getDatabaseType()));
 			datasource.setJdbcUrl(get_connection_string());
 			datasource.setUser(username);
 			datasource.setPassword(password);
@@ -197,20 +193,6 @@ public final class DatabaseConfig {
 	}
 	
 	/**
-	 * Creates set of results from the given query through the given connection
-	 * @param connection The connection used to connect to the database
-	 * @param query The text for the query to call
-	 * @return The results of the query
-	 * @throws SQLException Any issue caused by running the query in the database
-	 */
-	public ResultSet get_results(final Connection connection, String query) throws SQLException
-	{
-		Statement statement = connection.createStatement();
-		statement.setFetchSize(SystemConfig.instance().get_fetch_size());
-		return statement.executeQuery(query);
-	}
-	
-	/**
 	 * Parses out settings from the passed in XML 
 	 * @param reader The XML reader containing XML data describing the database settings
 	 * @throws Exception Any exception occurred when reading from the XML
@@ -260,7 +242,7 @@ public final class DatabaseConfig {
 		}
 	}
 	
-	public String get_database_type()
+	public String getDatabaseType()
 	{
 		return this.database_type;
 	}

@@ -8,10 +8,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
@@ -23,7 +21,7 @@ import config.SystemConfig;
 
 public class Database {
 
-    private static ComboPooledDataSource pool = SystemConfig.instance().get_connection_pool();
+    private static ComboPooledDataSource pool = SystemConfig.getConnectionPool();
 
 	// A thread executor specifically for SQL calls
 	private static ExecutorService sqlTasks = createService();
@@ -38,7 +36,7 @@ public class Database {
 		{
 			sqlTasks.shutdown();
 		}
-		return Executors.newFixedThreadPool(SystemConfig.instance().get_maximum_thread_count());
+		return Executors.newFixedThreadPool(SystemConfig.maximumThreadCount());
 	}
 	
 	/**
@@ -88,9 +86,16 @@ public class Database {
 		return connection;
 	}
 	
-	public static void returnConnection(Connection connection) throws SQLException
-	{
-		connection.close();
+	/**
+	 * Returns the connection to the connection pool.
+	 * @param connection The connection to return
+	 * @throws SQLException
+	 */
+	public static void returnConnection(Connection connection) throws SQLException {
+	    if (connection != null) {
+	        // The implementation of the C3P0 Connection option returns the connection to the pool when "close"d
+	        connection.close();
+	    }
 	}
 	
 	public static boolean execute(final String query) throws SQLException
@@ -140,7 +145,7 @@ public class Database {
 	
 	public static boolean copy(final String table_definition, final String values, String delimiter) throws Exception
 	{
-		if (!SystemConfig.instance().get_database_type().equalsIgnoreCase("postgresql"))
+		if (!SystemConfig.getDatabaseType().equalsIgnoreCase("postgresql"))
 		{
 			return translateCopyToInsert(table_definition, values, delimiter);
 		}
@@ -226,7 +231,7 @@ public class Database {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static <T> T get_result(final String query, String label) throws SQLException
+	public static <T> T getResult(final String query, String label) throws SQLException
 	{
 		ResultSet results = null;
 		Connection connection = null;
@@ -276,4 +281,18 @@ public class Database {
 		
 		return result;
 	}
+    
+    /**
+     * Creates set of results from the given query through the given connection
+     * @param connection The connection used to connect to the database
+     * @param query The text for the query to call
+     * @return The results of the query
+     * @throws SQLException Any issue caused by running the query in the database
+     */
+    public static ResultSet getResults(final Connection connection, String query) throws SQLException
+    {
+        Statement statement = connection.createStatement();
+        statement.setFetchSize(SystemConfig.fetchSize());
+        return statement.executeQuery(query);
+    }
 }

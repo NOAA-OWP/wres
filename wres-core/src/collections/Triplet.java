@@ -5,6 +5,8 @@ package collections;
 
 /**
  * A mutable grouping of three values
+ * 
+ * @author Christopher Tubbs
  */
 public class Triplet<T extends Comparable<T>, U extends Comparable<U>, V extends Comparable<V>> implements Group<Triplet<T, U, V>> {
 	/**
@@ -51,7 +53,8 @@ public class Triplet<T extends Comparable<T>, U extends Comparable<U>, V extends
 	// The third item in the grouping
 	public V itemThree = null;
 	
-	public boolean isFull()
+	@Override
+    public boolean isFull()
 	{
 		return this.itemOne != null && this.itemTwo != null && this.itemThree != null;
 	}
@@ -66,4 +69,27 @@ public class Triplet<T extends Comparable<T>, U extends Comparable<U>, V extends
 		// TODO Auto-generated method stub
 		return new Triplet<T, U, V>(itemOne, itemTwo, itemThree);
 	}
+
+    @Override
+    public float similarity(Triplet<T, U, V> other)
+    {
+        byte similarity = 0;
+        
+        if ((this.itemOne == null && other.itemOne == null) ||
+            (this.itemOne != null && this.itemOne.equals(other.itemOne))) {
+            similarity++;
+        }
+        
+        if ((this.itemTwo == null && other.itemTwo == null) ||
+            (this.itemTwo != null && this.itemTwo.equals(other.itemTwo))) {
+            similarity++;
+        }
+        
+        if ((this.itemThree == null && other.itemTwo == null) ||
+            (this.itemThree != null && this.itemThree.equals(other.itemThree))) {
+            similarity++;
+        }
+        
+        return similarity / 3.0F;
+    }
 }

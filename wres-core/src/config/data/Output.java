@@ -13,10 +13,14 @@ import javax.xml.stream.XMLStreamReader;
 import util.Utilities;
 
 /**
- * @author ctubbs
- *
+ * Specification for the type of output required for a metric
+ * @author Christopher Tubbs
  */
 public final class Output extends ConfigElement {
+    /**
+     * Constructor
+     * @param reader The XML Node detailing the specifications for the output
+     */
 	public Output(XMLStreamReader reader)
 	{
 		super(reader);
@@ -27,21 +31,26 @@ public final class Output extends ConfigElement {
 	{
 		OutputType specs = generateOutputType(reader);
 		
-		if (tagIs(reader, "graphic"))
+		if (Utilities.tagIs(reader, "graphic"))
 		{
 			addGraphicOutput(specs);
 		}
-		else if (tagIs(reader, "numeric"))
+		else if (Utilities.tagIs(reader, "numeric"))
 		{
 			addNumericOutput(specs);
 		}
 	}	
 	
-	private OutputType generateOutputType(XMLStreamReader reader)
+	/**
+	 * Strips basic information off the current XML node to construct details about specific types of outputs
+	 * @param reader The XML Node detailing a requested type of output
+	 * @return Specifications about the type of output
+	 */
+	private static OutputType generateOutputType(XMLStreamReader reader)
 	{
-		String output_attr = Utilities.get_attribute_value(reader, "output");
-		String path = Utilities.get_attribute_value(reader, "path");
-		String format = Utilities.get_attribute_value(reader, "format");
+		String output_attr = Utilities.getAttributeValue(reader, "output");
+		String path = Utilities.getAttributeValue(reader, "path");
+		String format = Utilities.getAttributeValue(reader, "format");
 		
 		boolean shouldSave = false;
 		if (output_attr != null)
@@ -98,6 +107,10 @@ public final class Output extends ConfigElement {
 		return description;
 	}
 	
+	/**
+	 * Adds output specifications for output that should be saved as graphics
+	 * @param graphicalType The specifications for the graphical output
+	 */
 	private void addGraphicOutput(OutputType graphicalType)
 	{
 		if (graphics == null)
@@ -108,6 +121,10 @@ public final class Output extends ConfigElement {
 		graphics.add(graphicalType);
 	}
 	
+	/**
+	 * Adds output specifications for output that should be save as numerical logs
+	 * @param numericalType The specifications for the numerical output
+	 */
 	private void addNumericOutput(OutputType numericalType)
 	{
 		if (numerics == null)

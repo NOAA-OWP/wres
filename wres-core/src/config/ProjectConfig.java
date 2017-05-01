@@ -13,31 +13,40 @@ import javax.xml.stream.XMLStreamReader;
 
 import config.data.Project;
 import reading.XMLReader;
+import util.Utilities;
 
 /**
- * @author ctubbs
- *
+ * Provides access to projects determining the configuration of metric execution
+ * @author Christopher Tubbs
  */
-public class ProjectConfig extends XMLReader {
+public final class ProjectConfig extends XMLReader {
 
+    // The underlying storage structure for the project configurations
 	private static final ProjectConfig configuration = new ProjectConfig();
+	
 	/**
-	 * 
+	 * Private Constructor
+	 * <br/><br/>
+	 * There should be no other instances of the project configuration. The ProjectConfig
+	 * is merely a cache for configurations
 	 */
-	public ProjectConfig() {
-		super(SystemConfig.instance().get_project_directory());
-		load_projects();
+	private ProjectConfig() {
+		super(SystemConfig.getProjectDirectory());
+		loadProjects();
 	}
 	
-	private void load_projects()
+	/**
+	 * Loads all project configurations defined within a directory
+	 */
+	private void loadProjects()
 	{
-		File directory = new File(this.get_filename());
+		File directory = new File(this.getFilename());
 		
 		FilenameFilter filter = new FilenameFilter() {			
 			@Override
 			public boolean accept(File dir, String name) {
-				File possible_file = new File(Paths.get(dir.getAbsolutePath(), name).toAbsolutePath().toString());
-				return possible_file.isFile() && possible_file.getName().endsWith(".xml");
+				File possibleFile = new File(Paths.get(dir.getAbsolutePath(), name).toAbsolutePath().toString());
+				return possibleFile.isFile() && possibleFile.getName().endsWith(".xml");
 			}
 		};
 		
@@ -48,16 +57,19 @@ public class ProjectConfig extends XMLReader {
 		}
 	}
 	
-	public static List<Project> get_projects()
-	{
+	/**
+	 * @return The collection of all configured projects
+	 */
+	public static List<Project> getProjects() {
 		return configuration.projects;
 	}
 	
 	@Override
-	protected void parseElement(XMLStreamReader reader)
-	{
-		if (tag_is(reader, "project"))
-		{
+	/**
+	 * If the found tag is a project, parses the contents and saves it as a new project
+	 */
+	protected void parseElement(XMLStreamReader reader) {
+		if (Utilities.tagIs(reader, "project")) {
 			try {
 				addProject(new Project(reader));
 			} catch (Exception e) {
@@ -73,6 +85,10 @@ public class ProjectConfig extends XMLReader {
 		}
 	}
 	
+	/**
+	 * Adds a project configuration to the collection of project specifications
+	 * @param project The configuration to add to the list
+	 */
 	private void addProject(Project project)
 	{
 		if (project == null)
