@@ -16,7 +16,7 @@ import ucar.ma2.Array;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
-import collections.AssociatedPair;
+import collections.AssociatedPairs;
 import collections.Triplet;
 import concurrency.Executor;
 import reading.BasicSource;
@@ -57,11 +57,11 @@ public class NetCDFSource extends BasicSource {
 													parameter.item_two, 
 													parameter.item_three));*/
 				script_builder.append("(");
-				script_builder.append(parameter.itemOne);
+				script_builder.append(parameter.getItemOne());
 				script_builder.append(", ");
-				script_builder.append(parameter.itemTwo);
+				script_builder.append(parameter.getItemTwo());
 				script_builder.append(", ");
-				script_builder.append(parameter.itemThree);
+				script_builder.append(parameter.getItemThree());
 				script_builder.append(")");
 			}
 			
@@ -334,7 +334,7 @@ public class NetCDFSource extends BasicSource {
 	 */
 	private void loadVariablePositions(String variable_name) throws SQLException {
 		System.out.println("Loading a new set of value positions for " + variable_name);
-		this.variable_positions = new AssociatedPair<Integer, Integer, Integer>();
+		this.variable_positions = new AssociatedPairs<Integer, Integer, Integer>();
 		Connection connection = null;
 		
 		try {
@@ -522,7 +522,7 @@ public class NetCDFSource extends BasicSource {
 	private String range = null;
 	private String data_category = null;
 	private Integer lead = null;
-	private AssociatedPair<Integer, Integer, Integer> variable_positions = null;
+	private AssociatedPairs<Integer, Integer, Integer> variable_positions = null;
 	private String ensemble_name = "default";
 	
 	private String model_initialization_time;

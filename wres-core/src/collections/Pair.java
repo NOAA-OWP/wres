@@ -26,9 +26,40 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements G
 		this.itemOne = itemOne;
 		this.itemTwo = itemTwo;
 	}
+    
+    /**
+     * @return The first value
+     */
+    public T getItemOne()
+    {
+        return itemOne;
+    }
+    
+    /**
+     * @return The second value
+     */
+    public U getItemTwo() {
+        return itemTwo;
+    }
+    
+    /**
+     * Updates the value of the first item
+     * @param itemOne The new value
+     */
+    public void setItemOne(T itemOne) {
+        this.itemOne = getItemOne();
+    }
+    
+    /**
+     * Updates the value of the second item
+     * @param itemTwo The new value
+     */
+    public void setItemTwo(U itemTwo) {
+        this.itemTwo = itemTwo;
+    }
 	
-	public T itemOne = null;
-	public U itemTwo = null;
+	private T itemOne = null;
+	private U itemTwo = null;
 
 	@Override
 	/**
@@ -41,14 +72,28 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements G
 	 * second value is greater than the firsts
 	 */
 	public int compareTo(Pair<T, U> other) {
-		int comparison = -1;
-		comparison = other.itemOne.compareTo(this.itemOne);
-		
-		if (comparison == 0) {
-			comparison = other.itemTwo.compareTo(itemTwo);
-		}
-		
-		return comparison;
+        int comparison = 0;
+        
+        if (this.getItemOne() == null && other.getItemOne() != null) {
+            comparison = -1;
+        } else if (this.getItemOne() != null && other.getItemOne() == null) {
+            comparison = 1;
+        } else if (this.getItemOne() != null && other.getItemOne() != null){
+            comparison = this.getItemOne().compareTo(other.getItemOne());
+        }
+        
+        
+        if (comparison == 0) {          
+            if (this.getItemTwo() == null && other.getItemTwo() != null) {
+                comparison = -1;
+            } else if (this.getItemTwo() != null && other.getItemTwo() == null) {
+                comparison = 1;
+            } else if (this.getItemTwo() != null && other.getItemTwo() != null){
+                comparison = this.getItemTwo().compareTo(other.getItemTwo());
+            }
+        }
+        
+        return comparison;
 	}
 
 	@Override

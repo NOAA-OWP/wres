@@ -37,15 +37,28 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 
 	@Override
 	public int compareTo(TwoTuple<T, U> other) {
-		int comparison = -1;
-		comparison = other.itemOne.compareTo(this.itemOne);
-		
-		if (comparison == 0)
-		{
-			comparison = other.itemTwo.compareTo(itemTwo);
-		}
-		
-		return comparison;
+        int comparison = 0;
+        
+        if (this.itemOne() == null && other.itemOne() != null) {
+            comparison = -1;
+        } else if (this.itemOne() != null && other.itemOne() == null) {
+            comparison = 1;
+        } else if (this.itemOne() != null && other.itemOne() != null){
+            comparison = this.itemOne().compareTo(other.itemOne());
+        }
+        
+        
+        if (comparison == 0) {          
+            if (this.itemTwo() == null && other.itemTwo() != null) {
+                comparison = -1;
+            } else if (this.itemTwo() != null && other.itemTwo() == null) {
+                comparison = 1;
+            } else if (this.itemTwo() != null && other.itemTwo() != null){
+                comparison = this.itemTwo().compareTo(other.itemTwo());
+            }
+        }
+        
+        return comparison;
 	}
 	
 	private final T itemOne;
@@ -82,5 +95,11 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
         }
 
         return similarity / 2F;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "(" + String.valueOf(this.itemOne()) + ", " + String.valueOf(this.itemTwo()) + ")";
     }
 }

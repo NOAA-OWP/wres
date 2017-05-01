@@ -20,45 +20,60 @@ public class ThreeTuple<T extends Comparable<T>, U extends Comparable<U>, V exte
 	}
 	
 	/**
-	 * Returns the first value
 	 * @return The first value
 	 */
-	public T itemOne()
+	public T getItemOne()
 	{
 		return this.itemOne;
 	}
 	
 	/**
-	 * Returns the second value
 	 * @return The second value
 	 */
-	public U itemTwo()
+	public U getItemTwo()
 	{
 		return this.itemTwo;
 	}
 	
 	/**
-	 * Returns the third value
 	 * @return The third value
 	 */
-	public V itemThree()
+	public V getItemThree()
 	{
 		return this.itemThree;
 	}
 
 	@Override
 	public int compareTo(ThreeTuple<T, U, V> other) {
-		int comparison = -1;
-		comparison = other.itemOne.compareTo(this.itemOne);
+		int comparison = 0;
 		
-		if (comparison == 0)
-		{
-			comparison = other.itemTwo.compareTo(itemTwo);
+		if (this.getItemOne() == null && other.getItemOne() != null) {
+		    comparison = -1;
+		} else if (this.getItemOne() != null && other.getItemOne() == null) {
+		    comparison = 1;
+		} else if (this.getItemOne() != null && other.getItemOne() != null){
+	        comparison = this.getItemOne().compareTo(other.getItemOne());
 		}
 		
-		if (comparison == 0)
-		{
-			comparison = other.itemThree.compareTo(itemThree);
+		
+		if (comparison == 0) {	        
+	        if (this.getItemTwo() == null && other.getItemTwo() != null) {
+	            comparison = -1;
+	        } else if (this.getItemTwo() != null && other.getItemTwo() == null) {
+	            comparison = 1;
+	        } else if (this.getItemTwo() != null && other.getItemTwo() != null){
+	            comparison = this.getItemTwo().compareTo(other.getItemTwo());
+	        }
+		}
+		
+		if (comparison == 0) {       
+            if (this.getItemThree() == null && other.getItemThree() != null) {
+                comparison = -1;
+            } else if (this.getItemThree() != null && other.getItemThree() == null) {
+                comparison = 1;
+            } else if (this.getItemThree() != null && other.getItemThree() != null){
+                comparison = this.getItemThree().compareTo(other.getItemThree());
+            }
 		}
 		
 		return comparison;
@@ -88,21 +103,29 @@ public class ThreeTuple<T extends Comparable<T>, U extends Comparable<U>, V exte
     {
         byte similarity = 0;
         
-        if ((this.itemOne() == null && other.itemOne() == null) ||
-            (this.itemOne() != null && this.itemOne().equals(other.itemOne()))) {
+        if ((this.getItemOne() == null && other.getItemOne() == null) ||
+            (this.getItemOne() != null && this.getItemOne().equals(other.getItemOne()))) {
             similarity++;
         }
         
-        if ((this.itemTwo() == null && other.itemTwo() == null) || 
-            (this.itemTwo() != null && this.itemTwo().equals(other.itemTwo()))) {
+        if ((this.getItemTwo() == null && other.getItemTwo() == null) || 
+            (this.getItemTwo() != null && this.getItemTwo().equals(other.getItemTwo()))) {
             similarity++;
         }
         
-        if ((this.itemThree() == null && other.itemThree() == null) ||
-            (this.itemThree().equals(other.itemThree()))) {
+        if ((this.getItemThree() == null && other.getItemThree() == null) ||
+            (this.getItemThree().equals(other.getItemThree()))) {
             similarity++;
         }
 
         return similarity / 3F;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "(" + String.valueOf(this.getItemOne()) + ", " + 
+            String.valueOf(this.getItemTwo()) + ", " + 
+            String.valueOf(this.getItemThree()) + ")"; 
     }
 }
