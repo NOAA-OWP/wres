@@ -128,4 +128,34 @@ implements LocationSingleTimeManyNonRasterData
         }
         return new double[] {};
     }
+
+    /**
+     * Return the values. May not be what was intended by Dataset.
+     */
+    @Override
+    public double[][] getValues()
+    {
+        return getObservationAndForecastValues("0");
+    }
+
+    @Override
+    public int size()
+    {
+        // TODO Auto-generated method stub
+        return forecasts.length;
+    }
+
+    @Override
+    public double[][] getObservationAndForecastValues(String ensembleId)
+    {
+        double[] observations = this.observations;
+        double[] forecasts = getForecastValues(ensembleId);
+        double[][] result = new double[forecasts.length][2];
+        for (int i = 0; i < forecasts.length && i < observations.length; i++)
+        {
+            result[i][0] = observations[i];
+            result[i][1] = forecasts[i];
+        }
+        return result;
+    }
 }

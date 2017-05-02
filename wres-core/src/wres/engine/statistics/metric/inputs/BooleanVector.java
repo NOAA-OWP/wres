@@ -2,6 +2,8 @@ package wres.engine.statistics.metric.inputs;
 
 import java.util.Objects;
 
+import gov.noaa.wres.datamodel.Dataset;
+
 /**
  * An immutable dataset that comprises a vector of <code>boolean</code> values.
  * 

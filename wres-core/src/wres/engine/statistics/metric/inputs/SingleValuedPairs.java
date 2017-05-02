@@ -3,6 +3,9 @@ package wres.engine.statistics.metric.inputs;
 import java.util.ArrayList;
 import java.util.Objects;
 
+import gov.noaa.wres.datamodel.Dimension;
+import gov.noaa.wres.datamodel.MetricInput;
+
 /**
  * Class for storing verification pairs that comprise single-valued, continuous numerical, predictions and observations.
  * In this context, the designation "single-valued" should not be confused with "deterministic". Rather, it is an input
