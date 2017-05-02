@@ -98,8 +98,6 @@ public final class MetricFactory
     /**
      * Return a default {@link MeanSquareError} function.
      * 
-     * @param <X> the single-valued pairs
-     * @param <Y> the metric output
      * @return a default {@link MeanSquareError} function.
      */
 
