@@ -19,9 +19,9 @@ public class LocationDef {
 	
 	/**
 	 * Constructor
-	 * <br/>
+	 * <br>
 	 * Constructs the location based on latitude and longitude
-	 * <br/><br/>
+	 * <br><br>
 	 * Defaults the location datum to <b>NGVD29</b>
 	 * @param latitude The initial value for the latitude of the location 
 	 * @param longitude The initial value for the longitude of the location

@@ -12,7 +12,7 @@ import data.details.CachedDetail;
 /**
  * An collection of details about concepts stored within the database
  * @author Christopher Tubbs
- * @param <V> The type of detail within the database
+ * @param <T> The type of detail within the database
  * @param <U> The key for the type within the database
  */
 abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
@@ -75,7 +75,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	
 	/**
 	 * Adds the details to the instance cache. If the details don't exist in the database, they are added.
-	 * <br/><br/>
+	 * <br><br>
 	 * Since only a limited amount of data is stored within the instanced cache, the least recently used item from the
 	 * instanced cache is removed if the amount surpasses the maximum allowable number of stored details
 	 * @param element The details to add to the instanced cache

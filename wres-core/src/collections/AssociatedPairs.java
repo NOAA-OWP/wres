@@ -7,7 +7,7 @@ import java.util.TreeMap;
 
 /**
  * A map that will map a pair of two comparable values to another value.
- * <br/><br/>
+ * <br><br>
  * Useful for accessing values based on two values instead of one.
  * 
  * @author Christopher Tubbs
