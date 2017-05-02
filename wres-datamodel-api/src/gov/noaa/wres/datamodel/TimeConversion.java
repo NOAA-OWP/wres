@@ -30,7 +30,7 @@ public class TimeConversion
 
     /**
      * Convert from legacy Java Date to internal time
-     * @param fatTime the external Date
+     * @param fatUtilTime the external Date
      * @return the internal integer time
      */
     public static int internalDateOf(java.util.Date fatUtilTime)
@@ -40,7 +40,7 @@ public class TimeConversion
 
     /**
      * Convert from SQL Java Date to internal time
-     * @param fatTime the external Date
+     * @param fatSqlTime the external Date
      * @return the internal integer time
      */
     public static int internalDateOf(java.sql.Date fatSqlTime)
