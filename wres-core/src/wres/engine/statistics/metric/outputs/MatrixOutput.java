@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric.outputs;
 
-import wres.engine.statistics.metric.inputs.Dimension;
+import gov.noaa.wres.datamodel.Dimension;
 import wres.engine.statistics.metric.inputs.DoubleMatrix;
 import wres.engine.statistics.metric.inputs.IntegerScalar;
 

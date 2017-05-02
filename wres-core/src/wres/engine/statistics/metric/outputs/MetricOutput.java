@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric.outputs;
 
+import gov.noaa.wres.datamodel.Dataset;
+import gov.noaa.wres.datamodel.Dimension;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.inputs.Dataset;
-import wres.engine.statistics.metric.inputs.Dimension;
 import wres.engine.statistics.metric.inputs.Sample;
 
 /**

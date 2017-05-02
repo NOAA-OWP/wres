@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric.inputs;
 
+import gov.noaa.wres.datamodel.Dimension;
+
 /**
  * A factory class for producing metric inputs.
  * 

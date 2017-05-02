@@ -7,9 +7,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import gov.noaa.wres.datamodel.MetricInput;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
-import wres.engine.statistics.metric.inputs.MetricInput;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputCollection;

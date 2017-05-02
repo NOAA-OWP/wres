@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.inputs;
+package gov.noaa.wres.datamodel;
 
 /**
  * Abstract base class for an immutable dataset that does not contain any spatial or temporal information. Extend this
