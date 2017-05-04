@@ -3,9 +3,6 @@ package wres.engine.statistics.metric.inputs;
 import java.util.ArrayList;
 import java.util.Objects;
 
-import gov.noaa.wres.datamodel.Dimension;
-import gov.noaa.wres.datamodel.MetricInput;
-
 /**
  * Class for storing the verification pairs associated with the outcome (true or false) of a multi-category event. The
  * categorical outcomes may be ordered or unordered. For multi-category pairs with <b>more</b> than two possible

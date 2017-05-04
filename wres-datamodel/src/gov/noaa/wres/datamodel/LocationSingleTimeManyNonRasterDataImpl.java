@@ -129,22 +129,6 @@ implements LocationSingleTimeManyNonRasterData
         return new double[] {};
     }
 
-    /**
-     * Return the values. May not be what was intended by Dataset.
-     */
-    @Override
-    public double[][] getValues()
-    {
-        return getObservationAndForecastValues("0");
-    }
-
-    @Override
-    public int size()
-    {
-        // TODO Auto-generated method stub
-        return forecasts.length;
-    }
-
     @Override
     public double[][] getObservationAndForecastValues(String ensembleId)
     {

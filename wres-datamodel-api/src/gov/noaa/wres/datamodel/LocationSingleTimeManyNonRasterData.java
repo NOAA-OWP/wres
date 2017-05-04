@@ -1,7 +1,7 @@
 package gov.noaa.wres.datamodel;
 
 public interface LocationSingleTimeManyNonRasterData
-extends LocationSingle, TimeMany, NonRaster, Dataset<double[][]>
+extends LocationSingle, TimeMany, NonRaster
 {
     /** Get only the values of the observations 
      * Should we even have this?

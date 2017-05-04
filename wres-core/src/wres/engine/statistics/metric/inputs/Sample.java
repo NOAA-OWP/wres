@@ -1,7 +1,5 @@
 package wres.engine.statistics.metric.inputs;
 
-import gov.noaa.wres.datamodel.Dataset;
-
 /**
  * Identifies a dataset that represents a statistical sample.
  * 

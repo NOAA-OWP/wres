@@ -1,4 +1,4 @@
-package gov.noaa.wres.datamodel;
+package wres.engine.statistics.metric.inputs;
 
 import java.util.List;
 
