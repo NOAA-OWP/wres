@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import gov.noaa.wres.datamodel.MetricInput;
+import wres.engine.statistics.metric.inputs.MetricInput;
 import wres.engine.statistics.metric.inputs.MetricInputException;
 import wres.engine.statistics.metric.outputs.MetricOutput;
 

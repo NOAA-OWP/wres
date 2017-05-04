@@ -2,8 +2,6 @@ package wres.engine.statistics.metric.inputs;
 
 import java.util.Objects;
 
-import gov.noaa.wres.datamodel.Dataset;
-
 /**
  * A mutable dataset that comprises a vector of <code>double</code> values.
  * 

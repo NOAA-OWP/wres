@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gov.noaa.wres.datamodel;
+package wres.engine.statistics.metric.inputs;
 
 /**
  * Placeholder for a class that stores the dimension or unit of measurement associated with a dataset.

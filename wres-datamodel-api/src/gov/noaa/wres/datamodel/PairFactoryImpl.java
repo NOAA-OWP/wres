@@ -17,12 +17,4 @@ public class PairFactoryImpl
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }
-    static LocationSingleTimeManyRasterData getLocationSingleTimeManyRasterData()
-    {
-        throw new UnsupportedOperationException("This code should not make it into the api jar file");
-    }    
-    static LocationManyTimeSingleNonRasterData getLocationManyTimeSingleNonRasterData()
-    {
-        throw new UnsupportedOperationException("This code should not make it into the api jar file");
-    }
 }

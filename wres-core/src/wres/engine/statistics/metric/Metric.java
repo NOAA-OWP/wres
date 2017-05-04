@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
 
-import gov.noaa.wres.datamodel.MetricInput;
+import wres.engine.statistics.metric.inputs.MetricInput;
 import wres.engine.statistics.metric.outputs.MetricOutput;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 import wres.engine.statistics.metric.parameters.MetricParameterException;

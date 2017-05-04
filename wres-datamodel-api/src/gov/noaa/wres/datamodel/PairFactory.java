@@ -25,21 +25,4 @@ public class PairFactory
         return PairFactoryImpl.getLocationSingleTimeSingleRasterData();
     }
 
-    /**
-     * A common case: several rasters over the same space, like a video.
-     * @return
-     */
-    public static LocationSingleTimeManyRasterData getLocationSingleTimeManyRasterData()
-    {
-        return PairFactoryImpl.getLocationSingleTimeManyRasterData();
-    }
-
-    /**
-     * A common case: a single value for point locations, like an nwm channel timestep file.
-     * @return
-     */
-    public static LocationManyTimeSingleNonRasterData getLocationManyTimeSingleNonRasterData()
-    {
-        return PairFactoryImpl.getLocationManyTimeSingleNonRasterData();
-    }
 }
