@@ -159,4 +159,12 @@ public class Triplet<T extends Comparable<T>, U extends Comparable<U>, V extends
         
         return similarity / 3.0F;
     }
+    
+    @Override
+    public String toString()
+    {
+        return "(" + String.valueOf(this.getItemOne()) + ", " + 
+            String.valueOf(this.getItemTwo()) + ", " + 
+            String.valueOf(this.getItemThree()) + ")"; 
+    }
 }

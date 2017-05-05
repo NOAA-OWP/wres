@@ -4,6 +4,8 @@
 package collections;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.DoubleFunction;
@@ -18,10 +20,82 @@ import java.util.stream.Collectors;
  * @author Christopher Tubbs
  *
  */
-public class RealCollection extends ArrayList<Double> {
+public class RealCollection extends ArrayList<Double> implements Comparable<RealCollection> {
 
+    /**
+     * Adds a float to the collection as a double
+     * @param value The Float to add
+     */
+    public void add(Float value) 
+    {
+        this.add(value * 1.0);
+    }
+    
+    /**
+     * Adds an unboxed float to the collection as a double
+     * @param value The float to add
+     */
+    public void add(float value)
+    {
+        this.add(value * 1.0);
+    }
+    
+    /**
+     * Adds an Integer to the collection as a double
+     * @param value The Integer to add
+     */
+    public void add(Integer value)
+    {
+        this.add(value * 1.0);
+    }
+    
+    /**
+     * Adds an unboxed int to the collection as a double
+     * @param value The int to add
+     */
+    public void add(int value)
+    {
+        this.add(value * 1.0);
+    }
+    
+    /**
+     * Adds an unboxed short to the collection as a double
+     * @param value The short to add
+     */
+    public void add(short value)
+    {
+        this.add(value * 1.0);
+    }
+    
+    /**
+     * Adds a Short to the collection as a double
+     * @param value The Short to add
+     */
+    public void add(Short value)
+    {
+        this.add(value * 1.0);
+    }
+    
+    /**
+     * Adds a Long to the collection as a double
+     * @param value The Long to add
+     */
+    public void add(Long value)
+    {
+        this.add(value * 1.0);
+    }
+    
+    /**
+     * Adds an unboxed long to the collection as a double
+     * @param value The long to add
+     */
+    public void add(long value)
+    {
+        this.add(value * 1.0);
+    }
+    
 	/**
-	 * Returns the simple mean of the numbers in the collection
+	 * @return the simple mean of the numbers in the collection
 	 */
 	public Double mean() {
 		Double mean = null;
@@ -32,7 +106,7 @@ public class RealCollection extends ArrayList<Double> {
 	}
 	
 	/**
-	 * Returns the sum of all values in the collection
+	 * @return the sum of all values in the collection
 	 */
 	public double sum() {
 		double summation = 0.0;
@@ -71,8 +145,7 @@ public class RealCollection extends ArrayList<Double> {
 	}
 	
 	/**
-	 * Returns a new RealCollection with identical values
-	 * @return a new, identical RealCollection
+	 * @return a new RealCollection with identical values
 	 */
 	public RealCollection copy() {
 		RealCollection copied_collection = new RealCollection();
@@ -121,8 +194,11 @@ public class RealCollection extends ArrayList<Double> {
 		return summation;
 	}
 	
-	public double median() {
-		double middle = 0.0;
+	/**
+	 * @return The value in the middle of the collection
+	 */
+	public Double median() {
+		Double middle = null;
 		
 		if (this.size() > 0) {
 			int middle_position = this.size() / 2;
@@ -135,6 +211,54 @@ public class RealCollection extends ArrayList<Double> {
 		}
 		
 		return middle;
+	}
+	
+	/**
+	 * Returns a list containing every value within the given percentile
+	 * @param percent The percentile of the collection to obtain
+	 * @return A subset of the collection within the given percentile
+	 */
+	public List<Double> getPercentileValues(int percent)
+	{
+	    List<Double> values = this.copy();
+	    Collections.sort(values);
+	    return values.subList(0, getPercentilePosition(percent));
+	}
+	
+	/**
+	 * The position of the percentile within the collection
+	 * @param percent The percentile rank
+	 * @return The position of the percentile rank within the current collection
+	 */
+	private int getPercentilePosition(int percent) 
+	{
+	    int position = -1;
+	    
+	    if (percent >= 100) {
+	        position = this.size();
+	    } else {
+	        position = Math.min(this.size(), (percent / 100) * this.size());
+	    }  
+	    
+	    return position;
+	}
+	
+	/**
+	 * Returns the value situated at the given percentile
+	 * @param percent The percentile rank
+	 * @return The value for the percentile
+	 */
+	public Double getPercentileValue(int percent)
+	{
+	    Double percentile = null;
+	    int position = getPercentilePosition(percent);
+	    
+	    if (position < this.size())
+	    {
+	        percentile = this.get(position);
+	    }
+	    
+	    return percentile;
 	}
 	
 	/**
@@ -153,10 +277,171 @@ public class RealCollection extends ArrayList<Double> {
 	 */
 	public RealCollection(double[] values)
 	{
-		for (int index = 0; index < values.length; ++index)
-		{
-			this.set(index, values[index]);
-		}
+        for (double value : values)
+        {
+            this.add(value);
+        }
 	}
 
+    public RealCollection(Float[] values)
+    {
+        for (Float value : values)
+        {
+            this.add(value);
+        }
+    }
+    
+    public RealCollection(float[] values)
+    {
+        for (float value : values)
+        {
+            this.add(value);
+        }
+    }
+    
+    public RealCollection(Double[] values)
+    {
+        for (Double value : values)
+        {
+            this.add(value);
+        }
+    }
+    
+    public RealCollection(int[] values)
+    {
+        for (int value : values)
+        {
+            this.add(value);
+        }
+    }
+    
+    public RealCollection(Integer[] values)
+    {
+        for (Integer value : values)
+        {
+            this.add(value);
+        }
+    }
+    
+    public RealCollection(short[] values)
+    {
+        for (short value : values)
+        {
+            this.add(value);
+        }
+    }
+    
+    public RealCollection(Long[] values)
+    {
+        for (Long value : values)
+        {
+            this.add(value);
+        }
+    }
+    
+    public RealCollection(long[] values)
+    {
+        for (long value : values)
+        {
+            this.add(value);
+        }
+    }
+    
+    public RealCollection(Double value)
+    {
+        this.add(value);
+    }
+    
+    public RealCollection(double value)
+    {
+        this.add(value);
+    }
+    
+    public RealCollection(float value)
+    {
+        this.add(value);
+    }
+    
+    public RealCollection(Float value)
+    {
+        this.add(value);
+    }
+    
+    public RealCollection(Integer value)
+    {
+        this.add(value);
+    }
+    
+    public RealCollection(int value)
+    {
+        this.add(value);
+    }
+    
+    public RealCollection(short value)
+    {
+        this.add(value);
+    }
+    
+    public RealCollection(Short value)
+    {
+        this.add(value);
+    }
+    
+    public RealCollection(long value)
+    {
+        this.add(value);
+    }
+    
+    public RealCollection(Long value)
+    {
+        this.add(value);
+    }
+
+    @Override
+    public int compareTo(RealCollection other)
+    {
+        int comparison = 0;  
+        if (other == null || this.size() > other.size())
+        {
+            comparison = 1;
+        }
+        else if (this.size() == 0 && other.size() == 0)
+        {
+            comparison = 0;
+        }
+        else if (this.size() < other.size())
+        {
+            comparison = -1;
+        }
+        else
+        {
+            Double mean = this.mean();
+            Double otherMean = other.mean();
+            
+            if (mean > otherMean)
+            {
+                comparison = 1;
+            }
+            else if (mean < otherMean)
+            {
+                comparison = -1;
+            }
+            else
+            {
+                Double median = this.median();
+                Double otherMedian = other.median();
+                
+                if (median > otherMedian)
+                {
+                    comparison = 1;
+                }
+                else if (median < otherMedian)
+                {
+                    comparison = -1;
+                }
+            }
+        }
+        
+        return comparison;
+    }
 }

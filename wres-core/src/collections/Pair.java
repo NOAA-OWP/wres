@@ -47,7 +47,7 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements G
      * @param itemOne The new value
      */
     public void setItemOne(T itemOne) {
-        this.itemOne = getItemOne();
+        this.itemOne = itemOne;
     }
     
     /**
@@ -127,5 +127,11 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements G
         }
         
         return similarity / 2F;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "(" + String.valueOf(this.getItemOne()) + ", " + String.valueOf(this.getItemTwo()) + ")";
     }
 }

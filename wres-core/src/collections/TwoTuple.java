@@ -22,7 +22,7 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 	 * Returns the first value
 	 * @return The first value
 	 */
-	public T itemOne()
+	public T getItemOne()
 	{
 		return itemOne;
 	}
@@ -31,7 +31,7 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 	 * Returns the second value
 	 * @return The second value
 	 */
-	public U itemTwo() {
+	public U getItemTwo() {
 		return itemTwo;
 	}
 
@@ -39,22 +39,22 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 	public int compareTo(TwoTuple<T, U> other) {
         int comparison = 0;
         
-        if (this.itemOne() == null && other.itemOne() != null) {
+        if (this.getItemOne() == null && other.getItemOne() != null) {
             comparison = -1;
-        } else if (this.itemOne() != null && other.itemOne() == null) {
+        } else if (this.getItemOne() != null && other.getItemOne() == null) {
             comparison = 1;
-        } else if (this.itemOne() != null && other.itemOne() != null){
-            comparison = this.itemOne().compareTo(other.itemOne());
+        } else if (this.getItemOne() != null && other.getItemOne() != null){
+            comparison = this.getItemOne().compareTo(other.getItemOne());
         }
         
         
         if (comparison == 0) {          
-            if (this.itemTwo() == null && other.itemTwo() != null) {
+            if (this.getItemTwo() == null && other.getItemTwo() != null) {
                 comparison = -1;
-            } else if (this.itemTwo() != null && other.itemTwo() == null) {
+            } else if (this.getItemTwo() != null && other.getItemTwo() == null) {
                 comparison = 1;
-            } else if (this.itemTwo() != null && other.itemTwo() != null){
-                comparison = this.itemTwo().compareTo(other.itemTwo());
+            } else if (this.getItemTwo() != null && other.getItemTwo() != null){
+                comparison = this.getItemTwo().compareTo(other.getItemTwo());
             }
         }
         
@@ -84,13 +84,13 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
     {
         byte similarity = 0;
         
-        if ((this.itemOne() == null && other.itemOne() == null) ||
-            (this.itemOne() != null && this.itemOne().equals(other.itemOne()))) {
+        if ((this.getItemOne() == null && other.getItemOne() == null) ||
+            (this.getItemOne() != null && this.getItemOne().equals(other.getItemOne()))) {
             similarity++;
         }
         
-        if ((this.itemTwo() == null && other.itemTwo() == null) || 
-            (this.itemTwo() != null && this.itemTwo().equals(other.itemTwo()))) {
+        if ((this.getItemTwo() == null && other.getItemTwo() == null) || 
+            (this.getItemTwo() != null && this.getItemTwo().equals(other.getItemTwo()))) {
             similarity++;
         }
 
@@ -100,6 +100,6 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
     @Override
     public String toString()
     {
-        return "(" + String.valueOf(this.itemOne()) + ", " + String.valueOf(this.itemTwo()) + ")";
+        return "(" + String.valueOf(this.getItemOne()) + ", " + String.valueOf(this.getItemTwo()) + ")";
     }
 }
