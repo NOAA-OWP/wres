@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.Future;
 
@@ -82,40 +83,30 @@ public class Metric extends ClauseConfig {
 	{
 	    Map<Integer, ValuePairs> results = new TreeMap<Integer, ValuePairs>();
 	    Map<Integer, Future<ValuePairs>> threadResults = new TreeMap<Integer, Future<ValuePairs>>();
-
-	    int forecastVariableID = VariableCache.getVariableID(forecasts.getVariables().get(0).name(), 
-	                                                         forecasts.getVariables().get(0).getUnit());
 	    
-	    int observationVariableID = VariableCache.getVariableID(observations.getVariables().get(0).name(), 
-	                                                            observations.getVariables().get(0).getUnit());
-	    
-	    /*int minimumIDs = Math.min(observationVariablePositionIDs.size(), forecastVariablePositionIDs.size());
-	    
-	    List<Integer> steps = getSteps(forecastVariableID);
-	    
-	    for (int positionIndex = 0; positionIndex < minimumIDs; ++minimumIDs)
-	    {
-	        Map<Integer, Future<ValuePairs>> futureLeadPairs = new TreeMap<Integer, Future<ValuePairs>>();
-	        
-	        for (Integer step : steps)
-	        {
-	            // TODO: Convert observations and forecasts to 'Source One' and 'Source Two' (or some derivative)
-	            PairFetcher fetcher = new PairFetcher(observations, forecasts, "lead = " + step);
-	            futureLeadPairs.put(step, Executor.submit(fetcher));
-	        }
-	        
-	        threadResults.put(observationVariablePositionID, forecastVariablePositionID, futureLeadPairs);
-	    }
-	    
-	    for (Pair<Integer, Integer> threadKey : threadResults.keySet())
-	    {
-	        Map<Integer, ValuePairs> resultingPairs = new TreeMap<Integer, ValuePairs>();
-	        for (Integer lead : threadResults.get(threadKey).keySet())
-	        {
-	            resultingPairs.put(lead, threadResults.get(threadKey).get(lead).get());
-	        }
-	        results.put(threadKey, resultingPairs);
-	    }*/
+	    // TODO: Change this to consume the aggregation specification
+	    List<Integer> steps = getSteps(forecasts.getVariable().getVariableID());
+	    int threadsComplete = 0;
+	    int threadsAdded = 0;
+        
+        for (Integer step : steps)
+        {
+            // TODO: Convert observations and forecasts to 'Source One' and 'Source Two' (or some derivative)
+            PairFetcher fetcher = new PairFetcher(observations, forecasts, "lead = " + step);
+            threadResults.put(step, Executor.submit(fetcher));
+            threadsAdded++;
+        }
+        
+        System.err.println(threadsAdded + " operations were added to collect pairs. Waiting for results...");
+        
+        for (Entry<Integer, Future<ValuePairs>> result : threadResults.entrySet())
+        {
+            results.put(result.getKey(), result.getValue().get());
+            threadsComplete++;
+            System.err.print("\r" +threadsComplete + "/" + threadsAdded + " operations complete. (" + threadsComplete/threadsAdded + "%)");
+        }
+        
+        System.out.println();
         
 	    return results;
 	}
@@ -207,4 +198,5 @@ public class Metric extends ClauseConfig {
 	private Output metric_output;
 	private ProjectDataSource observations;
 	private ProjectDataSource forecasts;
+	
 }

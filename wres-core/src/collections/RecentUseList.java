@@ -188,7 +188,14 @@ public class RecentUseList<U extends Comparable<U>>
 		if (size() != 1 && contained_values.contains(value))
 		{
 			Node promotee = find(value);
-			promote(promotee);
+			if (promotee == null)
+			{
+			    System.err.println("The value '" + value + "' was found in the contained values, but not in the linked list.");
+			}
+			else
+			{
+			    promote(promotee);
+			}
 		}
 	}
 	
@@ -198,13 +205,56 @@ public class RecentUseList<U extends Comparable<U>>
 	 */
 	private void promote(Node promotee)
 	{
-		if (promotee != head)
-		{
-			promotee.get_previous().set_next(promotee.get_next());
-			promotee.set_previous(null);
-			promotee.set_next(head);
-			head = promotee;
-		}
+	    try
+	    {
+    		if (promotee != head && promotee != null)
+    		{
+    		    if (promotee.previous != null)
+    		    {
+    		        promotee.get_previous().set_next(promotee.get_next());
+    		        promotee.set_previous(null);
+    		    }
+    			promotee.set_next(head);
+    			head = promotee;
+    		}
+	    }
+	    catch (Exception e)
+	    {
+	        System.err.println("An error was encountered when attempting to promote the node:");
+	        System.err.println(promotee.toString());
+            System.err.println();
+	        System.err.println("The current contained values are:");
+            System.err.println();
+            
+            for (U value : contained_values)
+            {
+                System.err.println(value);
+            }
+            System.err.println();
+            
+            System.err.println("The current most used items are:");
+            System.err.println();
+            if (this.head != null)
+            {
+                System.err.println(this.head.entireString());
+            }
+            else
+            {
+                System.err.println("Nothing");
+            }
+            
+            if (this.tail == null)
+            {
+                System.err.println("The tail has not been set.");
+            }
+            else
+            {
+                System.err.println("The tail is: " + tail.toString());
+            }
+
+            e.printStackTrace();
+	        throw e;
+	    }
 	}
 	
 	/**
@@ -224,7 +274,7 @@ public class RecentUseList<U extends Comparable<U>>
 	/**
 	 * A node for the doubly linked list
 	 */
-	private class Node
+	private class Node implements Comparable<Node>
 	{
 		public Node(U value)
 		{
@@ -263,6 +313,11 @@ public class RecentUseList<U extends Comparable<U>>
 		 */
 		public void set_next(Node next)
 		{
+		    if (next == null)
+		    {
+		        return;
+		    }
+		    
 			if (this.next != null)
 			{
 				this.next.set_previous(next);
@@ -292,8 +347,25 @@ public class RecentUseList<U extends Comparable<U>>
 			return value.toString() + " ";
 		}
 		
+		public String entireString()
+		{
+		    String whole = this.toString();
+		    
+		    if (this.next != null)
+		    {
+		        whole += this.next.entireString();
+		    }
+		    
+		    return whole;
+		}
+		
 		private U value;
 		private Node previous;
 		private Node next;
+        @Override
+        public int compareTo(RecentUseList<U>.Node other)
+        {
+            return this.value.compareTo(other.value);
+        }
 	}
 }

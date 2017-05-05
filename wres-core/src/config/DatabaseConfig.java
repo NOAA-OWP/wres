@@ -80,7 +80,7 @@ public final class DatabaseConfig {
 			datasource.setAutoCommitOnClose(true);
 			datasource.setMaxIdleTime(max_idle_time);
 			datasource.setMaxPoolSize(max_pool_size);
-			datasource.setInitialPoolSize(40);
+			datasource.setInitialPoolSize(max_pool_size);
 		} 
 		catch (PropertyVetoException e) {
 			e.printStackTrace();

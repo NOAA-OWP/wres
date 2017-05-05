@@ -4,6 +4,7 @@
 package data;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import collections.Pair;
 import collections.RealCollection;
@@ -12,7 +13,7 @@ import collections.RealCollection;
  * @author Christopher Tubbs
  *
  */
-public class ValuePairs extends ArrayList<Pair<Double, RealCollection>>
+public class ValuePairs extends LinkedList<Pair<Double, RealCollection>>
 {    
     public void add(Float value, RealCollection collection)
     {

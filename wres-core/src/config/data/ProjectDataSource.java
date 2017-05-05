@@ -583,4 +583,7 @@ public class ProjectDataSource extends ConfigElement {
 	private List<Variable> variables;
 	private List<FeatureSelector> features;
 	private boolean isForecast;
+    
+    // TODO: Parse source information out of the configuration
+    private List<String> sources;
 }

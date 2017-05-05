@@ -779,9 +779,12 @@ public final class MainFunctions {
 	        {
 	            String projectName = args[0];
 	            String metricName = args[1];
-	            int printLimit = 800;
+	            int printLimit = 100;
 	            int printCount = 0;
+	            int totalLimit = 10;
+	            int totalCount = 0;
 	            Project foundProject = ProjectConfig.getProject(projectName);
+	            Map<Integer, ValuePairs> pairMapping = null;
 	            
 	            if (foundProject == null)
 	            {
@@ -801,16 +804,16 @@ public final class MainFunctions {
 	            
 	            try
                 {
-                    Map<Integer, ValuePairs> pairMapping = metric.getPairs();
+                    pairMapping = metric.getPairs();
                     
                     for (Integer leadKey : pairMapping.keySet())
                     {
                         System.out.println("\tLead Time: " + leadKey);
-                        /*for (Pair<Float, RealCollection> pairs : leadPairs.get(leadKey))
+                        for (Pair<Double, RealCollection> pairs : pairMapping.get(leadKey))
                         {
                             System.out.print("\t\t");
                             String representation = pairs.toString().substring(0, Math.min(120, pairs.toString().length()));
-                            System.out.print(representation);
+                            System.out.println(representation);
                             
                             printCount++;
                             
@@ -818,13 +821,19 @@ public final class MainFunctions {
                             {
                                 break;
                             }
-                        }*/
+                        }
                         
-                        if (printCount >= printLimit)
+                        totalCount++;
+                        printCount = 0;
+                        
+                        if (totalCount >= totalLimit)
                         {
                             break;
                         }
                     }
+                    
+                    System.out.println();
+                    System.out.println(Utilities.getSystemStats());
                 }
                 catch(Exception e)
                 {
