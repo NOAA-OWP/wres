@@ -24,7 +24,7 @@ import javax.xml.stream.XMLStreamReader;
  * @author Christopher Tubbs
  * 
  */
-public class Range extends ClauseConfig {
+public class Range extends FeatureSelector {
 	
     /**
      * Constructor
@@ -203,4 +203,11 @@ public class Range extends ClauseConfig {
 	private String xMaximum = null;
 	private String yMinimum = null;
 	private String yMaximum = null;
+
+    @Override
+    public List<Integer> getVariablePositionIDs(Integer variableID) throws Exception
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }
