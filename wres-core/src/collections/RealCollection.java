@@ -6,6 +6,7 @@ package collections;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.DoubleFunction;
@@ -20,8 +21,8 @@ import java.util.stream.Collectors;
  * @author Christopher Tubbs
  *
  */
-public class RealCollection extends ArrayList<Double> implements Comparable<RealCollection> {
-
+public class RealCollection extends LinkedList<Double> implements Comparable<RealCollection> {
+    
     /**
      * Adds a float to the collection as a double
      * @param value The Float to add
@@ -99,9 +100,11 @@ public class RealCollection extends ArrayList<Double> implements Comparable<Real
 	 */
 	public Double mean() {
 		Double mean = null;
+		
 		if (this.size() > 0) {
 			mean = sum()/this.size();
 		}
+		
 		return mean;
 	}
 	
@@ -110,9 +113,12 @@ public class RealCollection extends ArrayList<Double> implements Comparable<Real
 	 */
 	public double sum() {
 		double summation = 0.0;
-		for (int i = 0; i < this.size(); ++i) {
-			summation += get(i);
+		
+		for (final Double value : this)
+		{
+		    summation += value;
 		}
+		
 		return summation;
 	}
 	
@@ -123,7 +129,7 @@ public class RealCollection extends ArrayList<Double> implements Comparable<Real
 	 * @param maximum The largest acceptable number to add
 	 * @return The sum of all numbers between the minimum and maximum, inclusive
 	 */
-	public double sum_range(double minimum, double maximum) {
+	public double sumRange(double minimum, double maximum) {
 		RealCollection sorted_values = where((Double value) -> {
 			return value >= minimum && value <= maximum;
 		});
@@ -138,9 +144,11 @@ public class RealCollection extends ArrayList<Double> implements Comparable<Real
 	 */
 	public double sigma(DoubleFunction<Double> expression) {
 		double summation = 0.0;
-		for (int i = 0; i < this.size(); ++i) {
-			summation = expression.apply(get(i));
+		for (final Double value : this)
+		{
+            summation = expression.apply(value);
 		}
+
 		return summation;
 	}
 	
@@ -172,9 +180,12 @@ public class RealCollection extends ArrayList<Double> implements Comparable<Real
 	 */
 	public double sigma(Function<Double, Double> expression) {
 		double summation = 0.0;
-		for (int i = 0; i < this.size(); ++i) {
-			summation = expression.apply(get(i));
+		
+		for (final Double value : this)
+		{
+            summation = expression.apply(value); 
 		}
+		
 		return summation;
 	}
 	
@@ -187,8 +198,9 @@ public class RealCollection extends ArrayList<Double> implements Comparable<Real
 		double summation = 0.0;
 		final RealCollection copiedCollection = this.copy();
 		
-		for (int i = 0; i < this.size(); ++i) {
-			summation += expression.apply(get(i), copiedCollection);
+		for (final Double value : this)
+		{
+            summation += expression.apply(value, copiedCollection);
 		}
 		
 		return summation;

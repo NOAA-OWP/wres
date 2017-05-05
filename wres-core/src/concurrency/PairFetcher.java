@@ -51,16 +51,16 @@ public final class PairFetcher implements Callable<ValuePairs>
                 script = createArrayScript();
             }
 
-            System.err.println(script);
-            /*
+            //System.err.println(script);
+            
             ResultSet resultingPairs = Database.getResults(connection, script);
             
             while (resultingPairs.next())
             {
-                Float observedValue = resultingPairs.getFloat("observation");
-                RealCollection forecasts = new RealCollection((Double[])resultingPairs.getArray("forecasts").getArray());
+                Float observedValue = resultingPairs.getFloat("sourceOneValue");
+                RealCollection forecasts = new RealCollection((Double[])resultingPairs.getArray("measurements").getArray());
                 pairs.add(observedValue, forecasts);
-            }*/
+            }
         }
         catch (Exception error)
         {
@@ -72,6 +72,8 @@ public final class PairFetcher implements Callable<ValuePairs>
             System.err.println();
             System.err.println("The Second set of data comes from:");
             System.err.println(sourceTwo.toString());
+            System.err.println();
+            error.printStackTrace();
             System.err.println();
             throw error;
         }
@@ -368,9 +370,9 @@ public final class PairFetcher implements Callable<ValuePairs>
             script += "ORDER BY O.observation_time      -- Order results based on date (earliest to latest)" + newline;
         }
         
-        script += ";        -- Conclude the query";
+        //script += ";        -- Conclude the query";
         
-        return script;
+        return "SELECT * FROM (" + script + ") AS pairs;";
     }
     
     private String createSelectScript() throws Exception

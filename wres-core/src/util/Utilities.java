@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -384,5 +385,70 @@ public final class Utilities {
 		EnsembleCache.initialize();
 		VariableCache.initialize();
 		SourceCache.initialize();
+	}
+	
+	public static String getSystemStats()
+	{          
+	    Runtime runtime = Runtime.getRuntime();
+        
+	    final String newline = System.lineSeparator();
+	    String stats = newline;
+	            
+        /* Total number of processors or cores available to the JVM */
+        stats += "Available processors (cores):\t" + runtime.availableProcessors() + newline;
+        
+        /**
+         * Function to whittle down and describe the memory in a human readable format
+         * (i.e. not represented in raw number of bytes
+         */
+        Function<Long, String> describeMemory = (Long memory) -> {
+            String memoryUnit = " bytes";
+            Double floatingMemory = memory.doubleValue();
+            
+            // Convert to KB if necessary
+            if (floatingMemory > 1000)
+            {
+                floatingMemory = floatingMemory / 1000.0;
+                memoryUnit = " KB";
+            }
+            
+            // Convert to MB if Necessary
+            if (floatingMemory > 1000)
+            {
+                floatingMemory = floatingMemory / 1000.0;
+                memoryUnit = " MB";
+            }
+            
+            // Convert to GB if necessary
+            if (floatingMemory > 1000)
+            {
+                floatingMemory = floatingMemory / 1000.0;
+                memoryUnit = " GB";
+            }
+            
+            // Convert to TB if necessary
+            if (floatingMemory > 1000)
+            {
+                floatingMemory = floatingMemory / 1000.0;
+                memoryUnit = " TB";
+            }
+            
+            return floatingMemory + memoryUnit;
+        };
+        
+        // Theoretical amount of free memory
+        stats += "Free memory:\t\t\t" + describeMemory.apply(runtime.freeMemory()) + newline;
+        
+        /* This will return Long.MAX_VALUE if there is no preset limit */
+        long maxMemory = runtime.maxMemory();
+        
+        /* Maximum amount of memory the JVM will attempt to use */
+        stats += "Maximum available memory:\t" + (maxMemory == Long.MAX_VALUE ? "no limit" : describeMemory.apply(maxMemory)) + newline;
+        
+        /* Total memory currently in use by the JVM */
+        stats += "Total memory in use:\t\t" + describeMemory.apply(runtime.totalMemory()) + newline;
+        stats += newline;
+        
+        return stats;
 	}
 }
