@@ -13,7 +13,7 @@ public class Main {
 	
 	/**
 	 * Executes and times the requested operation with the given parameters
-	 * @param args Arguments from the command line of the format "action <parameter 1, parameter 2, etc>"
+	 * @param args Arguments from the command line of the format {@code action <parameter 1, parameter 2, etc>}"
 	 */
 	public static void main(String[] args) {
 

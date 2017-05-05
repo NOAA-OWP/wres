@@ -8,7 +8,7 @@ package wres.engine.statistics.metric.inputs;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class Dimension
+public interface Dimension
 {
 
 }

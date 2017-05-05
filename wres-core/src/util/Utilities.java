@@ -305,7 +305,7 @@ public final class Utilities {
 	
 	/**
 	 * Gets the text within an xml element
-	 * <br/>
+	 * <br>
 	 * <b>The stream will attempt to move forward within the source</b>
 	 * @param reader The reader for the XML data
 	 * @return The trimed text within the xml node. Null is returned if no text is found

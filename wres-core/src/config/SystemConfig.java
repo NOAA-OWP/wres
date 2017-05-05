@@ -159,7 +159,7 @@ public final class SystemConfig extends reading.XMLReader
 
 	/**
 	 * @return The type of database to build queries for
-	 * <br/><br/>
+	 * <br><br>
 	 * <b>Acceptable Values are:</b>
 	 * <ul>
 	 *     <li>PostgreSQL</li>

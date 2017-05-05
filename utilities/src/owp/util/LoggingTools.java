@@ -282,7 +282,7 @@ public abstract class LoggingTools
     }
 
     /**
-     * Output multiple lines calling {@link Logger#debug(Object)}.
+     * Output multiple lines calling {@link Logger#debug(String)}.
      * 
      * @param log The {@link Logger} to use.
      * @param lines The lines to output.
@@ -296,7 +296,7 @@ public abstract class LoggingTools
     }
 
     /**
-     * Output multiple lines calling {@link Logger#info(Object)}.
+     * Output multiple lines calling {@link Logger#info(String)}.
      * 
      * @param log The {@link Logger} to use.
      * @param lines The lines to output.
@@ -310,7 +310,7 @@ public abstract class LoggingTools
     }
 
     /**
-     * Output multiple lines calling {@link Logger#warn(Object)}.
+     * Output multiple lines calling {@link Logger#warn(String)}.
      * 
      * @param log The {@link Logger} to use.
      * @param lines The lines to output.
@@ -324,7 +324,7 @@ public abstract class LoggingTools
     }
 
     /**
-     * Output multiple lines calling {@link Logger#error(Object)}.
+     * Output multiple lines calling {@link Logger#error(String)}.
      * 
      * @param log The {@link Logger} to use.
      * @param lines The lines to output.
@@ -337,7 +337,7 @@ public abstract class LoggingTools
         }
     }
     /**
-     * Output multiple lines calling {@link Logger#debug(Object)}.
+     * Output multiple lines calling {@link Logger#debug(String)}.
      * 
      * @param log The {@link Logger} to use.
      * @param lines The lines to output.
@@ -351,7 +351,7 @@ public abstract class LoggingTools
     }
 
     /**
-     * Output multiple lines calling {@link Logger#info(Object)}.
+     * Output multiple lines calling {@link Logger#info(String)}.
      * 
      * @param log The {@link Logger} to use.
      * @param lines The lines to output.
@@ -365,7 +365,7 @@ public abstract class LoggingTools
     }
 
     /**
-     * Output multiple lines calling {@link Logger#warn(Object)}.
+     * Output multiple lines calling {@link Logger#warn(String)}.
      * 
      * @param log The {@link Logger} to use.
      * @param lines The lines to output.
@@ -379,7 +379,7 @@ public abstract class LoggingTools
     }
 
     /**
-     * Output multiple lines calling {@link Logger#error(Object)}.
+     * Output multiple lines calling {@link Logger#error(String)}.
      * 
      * @param log The {@link Logger} to use.
      * @param lines The lines to output.
