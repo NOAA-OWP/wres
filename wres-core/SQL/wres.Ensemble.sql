@@ -1,6 +1,6 @@
 ﻿-- Table: wres.Ensemble
 
-CREATE SCHEMA IF NOT EXISTS wres;
+CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
 DROP TABLE IF EXISTS wres.Ensemble;
 
@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS wres.Ensemble
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE wres.ensemble
+  OWNER TO wres;
 
 CREATE INDEX IF NOT EXISTS ensemble_name_idx
   ON wres.Ensemble (ensemble_name);

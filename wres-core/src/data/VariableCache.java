@@ -7,6 +7,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 import data.details.VariableDetails;
 import util.Database;
@@ -56,6 +58,86 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 	 */
 	public static Integer getVariableID(String variableName, Integer measurementUnitID) throws Exception {
 		return internalCache.getID(variableName, measurementUnitID);
+	}
+	
+	/**
+	 * Returns a list of all variable position IDs for a range of IDs for a given variable
+	 * @param range The range of all variable positions to obtain
+	 * @param variableName The name of the variable to look for
+	 * @return A list of all obtained variable position IDs
+	 * @throws Exception
+	 */
+	public static List<Integer> getVariablePositionIDs(config.data.Range range, String variableName) throws Exception
+	{
+	    return internalCache.getVarPosIDs(range, variableName);
+	}
+	
+	public List<Integer> getVarPosIDs(config.data.Range range, String variableName) throws Exception
+	{
+	    List<Integer> IDs = new ArrayList<Integer>();
+	    
+	    int variableID = this.getID(variableName);
+
+	    String script = "";
+	    script += "SELECT variableposition_id" + newline;
+	    script += "FROM wres.VariablePosition VP" + newline;
+	    script += "WHERE variable_id = " + variableID;
+	    
+	    if (range.xMinimum() != null)
+	    {
+	        script += newline;
+	        script += "    AND x_position >= " + range.xMinimum();
+	    }
+	    
+	    if (range.xMaximum() != null)
+	    {
+	        script += newline;
+	        script += "    AND x_position <= " + range.xMaximum();
+	    }
+	    
+	    if (range.yMinimum() != null)
+	    {
+	        script += newline;
+            script += "    AND y_position >= " + range.yMinimum();
+	    }
+        
+        if (range.yMaximum() != null)
+        {
+            script += newline;
+            script += "    AND y_position <= " + range.yMaximum();
+        }
+
+	    script += ";";
+	    
+	    Connection connection = null;
+	    
+	    try
+	    {
+	        connection = Database.getConnection();
+	        ResultSet results = Database.getResults(connection, script);
+	        
+	        while (results.next())
+	        {
+	            IDs.add(results.getInt("variableposition_id"));
+	        }
+	    }
+	    catch (Exception error)
+	    {
+	        System.err.println("The list of possible variable possible IDs for the given range could not be retrieved.");
+	        System.err.println();
+	        System.err.println(range.toString());
+	        System.err.println();
+	        throw error;
+	    }
+	    finally
+	    {
+	        if (connection != null)
+	        {
+	            Database.returnConnection(connection);
+	        }
+	    }
+	    
+	    return IDs;
 	}
 	
 	/**

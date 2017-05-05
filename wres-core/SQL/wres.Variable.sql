@@ -1,8 +1,8 @@
 ﻿-- Table: wres.Variable
 
-CREATE SCHEMA IF NOT EXISTS wres;
+CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
-DROP TABLE IF EXISTS wres.Variable;
+DROP TABLE IF EXISTS wres.Variable CASCADE;
 
 CREATE TABLE IF NOT EXISTS wres.Variable
 (
@@ -19,4 +19,7 @@ CREATE TABLE IF NOT EXISTS wres.Variable
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE wres.variable
+  OWNER TO wres;
+  
 CREATE INDEX IF NOT EXISTS variable_variable_name_idx ON wres.Variable(variable_name);

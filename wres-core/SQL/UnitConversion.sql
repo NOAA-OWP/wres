@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS public.unitconversion
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.unitconversion
+  OWNER TO wres;
 
 -- Index: public.unitconversion_measurementunit_idx
 

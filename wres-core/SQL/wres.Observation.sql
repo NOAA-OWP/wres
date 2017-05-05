@@ -1,6 +1,6 @@
 ﻿-- Table: wres.Observation
 
-CREATE SCHEMA IF NOT EXISTS wres;
+CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
 DROP TABLE IF EXISTS wres.Observation;
 
@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS wres.Observation
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE wres.observation
+  OWNER TO wres;
 
 DROP INDEX IF EXISTS observation_variableposition_idx;
   

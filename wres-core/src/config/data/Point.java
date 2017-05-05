@@ -14,7 +14,7 @@ import javax.xml.stream.XMLStreamReader;
  * Specification for a point in gridded data that should be selected
  * @author Christopher Tubbs
  */
-public class Point extends ClauseConfig {
+public class Point extends FeatureSelector {
 
 	/**
 	 * Constructor
@@ -94,4 +94,11 @@ public class Point extends ClauseConfig {
 
 	private String x;
 	private String y;
+
+    @Override
+    public List<Integer> getVariablePositionIDs(Integer variableID)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

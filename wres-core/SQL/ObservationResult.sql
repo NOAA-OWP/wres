@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS public.observationresult
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.observationresult
+  OWNER TO wres;
 
 -- Index: public.observationresult_location_idx
 

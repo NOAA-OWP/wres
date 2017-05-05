@@ -42,8 +42,8 @@ public class SourceDetails extends CachedDetail<SourceDetails, TwoTuple<String, 
 	 * that the source file was generated
 	 */
 	public SourceDetails(TwoTuple<String, String> key) {
-		this.setSourcePath(key.itemOne());
-		this.setOutputTime(key.itemTwo());
+		this.setSourcePath(key.getItemOne());
+		this.setOutputTime(key.getItemTwo());
 		this.setID(null);
 	}
 	

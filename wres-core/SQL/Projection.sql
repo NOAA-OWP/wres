@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS public.projection
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.projection
+  OWNER TO wres;
 
 INSERT INTO public.Projection (transform_name, false_easting, false_northing, earth_radius)
 SELECT 'UNDEFINED', 0, 0, 6370000

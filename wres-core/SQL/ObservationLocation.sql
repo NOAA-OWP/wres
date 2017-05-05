@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS public.observationlocation
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.observationlocation
+  OWNER TO wres;
 
 -- Index: public.observationlocation_comid_idx
 

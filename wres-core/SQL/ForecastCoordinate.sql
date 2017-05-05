@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS public.forecastcoordinate
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.forecastcoordinate
+  OWNER TO wres;
 
 -- Index: public.forecastcoordinate_coordinate_idx
 

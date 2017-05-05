@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS public.variable
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.variable
+  OWNER TO wres;
 
 -- Index: public.variable_variable_name_idx
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projects>
     <project>
-        <name>Example Project</name>
+        <name>Example</name>
         <observations lazy_load="true">
             <directories>
                 <directory load_all="false">
@@ -41,14 +41,17 @@
         </forecasts>
         <metrics>
             <metric type="mean_error" join_on_feature="false" measurement="CFS">
-                <name>Complete Mean Error</name>
+                <name>ME</name>
                 <output combine_output="false">
                     <graphic output="false" path="" format=""/>
                     <numeric output="true" path="numeric_output" format="xml" />
                 </output>
                 <observations>
+                    <sources>
+                        <!--<source name="examplefilename.xml" /> -->
+                    </sources>
                     <conditions>
-                        <dates earliest="NA" latest="NA" />
+                        <dates earliest="NA" latest="NA" offset="0"/>
                         <values minimum="-infinity" maximum="infinity"/>
                     </conditions>
                     <aggregation aggregate="false" range="1" unit="hour" mode="mean" />
@@ -71,9 +74,12 @@
                         <!--<range x_minimum="42" x_maximum="20000"/>-->
                     </features>
                 </observations>
-                <forecasts>
+                <forecasts is_forecast="true">
+                    <sources>
+                        <!--<source name="examplefilename.xml" /> -->
+                    </sources>
                     <conditions>
-                        <dates earliest="NA" latest="NA" />
+                        <dates earliest="NA" latest="NA" offset="0"/>
                         <values minimum="-infinity" maximum="infinity" />
                     </conditions>
                     <aggregation aggregate="false" range="1" unit="hour" mode="mean" />
@@ -82,7 +88,7 @@
                     </variables>
                     <features all="false">
                         <feature>
-                            <lid>DCCR2HSF</lid>
+                            <lid>DRRC2HSF</lid>
                             <comid></comid>
                             <gage_id></gage_id>
                             <huc></huc>
