@@ -9,6 +9,9 @@ package gov.noaa.wres.datamodel;
  */
 public interface ByLeadTime<T>
 {
-    T getByLeadTime(int leadtime) throws IndexOutOfBoundsException;
+    /** @return null if not found */
+    T getByLeadTime(int leadtime);
+    int getLeadTime(int index) throws IndexOutOfBoundsException;
+    /** @return the number of T elements available */
     int getLength();
 }
