@@ -4,7 +4,7 @@ package gov.noaa.wres.datamodel;
  * Tuple for cases where non-primitive types are used.
  * 
  * For example, when having two sets of forecasts as a pair,
- * could create a Tuple<DoubleBrick,DoubleBrick>
+ * could create a {@code Tuple<DoubleBrick,DoubleBrick>}
  * 
  * @author jesse
  *
