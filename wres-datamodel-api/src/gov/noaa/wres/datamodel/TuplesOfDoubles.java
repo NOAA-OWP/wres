@@ -1,6 +1,8 @@
 package gov.noaa.wres.datamodel;
 
+import java.util.List;
+
 public interface TuplesOfDoubles
 {
-    TupleOfDoubles[] getTuplesOfDoubles();
+    List<TupleOfDoubles> getTuplesOfDoubles();
 }

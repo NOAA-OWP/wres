@@ -8,7 +8,7 @@ package gov.noaa.wres.datamodel;
  * Length is unnecessary because we have a tuple, the second element
  * has its own length in it.
  * 
- * Needed getKeyAtIndex method to retrieve the first value of the tuple,
+ * Use getKey method to retrieve the first value of the tuple,
  * the method to retrieve the second value of the tuple is from ByIndex.
  *
  * @author jesse

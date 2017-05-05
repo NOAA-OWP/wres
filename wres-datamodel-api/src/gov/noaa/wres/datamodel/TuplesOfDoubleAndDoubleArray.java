@@ -1,5 +1,7 @@
 package gov.noaa.wres.datamodel;
 
+import java.util.List;
+
 /**
  * Attempt to model the outer case of data looking like:
  * 
@@ -14,6 +16,6 @@ package gov.noaa.wres.datamodel;
  *
  */
 public interface TuplesOfDoubleAndDoubleArray
-extends ByIndex<TupleOfDoubleAndDoubleArray>
 {
+    List<TupleOfDoubleAndDoubleArray> getTuplesOfDoubleAndDoubleArray();
 }
