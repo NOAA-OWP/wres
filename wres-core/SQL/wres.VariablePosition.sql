@@ -1,6 +1,6 @@
 ﻿-- Table: wres.variableposition
 
-CREATE SCHEMA IF NOT EXISTS wres;
+CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
 DROP TABLE IF EXISTS wres.variableposition CASCADE;
 
@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS wres.variableposition
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE wres.variableposition
+  OWNER TO wres;
 
 -- Index: wres.variableposition_variable_idx
 

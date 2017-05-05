@@ -12,3 +12,5 @@ CREATE TABLE IF NOT EXISTS public.measurementunit
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.measurementunit
+  OWNER TO wres;

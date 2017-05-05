@@ -1,6 +1,6 @@
 ﻿-- Table: wres.Feature
 
-CREATE SCHEMA IF NOT EXISTS wres;
+CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
 DROP TABLE IF EXISTS wres.Feature CASCADE;
 
@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS wres.Feature
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE wres.feature
+  OWNER TO wres;
 
 DROP INDEX IF EXISTS wres.feature_comid_idx;
 

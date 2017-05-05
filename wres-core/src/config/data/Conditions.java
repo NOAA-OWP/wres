@@ -31,6 +31,7 @@ public final class Conditions extends ClauseConfig {
 		setLatestDate(latestDate);
 		setMinimumValue(minimumValue);
 		setMaximumValue(maximumValue);
+		setOffset(this.offset);
 	}
 	
 	@Override
@@ -57,6 +58,10 @@ public final class Conditions extends ClauseConfig {
 			else if (attribute_name.equalsIgnoreCase("maximum"))
 			{
 				this.maximumValue = reader.getAttributeValue(attribute_index);
+			}
+			if (attribute_name.equalsIgnoreCase("offset"))
+			{
+			    this.offset = reader.getAttributeValue(attribute_index);
 			}
 		}
 	}
@@ -93,6 +98,14 @@ public final class Conditions extends ClauseConfig {
 	public String getMaximumValue()
 	{
 		return this.maximumValue;
+	}
+	
+	/**
+	 * @return Returns the hourly offset to use for pairing
+	 */
+	public String getOffset()
+	{
+	    return this.offset;
 	}
 	
 	/**
@@ -145,10 +158,68 @@ public final class Conditions extends ClauseConfig {
 		this.latestDate = latest;
 	}
 	
+	/**
+	 * Sets the hourly offset for the condition
+	 * @param offset The updated offset. If the offset isn't a valid number, it defaults to 0
+	 */
+	private void setOffset(String offset)
+	{
+	    if (!Utilities.isNumeric(offset))
+	    {
+	        offset = "0";
+	    }
+	    this.offset = offset;
+	}
+	
+	public boolean hasEarliestDate()
+	{
+	    return !this.earliestDate.equalsIgnoreCase("-infinity");
+	}
+	
+	public boolean hasLatestDate()
+	{
+	    return !this.latestDate.equalsIgnoreCase("infinity");
+	}
+	
+	public boolean hasMinimumValue()
+	{
+	    return !this.minimumValue.equalsIgnoreCase("-infinity");
+	}
+	
+	public boolean hasMaximumValue()
+	{
+	    return !this.maximumValue.equalsIgnoreCase("infinity");
+	}
+	
+	public boolean hasOffset()
+	{
+	    return this.offset != null && !this.offset.equalsIgnoreCase("0");
+	}
+	
+	/**
+	 * The earliest date and time to consider
+	 */
 	private String earliestDate;
+	
+	/**
+	 * The latest date and time to consider
+	 */
 	private String latestDate;
+	
+	/**
+	 * The minimum value for consideration
+	 */
 	private String minimumValue;
+	
+	/**
+	 * The maximum value for consideration
+	 */
 	private String maximumValue;
+	
+	/**
+	 * The number of hours to offset the time of an entry
+	 */
+	private String offset;
 	
 	@Override
 	public String getCondition(TreeMap<String, String> aliases) {

@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS public.observation
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.observation
+  OWNER TO wres;
 
 -- Index: public.observation_variable_idx
 

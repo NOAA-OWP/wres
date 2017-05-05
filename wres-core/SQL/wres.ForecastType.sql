@@ -1,6 +1,6 @@
 ﻿-- Table: wres.ForecastType
 
-CREATE SCHEMA IF NOT EXISTS wres;
+CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
 DROP TABLE IF EXISTS wres.ForecastType;
 
@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS wres.ForecastType
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE wres.forecasttype
+  OWNER TO wres;
 
  INSERT INTO wres.ForecastType (type_name, timestep, step_count)
  VALUES ('short', 1, 18),

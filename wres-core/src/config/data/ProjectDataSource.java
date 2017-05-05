@@ -9,6 +9,7 @@ import java.util.Arrays;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import data.EnsembleCache;
 import util.Utilities;
 
 /**
@@ -29,7 +30,7 @@ public class ProjectDataSource extends ConfigElement {
 
 	@Override
 	protected List<String> tagNames() {
-		return Arrays.asList("observations", "forecasts");
+		return Arrays.asList("observations", "forecasts", "datasource");
 	}
 	
 	@Override
@@ -39,6 +40,10 @@ public class ProjectDataSource extends ConfigElement {
 			if (reader.getAttributeLocalName(attributeIndex).equalsIgnoreCase("lazy_load"))
 			{
 				this.lazyLoad = Boolean.valueOf(reader.getAttributeValue(attributeIndex));
+			}
+			else if (reader.getAttributeLocalName(attributeIndex).equalsIgnoreCase("is_forecast"))
+			{
+			    this.isForecast = Boolean.valueOf(reader.getAttributeValue(attributeIndex));
 			}
 		}
 	}
@@ -123,7 +128,7 @@ public class ProjectDataSource extends ConfigElement {
 				continue;
 			}
 			
-			ClauseConfig feature = null;			
+			FeatureSelector feature = null;			
 			
 			if (Utilities.tagIs(reader, "feature"))
 			{
@@ -249,7 +254,7 @@ public class ProjectDataSource extends ConfigElement {
 	 * Adds specifications for a feature to identify
 	 * @param feature The specification for the feature to add
 	 */
-	private void addFeature(ClauseConfig feature)
+	private void addFeature(FeatureSelector feature)
 	{
 		if (feature == null)
 		{
@@ -258,7 +263,7 @@ public class ProjectDataSource extends ConfigElement {
 		
 		if (this.features == null)
 		{
-			this.features = new ArrayList<ClauseConfig>();
+			this.features = new ArrayList<FeatureSelector>();
 		}
 		
 		this.features.add(feature);
@@ -271,7 +276,7 @@ public class ProjectDataSource extends ConfigElement {
 	{
 		if (this.features == null)
 		{
-			this.features = new ArrayList<ClauseConfig>();
+			this.features = new ArrayList<FeatureSelector>();
 		}
 		
 		return this.features.size();
@@ -300,13 +305,43 @@ public class ProjectDataSource extends ConfigElement {
 	/**
 	 * @return A list of feature specifications
 	 */
-	public List<ClauseConfig> getFeatures()
+	public List<FeatureSelector> getFeatures()
 	{
 		if (this.features == null)
 		{
-			this.features = new ArrayList<ClauseConfig>();
+			this.features = new ArrayList<FeatureSelector>();
 		}
 		return this.features;
+	}
+	
+	/**
+	 * Retrieves the feature specification at the given position
+	 * @param index The position to retrieve the feature specification from
+	 * @return The feature specification at the given otherwise, if it exists. <b>null</b> otherwise.
+	 */
+	public FeatureSelector getFeature(int index)
+	{
+	    FeatureSelector feature = null;
+	    
+	    if (this.features == null)
+	    {
+	        this.features = new ArrayList<FeatureSelector>();
+	    }
+	    
+	    if (index < this.features.size())
+	    {
+	        feature = this.features.get(index);
+	    }
+	    
+	    return feature;
+	}
+	
+	/**
+	 * @return The first feature specification, if there is one. <b>null</b> otherwise.
+	 */
+	public FeatureSelector getFeature()
+	{
+	    return getFeature(0);
 	}
 	
 	/**
@@ -341,6 +376,30 @@ public class ProjectDataSource extends ConfigElement {
 		return lazyLoad;
 	}
 	
+	public String getEnsembleCondition() throws Exception
+	{
+	    String condition = "ANY('{";
+
+        boolean addComma = false;
+        for (Ensemble ensemble : this.ensembles)
+        {
+            if (addComma)
+            {
+                condition += ",";
+            }
+            else
+            {
+                addComma = true;
+            }
+            
+            condition += ensemble.getID();
+        }
+        
+        condition += "}'::int[])";
+	    
+	    return condition;
+	}
+	
 	/**
 	 * @return A list of all ensemble specification
 	 */
@@ -366,6 +425,36 @@ public class ProjectDataSource extends ConfigElement {
 	}
 	
 	/**
+	 * Returns the variable at a specific position, if there is one there
+	 * @param index The position of the variable to retrieve
+	 * @return The variable specification at a specific position. <b>null</b> otherwise.
+	 */
+	public Variable getVariable(int index)
+	{
+	    Variable variable = null;
+	    
+	    if (this.variables == null)
+	    {
+	        this.variables = new ArrayList<Variable>();
+	    }
+	    
+	    if (index < this.variables.size())
+	    {
+	        variable = this.variables.get(index);
+	    }
+	    
+	    return variable;
+	}
+	
+	/**
+	 * @return The first defined variable, if there is one. <b>null</b> otherwise
+	 */
+	public Variable getVariable()
+	{
+	    return getVariable(0);
+	}
+	
+	/**
 	 * @return Returns the number of specified variables
 	 */
 	public int variableCount()
@@ -385,6 +474,11 @@ public class ProjectDataSource extends ConfigElement {
 		}
 		
 		getVariables().add(variable);
+	}
+	
+	public boolean isForecast()
+	{
+	    return this.isForecast;
 	}
 	
 	@Override
@@ -487,5 +581,6 @@ public class ProjectDataSource extends ConfigElement {
 	private List<Ensemble> ensembles;
 	private Boolean lazyLoad;
 	private List<Variable> variables;
-	private List<ClauseConfig> features;
+	private List<FeatureSelector> features;
+	private boolean isForecast;
 }

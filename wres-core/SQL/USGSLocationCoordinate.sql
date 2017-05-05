@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS public.usgslocationcoordinate
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.usgslocationcoordinate
+  OWNER TO wres;
 
 -- Index: public.usgslocationcoordinate_coordinate_idx
 

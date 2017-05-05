@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS public.coordinate
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE wres.coordinate
+  OWNER TO wres;
 
 COMMENT ON COLUMN public.coordinate.resolution IS 'The degree of accuracy for the coordinate. If the resolution is greater than 0, the coordinate is valid for all points within the resolution from the coordinates. A resolution of 0 indicates an absolute location.';
 

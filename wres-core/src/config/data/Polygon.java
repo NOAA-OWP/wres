@@ -15,7 +15,7 @@ import javax.xml.stream.XMLStreamReader;
  *
  * @author Christopher Tubbs
  */
-public final class Polygon extends ClauseConfig {
+public final class Polygon extends FeatureSelector {
     /**
      * Constructor
      * @param reader The XML Reader containing details about the polygon to draw
@@ -84,4 +84,11 @@ public final class Polygon extends ClauseConfig {
 	}
 	
 	private ArrayList<Point> points;
+
+    @Override
+    public List<Integer> getVariablePositionIDs(Integer variableID) throws Exception
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

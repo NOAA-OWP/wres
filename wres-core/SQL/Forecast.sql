@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS public.forecast
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.forecast
+  OWNER TO wres;
 
 -- Index: public.forecast_forecast_date_idx
 

@@ -21,7 +21,9 @@ import util.Utilities;
  */
 public final class ProjectConfig extends XMLReader {
 
-    // The underlying storage structure for the project configurations
+    /**
+     *  The underlying storage structure for the project configurations
+     */
 	private static final ProjectConfig configuration = new ProjectConfig();
 	
 	/**
@@ -86,6 +88,17 @@ public final class ProjectConfig extends XMLReader {
 	}
 	
 	/**
+	 * Finds a project based on its name
+	 * @param projectName The name of the desired project
+	 * @return The project
+	 */
+	public static Project getProject(String projectName) {
+	    return Utilities.find(getProjects(), (Project project) -> {
+	        return project.getName().equalsIgnoreCase(projectName);
+	    });
+	}
+	
+	/**
 	 * Adds a project configuration to the collection of project specifications
 	 * @param project The configuration to add to the list
 	 */
@@ -104,5 +117,8 @@ public final class ProjectConfig extends XMLReader {
 		this.projects.add(project);
 	}
 
+	/**
+	 * The collection of all loaded projects
+	 */
 	private List<Project> projects;
 }

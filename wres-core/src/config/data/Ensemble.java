@@ -1,5 +1,7 @@
 package config.data;
 
+import data.EnsembleCache;
+
 /**
  * Represents information about an Ensemble from the configuration
  * @author Christopher Tubbs
@@ -25,6 +27,11 @@ public final class Ensemble {
 	public String getQualifier()
 	{
 		return this.qualifier;
+	}
+	
+	public String getID() throws Exception
+	{
+	    return String.valueOf(EnsembleCache.getEnsembleID(this.name, this.memberID, this.memberID));
 	}
 	
 	@Override

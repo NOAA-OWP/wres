@@ -1,6 +1,6 @@
 ﻿-- Table: wres.ForecastEnsemble
 
-CREATE SCHEMA IF NOT EXISTS wres;
+CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
 DROP TABLE IF EXISTS wres.ForecastEnsemble;
 
@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS wres.ForecastEnsemble
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE wres.forecastensemble
+  OWNER TO wres;
 
 -- Index: wres.forecastensemble_source_idx
 

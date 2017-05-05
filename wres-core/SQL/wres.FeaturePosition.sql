@@ -1,6 +1,6 @@
 ﻿-- Table: wres.featureposition
 
-CREATE SCHEMA IF NOT EXISTS wres;
+CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
 DROP TABLE IF EXISTS wres.featureposition;
 
@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS wres.featureposition
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE wres.featureposition
+  OWNER TO wres;
 
 CREATE INDEX IF NOT EXISTS featureposition_feature_idx ON wres.featureposition (feature_id);
 CREATE INDEX IF NOT EXISTS featureposition_position_idx ON wres.featureposition (variableposition_id);

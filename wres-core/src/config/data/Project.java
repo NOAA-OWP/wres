@@ -115,6 +115,20 @@ public class Project extends ConfigElement {
 		return metric;
 	}
 	
+	public Metric getMetric(String metricName)
+	{
+	    Metric metric = null;
+	    
+	    if (metricCount() > 0)
+	    {
+	        metric = Utilities.find(metrics, (Metric met) -> {
+	           return met.getName().equalsIgnoreCase(metricName);
+	        });
+	    }
+	    
+	    return metric;
+	}
+	
 	/**
 	 * @return The number of metrics to be run on the project
 	 */
@@ -144,6 +158,10 @@ public class Project extends ConfigElement {
 	public ProjectDataSource getForecasts()
 	{
 		return forecasts;
+	}
+	
+	public String getName() {
+	    return this.name;
 	}
 	
 	@Override

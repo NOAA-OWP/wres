@@ -1,6 +1,6 @@
 ﻿-- Table: wres.MeasurementUnit
 
-CREATE SCHEMA IF NOT EXISTS wres;
+CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
 DROP TABLE IF EXISTS wres.MeasurementUnit CASCADE;
 
@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS wres.MeasurementUnit
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE wres.measurementunit
+  OWNER TO wres;
 
  INSERT INTO wres.MeasurementUnit (unit_name)
  VALUES	('NONE'),

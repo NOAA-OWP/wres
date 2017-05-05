@@ -15,6 +15,9 @@ import util.Utilities;
  * @author Christopher Tubbs
  */
 public abstract class ConfigElement {
+    
+    protected static final String newline = System.lineSeparator();
+    
     /**
      * The Constructor
      * @param reader The XML Reader containing the configuration elements

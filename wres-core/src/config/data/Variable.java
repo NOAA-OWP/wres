@@ -3,6 +3,8 @@
  */
 package config.data;
 
+import data.VariableCache;
+
 /**
  * A specification for a variable to perform queries against
  * @author Christopher Tubbs
@@ -31,6 +33,10 @@ public class Variable {
 	 */
 	public String getUnit() {
 		return this.unitOfMeasurement;
+	}
+	
+	public Integer getVariableID() throws Exception {
+	    return VariableCache.getVariableID(variableName, unitOfMeasurement);
 	}
 	
 	private final String variableName;

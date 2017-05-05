@@ -20,16 +20,23 @@ import concurrency.ForecastSaver;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import collections.AssociatedPairs;
+import collections.Pair;
 import reading.BasicSource;
 import reading.SourceReader;
 import config.ProjectConfig;
+import config.data.Metric;
 import config.data.Project;
+import collections.RealCollection;
 
 import java.util.concurrent.Future;
 import concurrency.FunctionRunner;
 import concurrency.Metrics;
 import concurrency.ObservationSaver;
-import data.Variable;;
+import data.MeasurementCache;
+import data.ValuePairs;
+import data.Variable;
+import data.VariableCache;;
 /**
  * @author ctubbs
  *
@@ -91,6 +98,8 @@ public final class MainFunctions {
 		prototypes.put("flushforecasts", flushForecasts());
 		prototypes.put("flushobservations", flushObservations());
 		prototypes.put("refreshforecasts", refreshForecasts());
+		prototypes.put("getpairs", getPairs());
+		prototypes.put("getprojectpairs", getProjectPairs());
 		
 		return prototypes;
 	}
@@ -657,5 +666,176 @@ public final class MainFunctions {
 				e.printStackTrace();
 			}
 		};
+	}
+	
+	/**
+	 * Creates the 'getPairs' function
+	 * @return Prints the count and the first 10 pairs for all observations and forecasts for the passed in forecast variable,
+	 * observation variable, and lead time
+	 */
+	private static final Consumer<String[]> getPairs() {
+	    return (String[] args) -> {
+	        
+	        Connection connection = null;
+            try
+            {
+                String forecastVariable = args[0];
+                String observationVariable = args[1];
+                String lead = args[2];
+                String targetUnit = args[3];
+                int targetUnitID = MeasurementCache.getMeasurementUnitID(targetUnit);
+                int observationVariableID = VariableCache.getVariableID(observationVariable, targetUnitID);
+                int forecastVariableID = VariableCache.getVariableID(forecastVariable, targetUnitID);
+                int forecastVariablePositionID = 0;
+                int observationVariablePositionID = 0;
+                
+                ArrayList<Pair<Float, RealCollection>> pairs = new ArrayList<Pair<Float, RealCollection>>();
+        
+                String script = "";
+                
+                script = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = " + observationVariableID + ";";
+                observationVariablePositionID = Database.getResult(script, "variableposition_id");
+                
+                script = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = " + forecastVariableID + ";";
+                forecastVariablePositionID = Database.getResult(script, "variableposition_id");
+                
+                script = "";
+                script +=   "WITH forecast_measurements AS (" + newline;
+                script +=   "   SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + newline;
+                script +=   "       array_agg(FV.forecasted_value * UC.factor) AS forecasts" + newline;
+                script +=   "   FROM wres.Forecast F" + newline;
+                script +=   "   INNER JOIN wres.ForecastEnsemble FE" + newline;
+                script +=   "       ON F.forecast_id = FE.forecast_id" + newline;
+                script +=   "   INNER JOIN wres.ForecastValue FV" + newline;
+                script +=   "       ON FV.forecastensemble_id = FE.forecastensemble_id" + newline;
+                script +=   "   INNER JOIN wres.UnitConversion UC" + newline;
+                script +=   "       ON UC.from_unit = FE.measurementunit_id" + newline;
+                script +=   "   WHERE lead = " + lead + newline;
+                script +=   "       AND FE.variableposition_id = " + forecastVariablePositionID + newline;
+                script +=   "       AND UC.to_unit = " + targetUnitID + newline;
+                script +=   "   GROUP BY forecasted_date" + newline;
+                script +=   ")" + newline;
+                script +=   "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + newline;
+                script +=   "FROM forecast_measurements FM" + newline;
+                script +=   "INNER JOIN wres.Observation O" + newline;
+                script +=   "   ON O.observation_time = FM.forecasted_date" + newline;
+                script +=   "INNER JOIN wres.UnitConversion UC" + newline;
+                script +=   "   ON UC.from_unit = O.measurementunit_id" + newline;
+                script +=   "WHERE O.variableposition_id = " + observationVariablePositionID + newline;
+                script +=   "   AND UC.to_unit = " + targetUnitID + newline;
+                script +=   "ORDER BY FM.forecasted_date;";
+                
+                connection = Database.getConnection();
+                ResultSet results = Database.getResults(connection, script);
+                
+                while (results.next()) {
+                    Pair<Float, RealCollection> pair = new Pair<Float, RealCollection>();
+                    pair.setItemOne(results.getFloat("observation"));
+                    pair.setItemTwo(new RealCollection());
+                    for(Double result : (Double[])results.getArray("forecasts").getArray()) {
+                        pair.getItemTwo().add(result);
+                    }
+                    pairs.add(pair);
+                }
+                
+                System.out.println();
+                System.out.println(pairs.size() + " pairs were retrieved!");
+                System.out.println();
+                
+                for (int i = 0; i < 10; ++i) {
+                    String representation = pairs.get(i).toString();
+                    representation = representation.substring(0, Math.min(100, representation.length()));
+                    if (representation.length() == 100)
+                    {
+                        representation += "...";
+                    }
+                    System.out.println(representation);
+                }
+            }
+            catch(Exception e)
+            {
+                e.printStackTrace();
+            } 
+            finally 
+            {
+                if (connection != null) {
+                    try
+                    {
+                        Database.returnConnection(connection);
+                    }
+                    catch(SQLException e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }
+	    };
+	}
+	
+	private static Consumer<String[]> getProjectPairs()
+	{
+	    return (String[] args) -> {
+	        if (args.length > 1)
+	        {
+	            String projectName = args[0];
+	            String metricName = args[1];
+	            int printLimit = 800;
+	            int printCount = 0;
+	            Project foundProject = ProjectConfig.getProject(projectName);
+	            
+	            if (foundProject == null)
+	            {
+	                System.err.println("There is not a project named '" + projectName + "'");
+	                System.err.println("Pairs could not be created because there wasn't a specification.");
+	                return;
+	            }
+	            
+	            Metric metric = foundProject.getMetric(metricName);
+	            
+	            if (metric == null)
+	            {
+                    System.err.println("There is not a metric named '" + metricName + "' in the project '" + projectName + '"');
+                    System.err.println("Pairs could not be created because there wasn't a specification.");
+                    return;
+	            }
+	            
+	            try
+                {
+                    Map<Integer, ValuePairs> pairMapping = metric.getPairs();
+                    
+                    for (Integer leadKey : pairMapping.keySet())
+                    {
+                        System.out.println("\tLead Time: " + leadKey);
+                        /*for (Pair<Float, RealCollection> pairs : leadPairs.get(leadKey))
+                        {
+                            System.out.print("\t\t");
+                            String representation = pairs.toString().substring(0, Math.min(120, pairs.toString().length()));
+                            System.out.print(representation);
+                            
+                            printCount++;
+                            
+                            if (printCount >= printLimit)
+                            {
+                                break;
+                            }
+                        }*/
+                        
+                        if (printCount >= printLimit)
+                        {
+                            break;
+                        }
+                    }
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+	        }
+	        else
+	        {
+	            System.err.println("There are not enough arguments to run 'getProjectPairs'");
+	            System.err.println("usage: getProjectPairs <project name> <metric name>");
+	        }
+	    };
 	}
 }

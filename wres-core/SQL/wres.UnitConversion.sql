@@ -1,8 +1,8 @@
 ﻿-- Table: wres.UnitConversion
 
-CREATE SCHEMA IF NOT EXISTS wres;
+CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
-DROP TABLE IF EXISTS wres.UnitConversion;
+DROP TABLE IF EXISTS wres.UnitConversion CASCADE;
 
 CREATE TABLE IF NOT EXISTS wres.UnitConversion
 (
@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS wres.UnitConversion
 		REFERENCES wres.MeasurementUnit(measurementunit_id) MATCH SIMPLE
 		ON UPDATE NO ACTION ON DELETE CASCADE
 );
+ALTER TABLE wres.unitconversion
+  OWNER TO wres;
 
 CREATE INDEX IF NOT EXISTS unitconversion_measurementunit_idx
 	ON wres.UnitConversion

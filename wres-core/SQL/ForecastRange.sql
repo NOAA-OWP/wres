@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS public.forecastrange
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.forecastrange
+  OWNER TO wres;
 
 INSERT INTO public.ForecastRange (range_name, timestep)
 VALUES	('short',1),

@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS public.observationcoordinate
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE public.observationcoordinate
+  OWNER TO wres;
 
 -- Index: public.observationcoordinate_coordinate_idx
 
