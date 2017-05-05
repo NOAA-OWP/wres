@@ -3,13 +3,17 @@
  */
 package collections;
 
+import wres.datamodel.Tuple;
+
 /**
  * A mutable grouping of two values
  * 
  * @author Christopher Tubbs
  *
  */
-public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements Group<Pair<T, U>> {
+public class Pair<T extends Comparable<T>, U extends Comparable<U>>
+implements Group<Pair<T, U>>, Tuple<T,U>
+{
 
 	/**
 	 * Creates a pair of null values
@@ -30,14 +34,16 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements G
     /**
      * @return The first value
      */
+	@Override
     public T getItemOne()
     {
         return itemOne;
     }
-    
+
     /**
      * @return The second value
      */
+	@Override
     public U getItemTwo() {
         return itemTwo;
     }

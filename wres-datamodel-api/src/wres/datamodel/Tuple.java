@@ -13,6 +13,14 @@ package wres.datamodel;
  */
 public interface Tuple<T,U>
 {
-    T getFirst();
-    U getSecond();
+    /**
+     * Get the first value
+     * @return the first instance in this tuple
+     */
+    T getItemOne();
+    /**
+     * Get the second value
+     * @return the second instance in this tuple
+     */
+    U getItemTwo();
 }
