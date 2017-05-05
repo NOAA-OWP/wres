@@ -4,14 +4,15 @@
 package collections;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.DoubleFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import static java.util.stream.Collectors.*;
+
+import wres.datamodel.DoubleBrick;
 
 
 /**
@@ -20,7 +21,9 @@ import java.util.stream.Collectors;
  * @author Christopher Tubbs
  *
  */
-public class RealCollection extends ArrayList<Double> implements Comparable<RealCollection> {
+public class RealCollection extends ArrayList<Double>
+implements Comparable<RealCollection>, DoubleBrick
+{
 
     /**
      * Adds a float to the collection as a double
@@ -149,7 +152,7 @@ public class RealCollection extends ArrayList<Double> implements Comparable<Real
 	 */
 	public RealCollection copy() {
 		RealCollection copied_collection = new RealCollection();
-		stream().collect(Collectors.toCollection(()->copied_collection));
+		stream().collect(toCollection(()->copied_collection));
 		return copied_collection;
 	}
 	
@@ -160,7 +163,7 @@ public class RealCollection extends ArrayList<Double> implements Comparable<Real
 	 */
 	public RealCollection where(Predicate<? super Double> expression) {
 		RealCollection copy = new RealCollection();
-		stream().filter(expression).collect(Collectors.toCollection(()->copy));
+		stream().filter(expression).collect(toCollection(()->copy));
 		copy.sort(null);
 		return copy;
 	}
@@ -443,5 +446,11 @@ public class RealCollection extends ArrayList<Double> implements Comparable<Real
         }
         
         return comparison;
+    }
+
+    @Override
+    public double[] getDoubles()
+    {
+        return this.stream().mapToDouble(d -> d).toArray();
     }
 }
