@@ -276,6 +276,10 @@ public final class Utilities {
 		
 		return val;
 	}
+    
+    public static <U> boolean exists(Collection<U> source, Predicate<U> expression) {
+        return !where(source, expression).isEmpty();
+    }
 	
 	/**
 	 * Determines if the passed in array contains the indicated value
