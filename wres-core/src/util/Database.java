@@ -231,6 +231,13 @@ public class Database {
 	}
 	
 	@SuppressWarnings("unchecked")
+	/**
+	 * Returns the value in the labeled column in the first row of the result from the query
+	 * @param query The statement to execute in the database
+	 * @param label The name of the column to pull the value from
+	 * @return The resulting value. Null if nothing was returned
+	 * @throws SQLException Thrown if the function failed to interact with the database
+	 */
 	public static <T> T getResult(final String query, String label) throws SQLException
 	{
 		ResultSet results = null;
@@ -280,6 +287,64 @@ public class Database {
 		}
 		
 		return result;
+	}
+	
+	/**
+	 * Retrieves an array from the database
+	 * @param query The query to execute to return the array
+	 * @param label The name of the column containing the array
+	 * @return the requested array
+	 * @throws SQLException Thrown if the an error occured while interacting with the database
+	 */
+	public static <T> T[] getArray(final String query, String label) throws SQLException
+	{	    
+        ResultSet results = null;
+        Connection connection = null;
+        Statement statement = null;
+        T[] result = null;
+        
+	    try
+        {
+            connection = getConnection();
+            statement = connection.createStatement();
+            statement.setFetchSize(1);
+            results = statement.executeQuery(query);
+            
+            if (results.isBeforeFirst())
+            {
+                results.next();
+                result = (T[])results.getArray(label).getArray();
+            }
+        }
+        catch (SQLException error)
+        {           
+            System.err.println("The following SQL call failed:");
+            if (query.length() > 1000)
+            {
+                System.err.println(query.substring(0, 1000));
+            }
+            else
+            {
+                System.err.println(query);
+            }
+            System.err.println();
+            
+            error.printStackTrace();
+            throw error;
+        }
+        finally
+        {           
+            if (statement != null)
+            {
+                statement.close();
+            }
+            if (connection != null)
+            {
+                returnConnection(connection);
+            }
+        }
+        
+        return result;
 	}
     
     /**
