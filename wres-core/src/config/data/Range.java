@@ -12,7 +12,7 @@ import javax.xml.stream.XMLStreamReader;
 /**
  * Specification for a range of indices for a vector or gridded variable to load from the
  * database. Provides support for bounding box selection
- * <br/><br/>
+ * <br><br>
  * All possible values for any variable in the database for any given location is stored in the
  * database as infinite gridded information indicated by x and y coordinates. One dimensional 
  * Vector data is stored in a conceptual 2 dimensional array where all y values are stored as

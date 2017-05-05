@@ -11,5 +11,5 @@
 /testinput/sharedinput/*.nc
 /testinput/sharedinput/*.gz
 wres-core.jar
-wres
+/wres
 compile

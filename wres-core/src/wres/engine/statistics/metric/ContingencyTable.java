@@ -74,7 +74,7 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
      * if the output is incompatible.
      * 
      * @param output the output to check
-     * @param the metric to use when throwing an informative exception
+     * @param metric the metric to use when throwing an informative exception
      * @throws MetricInputException if the output is not a valid input for an intermediate calculation
      */
 
