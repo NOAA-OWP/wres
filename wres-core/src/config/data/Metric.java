@@ -29,6 +29,7 @@ import data.VariableCache;
 import thredds.client.catalog.Dataset;
 import util.Database;
 import util.Utilities;
+import wres.datamodel.TupleOfDoubleAndDoubleArray;
 
 /**
  * The specification for a metric and the information necessary to retrieve details
@@ -79,10 +80,10 @@ public class Metric extends ClauseConfig {
 		return null;
 	}
 	
-	public Map<Integer, ValuePairs> getPairs() throws Exception
+	public Map<Integer, List<TupleOfDoubleAndDoubleArray>> getPairs() throws Exception
 	{
-	    Map<Integer, ValuePairs> results = new TreeMap<Integer, ValuePairs>();
-	    Map<Integer, Future<ValuePairs>> threadResults = new TreeMap<Integer, Future<ValuePairs>>();
+	    Map<Integer, List<TupleOfDoubleAndDoubleArray>> results = new TreeMap<Integer, List<TupleOfDoubleAndDoubleArray>>();
+	    Map<Integer, Future<List<TupleOfDoubleAndDoubleArray>>> threadResults = new TreeMap<Integer, Future<List<TupleOfDoubleAndDoubleArray>>>();
 	    
 	    // TODO: Change this to consume the aggregation specification
 	    List<Integer> steps = getSteps(forecasts.getVariable().getVariableID());
@@ -103,7 +104,7 @@ public class Metric extends ClauseConfig {
         //{
             //results.put(lead, threadResults.get(lead).get());
             //threadResults.put(lead, null);
-        for (Entry<Integer, Future<ValuePairs>> result : threadResults.entrySet())
+        for (Entry<Integer, Future<List<TupleOfDoubleAndDoubleArray>>> result : threadResults.entrySet())
         {
             results.put(result.getKey(), result.getValue().get());
             threadsComplete++;

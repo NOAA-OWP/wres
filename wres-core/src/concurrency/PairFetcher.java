@@ -5,6 +5,8 @@ package concurrency;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import collections.RealCollection;
@@ -14,12 +16,15 @@ import data.FeatureCache;
 import data.MeasurementCache;
 import data.ValuePairs;
 import util.Database;
+import wres.datamodel.DataFactory;
+import wres.datamodel.TupleOfDoubleAndDoubleArray;
 
 /**
  * @author Christopher Tubbs
  *
  */
-public final class PairFetcher implements Callable<ValuePairs>
+public final class PairFetcher //implements Callable<ValuePairs>
+implements Callable<List<TupleOfDoubleAndDoubleArray>>
 {
     private static final boolean USE_DOUBLE_PAIR = false;
     private static final String newline = System.lineSeparator();
@@ -34,10 +39,14 @@ public final class PairFetcher implements Callable<ValuePairs>
     }
 
     @Override
-    public ValuePairs call() throws Exception
-    {
-        ValuePairs pairs = new ValuePairs();
+    public List<TupleOfDoubleAndDoubleArray> call() throws Exception
+    //    public ValuePairs call() throws Exception
+      {
+        //ValuePairs pairs = new ValuePairs();
+        // trying out verbosely named API type:
+        List<TupleOfDoubleAndDoubleArray> pairs = new ArrayList<>();
         Connection connection = null;
+
         try
         {
             connection = Database.getConnection();
@@ -57,9 +66,11 @@ public final class PairFetcher implements Callable<ValuePairs>
             
             while (resultingPairs.next())
             {
-                Float observedValue = resultingPairs.getFloat("sourceOneValue");
-                RealCollection forecasts = new RealCollection((Double[])resultingPairs.getArray("measurements").getArray());
-                pairs.add(observedValue, forecasts);
+                //Float observedValue = resultingPairs.getFloat("sourceOneValue");
+                Double observedValue = resultingPairs.getDouble("sourceOneValue");
+                //RealCollection forecasts = new RealCollection((Double[])resultingPairs.getArray("measurements").getArray());
+                Double[] forecasts = (Double[]) resultingPairs.getArray("measurements").getArray();
+                pairs.add(DataFactory.tupleOf(observedValue, forecasts));
             }
         }
         catch (Exception error)
