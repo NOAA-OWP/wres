@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author jesse
  *
  */
-public class WresPointFactoryImpl
+class WresPointFactoryImpl
 implements WresPoint, Comparable
 {
     private final int x;
@@ -42,17 +42,17 @@ implements WresPoint, Comparable
         this.z = z;
     }
 
-    public static WresPoint of(int x)
+    static WresPoint of(int x)
     {
         return WresPointFactoryImpl.of(x, Integer.MIN_VALUE, Integer.MIN_VALUE);
     }
 
-    public static WresPoint of(int x, int y)
+    static WresPoint of(int x, int y)
     {
         return WresPointFactoryImpl.of(x, y, Integer.MIN_VALUE);
     }
 
-    public static WresPoint of(int x, int y, int z)
+    static WresPoint of(int x, int y, int z)
     {
         // search the cache, if not found, create, add, return.
         WresPoint maybeFoundPoint = cachedPoint(x,y,z); 

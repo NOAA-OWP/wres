@@ -1,10 +1,10 @@
 package wres.datamodel;
 
 /**
- * A WresPointFactory provides static methods to create WresPoint objects
- * 
- * Calls the actual implementation.
- * 
+ * A WresPointFactory provides static methods to create WresPoint objects.
+ *
+ * Calls the implementation provided at runtime.
+ *
  * @author jesse
  *
  */

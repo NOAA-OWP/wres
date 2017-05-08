@@ -6,7 +6,7 @@ package wres.datamodel;
  * @author jesse
  */
 public interface DoublesByLeadTime
-extends DoubleBrick, ByLeadTime<DoubleBrick>
+extends DoubleArray, ByLeadTime<DoubleArray>
 {
 
 }
