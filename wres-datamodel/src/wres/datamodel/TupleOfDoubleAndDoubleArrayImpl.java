@@ -13,7 +13,7 @@ implements TupleOfDoubleAndDoubleArray
         this.key = key;
         this.doubles = doubles;
     }
-    
+
     public static TupleOfDoubleAndDoubleArray of(double key, double[] doubles)
     {
         return new TupleOfDoubleAndDoubleArrayImpl(key, doubles);
@@ -37,5 +37,22 @@ implements TupleOfDoubleAndDoubleArray
     public double getKey()
     {
         return key;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder s = new StringBuilder();
+        s.append("key: ");
+        s.append(getKey());
+        s.append(" ");
+        s.append("value: [ ");
+        for (double d : getDoubles())
+        {
+            s.append(d);
+            s.append(" ");
+        }
+        s.append("]");
+        return s.toString();
     }
 }
