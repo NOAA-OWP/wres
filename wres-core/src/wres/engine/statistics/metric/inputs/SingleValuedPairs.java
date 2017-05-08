@@ -1,7 +1,12 @@
 package wres.engine.statistics.metric.inputs;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import static java.util.stream.Collectors.*;
+
+import wres.datamodel.TupleOfDoubles;
+import wres.datamodel.TuplesOfDoubles;
 
 /**
  * Class for storing verification pairs that comprise single-valued, continuous numerical, predictions and observations.
@@ -17,13 +22,13 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * The verification pairs.
      */
 
-    final ArrayList<DoubleVector> pairs;
+    private final List<TupleOfDoubles> pairs;
 
     /**
      * The baseline pairs.
      */
 
-    final ArrayList<DoubleVector> basePairs;
+    private final List<TupleOfDoubles> basePairs;
 
     /**
      * Dimension of the data (must be the same for all datasets).
@@ -40,7 +45,7 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * @throws MetricInputException if the pairs are invalid
      */
 
-    protected SingleValuedPairs(final double[][] pairs, final Dimension dim)
+    protected SingleValuedPairs(final TuplesOfDoubles pairs, final Dimension dim)
     {
         this(pairs, null, dim);
     }
@@ -49,17 +54,19 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * Construct the single-valued input with a baseline. Throws an exception if the pairs are null or empty or if the
      * baseline pairs are empty or if any individual pairs do not contain two values. The baseline pairs may be null.
      * 
-     * @param pairs the single-valued pairs
+     * @param pairs2 the single-valued pairs
      * @param basePairs the baseline pairs
      * @param dim the dimension of the input
      * @throws MetricInputException if the pairs are invalid
      */
 
-    protected SingleValuedPairs(final double[][] pairs, final double[][] basePairs, final Dimension dim)
+    protected SingleValuedPairs(final TuplesOfDoubles pairs2,
+                                final TuplesOfDoubles basePairs,
+                                final Dimension dim)
     {
         //Bounds check
-        Objects.requireNonNull(pairs, "Specify non-null input for the single-valued pairs.");
-        if(pairs.length == 0)
+        Objects.requireNonNull(pairs2, "Specify non-null input for the single-valued pairs.");
+        if(pairs2.getTuplesOfDoubles().size() == 0)
         {
             throw new MetricInputException("Provide an input with one or more pairs.");
         }
@@ -68,19 +75,19 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
         if(basePairs != null)
         {
             //Bounds check
-            if(basePairs.length == 0)
+            if(basePairs.getTuplesOfDoubles().size() == 0)
             {
                 throw new MetricInputException("Provide a baseline with one or more pairs.");
             }
             this.basePairs = new ArrayList<>();
             //Set the baseline pairs
-            for(final double[] pair: basePairs)
+            for(final TupleOfDoubles pair: basePairs.getTuplesOfDoubles())
             {
-                if(pair.length != 2)
+                if(pair.getTupleOfDoubles().length != 2)
                 {
                     throw new MetricInputException("Expected single-valued pairs with only two values.");
                 }
-                this.basePairs.add(PairFactory.getDoublePair(pair));
+                this.basePairs.add(pair);
             }
         }
         else
@@ -88,13 +95,13 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
             this.basePairs = null;
         }
         //Set the pairs
-        for(final double[] pair: pairs)
+        for(final TupleOfDoubles pair : pairs2.getTuplesOfDoubles())
         {
-            if(pair.length != 2)
+            if(pair.getTupleOfDoubles().length != 2)
             {
                 throw new MetricInputException("Expected single-valued pairs with only two values.");
             }
-            this.pairs.add(PairFactory.getDoublePair(pair));
+            this.pairs.add(pair);
         }
         this.dim = dim;
     }
@@ -123,15 +130,25 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
     }
 
     @Override
-    public ArrayList<DoubleVector> getData()
+    public List<DoubleVector> getData()
     {
-        return pairs;
+        // using stream transformation for now, but if we move toward an API,
+        // then we could return exactly what it is (or a copy)
+        return pairs.stream()
+                    .map(d -> d.getTupleOfDoubles())
+                    .map(DoubleVector::new)
+                    .collect(toList());
     }
 
     @Override
-    public ArrayList<DoubleVector> getBaselineData()
+    public List<DoubleVector> getBaselineData()
     {
-        return basePairs;
+        // using stream transformation for now, but if we move toward an API,
+        // then we could return exactly what it is (or a copy)
+        return basePairs.stream()
+                        .map(d -> d.getTupleOfDoubles())
+                        .map(DoubleVector::new)
+                        .collect(toList());
     }
 
     @Override
@@ -156,8 +173,8 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * @throws MetricInputException
      */
 
-    private SingleValuedPairs(final ArrayList<DoubleVector> pairs,
-                              final ArrayList<DoubleVector> basePairs,
+    private SingleValuedPairs(final List<TupleOfDoubles> pairs,
+                              final List<TupleOfDoubles> basePairs,
                               final Dimension dim)
     {
         this.pairs = pairs;

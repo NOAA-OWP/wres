@@ -2,13 +2,15 @@ package wres.engine.statistics.metric.inputs;
 
 import java.util.Objects;
 
+import wres.datamodel.DoubleBrick;
+
 /**
  * A mutable dataset that comprises a vector of <code>double</code> values.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class DoubleVector implements Dataset<double[]>
+public class DoubleVector implements Dataset<double[]>, DoubleBrick
 {
     /**
      * The values.
@@ -38,6 +40,12 @@ public class DoubleVector implements Dataset<double[]>
     public int size()
     {
         return values.length;
+    }
+
+    @Override
+    public double[] getDoubles()
+    {
+        return values.clone();
     }
 
 }
