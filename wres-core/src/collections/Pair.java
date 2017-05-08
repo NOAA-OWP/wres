@@ -33,6 +33,7 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements G
     /**
      * @return The first value
      */
+    @Override
     public T getItemOne()
     {
         return itemOne;
@@ -41,6 +42,7 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements G
     /**
      * @return The second value
      */
+    @Override
     public U getItemTwo() {
         return itemTwo;
     }
@@ -136,17 +138,5 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements G
     public String toString()
     {
         return "(" + String.valueOf(this.getItemOne()) + ", " + String.valueOf(this.getItemTwo()) + ")";
-    }
-
-    @Override
-    public T getFirst()
-    {
-        return getItemOne();
-    }
-
-    @Override
-    public U getSecond()
-    {
-        return getItemTwo();
     }
 }

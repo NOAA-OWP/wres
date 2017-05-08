@@ -25,7 +25,8 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 	 * Returns the first value
 	 * @return The first value
 	 */
-	public T getItemOne()
+	@Override
+    public T getItemOne()
 	{
 		return itemOne;
 	}
@@ -34,7 +35,8 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
 	 * Returns the second value
 	 * @return The second value
 	 */
-	public U getItemTwo() {
+	@Override
+    public U getItemTwo() {
 		return itemTwo;
 	}
 
@@ -104,17 +106,5 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
     public String toString()
     {
         return "(" + String.valueOf(this.getItemOne()) + ", " + String.valueOf(this.getItemTwo()) + ")";
-    }
-
-    @Override
-    public T getFirst()
-    {
-        return getItemOne();
-    }
-
-    @Override
-    public U getSecond()
-    {
-        return getItemTwo();
     }
 }

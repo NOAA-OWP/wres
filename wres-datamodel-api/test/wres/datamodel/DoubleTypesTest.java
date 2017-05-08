@@ -29,7 +29,7 @@ public class DoubleTypesTest
                     = new Tuple<DoubleBrick,DoubleBrick>()
                 {
                     @Override
-                    public DoubleBrick getFirst()
+                    public DoubleBrick getItemOne()
                     {
                         return new DoubleBrick()
                         {
@@ -42,7 +42,7 @@ public class DoubleTypesTest
                     }
 
                     @Override
-                    public DoubleBrick getSecond()
+                    public DoubleBrick getItemTwo()
                     {
                         return new DoubleBrick()
                         {
@@ -60,7 +60,7 @@ public class DoubleTypesTest
                     = new Tuple<DoubleBrick,DoubleBrick>()
                 {
                     @Override
-                    public DoubleBrick getFirst()
+                    public DoubleBrick getItemOne()
                     {
                         return new DoubleBrick()
                         {
@@ -73,7 +73,7 @@ public class DoubleTypesTest
                     }
 
                     @Override
-                    public DoubleBrick getSecond()
+                    public DoubleBrick getItemTwo()
                     {
                         return new DoubleBrick()
                         {
@@ -95,41 +95,41 @@ public class DoubleTypesTest
 
         for (Tuple<DoubleBrick,DoubleBrick> tup : testFcFc.getTuplesOfDoubleBricks())
         {
-            assert(tup.getFirst() instanceof DoubleBrick);
-            assert(tup.getSecond() instanceof DoubleBrick);
+            assert(tup.getItemOne() instanceof DoubleBrick);
+            assert(tup.getItemTwo() instanceof DoubleBrick);
         }
 
         assert(testFcFc.getTuplesOfDoubleBricks()
                        .get(0)
-                       .getFirst()
+                       .getItemOne()
                        .getDoubles()[0] == 1.0);
         assert(testFcFc.getTuplesOfDoubleBricks()
                        .get(0)
-                       .getFirst()
+                       .getItemOne()
                        .getDoubles()[1] == 2.0);
         assert(testFcFc.getTuplesOfDoubleBricks()
                        .get(0)
-                       .getSecond()
+                       .getItemTwo()
                        .getDoubles()[0] == 3.0);
         assert(testFcFc.getTuplesOfDoubleBricks()
                        .get(0)
-                       .getSecond()
+                       .getItemTwo()
                        .getDoubles()[1] == 4.0);
         assert(testFcFc.getTuplesOfDoubleBricks()
                        .get(1)
-                       .getFirst()
+                       .getItemOne()
                        .getDoubles()[0] == 5.0);
         assert(testFcFc.getTuplesOfDoubleBricks()
                        .get(1)
-                       .getFirst()
+                       .getItemOne()
                        .getDoubles()[1] == 6.0);
         assert(testFcFc.getTuplesOfDoubleBricks()
                        .get(1)
-                       .getSecond()
+                       .getItemTwo()
                        .getDoubles()[0] == 7.0);
         assert(testFcFc.getTuplesOfDoubleBricks()
                        .get(1)
-                       .getSecond()
+                       .getItemTwo()
                        .getDoubles()[1] == 8.0);
     }
 }
