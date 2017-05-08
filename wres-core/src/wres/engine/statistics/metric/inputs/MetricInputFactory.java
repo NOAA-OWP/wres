@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric.inputs;
 
+import wres.datamodel.TuplesOfDoubles;
+
 /**
  * A factory class for producing metric inputs.
  * 
@@ -49,7 +51,7 @@ public class MetricInputFactory
      * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
      */
 
-    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final double[][] pairs)
+    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final TuplesOfDoubles pairs)
     {
         return ofDiscreteProbabilityPairs(pairs, null);
     }
@@ -63,8 +65,8 @@ public class MetricInputFactory
      * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
      */
 
-    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final double[][] pairs,
-                                                                      final double[][] basePairs)
+    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final TuplesOfDoubles pairs,
+                                                                      final TuplesOfDoubles basePairs)
     {
         return new DiscreteProbabilityPairs(pairs, basePairs);
     }
@@ -111,7 +113,7 @@ public class MetricInputFactory
      * @throws MetricInputException if the pairs are invalid
      */
 
-    public static SingleValuedPairs ofSingleValuedPairs(final double[][] pairs, final Dimension dim)
+    public static SingleValuedPairs ofSingleValuedPairs(final TuplesOfDoubles pairs, final Dimension dim)
     {
         return ofSingleValuedPairs(pairs, null, dim);
     }
@@ -126,8 +128,8 @@ public class MetricInputFactory
      * @throws MetricInputException if the pairs are invalid
      */
 
-    public static SingleValuedPairs ofSingleValuedPairs(final double[][] pairs,
-                                                        final double[][] basePairs,
+    public static SingleValuedPairs ofSingleValuedPairs(final TuplesOfDoubles pairs,
+                                                        final TuplesOfDoubles basePairs,
                                                         final Dimension dim)
     {
         return new SingleValuedPairs(pairs, basePairs, null);

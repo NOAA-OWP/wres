@@ -1,5 +1,11 @@
 package wres.engine.statistics.metric;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import wres.datamodel.DataFactory;
+import wres.datamodel.TupleOfDoubles;
+import wres.datamodel.TuplesOfDoubles;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
 import wres.engine.statistics.metric.inputs.MetricInputFactory;
@@ -24,8 +30,19 @@ public final class MetricTestDataFactory
     public static SingleValuedPairs getSingleValuedPairsOne()
     {
         //Construct some single-valued pairs
-        final double[][] dData = new double[][]{{22.9, 22.8}, {75.2, 80}, {63.2, 65}, {29, 30}, {5, 2}, {2.1, 3.1},
-            {35000, 37000}, {8, 7}, {12, 12}, {93, 94}};
+        final List<TupleOfDoubles> values = new ArrayList<>();
+        values.add(DataFactory.tupleOf(22.9, 22.8));
+        values.add(DataFactory.tupleOf(75.2, 80));
+        values.add(DataFactory.tupleOf(63.2, 65));
+        values.add(DataFactory.tupleOf(29, 30));
+        values.add(DataFactory.tupleOf(5, 2));
+        values.add(DataFactory.tupleOf(2.1, 3.1));
+        values.add(DataFactory.tupleOf(35000, 37000));
+        values.add(DataFactory.tupleOf(8, 7));
+        values.add(DataFactory.tupleOf(12, 12));
+        values.add(DataFactory.tupleOf(93, 94));
+
+        final TuplesOfDoubles dData = DataFactory.tuplesOf(values);
         return MetricInputFactory.ofSingleValuedPairs(dData, null);
     }
 
@@ -68,9 +85,14 @@ public final class MetricTestDataFactory
     public static DiscreteProbabilityPairs getDiscreteProbabilityPairsOne()
     {
         //Construct some probabilistic pairs, and use the same pairs as a reference for skill (i.e. skill = 0.0)
-        final double[][] pData = new double[][]{{0, 3.0 / 5.0}, {0, 1.0 / 5.0}, {1, 2.0 / 5.0}, {1, 3.0 / 5.0},
-            {0, 0.0 / 5.0}, {1, 1.0 / 5.0}};
+        final List<TupleOfDoubles> values = new ArrayList<>();
+        values.add(DataFactory.tupleOf(0, 3.0 / 5.0));
+        values.add(DataFactory.tupleOf(0, 1.0 / 5.0));
+        values.add(DataFactory.tupleOf(1, 2.0 / 5.0));
+        values.add(DataFactory.tupleOf(1, 3.0 / 5.0));
+        values.add(DataFactory.tupleOf(0, 0.0 / 5.0));
+        values.add(DataFactory.tupleOf(1, 1.0 / 5.0));
+        final TuplesOfDoubles pData = DataFactory.tuplesOf(values);
         return MetricInputFactory.ofDiscreteProbabilityPairs(pData, pData);
     }
-
 }
