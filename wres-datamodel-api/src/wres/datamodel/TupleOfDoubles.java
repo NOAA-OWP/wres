@@ -1,9 +1,10 @@
 package wres.datamodel;
 
 /**
- * Indicates a tuple of precisely two double primitive values.
- *
- * Low level interface but may be useful across the system.
+ * Represents a List of TupleOfDoubles instances.
+ * 
+ * An example might be the simplest forecast/observation timeseries data,
+ * but stripped of any/all time information. Only the values.
  *
  * @author jesse
  *
