@@ -7,6 +7,6 @@ package wres.datamodel;
  *
  */
 public interface TuplesOfDoubleBricksByLeadTime
-extends ByLeadTime<Tuple<DoubleBrick,DoubleBrick>>, TuplesOfDoubleBricks
+extends ByLeadTime<Tuple<DoubleArray,DoubleArray>>, TuplesOfDoubleBricks
 {
 }

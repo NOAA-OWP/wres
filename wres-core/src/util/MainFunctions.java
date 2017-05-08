@@ -39,7 +39,6 @@ import data.ValuePairs;
 import data.Variable;
 import data.VariableCache;
 import wres.datamodel.TupleOfDoubleAndDoubleArray;
-import wres.datamodel.DoubleBrick;
 
 /**
  * @author ctubbs

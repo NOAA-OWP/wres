@@ -7,19 +7,19 @@ package wres.datamodel;
  * @author jesse
  *
  */
-public class WresPointFactoryImpl
+class WresPointFactoryImpl
 {
-    public static WresPoint of(int x)
+    static WresPoint of(int x)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }
 
-    public static WresPoint of(int x, int y)
+    static WresPoint of(int x, int y)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }
 
-    public static WresPoint of(int x, int y, int z)
+    static WresPoint of(int x, int y, int z)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }

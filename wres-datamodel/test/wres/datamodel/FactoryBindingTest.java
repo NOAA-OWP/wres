@@ -8,15 +8,12 @@ public class FactoryBindingTest
     @Test
     public void useDataFactoryTest()
     {
-        LocationSingleTimeManyNonRasterData timeseries = 
-            PairFactory.getLocationSingleTimeManyNonRasterData();
-        assertNotNull(timeseries);
-        assertNotNull(timeseries.getWresPoint());
-        assertEquals(timeseries.getWresPoint().getX(), 0);
-        assertEquals(timeseries.getWresPoint().getY(), Integer.MIN_VALUE);
-        assertEquals(timeseries.getWresPoint().getZ(), Integer.MIN_VALUE);
-        assertNotNull(timeseries.getDateTimes());
-        assertNotNull(timeseries.getForecastValues("0"));
-        assertNotNull(timeseries.getObservationValues());
+        TupleOfDoubles tuple = DataFactory.tupleOf(1.0, 2.0);
+        assertNotNull(tuple);
+        assertNotNull(tuple.getTupleOfDoubles());
+        assertNotNull(tuple.getTupleOfDoubles()[0]);
+        assertNotNull(tuple.getTupleOfDoubles()[1]);
+        assert(tuple.getTupleOfDoubles()[0] == 1.0);
+        assert(tuple.getTupleOfDoubles()[1] == 2.0);
     }
 }

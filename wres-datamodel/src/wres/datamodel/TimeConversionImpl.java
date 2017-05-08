@@ -9,26 +9,26 @@ import java.time.LocalDateTime;
  * @author jesse
  *
  */
-public class TimeConversionImpl
+class TimeConversionImpl
 {
     private static final int FACTOR = 60;
     
-    public static LocalDateTime localDateTimeOf(int slimTime)
+    static LocalDateTime localDateTimeOf(int slimTime)
     {
         return LocalDateTime.ofEpochSecond(slimTime * FACTOR, 0, ZoneOffset.UTC);
     }
 
-    public static int internalTimeOf(LocalDateTime fatTime)
+    static int internalTimeOf(LocalDateTime fatTime)
     {
         return (int) (fatTime.toEpochSecond(ZoneOffset.UTC) / FACTOR);
     }
 
-    public static int internalTimeOf(java.util.Date fatUtilTime)
+    static int internalTimeOf(java.util.Date fatUtilTime)
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    public static int internalTimeOf(java.sql.Date fatSqlTime)
+    static int internalTimeOf(java.sql.Date fatSqlTime)
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }

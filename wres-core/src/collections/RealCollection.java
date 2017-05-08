@@ -13,7 +13,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import static java.util.stream.Collectors.*;
 
-import wres.datamodel.DoubleBrick;
+import wres.datamodel.DoubleArray;
 
 
 /**
@@ -22,7 +22,7 @@ import wres.datamodel.DoubleBrick;
  * @author Christopher Tubbs
  *
  */
-public class RealCollection extends LinkedList<Double> implements Comparable<RealCollection>, DoubleBrick
+public class RealCollection extends LinkedList<Double> implements Comparable<RealCollection>, DoubleArray
 {
     /**
      * Adds a float to the collection as a double

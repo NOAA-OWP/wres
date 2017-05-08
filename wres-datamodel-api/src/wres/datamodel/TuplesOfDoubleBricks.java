@@ -4,5 +4,5 @@ import java.util.List;
 
 public interface TuplesOfDoubleBricks
 {
-    List<Tuple<DoubleBrick,DoubleBrick>> getTuplesOfDoubleBricks();
+    List<Tuple<DoubleArray,DoubleArray>> getTuplesOfDoubleBricks();
 }

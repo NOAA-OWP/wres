@@ -23,15 +23,15 @@ public class DoubleTypesTest
         TuplesOfDoubleBricks testFcFc = new TuplesOfDoubleBricks()
         {
             @Override
-            public List<Tuple<DoubleBrick, DoubleBrick>> getTuplesOfDoubleBricks()
+            public List<Tuple<DoubleArray, DoubleArray>> getTuplesOfDoubleBricks()
             {
-                Tuple<DoubleBrick,DoubleBrick> tupleA
-                    = new Tuple<DoubleBrick,DoubleBrick>()
+                Tuple<DoubleArray,DoubleArray> tupleA
+                    = new Tuple<DoubleArray,DoubleArray>()
                 {
                     @Override
-                    public DoubleBrick getItemOne()
+                    public DoubleArray getItemOne()
                     {
-                        return new DoubleBrick()
+                        return new DoubleArray()
                         {
                             @Override
                             public double[] getDoubles()
@@ -42,9 +42,9 @@ public class DoubleTypesTest
                     }
 
                     @Override
-                    public DoubleBrick getItemTwo()
+                    public DoubleArray getItemTwo()
                     {
-                        return new DoubleBrick()
+                        return new DoubleArray()
                         {
                             @Override
                             public double[] getDoubles()
@@ -56,13 +56,13 @@ public class DoubleTypesTest
 
                 };
 
-                Tuple<DoubleBrick,DoubleBrick> tupleB
-                    = new Tuple<DoubleBrick,DoubleBrick>()
+                Tuple<DoubleArray,DoubleArray> tupleB
+                    = new Tuple<DoubleArray,DoubleArray>()
                 {
                     @Override
-                    public DoubleBrick getItemOne()
+                    public DoubleArray getItemOne()
                     {
-                        return new DoubleBrick()
+                        return new DoubleArray()
                         {
                             @Override
                             public double[] getDoubles()
@@ -73,9 +73,9 @@ public class DoubleTypesTest
                     }
 
                     @Override
-                    public DoubleBrick getItemTwo()
+                    public DoubleArray getItemTwo()
                     {
-                        return new DoubleBrick()
+                        return new DoubleArray()
                         {
                             @Override
                             public double[] getDoubles()
@@ -86,17 +86,17 @@ public class DoubleTypesTest
                     }
                 };
 
-                List<Tuple<DoubleBrick,DoubleBrick>> fourBricks = new ArrayList<>(2);
+                List<Tuple<DoubleArray,DoubleArray>> fourBricks = new ArrayList<>(2);
                 fourBricks.add(tupleA);
                 fourBricks.add(tupleB);
                 return fourBricks;
             }
         };
 
-        for (Tuple<DoubleBrick,DoubleBrick> tup : testFcFc.getTuplesOfDoubleBricks())
+        for (Tuple<DoubleArray,DoubleArray> tup : testFcFc.getTuplesOfDoubleBricks())
         {
-            assert(tup.getItemOne() instanceof DoubleBrick);
-            assert(tup.getItemTwo() instanceof DoubleBrick);
+            assert(tup.getItemOne() instanceof DoubleArray);
+            assert(tup.getItemTwo() instanceof DoubleArray);
         }
 
         assert(testFcFc.getTuplesOfDoubleBricks()
