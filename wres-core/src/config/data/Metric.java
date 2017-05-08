@@ -86,8 +86,8 @@ public class Metric extends ClauseConfig {
 	    
 	    // TODO: Change this to consume the aggregation specification
 	    List<Integer> steps = getSteps(forecasts.getVariable().getVariableID());
-	    int threadsComplete = 0;
-	    int threadsAdded = 0;
+	    float threadsComplete = 0;
+	    float threadsAdded = 0;
         
         for (Integer step : steps)
         {
@@ -99,12 +99,15 @@ public class Metric extends ClauseConfig {
         
         System.err.println(threadsAdded + " operations were added to collect pairs. Waiting for results...");
         
-        for (Integer lead : threadResults.keySet())
+        //for (Integer lead : threadResults.keySet())
+        //{
+            //results.put(lead, threadResults.get(lead).get());
+            //threadResults.put(lead, null);
+        for (Entry<Integer, Future<ValuePairs>> result : threadResults.entrySet())
         {
-            results.put(lead, threadResults.get(lead).get());
-            threadResults.remove(lead);
+            results.put(result.getKey(), result.getValue().get());
             threadsComplete++;
-            System.err.print("\r" +threadsComplete + "/" + threadsAdded + " operations complete. (" + threadsComplete/threadsAdded + "%)");
+            System.err.print("\r" +threadsComplete + "/" + threadsAdded + " operations complete. (" + (threadsComplete/threadsAdded) * 100 + "%)\t");
         }
         
         System.out.println();
