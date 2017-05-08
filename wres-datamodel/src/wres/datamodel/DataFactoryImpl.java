@@ -32,4 +32,15 @@ public class DataFactoryImpl
             }
         };
     }
+
+    public static TupleOfDoubleAndDoubleArray tupleOf(double first, double[] second)
+    {
+        return TupleOfDoubleAndDoubleArrayImpl.of(first, second);
+    }
+
+    public static TupleOfDoubleAndDoubleArray tupleOf(Double first, Double[] second)
+    {
+        return TupleOfDoubleAndDoubleArrayImpl.of(first, second);
+    }
+
 }

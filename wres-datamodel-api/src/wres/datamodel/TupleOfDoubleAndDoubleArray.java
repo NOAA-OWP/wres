@@ -5,11 +5,11 @@ package wres.datamodel;
  * 
  *   [obs_val1, [fc1_val1, fc1_val2 ... fc1_valn]
  *   
- * Length is unnecessary because we have a tuple, the second element
- * has its own length in it.
+ * Length of second element can be found from the second element.
+ * It is just an array of primitive doubles.
  * 
  * Use getKey method to retrieve the first value of the tuple,
- * the method to retrieve the second value of the tuple is from ByIndex.
+ * the method to retrieve the second value of the tuple is from DoubleBrick.
  *
  * @author jesse
  * 

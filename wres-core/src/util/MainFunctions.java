@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
@@ -36,7 +37,10 @@ import concurrency.ObservationSaver;
 import data.MeasurementCache;
 import data.ValuePairs;
 import data.Variable;
-import data.VariableCache;;
+import data.VariableCache;
+import wres.datamodel.TupleOfDoubleAndDoubleArray;
+import wres.datamodel.DoubleBrick;
+
 /**
  * @author ctubbs
  *
@@ -784,7 +788,7 @@ public final class MainFunctions {
 	            int totalLimit = 10;
 	            int totalCount = 0;
 	            Project foundProject = ProjectConfig.getProject(projectName);
-	            Map<Integer, ValuePairs> pairMapping = null;
+	            Map<Integer, List<TupleOfDoubleAndDoubleArray>> pairMapping = null;
 	            
 	            if (foundProject == null)
 	            {
@@ -809,7 +813,7 @@ public final class MainFunctions {
                     for (Integer leadKey : pairMapping.keySet())
                     {
                         System.out.println("\tLead Time: " + leadKey);
-                        for (Pair<Double, RealCollection> pairs : pairMapping.get(leadKey))
+                        for (TupleOfDoubleAndDoubleArray pairs : pairMapping.get(leadKey))
                         {
                             System.out.print("\t\t");
                             String representation = pairs.toString().substring(0, Math.min(120, pairs.toString().length()));
