@@ -77,7 +77,7 @@ project(':wres-datamodel-api')
 
     jar
     {
-        exclude('gov/noaa/wres/datamodel/**/*Impl*')
+        exclude('wres/datamodel/**/*Impl*')
     }
 }
 
