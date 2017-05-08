@@ -3,12 +3,15 @@
  */
 package collections;
 
+import wres.datamodel.Tuple;
+
 /**
  * An immutable pairing of two values
  * 
  * @author Christopher Tubbs
  */
-public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implements Group<TwoTuple<T, U>>{
+public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implements Group<TwoTuple<T, U>>, Tuple<T,U>
+{
 
 	/**
 	 * Creates the immutable pair of two values
@@ -101,5 +104,17 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
     public String toString()
     {
         return "(" + String.valueOf(this.getItemOne()) + ", " + String.valueOf(this.getItemTwo()) + ")";
+    }
+
+    @Override
+    public T getFirst()
+    {
+        return getItemOne();
+    }
+
+    @Override
+    public U getSecond()
+    {
+        return getItemTwo();
     }
 }

@@ -99,9 +99,10 @@ public class Metric extends ClauseConfig {
         
         System.err.println(threadsAdded + " operations were added to collect pairs. Waiting for results...");
         
-        for (Entry<Integer, Future<ValuePairs>> result : threadResults.entrySet())
+        for (Integer lead : threadResults.keySet())
         {
-            results.put(result.getKey(), result.getValue().get());
+            results.put(lead, threadResults.get(lead).get());
+            threadResults.remove(lead);
             threadsComplete++;
             System.err.print("\r" +threadsComplete + "/" + threadsAdded + " operations complete. (" + threadsComplete/threadsAdded + "%)");
         }
