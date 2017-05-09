@@ -2,9 +2,9 @@ package wres.datamodel;
 
 /**
  * Provides getting an element of a collection or array by a lead time.
- * 
+ *
  * Low level interface to be used by other interfaces
- * 
+ *
  * @author jesse
  *
  * @param <T>

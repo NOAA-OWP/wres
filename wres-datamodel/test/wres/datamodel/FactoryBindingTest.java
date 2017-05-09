@@ -10,10 +10,7 @@ public class FactoryBindingTest
     {
         TupleOfDoubles tuple = DataFactory.tupleOf(1.0, 2.0);
         assertNotNull(tuple);
-        assertNotNull(tuple.getTupleOfDoubles());
-        assertNotNull(tuple.getTupleOfDoubles()[0]);
-        assertNotNull(tuple.getTupleOfDoubles()[1]);
-        assert(tuple.getTupleOfDoubles()[0] == 1.0);
-        assert(tuple.getTupleOfDoubles()[1] == 2.0);
+        assert(tuple.getItemOne() == 1.0);
+        assert(tuple.getItemTwo() == 2.0);
     }
 }

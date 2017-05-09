@@ -5,13 +5,13 @@ import java.util.stream.Stream;
 class TupleOfDoubleAndDoubleArrayImpl
 implements TupleOfDoubleAndDoubleArray
 {
-    private final double key;
-    private final double[] doubles;
+    private final double itemOne;
+    private final double[] itemTwo;
 
     private TupleOfDoubleAndDoubleArrayImpl(double key, double[] doubles)
     {
-        this.key = key;
-        this.doubles = doubles;
+        this.itemOne = key;
+        this.itemTwo = doubles;
     }
 
     static TupleOfDoubleAndDoubleArray of(double key, double[] doubles)
@@ -28,15 +28,15 @@ implements TupleOfDoubleAndDoubleArray
     }
 
     @Override
-    public double[] getDoubles()
+    public double[] getItemTwo()
     {
-        return doubles;
+        return itemTwo;
     }
 
     @Override
-    public double getKey()
+    public double getItemOne()
     {
-        return key;
+        return itemOne;
     }
 
     @Override
@@ -44,10 +44,10 @@ implements TupleOfDoubleAndDoubleArray
     {
         StringBuilder s = new StringBuilder();
         s.append("key: ");
-        s.append(getKey());
+        s.append(getItemOne());
         s.append(" ");
         s.append("value: [ ");
-        for (double d : getDoubles())
+        for (double d : getItemTwo())
         {
             s.append(d);
             s.append(" ");

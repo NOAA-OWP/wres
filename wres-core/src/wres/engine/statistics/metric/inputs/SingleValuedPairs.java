@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.inputs;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import static java.util.stream.Collectors.*;
@@ -83,10 +84,6 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
             //Set the baseline pairs
             for(final TupleOfDoubles pair: basePairs.getTuplesOfDoubles())
             {
-                if(pair.getTupleOfDoubles().length != 2)
-                {
-                    throw new MetricInputException("Expected single-valued pairs with only two values.");
-                }
                 this.basePairs.add(pair);
             }
         }
@@ -97,10 +94,6 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
         //Set the pairs
         for(final TupleOfDoubles pair : pairs2.getTuplesOfDoubles())
         {
-            if(pair.getTupleOfDoubles().length != 2)
-            {
-                throw new MetricInputException("Expected single-valued pairs with only two values.");
-            }
             this.pairs.add(pair);
         }
         this.dim = dim;
@@ -135,7 +128,7 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
         // using stream transformation for now, but if we move toward an API,
         // then we could return exactly what it is (or a copy)
         return pairs.stream()
-                    .map(d -> d.getTupleOfDoubles())
+                    .map(d -> new double[] {d.getItemOne(), d.getItemTwo()})
                     .map(DoubleVector::new)
                     .collect(toList());
     }
@@ -146,7 +139,7 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
         // using stream transformation for now, but if we move toward an API,
         // then we could return exactly what it is (or a copy)
         return basePairs.stream()
-                        .map(d -> d.getTupleOfDoubles())
+                        .map(d -> new double[] {d.getItemOne(), d.getItemTwo()})
                         .map(DoubleVector::new)
                         .collect(toList());
     }

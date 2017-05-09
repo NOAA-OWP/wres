@@ -11,5 +11,6 @@ package wres.datamodel;
  */
 public interface TupleOfDoubles
 {
-    double[] getTupleOfDoubles();
+    double getItemOne();
+    double getItemTwo();
 }

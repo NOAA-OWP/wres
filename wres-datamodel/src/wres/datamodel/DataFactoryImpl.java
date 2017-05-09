@@ -12,10 +12,15 @@ class DataFactoryImpl
         return new TupleOfDoubles()
         {
             @Override
-            public double[] getTupleOfDoubles()
+            public double getItemOne()
             {
-                double[] tuple = { first, second };
-                return tuple;
+                return first;
+            }
+
+            @Override
+            public double getItemTwo()
+            {
+                return second;
             }
             
         };
