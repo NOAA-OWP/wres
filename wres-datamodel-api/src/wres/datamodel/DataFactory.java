@@ -20,6 +20,18 @@ public class DataFactory
         // No construction, this is a static factory class.
     }
 
+    /**
+     * High level helper to get the typical paired ensemble data structure.
+     * 
+     * @param observation
+     * @param forecast
+     * @return
+     */
+    public static EnsemblePair pairOf(Double observation, Double[] forecast)
+    {
+        return DataFactoryImpl.pairOf(observation, forecast);
+    }
+
     public static TupleOfDoubles tupleOf(double first, double second)
     {
         return DataFactoryImpl.tupleOf(first, second);

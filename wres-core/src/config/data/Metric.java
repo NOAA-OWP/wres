@@ -29,7 +29,7 @@ import data.VariableCache;
 import thredds.client.catalog.Dataset;
 import util.Database;
 import util.Utilities;
-import wres.datamodel.TupleOfDoubleAndDoubleArray;
+import wres.datamodel.EnsemblePair;
 
 /**
  * The specification for a metric and the information necessary to retrieve details
@@ -80,10 +80,10 @@ public class Metric extends ClauseConfig {
 		return null;
 	}
 	
-	public Map<Integer, List<TupleOfDoubleAndDoubleArray>> getPairs() throws Exception
+	public Map<Integer, List<EnsemblePair>> getPairs() throws Exception
 	{
-	    Map<Integer, List<TupleOfDoubleAndDoubleArray>> results = new TreeMap<Integer, List<TupleOfDoubleAndDoubleArray>>();
-	    Map<Integer, Future<List<TupleOfDoubleAndDoubleArray>>> threadResults = new TreeMap<Integer, Future<List<TupleOfDoubleAndDoubleArray>>>();
+	    Map<Integer, List<EnsemblePair>> results = new TreeMap<Integer, List<EnsemblePair>>();
+	    Map<Integer, Future<List<EnsemblePair>>> threadResults = new TreeMap<Integer, Future<List<EnsemblePair>>>();
 	    
 	    // TODO: Change this to consume the aggregation specification
 	    List<Integer> steps = getSteps(forecasts.getVariable().getVariableID());
@@ -104,7 +104,7 @@ public class Metric extends ClauseConfig {
         //{
             //results.put(lead, threadResults.get(lead).get());
             //threadResults.put(lead, null);
-        for (Entry<Integer, Future<List<TupleOfDoubleAndDoubleArray>>> result : threadResults.entrySet())
+        for (Entry<Integer, Future<List<EnsemblePair>>> result : threadResults.entrySet())
         {
             results.put(result.getKey(), result.getValue().get());
             threadsComplete++;

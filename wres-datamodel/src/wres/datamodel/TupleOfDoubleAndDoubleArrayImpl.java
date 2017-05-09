@@ -3,7 +3,7 @@ package wres.datamodel;
 import java.util.stream.Stream;
 
 class TupleOfDoubleAndDoubleArrayImpl
-implements TupleOfDoubleAndDoubleArray
+implements TupleOfDoubleAndDoubleArray, EnsemblePair
 {
     private final double itemOne;
     private final double[] itemTwo;
@@ -30,7 +30,7 @@ implements TupleOfDoubleAndDoubleArray
     @Override
     public double[] getItemTwo()
     {
-        return itemTwo;
+        return itemTwo.clone();
     }
 
     @Override
@@ -54,5 +54,17 @@ implements TupleOfDoubleAndDoubleArray
         }
         s.append("]");
         return s.toString();
+    }
+
+    @Override
+    public double getObservation()
+    {
+        return getItemOne();
+    }
+
+    @Override
+    public double[] getForecast()
+    {
+        return getItemTwo();
     }
 }

@@ -4,6 +4,12 @@ import java.util.List;
 
 class DataFactoryImpl
 {
+
+    static EnsemblePair pairOf(Double observation, Double[] forecast)
+    {
+        throw new UnsupportedOperationException("This code should not make it into the api jar file");
+    }
+
     static TupleOfDoubles tupleOf(double first, double second)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
@@ -23,4 +29,5 @@ class DataFactoryImpl
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }
+
 }
