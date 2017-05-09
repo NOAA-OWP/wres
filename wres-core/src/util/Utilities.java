@@ -7,6 +7,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -38,7 +40,56 @@ public final class Utilities {
 	/**
 	 * Static list of string values that might map to the boolean value 'true'
 	 */
-	public static final List<String> POSSIBLE_TRUE_VALUES = Arrays.asList("true", "True", "TRUE", "T", "t", "y", "yes", "Yes", "YES", "Y");
+	public static final List<String> POSSIBLE_TRUE_VALUES = Arrays.asList("true", "True", "TRUE", "T", "t", "y", "yes", "Yes", "YES", "Y", "1");
+	
+	public static final Map<String, Double> HOUR_CONVERSION = mapTimeToHours();
+	
+	private static Map<String, Double> mapTimeToHours()
+	{
+	    Map<String, Double> mapping = new TreeMap<String, Double>();
+        
+        mapping.put("second", 1/3600.0);
+        mapping.put("hour", 1.0);
+        mapping.put("day", 24.0);
+        mapping.put("minute", 1/60.0);
+	    
+	    return mapping;
+	}
+	
+	public static final Double secondsToHours(int seconds)
+	{
+	    return seconds * HOUR_CONVERSION.get("second");
+	}
+	
+	public static final Double secondsToHours(Double seconds)
+	{
+	    return seconds * HOUR_CONVERSION.get("second");
+	}
+	
+	public static final Double daysToHours(int days)
+	{
+	    return days * HOUR_CONVERSION.get("day");
+	}
+	
+	public static final Double daysToHours(Double days)
+	{
+	    return days * HOUR_CONVERSION.get("day");
+	}
+	
+	public static final Double minutesToHours(int minutes)
+	{
+	    return minutes * HOUR_CONVERSION.get("minute");
+	}
+	
+	public static final Double minutesToHours(Double minutes)
+	{
+	    return minutes * HOUR_CONVERSION.get("minute");
+	}
+	
+	public static boolean isTrue(String possibleBoolean)
+	{
+	    return POSSIBLE_TRUE_VALUES.contains(possibleBoolean);
+	}
 	
 	/**
 	 * Creates a new array without the value at the indicated index

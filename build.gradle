@@ -86,7 +86,7 @@ project(':wres-core')
     apply plugin: 'application'
     mainClassName = 'Main'
 
-    applicationDefaultJvmArgs = ['-Xmx3500m']
+    applicationDefaultJvmArgs = ['-Xmx3600m', '-Xms3200m']
 
     dependencies
     {

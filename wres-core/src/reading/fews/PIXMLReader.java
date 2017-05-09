@@ -37,26 +37,6 @@ public final class PIXMLReader extends XMLReader
      * Alias for the system agnostic newline separator
      */
 	private final static String newline = System.lineSeparator();
-	
-	/**
-	 * General mapping for calculations used to convert temporal units to hours
-	 */
-	private final static Map<String, Double> hourConversion = mapTimeToHours();
-	
-	/**
-	 * @return The mapping for calculations between temporal units and hours 
-	 */
-	private static Map<String, Double> mapTimeToHours() 
-	{
-		Map<String, Double> mapping = new TreeMap<String, Double>();
-		
-		mapping.put("second", 1/3600.0);
-		mapping.put("hour", 1.0);
-		mapping.put("day", 24.0);
-		mapping.put("minute", 1/60.0);
-		
-		return mapping;
-	}
 
 	/**
 	 * Message logger for the PIXMLReader class
@@ -356,7 +336,7 @@ public final class PIXMLReader extends XMLReader
 						}
 					}
 					
-					timeStep = (int) (hourConversion.get(unit) * multiplier);
+					timeStep = (int) (Utilities.HOUR_CONVERSION.get(unit) * multiplier);
 				}
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
