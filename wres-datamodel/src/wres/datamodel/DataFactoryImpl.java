@@ -7,6 +7,13 @@ import wres.datamodel.TuplesOfDoubles;
 
 class DataFactoryImpl
 {
+    static EnsemblePair pairOf(Double observation, Double[] forecast)
+    {
+        // EnsemblePair is a friendlier name for TupleOfDoubleAndDoubleArray
+        return (EnsemblePair) TupleOfDoubleAndDoubleArrayImpl.of(observation,
+                                                                     forecast);
+    }
+
     static TupleOfDoubles tupleOf(double first, double second)
     {
         return new TupleOfDoubles()

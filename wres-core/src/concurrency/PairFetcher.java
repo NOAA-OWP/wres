@@ -17,14 +17,14 @@ import data.MeasurementCache;
 import data.ValuePairs;
 import util.Database;
 import wres.datamodel.DataFactory;
-import wres.datamodel.TupleOfDoubleAndDoubleArray;
+import wres.datamodel.EnsemblePair;
 
 /**
  * @author Christopher Tubbs
  *
  */
 public final class PairFetcher //implements Callable<ValuePairs>
-implements Callable<List<TupleOfDoubleAndDoubleArray>>
+implements Callable<List<EnsemblePair>>
 {
     private static final boolean USE_DOUBLE_PAIR = false;
     private static final String newline = System.lineSeparator();
@@ -39,12 +39,12 @@ implements Callable<List<TupleOfDoubleAndDoubleArray>>
     }
 
     @Override
-    public List<TupleOfDoubleAndDoubleArray> call() throws Exception
+    public List<EnsemblePair> call() throws Exception
     //    public ValuePairs call() throws Exception
       {
         //ValuePairs pairs = new ValuePairs();
         // trying out verbosely named API type:
-        List<TupleOfDoubleAndDoubleArray> pairs = new ArrayList<>();
+        List<EnsemblePair> pairs = new ArrayList<>();
         Connection connection = null;
 
         try
@@ -70,7 +70,7 @@ implements Callable<List<TupleOfDoubleAndDoubleArray>>
                 Double observedValue = resultingPairs.getDouble("sourceOneValue");
                 //RealCollection forecasts = new RealCollection((Double[])resultingPairs.getArray("measurements").getArray());
                 Double[] forecasts = (Double[]) resultingPairs.getArray("measurements").getArray();
-                pairs.add(DataFactory.tupleOf(observedValue, forecasts));
+                pairs.add(DataFactory.pairOf(observedValue, forecasts));
             }
         }
         catch (Exception error)
