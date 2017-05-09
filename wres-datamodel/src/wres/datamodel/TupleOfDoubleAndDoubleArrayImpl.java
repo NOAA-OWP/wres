@@ -2,24 +2,24 @@ package wres.datamodel;
 
 import java.util.stream.Stream;
 
-public class TupleOfDoubleAndDoubleArrayImpl
-implements TupleOfDoubleAndDoubleArray
+class TupleOfDoubleAndDoubleArrayImpl
+implements TupleOfDoubleAndDoubleArray, EnsemblePair
 {
-    private final double key;
-    private final double[] doubles;
+    private final double itemOne;
+    private final double[] itemTwo;
 
     private TupleOfDoubleAndDoubleArrayImpl(double key, double[] doubles)
     {
-        this.key = key;
-        this.doubles = doubles;
+        this.itemOne = key;
+        this.itemTwo = doubles;
     }
 
-    public static TupleOfDoubleAndDoubleArray of(double key, double[] doubles)
+    static TupleOfDoubleAndDoubleArray of(double key, double[] doubles)
     {
         return new TupleOfDoubleAndDoubleArrayImpl(key, doubles);
     }
 
-    public static TupleOfDoubleAndDoubleArray of(Double key, Double[] doubles)
+    static TupleOfDoubleAndDoubleArray of(Double key, Double[] doubles)
     {
         double[] unboxedDoubles = Stream.of(doubles)
                                         .mapToDouble(Double::doubleValue)
@@ -28,15 +28,15 @@ implements TupleOfDoubleAndDoubleArray
     }
 
     @Override
-    public double[] getDoubles()
+    public double[] getItemTwo()
     {
-        return doubles;
+        return itemTwo.clone();
     }
 
     @Override
-    public double getKey()
+    public double getItemOne()
     {
-        return key;
+        return itemOne;
     }
 
     @Override
@@ -44,15 +44,27 @@ implements TupleOfDoubleAndDoubleArray
     {
         StringBuilder s = new StringBuilder();
         s.append("key: ");
-        s.append(getKey());
+        s.append(getItemOne());
         s.append(" ");
         s.append("value: [ ");
-        for (double d : getDoubles())
+        for (double d : getItemTwo())
         {
             s.append(d);
             s.append(" ");
         }
         s.append("]");
         return s.toString();
+    }
+
+    @Override
+    public double getObservation()
+    {
+        return getItemOne();
+    }
+
+    @Override
+    public double[] getForecast()
+    {
+        return getItemTwo();
     }
 }

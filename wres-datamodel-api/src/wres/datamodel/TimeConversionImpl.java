@@ -7,24 +7,24 @@ package wres.datamodel;
  * @author jesse
  *
  */
-public class TimeConversionImpl
+class TimeConversionImpl
 {
-    public static java.time.LocalDateTime localDateTimeOf(int slimTime)
+    static java.time.LocalDateTime localDateTimeOf(int slimTime)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }
 
-    public static int internalTimeOf(java.time.LocalDateTime fatTime)
+    static int internalTimeOf(java.time.LocalDateTime fatTime)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }
 
-    public static int internalTimeOf(java.util.Date fatUtilTime)
+    static int internalTimeOf(java.util.Date fatUtilTime)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }
 
-    public static int internalTimeOf(java.sql.Date fatSqlTime)
+    static int internalTimeOf(java.sql.Date fatSqlTime)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }

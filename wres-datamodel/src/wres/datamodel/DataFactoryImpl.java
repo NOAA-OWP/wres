@@ -5,23 +5,35 @@ import java.util.List;
 import wres.datamodel.TupleOfDoubles;
 import wres.datamodel.TuplesOfDoubles;
 
-public class DataFactoryImpl
+class DataFactoryImpl
 {
-    public static TupleOfDoubles tupleOf(double first, double second)
+    static EnsemblePair pairOf(Double observation, Double[] forecast)
+    {
+        // EnsemblePair is a friendlier name for TupleOfDoubleAndDoubleArray
+        return (EnsemblePair) TupleOfDoubleAndDoubleArrayImpl.of(observation,
+                                                                     forecast);
+    }
+
+    static TupleOfDoubles tupleOf(double first, double second)
     {
         return new TupleOfDoubles()
         {
             @Override
-            public double[] getTupleOfDoubles()
+            public double getItemOne()
             {
-                double[] tuple = { first, second };
-                return tuple;
+                return first;
+            }
+
+            @Override
+            public double getItemTwo()
+            {
+                return second;
             }
             
         };
     }
 
-    public static TuplesOfDoubles tuplesOf(List<TupleOfDoubles> tuples)
+    static TuplesOfDoubles tuplesOf(List<TupleOfDoubles> tuples)
     {
         return new TuplesOfDoubles()
         {
@@ -33,12 +45,12 @@ public class DataFactoryImpl
         };
     }
 
-    public static TupleOfDoubleAndDoubleArray tupleOf(double first, double[] second)
+    static TupleOfDoubleAndDoubleArray tupleOf(double first, double[] second)
     {
         return TupleOfDoubleAndDoubleArrayImpl.of(first, second);
     }
 
-    public static TupleOfDoubleAndDoubleArray tupleOf(Double first, Double[] second)
+    static TupleOfDoubleAndDoubleArray tupleOf(Double first, Double[] second)
     {
         return TupleOfDoubleAndDoubleArrayImpl.of(first, second);
     }

@@ -20,18 +20,18 @@ public class DoubleTypesTest
         double[] ensembleA2 = { 3.0, 4.0 };
         double[] ensembleB1 = { 5.0, 6.0 };
         double[] ensembleB2 = { 7.0, 8.0 };
-        TuplesOfDoubleBricks testFcFc = new TuplesOfDoubleBricks()
+        TuplesOfDoubleArrays testFcFc = new TuplesOfDoubleArrays()
         {
             @Override
-            public List<Tuple<DoubleBrick, DoubleBrick>> getTuplesOfDoubleBricks()
+            public List<Tuple<DoubleArray, DoubleArray>> getTuplesofDoubleArrays()
             {
-                Tuple<DoubleBrick,DoubleBrick> tupleA
-                    = new Tuple<DoubleBrick,DoubleBrick>()
+                Tuple<DoubleArray,DoubleArray> tupleA
+                    = new Tuple<DoubleArray,DoubleArray>()
                 {
                     @Override
-                    public DoubleBrick getItemOne()
+                    public DoubleArray getItemOne()
                     {
-                        return new DoubleBrick()
+                        return new DoubleArray()
                         {
                             @Override
                             public double[] getDoubles()
@@ -42,9 +42,9 @@ public class DoubleTypesTest
                     }
 
                     @Override
-                    public DoubleBrick getItemTwo()
+                    public DoubleArray getItemTwo()
                     {
-                        return new DoubleBrick()
+                        return new DoubleArray()
                         {
                             @Override
                             public double[] getDoubles()
@@ -56,13 +56,13 @@ public class DoubleTypesTest
 
                 };
 
-                Tuple<DoubleBrick,DoubleBrick> tupleB
-                    = new Tuple<DoubleBrick,DoubleBrick>()
+                Tuple<DoubleArray,DoubleArray> tupleB
+                    = new Tuple<DoubleArray,DoubleArray>()
                 {
                     @Override
-                    public DoubleBrick getItemOne()
+                    public DoubleArray getItemOne()
                     {
-                        return new DoubleBrick()
+                        return new DoubleArray()
                         {
                             @Override
                             public double[] getDoubles()
@@ -73,9 +73,9 @@ public class DoubleTypesTest
                     }
 
                     @Override
-                    public DoubleBrick getItemTwo()
+                    public DoubleArray getItemTwo()
                     {
-                        return new DoubleBrick()
+                        return new DoubleArray()
                         {
                             @Override
                             public double[] getDoubles()
@@ -86,48 +86,48 @@ public class DoubleTypesTest
                     }
                 };
 
-                List<Tuple<DoubleBrick,DoubleBrick>> fourBricks = new ArrayList<>(2);
+                List<Tuple<DoubleArray,DoubleArray>> fourBricks = new ArrayList<>(2);
                 fourBricks.add(tupleA);
                 fourBricks.add(tupleB);
                 return fourBricks;
             }
         };
 
-        for (Tuple<DoubleBrick,DoubleBrick> tup : testFcFc.getTuplesOfDoubleBricks())
+        for (Tuple<DoubleArray,DoubleArray> tup : testFcFc.getTuplesofDoubleArrays())
         {
-            assert(tup.getItemOne() instanceof DoubleBrick);
-            assert(tup.getItemTwo() instanceof DoubleBrick);
+            assert(tup.getItemOne() instanceof DoubleArray);
+            assert(tup.getItemTwo() instanceof DoubleArray);
         }
 
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(0)
                        .getItemOne()
                        .getDoubles()[0] == 1.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(0)
                        .getItemOne()
                        .getDoubles()[1] == 2.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(0)
                        .getItemTwo()
                        .getDoubles()[0] == 3.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(0)
                        .getItemTwo()
                        .getDoubles()[1] == 4.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(1)
                        .getItemOne()
                        .getDoubles()[0] == 5.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(1)
                        .getItemOne()
                        .getDoubles()[1] == 6.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(1)
                        .getItemTwo()
                        .getDoubles()[0] == 7.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(1)
                        .getItemTwo()
                        .getDoubles()[1] == 8.0);
