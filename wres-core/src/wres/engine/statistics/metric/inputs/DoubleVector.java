@@ -2,7 +2,7 @@ package wres.engine.statistics.metric.inputs;
 
 import java.util.Objects;
 
-import wres.datamodel.DoubleBrick;
+import wres.datamodel.DoubleArray;
 
 /**
  * A mutable dataset that comprises a vector of <code>double</code> values.
@@ -10,7 +10,7 @@ import wres.datamodel.DoubleBrick;
  * @author james.brown@hydrosolved.com
  */
 
-public class DoubleVector implements Dataset<double[]>, DoubleBrick
+public class DoubleVector implements Dataset<double[]>, DoubleArray
 {
     /**
      * The values.
