@@ -20,10 +20,10 @@ public class DoubleTypesTest
         double[] ensembleA2 = { 3.0, 4.0 };
         double[] ensembleB1 = { 5.0, 6.0 };
         double[] ensembleB2 = { 7.0, 8.0 };
-        TuplesOfDoubleBricks testFcFc = new TuplesOfDoubleBricks()
+        TuplesOfDoubleArrays testFcFc = new TuplesOfDoubleArrays()
         {
             @Override
-            public List<Tuple<DoubleArray, DoubleArray>> getTuplesOfDoubleBricks()
+            public List<Tuple<DoubleArray, DoubleArray>> getTuplesofDoubleArrays()
             {
                 Tuple<DoubleArray,DoubleArray> tupleA
                     = new Tuple<DoubleArray,DoubleArray>()
@@ -93,41 +93,41 @@ public class DoubleTypesTest
             }
         };
 
-        for (Tuple<DoubleArray,DoubleArray> tup : testFcFc.getTuplesOfDoubleBricks())
+        for (Tuple<DoubleArray,DoubleArray> tup : testFcFc.getTuplesofDoubleArrays())
         {
             assert(tup.getItemOne() instanceof DoubleArray);
             assert(tup.getItemTwo() instanceof DoubleArray);
         }
 
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(0)
                        .getItemOne()
                        .getDoubles()[0] == 1.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(0)
                        .getItemOne()
                        .getDoubles()[1] == 2.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(0)
                        .getItemTwo()
                        .getDoubles()[0] == 3.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(0)
                        .getItemTwo()
                        .getDoubles()[1] == 4.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(1)
                        .getItemOne()
                        .getDoubles()[0] == 5.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(1)
                        .getItemOne()
                        .getDoubles()[1] == 6.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(1)
                        .getItemTwo()
                        .getDoubles()[0] == 7.0);
-        assert(testFcFc.getTuplesOfDoubleBricks()
+        assert(testFcFc.getTuplesofDoubleArrays()
                        .get(1)
                        .getItemTwo()
                        .getDoubles()[1] == 8.0);
