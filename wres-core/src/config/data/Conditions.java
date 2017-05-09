@@ -21,7 +21,6 @@ public final class Conditions extends ClauseConfig {
     /**
      * Creates and parses the condition
      * @param reader The XML node(s) containing the definitions for the conditions
-     * @throws Exception 
      */
 	public Conditions(XMLStreamReader reader)
 	{
