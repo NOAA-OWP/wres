@@ -21,6 +21,7 @@ public final class Conditions extends ClauseConfig {
     /**
      * Creates and parses the condition
      * @param reader The XML node(s) containing the definitions for the conditions
+     * @throws Exception 
      */
 	public Conditions(XMLStreamReader reader)
 	{
@@ -173,27 +174,37 @@ public final class Conditions extends ClauseConfig {
 	
 	public boolean hasEarliestDate()
 	{
-	    return !this.earliestDate.equalsIgnoreCase("-infinity");
+	    return this.earliestDate != null && 
+	           !this.earliestDate.isEmpty() &&
+	           !this.earliestDate.equalsIgnoreCase("-infinity");
 	}
 	
 	public boolean hasLatestDate()
 	{
-	    return !this.latestDate.equalsIgnoreCase("infinity");
+	    return this.latestDate != null && 
+	           !this.latestDate.isEmpty() && 
+	           !this.latestDate.equalsIgnoreCase("infinity");
 	}
 	
 	public boolean hasMinimumValue()
 	{
-	    return !this.minimumValue.equalsIgnoreCase("-infinity");
+	    return this.minimumValue != null && 
+	           !this.minimumValue.isEmpty() && 
+	           !this.minimumValue.equalsIgnoreCase("-infinity");
 	}
 	
 	public boolean hasMaximumValue()
 	{
-	    return !this.maximumValue.equalsIgnoreCase("infinity");
+	    return this.maximumValue != null &&
+	           !this.maximumValue.isEmpty() &&         
+	           !this.maximumValue.equalsIgnoreCase("infinity");
 	}
 	
 	public boolean hasOffset()
 	{
-	    return this.offset != null && !this.offset.equalsIgnoreCase("0");
+	    return this.offset != null && 
+	           !this.offset.equalsIgnoreCase("0") &&
+	           !this.offset.isEmpty();
 	}
 	
 	/**

@@ -71,6 +71,10 @@ public class Metric extends ClauseConfig {
 		{
 			this.forecasts = new ProjectDataSource(reader);
 		}
+		else if (Utilities.tagIs(reader, "aggregation"))
+		{
+		    this.metricAggregate = new Aggregation(reader);
+		}
 	}
 
 	@Override
@@ -86,17 +90,29 @@ public class Metric extends ClauseConfig {
 	    Map<Integer, Future<List<TupleOfDoubleAndDoubleArray>>> threadResults = new TreeMap<Integer, Future<List<TupleOfDoubleAndDoubleArray>>>();
 	    
 	    // TODO: Change this to consume the aggregation specification
-	    List<Integer> steps = getSteps(forecasts.getVariable().getVariableID());
+	    //List<Integer> steps = getSteps(forecasts.getVariable().getVariableID());
 	    float threadsComplete = 0;
 	    float threadsAdded = 0;
+	    
+	    Integer finalLead = getLastLead(forecasts.getVariable().getVariableID());
         
-        for (Integer step : steps)
+	    int step = 1;
+	    
+	    while (metricAggregate.leadIsValid(step, finalLead)) {
+            // TODO: Convert observations and forecasts to 'Source One' and 'Source Two' (or some derivative)
+            PairFetcher fetcher = new PairFetcher(observations, forecasts, metricAggregate.getLeadQualifier(step));
+            threadResults.put(step, Executor.submit(fetcher));
+            threadsAdded++;
+	        step++;
+	    }
+	    
+        /*for (Integer step : steps)
         {
             // TODO: Convert observations and forecasts to 'Source One' and 'Source Two' (or some derivative)
             PairFetcher fetcher = new PairFetcher(observations, forecasts, "lead = " + step);
             threadResults.put(step, Executor.submit(fetcher));
             threadsAdded++;
-        }
+        }*/
         
         System.err.println(threadsAdded + " operations were added to collect pairs. Waiting for results...");
         
@@ -114,6 +130,27 @@ public class Metric extends ClauseConfig {
         System.out.println();
         
 	    return results;
+	}
+	
+	// TODO: Handle case where neither source uses forecast data
+	private static Integer getLastLead(int variableID) throws SQLException
+	{
+	    Integer finalLead = -1;
+	    
+	    String script = "";
+	    script += "SELECT FV.lead AS last_lead" + newline;
+	    script += "FROM wres.VariablePosition VP" + newline;
+	    script += "INNER JOIN wres.ForecastEnsemble FE" + newline;
+	    script += "    ON FE.variableposition_id = VP.variableposition_id" + newline;
+	    script += "INNER JOIN wres.ForecastValue FV" + newline;
+	    script += "    ON FV.forecastensemble_id = FE.forecastensemble_id" + newline;
+	    script += "WHERE VP.variable_id = " + variableID + newline;
+	    script += "ORDER BY FV.lead DESC" + newline;
+	    script += "LIMIT 1;";
+	    
+	    finalLead = Database.getResult(script, "last_lead");
+	    
+	    return finalLead;
 	}
 	
 	private static List<Integer> getSteps(int variableID) throws SQLException
@@ -203,5 +240,6 @@ public class Metric extends ClauseConfig {
 	private Output metric_output;
 	private ProjectDataSource observations;
 	private ProjectDataSource forecasts;
-	
+	private ProjectDataSource baseline;
+	private Aggregation metricAggregate;
 }
