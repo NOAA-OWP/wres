@@ -235,4 +235,10 @@ public class Project extends ConfigElement {
 	private ProjectDataSource observations;
 	private ProjectDataSource forecasts;
 	private String name;
+    @Override
+    public String toXML()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

@@ -10,7 +10,7 @@ import javax.xml.stream.XMLStreamReader;
  * @author Christopher Tubbs
  *
  */
-public abstract class FeatureSelector extends ClauseConfig
+public abstract class FeatureSelector extends ConfigElement
 {
 
     /**

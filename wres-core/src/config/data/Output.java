@@ -136,4 +136,10 @@ public final class Output extends ConfigElement {
 	
 	private ArrayList<OutputType> graphics;
 	private ArrayList<OutputType> numerics;
+    @Override
+    public String toXML()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

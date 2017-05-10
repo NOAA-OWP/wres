@@ -93,4 +93,6 @@ public abstract class ConfigElement {
 	
 	@Override
 	public abstract String toString();
+	
+	public abstract String toXML();
 }

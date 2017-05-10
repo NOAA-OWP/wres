@@ -33,12 +33,6 @@ public class Point extends FeatureSelector {
 			y = "null";
 		}
 	}
-	
-	@Override
-	public String getCondition(TreeMap<String, String> aliases) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 	@Override
 	protected void interpret(XMLStreamReader reader) throws XMLStreamException {
@@ -97,6 +91,13 @@ public class Point extends FeatureSelector {
 
     @Override
     public List<Integer> getVariablePositionIDs(Integer variableID)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String toXML()
     {
         // TODO Auto-generated method stub
         return null;

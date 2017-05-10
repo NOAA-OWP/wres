@@ -64,56 +64,6 @@ public class Range extends FeatureSelector {
 		return Arrays.asList("range");
 	}
 	
-	/* (non-Javadoc)
-	 * @see config.data.Feature#get_condition()
-	 */
-	@Override
-	public String getCondition(TreeMap<String, String> aliases) {
-		boolean appendAnd = false;
-		String condition = "";
-		
-		if (xMinimum != null)
-		{
-			condition += aliases.get("variableposition_alias") + ".x_position >= '" + xMinimum;
-			appendAnd = true;
-		}
-		
-		if (xMaximum != null)
-		{
-			if (appendAnd)
-			{
-				condition += " AND ";
-			}
-			condition += aliases.get("variableposition_alias") + ".x_position <= " + xMaximum;
-			appendAnd = true;
-		}
-		
-		if (yMinimum != null)
-		{
-			if (appendAnd)
-			{
-				condition += " AND ";
-			}
-			condition += aliases.get("variableposition_alias") + ".y_position >= " + yMinimum;
-			appendAnd = true;
-		}
-		
-		if (yMaximum != null)
-		{
-			if (appendAnd)
-			{
-				condition += " AND ";
-			}
-			condition += aliases.get("variableposition_alias") + ".y_position <= " + yMaximum;
-		}
-		
-		if (!condition.isEmpty()){
-			condition = "(" + condition + ")";
-		}
-
-		return condition;
-	}
-	
 	/**
 	 * @return The first index to use for the x dimension for the range
 	 */
@@ -206,6 +156,13 @@ public class Range extends FeatureSelector {
 
     @Override
     public List<Integer> getVariablePositionIDs(Integer variableID) throws Exception
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String toXML()
     {
         // TODO Auto-generated method stub
         return null;

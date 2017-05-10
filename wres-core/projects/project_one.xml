@@ -47,7 +47,7 @@
                     <numeric output="true" path="numeric_output" format="xml" />
                 </output>
                 <aggregation aggregate="false" range="1" unit="hour" mode="mean" first_lead="0" last_lead="" />
-                <observations>
+                <source_one>
                     <sources>
                         <!--<source name="examplefilename.xml" /> -->
                     </sources>
@@ -73,8 +73,8 @@
                         </polygon>-->
                         <!--<range x_minimum="42" x_maximum="20000"/>-->
                     </features>
-                </observations>
-                <forecasts is_forecast="true">
+                </source_one>
+                <source_two is_forecast="true">
                     <sources>
                         <!--<source name="examplefilename.xml" /> -->
                     </sources>
@@ -104,7 +104,10 @@
                     <ensembles all="true">
                         <ensemble name="MEFP" qualifier="SIM1" member_id="1961"/>
                     </ensembles>
-                </forecasts>
+                </source_two>
+                <!-- <baseline>
+                        Baselines can be defined like source_one and source_two
+                     </baseline> -->
             </metric>
         </metrics>
     </project>
