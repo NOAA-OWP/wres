@@ -3,15 +3,13 @@
  */
 package collections;
 
-import wres.datamodel.Pair;
-
 /**
  * A mutable grouping of two values
  * 
  * @author Christopher Tubbs
  *
  */
-public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements Group<Pair<T, U>>, Pair<T,U>
+public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements Group<Pair<T, U>>, wres.datamodel.Pair<T,U>
 {
 
 	/**
