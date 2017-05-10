@@ -16,7 +16,7 @@ import util.Utilities;
  * Details conditions to place on selected rows from the database based upon date and value
  * @author Christopher Tubbs
  */
-public final class Conditions extends ClauseConfig {
+public final class Conditions extends ConfigElement {
 
     /**
      * Creates and parses the condition
@@ -230,12 +230,6 @@ public final class Conditions extends ClauseConfig {
 	 * The number of hours to offset the time of an entry
 	 */
 	private String offset;
-	
-	@Override
-	public String getCondition(TreeMap<String, String> aliases) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 	@Override
 	protected List<String> tagNames() {
@@ -256,4 +250,11 @@ public final class Conditions extends ClauseConfig {
 				
 		return description;
 	}
+
+    @Override
+    public String toXML()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }
