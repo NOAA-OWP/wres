@@ -2,21 +2,21 @@ package wres.datamodel;
 
 import java.util.List;
 
-import wres.datamodel.TupleOfDoubles;
-import wres.datamodel.TuplesOfDoubles;
+import wres.datamodel.PairOfDoubles;
+import wres.datamodel.PairsOfDoubles;
 
 class DataFactoryImpl
 {
-    static EnsemblePair pairOf(Double observation, Double[] forecast)
+    static PairOfOneObsManyFcMembers pairOf(Double observation, Double[] forecast)
     {
         // EnsemblePair is a friendlier name for TupleOfDoubleAndDoubleArray
-        return (EnsemblePair) TupleOfDoubleAndDoubleArrayImpl.of(observation,
+        return (PairOfOneObsManyFcMembers) PairOfDoubleAndVectorOfDoublesImpl.of(observation,
                                                                      forecast);
     }
 
-    static TupleOfDoubles tupleOf(double first, double second)
+    static PairOfDoubles tupleOf(double first, double second)
     {
-        return new TupleOfDoubles()
+        return new PairOfDoubles()
         {
             @Override
             public double getItemOne()
@@ -33,26 +33,26 @@ class DataFactoryImpl
         };
     }
 
-    static TuplesOfDoubles tuplesOf(List<TupleOfDoubles> tuples)
+    static PairsOfDoubles tuplesOf(List<PairOfDoubles> tuples)
     {
-        return new TuplesOfDoubles()
+        return new PairsOfDoubles()
         {
             @Override
-            public List<TupleOfDoubles> getTuplesOfDoubles()
+            public List<PairOfDoubles> getTuplesOfDoubles()
             {
                 return tuples;
             }
         };
     }
 
-    static TupleOfDoubleAndDoubleArray tupleOf(double first, double[] second)
+    static PairOfDoubleAndVectorOfDoubles tupleOf(double first, double[] second)
     {
-        return TupleOfDoubleAndDoubleArrayImpl.of(first, second);
+        return PairOfDoubleAndVectorOfDoublesImpl.of(first, second);
     }
 
-    static TupleOfDoubleAndDoubleArray tupleOf(Double first, Double[] second)
+    static PairOfDoubleAndVectorOfDoubles tupleOf(Double first, Double[] second)
     {
-        return TupleOfDoubleAndDoubleArrayImpl.of(first, second);
+        return PairOfDoubleAndVectorOfDoublesImpl.of(first, second);
     }
 
 }

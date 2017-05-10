@@ -2,7 +2,7 @@ package wres.engine.statistics.metric.inputs;
 
 import java.util.Objects;
 
-import wres.datamodel.DoubleArray;
+import wres.datamodel.VectorOfDoubles;
 
 /**
  * A mutable dataset that comprises a vector of <code>double</code> values.
@@ -10,7 +10,7 @@ import wres.datamodel.DoubleArray;
  * @author james.brown@hydrosolved.com
  */
 
-public class DoubleVector implements Dataset<double[]>, DoubleArray
+public class DoubleVector implements Dataset<double[]>, VectorOfDoubles
 {
     /**
      * The values.

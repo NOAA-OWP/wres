@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Objects;
 import static java.util.stream.Collectors.*;
 
-import wres.datamodel.TupleOfDoubles;
-import wres.datamodel.TuplesOfDoubles;
+import wres.datamodel.PairOfDoubles;
+import wres.datamodel.PairsOfDoubles;
 
 /**
  * Class for storing verification pairs that comprise single-valued, continuous numerical, predictions and observations.
@@ -23,13 +23,13 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * The verification pairs.
      */
 
-    private final List<TupleOfDoubles> pairs;
+    private final List<PairOfDoubles> pairs;
 
     /**
      * The baseline pairs.
      */
 
-    private final List<TupleOfDoubles> basePairs;
+    private final List<PairOfDoubles> basePairs;
 
     /**
      * Dimension of the data (must be the same for all datasets).
@@ -46,7 +46,7 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * @throws MetricInputException if the pairs are invalid
      */
 
-    protected SingleValuedPairs(final TuplesOfDoubles pairs, final Dimension dim)
+    protected SingleValuedPairs(final PairsOfDoubles pairs, final Dimension dim)
     {
         this(pairs, null, dim);
     }
@@ -61,8 +61,8 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * @throws MetricInputException if the pairs are invalid
      */
 
-    protected SingleValuedPairs(final TuplesOfDoubles pairs2,
-                                final TuplesOfDoubles basePairs,
+    protected SingleValuedPairs(final PairsOfDoubles pairs2,
+                                final PairsOfDoubles basePairs,
                                 final Dimension dim)
     {
         //Bounds check
@@ -82,7 +82,7 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
             }
             this.basePairs = new ArrayList<>();
             //Set the baseline pairs
-            for(final TupleOfDoubles pair: basePairs.getTuplesOfDoubles())
+            for(final PairOfDoubles pair: basePairs.getTuplesOfDoubles())
             {
                 this.basePairs.add(pair);
             }
@@ -92,7 +92,7 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
             this.basePairs = null;
         }
         //Set the pairs
-        for(final TupleOfDoubles pair : pairs2.getTuplesOfDoubles())
+        for(final PairOfDoubles pair : pairs2.getTuplesOfDoubles())
         {
             this.pairs.add(pair);
         }
@@ -166,8 +166,8 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * @throws MetricInputException
      */
 
-    private SingleValuedPairs(final List<TupleOfDoubles> pairs,
-                              final List<TupleOfDoubles> basePairs,
+    private SingleValuedPairs(final List<PairOfDoubles> pairs,
+                              final List<PairOfDoubles> basePairs,
                               final Dimension dim)
     {
         this.pairs = pairs;

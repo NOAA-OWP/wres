@@ -5,27 +5,27 @@ import java.util.List;
 class DataFactoryImpl
 {
 
-    static EnsemblePair pairOf(Double observation, Double[] forecast)
+    static PairOfOneObsManyFcMembers pairOf(Double observation, Double[] forecast)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }
 
-    static TupleOfDoubles tupleOf(double first, double second)
+    static PairOfDoubles tupleOf(double first, double second)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }
 
-    static TuplesOfDoubles tuplesOf(List<TupleOfDoubles> tuples)
+    static PairsOfDoubles tuplesOf(List<PairOfDoubles> tuples)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }
 
-    static TupleOfDoubleAndDoubleArray tupleOf(double first, double[] second)
+    static PairOfDoubleAndVectorOfDoubles tupleOf(double first, double[] second)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }
 
-    static TupleOfDoubleAndDoubleArray tupleOf(Double first, Double[] second)
+    static PairOfDoubleAndVectorOfDoubles tupleOf(Double first, Double[] second)
     {
         throw new UnsupportedOperationException("This code should not make it into the api jar file");
     }

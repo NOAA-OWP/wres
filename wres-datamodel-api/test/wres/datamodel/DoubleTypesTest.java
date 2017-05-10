@@ -20,18 +20,18 @@ public class DoubleTypesTest
         double[] ensembleA2 = { 3.0, 4.0 };
         double[] ensembleB1 = { 5.0, 6.0 };
         double[] ensembleB2 = { 7.0, 8.0 };
-        TuplesOfDoubleArrays testFcFc = new TuplesOfDoubleArrays()
+        PairsOfVectorOfDoubles testFcFc = new PairsOfVectorOfDoubles()
         {
             @Override
-            public List<Pair<DoubleArray, DoubleArray>> getTuplesofDoubleArrays()
+            public List<Pair<VectorOfDoubles, VectorOfDoubles>> getTuplesofDoubleArrays()
             {
-                Pair<DoubleArray,DoubleArray> tupleA
-                    = new Pair<DoubleArray,DoubleArray>()
+                Pair<VectorOfDoubles,VectorOfDoubles> tupleA
+                    = new Pair<VectorOfDoubles,VectorOfDoubles>()
                 {
                     @Override
-                    public DoubleArray getItemOne()
+                    public VectorOfDoubles getItemOne()
                     {
-                        return new DoubleArray()
+                        return new VectorOfDoubles()
                         {
                             @Override
                             public double[] getDoubles()
@@ -42,9 +42,9 @@ public class DoubleTypesTest
                     }
 
                     @Override
-                    public DoubleArray getItemTwo()
+                    public VectorOfDoubles getItemTwo()
                     {
-                        return new DoubleArray()
+                        return new VectorOfDoubles()
                         {
                             @Override
                             public double[] getDoubles()
@@ -56,13 +56,13 @@ public class DoubleTypesTest
 
                 };
 
-                Pair<DoubleArray,DoubleArray> tupleB
-                    = new Pair<DoubleArray,DoubleArray>()
+                Pair<VectorOfDoubles,VectorOfDoubles> tupleB
+                    = new Pair<VectorOfDoubles,VectorOfDoubles>()
                 {
                     @Override
-                    public DoubleArray getItemOne()
+                    public VectorOfDoubles getItemOne()
                     {
-                        return new DoubleArray()
+                        return new VectorOfDoubles()
                         {
                             @Override
                             public double[] getDoubles()
@@ -73,9 +73,9 @@ public class DoubleTypesTest
                     }
 
                     @Override
-                    public DoubleArray getItemTwo()
+                    public VectorOfDoubles getItemTwo()
                     {
-                        return new DoubleArray()
+                        return new VectorOfDoubles()
                         {
                             @Override
                             public double[] getDoubles()
@@ -86,17 +86,17 @@ public class DoubleTypesTest
                     }
                 };
 
-                List<Pair<DoubleArray,DoubleArray>> fourBricks = new ArrayList<>(2);
+                List<Pair<VectorOfDoubles,VectorOfDoubles>> fourBricks = new ArrayList<>(2);
                 fourBricks.add(tupleA);
                 fourBricks.add(tupleB);
                 return fourBricks;
             }
         };
 
-        for (Pair<DoubleArray,DoubleArray> tup : testFcFc.getTuplesofDoubleArrays())
+        for (Pair<VectorOfDoubles,VectorOfDoubles> tup : testFcFc.getTuplesofDoubleArrays())
         {
-            assert(tup.getItemOne() instanceof DoubleArray);
-            assert(tup.getItemTwo() instanceof DoubleArray);
+            assert(tup.getItemOne() instanceof VectorOfDoubles);
+            assert(tup.getItemTwo() instanceof VectorOfDoubles);
         }
 
         assert(testFcFc.getTuplesofDoubleArrays()

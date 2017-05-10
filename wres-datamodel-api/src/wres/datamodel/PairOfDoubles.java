@@ -1,7 +1,7 @@
 package wres.datamodel;
 
 /**
- * Tuple of primitive double values as a primitive double[] with two values.
+ * Pair of primitive double values.
  * 
  * An example might be the simplest forecast/observation timeseries data,
  * but stripped of any/all time information. Only the values.
@@ -9,7 +9,7 @@ package wres.datamodel;
  * @author jesse
  *
  */
-public interface TupleOfDoubles
+public interface PairOfDoubles
 {
     double getItemOne();
     double getItemTwo();

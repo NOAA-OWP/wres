@@ -17,7 +17,7 @@ import java.util.List;
  * @author jesse
  *
  */
-public interface TuplesOfDoubleAndDoubleArray
+public interface PairsOfDoubleAndVectorOfDouble
 {
-    List<TupleOfDoubleAndDoubleArray> getTuplesOfDoubleAndDoubleArray();
+    List<PairOfDoubleAndVectorOfDoubles> getPairsOfDoubleAndVectorOfDoubles();
 }

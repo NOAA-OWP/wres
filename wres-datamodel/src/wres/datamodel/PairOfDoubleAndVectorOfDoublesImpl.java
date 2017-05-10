@@ -2,29 +2,29 @@ package wres.datamodel;
 
 import java.util.stream.Stream;
 
-class TupleOfDoubleAndDoubleArrayImpl
-implements TupleOfDoubleAndDoubleArray, EnsemblePair
+class PairOfDoubleAndVectorOfDoublesImpl
+implements PairOfDoubleAndVectorOfDoubles, PairOfOneObsManyFcMembers
 {
     private final double itemOne;
     private final double[] itemTwo;
 
-    private TupleOfDoubleAndDoubleArrayImpl(double key, double[] doubles)
+    private PairOfDoubleAndVectorOfDoublesImpl(double key, double[] doubles)
     {
         this.itemOne = key;
         this.itemTwo = doubles;
     }
 
-    static TupleOfDoubleAndDoubleArray of(double key, double[] doubles)
+    static PairOfDoubleAndVectorOfDoubles of(double key, double[] doubles)
     {
-        return new TupleOfDoubleAndDoubleArrayImpl(key, doubles);
+        return new PairOfDoubleAndVectorOfDoublesImpl(key, doubles);
     }
 
-    static TupleOfDoubleAndDoubleArray of(Double key, Double[] doubles)
+    static PairOfDoubleAndVectorOfDoubles of(Double key, Double[] doubles)
     {
         double[] unboxedDoubles = Stream.of(doubles)
                                         .mapToDouble(Double::doubleValue)
                                         .toArray();
-        return new TupleOfDoubleAndDoubleArrayImpl(key.doubleValue(), unboxedDoubles);
+        return new PairOfDoubleAndVectorOfDoublesImpl(key.doubleValue(), unboxedDoubles);
     }
 
     @Override
