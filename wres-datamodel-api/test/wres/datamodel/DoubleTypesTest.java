@@ -23,10 +23,10 @@ public class DoubleTypesTest
         TuplesOfDoubleArrays testFcFc = new TuplesOfDoubleArrays()
         {
             @Override
-            public List<Tuple<DoubleArray, DoubleArray>> getTuplesofDoubleArrays()
+            public List<Pair<DoubleArray, DoubleArray>> getTuplesofDoubleArrays()
             {
-                Tuple<DoubleArray,DoubleArray> tupleA
-                    = new Tuple<DoubleArray,DoubleArray>()
+                Pair<DoubleArray,DoubleArray> tupleA
+                    = new Pair<DoubleArray,DoubleArray>()
                 {
                     @Override
                     public DoubleArray getItemOne()
@@ -56,8 +56,8 @@ public class DoubleTypesTest
 
                 };
 
-                Tuple<DoubleArray,DoubleArray> tupleB
-                    = new Tuple<DoubleArray,DoubleArray>()
+                Pair<DoubleArray,DoubleArray> tupleB
+                    = new Pair<DoubleArray,DoubleArray>()
                 {
                     @Override
                     public DoubleArray getItemOne()
@@ -86,14 +86,14 @@ public class DoubleTypesTest
                     }
                 };
 
-                List<Tuple<DoubleArray,DoubleArray>> fourBricks = new ArrayList<>(2);
+                List<Pair<DoubleArray,DoubleArray>> fourBricks = new ArrayList<>(2);
                 fourBricks.add(tupleA);
                 fourBricks.add(tupleB);
                 return fourBricks;
             }
         };
 
-        for (Tuple<DoubleArray,DoubleArray> tup : testFcFc.getTuplesofDoubleArrays())
+        for (Pair<DoubleArray,DoubleArray> tup : testFcFc.getTuplesofDoubleArrays())
         {
             assert(tup.getItemOne() instanceof DoubleArray);
             assert(tup.getItemTwo() instanceof DoubleArray);
