@@ -1,7 +1,7 @@
 package wres.datamodel;
 
 /**
- * Provides an array of primitive doubles.
+ * Provides a 1D array of primitive doubles.
  *
  * Low level, but common interface, to be used across the system.
  *
@@ -12,7 +12,7 @@ package wres.datamodel;
  * @author jesse
  *
  */
-public interface DoubleArray
+public interface VectorOfDoubles
 {
     double[] getDoubles();
 }

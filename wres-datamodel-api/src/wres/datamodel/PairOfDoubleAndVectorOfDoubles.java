@@ -13,7 +13,7 @@ package wres.datamodel;
  * @author jesse
  *
  */
-public interface TupleOfDoubleAndDoubleArray
+public interface PairOfDoubleAndVectorOfDoubles
 {
     /** In the above example, get the "obs_val1" value */
     double getItemOne();

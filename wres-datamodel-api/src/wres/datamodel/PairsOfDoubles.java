@@ -7,7 +7,7 @@ import java.util.List;
  * @author jesse
  *
  */
-public interface TuplesOfDoubles
+public interface PairsOfDoubles
 {
-    List<TupleOfDoubles> getTuplesOfDoubles();
+    List<PairOfDoubles> getTuplesOfDoubles();
 }

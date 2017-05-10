@@ -38,7 +38,7 @@ import data.MeasurementCache;
 import data.ValuePairs;
 import data.Variable;
 import data.VariableCache;
-import wres.datamodel.EnsemblePair;
+import wres.datamodel.PairOfOneObsManyFcMembers;
 
 /**
  * @author ctubbs
@@ -787,7 +787,7 @@ public final class MainFunctions {
 	            int totalLimit = 10;
 	            int totalCount = 0;
 	            Project foundProject = ProjectConfig.getProject(projectName);
-	            Map<Integer, List<EnsemblePair>> pairMapping = null;
+	            Map<Integer, List<PairOfOneObsManyFcMembers>> pairMapping = null;
 	            
 	            if (foundProject == null)
 	            {
@@ -812,7 +812,7 @@ public final class MainFunctions {
                     for (Integer leadKey : pairMapping.keySet())
                     {
                         System.out.println("\tLead Time: " + leadKey);
-                        for (EnsemblePair pair : pairMapping.get(leadKey))
+                        for (PairOfOneObsManyFcMembers pair : pairMapping.get(leadKey))
                         {
                             System.out.print("\t\t");
                             String representation = pair.toString().substring(0, Math.min(120, pair.toString().length()));
