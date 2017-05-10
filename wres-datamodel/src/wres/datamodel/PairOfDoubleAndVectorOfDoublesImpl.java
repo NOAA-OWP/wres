@@ -3,7 +3,7 @@ package wres.datamodel;
 import java.util.stream.Stream;
 
 class PairOfDoubleAndVectorOfDoublesImpl
-implements PairOfDoubleAndVectorOfDoubles, PairOfOneObsManyFcMembers
+implements PairOfDoubleAndVectorOfDoubles
 {
     private final double itemOne;
     private final double[] itemTwo;
@@ -56,15 +56,4 @@ implements PairOfDoubleAndVectorOfDoubles, PairOfOneObsManyFcMembers
         return s.toString();
     }
 
-    @Override
-    public double getObservation()
-    {
-        return getItemOne();
-    }
-
-    @Override
-    public double[] getForecast()
-    {
-        return getItemTwo();
-    }
 }

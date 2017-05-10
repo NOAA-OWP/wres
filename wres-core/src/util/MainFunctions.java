@@ -39,7 +39,6 @@ import data.ValuePairs;
 import data.Variable;
 import data.VariableCache;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.PairOfOneObsManyFcMembers;
 
 /**
  * @author ctubbs
