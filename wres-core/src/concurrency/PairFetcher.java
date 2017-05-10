@@ -17,14 +17,14 @@ import data.MeasurementCache;
 import data.ValuePairs;
 import util.Database;
 import wres.datamodel.DataFactory;
-import wres.datamodel.PairOfOneObsManyFcMembers;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
 /**
  * @author Christopher Tubbs
  *
  */
 public final class PairFetcher //implements Callable<ValuePairs>
-implements Callable<List<PairOfOneObsManyFcMembers>>
+implements Callable<List<PairOfDoubleAndVectorOfDoubles>>
 {
     private static final boolean USE_DOUBLE_PAIR = false;
     private static final String newline = System.lineSeparator();
@@ -39,12 +39,12 @@ implements Callable<List<PairOfOneObsManyFcMembers>>
     }
 
     @Override
-    public List<PairOfOneObsManyFcMembers> call() throws Exception
+    public List<PairOfDoubleAndVectorOfDoubles> call() throws Exception
     //    public ValuePairs call() throws Exception
       {
         //ValuePairs pairs = new ValuePairs();
         // trying out verbosely named API type:
-        List<PairOfOneObsManyFcMembers> pairs = new ArrayList<>();
+        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         Connection connection = null;
 
         try

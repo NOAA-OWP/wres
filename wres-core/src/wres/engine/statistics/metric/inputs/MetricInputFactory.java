@@ -1,6 +1,8 @@
 package wres.engine.statistics.metric.inputs;
 
-import wres.datamodel.PairsOfDoubles;
+import java.util.List;
+
+import wres.datamodel.PairOfDoubles;
 
 /**
  * A factory class for producing metric inputs.
@@ -51,7 +53,7 @@ public class MetricInputFactory
      * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
      */
 
-    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final PairsOfDoubles pairs)
+    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs)
     {
         return ofDiscreteProbabilityPairs(pairs, null);
     }
@@ -65,8 +67,8 @@ public class MetricInputFactory
      * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
      */
 
-    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final PairsOfDoubles pairs,
-                                                                      final PairsOfDoubles basePairs)
+    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
+                                                                      final List<PairOfDoubles> basePairs)
     {
         return new DiscreteProbabilityPairs(pairs, basePairs);
     }
@@ -113,7 +115,7 @@ public class MetricInputFactory
      * @throws MetricInputException if the pairs are invalid
      */
 
-    public static SingleValuedPairs ofSingleValuedPairs(final PairsOfDoubles pairs, final Dimension dim)
+    public static SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Dimension dim)
     {
         return ofSingleValuedPairs(pairs, null, dim);
     }
@@ -128,8 +130,8 @@ public class MetricInputFactory
      * @throws MetricInputException if the pairs are invalid
      */
 
-    public static SingleValuedPairs ofSingleValuedPairs(final PairsOfDoubles pairs,
-                                                        final PairsOfDoubles basePairs,
+    public static SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
+                                                        final List<PairOfDoubles> basePairs,
                                                         final Dimension dim)
     {
         return new SingleValuedPairs(pairs, basePairs, null);

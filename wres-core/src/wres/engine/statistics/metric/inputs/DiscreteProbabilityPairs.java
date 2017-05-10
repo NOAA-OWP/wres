@@ -1,6 +1,8 @@
 package wres.engine.statistics.metric.inputs;
 
-import wres.datamodel.PairsOfDoubles;
+import java.util.List;
+
+import wres.datamodel.PairOfDoubles;
 
 /**
  * Class for storing verification pairs that comprise probabilistic observations and predictions.
@@ -18,7 +20,7 @@ public class DiscreteProbabilityPairs extends SingleValuedPairs
      * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
      */
 
-    protected DiscreteProbabilityPairs(final PairsOfDoubles pairs)
+    protected DiscreteProbabilityPairs(final List<PairOfDoubles> pairs)
     {
         super(pairs, null);
         // TODO Auto-generated constructor stub
@@ -34,7 +36,7 @@ public class DiscreteProbabilityPairs extends SingleValuedPairs
      * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
      */
 
-    protected DiscreteProbabilityPairs(final PairsOfDoubles pairs, final PairsOfDoubles basePairs)
+    protected DiscreteProbabilityPairs(final List<PairOfDoubles> pairs, final List<PairOfDoubles> basePairs)
     {
         super(pairs, basePairs, null);
         // TODO Auto-generated constructor stub

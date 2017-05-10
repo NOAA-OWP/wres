@@ -29,7 +29,7 @@ import data.VariableCache;
 import thredds.client.catalog.Dataset;
 import util.Database;
 import util.Utilities;
-import wres.datamodel.PairOfOneObsManyFcMembers;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
 /**
  * The specification for a metric and the information necessary to retrieve details
@@ -84,10 +84,10 @@ public class Metric extends ClauseConfig {
 		return null;
 	}
 	
-	public Map<Integer, List<PairOfOneObsManyFcMembers>> getPairs() throws Exception
+	public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> getPairs() throws Exception
 	{
-	    Map<Integer, List<PairOfOneObsManyFcMembers>> results = new TreeMap<Integer, List<PairOfOneObsManyFcMembers>>();
-	    Map<Integer, Future<List<PairOfOneObsManyFcMembers>>> threadResults = new TreeMap<Integer, Future<List<PairOfOneObsManyFcMembers>>>();
+	    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> results = new TreeMap<Integer, List<PairOfDoubleAndVectorOfDoubles>>();
+	    Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>>();
 	    
 	    // TODO: Change this to consume the aggregation specification
 	    //List<Integer> steps = getSteps(forecasts.getVariable().getVariableID());
@@ -120,7 +120,7 @@ public class Metric extends ClauseConfig {
         //{
             //results.put(lead, threadResults.get(lead).get());
             //threadResults.put(lead, null);
-        for (Entry<Integer, Future<List<PairOfOneObsManyFcMembers>>> result : threadResults.entrySet())
+        for (Entry<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> result : threadResults.entrySet())
         {
             results.put(result.getKey(), result.getValue().get());
             threadsComplete++;
