@@ -58,12 +58,6 @@ public final class Location extends FeatureSelector {
 	protected List<String> tagNames() {
 		return Arrays.asList("feature");
 	}
-
-	@Override
-	public String getCondition(TreeMap<String, String> aliases) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 	
 	/**
 	 * @return The location id of the indicated feature
@@ -156,5 +150,12 @@ public final class Location extends FeatureSelector {
         List<Integer> id = new ArrayList<Integer>(1);
         id.add(FeatureCache.getVariablePositionID(lid, name, variableID));
         return id;
+    }
+
+    @Override
+    public String toXML()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

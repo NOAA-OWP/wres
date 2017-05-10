@@ -3,10 +3,7 @@
  */
 package config.data;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -17,16 +14,8 @@ import java.util.concurrent.Future;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import collections.AssociatedPairs;
-import collections.Pair;
-import collections.RealCollection;
 import concurrency.Executor;
 import concurrency.PairFetcher;
-import data.FeatureCache;
-import data.MeasurementCache;
-import data.ValuePairs;
-import data.VariableCache;
-import thredds.client.catalog.Dataset;
 import util.Database;
 import util.Utilities;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -36,7 +25,7 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
  * for it from the database
  * @author Christopher Tubbs
  */
-public class Metric extends ClauseConfig {
+public class Metric extends ConfigElement {
 
 	/**
 	 * Constructor
@@ -63,25 +52,22 @@ public class Metric extends ClauseConfig {
 		{
 			this.metric_output = new Output(reader);
 		}
-		else if (tag_name.equalsIgnoreCase("observations"))
+		else if (tag_name.equalsIgnoreCase("source_one"))
 		{
-			this.observations = new ProjectDataSource(reader);
+			this.source_one = new ProjectDataSource(reader);
 		}
-		else if (tag_name.equalsIgnoreCase("forecasts"))
+		else if (tag_name.equalsIgnoreCase("source_two"))
 		{
-			this.forecasts = new ProjectDataSource(reader);
+			this.source_two = new ProjectDataSource(reader);
+		}
+		else if (tag_name.equalsIgnoreCase("baseline"))
+		{
+		    this.baseline = new ProjectDataSource(reader);
 		}
 		else if (Utilities.tagIs(reader, "aggregation"))
 		{
 		    this.metricAggregate = new Aggregation(reader);
 		}
-	}
-
-	@Override
-	public String getCondition(TreeMap<String, String> aliases) 
-	{
-		// TODO Auto-generated method stub
-		return null;
 	}
 	
 	public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> getPairs() throws Exception
@@ -89,42 +75,27 @@ public class Metric extends ClauseConfig {
 	    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> results = new TreeMap<Integer, List<PairOfDoubleAndVectorOfDoubles>>();
 	    Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>>();
 	    
-	    // TODO: Change this to consume the aggregation specification
-	    //List<Integer> steps = getSteps(forecasts.getVariable().getVariableID());
 	    float threadsComplete = 0;
 	    float threadsAdded = 0;
 	    
-	    Integer finalLead = getLastLead(forecasts.getVariable().getVariableID());
+	    Integer finalLead = getLastLead(source_two.getVariable().getVariableID());
         
 	    int step = 1;
 	    
 	    while (metricAggregate.leadIsValid(step, finalLead)) {
-            // TODO: Convert observations and forecasts to 'Source One' and 'Source Two' (or some derivative)
-            PairFetcher fetcher = new PairFetcher(observations, forecasts, metricAggregate.getLeadQualifier(step));
+            PairFetcher fetcher = new PairFetcher(source_one, source_two, metricAggregate.getLeadQualifier(step));
             threadResults.put(step, Executor.submit(fetcher));
             threadsAdded++;
 	        step++;
 	    }
-	    
-        /*for (Integer step : steps)
-        {
-            // TODO: Convert observations and forecasts to 'Source One' and 'Source Two' (or some derivative)
-            PairFetcher fetcher = new PairFetcher(observations, forecasts, "lead = " + step);
-            threadResults.put(step, Executor.submit(fetcher));
-            threadsAdded++;
-        }*/
         
         System.err.println(threadsAdded + " operations were added to collect pairs. Waiting for results...");
-        
-        //for (Integer lead : threadResults.keySet())
-        //{
-            //results.put(lead, threadResults.get(lead).get());
-            //threadResults.put(lead, null);
+
         for (Entry<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> result : threadResults.entrySet())
         {
             results.put(result.getKey(), result.getValue().get());
             threadsComplete++;
-            System.err.print("\r" +threadsComplete + "/" + threadsAdded + " operations complete. (" + (threadsComplete/threadsAdded) * 100 + "%)\t");
+            System.err.print("\r" +threadsComplete + "/" + threadsAdded + " operations complete. (" + (threadsComplete/threadsAdded) * 100 + "%)------------");
         }
         
         System.out.println();
@@ -152,39 +123,6 @@ public class Metric extends ClauseConfig {
 	    
 	    return finalLead;
 	}
-	
-	private static List<Integer> getSteps(int variableID) throws SQLException
-	{
-	    List<Integer> steps = new ArrayList<Integer>();
-	    String script = "";
-	    script += "SELECT FV.lead" + newline;
-	    script += "FROM wres.Forecast F" + newline;
-	    script += "INNER JOIN wres.ForecastEnsemble FE" + newline;
-	    script += "    ON FE.forecast_id = F.forecast_id" + newline;
-	    script += "INNER JOIN wres.ForecastValue FV" + newline;
-	    script += "    ON FV.forecastensemble_id = FE.forecastensemble_id" + newline;
-	    script += "INNER JOIN wres.VariablePosition VP" + newline;
-	    script += "    ON VP.variableposition_id = FE.variableposition_id" + newline;
-	    script += "WHERE VP.variable_id = " + variableID + newline;
-	    script += "GROUP BY FV.lead;";
-	    
-	    Connection connection = null;
-	    try
-	    {
-	        connection = Database.getConnection();
-	        ResultSet stepResults = Database.getResults(connection, script);
-	        
-	        while (stepResults.next())
-	        {
-	            steps.add(stepResults.getInt("lead"));
-	        }
-	    }
-	    finally {
-	        Database.returnConnection(connection);
-	    }
-	    
-	    return steps;
-	}
 
 	@Override
 	protected List<String> tagNames() {
@@ -209,21 +147,29 @@ public class Metric extends ClauseConfig {
 		description += System.lineSeparator();
 		description += System.lineSeparator();
 		
-		description += "Observations: ";
+		description += "Datasource One: ";
 		description += System.lineSeparator();
 		description += System.lineSeparator();
-		description += observations.toString();
+		description += source_one.toString();
 		description += System.lineSeparator();
 		
 		description += "-  -  -  -  -  -  -  -  -  -";
 		description += System.lineSeparator();
 		description += System.lineSeparator();
 		
-		description += "Forecasts: ";
+		description += "Datasource Two: ";
 		description += System.lineSeparator();
 		description += System.lineSeparator();
-		description += forecasts.toString();
+		description += source_two.toString();
 		description += System.lineSeparator();
+		
+		if (baseline != null) {
+	        description += "Baseline: ";
+	        description += System.lineSeparator();
+	        description += System.lineSeparator();
+	        description += baseline.toString();
+	        description += System.lineSeparator();
+		}
 		
 		return description;
 	}
@@ -238,8 +184,14 @@ public class Metric extends ClauseConfig {
 
 	private String name;
 	private Output metric_output;
-	private ProjectDataSource observations;
-	private ProjectDataSource forecasts;
+	private ProjectDataSource source_one;
+	private ProjectDataSource source_two;
 	private ProjectDataSource baseline;
 	private Aggregation metricAggregate;
+    @Override
+    public String toXML()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

@@ -270,4 +270,11 @@ public class Aggregation extends ConfigElement {
             }
         }
     }
+
+    @Override
+    public String toXML()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }
