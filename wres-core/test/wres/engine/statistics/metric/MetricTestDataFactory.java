@@ -5,7 +5,6 @@ import java.util.List;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.PairsOfDoubles;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
 import wres.engine.statistics.metric.inputs.MetricInputFactory;

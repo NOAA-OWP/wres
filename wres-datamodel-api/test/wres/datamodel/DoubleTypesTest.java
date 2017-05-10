@@ -20,116 +20,100 @@ public class DoubleTypesTest
         double[] ensembleA2 = { 3.0, 4.0 };
         double[] ensembleB1 = { 5.0, 6.0 };
         double[] ensembleB2 = { 7.0, 8.0 };
-        PairsOfVectorOfDoubles testFcFc = new PairsOfVectorOfDoubles()
+        List<Pair<VectorOfDoubles,VectorOfDoubles>> testFcFc = new ArrayList<>(2);
+
+        Pair<VectorOfDoubles,VectorOfDoubles> tupleA = new Pair<VectorOfDoubles,VectorOfDoubles>()
         {
             @Override
-            public List<Pair<VectorOfDoubles, VectorOfDoubles>> getTuplesofDoubleArrays()
+            public VectorOfDoubles getItemOne()
             {
-                Pair<VectorOfDoubles,VectorOfDoubles> tupleA
-                    = new Pair<VectorOfDoubles,VectorOfDoubles>()
+                return new VectorOfDoubles()
                 {
                     @Override
-                    public VectorOfDoubles getItemOne()
+                    public double[] getDoubles()
                     {
-                        return new VectorOfDoubles()
-                        {
-                            @Override
-                            public double[] getDoubles()
-                            {
-                                return ensembleA1;
-                            }
-                        };
+                        return ensembleA1;
                     }
-
-                    @Override
-                    public VectorOfDoubles getItemTwo()
-                    {
-                        return new VectorOfDoubles()
-                        {
-                            @Override
-                            public double[] getDoubles()
-                            {
-                                return ensembleA2;
-                            }
-                        };
-                    }
-
                 };
+            }
 
-                Pair<VectorOfDoubles,VectorOfDoubles> tupleB
-                    = new Pair<VectorOfDoubles,VectorOfDoubles>()
+            @Override
+            public VectorOfDoubles getItemTwo()
+            {
+                return new VectorOfDoubles()
                 {
                     @Override
-                    public VectorOfDoubles getItemOne()
+                    public double[] getDoubles()
                     {
-                        return new VectorOfDoubles()
-                        {
-                            @Override
-                            public double[] getDoubles()
-                            {
-                                return ensembleB1;
-                            }
-                        };
-                    }
-
-                    @Override
-                    public VectorOfDoubles getItemTwo()
-                    {
-                        return new VectorOfDoubles()
-                        {
-                            @Override
-                            public double[] getDoubles()
-                            {
-                                return ensembleB2;
-                            }
-                        };
+                        return ensembleA2;
                     }
                 };
+            }
 
-                List<Pair<VectorOfDoubles,VectorOfDoubles>> fourBricks = new ArrayList<>(2);
-                fourBricks.add(tupleA);
-                fourBricks.add(tupleB);
-                return fourBricks;
+        };
+
+        Pair<VectorOfDoubles,VectorOfDoubles> tupleB
+            = new Pair<VectorOfDoubles,VectorOfDoubles>()
+        {
+            @Override
+            public VectorOfDoubles getItemOne()
+            {
+                return new VectorOfDoubles()
+                {
+                    @Override
+                    public double[] getDoubles()
+                    {
+                        return ensembleB1;
+                    }
+                };
+            }
+
+            @Override
+            public VectorOfDoubles getItemTwo()
+            {
+                return new VectorOfDoubles()
+                {
+                    @Override
+                    public double[] getDoubles()
+                    {
+                        return ensembleB2;
+                    }
+                };
             }
         };
 
-        for (Pair<VectorOfDoubles,VectorOfDoubles> tup : testFcFc.getTuplesofDoubleArrays())
+        testFcFc.add(tupleA);
+        testFcFc.add(tupleB);
+
+        for (Pair<VectorOfDoubles,VectorOfDoubles> tup : testFcFc)
         {
             assert(tup.getItemOne() instanceof VectorOfDoubles);
             assert(tup.getItemTwo() instanceof VectorOfDoubles);
         }
 
-        assert(testFcFc.getTuplesofDoubleArrays()
-                       .get(0)
-                       .getItemOne()
-                       .getDoubles()[0] == 1.0);
-        assert(testFcFc.getTuplesofDoubleArrays()
-                       .get(0)
-                       .getItemOne()
-                       .getDoubles()[1] == 2.0);
-        assert(testFcFc.getTuplesofDoubleArrays()
-                       .get(0)
-                       .getItemTwo()
-                       .getDoubles()[0] == 3.0);
-        assert(testFcFc.getTuplesofDoubleArrays()
-                       .get(0)
-                       .getItemTwo()
-                       .getDoubles()[1] == 4.0);
-        assert(testFcFc.getTuplesofDoubleArrays()
-                       .get(1)
-                       .getItemOne()
-                       .getDoubles()[0] == 5.0);
-        assert(testFcFc.getTuplesofDoubleArrays()
-                       .get(1)
-                       .getItemOne()
-                       .getDoubles()[1] == 6.0);
-        assert(testFcFc.getTuplesofDoubleArrays()
-                       .get(1)
-                       .getItemTwo()
-                       .getDoubles()[0] == 7.0);
-        assert(testFcFc.getTuplesofDoubleArrays()
-                       .get(1)
-                       .getItemTwo()
-                       .getDoubles()[1] == 8.0);
+        assert(testFcFc.get(0)
+               .getItemOne()
+               .getDoubles()[0] == 1.0);
+        assert(testFcFc.get(0)
+               .getItemOne()
+               .getDoubles()[1] == 2.0);
+        assert(testFcFc.get(0)
+               .getItemTwo()
+               .getDoubles()[0] == 3.0);
+        assert(testFcFc.get(0)
+               .getItemTwo()
+               .getDoubles()[1] == 4.0);
+        assert(testFcFc.get(1)
+               .getItemOne()
+               .getDoubles()[0] == 5.0);
+        assert(testFcFc.get(1)
+               .getItemOne()
+               .getDoubles()[1] == 6.0);
+        assert(testFcFc.get(1)
+               .getItemTwo()
+               .getDoubles()[0] == 7.0);
+        assert(testFcFc.get(1)
+               .getItemTwo()
+               .getDoubles()[1] == 8.0);
     }
 }
