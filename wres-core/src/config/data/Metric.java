@@ -18,7 +18,7 @@ import concurrency.Executor;
 import concurrency.PairFetcher;
 import util.Database;
 import util.Utilities;
-import wres.datamodel.EnsemblePair;
+import wres.datamodel.PairOfOneObsManyFcMembers;
 
 /**
  * The specification for a metric and the information necessary to retrieve details
@@ -70,10 +70,10 @@ public class Metric extends ConfigElement {
 		}
 	}
 	
-	public Map<Integer, List<EnsemblePair>> getPairs() throws Exception
+	public Map<Integer, List<PairOfOneObsManyFcMembers>> getPairs() throws Exception
 	{
-	    Map<Integer, List<EnsemblePair>> results = new TreeMap<Integer, List<EnsemblePair>>();
-	    Map<Integer, Future<List<EnsemblePair>>> threadResults = new TreeMap<Integer, Future<List<EnsemblePair>>>();
+	    Map<Integer, List<PairOfOneObsManyFcMembers>> results = new TreeMap<Integer, List<PairOfOneObsManyFcMembers>>();
+	    Map<Integer, Future<List<PairOfOneObsManyFcMembers>>> threadResults = new TreeMap<Integer, Future<List<PairOfOneObsManyFcMembers>>>();
 	    
 	    float threadsComplete = 0;
 	    float threadsAdded = 0;
@@ -91,7 +91,7 @@ public class Metric extends ConfigElement {
         
         System.err.println(threadsAdded + " operations were added to collect pairs. Waiting for results...");
 
-        for (Entry<Integer, Future<List<EnsemblePair>>> result : threadResults.entrySet())
+        for (Entry<Integer, Future<List<PairOfOneObsManyFcMembers>>> result : threadResults.entrySet())
         {
             results.put(result.getKey(), result.getValue().get());
             threadsComplete++;

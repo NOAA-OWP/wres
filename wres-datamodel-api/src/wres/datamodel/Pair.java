@@ -1,17 +1,17 @@
 package wres.datamodel;
 
 /**
- * Tuple for cases where non-primitive types are used.
- * 
+ * Pair for cases where non-primitive types are used.
+ *
  * For example, when having two sets of forecasts as a pair,
- * could create a {@code Tuple<DoubleBrick,DoubleBrick>}
- * 
+ * could create a {@code Pair<DoubleBrick,DoubleBrick>}
+ *
  * @author jesse
  *
  * @param <T> type of first element
  * @param <U> type of second/last element
  */
-public interface Tuple<T,U>
+public interface Pair<T,U>
 {
     /**
      * Get the first value
