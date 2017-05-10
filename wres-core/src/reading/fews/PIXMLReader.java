@@ -18,9 +18,6 @@ import reading.XMLReader;
 import util.Database;
 import util.Utilities;
 
-import java.util.Map;
-import java.util.TreeMap;
-
 import javax.xml.stream.XMLStreamReader;
 
 import org.slf4j.Logger;
@@ -260,6 +257,14 @@ public final class PIXMLReader extends XMLReader
 					
 					//	If we are at the tag for the location id, save it to the location metadata
 					currentLID = Utilities.getXMLText(reader);
+
+                    // TODO: Add FCST to the model
+					// LIDs have a length of 5. If it is greater, it is of the form of LID+FCST
+					/*if (currentLID.length() > 5)
+					{
+					    //currentFCST = currentLID.substring(5, currentLID.length());
+					    currentLID = currentLID.substring(0, 5);
+					}*/
 				}
 				else if (localName.equalsIgnoreCase("stationName"))
 				{

@@ -26,12 +26,6 @@ public final class Polygon extends FeatureSelector {
 	}
 
 	@Override
-	public String getCondition(TreeMap<String, String> aliases) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
 	protected void interpret(XMLStreamReader reader) 
 	{
 		if (reader.getLocalName().equalsIgnoreCase("point"))
@@ -87,6 +81,13 @@ public final class Polygon extends FeatureSelector {
 
     @Override
     public List<Integer> getVariablePositionIDs(Integer variableID) throws Exception
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String toXML()
     {
         // TODO Auto-generated method stub
         return null;

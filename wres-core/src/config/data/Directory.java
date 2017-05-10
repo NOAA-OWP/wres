@@ -159,4 +159,11 @@ public class Directory extends ConfigElement
 		private final String fileType;
 		private final String path;
 	}
+
+    @Override
+    public String toXML()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

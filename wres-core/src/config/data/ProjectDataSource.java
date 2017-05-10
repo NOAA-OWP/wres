@@ -30,7 +30,7 @@ public class ProjectDataSource extends ConfigElement {
 
 	@Override
 	protected List<String> tagNames() {
-		return Arrays.asList("observations", "forecasts", "datasource");
+		return Arrays.asList("observations", "forecasts", "datasource", "baseline", "source_one", "source_two");
 	}
 	
 	@Override
@@ -541,7 +541,7 @@ public class ProjectDataSource extends ConfigElement {
 		{
 			description += "The following features will be considered:";
 			description += System.lineSeparator();
-			for (ClauseConfig feature : features)
+			for (FeatureSelector feature : features)
 			{
 				description += feature.toString();
 			}
@@ -586,4 +586,11 @@ public class ProjectDataSource extends ConfigElement {
     
     // TODO: Parse source information out of the configuration
     private List<String> sources;
+
+    @Override
+    public String toXML()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }
