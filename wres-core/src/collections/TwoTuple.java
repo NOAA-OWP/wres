@@ -3,14 +3,14 @@
  */
 package collections;
 
-import wres.datamodel.Tuple;
+import wres.datamodel.Pair;
 
 /**
  * An immutable pairing of two values
  * 
  * @author Christopher Tubbs
  */
-public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implements Group<TwoTuple<T, U>>, Tuple<T,U>
+public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implements Group<TwoTuple<T, U>>, Pair<T,U>
 {
 
 	/**

@@ -27,17 +27,17 @@ public class DataFactory
      * @param forecast
      * @return
      */
-    public static EnsemblePair pairOf(Double observation, Double[] forecast)
+    public static PairOfOneObsManyFcMembers pairOf(Double observation, Double[] forecast)
     {
         return DataFactoryImpl.pairOf(observation, forecast);
     }
 
-    public static TupleOfDoubles tupleOf(double first, double second)
+    public static PairOfDoubles tupleOf(double first, double second)
     {
         return DataFactoryImpl.tupleOf(first, second);
     }
 
-    public static TuplesOfDoubles tuplesOf(List<TupleOfDoubles> tuples)
+    public static PairsOfDoubles tuplesOf(List<PairOfDoubles> tuples)
     {
         return DataFactoryImpl.tuplesOf(tuples);
     }
@@ -48,7 +48,7 @@ public class DataFactory
      * @param second the double array
      * @return the tuple
      */
-    public static TupleOfDoubleAndDoubleArray tupleOf(double first, double[] second)
+    public static PairOfDoubleAndVectorOfDoubles tupleOf(double first, double[] second)
     {
         return DataFactoryImpl.tupleOf(first, second);
     }
@@ -60,7 +60,7 @@ public class DataFactory
      * @param second a boxed Double[]
      * @return the tuple of unboxed primitive, can use getKey() and getDoubles() on it.
      */
-    public static TupleOfDoubleAndDoubleArray tupleOf(Double first, Double[] second)
+    public static PairOfDoubleAndVectorOfDoubles tupleOf(Double first, Double[] second)
     {
         return DataFactoryImpl.tupleOf(first, second);
     }

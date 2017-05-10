@@ -17,7 +17,7 @@ package wres.datamodel;
  * @author jesse
  *
  */
-public interface EnsemblePair extends TupleOfDoubleAndDoubleArray
+public interface PairOfOneObsManyFcMembers extends PairOfDoubleAndVectorOfDoubles
 {
     public double getObservation();
     public double[] getForecast();
