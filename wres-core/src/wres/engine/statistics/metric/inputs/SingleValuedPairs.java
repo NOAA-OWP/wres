@@ -1,13 +1,11 @@
 package wres.engine.statistics.metric.inputs;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import static java.util.stream.Collectors.*;
 
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.PairsOfDoubles;
 
 /**
  * Class for storing verification pairs that comprise single-valued, continuous numerical, predictions and observations.
@@ -41,14 +39,14 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * Construct the single-valued input without any pairs for a baseline. Throws an exception if the pairs are null or
      * empty or if any individual pairs do not contain two values.
      * 
-     * @param pairs the verification pairs
+     * @param pairs2 the verification pairs
      * @param dim the dimension of the input
      * @throws MetricInputException if the pairs are invalid
      */
 
-    protected SingleValuedPairs(final PairsOfDoubles pairs, final Dimension dim)
+    protected SingleValuedPairs(final List<PairOfDoubles> pairs2, final Dimension dim)
     {
-        this(pairs, null, dim);
+        this(pairs2, null, dim);
     }
 
     /**
@@ -61,13 +59,13 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
      * @throws MetricInputException if the pairs are invalid
      */
 
-    protected SingleValuedPairs(final PairsOfDoubles pairs2,
-                                final PairsOfDoubles basePairs,
+    protected SingleValuedPairs(final List<PairOfDoubles> pairs2,
+                                final List<PairOfDoubles> basePairs,
                                 final Dimension dim)
     {
         //Bounds check
         Objects.requireNonNull(pairs2, "Specify non-null input for the single-valued pairs.");
-        if(pairs2.getTuplesOfDoubles().size() == 0)
+        if(pairs2.size() == 0)
         {
             throw new MetricInputException("Provide an input with one or more pairs.");
         }
@@ -76,13 +74,13 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
         if(basePairs != null)
         {
             //Bounds check
-            if(basePairs.getTuplesOfDoubles().size() == 0)
+            if(basePairs.size() == 0)
             {
                 throw new MetricInputException("Provide a baseline with one or more pairs.");
             }
             this.basePairs = new ArrayList<>();
             //Set the baseline pairs
-            for(final PairOfDoubles pair: basePairs.getTuplesOfDoubles())
+            for(final PairOfDoubles pair: basePairs)
             {
                 this.basePairs.add(pair);
             }
@@ -92,7 +90,7 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
             this.basePairs = null;
         }
         //Set the pairs
-        for(final PairOfDoubles pair : pairs2.getTuplesOfDoubles())
+        for(final PairOfDoubles pair : pairs2)
         {
             this.pairs.add(pair);
         }
@@ -155,24 +153,4 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
     {
         return basePairs.size();
     }
-
-    /**
-     * Construct the single-valued input with a baseline. Throws an exception if the pairs are null or empty or if the
-     * baseline pairs are empty. The baseline pairs may be null.
-     * 
-     * @param pairs the single-valued pairs
-     * @param basePairs the baseline pairs
-     * @param dim the dimension of the input
-     * @throws MetricInputException
-     */
-
-    private SingleValuedPairs(final List<PairOfDoubles> pairs,
-                              final List<PairOfDoubles> basePairs,
-                              final Dimension dim)
-    {
-        this.pairs = pairs;
-        this.basePairs = basePairs;
-        this.dim = dim;
-    }
-
 }

@@ -20,48 +20,31 @@ public class DataFactory
         // No construction, this is a static factory class.
     }
 
-    /**
-     * High level helper to get the typical paired ensemble data structure.
-     * 
-     * @param observation
-     * @param forecast
-     * @return
-     */
-    public static PairOfOneObsManyFcMembers pairOf(Double observation, Double[] forecast)
+    public static PairOfDoubles pairOf(double first, double second)
     {
-        return DataFactoryImpl.pairOf(observation, forecast);
-    }
-
-    public static PairOfDoubles tupleOf(double first, double second)
-    {
-        return DataFactoryImpl.tupleOf(first, second);
-    }
-
-    public static PairsOfDoubles tuplesOf(List<PairOfDoubles> tuples)
-    {
-        return DataFactoryImpl.tuplesOf(tuples);
+        return DataFactoryImpl.pairOf(first, second);
     }
 
     /**
-     * Get a primitive tuple of double, double[]
+     * Create a primitive pair of double, double[]
      * @param first the double
      * @param second the double array
      * @return the tuple
      */
-    public static PairOfDoubleAndVectorOfDoubles tupleOf(double first, double[] second)
+    public static PairOfDoubleAndVectorOfDoubles pairOf(double first, double[] second)
     {
-        return DataFactoryImpl.tupleOf(first, second);
+        return DataFactoryImpl.pairOf(first, second);
     }
 
     /**
-     * Get a primitive tuple of double, double[] from boxed versions of same.
+     * Create a primitive tuple of double, double[] from boxed versions of same.
      *
      * @param first a boxed Double
      * @param second a boxed Double[]
      * @return the tuple of unboxed primitive, can use getKey() and getDoubles() on it.
      */
-    public static PairOfDoubleAndVectorOfDoubles tupleOf(Double first, Double[] second)
+    public static PairOfDoubleAndVectorOfDoubles pairOf(Double first, Double[] second)
     {
-        return DataFactoryImpl.tupleOf(first, second);
+        return DataFactoryImpl.pairOf(first, second);
     }
 }
