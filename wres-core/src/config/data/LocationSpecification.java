@@ -17,12 +17,12 @@ import util.Utilities;
  * Details a location to query based on information in the configuration
  * @author Christopher Tubbs
  */
-public final class Location extends FeatureSelector {
+public final class LocationSpecification extends FeatureSpecification {
     /**
      * Constructor
      * @param reader The XML Reader containing the specification for the Location
      */
-	public Location(XMLStreamReader reader)
+	public LocationSpecification(XMLStreamReader reader)
 	{
 		super(reader);
 	}

@@ -7,7 +7,7 @@ package config.data;
  * Specifications for how results need to be output
  * @author Christopher Tubbs
  */
-public class OutputType {
+public class OutputTypeSpecification {
 
 	/**
 	 * Constructor
@@ -15,7 +15,7 @@ public class OutputType {
 	 * @param path The path to write to
 	 * @param fileFormat the format to save the file to
 	 */
-	public OutputType(Boolean shouldSave, String path, String fileFormat) {
+	public OutputTypeSpecification(Boolean shouldSave, String path, String fileFormat) {
 		this.shouldSave = shouldSave;
 		this.path = path;
 		this.fileFormat = fileFormat;

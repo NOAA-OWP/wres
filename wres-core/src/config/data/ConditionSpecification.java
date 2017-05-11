@@ -16,13 +16,13 @@ import util.Utilities;
  * Details conditions to place on selected rows from the database based upon date and value
  * @author Christopher Tubbs
  */
-public final class Conditions extends ConfigElement {
+public final class ConditionSpecification extends SpecificationElement {
 
     /**
      * Creates and parses the condition
      * @param reader The XML node(s) containing the definitions for the conditions
      */
-	public Conditions(XMLStreamReader reader)
+	public ConditionSpecification(XMLStreamReader reader)
 	{
 		super(reader);
 		

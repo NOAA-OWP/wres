@@ -15,12 +15,12 @@ import javax.xml.stream.XMLStreamReader;
  *
  * @author Christopher Tubbs
  */
-public final class Polygon extends FeatureSelector {
+public final class PolygonSpecification extends FeatureSpecification {
     /**
      * Constructor
      * @param reader The XML Reader containing details about the polygon to draw
      */
-	public Polygon(XMLStreamReader reader)
+	public PolygonSpecification(XMLStreamReader reader)
 	{
 		super(reader);
 	}
@@ -30,7 +30,7 @@ public final class Polygon extends FeatureSelector {
 	{
 		if (reader.getLocalName().equalsIgnoreCase("point"))
 		{
-			addPoint(new Point(reader));
+			addPoint(new PointSpecification(reader));
 		}
 	}
 
@@ -43,7 +43,7 @@ public final class Polygon extends FeatureSelector {
 	 * Adds a point to the polygon
 	 * @param point Point that will act as another vertex for the polygon
 	 */
-	private void addPoint(Point point)
+	private void addPoint(PointSpecification point)
 	{
 		if (point == null)
 		{
@@ -52,7 +52,7 @@ public final class Polygon extends FeatureSelector {
 		
 		if (this.points == null)
 		{
-			this.points = new ArrayList<Point>();
+			this.points = new ArrayList<PointSpecification>();
 		}
 		
 		this.points.add(point);
@@ -64,7 +64,7 @@ public final class Polygon extends FeatureSelector {
 		String description = "Polygon:";
 		description += System.lineSeparator();
 		
-		for (Point point : points)
+		for (PointSpecification point : points)
 		{
 			description += "\tVertex: (";
 			description += point.x();
@@ -77,7 +77,7 @@ public final class Polygon extends FeatureSelector {
 		return description;
 	}
 	
-	private ArrayList<Point> points;
+	private ArrayList<PointSpecification> points;
 
     @Override
     public List<Integer> getVariablePositionIDs(Integer variableID) throws Exception

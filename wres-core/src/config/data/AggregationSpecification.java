@@ -15,9 +15,9 @@ import util.Utilities;
  * Specification for how to aggregate values in a metric
  * @author Christopher Tubbs
  */
-public class Aggregation extends ConfigElement {
+public class AggregationSpecification extends SpecificationElement {
 	
-	public Aggregation(XMLStreamReader reader)
+	public AggregationSpecification(XMLStreamReader reader)
 	{
 	    super(reader);
 	}

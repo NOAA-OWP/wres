@@ -14,7 +14,7 @@ import util.Utilities;
  * An element within a configuration file
  * @author Christopher Tubbs
  */
-public abstract class ConfigElement {
+public abstract class SpecificationElement {
     
     protected static final String newline = System.lineSeparator();
     
@@ -22,7 +22,7 @@ public abstract class ConfigElement {
      * The Constructor
      * @param reader The XML Reader containing the configuration elements
      */
-	public ConfigElement(XMLStreamReader reader)
+	public SpecificationElement(XMLStreamReader reader)
 	{
 		try 
 		{

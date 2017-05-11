@@ -9,14 +9,14 @@ import data.caching.VariableCache;
  * A specification for a variable to perform queries against
  * @author Christopher Tubbs
  */
-public class Variable {
+public class VariableSpecification {
 
 	/**
 	 * Constructor
 	 * @param name The name of the specified variable
 	 * @param unit The unit that the specified variable should be measured in
 	 */
-	public Variable(String name, String unit) {
+	public VariableSpecification(String name, String unit) {
 		this.variableName = name;
 		this.unitOfMeasurement = unit;
 	}

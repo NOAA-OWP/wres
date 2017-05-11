@@ -14,13 +14,13 @@ import javax.xml.stream.XMLStreamReader;
  * Specification for a point in gridded data that should be selected
  * @author Christopher Tubbs
  */
-public class Point extends FeatureSelector {
+public class PointSpecification extends FeatureSpecification {
 
 	/**
 	 * Constructor
 	 * @param reader The XML Stream containing the point data
 	 */
-	public Point(XMLStreamReader reader) {
+	public PointSpecification(XMLStreamReader reader) {
 		super(reader);
 		
 		if (x == null)

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import config.data.Metric;
+import config.data.MetricSpecification;
 import config.data.ScriptBuilder;
 import util.Database;
 import wres.datamodel.DataFactory;
@@ -95,7 +95,7 @@ public final class Metrics {
 	    };
 	}
 	
-	public static List<PairOfDoubleAndVectorOfDoubles> getPairs(Metric metricSpecification, int progress) throws Exception {
+	public static List<PairOfDoubleAndVectorOfDoubles> getPairs(MetricSpecification metricSpecification, int progress) throws Exception {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         Connection connection = null;
 
