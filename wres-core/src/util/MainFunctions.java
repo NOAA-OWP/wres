@@ -21,7 +21,6 @@ import concurrency.ForecastSaver;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import collections.AssociatedPairs;
 import collections.Pair;
 import reading.BasicSource;
 import reading.SourceReader;
@@ -34,10 +33,9 @@ import java.util.concurrent.Future;
 import concurrency.FunctionRunner;
 import concurrency.Metrics;
 import concurrency.ObservationSaver;
-import data.MeasurementCache;
-import data.ValuePairs;
-import data.Variable;
-import data.VariableCache;
+import data.caching.MeasurementCache;
+import data.caching.Variable;
+import data.caching.VariableCache;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
 /**

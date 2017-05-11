@@ -60,7 +60,7 @@
                     </variables>
                     <features all="false">
                         <feature>
-                            <lid>DRRC2HLF</lid>
+                            <lid>DRRC2</lid>
                             <comid></comid>
                             <gage_id></gage_id>
                             <huc></huc>
@@ -88,7 +88,7 @@
                     </variables>
                     <features all="false">
                         <feature>
-                            <lid>DRRC2HSF</lid>
+                            <lid>DRRC2</lid>
                             <comid></comid>
                             <gage_id></gage_id>
                             <huc></huc>

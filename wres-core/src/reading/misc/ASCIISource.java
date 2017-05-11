@@ -16,7 +16,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import concurrency.Executor;
-import data.Variable;
+import data.caching.Variable;
 
 /**
  * @author ctubbs

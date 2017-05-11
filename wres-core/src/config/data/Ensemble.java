@@ -1,6 +1,6 @@
 package config.data;
 
-import data.EnsembleCache;
+import data.caching.EnsembleCache;
 
 /**
  * Represents information about an Ensemble from the configuration
