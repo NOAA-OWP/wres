@@ -2,10 +2,10 @@
 <projects>
     <project>
         <name>Example</name>
-        <observations lazy_load="true">
+        <observations lazyLoad="true">
             <directories>
                 <directory load_all="false">
-                    <path>/resources/</path>
+                    <path>testinput/sharedinput/</path>
                     <file file_type="PIXML">DRRC2SQIN.xml</file>
                 </directory>
             </directories>
@@ -17,10 +17,10 @@
                 <variable name="QINE" unit="CFS"/>
             </variables>
         </observations>
-        <forecasts lazy_load="true">
+        <forecasts lazyLoad="true" isForecast="true">
             <directories>
                 <directory load_all="false">
-                    <path>/resources/forecasts/</path>
+                    <path>testinput/sharedinput/forecasts/</path>
                     <file file_type="PIXML">
                         1985010112_DRRC2_SQIN_case_gefs_climatology_export.xml
                     </file>
@@ -47,7 +47,7 @@
                     <numeric output="true" path="numeric_output" format="xml" />
                 </output>
                 <aggregation aggregate="false" range="1" unit="hour" mode="mean" first_lead="0" last_lead="" />
-                <source_one>
+                <source_one sourceID="one">
                     <sources>
                         <!--<source name="examplefilename.xml" /> -->
                     </sources>
@@ -74,7 +74,7 @@
                         <!--<range x_minimum="42" x_maximum="20000"/>-->
                     </features>
                 </source_one>
-                <source_two is_forecast="true">
+                <source_two isForecast="true" sourceID="two">
                     <sources>
                         <!--<source name="examplefilename.xml" /> -->
                     </sources>
@@ -105,7 +105,7 @@
                         <ensemble name="MEFP" qualifier="SIM1" member_id="1961"/>
                     </ensembles>
                 </source_two>
-                <!-- <baseline>
+                <!-- <baseline sourceID="baseline">
                         Baselines can be defined like source_one and source_two
                      </baseline> -->
             </metric>

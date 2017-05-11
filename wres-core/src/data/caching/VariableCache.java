@@ -10,6 +10,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import config.specification.FeatureRangeSpecification;
 import data.details.VariableDetails;
 import util.Database;
 
@@ -67,12 +68,12 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 	 * @return A list of all obtained variable position IDs
 	 * @throws Exception
 	 */
-	public static List<Integer> getVariablePositionIDs(config.data.FeatureRangeSpecification range, String variableName) throws Exception
+	public static List<Integer> getVariablePositionIDs(FeatureRangeSpecification range, String variableName) throws Exception
 	{
 	    return internalCache.getVarPosIDs(range, variableName);
 	}
 	
-	public List<Integer> getVarPosIDs(config.data.FeatureRangeSpecification range, String variableName) throws Exception
+	public List<Integer> getVarPosIDs(FeatureRangeSpecification range, String variableName) throws Exception
 	{
 	    List<Integer> IDs = new ArrayList<Integer>();
 	    

@@ -11,7 +11,7 @@ import java.util.List;
 
 import javax.xml.stream.XMLStreamReader;
 
-import config.data.ProjectSpecification;
+import config.specification.ProjectSpecification;
 import reading.XMLReader;
 import util.Utilities;
 
@@ -57,6 +57,12 @@ public final class ProjectConfig extends XMLReader {
 			set_filename(file.getAbsolutePath());
 			parse();
 		}
+	}
+	
+	public static void loadProjectData() {
+	    for (ProjectSpecification project : getProjects()) {
+	        
+	    }
 	}
 	
 	/**

@@ -25,8 +25,8 @@ import collections.Pair;
 import reading.BasicSource;
 import reading.SourceReader;
 import config.ProjectConfig;
-import config.data.MetricSpecification;
-import config.data.ProjectSpecification;
+import config.specification.MetricSpecification;
+import config.specification.ProjectSpecification;
 import collections.RealCollection;
 
 import java.util.concurrent.Future;

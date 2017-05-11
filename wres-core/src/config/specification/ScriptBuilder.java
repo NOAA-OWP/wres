@@ -1,7 +1,7 @@
 /**
  * 
  */
-package config.data;
+package config.specification;
 
 import collections.TwoTuple;
 import data.caching.MeasurementCache;

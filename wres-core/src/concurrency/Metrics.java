@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import config.data.MetricSpecification;
-import config.data.ScriptBuilder;
+import config.specification.MetricSpecification;
+import config.specification.ScriptBuilder;
 import util.Database;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;

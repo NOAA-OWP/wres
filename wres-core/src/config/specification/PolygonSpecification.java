@@ -1,13 +1,11 @@
 /**
  * 
  */
-package config.data;
+package config.specification;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.TreeMap;
-
 import javax.xml.stream.XMLStreamReader;
 
 /**
