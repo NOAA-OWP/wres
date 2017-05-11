@@ -52,6 +52,17 @@ public class MetricSpecification extends SpecificationElement {
 		{
 			this.metric_output = new OutputSpecification(reader);
 		}
+		else if(Utilities.tagIs(reader, "datasource")) {
+		    ProjectDataSpecification newDataSource = new ProjectDataSpecification(reader);
+		    
+		    if (newDataSource.getDataSourceIdentifier().equalsIgnoreCase("one")) {
+		        this.sourceOne = newDataSource;
+		    } else if (newDataSource.getDataSourceIdentifier().equalsIgnoreCase("two")) {
+		        this.sourceTwo = newDataSource;
+		    } else if (newDataSource.getDataSourceIdentifier().equalsIgnoreCase("baseline")){
+		        this.baseline = newDataSource;
+		    }
+		}
 		else if (tag_name.equalsIgnoreCase("source_one"))
 		{
 			this.sourceOne = new ProjectDataSpecification(reader);
