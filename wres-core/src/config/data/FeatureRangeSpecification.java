@@ -24,14 +24,14 @@ import javax.xml.stream.XMLStreamReader;
  * @author Christopher Tubbs
  * 
  */
-public class Range extends FeatureSelector {
+public class FeatureRangeSpecification extends FeatureSpecification {
 	
     /**
      * Constructor
      * @param reader The XML Node containing the specification for the range of values
      * to select.
      */
-	public Range(XMLStreamReader reader) {
+	public FeatureRangeSpecification(XMLStreamReader reader) {
 		super(reader);
 	}
 

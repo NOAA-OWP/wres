@@ -26,14 +26,14 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
  * for it from the database
  * @author Christopher Tubbs
  */
-public class Metric extends ConfigElement {
+public class MetricSpecification extends SpecificationElement {
 
 	/**
 	 * Constructor
 	 * @param reader The XML Node containing data about the metric
 	 * @throws Exception 
 	 */
-	public Metric(XMLStreamReader reader) throws Exception {
+	public MetricSpecification(XMLStreamReader reader) throws Exception {
 		super(reader);
 	}
 
@@ -51,23 +51,23 @@ public class Metric extends ConfigElement {
 		}
 		else if (tag_name.equalsIgnoreCase("output"))
 		{
-			this.metric_output = new Output(reader);
+			this.metric_output = new OutputSpecification(reader);
 		}
 		else if (tag_name.equalsIgnoreCase("source_one"))
 		{
-			this.sourceOne = new ProjectDataSource(reader);
+			this.sourceOne = new ProjectDataSpecification(reader);
 		}
 		else if (tag_name.equalsIgnoreCase("source_two"))
 		{
-			this.sourceTwo = new ProjectDataSource(reader);
+			this.sourceTwo = new ProjectDataSpecification(reader);
 		}
 		else if (tag_name.equalsIgnoreCase("baseline"))
 		{
-		    this.baseline = new ProjectDataSource(reader);
+		    this.baseline = new ProjectDataSpecification(reader);
 		}
 		else if (Utilities.tagIs(reader, "aggregation"))
 		{
-		    this.metricAggregate = new Aggregation(reader);
+		    this.metricAggregate = new AggregationSpecification(reader);
 		}
 	}
 	
@@ -164,29 +164,29 @@ public class Metric extends ConfigElement {
 	    return this.name;
 	}
 	
-	public ProjectDataSource getFirstSource()
+	public ProjectDataSpecification getFirstSource()
 	{
 	    return this.sourceOne;
 	}
 	
-	public ProjectDataSource getSecondSource() {
+	public ProjectDataSpecification getSecondSource() {
 	    return this.sourceTwo;
 	}
 	
-	public ProjectDataSource getBaselineSource() {
+	public ProjectDataSpecification getBaselineSource() {
 	    return this.baseline;
 	}
 	
-	public Aggregation getAggregationSpecification() {
+	public AggregationSpecification getAggregationSpecification() {
 	    return this.metricAggregate;
 	}
 
 	private String name;
-	private Output metric_output;
-	private ProjectDataSource sourceOne;
-	private ProjectDataSource sourceTwo;
-	private ProjectDataSource baseline;
-	private Aggregation metricAggregate;
+	private OutputSpecification metric_output;
+	private ProjectDataSpecification sourceOne;
+	private ProjectDataSpecification sourceTwo;
+	private ProjectDataSpecification baseline;
+	private AggregationSpecification metricAggregate;
     @Override
     public String toXML()
     {

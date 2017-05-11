@@ -25,8 +25,8 @@ import collections.Pair;
 import reading.BasicSource;
 import reading.SourceReader;
 import config.ProjectConfig;
-import config.data.Metric;
-import config.data.Project;
+import config.data.MetricSpecification;
+import config.data.ProjectSpecification;
 import collections.RealCollection;
 
 import java.util.concurrent.Future;
@@ -587,7 +587,7 @@ public final class MainFunctions {
 			System.out.println("The configured projects are:");
 			System.out.println();
 			System.out.println();
-			for (Project project : ProjectConfig.getProjects())
+			for (ProjectSpecification project : ProjectConfig.getProjects())
 			{
 				System.out.println(project.toString());
 			}
@@ -784,7 +784,7 @@ public final class MainFunctions {
 	            int printCount = 0;
 	            int totalLimit = 10;
 	            int totalCount = 0;
-	            Project foundProject = ProjectConfig.getProject(projectName);
+	            ProjectSpecification foundProject = ProjectConfig.getProject(projectName);
 	            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping = null;
 	            
 	            if (foundProject == null)
@@ -794,7 +794,7 @@ public final class MainFunctions {
 	                return;
 	            }
 	            
-	            Metric metric = foundProject.getMetric(metricName);
+	            MetricSpecification metric = foundProject.getMetric(metricName);
 	            
 	            if (metric == null)
 	            {

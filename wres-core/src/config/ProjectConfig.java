@@ -11,7 +11,7 @@ import java.util.List;
 
 import javax.xml.stream.XMLStreamReader;
 
-import config.data.Project;
+import config.data.ProjectSpecification;
 import reading.XMLReader;
 import util.Utilities;
 
@@ -62,7 +62,7 @@ public final class ProjectConfig extends XMLReader {
 	/**
 	 * @return The collection of all configured projects
 	 */
-	public static List<Project> getProjects() {
+	public static List<ProjectSpecification> getProjects() {
 		return configuration.projects;
 	}
 	
@@ -73,7 +73,7 @@ public final class ProjectConfig extends XMLReader {
 	protected void parseElement(XMLStreamReader reader) {
 		if (Utilities.tagIs(reader, "project")) {
 			try {
-				addProject(new Project(reader));
+				addProject(new ProjectSpecification(reader));
 			} catch (Exception e) {
 				System.err.println();
 				System.err.println();
@@ -92,8 +92,8 @@ public final class ProjectConfig extends XMLReader {
 	 * @param projectName The name of the desired project
 	 * @return The project
 	 */
-	public static Project getProject(String projectName) {
-	    return Utilities.find(getProjects(), (Project project) -> {
+	public static ProjectSpecification getProject(String projectName) {
+	    return Utilities.find(getProjects(), (ProjectSpecification project) -> {
 	        return project.getName().equalsIgnoreCase(projectName);
 	    });
 	}
@@ -102,7 +102,7 @@ public final class ProjectConfig extends XMLReader {
 	 * Adds a project configuration to the collection of project specifications
 	 * @param project The configuration to add to the list
 	 */
-	private void addProject(Project project)
+	private void addProject(ProjectSpecification project)
 	{
 		if (project == null)
 		{
@@ -111,7 +111,7 @@ public final class ProjectConfig extends XMLReader {
 		
 		if (this.projects == null)
 		{
-			this.projects = new ArrayList<Project>();
+			this.projects = new ArrayList<ProjectSpecification>();
 		}
 		
 		this.projects.add(project);
@@ -120,5 +120,5 @@ public final class ProjectConfig extends XMLReader {
 	/**
 	 * The collection of all loaded projects
 	 */
-	private List<Project> projects;
+	private List<ProjectSpecification> projects;
 }

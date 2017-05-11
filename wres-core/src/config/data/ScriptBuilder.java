@@ -37,12 +37,12 @@ public final class ScriptBuilder
         return new TwoTuple<String, String>(script, label);
     }
     
-    public static String generateGetPairData(Metric metricSpecification, int progress) throws Exception {
+    public static String generateGetPairData(MetricSpecification metricSpecification, int progress) throws Exception {
         // TODO: Break into multiple functions
         
         // Expose members of the specification to reduce the depth of data accessors
-        ProjectDataSource firstSourceSpec = metricSpecification.getFirstSource();
-        ProjectDataSource secondSourceSpec = metricSpecification.getSecondSource();
+        ProjectDataSpecification firstSourceSpec = metricSpecification.getFirstSource();
+        ProjectDataSpecification secondSourceSpec = metricSpecification.getSecondSource();
         
         String leadSpecification = metricSpecification.getAggregationSpecification().getLeadQualifier(progress);
         

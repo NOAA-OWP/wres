@@ -10,13 +10,13 @@ import javax.xml.stream.XMLStreamReader;
  * @author Christopher Tubbs
  *
  */
-public abstract class FeatureSelector extends ConfigElement
+public abstract class FeatureSpecification extends SpecificationElement
 {
 
     /**
      * @param reader
      */
-    public FeatureSelector(XMLStreamReader reader)
+    public FeatureSpecification(XMLStreamReader reader)
     {
         super(reader);
     }

@@ -16,12 +16,12 @@ import util.Utilities;
  * Specification for the type of output required for a metric
  * @author Christopher Tubbs
  */
-public final class Output extends ConfigElement {
+public final class OutputSpecification extends SpecificationElement {
     /**
      * Constructor
      * @param reader The XML Node detailing the specifications for the output
      */
-	public Output(XMLStreamReader reader)
+	public OutputSpecification(XMLStreamReader reader)
 	{
 		super(reader);
 	}
@@ -29,7 +29,7 @@ public final class Output extends ConfigElement {
 	@Override
 	protected void interpret(XMLStreamReader reader) throws XMLStreamException 
 	{
-		OutputType specs = generateOutputType(reader);
+		OutputTypeSpecification specs = generateOutputType(reader);
 		
 		if (Utilities.tagIs(reader, "graphic"))
 		{
@@ -46,7 +46,7 @@ public final class Output extends ConfigElement {
 	 * @param reader The XML Node detailing a requested type of output
 	 * @return Specifications about the type of output
 	 */
-	private static OutputType generateOutputType(XMLStreamReader reader)
+	private static OutputTypeSpecification generateOutputType(XMLStreamReader reader)
 	{
 		String output_attr = Utilities.getAttributeValue(reader, "output");
 		String path = Utilities.getAttributeValue(reader, "path");
@@ -58,7 +58,7 @@ public final class Output extends ConfigElement {
 			shouldSave = Utilities.POSSIBLE_TRUE_VALUES.contains(output_attr);
 		}
 		
-		return new OutputType(shouldSave, path, format);
+		return new OutputTypeSpecification(shouldSave, path, format);
 	}
 
 	@Override
@@ -76,7 +76,7 @@ public final class Output extends ConfigElement {
 		description += System.lineSeparator();
 		if (graphics.size() > 0)
 		{
-			for (OutputType graphic : graphics)
+			for (OutputTypeSpecification graphic : graphics)
 			{
 				description += graphic.toString();
 			}
@@ -92,7 +92,7 @@ public final class Output extends ConfigElement {
 		description += System.lineSeparator();
 		if (numerics.size() > 0)
 		{
-			for (OutputType numeric : numerics)
+			for (OutputTypeSpecification numeric : numerics)
 			{
 				description += numeric.toString();
 			}
@@ -111,11 +111,11 @@ public final class Output extends ConfigElement {
 	 * Adds output specifications for output that should be saved as graphics
 	 * @param graphicalType The specifications for the graphical output
 	 */
-	private void addGraphicOutput(OutputType graphicalType)
+	private void addGraphicOutput(OutputTypeSpecification graphicalType)
 	{
 		if (graphics == null)
 		{
-			graphics = new ArrayList<OutputType>();
+			graphics = new ArrayList<OutputTypeSpecification>();
 		}
 		
 		graphics.add(graphicalType);
@@ -125,17 +125,17 @@ public final class Output extends ConfigElement {
 	 * Adds output specifications for output that should be save as numerical logs
 	 * @param numericalType The specifications for the numerical output
 	 */
-	private void addNumericOutput(OutputType numericalType)
+	private void addNumericOutput(OutputTypeSpecification numericalType)
 	{
 		if (numerics == null)
 		{
-			numerics = new ArrayList<OutputType>();
+			numerics = new ArrayList<OutputTypeSpecification>();
 		}
 		numerics.add(numericalType);
 	}
 	
-	private ArrayList<OutputType> graphics;
-	private ArrayList<OutputType> numerics;
+	private ArrayList<OutputTypeSpecification> graphics;
+	private ArrayList<OutputTypeSpecification> numerics;
     @Override
     public String toXML()
     {

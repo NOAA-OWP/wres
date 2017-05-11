@@ -16,14 +16,14 @@ import util.Utilities;
  * 
  * @author Christopher Tubbs
  */
-public class Project extends ConfigElement {
+public class ProjectSpecification extends SpecificationElement {
 
 	/**
 	 * Constructor
 	 * @param reader The XML reader containing the details about the project specification
 	 * @throws Exception An error is thrown if there is trouble reading the detabase
 	 */
-	public Project(XMLStreamReader reader) throws Exception 
+	public ProjectSpecification(XMLStreamReader reader) throws Exception 
 	{
 		super(reader);
 	}
@@ -39,11 +39,11 @@ public class Project extends ConfigElement {
 		}
 		else if (Utilities.tagIs(reader, "observations"))
 		{
-			this.observations = new ProjectDataSource(reader);
+			this.observations = new ProjectDataSpecification(reader);
 		}
 		else if (Utilities.tagIs(reader, "forecasts"))
 		{
-			this.forecasts = new ProjectDataSource(reader);
+			this.forecasts = new ProjectDataSpecification(reader);
 		}
 		else if (Utilities.tagIs(reader, "metrics"))
 		{
@@ -74,7 +74,7 @@ public class Project extends ConfigElement {
 
 			if (Utilities.tagIs(reader, "metric"))
 			{
-				addMetric(new Metric(reader));
+				addMetric(new MetricSpecification(reader));
 			}
 		}
 	}
@@ -83,7 +83,7 @@ public class Project extends ConfigElement {
 	 * Adds a created metric to the metric collection
 	 * @param metric The metric specification to add
 	 */
-	public void addMetric(Metric metric)
+	public void addMetric(MetricSpecification metric)
 	{
 		if (metric == null)
 		{
@@ -92,7 +92,7 @@ public class Project extends ConfigElement {
 		
 		if (metrics == null)
 		{
-			metrics = new ArrayList<Metric>();
+			metrics = new ArrayList<MetricSpecification>();
 		}
 		
 		metrics.add(metric);
@@ -103,9 +103,9 @@ public class Project extends ConfigElement {
 	 * @param index The index of the metric to retrieve
 	 * @return A metric specification. Null is returned if the index was not valid
 	 */
-	public Metric getMetric(int index)
+	public MetricSpecification getMetric(int index)
 	{
-		Metric metric = null;
+		MetricSpecification metric = null;
 		
 		if (index < metricCount())
 		{
@@ -115,13 +115,13 @@ public class Project extends ConfigElement {
 		return metric;
 	}
 	
-	public Metric getMetric(String metricName)
+	public MetricSpecification getMetric(String metricName)
 	{
-	    Metric metric = null;
+	    MetricSpecification metric = null;
 	    
 	    if (metricCount() > 0)
 	    {
-	        metric = Utilities.find(metrics, (Metric met) -> {
+	        metric = Utilities.find(metrics, (MetricSpecification met) -> {
 	           return met.getName().equalsIgnoreCase(metricName);
 	        });
 	    }
@@ -136,7 +136,7 @@ public class Project extends ConfigElement {
 	{
 		if (metrics == null)
 		{
-			metrics = new ArrayList<Metric>();
+			metrics = new ArrayList<MetricSpecification>();
 		}
 		
 		return metrics.size();
@@ -146,7 +146,7 @@ public class Project extends ConfigElement {
 	 * Details about the observation data that needs to be present to execute a project
 	 * @return Information about the data required for the project's observations
 	 */
-	public ProjectDataSource getObservations()
+	public ProjectDataSpecification getObservations()
 	{
 		return observations;
 	}
@@ -155,7 +155,7 @@ public class Project extends ConfigElement {
 	 * Details about the forecast data that needs to be present to execute a project
 	 * @return Information about the data required for the project's forecasts
 	 */
-	public ProjectDataSource getForecasts()
+	public ProjectDataSpecification getForecasts()
 	{
 		return forecasts;
 	}
@@ -214,7 +214,7 @@ public class Project extends ConfigElement {
 		description += System.lineSeparator();
 		if (metricCount() > 0)
 		{
-			for (Metric metric : metrics)
+			for (MetricSpecification metric : metrics)
 			{
 				description += metric.toString();
 				description += System.lineSeparator();
@@ -231,9 +231,9 @@ public class Project extends ConfigElement {
 		return description;
 	}
 
-	private ArrayList<Metric> metrics;
-	private ProjectDataSource observations;
-	private ProjectDataSource forecasts;
+	private ArrayList<MetricSpecification> metrics;
+	private ProjectDataSpecification observations;
+	private ProjectDataSpecification forecasts;
 	private String name;
     @Override
     public String toXML()

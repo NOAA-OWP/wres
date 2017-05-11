@@ -17,13 +17,13 @@ import util.Utilities;
  *
  * @author Christopher Tubbs
  */
-public class Directory extends ConfigElement
+public class DirectorySpecification extends SpecificationElement
 {
     /**
      * The Constructor
      * @param reader The XML Reader describing the directory
      */
-	public Directory(XMLStreamReader reader)
+	public DirectorySpecification(XMLStreamReader reader)
 	{
 		super(reader);
 	}

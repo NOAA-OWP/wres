@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import collections.RealCollection;
-import config.data.Conditions;
-import config.data.Metric;
-import config.data.ProjectDataSource;
+import config.data.ConditionSpecification;
+import config.data.MetricSpecification;
+import config.data.ProjectDataSpecification;
 import config.data.ScriptBuilder;
 import data.caching.FeatureCache;
 import data.caching.MeasurementCache;
@@ -32,7 +32,7 @@ public final class PairFetcher implements Callable<List<PairOfDoubleAndVectorOfD
     /**
      * 
      */
-    public PairFetcher(Metric metricSpecification, int progress)
+    public PairFetcher(MetricSpecification metricSpecification, int progress)
     {
         this.metricSpecification = metricSpecification;
         this.progress = progress;
@@ -386,6 +386,6 @@ public final class PairFetcher implements Callable<List<PairOfDoubleAndVectorOfD
         return "SELECT * FROM (" + script + ") AS pairs;";
     }*/
 
-    private final Metric metricSpecification;
+    private final MetricSpecification metricSpecification;
     private final int progress;
 }

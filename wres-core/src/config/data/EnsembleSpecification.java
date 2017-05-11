@@ -7,8 +7,8 @@ import data.caching.EnsembleCache;
  * @author Christopher Tubbs
  *
  */
-public final class Ensemble {
-	public Ensemble(String ensemble_name, String ensemblemember_id, String qualifier) {
+public final class EnsembleSpecification {
+	public EnsembleSpecification(String ensemble_name, String ensemblemember_id, String qualifier) {
 		this.name = ensemble_name;
 		this.memberID = ensemblemember_id;
 		this.qualifier = qualifier;

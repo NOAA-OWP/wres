@@ -17,13 +17,13 @@ import util.Utilities;
  * 
  * @author Christopher Tubbs
  */
-public class ProjectDataSource extends ConfigElement {
+public class ProjectDataSpecification extends SpecificationElement {
 
 	/**
 	 * Constructor
 	 * @param reader The xml reader that contains the specifications for the data source
 	 */
-	public ProjectDataSource(XMLStreamReader reader) 
+	public ProjectDataSpecification(XMLStreamReader reader) 
 	{
 		super(reader);
 	}
@@ -66,13 +66,13 @@ public class ProjectDataSource extends ConfigElement {
 				
 				if (reader.isStartElement())
 				{
-					addDirectory(new Directory(reader));
+					addDirectory(new DirectorySpecification(reader));
 				}
 			}
 		}
 		else if(Utilities.tagIs(reader, "conditions"))
 		{
-			conditions = new Conditions(reader);
+			conditions = new ConditionSpecification(reader);
 		}
 		else if (Utilities.tagIs(reader, "variable"))
 		{
@@ -89,7 +89,7 @@ public class ProjectDataSource extends ConfigElement {
 					variableUnit = reader.getAttributeValue(attributeIndex);
 				}				
 			}	
-			addVariable(new Variable(variableName, variableUnit));
+			addVariable(new VariableSpecification(variableName, variableUnit));
 		}
 		else if (Utilities.tagIs(reader, "ensembles"))
 		{
@@ -128,23 +128,23 @@ public class ProjectDataSource extends ConfigElement {
 				continue;
 			}
 			
-			FeatureSelector feature = null;			
+			FeatureSpecification feature = null;			
 			
 			if (Utilities.tagIs(reader, "feature"))
 			{
-				feature = new Location(reader);
+				feature = new LocationSpecification(reader);
 			}
 			else if (Utilities.tagIs(reader, "range"))
 			{
-				feature = new Range(reader);
+				feature = new FeatureRangeSpecification(reader);
 			}
 			else if (Utilities.tagIs(reader, "polygon"))
 			{
-				feature = new Polygon(reader);
+				feature = new PolygonSpecification(reader);
 			}
 			else if (Utilities.tagIs(reader, "point"))
 			{
-				feature = new Point(reader);
+				feature = new PointSpecification(reader);
 			}
 			
 			addFeature(feature);
@@ -198,7 +198,7 @@ public class ProjectDataSource extends ConfigElement {
 				}
 			}
 			
-			addEnsemble(new Ensemble(name, memberID, qualifier));
+			addEnsemble(new EnsembleSpecification(name, memberID, qualifier));
 		}
 	}
 	
@@ -206,7 +206,7 @@ public class ProjectDataSource extends ConfigElement {
 	 * Adds a directory specification to the datasource
 	 * @param directory The directory to add
 	 */
-	private void addDirectory(Directory directory)
+	private void addDirectory(DirectorySpecification directory)
 	{
 		if (directory == null)
 		{
@@ -215,7 +215,7 @@ public class ProjectDataSource extends ConfigElement {
 		
 		if (this.directories == null)
 		{
-			this.directories = new ArrayList<Directory>();
+			this.directories = new ArrayList<DirectorySpecification>();
 		}
 		
 		this.directories.add(directory);
@@ -225,7 +225,7 @@ public class ProjectDataSource extends ConfigElement {
 	 * Adds an ensemble specification to the data source
 	 * @param ensemble The ensemble specification to add
 	 */
-	private void addEnsemble(Ensemble ensemble)
+	private void addEnsemble(EnsembleSpecification ensemble)
 	{
 		if (ensemble == null || (ensemble.getName().isEmpty() && 
 								 ensemble.getMemberID().isEmpty() && 
@@ -236,7 +236,7 @@ public class ProjectDataSource extends ConfigElement {
 		
 		if (this.ensembles == null)
 		{
-			this.ensembles = new ArrayList<Ensemble>();
+			this.ensembles = new ArrayList<EnsembleSpecification>();
 		}
 		
 		this.ensembles.add(ensemble);
@@ -254,7 +254,7 @@ public class ProjectDataSource extends ConfigElement {
 	 * Adds specifications for a feature to identify
 	 * @param feature The specification for the feature to add
 	 */
-	private void addFeature(FeatureSelector feature)
+	private void addFeature(FeatureSpecification feature)
 	{
 		if (feature == null)
 		{
@@ -263,7 +263,7 @@ public class ProjectDataSource extends ConfigElement {
 		
 		if (this.features == null)
 		{
-			this.features = new ArrayList<FeatureSelector>();
+			this.features = new ArrayList<FeatureSpecification>();
 		}
 		
 		this.features.add(feature);
@@ -276,7 +276,7 @@ public class ProjectDataSource extends ConfigElement {
 	{
 		if (this.features == null)
 		{
-			this.features = new ArrayList<FeatureSelector>();
+			this.features = new ArrayList<FeatureSpecification>();
 		}
 		
 		return this.features.size();
@@ -285,11 +285,11 @@ public class ProjectDataSource extends ConfigElement {
 	/**
 	 * @return A list of stored directory specifications
 	 */
-	public List<Directory> getDirectories()
+	public List<DirectorySpecification> getDirectories()
 	{
 		if (this.directories == null)
 		{
-			this.directories = new ArrayList<Directory>();
+			this.directories = new ArrayList<DirectorySpecification>();
 		}
 		return directories;
 	}
@@ -305,11 +305,11 @@ public class ProjectDataSource extends ConfigElement {
 	/**
 	 * @return A list of feature specifications
 	 */
-	public List<FeatureSelector> getFeatures()
+	public List<FeatureSpecification> getFeatures()
 	{
 		if (this.features == null)
 		{
-			this.features = new ArrayList<FeatureSelector>();
+			this.features = new ArrayList<FeatureSpecification>();
 		}
 		return this.features;
 	}
@@ -319,13 +319,13 @@ public class ProjectDataSource extends ConfigElement {
 	 * @param index The position to retrieve the feature specification from
 	 * @return The feature specification at the given otherwise, if it exists. <b>null</b> otherwise.
 	 */
-	public FeatureSelector getFeature(int index)
+	public FeatureSpecification getFeature(int index)
 	{
-	    FeatureSelector feature = null;
+	    FeatureSpecification feature = null;
 	    
 	    if (this.features == null)
 	    {
-	        this.features = new ArrayList<FeatureSelector>();
+	        this.features = new ArrayList<FeatureSpecification>();
 	    }
 	    
 	    if (index < this.features.size())
@@ -339,7 +339,7 @@ public class ProjectDataSource extends ConfigElement {
 	/**
 	 * @return The first feature specification, if there is one. <b>null</b> otherwise.
 	 */
-	public FeatureSelector getFeature()
+	public FeatureSpecification getFeature()
 	{
 	    return getFeature(0);
 	}
@@ -347,7 +347,7 @@ public class ProjectDataSource extends ConfigElement {
 	/**
 	 * @return The conditions imposed upon this data
 	 */
-	public Conditions conditions()
+	public ConditionSpecification conditions()
 	{
 		return conditions;
 	}
@@ -381,7 +381,7 @@ public class ProjectDataSource extends ConfigElement {
 	    String condition = "ANY('{";
 
         boolean addComma = false;
-        for (Ensemble ensemble : this.ensembles)
+        for (EnsembleSpecification ensemble : this.ensembles)
         {
             if (addComma)
             {
@@ -403,11 +403,11 @@ public class ProjectDataSource extends ConfigElement {
 	/**
 	 * @return A list of all ensemble specification
 	 */
-	public List<Ensemble> getEnsembles()
+	public List<EnsembleSpecification> getEnsembles()
 	{
 		if (this.ensembles == null)
 		{
-			this.ensembles = new ArrayList<Ensemble>();
+			this.ensembles = new ArrayList<EnsembleSpecification>();
 		}
 		return ensembles;
 	}
@@ -415,21 +415,21 @@ public class ProjectDataSource extends ConfigElement {
 	/**
 	 * @return A list of all variable specifications
 	 */
-	public List<Variable> getVariables()
+	public List<VariableSpecification> getVariables()
 	{
 		if (this.variables == null)
 		{
-			this.variables = new ArrayList<Variable>();
+			this.variables = new ArrayList<VariableSpecification>();
 		}
 		return this.variables;
 	}
 	
 	public Integer getFirstVariablePositionID() throws Exception {
 	    Integer ID = null;
-	    FeatureSelector feature = getFeature();
+	    FeatureSpecification feature = getFeature();
 	    
 	    if (feature != null) {
-	        Variable firstVariable = this.getVariable();
+	        VariableSpecification firstVariable = this.getVariable();
 	        if (firstVariable != null && firstVariable.getVariableID() != null)
 	        {
 	            List<Integer> variablePositionIDs = feature.getVariablePositionIDs(firstVariable.getVariableID());
@@ -444,7 +444,7 @@ public class ProjectDataSource extends ConfigElement {
 	
 	public String getMeasurementUnit() {
 	    String unit = null;
-	    Variable firstVariable = getVariable();
+	    VariableSpecification firstVariable = getVariable();
 	    
 	    if (firstVariable != null)
 	    {
@@ -509,13 +509,13 @@ public class ProjectDataSource extends ConfigElement {
 	 * @param index The position of the variable to retrieve
 	 * @return The variable specification at a specific position. <b>null</b> otherwise.
 	 */
-	public Variable getVariable(int index)
+	public VariableSpecification getVariable(int index)
 	{
-	    Variable variable = null;
+	    VariableSpecification variable = null;
 	    
 	    if (this.variables == null)
 	    {
-	        this.variables = new ArrayList<Variable>();
+	        this.variables = new ArrayList<VariableSpecification>();
 	    }
 	    
 	    if (index < this.variables.size())
@@ -529,7 +529,7 @@ public class ProjectDataSource extends ConfigElement {
 	/**
 	 * @return The first defined variable, if there is one. <b>null</b> otherwise
 	 */
-	public Variable getVariable()
+	public VariableSpecification getVariable()
 	{
 	    return getVariable(0);
 	}
@@ -546,7 +546,7 @@ public class ProjectDataSource extends ConfigElement {
 	 * Adds a specification for a variable for use in verification
 	 * @param variable The specification to add
 	 */
-	public void addVariable(Variable variable)
+	public void addVariable(VariableSpecification variable)
 	{
 		if (variable == null)
 		{
@@ -567,7 +567,7 @@ public class ProjectDataSource extends ConfigElement {
 		String description = "";
 		if (variableCount() == 1)
 		{
-			Variable variable = this.variables.get(0);
+			VariableSpecification variable = this.variables.get(0);
 			description = "Variable: ";
 			description += String.valueOf(variable.name());
 			description += ", measured in ";
@@ -579,7 +579,7 @@ public class ProjectDataSource extends ConfigElement {
 			description += "Variables:";
 			description += System.lineSeparator();
 			description += System.lineSeparator();
-			for (Variable variable : this.variables)
+			for (VariableSpecification variable : this.variables)
 			{
 				description += "\tVariable: ";
 				description += String.valueOf(variable.name());
@@ -594,7 +594,7 @@ public class ProjectDataSource extends ConfigElement {
 			description += "Directories: ";
 			description += System.lineSeparator();
 			description += System.lineSeparator();
-			for (Directory directory : directories)
+			for (DirectorySpecification directory : directories)
 			{
 				description += directory;
 			}
@@ -621,7 +621,7 @@ public class ProjectDataSource extends ConfigElement {
 		{
 			description += "The following features will be considered:";
 			description += System.lineSeparator();
-			for (FeatureSelector feature : features)
+			for (FeatureSpecification feature : features)
 			{
 				description += feature.toString();
 			}
@@ -637,7 +637,7 @@ public class ProjectDataSource extends ConfigElement {
 		{
 			description += "The following ensembles will be considered:";
 			description += System.lineSeparator();
-			for (Ensemble ensemble : ensembles)
+			for (EnsembleSpecification ensemble : ensembles)
 			{
 				description += ensemble.toString();
 			}
@@ -655,13 +655,13 @@ public class ProjectDataSource extends ConfigElement {
 	}
 
 	private boolean loadAllFeatures;
-	private List<Directory> directories;
-	private Conditions conditions;
+	private List<DirectorySpecification> directories;
+	private ConditionSpecification conditions;
 	private boolean loadAllEnsembles;
-	private List<Ensemble> ensembles;
+	private List<EnsembleSpecification> ensembles;
 	private Boolean lazyLoad;
-	private List<Variable> variables;
-	private List<FeatureSelector> features;
+	private List<VariableSpecification> variables;
+	private List<FeatureSpecification> features;
 	private boolean isForecast;
     
     // TODO: Parse source information out of the configuration
