@@ -1,7 +1,7 @@
 /**
  * 
  */
-package config.data;
+package config.specification;
 
 /**
  * Specifications for how results need to be output

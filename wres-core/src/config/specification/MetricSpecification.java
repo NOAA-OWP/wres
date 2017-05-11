@@ -1,9 +1,8 @@
 /**
  * 
  */
-package config.data;
+package config.specification;
 
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

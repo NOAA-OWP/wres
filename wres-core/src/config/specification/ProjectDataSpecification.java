@@ -1,7 +1,7 @@
 /**
  * 
  */
-package config.data;
+package config.specification;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,6 @@ import java.util.Arrays;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import data.caching.EnsembleCache;
 import util.Utilities;
 
 /**
@@ -37,13 +36,16 @@ public class ProjectDataSpecification extends SpecificationElement {
 	protected void getAttributes(XMLStreamReader reader) {
 		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
 		{
-			if (reader.getAttributeLocalName(attributeIndex).equalsIgnoreCase("lazy_load"))
+			if (reader.getAttributeLocalName(attributeIndex).equalsIgnoreCase("lazyLoad"))
 			{
 				this.lazyLoad = Boolean.valueOf(reader.getAttributeValue(attributeIndex));
 			}
-			else if (reader.getAttributeLocalName(attributeIndex).equalsIgnoreCase("is_forecast"))
+			else if (reader.getAttributeLocalName(attributeIndex).equalsIgnoreCase("isForecast"))
 			{
 			    this.isForecast = Boolean.valueOf(reader.getAttributeValue(attributeIndex));
+			}
+			else if (reader.getAttributeLocalName(attributeIndex).equalsIgnoreCase("sourceID")) {
+			    this.setDataSourceIdentifier(reader.getAttributeValue(attributeIndex));
 			}
 		}
 	}
@@ -376,6 +378,14 @@ public class ProjectDataSpecification extends SpecificationElement {
 		return lazyLoad;
 	}
 	
+	public void setDataSourceIdentifier(String dataSourceIdentifier) {
+	    this.dataSourceIdentifier = dataSourceIdentifier;
+	}
+	
+	public String getDataSourceIdentifier() {
+	    return this.dataSourceIdentifier;
+	}
+	
 	public String getEnsembleCondition() throws Exception
 	{
 	    String condition = "ANY('{";
@@ -663,6 +673,7 @@ public class ProjectDataSpecification extends SpecificationElement {
 	private List<VariableSpecification> variables;
 	private List<FeatureSpecification> features;
 	private boolean isForecast;
+	private String dataSourceIdentifier;
     
     // TODO: Parse source information out of the configuration
     private List<String> sources;

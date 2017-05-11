@@ -1,7 +1,7 @@
 /**
  * 
  */
-package config.data;
+package config.specification;
 
 import java.util.ArrayList;
 import java.util.Arrays;

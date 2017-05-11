@@ -1,7 +1,7 @@
 /**
  * 
  */
-package config.data;
+package config.specification;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,13 +37,11 @@ public class ProjectSpecification extends SpecificationElement {
 		{
 			this.name = Utilities.getXMLText(reader);
 		}
-		else if (Utilities.tagIs(reader, "observations"))
+		else if (Utilities.tagIs(reader, "observations") || 
+		         Utilities.tagIs(reader, "forecasts") || 
+		         Utilities.tagIs(reader, "dataSource"))
 		{
-			this.observations = new ProjectDataSpecification(reader);
-		}
-		else if (Utilities.tagIs(reader, "forecasts"))
-		{
-			this.forecasts = new ProjectDataSpecification(reader);
+		    this.dataSources.add(new ProjectDataSpecification(reader));
 		}
 		else if (Utilities.tagIs(reader, "metrics"))
 		{
@@ -234,6 +232,7 @@ public class ProjectSpecification extends SpecificationElement {
 	private ArrayList<MetricSpecification> metrics;
 	private ProjectDataSpecification observations;
 	private ProjectDataSpecification forecasts;
+	private List<ProjectDataSpecification> dataSources = new ArrayList<>();
 	private String name;
     @Override
     public String toXML()

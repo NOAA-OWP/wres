@@ -1,4 +1,4 @@
-package config.data;
+package config.specification;
 
 import data.caching.EnsembleCache;
 
