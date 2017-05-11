@@ -171,3 +171,15 @@ project(':wres-io')
 
     }
 }
+
+task(fixEclipseDebugger)
+{
+    description 'Removes class files from the eclipse debugger\'s classpath that cause issues with debugging.'
+    group 'application'
+    doLast
+    {
+        FileTree toRemove = fileTree(dir: 'wres-datamodel-api/bin', include: '**/*Impl.class')
+        delete(toRemove)
+        println 'Cleaned up files to help eclipse debugger.'
+    }
+}
