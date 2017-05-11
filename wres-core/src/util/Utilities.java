@@ -19,11 +19,11 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import data.EnsembleCache;
-import data.FeatureCache;
-import data.MeasurementCache;
-import data.SourceCache;
-import data.VariableCache;
+import data.caching.EnsembleCache;
+import data.caching.FeatureCache;
+import data.caching.MeasurementCache;
+import data.caching.SourceCache;
+import data.caching.VariableCache;
 
 public final class Utilities {
 	

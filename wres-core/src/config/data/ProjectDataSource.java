@@ -9,7 +9,7 @@ import java.util.Arrays;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import data.EnsembleCache;
+import data.caching.EnsembleCache;
 import util.Utilities;
 
 /**
@@ -422,6 +422,86 @@ public class ProjectDataSource extends ConfigElement {
 			this.variables = new ArrayList<Variable>();
 		}
 		return this.variables;
+	}
+	
+	public Integer getFirstVariablePositionID() throws Exception {
+	    Integer ID = null;
+	    FeatureSelector feature = getFeature();
+	    
+	    if (feature != null) {
+	        Variable firstVariable = this.getVariable();
+	        if (firstVariable != null && firstVariable.getVariableID() != null)
+	        {
+	            List<Integer> variablePositionIDs = feature.getVariablePositionIDs(firstVariable.getVariableID());
+	            if (variablePositionIDs.size() > 0) {
+	                ID = variablePositionIDs.get(0);
+	            }
+	        }
+	    }
+	    
+	    return ID;
+	}
+	
+	public String getMeasurementUnit() {
+	    String unit = null;
+	    Variable firstVariable = getVariable();
+	    
+	    if (firstVariable != null)
+	    {
+	        unit = firstVariable.getUnit();
+	    }
+	    
+	    return unit;
+	}
+	
+	public String getTimeOffset() {
+	    String offset = null;
+	    
+	    if (this.conditions != null && this.conditions.hasOffset()) {
+	        offset = this.conditions.getOffset();
+	    }
+	    
+	    return offset;
+	}
+	
+	public String getEarliestDate() {
+	    String earliestDate = null;
+	    
+	    if (this.conditions != null && this.conditions.hasEarliestDate()) {
+	        earliestDate = this.conditions.getEarliestDate();
+	    }
+	    
+	    return earliestDate;
+	}
+	
+	public String getLatestDate() {
+	    String latestDate = null;
+	    
+	    if (this.conditions != null && this.conditions.hasLatestDate()) {
+	        latestDate = this.conditions.getLatestDate();
+	    }
+	    
+	    return latestDate;
+	}
+	
+	public String getMinimumValue() {
+	    String minimum = null;
+	    
+	    if (this.conditions != null && this.conditions.hasMinimumValue()) {
+	        minimum = this.conditions.getMinimumValue();
+	    }
+	    
+	    return minimum;
+	}
+	
+	public String getMaximumValue() {
+	    String maximum = null;
+	    
+	    if (this.conditions != null && this.conditions.hasMaximumValue()) {
+	        maximum = this.conditions.getMaximumValue();
+	    }
+	    
+	    return maximum;
 	}
 	
 	/**

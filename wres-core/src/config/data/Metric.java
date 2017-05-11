@@ -14,6 +14,7 @@ import java.util.concurrent.Future;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import collections.TwoTuple;
 import concurrency.Executor;
 import concurrency.PairFetcher;
 import util.Database;
@@ -54,11 +55,11 @@ public class Metric extends ConfigElement {
 		}
 		else if (tag_name.equalsIgnoreCase("source_one"))
 		{
-			this.source_one = new ProjectDataSource(reader);
+			this.sourceOne = new ProjectDataSource(reader);
 		}
 		else if (tag_name.equalsIgnoreCase("source_two"))
 		{
-			this.source_two = new ProjectDataSource(reader);
+			this.sourceTwo = new ProjectDataSource(reader);
 		}
 		else if (tag_name.equalsIgnoreCase("baseline"))
 		{
@@ -78,13 +79,15 @@ public class Metric extends ConfigElement {
 	    float threadsComplete = 0;
 	    float threadsAdded = 0;
 	    
-	    Integer finalLead = getLastLead(source_two.getVariable().getVariableID());
+	    TwoTuple<String, String> lastLeadScript = ScriptBuilder.generateFindLastLead(sourceTwo.getVariable().getVariableID());
+	    
+	    Integer finalLead = Database.getResult(lastLeadScript.getItemOne(), lastLeadScript.getItemTwo());
         
 	    int step = 1;
 	    
 	    while (metricAggregate.leadIsValid(step, finalLead)) {
-            PairFetcher fetcher = new PairFetcher(source_one, source_two, metricAggregate.getLeadQualifier(step));
-            threadResults.put(step, Executor.submit(fetcher));
+            //PairFetcher fetcher = new PairFetcher(sourceOne, sourceTwo, metricAggregate.getLeadQualifier(step));
+            threadResults.put(step, Executor.submit(new PairFetcher(this, step)));
             threadsAdded++;
 	        step++;
 	    }
@@ -101,27 +104,6 @@ public class Metric extends ConfigElement {
         System.out.println();
         
 	    return results;
-	}
-	
-	// TODO: Handle case where neither source uses forecast data
-	private static Integer getLastLead(int variableID) throws SQLException
-	{
-	    Integer finalLead = -1;
-	    
-	    String script = "";
-	    script += "SELECT FV.lead AS last_lead" + newline;
-	    script += "FROM wres.VariablePosition VP" + newline;
-	    script += "INNER JOIN wres.ForecastEnsemble FE" + newline;
-	    script += "    ON FE.variableposition_id = VP.variableposition_id" + newline;
-	    script += "INNER JOIN wres.ForecastValue FV" + newline;
-	    script += "    ON FV.forecastensemble_id = FE.forecastensemble_id" + newline;
-	    script += "WHERE VP.variable_id = " + variableID + newline;
-	    script += "ORDER BY FV.lead DESC" + newline;
-	    script += "LIMIT 1;";
-	    
-	    finalLead = Database.getResult(script, "last_lead");
-	    
-	    return finalLead;
 	}
 
 	@Override
@@ -150,7 +132,7 @@ public class Metric extends ConfigElement {
 		description += "Datasource One: ";
 		description += System.lineSeparator();
 		description += System.lineSeparator();
-		description += source_one.toString();
+		description += sourceOne.toString();
 		description += System.lineSeparator();
 		
 		description += "-  -  -  -  -  -  -  -  -  -";
@@ -160,7 +142,7 @@ public class Metric extends ConfigElement {
 		description += "Datasource Two: ";
 		description += System.lineSeparator();
 		description += System.lineSeparator();
-		description += source_two.toString();
+		description += sourceTwo.toString();
 		description += System.lineSeparator();
 		
 		if (baseline != null) {
@@ -181,11 +163,28 @@ public class Metric extends ConfigElement {
 	{
 	    return this.name;
 	}
+	
+	public ProjectDataSource getFirstSource()
+	{
+	    return this.sourceOne;
+	}
+	
+	public ProjectDataSource getSecondSource() {
+	    return this.sourceTwo;
+	}
+	
+	public ProjectDataSource getBaselineSource() {
+	    return this.baseline;
+	}
+	
+	public Aggregation getAggregationSpecification() {
+	    return this.metricAggregate;
+	}
 
 	private String name;
 	private Output metric_output;
-	private ProjectDataSource source_one;
-	private ProjectDataSource source_two;
+	private ProjectDataSource sourceOne;
+	private ProjectDataSource sourceTwo;
 	private ProjectDataSource baseline;
 	private Aggregation metricAggregate;
     @Override

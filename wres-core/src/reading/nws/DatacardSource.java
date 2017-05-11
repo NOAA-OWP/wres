@@ -9,7 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import concurrency.Executor;
-import data.Variable;
+import data.caching.Variable;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;

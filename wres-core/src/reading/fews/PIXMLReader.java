@@ -5,13 +5,13 @@ package reading.fews;
 
 import concurrency.CopyExecutor;
 import config.SystemConfig;
-import data.EnsembleCache;
-import data.FeatureCache;
-import data.MeasurementCache;
+import data.caching.EnsembleCache;
+import data.caching.FeatureCache;
+import data.caching.MeasurementCache;
 
 // TODO: Uncomment when work on the SourceCache continues
 //import data.SourceCache;
-import data.VariableCache;
+import data.caching.VariableCache;
 import data.details.ForecastDetails;
 import data.details.ForecastEnsembleDetails;
 import reading.XMLReader;
@@ -260,11 +260,11 @@ public final class PIXMLReader extends XMLReader
 
                     // TODO: Add FCST to the model
 					// LIDs have a length of 5. If it is greater, it is of the form of LID+FCST
-					/*if (currentLID.length() > 5)
+					if (currentLID.length() > 5)
 					{
 					    //currentFCST = currentLID.substring(5, currentLID.length());
 					    currentLID = currentLID.substring(0, 5);
-					}*/
+					}
 				}
 				else if (localName.equalsIgnoreCase("stationName"))
 				{

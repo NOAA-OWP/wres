@@ -3,7 +3,7 @@
  */
 package config.data;
 
-import data.VariableCache;
+import data.caching.VariableCache;
 
 /**
  * A specification for a variable to perform queries against

@@ -6,12 +6,11 @@ package config.data;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.TreeMap;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import data.FeatureCache;
+import data.caching.FeatureCache;
 import util.Utilities;
 
 /**

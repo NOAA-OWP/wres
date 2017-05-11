@@ -1,7 +1,7 @@
 /**
  * 
  */
-package data;
+package data.caching;
 
 import java.sql.SQLException;
 import java.util.concurrent.ConcurrentSkipListMap;

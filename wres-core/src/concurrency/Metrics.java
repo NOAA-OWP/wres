@@ -3,10 +3,19 @@
  */
 package concurrency;
 
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import config.data.Metric;
+import config.data.ScriptBuilder;
+import util.Database;
+import wres.datamodel.DataFactory;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
 /**
  * A collection of Metrics that may be performed on selected data
@@ -14,6 +23,11 @@ import java.util.function.Function;
  * @author Christopher Tubbs
  */
 public final class Metrics {
+    
+    /**
+     * The Metrics class is a collection of functions; it should not be instantiated
+     */
+    private Metrics() {}
 	
 	@Deprecated
 	/**
@@ -79,5 +93,45 @@ public final class Metrics {
 	        
 	        return sum / valueCount;
 	    };
+	}
+	
+	public static List<PairOfDoubleAndVectorOfDoubles> getPairs(Metric metricSpecification, int progress) throws Exception {
+        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        Connection connection = null;
+
+        try
+        {
+            connection = Database.getConnection();
+            String script = ScriptBuilder.generateGetPairData(metricSpecification, progress);            
+            
+            ResultSet resultingPairs = Database.getResults(connection, script);
+            
+            while (resultingPairs.next())
+            {
+                Double observedValue = resultingPairs.getDouble("sourceOneValue");
+                Double[] forecasts = (Double[]) resultingPairs.getArray("measurements").getArray();
+                pairs.add(DataFactory.pairOf(observedValue, forecasts));
+            }
+        }
+        catch (Exception error)
+        {
+            System.err.println("Pairs could not be retrieved for the following parameters:");
+            System.err.println("Progress: " + progress);
+            System.err.println();
+            System.err.println("The metric was:");
+            System.err.println(metricSpecification.toString());
+            System.err.println();
+            error.printStackTrace();
+            System.err.println();
+            throw error;
+        }
+        finally
+        {
+            if (connection != null)
+            {
+                Database.returnConnection(connection);
+            }
+        }
+        return pairs;
 	}
 }
