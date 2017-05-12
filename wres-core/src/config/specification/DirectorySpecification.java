@@ -3,6 +3,9 @@
  */
 package config.specification;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -64,6 +67,20 @@ public class DirectorySpecification extends SpecificationElement
 	@Override
 	protected List<String> tagNames() {
 		return Arrays.asList("Directory");
+	}
+	
+	public boolean shouldLoadAllFiles() {
+	    return this.loadAll;
+	}
+	
+	public String getPath() {
+	    String pathToDirectory = null;
+	    Path directoryPath = Paths.get(this.path);
+	    
+	    if (Files.exists(directoryPath)) {
+	        pathToDirectory = directoryPath.toAbsolutePath().toString();
+	    }
+	    return pathToDirectory;
 	}
 	
 	/**

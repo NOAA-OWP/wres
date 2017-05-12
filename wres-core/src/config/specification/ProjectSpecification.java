@@ -41,12 +41,19 @@ public class ProjectSpecification extends SpecificationElement {
 		         Utilities.tagIs(reader, "forecasts") || 
 		         Utilities.tagIs(reader, "dataSource"))
 		{
-		    this.dataSources.add(new ProjectDataSpecification(reader));
+		    addDatasource(reader);
 		}
 		else if (Utilities.tagIs(reader, "metrics"))
 		{
 			parseMetrics(reader);
 		}
+	}
+	
+	private void addDatasource(XMLStreamReader reader) {
+        if (this.dataSources == null) {
+            this.dataSources = new ArrayList<>();
+        }
+        this.dataSources.add(new ProjectDataSpecification(reader));
 	}
 
 	@Override
@@ -232,7 +239,7 @@ public class ProjectSpecification extends SpecificationElement {
 	private ArrayList<MetricSpecification> metrics;
 	private ProjectDataSpecification observations;
 	private ProjectDataSpecification forecasts;
-	private List<ProjectDataSpecification> dataSources = new ArrayList<>();
+	private List<ProjectDataSpecification> dataSources;
 	private String name;
     @Override
     public String toXML()
