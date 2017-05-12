@@ -9,6 +9,9 @@ import java.util.Arrays;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import util.Utilities;
 
 /**
@@ -16,7 +19,9 @@ import util.Utilities;
  * 
  * @author Christopher Tubbs
  */
-public class ProjectDataSpecification extends SpecificationElement {
+public class ProjectDataSpecification extends SpecificationElement
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProjectDataSpecification.class);
 
 	/**
 	 * Constructor
@@ -55,7 +60,16 @@ public class ProjectDataSpecification extends SpecificationElement {
 	 */
 	@Override
 	protected void interpret(XMLStreamReader reader) throws XMLStreamException 
-	{		
+	{
+	    if (reader == null)
+	    {
+	        LOGGER.trace("interpret - reader was null");
+	    }
+	    else
+	    {
+	        LOGGER.trace("interpret - reader passed: {}", reader);
+	    }
+
 		if (Utilities.tagIs(reader, "directories"))
 		{
 			while (reader.hasNext())
