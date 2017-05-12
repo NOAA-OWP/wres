@@ -37,9 +37,10 @@ public class MeasurementCache extends Cache<MeasurementDetails, String> {
 	 * Returns the ID of a unit of measurement from the global cache based on the name of the measurement
 	 * @param unit The name of the unit of measurement
 	 * @return The ID of the unit of measurement
-	 * @throws Exception Thrown if the ID could not be retrieved from the database
+	 * @throws SQLException Thrown if the ID could not be retrieved from the database
 	 */
-	public static Integer getMeasurementUnitID(String unit) throws Exception {
+	public static Integer getMeasurementUnitID(String unit) throws SQLException
+	{
 		return internalCache.getUnitID(unit);
 	}
 	
@@ -57,10 +58,10 @@ public class MeasurementCache extends Cache<MeasurementDetails, String> {
 	 * Returns the ID of the unit of measurement from the instance cache based on its name
 	 * @param unit The name of the unit of measurement
 	 * @return The ID of the unit of measurement
-	 * @throws Exception Thrown if the ID of the unit of measurement couldn't be loaded from the
+	 * @throws SQLException Thrown if the ID of the unit of measurement couldn't be loaded from the
 	 * database or stored in the cache
 	 */
-	public Integer getUnitID(String unit) throws Exception
+	public Integer getUnitID(String unit) throws SQLException
 	{
 		if (!keyIndex.containsKey(unit))
 		{

@@ -4,6 +4,7 @@
 package util;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -20,6 +21,8 @@ import concurrency.Executor;
 import concurrency.ForecastSaver;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import javax.xml.stream.XMLStreamException;
 
 import collections.Pair;
 import reading.BasicSource;
@@ -775,77 +778,94 @@ public final class MainFunctions {
 	
 	private static Consumer<String[]> getProjectPairs()
 	{
-	    return (String[] args) -> {
-	        if (args.length > 1)
-	        {
-	            String projectName = args[0];
-	            String metricName = args[1];
-	            int printLimit = 100;
-	            int printCount = 0;
-	            int totalLimit = 10;
-	            int totalCount = 0;
-	            ProjectSpecification foundProject = ProjectConfig.getProject(projectName);
-	            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping = null;
-	            
-	            if (foundProject == null)
-	            {
-	                System.err.println("There is not a project named '" + projectName + "'");
-	                System.err.println("Pairs could not be created because there wasn't a specification.");
-	                return;
-	            }
-	            
-	            MetricSpecification metric = foundProject.getMetric(metricName);
-	            
-	            if (metric == null)
-	            {
-                    System.err.println("There is not a metric named '" + metricName + "' in the project '" + projectName + '"');
+	    return new ProjectPairs();
+	}
+
+    private static class ProjectPairs implements Consumer<String[]>
+    {
+        @Override
+        public void accept(String[] args)
+        {
+            if(args.length > 1)
+            {
+                String projectName = args[0];
+                String metricName = args[1];
+                int printLimit = 100;
+                int printCount = 0;
+                int totalLimit = 10;
+                int totalCount = 0;
+                ProjectSpecification foundProject =
+                                                  ProjectConfig.getProject(projectName);
+                Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping =
+                                                                               null;
+
+                if(foundProject == null)
+                {
+                    System.err.println("There is not a project named '"
+                        + projectName + "'");
                     System.err.println("Pairs could not be created because there wasn't a specification.");
                     return;
-	            }
-	            
-	            try
+                }
+
+                MetricSpecification metric = foundProject.getMetric(metricName);
+
+                if(metric == null)
+                {
+                    System.err.println("There is not a metric named '"
+                        + metricName + "' in the project '" + projectName
+                        + '"');
+                    System.err.println("Pairs could not be created because there wasn't a specification.");
+                    return;
+                }
+
+                try
                 {
                     pairMapping = metric.getPairs();
-                    
-                    for (Integer leadKey : pairMapping.keySet())
+
+                    for(Integer leadKey: pairMapping.keySet())
                     {
                         System.out.println("\tLead Time: " + leadKey);
-                        for (PairOfDoubleAndVectorOfDoubles pair : pairMapping.get(leadKey))
+                        for(PairOfDoubleAndVectorOfDoubles pair: pairMapping.get(leadKey))
                         {
                             System.out.print("\t\t");
-                            String representation = pair.toString().substring(0, Math.min(120, pair.toString().length()));
+                            String representation =
+                                                  pair.toString()
+                                                      .substring(0,
+                                                                 Math.min(120,
+                                                                          pair.toString()
+                                                                              .length()));
                             System.out.println(representation);
-                            
+
                             printCount++;
-                            
-                            if (printCount >= printLimit)
+
+                            if(printCount >= printLimit)
                             {
                                 break;
                             }
                         }
-                        
+
                         totalCount++;
                         printCount = 0;
-                        
-                        if (totalCount >= totalLimit)
+
+                        if(totalCount >= totalLimit)
                         {
                             break;
                         }
                     }
-                    
+
                     System.out.println();
                     System.out.println(Utilities.getSystemStats());
                 }
-                catch(Exception e)
+                catch(IOException | XMLStreamException | SQLException | InterruptedException | ExecutionException e)
                 {
                     e.printStackTrace();
                 }
-	        }
-	        else
-	        {
-	            System.err.println("There are not enough arguments to run 'getProjectPairs'");
-	            System.err.println("usage: getProjectPairs <project name> <metric name>");
-	        }
-	    };
-	}
+            }
+            else
+            {
+                System.err.println("There are not enough arguments to run 'getProjectPairs'");
+                System.err.println("usage: getProjectPairs <project name> <metric name>");
+            }
+        }
+    }
 }

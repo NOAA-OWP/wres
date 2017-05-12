@@ -3,11 +3,14 @@
  */
 package config.specification;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import javax.xml.stream.XMLStreamException;
@@ -27,14 +30,16 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
  */
 public class MetricSpecification extends SpecificationElement {
 
-	/**
-	 * Constructor
-	 * @param reader The XML Node containing data about the metric
-	 * @throws Exception 
-	 */
-	public MetricSpecification(XMLStreamReader reader) throws Exception {
-		super(reader);
-	}
+    /**
+     * Constructor
+     * @param reader The XML Node containing data about the metric
+     * @throws IOException
+     * @throws XMLStreamException
+     */
+    public MetricSpecification(XMLStreamReader reader) throws IOException, XMLStreamException
+    {
+        super(reader);
+    }
 
 	/* (non-Javadoc)
 	 * @see config.data.ConfigElement#interpret(javax.xml.stream.XMLStreamReader)
@@ -81,7 +86,7 @@ public class MetricSpecification extends SpecificationElement {
 		}
 	}
 	
-	public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> getPairs() throws Exception
+	public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> getPairs() throws IOException, XMLStreamException, SQLException, InterruptedException, ExecutionException
 	{
 	    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> results = new TreeMap<Integer, List<PairOfDoubleAndVectorOfDoubles>>();
 	    Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>>();
@@ -142,7 +147,14 @@ public class MetricSpecification extends SpecificationElement {
 		description += "Datasource One: ";
 		description += System.lineSeparator();
 		description += System.lineSeparator();
-		description += sourceOne.toString();
+		if (sourceOne != null)
+		{
+		    description += sourceOne.toString();
+		}
+		else
+		{
+		    description += "[none]";
+		}
 		description += System.lineSeparator();
 		
 		description += "-  -  -  -  -  -  -  -  -  -";
@@ -152,9 +164,15 @@ public class MetricSpecification extends SpecificationElement {
 		description += "Datasource Two: ";
 		description += System.lineSeparator();
 		description += System.lineSeparator();
-		description += sourceTwo.toString();
-		description += System.lineSeparator();
-		
+	    if (sourceTwo != null)
+		{
+		    description += sourceTwo.toString();
+		}
+		else
+		{
+		    description += "[none]";
+		}
+	    description += System.lineSeparator();
 		if (baseline != null) {
 	        description += "Baseline: ";
 	        description += System.lineSeparator();

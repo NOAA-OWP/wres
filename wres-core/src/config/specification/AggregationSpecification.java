@@ -3,6 +3,7 @@
  */
 package config.specification;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -229,7 +230,7 @@ public class AggregationSpecification extends SpecificationElement {
 	private Short lastLead;
 	
     @Override
-    protected void interpret(XMLStreamReader reader) throws XMLStreamException, Exception {}
+    protected void interpret(XMLStreamReader reader) throws XMLStreamException, IOException {}
 
     @Override
     protected List<String> tagNames()

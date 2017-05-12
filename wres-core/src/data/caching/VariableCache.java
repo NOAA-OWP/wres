@@ -31,10 +31,10 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 	 * @param variableName The short name of the variable
 	 * @param measurementUnit The name of the unit of measurement for the variable
 	 * @return The ID of the variable
-	 * @throws Exception Thrown if an error was encountered while interacting with the database or storing
+	 * @throws SQLException Thrown if an error was encountered while interacting with the database or storing
 	 * the result in the cache
 	 */
-	public static Integer getVariableID(String variableName, String measurementUnit) throws Exception {
+	public static Integer getVariableID(String variableName, String measurementUnit) throws SQLException {
 		return internalCache.getID(variableName, measurementUnit);
 	}
 	
@@ -146,10 +146,10 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 	 * @param variableName The short name of the variable
 	 * @param measurementUnit The name of the unit of measurement for the variable
 	 * @return The ID of the variable
-	 * @throws Exception Thrown if an error was encountered while interacting with the database or storing
+	 * @throws SQLException Thrown if an error was encountered while interacting with the database or storing
 	 * the result in the cache
 	 */
-	public Integer getID(String variableName, String measurementUnit) throws Exception {
+	public Integer getID(String variableName, String measurementUnit) throws SQLException {
 		if (!keyIndex.containsKey(variableName)) {
 			VariableDetails detail = new VariableDetails();
 			detail.setVariableName(variableName);

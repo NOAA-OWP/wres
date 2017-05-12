@@ -79,10 +79,11 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * Since only a limited amount of data is stored within the instanced cache, the least recently used item from the
 	 * instanced cache is removed if the amount surpasses the maximum allowable number of stored details
 	 * @param element The details to add to the instanced cache
-	 * @throws Exception Thrown if the ID of the element could not be retrieved or the cache could not be
+	 * @throws SQLException Thrown if the ID of the element could not be retrieved or the cache could not be
 	 * updated
 	 */
-	public void addElement(T element) throws Exception {
+	public void addElement(T element) throws SQLException
+	{
 		element.save();
 		recentlyUsedIDs.add(element.getId());
 
