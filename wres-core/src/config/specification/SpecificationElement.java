@@ -3,10 +3,15 @@
  */
 package config.specification;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import util.Utilities;
 
@@ -14,17 +19,29 @@ import util.Utilities;
  * An element within a configuration file
  * @author Christopher Tubbs
  */
-public abstract class SpecificationElement {
-    
+public abstract class SpecificationElement
+{
+
     protected static final String newline = System.lineSeparator();
-    
+
+    private static Logger LOGGER = LoggerFactory.getLogger(SpecificationElement.class);
+
     /**
      * The Constructor
      * @param reader The XML Reader containing the configuration elements
      */
 	public SpecificationElement(XMLStreamReader reader)
 	{
-		try 
+	    if (reader == null)
+	    {
+	        LOGGER.trace("constructor - reader was null");
+	    }
+	    else
+	    {
+	        LOGGER.trace("constructor - reader passed : {}", reader);
+	    }
+
+		try
 		{
 			getAttributes(reader);
 			
@@ -40,8 +57,8 @@ public abstract class SpecificationElement {
 				}
 				next(reader);
 			}
-		} 
-		catch (Exception e) 
+		}
+		catch (XMLStreamException|IOException e)
 		{
 			e.printStackTrace();
 		}
@@ -60,6 +77,14 @@ public abstract class SpecificationElement {
 	 */
 	protected boolean hasEnded(XMLStreamReader reader)
 	{
+        if (reader == null)
+        {
+            LOGGER.trace("hasEnded - reader was null");
+        }
+        else
+        {
+            LOGGER.trace("hasEnded - reader passed : {}", reader);
+        }
 		return Utilities.xmlTagClosed(reader, tagNames());
 	}
 	
@@ -68,8 +93,18 @@ public abstract class SpecificationElement {
 	 * @param reader The reader to move
 	 * @throws XMLStreamException An exception is thrown if the reader cannot be moved
 	 */
-	protected static void next(XMLStreamReader reader) throws XMLStreamException {
-		if (reader.hasNext()) {
+	protected static void next(XMLStreamReader reader) throws XMLStreamException
+	{
+        if (reader == null)
+        {
+            LOGGER.trace("next - reader was null");
+        }
+        else
+        {
+            LOGGER.trace("next - reader passed : {}", reader);
+        }
+
+        if (reader.hasNext()) {
 			reader.next();
 			if (reader.isWhiteSpace() && reader.hasNext()) {
 				reader.next();
@@ -81,9 +116,9 @@ public abstract class SpecificationElement {
 	 * Interprets a single start tag
 	 * @param reader The reader representing the current XML node
 	 * @throws XMLStreamException
-	 * @throws Exception 
+	 * @throws IOException 
 	 */
-	protected abstract void interpret(XMLStreamReader reader) throws XMLStreamException, Exception;
+	protected abstract void interpret(XMLStreamReader reader) throws XMLStreamException, IOException;
 	
 	/**
 	 * Details a list of possible tag names describing this type of element

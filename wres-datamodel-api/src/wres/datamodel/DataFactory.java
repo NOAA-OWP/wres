@@ -1,7 +1,5 @@
 package wres.datamodel;
 
-import java.util.List;
-
 /**
  * Factory class for creating instances of types in the interfaces in this jar.
  *
