@@ -90,4 +90,10 @@ public final class PolygonSpecification extends FeatureSpecification {
         // TODO Auto-generated method stub
         return null;
     }
+
+    @Override
+    public int getFeatureType()
+    {
+        return FeatureSpecification.POLYGON;
+    }
 }

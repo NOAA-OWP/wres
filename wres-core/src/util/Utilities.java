@@ -2,8 +2,11 @@ package util;
 
 import java.lang.reflect.Array;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -168,6 +171,71 @@ public final class Utilities {
 	{
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
 		return datetime.format(formatter);
+	}
+	
+	public static String extractDay(String date) {
+	    String day = null;
+	    
+	    if (isTimestamp(date)) {
+    	    day = extractWord(date, "\\d{1,2}/\\d{1,2}/\\d{4}");
+    	    if (day == null) {
+    	        day = extractWord(date, "\\d{1,2}-\\d{1,2}-\\d{4}");
+    	    }
+	    }
+	    
+	    return day;
+	}
+	
+	public static OffsetDateTime convertStringtoDate(String date, String time, String offset) {
+	    return convertStringToDate(date + " " + time, offset);
+	}
+	
+	public static OffsetDateTime convertStringToDate(String datetime, String offset) {
+	    OffsetDateTime date = convertStringToDate(datetime);
+	    
+	    if (date != null && isNumeric(offset)) {
+            date = date.plusHours(Integer.parseInt(offset));
+	    }
+        
+        return date;
+	}
+	
+	public static OffsetDateTime convertStringToDate(String datetime) {
+	    OffsetDateTime date = null;
+	    
+	    if (datetime.equalsIgnoreCase("epoch")) {
+	        date = OffsetDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+	    } else if (datetime.equalsIgnoreCase("infinity")) {
+	        date = OffsetDateTime.MAX;
+	    } else if (datetime.equalsIgnoreCase("-infinity")) {
+	        date = OffsetDateTime.MIN;
+	    } else if (datetime.equalsIgnoreCase("today")) {
+	        date = OffsetDateTime.now();
+	        date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
+	    } else if (datetime.equalsIgnoreCase("tomorrow")) {
+	        date = OffsetDateTime.now().plusDays(1L);
+	        date = date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
+	    } else if (datetime.equalsIgnoreCase("now")) {
+	        date = OffsetDateTime.now();
+	    } else if (datetime.equalsIgnoreCase("yesterday")) {
+	        date = OffsetDateTime.now().minusDays(1L);
+	        date = date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
+	    } else if (isTimestamp(datetime)) {
+	        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
+	        date = OffsetDateTime.parse(datetime, formatter);
+	    }
+	    
+	    return date;
+	}
+	
+	public static String extractTime(String date) {
+	    String time = null;
+	    
+	    if (isTimestamp(date)) {
+	        time = extractWord(date, "\\d{1,2}\\d{2}\\d{2}\\.?\\d*");
+	    }
+	    
+	    return time;
 	}
 	
 	/**
@@ -381,21 +449,25 @@ public final class Utilities {
 	 * @return Returns true if the current tag is a closed tag with one of the possible names
 	 */
 	public static boolean xmlTagClosed(XMLStreamReader reader, List<String> tagNames) {
-		if (!reader.isEndElement()) {
-			return false;
-		}
-		boolean hasTagName = false;
-		String tag_name = reader.getLocalName();
-
-		// List.contains is not used because we want to ignore casing
-		for (String name : tagNames) {
-			if (name.equalsIgnoreCase(tag_name)) {
-				hasTagName = true;
-				break;
-			}
-		}
-		
-		return hasTagName;
+		return reader.isEndElement() && exists(tagNames, (String name) -> {
+		   return name.equalsIgnoreCase(reader.getLocalName()); 
+		});
+	}
+	
+	public static boolean xmlTagClosed(XMLStreamReader reader, String tagName) {
+	    return reader.isEndElement() && reader.getLocalName().equalsIgnoreCase(tagName);
+	}
+	
+	public static void skipToEndTag(XMLStreamReader reader, List<String> tagNames) throws XMLStreamException {
+	    while (reader.hasNext() && !xmlTagClosed(reader, tagNames)) {
+	        reader.next();
+	    }
+	}
+	
+	public static void skipToEndTag(XMLStreamReader reader, String tagName) throws XMLStreamException {
+	    while (reader.hasNext() && !xmlTagClosed(reader, tagName)) {
+	        reader.next();
+	    }
 	}
 	
 	/**

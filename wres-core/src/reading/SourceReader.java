@@ -17,18 +17,18 @@ public class SourceReader {
 	
 	public static BasicSource get_source(String filename) throws Exception
 	{
-		return SourceFactory.get_source(filename);
+		return ReaderFactory.getReader(filename);
 	}
 	
 	public BasicSource get_observation() throws Exception
 	{
-		observation = SourceFactory.get_source(observation_filename);		
+		observation = ReaderFactory.getReader(observation_filename);		
 		return observation;
 	}
 	
 	public BasicSource get_forecast() throws Exception
 	{
-		forecast = SourceFactory.get_source(forecast_filename);		
+		forecast = ReaderFactory.getReader(forecast_filename);		
 		return forecast;
 	}
 	

@@ -8,10 +8,12 @@ package reading;
  * @author ctubbs
  *
  */
-public class SourceFactory {
-	public static BasicSource get_source(String filename) throws Exception
+public class ReaderFactory {
+    private ReaderFactory(){}
+    
+	public static BasicSource getReader(String filename) throws Exception
 	{
-		SourceType type_of_file = get_filetype(filename);
+		SourceType type_of_file = getFiletype(filename);
 		
 		BasicSource source;
 		
@@ -37,7 +39,7 @@ public class SourceFactory {
 		return source;
 	}
 	
-	private static SourceType get_filetype(String filename)
+	private static SourceType getFiletype(String filename)
 	{
 		SourceType type = SourceType.UNDEFINED;
 		

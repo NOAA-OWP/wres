@@ -1,7 +1,7 @@
 /**
  * 
  */
-package reading.nws;
+package concurrency;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;

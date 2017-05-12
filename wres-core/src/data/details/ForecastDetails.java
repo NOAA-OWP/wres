@@ -15,7 +15,7 @@ public final class ForecastDetails {
 	private final static String newline = System.lineSeparator();
 	
 	private String sourcePath = null;
-	private String forecast_date = null;
+	private String forecastDate = null;
 	private Integer forecast_id = null;
 	
 	/**
@@ -26,15 +26,23 @@ public final class ForecastDetails {
 		this.sourcePath = path;
 	}
 	
+	public String getForecastDate() {
+	    return this.forecastDate;
+	}
+	
+	public String getSourcePath() {
+	    return this.sourcePath;
+	}
+	
 	/**
 	 * Sets the date of when the forecast was generated
 	 * @param forecastDate The value to update the current forecast date with
 	 */
 	public void setForecastDate(String forecastDate)
 	{
-		if (this.forecast_date == null || !this.forecast_date.equalsIgnoreCase(forecastDate))
+		if (this.forecastDate == null || !this.forecastDate.equalsIgnoreCase(forecastDate))
 		{
-			this.forecast_date = forecastDate;
+			this.forecastDate = forecastDate;
 			forecast_id = null;
 		}
 	}
@@ -76,11 +84,11 @@ public final class ForecastDetails {
 		script += "WITH new_forecast AS" + newline;
 		script += "(" + newline;
 		script += "		INSERT INTO wres.Forecast(forecast_date)" + newline;
-		script += "		SELECT '" + forecast_date + "'" + newline;
+		script += "		SELECT '" + forecastDate + "'" + newline;
 		script += "		WHERE NOT EXISTS (" + newline;
 		script += "			SELECT 1" + newline;
 		script += "			FROM wres.Forecast" + newline;
-		script += "			WHERE forecast_date = '" + forecast_date + "'" + newline;
+		script += "			WHERE forecast_date = '" + forecastDate + "'" + newline;
 		script += "		)" + newline;
 		script += "		RETURNING forecast_id" + newline;
 		script += ")" + newline;
@@ -91,7 +99,7 @@ public final class ForecastDetails {
 		script += "";
 		script += "SELECT forecast_id" + newline;
 		script += "FROM wres.Forecast" + newline;
-		script += "WHERE forecast_date = '" + forecast_date + "';";
+		script += "WHERE forecast_date = '" + forecastDate + "';";
 		
 		forecast_id = Database.getResult(script, "forecast_id");
 		
