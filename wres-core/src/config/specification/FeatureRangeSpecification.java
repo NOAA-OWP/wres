@@ -147,10 +147,10 @@ public class FeatureRangeSpecification extends FeatureSpecification {
 		return description;
 	}
 
-	private String xMinimum = null;
-	private String xMaximum = null;
-	private String yMinimum = null;
-	private String yMaximum = null;
+	private String xMinimum;
+	private String xMaximum;
+	private String yMinimum;
+	private String yMaximum;
 
     @Override
     public List<Integer> getVariablePositionIDs(Integer variableID) throws Exception
