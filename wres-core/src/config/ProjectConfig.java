@@ -5,10 +5,12 @@ package config;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import config.specification.ProjectSpecification;
@@ -72,27 +74,32 @@ public final class ProjectConfig extends XMLReader {
 		return configuration.projects;
 	}
 	
-	@Override
-	/**
-	 * If the found tag is a project, parses the contents and saves it as a new project
-	 */
-	protected void parseElement(XMLStreamReader reader) {
-		if (Utilities.tagIs(reader, "project")) {
-			try {
-				addProject(new ProjectSpecification(reader));
-			} catch (Exception e) {
-				System.err.println();
-				System.err.println();
-				
-				System.err.println("A project could not be parsed correctly.");
-				
-				System.err.println();
-				System.err.println();
-				e.printStackTrace();
-			}
-		}
-	}
-	
+    @Override
+    /**
+     * If the found tag is a project, parses the contents and saves it as a new project
+     */
+    protected void parseElement(XMLStreamReader reader)
+    {
+        if (Utilities.tagIs(reader, "project"))
+        {
+            try
+            {
+                addProject(new ProjectSpecification(reader));
+            }
+            catch (IOException|XMLStreamException e)
+            {
+                System.err.println();
+                System.err.println();
+
+                System.err.println("A project could not be parsed correctly.");
+
+                System.err.println();
+                System.err.println();
+                e.printStackTrace();
+            }
+        }
+    }
+
 	/**
 	 * Finds a project based on its name
 	 * @param projectName The name of the desired project

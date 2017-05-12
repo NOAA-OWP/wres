@@ -3,6 +3,8 @@
  */
 package config.specification;
 
+import java.sql.SQLException;
+
 import data.caching.VariableCache;
 
 /**
@@ -35,7 +37,7 @@ public class VariableSpecification {
 		return this.unitOfMeasurement;
 	}
 	
-	public Integer getVariableID() throws Exception {
+	public Integer getVariableID() throws SQLException {
 	    return VariableCache.getVariableID(variableName, unitOfMeasurement);
 	}
 	
