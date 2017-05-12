@@ -2,3 +2,5 @@
 
 ../gradlew clean
 ../gradlew installDist
+rm -f build/resources/main/wresconfig.xml
+ln -s nonsrc/wresconfig.xml build/resources/main/wresconfig.xml
