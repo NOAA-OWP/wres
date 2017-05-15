@@ -2,6 +2,8 @@
  * 
  */
 
+import java.sql.SQLException;
+
 import util.MainFunctions;
 import util.Utilities;
 
@@ -21,8 +23,17 @@ public class Main {
 		{
 			String operation = args[0];
 			
-			if (MainFunctions.has_operation(operation))
+			if (MainFunctions.hasOperation(operation))
 			{
+			    try
+                {
+                    Utilities.initializeCaches();
+                }
+                catch(SQLException e1)
+                {
+                    System.err.println("The cache could not be initialized.");
+                    e1.printStackTrace();
+                }
 				args = Utilities.removeIndexFromArray(args, 0);
 				System.out.println("Beginning operation: '" + operation + "'...");
 				long start_time = System.nanoTime();
