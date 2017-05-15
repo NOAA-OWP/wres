@@ -30,7 +30,7 @@ public final class SystemConfig extends reading.XMLReader
     private String projectDirectory = "projects";
 
 	// The static path to the configuration path
-    private static final String config_path = "wresconfig.xml";
+    private static final String config_path = "conf/wresconfig.xml";
 
     private final Logger LOGGER = LoggerFactory.getLogger(SystemConfig.class);
 
