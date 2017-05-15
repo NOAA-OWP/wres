@@ -5,3 +5,8 @@
 **/.gradle
 **/.settings
 **/.classpath
+wres/
+.settings/
+.gradle/
+.project
+*.swp

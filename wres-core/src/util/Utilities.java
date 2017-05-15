@@ -12,12 +12,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.sound.midi.SoundbankResource;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -395,6 +397,17 @@ public final class Utilities {
 		}
 		
 		return val;
+	}
+	
+	public static <U> U find(Collection<U> source, U comparator, BiPredicate<U, U> expression) {
+	    U foundElement = null;
+	    for (U element : source) {
+	        if (expression.test(element, comparator)) {
+	            foundElement = element;
+	            break;
+	        }
+	    }
+	    return foundElement;
 	}
     
     public static <U> boolean exists(Collection<U> source, Predicate<U> expression) {

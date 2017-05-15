@@ -5,6 +5,10 @@ package reading.fews;
 
 import concurrency.CopyExecutor;
 import config.SystemConfig;
+import config.specification.EnsembleSpecification;
+import config.specification.FeatureSpecification;
+import config.specification.LocationSpecification;
+import config.specification.VariableSpecification;
 import data.caching.EnsembleCache;
 import data.caching.FeatureCache;
 import data.caching.MeasurementCache;
@@ -18,6 +22,11 @@ import reading.XMLReader;
 import util.Database;
 import util.Utilities;
 
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import org.slf4j.Logger;
@@ -110,6 +119,10 @@ public final class PIXMLReader extends XMLReader
 				if (localName.equalsIgnoreCase("header"))
 				{
 					parseHeader(reader);
+					if (!seriesIsApproved()) {
+					    Utilities.skipToEndTag(reader, "series");
+					    break;
+					}
 				}
 				else if(localName.equalsIgnoreCase("event"))
 				{
@@ -148,9 +161,9 @@ public final class PIXMLReader extends XMLReader
 			}
 		}
 		
-		if (value != currentMissingIndex) {			
+		if (value != currentMissingValue) {			
 			if (isForecast) {
-				addForecastEvent(value);
+				addForecastEvent(time, value);
 			} else {
 				addObservedEvent(time, value);
 			}
@@ -167,8 +180,12 @@ public final class PIXMLReader extends XMLReader
 	 * @param forecastedValue The value parsed out of the XML
 	 * @throws Exception Any possible error encountered while trying to collect the forecast ensemble ID
 	 */
-	private void addForecastEvent(Float forecastedValue) throws Exception
+	private void addForecastEvent(String time, Float forecastedValue) throws Exception
 	{
+	    if (!dateIsApproved(time) || !valueIsApproved(forecastedValue)) {
+	        return;
+	    }
+	    
 		if (insertCount > 0) {
 			currentScript += newline;
 		} else if(insertCount == 0) {
@@ -188,6 +205,10 @@ public final class PIXMLReader extends XMLReader
 	 * @throws Exception Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
 	 */
 	private void addObservedEvent(String observedTime, Float observedValue) throws Exception {
+        if (!dateIsApproved(observedTime) || !valueIsApproved(observedValue)) {
+            return;
+        }
+        
 		if (insertCount > 0)
 		{
 			currentScript += newline;
@@ -273,12 +294,14 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if(localName.equalsIgnoreCase("ensembleId"))
 				{
+				    currentForecastEnsembleID = null;
 					currentEnsembleID = null;
 					//	If we are at the tag for the name of the ensemble, save it to the ensemble
 					currentEnsembleName = Utilities.getXMLText(reader);
 				}
 				else if(localName.equalsIgnoreCase("qualifierId"))
 				{
+				    currentForecastEnsembleID = null;
 					currentEnsembleID = null;
 					
 					//	If we are at the tag for the ensemble qualifier, save it to the ensemble
@@ -287,6 +310,7 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if(localName.equalsIgnoreCase("ensembleMemberIndex"))
 				{
+				    currentForecastEnsembleID = null;
 					currentEnsembleID = null;
 					
 					//	If we are at the tag for the ensemble member, save it to the ensemble
@@ -306,7 +330,7 @@ public final class PIXMLReader extends XMLReader
 				else if(localName.equalsIgnoreCase("missVal"))
 				{
 					// If we are at the tag for the missing value definition, record it
-					currentMissingIndex = Float.parseFloat(Utilities.getXMLText(reader));
+					currentMissingValue = Float.parseFloat(Utilities.getXMLText(reader));
 				}
 				// TODO: Uncomment when work on the source saving continues
 				/*else if (localName.equalsIgnoreCase("startDate"))
@@ -351,10 +375,10 @@ public final class PIXMLReader extends XMLReader
 			}
 			reader.next();
 		}
-		
-		if (isForecast && this.creationDate != null && this.creationTime != null) {
+	
+		/*if (isForecast && this.creationDate != null && this.creationTime != null) {
 			this.currentForecast.setForecastDate(this.creationDate + " " + this.creationTime);
-		}
+		}*/
 	}
 	
 	@Override
@@ -534,6 +558,107 @@ public final class PIXMLReader extends XMLReader
 		return "wres.Observation(variableposition_id, observation_time, observed_value, measurementunit_id)";
 	}
 	
+	public void setSpecifiedEarliestDate(String earliestDate) {
+	    this.specifiedEarliestDate = Utilities.convertStringToDate(earliestDate);
+	    this.detailsSpecified = true;
+	}
+	
+	public void setSpecifiedLatestDate(String latestDate) {
+	    this.specifiedLatestDate = Utilities.convertStringToDate(latestDate);
+	    this.detailsSpecified = true;
+	}
+	
+	public void setSpecifiedMinimumValue(String minimumValue) {
+	    if (Utilities.isNumeric(minimumValue)) {
+	        this.specifiedMinimumValue = Float.parseFloat(minimumValue);
+	        this.detailsSpecified = true;
+	    }
+	}
+	
+	public void setSpecifiedMaximumValue(String maximumValue) {
+	    if (Utilities.isNumeric(maximumValue)) {
+	        this.specifiedMaximumValue = Float.parseFloat(maximumValue);
+	        this.detailsSpecified = true;
+	    }
+	}
+	
+	public void setSpecifiedVariables(List<VariableSpecification> variables) {
+	    this.specifiedVariables = variables;
+	    this.loadAllVariables = this.specifiedVariables == null || this.specifiedVariables.size() == 0;
+	    if (!loadAllVariables) {
+	        this.detailsSpecified = true;
+	    }
+	}
+	
+	public void setSpecifiedEnsembles(List<EnsembleSpecification> ensembles) {
+	    this.specifiedEnsemblesToLoad = ensembles;
+	    this.loadAllEnsembles = this.specifiedEnsemblesToLoad == null || this.specifiedEnsemblesToLoad.size() == 0;
+	    if (!loadAllEnsembles) {
+	        this.detailsSpecified = true;
+	    }
+	}
+	
+	public void setSpecifiedFeatures(List<FeatureSpecification> features) {
+	    this.specifiedFeatures = features;
+	    this.loadAllFeatures = this.specifiedFeatures == null || this.specifiedFeatures.size() == 0;
+	    if (!loadAllFeatures) {
+	        this.detailsSpecified = true;
+	    }
+	}
+	
+	private boolean dateIsApproved(String date) {
+	    if (!detailsSpecified || (this.specifiedEarliestDate == null && this.specifiedLatestDate == null)) {
+	        return true;
+	    }
+	    OffsetDateTime dateToApprove = Utilities.convertStringToDate(date);
+	    return dateToApprove.isAfter(specifiedEarliestDate) && dateToApprove.isBefore(specifiedLatestDate);
+	}
+	
+	private boolean valueIsApproved(Float value) {
+	    return value != this.currentMissingValue && 
+	           value >= this.specifiedMinimumValue && 
+	           value <= this.specifiedMaximumValue; 
+	}
+    
+    protected boolean variableIsApproved(String name) {
+        return !this.detailsSpecified || 
+               this.loadAllVariables || 
+               this.specifiedVariables == null ||
+               this.specifiedVariables.size() == 0 ||
+               Utilities.exists(this.specifiedVariables, (VariableSpecification specification) -> {
+                   return specification.name().equalsIgnoreCase(name);
+        });
+    }
+    
+    protected boolean ensembleIsApproved(String name, String ensembleMemberID) {
+        return !isForecast ||
+               !detailsSpecified || 
+               this.loadAllEnsembles || 
+               this.specifiedEnsemblesToLoad == null ||
+               this.specifiedEnsemblesToLoad.size() == 0 ||
+               Utilities.exists(this.specifiedEnsemblesToLoad, (EnsembleSpecification specification) -> {
+                   return specification.getName().equalsIgnoreCase(name) && specification.getMemberID().equalsIgnoreCase(ensembleMemberID);
+        });
+    }
+    
+    protected boolean featureIsApproved(String lid) {
+        return !detailsSpecified || 
+               this.loadAllFeatures ||
+               this.specifiedFeatures == null ||
+               this.specifiedFeatures.size() == 0 ||
+               Utilities.exists(this.specifiedFeatures, (FeatureSpecification specification) -> {
+                   return specification.isLocation() && ((LocationSpecification)specification).lid().equalsIgnoreCase(lid);
+               });
+    }
+    
+    protected boolean seriesIsApproved() {
+        boolean ensembleApproved = this.ensembleIsApproved(this.currentEnsembleName, this.currentEnsembleMemberID);
+        boolean featureApproved = this.featureIsApproved(this.currentLID);
+        boolean variableApproved = this.variableIsApproved(currentVariableName);
+        
+        return featureApproved && variableApproved && ensembleApproved;
+    }
+	
 	/**
 	 * The date for when the source was created
 	 */
@@ -573,7 +698,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The value which indicates a null or invalid value from the source
 	 */
-	private Float currentMissingIndex = null;
+	private Float currentMissingValue = null;
 	
 	/**
 	 * Indicates the amount of time in hours between measurements
@@ -670,4 +795,18 @@ public final class PIXMLReader extends XMLReader
 	 * The name of the variable whose values are currently being parsed 
 	 */
 	private String currentVariableName = null;
+	
+
+    
+    private OffsetDateTime specifiedEarliestDate = null;
+    private OffsetDateTime specifiedLatestDate = null;
+    private Float specifiedMinimumValue = Float.MIN_VALUE;
+    private Float specifiedMaximumValue = Float.MAX_VALUE;
+    private List<VariableSpecification> specifiedVariables = null;
+    private boolean loadAllVariables = true;
+    private boolean loadAllEnsembles = true;
+    private List<EnsembleSpecification> specifiedEnsemblesToLoad = null;
+    private boolean loadAllFeatures = true;
+    private List<FeatureSpecification> specifiedFeatures = null;
+    private boolean detailsSpecified = false;
 }

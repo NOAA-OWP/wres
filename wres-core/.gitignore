@@ -3,13 +3,6 @@
 /.project
 /bin/
 /resources/
-/testinput/sharedinput/*.xml
-/testinput/sharedinput/*.XML
-/testinput/sharedinput/*.asc
-/testinput/sharedinput/*.ASC
-/testinput/sharedinput/*.MAP06
-/testinput/sharedinput/*.nc
-/testinput/sharedinput/*.gz
+/testinput/sharedinput/*
 wres-core.jar
-/wres
-compile
+*.ct
