@@ -12,7 +12,7 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
  * @author Christopher Tubbs
  *
  */
-public final class PairFetcher implements Callable<List<PairOfDoubleAndVectorOfDoubles>> {
+public final class PairFetcher extends WRESThread implements Callable<List<PairOfDoubleAndVectorOfDoubles>> {
     
     /**
      * 
@@ -26,7 +26,10 @@ public final class PairFetcher implements Callable<List<PairOfDoubleAndVectorOfD
     @Override
     public List<PairOfDoubleAndVectorOfDoubles> call() throws Exception
     {
-        return Metrics.getPairs(this.metricSpecification, this.progress);
+        this.executeOnRun();
+        List<PairOfDoubleAndVectorOfDoubles> results = Metrics.getPairs(this.metricSpecification, this.progress);
+        this.exectureOnComplete();
+        return results;
     }
 
     private final MetricSpecification metricSpecification;

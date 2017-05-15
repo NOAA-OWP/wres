@@ -16,7 +16,7 @@ import util.Database;
  * 
  * @author Christopher Tubbs
  */
-public class FunctionRunner<V, U> implements Callable<V> {
+public class FunctionRunner<V, U> extends WRESThread implements Callable<V> {
 
 	/**
 	 * Creates a thread with the given query to select data and a function to call on the data selected
@@ -66,7 +66,7 @@ public class FunctionRunner<V, U> implements Callable<V> {
 	public V call() throws Exception {
 		V functionResult = null;
 		Connection connection = null;
-		
+		this.executeOnRun();
 		try {
 			connection = Database.getConnection();
 			ResultSet result = Database.getResults(connection, dataSelect);
@@ -74,6 +74,7 @@ public class FunctionRunner<V, U> implements Callable<V> {
 		} finally {
 			Database.returnConnection(connection);
 		}
+		this.exectureOnComplete();
 		return functionResult;
 	}
 	

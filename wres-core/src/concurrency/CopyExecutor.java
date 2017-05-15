@@ -7,12 +7,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import util.Database;
+import util.Utilities;
 
 /**
  * Executes the database copy operation for every value in the passed in string
  * @author Christopher Tubbs
  */
-public class CopyExecutor implements Runnable
+public class CopyExecutor extends WRESThread implements Runnable
 {
     private final String table_definition;
     private final String values;
@@ -38,6 +39,7 @@ public class CopyExecutor implements Runnable
 	 * Copy the passed in data to the database
 	 */
 	public void run() {
+	    this.executeOnRun();
 		try {
 		    LOGGER.trace("Using table_definition {} values {} delimiter {}",
 		                 table_definition, values, delimiter);
@@ -45,5 +47,6 @@ public class CopyExecutor implements Runnable
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
+		this.exectureOnComplete();
 	}
 }
