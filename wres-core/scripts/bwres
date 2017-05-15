@@ -8,8 +8,6 @@ else
     echo 'Building WRES...'
     ../gradlew installDist javadoc
     result=$?
-    rm -f build/resources/main/wresconfig.xml
-    ln -s nonsrc/wresconfig.xml build/resources/main/wresconfig.xml
     if [[ $result -eq 0 ]]
     then
         echo 'WRES Built, now running...'
