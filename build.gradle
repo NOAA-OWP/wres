@@ -13,13 +13,16 @@ subprojects
             {
                 srcDirs = ['src']
             }
-            // The downside with resources is that xml ends up INSIDE jar file
-            // (haven't found simple workaround yet)
+
+            // "resources" here end up included inside the jar.
+            // For non-jarred resources such as config files, see distributions
+            // section inside wres-core, as well as startScripts section.
             resources
             {
-                srcDirs = ['nonsrc']
+                srcDirs = ['nonsrc/insidejar']
             }
         }
+
         test
         {
         	java
@@ -43,7 +46,6 @@ subprojects
         maxHeapSize = "3072m"
         testLogging.showStandardStreams = true
     }
-
 }
 
 project(':utilities')
@@ -124,6 +126,35 @@ project(':wres-core')
         //jvmArgs = ['-agentlib:hprof=cpu=samples,interval=5,depth=25']
     }
 
+    // Default location in gradle is 'src/dist' but we want conf files that are
+    // outside the jar to be from the 'nonsrc' directory.
+    distributions
+    {
+        main
+        {
+            contents
+            {
+                from
+                {
+                    // Note: to have files land in the distributed zip files,
+                    // must put inside lib directory inside below directory.
+                    // Must also add the new directory to classpath under
+                    // startScripts below.
+                    'nonsrc/outsidejar'
+                }
+            }
+        }
+    }
+
+    // Add configuration files to the classpath when running via script
+    startScripts
+    {
+        // Note gradle in this context assumes lib directory precedes these
+        // files. To add more outsidejar directories, they need to be
+        // added to 'nonsrc/outsidejar/lib' and then the directory name
+        // can be added below.
+        classpath += files('conf')
+    }
 }
 
 project(':wres-datamodel')
