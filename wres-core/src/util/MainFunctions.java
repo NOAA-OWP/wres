@@ -21,6 +21,8 @@ import concurrency.ForecastSaver;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.google.common.util.concurrent.Monitor;
+
 import collections.Pair;
 import reading.BasicSource;
 import reading.SourceReader;
@@ -172,23 +174,24 @@ public final class MainFunctions {
 					System.out.println();
 					
 					ArrayList<Future<?>> tasks = new ArrayList<Future<?>>();
-					
+					//Utilities.MONITOR.setSteps(files.length);
+					Utilities.MONITOR.setShowPercentage(false);
 					for (File file : files)
 					{
-						tasks.add(Executor.execute(new ForecastSaver(file.getAbsolutePath())));
+					    ForecastSaver saver = new ForecastSaver(file.getAbsolutePath());
+					    saver.setOnRun(Utilities.defaultOnThreadStartHandler());
+					    saver.setOnComplete(Utilities.defaultOnThreadCompleteHandler());
+						tasks.add(Executor.execute(saver));
 					}
 					
 					for (Future<?> task : tasks)
 					{
 						task.get();
 					}
-					
-					System.out.println();
-					System.out.println(tasks.size() + " files were theoretically saved to the database. Closing now... (This might take a little while)");
-					System.out.println();
 
 					Executor.complete();
 					Database.shutdown();
+					System.out.println();
 					System.out.println("All forecast saving operations complete. Please verify data.");
 				}
 				catch (Exception e)

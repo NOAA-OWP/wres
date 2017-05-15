@@ -12,7 +12,7 @@ import util.Stopwatch;
  * 
  * @author Christopher Tubbs
  */
-public class ObservationSaver implements Runnable {
+public class ObservationSaver extends WRESThread implements Runnable {
 
 	/**
 	 * Creates a new save with the given path
@@ -30,6 +30,7 @@ public class ObservationSaver implements Runnable {
 	 */
 	public void run() {
 		BasicSource source;
+		this.executeOnRun();
 		try {
 			source = SourceReader.get_source(this.filepath);
 			Stopwatch watch = new Stopwatch();
@@ -42,6 +43,7 @@ public class ObservationSaver implements Runnable {
 			System.err.println("Failed to save '" + String.valueOf(filepath) + " as an observation.");
 			e.printStackTrace();
 		}
+		this.exectureOnComplete();
 	}
 
 	private String filepath = null;

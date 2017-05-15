@@ -11,7 +11,7 @@ import util.Utilities;
  * @author ctubbs
  *
  */
-public class ASCIIResultSaver implements Runnable {
+public class ASCIIResultSaver extends WRESThread implements Runnable {
 	
 	public ASCIIResultSaver(HashMap<Integer, HashMap<String, String[]>> forecasted_values, Integer observationlocation_id)
 	{
@@ -25,12 +25,14 @@ public class ASCIIResultSaver implements Runnable {
 	 */
 	@Override
 	public void run() {
+	    this.executeOnRun();
 		try {
 			save_mapping();
 		} 
 		catch (SQLException e) {
 			e.printStackTrace();
 		}
+		this.exectureOnComplete();
 	}
 	
 	private void save_mapping() throws SQLException

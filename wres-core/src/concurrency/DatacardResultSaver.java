@@ -12,7 +12,7 @@ import util.Database;
  * @author ctubbs
  *
  */
-public class DatacardResultSaver implements Runnable {
+public class DatacardResultSaver extends WRESThread implements Runnable {
 
 	/**
 	 * 
@@ -30,11 +30,13 @@ public class DatacardResultSaver implements Runnable {
 	 */
 	@Override
 	public void run() {
+	    this.executeOnRun();
 		try {
 			save();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+		this.exectureOnComplete();
 	}
 	
 	private void save() throws SQLException

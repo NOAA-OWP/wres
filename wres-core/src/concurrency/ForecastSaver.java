@@ -11,16 +11,15 @@ import reading.SourceReader;
  * 
  * @author Christopher Tubbs
  */
-public class ForecastSaver implements Runnable {
+public class ForecastSaver extends WRESThread implements Runnable {
 
 	/**
 	 * Creates the saver with the given path to a file containing observation data
 	 * @param filepath The path to the file to save as a forecast
 	 */
-	public ForecastSaver(String filepath) 
-	{
-		this.filepath = filepath;
-	}
+    public ForecastSaver(String filepath) {
+        this.filepath = filepath;
+    }
 
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
@@ -30,18 +29,19 @@ public class ForecastSaver implements Runnable {
 	 * Attempts to save data in the given file as a forecast in the given location
 	 */
 	public void run() {
+	    this.executeOnRun();
 		try
 		{
 			BasicSource source = SourceReader.get_source(this.filepath);
 			source.save_forecast();
-			System.out.println(this.filepath + " saved to the database as a forecast. Please verify data.");
 		}
 		catch (Exception e)
 		{
 			System.err.println("A forecast for the data at '" + this.filepath + "' could not be saved to the database.");
 			e.printStackTrace();
 		}
-
+		
+		this.exectureOnComplete();
 	}
 
 	private String filepath = null;
