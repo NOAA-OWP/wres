@@ -134,7 +134,7 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 	 * always supply all three values, we have to attempt to find the loaded key that is closest to the one
 	 * requested. If there aren't any values similar enough to match, a new ensemble is added.
 	 */
-	public Integer getID(Triplet<String, String, String> grouping) throws Exception
+	public Integer getID(final Triplet<String, String, String> grouping) throws Exception
 	{
 		// Maps keys to the number of similarities between them and the passed in grouping
 		Map<Byte, ArrayList<Triplet<String, String, String>>> possibleKeys = new TreeMap<Byte, ArrayList<Triplet<String, String, String>>>();
@@ -148,32 +148,32 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 		if (details.size() > 0)
 		{
 			// Attempt to find a key with all matching values from the grouping
-			mostSimilar = Utilities.find(keyIndex.keySet(), (Triplet<String, String, String> key) -> {
+			mostSimilar = Utilities.find(keyIndex.keySet(), grouping, (Triplet<String, String, String> key, Triplet<String, String, String> comparator) -> {
 		        boolean equal = true;
 		        
-		        if (key.getItemOne() == null && grouping.getItemOne() != null || 
-		                key.getItemOne() != null && grouping.getItemOne() == null) {
+		        if (key.getItemOne() == null && comparator.getItemOne() != null || 
+		                key.getItemOne() != null && comparator.getItemOne() == null) {
 		            equal = false;
-		        } else if (key.getItemOne() != null && grouping.getItemOne() != null){
-		            equal = key.getItemOne().equalsIgnoreCase(grouping.getItemOne());
+		        } else if (key.getItemOne() != null && comparator.getItemOne() != null){
+		            equal = key.getItemOne().equalsIgnoreCase(comparator.getItemOne());
 		        }
 		        
 		        
 		        if (equal) {          
-		            if (key.getItemTwo() == null && grouping.getItemTwo() != null || 
-		                    key.getItemTwo() != null && grouping.getItemTwo() == null) {
+		            if (key.getItemTwo() == null && comparator.getItemTwo() != null || 
+		                    key.getItemTwo() != null && comparator.getItemTwo() == null) {
 	                    equal = false;
-		            } else if (key.getItemTwo() != null && grouping.getItemTwo() != null){
-	                    equal = key.getItemOne().equalsIgnoreCase(grouping.getItemOne());
+		            } else if (key.getItemTwo() != null && comparator.getItemTwo() != null){
+	                    equal = key.getItemTwo().equalsIgnoreCase(comparator.getItemTwo());
 		            }
 		        }
 		        
 		        if (equal) {       
-		            if (key.getItemThree() == null && grouping.getItemThree() != null || 
-		                    key.getItemThree() != null && grouping.getItemThree() == null) {
+		            if (key.getItemThree() == null && comparator.getItemThree() != null || 
+		                    key.getItemThree() != null && comparator.getItemThree() == null) {
 	                    equal = false;
-		            } else if (key.getItemThree() != null && grouping.getItemThree() != null){
-	                    equal = key.getItemOne().equalsIgnoreCase(grouping.getItemOne());
+		            } else if (key.getItemThree() != null && comparator.getItemThree() != null){
+	                    equal = key.getItemThree().equalsIgnoreCase(comparator.getItemThree());
 		            }
 		        }
 		        
@@ -221,7 +221,7 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 				if (mostSimilar == null)
 				{
 					mostSimilar = Utilities.find(similarKeys, (Triplet<String, String, String> key) -> {
-						return key.getItemTwo() == key.getItemTwo();
+						return key.getItemTwo() == grouping.getItemTwo();
 					});
 				}
 			}
