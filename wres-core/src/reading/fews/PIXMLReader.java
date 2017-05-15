@@ -4,6 +4,7 @@
 package reading.fews;
 
 import concurrency.CopyExecutor;
+import concurrency.Executor;
 import config.SystemConfig;
 import config.specification.EnsembleSpecification;
 import config.specification.FeatureSpecification;
@@ -238,7 +239,10 @@ public final class PIXMLReader extends XMLReader
 		if (insertCount > 0)
 		{
 			insertCount = 0;
-			Database.execute(new CopyExecutor(currentTableDefinition, currentScript, delimiter));
+			CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript, delimiter);
+			copier.setOnRun(Utilities.defaultOnThreadStartHandler());
+			copier.setOnComplete(Utilities.defaultOnThreadCompleteHandler());
+			Database.execute(copier);
 			currentScript = null;
 		}
 	}

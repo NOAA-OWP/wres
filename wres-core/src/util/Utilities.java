@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -49,6 +50,8 @@ public final class Utilities {
 	
 	public static final Map<String, Double> HOUR_CONVERSION = mapTimeToHours();
 	
+	public static final ProgressMonitor MONITOR = new ProgressMonitor();
+	
 	private static Map<String, Double> mapTimeToHours()
 	{
 	    Map<String, Double> mapping = new TreeMap<String, Double>();
@@ -59,6 +62,32 @@ public final class Utilities {
         mapping.put("minute", 1/60.0);
 	    
 	    return mapping;
+	}
+	
+	public static Consumer<Object> defaultOnThreadStartHandler() {
+	    return new Consumer() {
+
+            @Override
+            public void accept(Object t)
+            {
+                MONITOR.addStep();
+                
+            }
+	        
+	    };
+	}
+	
+	public static Consumer<Object> defaultOnThreadCompleteHandler() {
+	    return new Consumer() {
+
+            @Override
+            public void accept(Object t)
+            {
+                MONITOR.UpdateMonitor();
+                
+            }
+	        
+	    };
 	}
 	
 	public static final Double secondsToHours(int seconds)

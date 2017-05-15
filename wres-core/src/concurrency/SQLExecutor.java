@@ -12,7 +12,7 @@ import util.Database;
  * 
  * @author Christopher Tubbs
  */
-public class SQLExecutor implements Runnable {
+public class SQLExecutor extends WRESThread implements Runnable {
 
 	/**
 	 * Creates the thread with the passed in SQL script
@@ -27,11 +27,13 @@ public class SQLExecutor implements Runnable {
 	 * Executes the SQL script
 	 */
 	public void run() {
+	    this.executeOnRun();
 		try {
 			Database.execute(this.script);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}		
+		this.exectureOnComplete();
 	}
 
 	private String script = null;
