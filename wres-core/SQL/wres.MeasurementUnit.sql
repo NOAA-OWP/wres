@@ -30,4 +30,6 @@ ALTER TABLE wres.measurementunit
 	('H'),
 	('S'),
 	('MM'),
-	('CM');
+	('CM'),
+	('m3 s-1'),
+	('kg m{-2}');
