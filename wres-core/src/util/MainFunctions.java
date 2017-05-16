@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -28,9 +29,11 @@ import config.ProjectConfig;
 import config.specification.MetricSpecification;
 import config.specification.ProjectSpecification;
 import collections.RealCollection;
+import collections.TwoTuple;
 
 import java.util.concurrent.Future;
 import concurrency.FunctionRunner;
+import concurrency.MetricExecutor;
 import concurrency.Metrics;
 import concurrency.ObservationSaver;
 import data.caching.MeasurementCache;
@@ -101,6 +104,7 @@ public final class MainFunctions {
 		prototypes.put("refreshforecasts", refreshForecasts());
 		prototypes.put("getpairs", getPairs());
 		prototypes.put("getprojectpairs", getProjectPairs());
+		prototypes.put("executeproject", executeProject());
 		
 		return prototypes;
 	}
@@ -846,6 +850,85 @@ public final class MainFunctions {
 	        {
 	            System.err.println("There are not enough arguments to run 'getProjectPairs'");
 	            System.err.println("usage: getProjectPairs <project name> <metric name>");
+	        }
+	    };
+	}
+	
+	private static Consumer<String[]> executeProject() {
+	    return (String[] args) -> {
+	        if (args.length > 0) {
+	            String projectName = args[0];
+	            String metricName = null;
+	            
+	            if (args.length > 1) {
+	                metricName = args[1];
+	            }
+	            
+	            ProjectSpecification project = ProjectConfig.getProject(projectName);
+	            
+	            Map<String, List<TwoTuple<Integer, Double>>> results = new TreeMap();
+	            Map<String, Future<List<TwoTuple<Integer, Double>>>> futureResults = new TreeMap();
+	            
+	            if (metricName == null)
+	            {
+    	            for (int metricIndex = 0; metricIndex < project.metricCount(); ++metricIndex)
+    	            {
+    	                MetricSpecification specification = project.getMetric(metricIndex);
+    	                MetricExecutor metric = new MetricExecutor(specification);
+    	                metric.setOnRun(Utilities.defaultOnThreadStartHandler());
+    	                metric.setOnComplete(Utilities.defaultOnThreadCompleteHandler());
+    	                futureResults.put(specification.getName(), Executor.submit(metric));
+    	            }
+	            }
+	            else
+	            {
+	                MetricSpecification specification = project.getMetric(metricName);
+	                
+	                if (specification != null)
+	                {
+	                    MetricExecutor metric = new MetricExecutor(specification);
+                        metric.setOnRun(Utilities.defaultOnThreadStartHandler());
+                        metric.setOnComplete(Utilities.defaultOnThreadCompleteHandler());
+                        futureResults.put(specification.getName(), Executor.submit(metric));
+	                }
+	            }
+	            
+	            for (Entry<String, Future<List<TwoTuple<Integer, Double>>>> entry : futureResults.entrySet())
+	            {
+	                try
+                    {
+                        results.put(entry.getKey(), entry.getValue().get());
+                    }
+                    catch(InterruptedException | ExecutionException e)
+                    {
+                        e.printStackTrace();
+                    }
+	            }
+	            
+	            System.out.println();
+	            System.out.println("Project: " + projectName);
+	            System.out.println();
+	            
+	            for (Entry<String, List<TwoTuple<Integer, Double>>> entry : results.entrySet())
+	            {
+	                System.out.println();
+	                System.out.println(entry.getKey());
+	                System.out.println("--------------------------------------------------------------------------------------");
+	                
+	                for (TwoTuple<Integer, Double> metricResult : entry.getValue())
+	                {
+	                    System.out.print(metricResult.getItemOne());
+	                    System.out.print("\t\t|\t");
+	                    System.out.println(metricResult.getItemTwo());
+	                }
+	                
+	                System.out.println();
+	            }
+	        }
+	        else
+	        {
+	            System.err.println("There are not enough arguments to run 'executeProject'");
+	            System.err.println("usage: executeProject <project name> [<metric name>]");
 	        }
 	    };
 	}
