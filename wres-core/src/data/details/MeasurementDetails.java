@@ -5,6 +5,8 @@ package data.details;
 
 import java.sql.SQLException;
 
+import util.Database;
+
 /**
  * Details defining a unit of measurement within the database (i.e. CFS (cubic feet per second),
  * M (meter), etc)
@@ -64,6 +66,14 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	public void setID(Integer id) {
 		this.measurementunit_id = id;		
 	}
+	
+	@Override
+	public void save() throws SQLException
+	{
+	    super.save();
+	    
+	    Database.execute(MeasurementDetails.getUnitConversionInsertScript());
+	}
 
 	@Override
 	protected String getInsertSelectStatement() {
@@ -90,5 +100,21 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 		script += "WHERE unit_name = '" + unit + "';";
 
 		return script;
+	}
+	
+    private static final String getUnitConversionInsertScript() {
+	    String script = "";
+	    
+	    script += "INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)" + newline;
+	    script += "SELECT measurementunit_id, measurementunit_id, 1" + newline;
+	    script += "FROM wres.MeasurementUnit M" + newline;
+	    script += "WHERE NOT EXISTS (" + newline;
+	    script += "    SELECT 1" + newline;
+	    script += "    FROM wres.UnitConversion UC" + newline;
+	    script += "    WHERE UC.from_unit = M.measurementunit_id" + newline;
+	    script += "        AND UC.from_unit = UC.to_unit" + newline;
+	    script += ");";
+	    
+	    return script;
 	}
 }
