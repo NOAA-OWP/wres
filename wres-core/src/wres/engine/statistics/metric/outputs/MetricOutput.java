@@ -1,7 +1,6 @@
 package wres.engine.statistics.metric.outputs;
 
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.inputs.Dataset;
 import wres.engine.statistics.metric.inputs.Dimension;
 import wres.engine.statistics.metric.inputs.Sample;
 
@@ -15,7 +14,7 @@ import wres.engine.statistics.metric.inputs.Sample;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface MetricOutput<U extends Dataset<?>, V extends Dataset<?>> extends Sample<V>
+public interface MetricOutput<U, V extends Sample>
 {
 
     /**
@@ -36,7 +35,7 @@ public interface MetricOutput<U extends Dataset<?>, V extends Dataset<?>> extend
     boolean isDimensionless();
 
     /**
-     * Returns a list of {@link Dataset}.
+     * Returns a list of {@link U}.
      * 
      * @return the data
      */

@@ -71,7 +71,7 @@ implements Score, Collectable<S, MetricOutput<?, ?>, T>
         if(v.getData().size() == 4)
         {
             return MetricOutputFactory.getExtendsScalarOutput((cm[0][0] / (cm[0][0] + cm[1][0]))
-                - (cm[0][1] / (cm[0][1] + cm[1][1])), v.getSampleSize().valueOf(), output.getDimension());
+                - (cm[0][1] / (cm[0][1] + cm[1][1])), v.getSampleSize(), output.getDimension());
         }
 
         //Multicategory predictand
@@ -101,7 +101,7 @@ implements Score, Collectable<S, MetricOutput<?, ?>, T>
         //Compose the result
         final double nSquared = n * n;
         final double result = ((diag / n) - (sumProd / nSquared)) / (1.0 - (uniProd / nSquared));
-        return MetricOutputFactory.getExtendsScalarOutput(result, v.getSampleSize().valueOf(), output.getDimension());
+        return MetricOutputFactory.getExtendsScalarOutput(result, v.getSampleSize(), output.getDimension());
     }
 
     @Override

@@ -8,7 +8,7 @@ import java.util.Objects;
  * @author james.brown@hydrosolved.com
  */
 
-public class DoubleMatrix implements Dataset<double[][]>
+public class DoubleMatrix
 {
     /**
      * The values.
@@ -28,13 +28,11 @@ public class DoubleMatrix implements Dataset<double[][]>
         this.values = values;
     }
 
-    @Override
     public final double[][] getValues()
     {
         return values;
     }
 
-    @Override
     public int size()
     {
         int size = 0;

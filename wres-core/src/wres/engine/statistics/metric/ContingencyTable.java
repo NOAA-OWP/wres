@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-import wres.engine.statistics.metric.inputs.BooleanVector;
+import wres.datamodel.VectorOfBooleans;
 import wres.engine.statistics.metric.inputs.MetricInputException;
 import wres.engine.statistics.metric.inputs.MulticategoryPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
@@ -40,8 +40,8 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
         final int outcomes = s.getCategoryCount();
         final double[][] returnMe = new double[outcomes][outcomes];
         //Function that returns the index within the contingency matrix to increment
-        final Consumer<BooleanVector> f = a -> {
-            boolean[] b = a.getValues();
+        final Consumer<VectorOfBooleans> f = a -> {
+            boolean[] b = a.getBooleans();
             //Dichotomous event represented as a single outcome: expand
             if(b.length == 2)
             {
