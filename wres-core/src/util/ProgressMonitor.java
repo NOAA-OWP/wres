@@ -3,7 +3,9 @@
  */
 package util;
 
+import java.io.PrintStream;
 import java.text.DecimalFormat;
+import java.util.function.BiConsumer;
 
 /**
  * @author Christopher Tubbs
@@ -11,18 +13,50 @@ import java.text.DecimalFormat;
  */
 public class ProgressMonitor
 {    
-    public ProgressMonitor() {
+    public ProgressMonitor(PrintStream printer) {
         this.totalSteps = 0;
         this.completedSteps = 0;
-        formatter = new DecimalFormat();
-        formatter.setMaximumFractionDigits(2);
+        this.formatter = new DecimalFormat();
+        this.formatter.setMaximumFractionDigits(2);
+        
+        if (printer == null)
+        {
+            printer = System.out;
+        }
+        
+        this.printer = printer;
+        this.outputFunction = (Integer completed, Integer total) -> {
+            this.outputProgress();
+        };
+    }
+    
+    public ProgressMonitor()
+    {
+        this.totalSteps = 0;
+        this.completedSteps = 0;
+        this.formatter = new DecimalFormat();
+        this.formatter.setMaximumFractionDigits(2);
+        this.printer = System.out;
+        this.outputFunction = (Integer completed, Integer total) -> {
+            this.outputProgress();
+        };
+    }
+    
+    public ProgressMonitor(BiConsumer<Integer, Integer> outputFunction)
+    {
+        this.totalSteps = 0;
+        this.completedSteps = 0;
+        this.formatter = new DecimalFormat();
+        this.formatter.setMaximumFractionDigits(2);
+        this.printer = System.out;
+        this.outputFunction = outputFunction;
     }
     
     public void UpdateMonitor() {
         
         if (completedSteps < totalSteps) {
             completedSteps++;
-            outputProgress();
+            this.outputFunction.accept(completedSteps, totalSteps);
         }
         
         if (this.autoReset && totalSteps.equals(completedSteps)) {
@@ -31,17 +65,17 @@ public class ProgressMonitor
     }
     
     private void outputProgress() {
-        System.out.print(getProgressMessage());
+        this.printer.print(getProgressMessage());
     }
     
     public void addStep() {
             this.totalSteps++;
-            outputProgress();
+            this.outputFunction.accept(completedSteps, totalSteps);
     }
     
     public void setSteps(int steps) {
             this.totalSteps = steps;
-            outputProgress();
+            this.outputFunction.accept(completedSteps, totalSteps);
     }
     
     public void setAutoReset(boolean reset) {
@@ -52,11 +86,15 @@ public class ProgressMonitor
         this.showPercentage = showPercentage;
     }
     
+    public void setShowStepDescription(boolean showStepDescription)
+    {
+        this.showStepDescription = showStepDescription;
+    }
+    
     public void reset() {
         this.totalSteps = 0;
         this.completedSteps = 0;
-        System.out.println();
-        System.out.println();
+        this.printer.println();
     }
     
     private String getProgressMessage() {
@@ -64,10 +102,14 @@ public class ProgressMonitor
         String builder = "\r";
         try
         {
-            builder += completedSteps;
-            builder += " steps out of ";
-            builder += totalSteps;
-            builder += " completed";
+            if (this.showStepDescription)
+            {
+                builder += completedSteps;
+                builder += " steps out of ";
+                builder += totalSteps;
+                builder += " completed";
+            }
+            
             if (this.showPercentage) {
                 builder += " (";
                 builder += getCompletionPercent();
@@ -90,10 +132,18 @@ public class ProgressMonitor
     private String getCompletionPercent() {
         return formatter.format(((completedSteps * 1.0)/(totalSteps * 1.0))*100);
     }
+    
+    public void changePrinter(PrintStream printer)
+    {
+        this.printer = printer;
+    }
 
     private Integer totalSteps;
     private Integer completedSteps;
     private boolean autoReset;
-    private boolean showPercentage = true;
+    private boolean showPercentage = false;
+    private boolean showStepDescription = true;
     private final DecimalFormat formatter;
+    private PrintStream printer;
+    private BiConsumer<Integer, Integer> outputFunction;
 }

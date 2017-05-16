@@ -11,6 +11,12 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.TreeMap;
+
 import config.specification.MetricSpecification;
 import config.specification.ScriptBuilder;
 import util.Database;
@@ -23,11 +29,60 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
  * @author Christopher Tubbs
  */
 public final class Metrics {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Metrics.class);
     
     /**
      * The Metrics class is a collection of functions; it should not be instantiated
      */
     private Metrics() {}
+    
+    private static final Map<String, Function<List<PairOfDoubleAndVectorOfDoubles>, Double>> FUNCTIONS = createFunctionMap();
+    
+    private static Map<String, Function<List<PairOfDoubleAndVectorOfDoubles>, Double>> createFunctionMap()
+    {
+        Map<String, Function<List<PairOfDoubleAndVectorOfDoubles>, Double>> functions = new TreeMap<>();
+        
+        functions.put("mean_error", getMeanError());
+        
+        return functions;
+    }
+    
+    public static boolean hasFunction(String functionName)
+    {
+        return FUNCTIONS.containsKey(functionName);
+    }
+    
+    public static Double call(String functionName, List<PairOfDoubleAndVectorOfDoubles> pairs)
+    {
+        Double result = null;
+        
+        if (hasFunction(functionName))
+        {
+            result = FUNCTIONS.get(functionName).apply(pairs);
+        }
+        else
+        {
+            LOGGER.debug("The function named: '" + functionName + "' is not an available function. Returning null...");
+        }
+        
+        return result;
+    }
+    
+    public static String[] getFunctionNames()
+    {
+        String[] functionNames = new String[FUNCTIONS.size()];
+        
+        int nameIndex = 0;
+        
+        for (String name : FUNCTIONS.keySet())
+        {
+            functionNames[nameIndex] = name;
+            nameIndex++;
+        }
+        
+        return functionNames;
+    }
 	
 	@Deprecated
 	/**
@@ -133,5 +188,31 @@ public final class Metrics {
             }
         }
         return pairs;
+	}
+	
+	private static Function<List<PairOfDoubleAndVectorOfDoubles>, Double> getMeanError()
+	{
+	    return (List<PairOfDoubleAndVectorOfDoubles> pairs) -> {
+	        double total = 0.0;
+	        int ensembleCount = 0;
+	        Double mean = null;
+	        
+	        for (PairOfDoubleAndVectorOfDoubles pair : pairs)
+	        {
+	            for (int pairedValue = 0; pairedValue < pair.getItemTwo().length; ++pairedValue)
+	            {
+	                double error = (pair.getItemTwo()[pairedValue] - pair.getItemOne());
+	                total += error;
+	                ensembleCount++;
+	            }
+	        }
+	        
+	        if (pairs.size() > 0)
+	        {
+	            mean = total / ensembleCount;
+	        }
+	        
+	        return mean;
+	    };
 	}
 }
