@@ -39,7 +39,7 @@ public abstract class DoubleErrorMetric<S extends SingleValuedPairs, T extends M
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         //Compute the atomic errors in a parallel stream
-        return MetricOutputFactory.getVectorExtendsMetricOutput(s.getData().parallelStream().mapToDouble(f).toArray(),
+        return MetricOutputFactory.getVectorExtendsMetricOutput(s.getData().stream().mapToDouble(f).toArray(),
                                                                 s.size(),
                                                                 null);
     }

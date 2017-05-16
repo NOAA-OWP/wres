@@ -3,7 +3,6 @@ package wres.engine.statistics.metric.inputs;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import static java.util.stream.Collectors.*;
 
 import wres.datamodel.PairOfDoubles;
 
@@ -14,7 +13,7 @@ import wres.datamodel.PairOfDoubles;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SingleValuedPairs implements MetricInput<DoubleVector>
+public class SingleValuedPairs implements MetricInput<PairOfDoubles>
 {
 
     /**
@@ -121,25 +120,19 @@ public class SingleValuedPairs implements MetricInput<DoubleVector>
     }
 
     @Override
-    public List<DoubleVector> getData()
+    public List<PairOfDoubles> getData()
     {
         // using stream transformation for now, but if we move toward an API,
         // then we could return exactly what it is (or a copy)
-        return pairs.stream()
-                    .map(d -> new double[] {d.getItemOne(), d.getItemTwo()})
-                    .map(DoubleVector::new)
-                    .collect(toList());
+        return pairs;
     }
 
     @Override
-    public List<DoubleVector> getBaselineData()
+    public List<PairOfDoubles> getBaselineData()
     {
         // using stream transformation for now, but if we move toward an API,
         // then we could return exactly what it is (or a copy)
-        return basePairs.stream()
-                        .map(d -> new double[] {d.getItemOne(), d.getItemTwo()})
-                        .map(DoubleVector::new)
-                        .collect(toList());
+        return basePairs;
     }
 
     @Override

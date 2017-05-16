@@ -44,7 +44,7 @@ public class MetricCollectionTest
         final MetricOutputCollection<ScalarOutput> d = n.apply(input);
 
         //Print them
-        d.stream().forEach(g -> System.out.println(g.getData().valueOf()));
+        d.stream().forEach(g -> System.out.println(g.getData()));
 
         //Check them
         assertTrue(d.get(0).equals(MetricOutputFactory.getScalarOutput(-200.55, 10, null)));

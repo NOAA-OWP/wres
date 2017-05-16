@@ -1,10 +1,8 @@
 package wres.engine.statistics.metric.outputs;
 
+import wres.datamodel.DataFactory;
 import wres.engine.statistics.metric.inputs.Dimension;
 import wres.engine.statistics.metric.inputs.DoubleMatrix;
-import wres.engine.statistics.metric.inputs.DoubleScalar;
-import wres.engine.statistics.metric.inputs.DoubleVector;
-import wres.engine.statistics.metric.inputs.IntegerScalar;
 
 /**
  * A factory class for producing metric outputs. TODO: revisit the suppressed warnings.
@@ -26,8 +24,8 @@ public class MetricOutputFactory
      * @return a {@link ScalarOutput}
      */
 
-    public static ScalarOutput getScalarOutput(final DoubleScalar output,
-                                               final IntegerScalar sampleSize,
+    public static ScalarOutput getScalarOutput(final Double output,
+                                               final Integer sampleSize,
                                                final Dimension d)
     {
         return new ScalarOutput(output, sampleSize, d);
@@ -44,7 +42,7 @@ public class MetricOutputFactory
 
     public static ScalarOutput getScalarOutput(final double output, final int sampleSize, final Dimension d)
     {
-        return getScalarOutput(new DoubleScalar(output), new IntegerScalar(sampleSize), d);
+        return getScalarOutput(new Double(output), new Integer(sampleSize), d);
     }
 
     /**
@@ -62,7 +60,7 @@ public class MetricOutputFactory
                                                                                 final int sampleSize,
                                                                                 final Dimension d)
     {
-        return (T)new MatrixOutput(new DoubleMatrix(output), new IntegerScalar(sampleSize));
+        return (T)new MatrixOutput(new DoubleMatrix(output), new Integer(sampleSize));
     }
 
     /**
@@ -80,7 +78,7 @@ public class MetricOutputFactory
                                                                                 final int sampleSize,
                                                                                 final Dimension d)
     {
-        return (T)new VectorOutput(new DoubleVector(output), new IntegerScalar(sampleSize));
+        return (T)new VectorOutput(DataFactory.vectorOf(output), new Integer(sampleSize));
     }
 
     /**
@@ -116,7 +114,7 @@ public class MetricOutputFactory
                                                                     final int sampleSize,
                                                                     final Dimension d)
     {
-        return (T)getScalarOutput(new DoubleScalar(output), new IntegerScalar(sampleSize), d);
+        return (T)getScalarOutput(new Double(output), new Integer(sampleSize), d);
     }
 
     /**
