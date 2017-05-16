@@ -6,3 +6,4 @@
 /testinput/sharedinput/*
 wres-core.jar
 *.ct
+/*.xml
