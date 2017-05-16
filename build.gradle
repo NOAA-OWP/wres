@@ -11,7 +11,13 @@ subprojects
         {
             java
             {
-                srcDirs = ['src']
+                // Standard sources in src. The outsidejar is for eclipse, it
+                // seems unintuitive but somehow works because there are no
+                // actual java files inside the conf directory, this just
+                // causes the files to show up on eclipse's classpath at
+                // runtime or debugtime.
+                // https://stackoverflow.com/questions/18183677/gradle-add-folder-to-eclipse-classpath#18184414
+                srcDirs = ['src', 'nonsrc/outsidejar/lib/conf']
             }
 
             // "resources" here end up included inside the jar.
@@ -86,6 +92,7 @@ project(':wres-datamodel-api')
 project(':wres-core')
 {
     apply plugin: 'application'
+
     mainClassName = 'Main'
 
     applicationDefaultJvmArgs = ['-Xmx3600m', '-Xms3200m']
