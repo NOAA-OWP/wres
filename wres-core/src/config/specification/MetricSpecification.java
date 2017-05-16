@@ -40,6 +40,20 @@ public class MetricSpecification extends SpecificationElement {
     {
         super(reader);
     }
+    
+    @Override
+    protected void getAttributes(XMLStreamReader reader)
+    {
+        for (int attribute_index = 0; attribute_index < reader.getAttributeCount(); ++attribute_index)
+        {
+            String attribute_name = reader.getAttributeLocalName(attribute_index);
+            
+            if (attribute_name.equalsIgnoreCase("type"))
+            {
+                this.metricType = reader.getAttributeValue(attribute_index);
+            }
+        }
+    }
 
 	/* (non-Javadoc)
 	 * @see config.data.ConfigElement#interpret(javax.xml.stream.XMLStreamReader)
@@ -101,7 +115,6 @@ public class MetricSpecification extends SpecificationElement {
 	    int step = 1;
 	    
 	    while (metricAggregate.leadIsValid(step, finalLead)) {
-            //PairFetcher fetcher = new PairFetcher(sourceOne, sourceTwo, metricAggregate.getLeadQualifier(step));
             threadResults.put(step, Executor.submit(new PairFetcher(this, step)));
             threadsAdded++;
 	        step++;
@@ -119,6 +132,16 @@ public class MetricSpecification extends SpecificationElement {
         System.out.println();
         
 	    return results;
+	}
+	
+	public Integer getFirstVariableID() throws SQLException
+	{
+	    return sourceOne.getVariable().getVariableID();
+	}
+	
+	public Integer getSecondVariableID() throws SQLException
+	{
+	    return sourceTwo.getVariable().getVariableID();
 	}
 
 	@Override
@@ -208,6 +231,11 @@ public class MetricSpecification extends SpecificationElement {
 	public AggregationSpecification getAggregationSpecification() {
 	    return this.metricAggregate;
 	}
+	
+	public String getMetricType()
+	{
+	    return this.metricType;
+	}
 
 	private String name;
 	private OutputSpecification metric_output;
@@ -215,6 +243,8 @@ public class MetricSpecification extends SpecificationElement {
 	private ProjectDataSpecification sourceTwo;
 	private ProjectDataSpecification baseline;
 	private AggregationSpecification metricAggregate;
+	private String metricType;
+	
     @Override
     public String toXML()
     {

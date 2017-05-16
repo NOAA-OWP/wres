@@ -61,12 +61,6 @@ public final class ProjectConfig extends XMLReader {
 		}
 	}
 	
-	public static void loadProjectData() {
-	    for (ProjectSpecification project : getProjects()) {
-	        
-	    }
-	}
-	
 	/**
 	 * @return The collection of all configured projects
 	 */
