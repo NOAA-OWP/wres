@@ -58,7 +58,7 @@ implements Score, Collectable<S, MetricOutput<?, ?>, T>
         final MatrixOutput v = (MatrixOutput)output;
         final double[][] cm = v.getData().getValues();
         return MetricOutputFactory.getExtendsScalarOutput(cm[0][1] / (cm[0][1] + cm[1][1]),
-                                                          v.getSampleSize().valueOf(),
+                                                          v.getSampleSize(),
                                                           output.getDimension());
     }
 

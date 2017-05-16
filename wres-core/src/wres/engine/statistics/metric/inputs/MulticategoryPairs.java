@@ -3,6 +3,9 @@ package wres.engine.statistics.metric.inputs;
 import java.util.ArrayList;
 import java.util.Objects;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.VectorOfBooleans;
+
 /**
  * Class for storing the verification pairs associated with the outcome (true or false) of a multi-category event. The
  * categorical outcomes may be ordered or unordered. For multi-category pairs with <b>more</b> than two possible
@@ -11,20 +14,20 @@ import java.util.Objects;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MulticategoryPairs implements MetricInput<BooleanVector>
+public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
 {
 
     /**
      * The multicategory pairs.
      */
 
-    final ArrayList<BooleanVector> pairs;
+    final ArrayList<VectorOfBooleans> pairs;
 
     /**
      * The multicategory pairs for the baseline.
      */
 
-    final ArrayList<BooleanVector> basePairs;
+    final ArrayList<VectorOfBooleans> basePairs;
 
     /**
      * Construct the multicategory input without any pairs for a baseline. The pairs have twice as many columns as
@@ -86,7 +89,7 @@ public class MulticategoryPairs implements MetricInput<BooleanVector>
                     throw new MetricInputException("Expected a multicategory baseline with " + outcomes + " outcomes.");
                 }
                 checkPair(outcomes, pair);
-                this.pairs.add(PairFactory.getBooleanPair(pair));
+                this.pairs.add(DataFactory.vectorOf(pair));
             }
         }
         //Set the pairs
@@ -97,7 +100,7 @@ public class MulticategoryPairs implements MetricInput<BooleanVector>
                 throw new MetricInputException("Expected multicategory pairs with with " + outcomes + " outcomes.");
             }
             checkPair(outcomes, pair);
-            this.pairs.add(PairFactory.getBooleanPair(pair));
+            this.pairs.add(DataFactory.vectorOf(pair));
         }
     }
 
@@ -114,13 +117,13 @@ public class MulticategoryPairs implements MetricInput<BooleanVector>
     }
 
     @Override
-    public ArrayList<BooleanVector> getData()
+    public ArrayList<VectorOfBooleans> getData()
     {
         return pairs;
     }
 
     @Override
-    public ArrayList<BooleanVector> getBaselineData()
+    public ArrayList<VectorOfBooleans> getBaselineData()
     {
         return basePairs;
     }
@@ -156,7 +159,7 @@ public class MulticategoryPairs implements MetricInput<BooleanVector>
 
     public int getCategoryCount()
     {
-        return pairs.get(0).size() / 2;
+        return pairs.get(0).getBooleans().length / 2;
     }
 
     /**
@@ -169,7 +172,7 @@ public class MulticategoryPairs implements MetricInput<BooleanVector>
      * @throws MetricInputException
      */
 
-    private MulticategoryPairs(final ArrayList<BooleanVector> pairs, final ArrayList<BooleanVector> basePairs)
+    private MulticategoryPairs(final ArrayList<VectorOfBooleans> pairs, final ArrayList<VectorOfBooleans> basePairs)
     {
         this.pairs = pairs;
         this.basePairs = basePairs;

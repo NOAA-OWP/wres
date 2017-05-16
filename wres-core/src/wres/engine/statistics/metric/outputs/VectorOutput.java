@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric.outputs;
 
+import wres.datamodel.VectorOfDoubles;
 import wres.engine.statistics.metric.inputs.Dimension;
-import wres.engine.statistics.metric.inputs.DoubleVector;
-import wres.engine.statistics.metric.inputs.IntegerScalar;
+import wres.engine.statistics.metric.inputs.Sample;
 
 /**
  * <p>
@@ -12,14 +12,14 @@ import wres.engine.statistics.metric.inputs.IntegerScalar;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class VectorOutput implements MetricOutput<DoubleVector, IntegerScalar>
+public class VectorOutput implements MetricOutput<VectorOfDoubles, Sample>, Sample
 {
 
     /**
      * The output.
      */
 
-    private final DoubleVector output;
+    private final VectorOfDoubles output;
 
     /**
      * The dimension associated with the output or null for dimensionless output.
@@ -31,7 +31,7 @@ public class VectorOutput implements MetricOutput<DoubleVector, IntegerScalar>
      * The sample size associated with the output.
      */
 
-    private final IntegerScalar sampleSize;
+    private final int sampleSize;
 
     /**
      * Construct a dimensionless output with a sample size.
@@ -40,7 +40,7 @@ public class VectorOutput implements MetricOutput<DoubleVector, IntegerScalar>
      * @param sampleSize the sample size
      */
 
-    public VectorOutput(final DoubleVector output, final IntegerScalar sampleSize)
+    public VectorOutput(final VectorOfDoubles output, final Integer sampleSize)
     {
         this(output, sampleSize, null);
     }
@@ -53,7 +53,7 @@ public class VectorOutput implements MetricOutput<DoubleVector, IntegerScalar>
      * @param dim the dimension.
      */
 
-    public VectorOutput(final DoubleVector output, final IntegerScalar sampleSize, final Dimension dim)
+    public VectorOutput(final VectorOfDoubles output, final Integer sampleSize, final Dimension dim)
     {
         this.output = output;
         this.sampleSize = sampleSize;
@@ -73,13 +73,13 @@ public class VectorOutput implements MetricOutput<DoubleVector, IntegerScalar>
     }
 
     @Override
-    public IntegerScalar getSampleSize()
+    public int getSampleSize()
     {
         return sampleSize;
     }
 
     @Override
-    public DoubleVector getData()
+    public VectorOfDoubles getData()
     {
         return output;
     }

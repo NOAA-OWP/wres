@@ -75,7 +75,7 @@ implements Score, Collectable<S, MetricOutput<?, ?>, T>
         final double t = cm[0][0] + cm[0][1] + cm[1][0];
         final double hitsRandom = ((cm[0][0] + cm[1][0]) * (cm[0][0] + cm[0][1])) / (t + cm[1][1]);
         return MetricOutputFactory.getExtendsScalarOutput((cm[0][0] - hitsRandom) / (t - hitsRandom),
-                                                          v.getSampleSize().valueOf(),
+                                                          v.getSampleSize(),
                                                           null);
     }
 

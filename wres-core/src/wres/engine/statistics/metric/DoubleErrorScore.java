@@ -35,7 +35,7 @@ implements Score
     public T apply(final S s)
     {
         return MetricOutputFactory.getScalarExtendsMetricOutput((Arrays.stream(((VectorOutput)super.apply(s)).getData()
-                                                                                                             .getValues())
+                                                                                                             .getDoubles())
                                                                        .sum()
             / s.size()), s.size(), s.getDimension());
     }

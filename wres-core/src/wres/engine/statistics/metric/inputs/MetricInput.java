@@ -11,7 +11,7 @@ import java.util.List;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface MetricInput<S extends Dataset<?>>
+public interface MetricInput<S>
 {
 
     /**
@@ -31,7 +31,7 @@ public interface MetricInput<S extends Dataset<?>>
     Dimension getDimension();
 
     /**
-     * Returns a list of {@link Dataset}.
+     * Returns a list of {@link S}.
      * 
      * @return the data
      */
@@ -39,7 +39,7 @@ public interface MetricInput<S extends Dataset<?>>
     List<S> getData();
 
     /**
-     * Returns a list of {@link Dataset} representing a baseline.
+     * Returns a list of {@link S} representing a baseline.
      * 
      * @return a list of baseline data
      */

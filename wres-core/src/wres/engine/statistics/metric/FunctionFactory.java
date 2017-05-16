@@ -1,8 +1,7 @@
 package wres.engine.statistics.metric;
 
 import java.util.function.DoubleBinaryOperator;
-
-import wres.engine.statistics.metric.inputs.DoubleVector;
+import wres.datamodel.PairOfDoubles;
 
 /**
  * A factory class for constructing elementary functions.
@@ -15,38 +14,38 @@ import wres.engine.statistics.metric.inputs.DoubleVector;
 public final class FunctionFactory
 {
     /**
-     * Return a function that computes the difference between the first and second entries in a {@link DoubleVector}.
+     * Return a function that computes the difference between the first and second entries in a {@link PairOfDoubles}.
      * 
      * @return a function that computes the error
      */
 
     public static DoubleErrorFunction error()
     {
-        return (a) -> a.getValues()[0] - a.getValues()[1];
+        return (a) -> a.getItemOne() - a.getItemTwo();
     }
 
     /**
      * Return a function that computes the absolute difference between the first and second entries in a
-     * {@link DoubleVector}.
+     * {@link PairOfDoubles}.
      * 
      * @return a function that computes the absolute error
      */
 
     public static DoubleErrorFunction absError()
     {
-        return (a) -> Math.abs(a.getValues()[0] - a.getValues()[1]);
+        return (a) -> Math.abs(a.getItemOne() - a.getItemTwo());
     }
 
     /**
      * Return a function that computes the square difference between the first and second entries in a
-     * {@link DoubleVector}.
+     * {@link PairOfDoubles}.
      * 
      * @return a function that computes the square error
      */
 
     public static DoubleErrorFunction squareError()
     {
-        return (a) -> Math.pow(a.getValues()[0] - a.getValues()[1], 2);
+        return (a) -> Math.pow(a.getItemOne() - a.getItemTwo(), 2);
     }
 
     /**
