@@ -1,12 +1,12 @@
-**/.project
-*.class
-*.[oa]
-**/build
-**/.gradle
-**/.settings
-**/.classpath
-wres/
-.settings/
-.gradle/
-.project
-*.swp
+*.class        # Java bytecode artifacts
+*.jar          # Java binary artifacts
+
+**/build       # Gradle-generated build directory with binary artifacts
+**/.gradle     # Gradle-generated directory with caches, etc.
+
+**/bin         # Eclipse-generated build directory with binary artifacts
+**/.settings   # Eclipse-generated directory with user-specific settings
+**/.classpath  # Eclipse-generated directory
+**/.project    # Eclipse-generated directory
+
+*.swp          # Vim swapfile (temporary file)

@@ -58,4 +58,9 @@ public class TimeSeries
     {
         return this.events.isEmpty();
     }
+
+    public SeriesInfo getSeriesInfo()
+    {
+        return this.seriesInfo;
+    }
 }

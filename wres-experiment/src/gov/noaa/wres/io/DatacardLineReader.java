@@ -53,7 +53,7 @@ public class DatacardLineReader implements Function<String,List<Event>>
         // Sample line here:
         // BLKO2       0185  09    0.000    0.257    0.026    0.121
 
-        String locationId =   datacardLine.subSequence(0,12).toString();
+        //String locationId =   datacardLine.subSequence(0,12).toString();
         String month =        datacardLine.subSequence(12,14).toString();
         String twoDigitYear = datacardLine.subSequence(14,16).toString();
         String twoDigitDay =  datacardLine.subSequence(18,20).toString();

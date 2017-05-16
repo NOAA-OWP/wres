@@ -21,8 +21,6 @@ import concurrency.ForecastSaver;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.google.common.util.concurrent.Monitor;
-
 import collections.Pair;
 import reading.BasicSource;
 import reading.SourceReader;
