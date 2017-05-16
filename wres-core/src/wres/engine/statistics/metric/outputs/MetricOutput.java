@@ -14,7 +14,7 @@ import wres.engine.statistics.metric.inputs.Sample;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface MetricOutput<U, V extends Sample>
+public interface MetricOutput<U> extends Sample
 {
 
     /**

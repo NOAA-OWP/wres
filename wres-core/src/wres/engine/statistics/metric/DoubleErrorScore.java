@@ -15,7 +15,7 @@ import wres.engine.statistics.metric.outputs.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public abstract class DoubleErrorScore<S extends SingleValuedPairs, T extends MetricOutput<?, ?>>
+public abstract class DoubleErrorScore<S extends SingleValuedPairs, T extends MetricOutput<?>>
 extends
     DoubleErrorMetric<S, T>
 implements Score

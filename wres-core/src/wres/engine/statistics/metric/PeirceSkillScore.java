@@ -21,7 +21,7 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * @since 0.1
  */
 public final class PeirceSkillScore<S extends MulticategoryPairs, T extends ScalarOutput> extends ContingencyTable<S, T>
-implements Score, Collectable<S, MetricOutput<?, ?>, T>
+implements Score, Collectable<S, MetricOutput<?>, T>
 {
 
     @Override
@@ -56,7 +56,7 @@ implements Score, Collectable<S, MetricOutput<?, ?>, T>
     }
 
     @Override
-    public T apply(final MetricOutput<?, ?> output)
+    public T apply(final MetricOutput<?> output)
     {
         Objects.requireNonNull(output, "Specify non-null input for the '" + toString() + "'.");
         if(!(output instanceof MatrixOutput))
@@ -105,7 +105,7 @@ implements Score, Collectable<S, MetricOutput<?, ?>, T>
     }
 
     @Override
-    public MetricOutput<?, ?> getCollectionInput(final S input)
+    public MetricOutput<?> getCollectionInput(final S input)
     {
         return super.apply(input); //Contingency table
     }

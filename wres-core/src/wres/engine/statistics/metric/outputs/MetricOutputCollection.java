@@ -8,7 +8,7 @@ import java.util.ArrayList;
  * @author james.brown@hydrosolved.com
  */
 
-public final class MetricOutputCollection<T extends MetricOutput<?, ?>> extends ArrayList<T>
+public final class MetricOutputCollection<T extends MetricOutput<?>> extends ArrayList<T>
 {
     private static final long serialVersionUID = -7715026905377885849L;
 

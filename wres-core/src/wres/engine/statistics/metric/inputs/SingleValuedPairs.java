@@ -122,16 +122,12 @@ public class SingleValuedPairs implements MetricInput<PairOfDoubles>
     @Override
     public List<PairOfDoubles> getData()
     {
-        // using stream transformation for now, but if we move toward an API,
-        // then we could return exactly what it is (or a copy)
         return pairs;
     }
 
     @Override
     public List<PairOfDoubles> getBaselineData()
     {
-        // using stream transformation for now, but if we move toward an API,
-        // then we could return exactly what it is (or a copy)
         return basePairs;
     }
 

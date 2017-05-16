@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -26,14 +27,14 @@ import wres.engine.statistics.metric.parameters.MetricParameterException;
  * @version 0.1
  * @since 0.1
  */
-public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?, ?>> implements Function<S, T>
+public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>> implements Function<S, T>
 {
 
     /**
      * Ordered map of parameters associated with the metric. For convenience, they are stored by their type identifier.
      */
 
-    private final TreeMap<Integer, MetricParameter> parameters = new TreeMap<>();
+    private final Map<Integer, MetricParameter> parameters = new TreeMap<>();
 
     /**
      * Applies the function to the input and throws a {@link MetricCalculationException} if the calculation fails.
@@ -95,9 +96,9 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?,
      * @return a deep copy of the metric parameters
      */
 
-    public final ArrayList<MetricParameter> getParameters()
+    public final List<MetricParameter> getParameters()
     {
-        final ArrayList<MetricParameter> returnMe = new ArrayList<>();
+        final List<MetricParameter> returnMe = new ArrayList<>();
         for(final Map.Entry<Integer, MetricParameter> p: parameters.entrySet())
         {
             returnMe.add(p.getValue().deepCopy());

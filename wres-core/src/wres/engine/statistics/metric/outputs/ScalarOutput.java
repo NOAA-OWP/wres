@@ -1,7 +1,6 @@
 package wres.engine.statistics.metric.outputs;
 
 import wres.engine.statistics.metric.inputs.Dimension;
-import wres.engine.statistics.metric.inputs.Sample;
 
 /**
  * A scalar outputs associated with a metric.
@@ -9,14 +8,14 @@ import wres.engine.statistics.metric.inputs.Sample;
  * @author james.brown@hydrosolved.com
  */
 
-public class ScalarOutput implements MetricOutput<Double, Sample>, Sample
+public class ScalarOutput implements MetricOutput<Double>
 {
 
     /**
      * The output.
      */
 
-    private final Double output;
+    private final double output;
 
     /**
      * The dimension associated with the output or null for dimensionless output.
@@ -28,7 +27,7 @@ public class ScalarOutput implements MetricOutput<Double, Sample>, Sample
      * The sample size associated with the output.
      */
 
-    private final Integer sampleSize;
+    private final int sampleSize;
 
     /**
      * Construct a dimensionless output with a sample size.
@@ -37,7 +36,7 @@ public class ScalarOutput implements MetricOutput<Double, Sample>, Sample
      * @param sampleSize the sample size
      */
 
-    public ScalarOutput(final Double output, final Integer sampleSize)
+    public ScalarOutput(final double output, final int sampleSize)
     {
         this(output, sampleSize, null);
     }
@@ -45,15 +44,15 @@ public class ScalarOutput implements MetricOutput<Double, Sample>, Sample
     /**
      * Construct the output.
      * 
-     * @param output2 the verification output.
-     * @param sampleSize2 the sample size
+     * @param output the verification output.
+     * @param sampleSize the sample size
      * @param dim the dimension.
      */
 
-    public ScalarOutput(final Double output2, final Integer sampleSize2, final Dimension dim)
+    public ScalarOutput(final double output, final int sampleSize, final Dimension dim)
     {
-        this.output = output2;
-        this.sampleSize = sampleSize2;
+        this.output = output;
+        this.sampleSize = sampleSize;
         this.dim = dim;
     }
 
@@ -73,8 +72,8 @@ public class ScalarOutput implements MetricOutput<Double, Sample>, Sample
     public boolean equals(final Object o)
     {
         final boolean start = o != null && o instanceof ScalarOutput
-            && ((ScalarOutput)o).getData().doubleValue() == output.doubleValue()
-            && ((ScalarOutput)o).sampleSize.intValue() == sampleSize.intValue()
+            && ((ScalarOutput)o).getData().doubleValue() == output
+            && ((ScalarOutput)o).sampleSize == sampleSize
             && (((ScalarOutput)o).dim == null) == (dim == null);
         return (dim != null) ? start && ((ScalarOutput)o).dim.equals(dim) : start;
     }
@@ -82,7 +81,7 @@ public class ScalarOutput implements MetricOutput<Double, Sample>, Sample
     @Override
     public int hashCode()
     {
-        int returnMe = Double.hashCode(output.doubleValue()) + Integer.hashCode(sampleSize.intValue());
+        int returnMe = Double.hashCode(output) + Integer.hashCode(sampleSize);
         if(dim != null)
         {
             returnMe = returnMe + dim.hashCode();

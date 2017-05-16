@@ -15,7 +15,7 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * @version 0.1
  * @since 0.1
  */
-public final class BrierSkillScore<S extends DiscreteProbabilityPairs, T extends MetricOutput<?, ?>>
+public final class BrierSkillScore<S extends DiscreteProbabilityPairs, T extends MetricOutput<?>>
 extends
     MeanSquareErrorSkillScore<S, T>
 implements ProbabilityScore
