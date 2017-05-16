@@ -34,10 +34,8 @@ extends
         final ScalarOutput numerator = (ScalarOutput)super.apply(s);
         final ScalarOutput denominator = (ScalarOutput)super.apply((S)s.getBaseline());
         return MetricOutputFactory.getScalarExtendsMetricOutput(FunctionFactory.skill()
-                                                                               .applyAsDouble(numerator.getData()
-                                                                                                       .valueOf(),
-                                                                                              denominator.getData()
-                                                                                                         .valueOf()),
+                                                                               .applyAsDouble(numerator.getData(),
+                                                                                              denominator.getData()),
                                                                 s.size(),
                                                                 s.getDimension());
     }

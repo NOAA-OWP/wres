@@ -18,7 +18,25 @@ public class DataFactory
         // No construction, this is a static factory class.
     }
 
+    /**
+     * Create a pair of primitive doubles.
+     * 
+     * @param first the first value
+     * @param second the second value
+     * @return the paired values
+     */
     public static PairOfDoubles pairOf(double first, double second)
+    {
+        return DataFactoryImpl.pairOf(first, second);
+    }
+
+    /**
+     * Create a pair of primitive booleans
+     * @param first the first value
+     * @param second the second value   
+     * @return the paired values
+     */
+    public static PairOfBooleans pairOf(boolean first, boolean second)
     {
         return DataFactoryImpl.pairOf(first, second);
     }
@@ -35,7 +53,7 @@ public class DataFactory
     }
 
     /**
-     * Create a primitive tuple of double, double[] from boxed versions of same.
+     * Create a primitive pair of double, double[] from boxed versions of same.
      *
      * @param first a boxed Double
      * @param second a boxed Double[]
@@ -44,5 +62,21 @@ public class DataFactory
     public static PairOfDoubleAndVectorOfDoubles pairOf(Double first, Double[] second)
     {
         return DataFactoryImpl.pairOf(first, second);
+    }
+
+    /**
+     * Create a VectorOfDoubles using a primitive double[]
+     */
+    public static VectorOfDoubles vectorOf(double[] vec)
+    {
+        return DataFactoryImpl.vectorOf(vec);
+    }
+
+    /**
+     * Create a VectorOfBooleans using a primitive boolean[]
+     */
+    public static VectorOfBooleans vectorOf(boolean[] vec)
+    {
+        return DataFactoryImpl.vectorOf(vec);
     }
 }
