@@ -14,7 +14,7 @@ import wres.engine.statistics.metric.outputs.MetricOutputFactory;
  * @version 0.1
  * @since 0.1
  */
-public abstract class DoubleErrorMetric<S extends SingleValuedPairs, T extends MetricOutput<?, ?>> extends Metric<S, T>
+public abstract class DoubleErrorMetric<S extends SingleValuedPairs, T extends MetricOutput<?>> extends Metric<S, T>
 {
     /**
      * The error function.

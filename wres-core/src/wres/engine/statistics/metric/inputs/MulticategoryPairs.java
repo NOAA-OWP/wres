@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.inputs;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.DataFactory;
@@ -21,13 +22,13 @@ public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
      * The multicategory pairs.
      */
 
-    final ArrayList<VectorOfBooleans> pairs;
+    final List<VectorOfBooleans> pairs;
 
     /**
      * The multicategory pairs for the baseline.
      */
 
-    final ArrayList<VectorOfBooleans> basePairs;
+    final List<VectorOfBooleans> basePairs;
 
     /**
      * Construct the multicategory input without any pairs for a baseline. The pairs have twice as many columns as
@@ -117,13 +118,13 @@ public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
     }
 
     @Override
-    public ArrayList<VectorOfBooleans> getData()
+    public List<VectorOfBooleans> getData()
     {
         return pairs;
     }
 
     @Override
-    public ArrayList<VectorOfBooleans> getBaselineData()
+    public List<VectorOfBooleans> getBaselineData()
     {
         return basePairs;
     }
@@ -172,7 +173,7 @@ public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
      * @throws MetricInputException
      */
 
-    private MulticategoryPairs(final ArrayList<VectorOfBooleans> pairs, final ArrayList<VectorOfBooleans> basePairs)
+    private MulticategoryPairs(final List<VectorOfBooleans> pairs, final List<VectorOfBooleans> basePairs)
     {
         this.pairs = pairs;
         this.basePairs = basePairs;

@@ -20,7 +20,7 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
 public final class CriticalSuccessIndex<S extends DichotomousPairs, T extends ScalarOutput>
 extends
     ContingencyTable<S, T>
-implements Score, Collectable<S, MetricOutput<?, ?>, T>
+implements Score, Collectable<S, MetricOutput<?>, T>
 {
 
     @Override
@@ -55,7 +55,7 @@ implements Score, Collectable<S, MetricOutput<?, ?>, T>
     }
 
     @Override
-    public T apply(final MetricOutput<?, ?> output)
+    public T apply(final MetricOutput<?> output)
     {
         is2x2ContingencyTable(output, this);
         final MatrixOutput v = (MatrixOutput)output;
@@ -66,7 +66,7 @@ implements Score, Collectable<S, MetricOutput<?, ?>, T>
     }
 
     @Override
-    public MetricOutput<?, ?> getCollectionInput(final S input)
+    public MetricOutput<?> getCollectionInput(final S input)
     {
         return super.apply(input); //2x2 contingency table
     }

@@ -17,7 +17,7 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * @version 0.1
  * @since 0.1
  */
-public class MeanSquareErrorSkillScore<S extends SingleValuedPairs, T extends MetricOutput<?, ?>>
+public class MeanSquareErrorSkillScore<S extends SingleValuedPairs, T extends MetricOutput<?>>
 extends
     MeanSquareError<S, T>
 {

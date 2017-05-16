@@ -30,7 +30,7 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * @since 0.1
  */
 
-public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutput<?, ?>> extends Metric<S, T>
+public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutput<?>> extends Metric<S, T>
 {
 
     @Override
@@ -78,7 +78,7 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
      * @throws MetricInputException if the output is not a valid input for an intermediate calculation
      */
 
-    protected void is2x2ContingencyTable(final MetricOutput<?, ?> output, final Metric<?, ?> metric)
+    protected void is2x2ContingencyTable(final MetricOutput<?> output, final Metric<?, ?> metric)
     {
         Objects.requireNonNull(output, "Specify non-null input for the '" + toString() + "'.");
         final String message = "Expected an intermediate result with the 2x2 Contingency Table when "

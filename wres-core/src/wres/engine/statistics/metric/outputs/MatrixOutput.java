@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.outputs;
 
 import wres.engine.statistics.metric.inputs.Dimension;
 import wres.engine.statistics.metric.inputs.DoubleMatrix;
-import wres.engine.statistics.metric.inputs.Sample;
 
 /**
  * <p>
@@ -12,7 +11,7 @@ import wres.engine.statistics.metric.inputs.Sample;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MatrixOutput implements MetricOutput<DoubleMatrix, Sample>, Sample
+public class MatrixOutput implements MetricOutput<DoubleMatrix>
 {
 
     /**
@@ -31,7 +30,7 @@ public class MatrixOutput implements MetricOutput<DoubleMatrix, Sample>, Sample
      * The sample size associated with the output.
      */
 
-    private final Integer sampleSize;
+    private final int sampleSize;
 
     /**
      * Construct a dimensionless output with a sample size.
@@ -40,7 +39,7 @@ public class MatrixOutput implements MetricOutput<DoubleMatrix, Sample>, Sample
      * @param sampleSize the sample size
      */
 
-    public MatrixOutput(final DoubleMatrix output, final Integer sampleSize)
+    public MatrixOutput(final DoubleMatrix output, final int sampleSize)
     {
         this(output, sampleSize, null);
     }
@@ -53,7 +52,7 @@ public class MatrixOutput implements MetricOutput<DoubleMatrix, Sample>, Sample
      * @param dim the dimension.
      */
 
-    public MatrixOutput(final DoubleMatrix output, final Integer sampleSize, final Dimension dim)
+    public MatrixOutput(final DoubleMatrix output, final int sampleSize, final Dimension dim)
     {
         this.output = output;
         this.sampleSize = sampleSize;

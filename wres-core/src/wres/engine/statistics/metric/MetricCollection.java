@@ -43,7 +43,7 @@ import wres.engine.statistics.metric.outputs.VectorOutput;
  * @since 0.1
  */
 
-public abstract class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?, ?>>
+public abstract class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
 extends
     ArrayList<Metric<S, T>>
 implements Function<S, MetricOutputCollection<T>>
@@ -157,13 +157,13 @@ implements Function<S, MetricOutputCollection<T>>
         //Collect the instances of Collectable by their getCollectionOf string, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
         @SuppressWarnings("unchecked")
-        final Map<String, List<Collectable<S, MetricOutput<?, ?>, T>>> collectable =
+        final Map<String, List<Collectable<S, MetricOutput<?>, T>>> collectable =
                                                                                    stream().filter(Collectable.class::isInstance)
-                                                                                           .map(p -> (Collectable<S, MetricOutput<?, ?>, T>)p)
+                                                                                           .map(p -> (Collectable<S, MetricOutput<?>, T>)p)
                                                                                            .collect(Collectors.groupingBy(Collectable::getCollectionOf));
         //Consumer that computes the intermediate output once and applies it to all grouped instances of Collectable
-        final Consumer<List<Collectable<S, MetricOutput<?, ?>, T>>> c = x -> {
-            final MetricOutput<?, ?> intermediate = x.get(0).getCollectionInput(s); //Compute intermediate output
+        final Consumer<List<Collectable<S, MetricOutput<?>, T>>> c = x -> {
+            final MetricOutput<?> intermediate = x.get(0).getCollectionInput(s); //Compute intermediate output
             x.forEach(y -> m.add(indexOf(y), y.apply(intermediate))); //Use intermediate output to compute all measures
         };
 

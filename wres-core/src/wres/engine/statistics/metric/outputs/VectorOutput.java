@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.outputs;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.engine.statistics.metric.inputs.Dimension;
-import wres.engine.statistics.metric.inputs.Sample;
 
 /**
  * <p>
@@ -12,7 +11,7 @@ import wres.engine.statistics.metric.inputs.Sample;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class VectorOutput implements MetricOutput<VectorOfDoubles, Sample>, Sample
+public class VectorOutput implements MetricOutput<VectorOfDoubles>
 {
 
     /**
@@ -40,7 +39,7 @@ public class VectorOutput implements MetricOutput<VectorOfDoubles, Sample>, Samp
      * @param sampleSize the sample size
      */
 
-    public VectorOutput(final VectorOfDoubles output, final Integer sampleSize)
+    public VectorOutput(final VectorOfDoubles output, final int sampleSize)
     {
         this(output, sampleSize, null);
     }
@@ -53,7 +52,7 @@ public class VectorOutput implements MetricOutput<VectorOfDoubles, Sample>, Samp
      * @param dim the dimension.
      */
 
-    public VectorOutput(final VectorOfDoubles output, final Integer sampleSize, final Dimension dim)
+    public VectorOutput(final VectorOfDoubles output, final int sampleSize, final Dimension dim)
     {
         this.output = output;
         this.sampleSize = sampleSize;
