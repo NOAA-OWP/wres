@@ -4,7 +4,6 @@
 package config.specification;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 
 import javax.xml.stream.XMLStreamException;

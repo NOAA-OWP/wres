@@ -1,9 +1,4 @@
-/build/
-/.classpath
-/.project
-/bin/
 /resources/
 /testinput/sharedinput/*
-wres-core.jar
 *.ct
 /*.xml

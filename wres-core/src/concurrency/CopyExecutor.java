@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import util.Database;
-import util.Utilities;
 
 /**
  * Executes the database copy operation for every value in the passed in string
