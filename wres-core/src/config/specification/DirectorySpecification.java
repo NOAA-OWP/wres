@@ -47,7 +47,7 @@ public class DirectorySpecification extends SpecificationElement
 			
 			if (!(file_type == null || file_path == null || file_type.isEmpty() || file_path.isEmpty()))
 			{
-				add_file(new File(file_type, file_path));
+				add_file(new FileSpecification(file_type, file_path));
 			}
 		}
 	}
@@ -87,7 +87,7 @@ public class DirectorySpecification extends SpecificationElement
 	 * Returns a list of files in interest inside of the directory
 	 * @return A list of file specifications
 	 */
-	public List<File> get_files()
+	public List<FileSpecification> get_files()
 	{
 		return this.files;
 	}
@@ -96,11 +96,11 @@ public class DirectorySpecification extends SpecificationElement
 	 * Adds a file specification to the list of contained files
 	 * @param file
 	 */
-	private void add_file(File file)
+	private void add_file(FileSpecification file)
 	{
 		if (this.files == null)
 		{
-			this.files = new ArrayList<File>();
+			this.files = new ArrayList<FileSpecification>();
 		}
 		
 		files.add(file);
@@ -123,7 +123,7 @@ public class DirectorySpecification extends SpecificationElement
 		{
 			description += System.lineSeparator();
 			
-			for (File file : files)
+			for (FileSpecification file : files)
 			{
 				description += file.toString();
 			}
@@ -133,49 +133,13 @@ public class DirectorySpecification extends SpecificationElement
 		return description;
 	}
 	
-	private List<File> files;
+	private List<FileSpecification> files;
 	
 	/**
 	 * Indicates whether or not to load all files within the current level of the directory
 	 */
 	private boolean loadAll;
 	private String path;
-	
-	/**
-	 * Specifications about files within a directory
-	 * @author Christopher Tubbs
-	 *
-	 */
-	public final class File {
-		public File(String fileType, String path) {
-		    this.fileType = fileType;
-		    this.path = path;
-		}
-
-		public String getFileType()
-		{
-			return this.fileType;
-		}
-		
-		public String getPath()
-		{
-		    return this.path;
-		}
-		
-		@Override
-		public String toString() {
-			String description = "\tFile: ";
-			description += getPath();
-			description += ", Type: ";
-			description += getFileType();
-			description += System.lineSeparator();
-			
-			return description;
-		}
-		
-		private final String fileType;
-		private final String path;
-	}
 
     @Override
     public String toXML()
