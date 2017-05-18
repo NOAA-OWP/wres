@@ -171,7 +171,8 @@ public final class PIXMLReader extends XMLReader
 		}
 		
 		if (insertCount >= SystemConfig.getMaximumCopies()) {
-		    LOGGER.debug("Insert count greater than maximum copies, saving.");
+		    LOGGER.debug("Insert count {} greater than maximum copies {}, saving.",
+		                 insertCount, SystemConfig.getMaximumCopies());
 			saveEntries();
 		}
 	}

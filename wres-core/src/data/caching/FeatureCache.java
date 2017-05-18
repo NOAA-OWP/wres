@@ -9,6 +9,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import data.details.FeatureDetails;
 import util.Database;
 
@@ -16,8 +19,10 @@ import util.Database;
  * Caches details about Features
  * @author Christopher Tubbs
  */
-public class FeatureCache extends Cache<FeatureDetails, String> {
+public class FeatureCache extends Cache<FeatureDetails, String>
+{
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureCache.class);
     /**
      *  Global cache for all Features
      */
@@ -34,6 +39,7 @@ public class FeatureCache extends Cache<FeatureDetails, String> {
 	 * @throws Exception Thrown if the ID could not be retrieved from the Database
 	 */
 	public static Integer getFeatureID(FeatureDetails detail) throws Exception {
+	    LOGGER.trace("getFeatureID - args {}", detail);
 		return internalCache.getID(detail);
 	}
 	
@@ -45,6 +51,7 @@ public class FeatureCache extends Cache<FeatureDetails, String> {
 	 * @throws Exception Thrown if the ID could not be loaded from the database
 	 */
 	public static Integer getFeatureID(String lid, String stationName) throws Exception {
+        LOGGER.trace("getFeatureID - args {} ; {}", lid, stationName);
 		FeatureDetails detail = new FeatureDetails();
 		detail.setLID(lid);
 		detail.station_name = stationName;
@@ -60,7 +67,8 @@ public class FeatureCache extends Cache<FeatureDetails, String> {
 	 * @throws Exception Thrown if the variable position could not be loaded from the database
 	 */
 	public static Integer getVariablePositionID(String lid, String stationName, Integer variableID) throws Exception {
-		return internalCache.getVarPosID(lid, stationName, variableID);
+        LOGGER.trace("getVariablePositionID - ars {} ; {} ; {}", lid, stationName, variableID);
+        return internalCache.getVarPosID(lid, stationName, variableID);
 	}
     
     /**
@@ -72,6 +80,7 @@ public class FeatureCache extends Cache<FeatureDetails, String> {
      * @throws Exception Thrown if the variable position could not be loaded from the database
      */
 	public Integer getVarPosID(String lid, String stationName, Integer variableID) throws Exception {
+        LOGGER.trace("getVarPosID - args {} ; {} ; {}", lid, stationName, variableID);
 		if (!keyIndex.containsKey(lid))
 		{
 			FeatureDetails detail = new FeatureDetails();
@@ -79,6 +88,7 @@ public class FeatureCache extends Cache<FeatureDetails, String> {
 			detail.station_name = stationName;
 			getID(detail);
 		}
+
 		FeatureDetails detail = null;
 		try
 		{
@@ -96,6 +106,7 @@ public class FeatureCache extends Cache<FeatureDetails, String> {
             System.err.println();
             throw error;
 		}
+
 		return detail.getVariablePositionID(variableID);
 	}
 	
