@@ -60,38 +60,6 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		return variablePositions.get(variableID);
 	}
 	
-	@Deprecated
-	/**
-	 * Finds the variable position id of the feature for a given variable. A position is
-	 * added if there is not one for this pair of variable and feature
-	 * 
-	 *  DEPRECATED: Replace with getVariablePositionID(variableID) once caching is fully implemented
-	 * @param lid
-	 * @param stationName
-	 * @param variableID
-	 * @return
-	 * @throws SQLException
-	 */
-	public Integer getVariablePositionID(String lid, String stationName, Integer variableID) throws SQLException
-	{
-		if (this.lid == null)
-		{
-			this.lid = lid;
-		}
-		
-		if (this.station_name == null)
-		{
-			this.station_name = stationName;
-		}
-		
-		if (this.feature_id == null)
-		{
-			this.save();
-		}
-		
-		return getVariablePositionID(variableID);
-	}
-	
 	/**
 	 * Sets the LID of the Feature
 	 * @param lid The value used to update the current LID with
@@ -149,7 +117,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 
 	@Override
 	protected String getIDName() {
-		return "comid";
+		return "feature_id";
 	}
 
 	@Override
@@ -163,26 +131,22 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		
 		script += "WITH new_feature AS" + newline;
 		script += "(" + newline;
-		script += "		INSERT INTO wres.Feature (comid, lid, feature_name)" + newline;
-		script += "		SELECT COALESCE((" + newline;
-		script += "				SELECT MAX(feature_id) + 1" + newline;
-		script += "				FROM wres.Feature" + newline;
-		script += "			), 0)," + newline;
-		script += "			'" + lid + "'," + newline;
+		script += "		INSERT INTO wres.Feature (lid, feature_name)" + newline;
+		script += "		SELECT '" + lid + "'," + newline;
 		script += "			" + stationName() + newline;
 		script += "		WHERE NOT EXISTS (" + newline;
 		script += "			SELECT 1" + newline;
 		script += "			FROM wres.Feature" + newline;
 		script += "			WHERE lid = '" + lid + "'" + newline;
 		script += "		)" + newline;
-		script += "		RETURNING comid" + newline;
+		script += "		RETURNING feature_id" + newline;
 		script += ")" + newline;
-		script += "SELECT comid" + newline;
+		script += "SELECT feature_id" + newline;
 		script += "FROM new_feature" + newline + newline;
 		script += "";
 		script += "UNION" + newline + newline;
 		script += "";
-		script += "SELECT comid" + newline;
+		script += "SELECT feature_id" + newline;
 		script += "FROM wres.feature" + newline;
 		script += "WHERE lid = '" + lid + "'" + newline;
 		script += "LIMIT 1;";
