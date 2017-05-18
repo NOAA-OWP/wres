@@ -7,7 +7,11 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import util.Database;
 
@@ -17,13 +21,14 @@ import util.Database;
  */
 public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDetails.class);
 
 	private String lid = null;
 	public String station_name = null;
 	private Integer feature_id = null;
 	
 	// A concurrent mapping of the feature to its index for a variable
-	private ConcurrentSkipListMap<Integer, Integer> variablePositions = new ConcurrentSkipListMap<Integer, Integer>();
+	private ConcurrentMap<Integer, Integer> variablePositions = new ConcurrentSkipListMap<Integer, Integer>();
 	
 	/**
 	 * Finds the variable position id of the feature for a given variable. A position is
@@ -38,7 +43,18 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		{			
 			String script = "SELECT wres.get_variableposition_id(" + getId() + ", " + variableID + ") AS variableposition_id;";
 
-			variablePositions.put(variableID, Database.getResult(script, "variableposition_id"));
+			LOGGER.trace("getVariablePositionID - script: {}", script);
+
+			Integer dbResult = Database.getResult(script, "variableposition_id");
+
+            LOGGER.trace("getVariablePositionID - dbResult: {}", dbResult);
+
+            if (dbResult == null)
+            {
+                // TODO: throw an appropriate checked exception instead of RuntimeException
+                throw new RuntimeException("Possibly missing data in the wres.variableposition table?");
+            }
+			variablePositions.put(variableID, dbResult);
 		}
 		
 		return variablePositions.get(variableID);

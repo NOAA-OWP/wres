@@ -16,6 +16,9 @@ import java.util.concurrent.Future;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import collections.TwoTuple;
 import concurrency.Executor;
 import concurrency.PairFetcher;
@@ -30,6 +33,7 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
  */
 public class MetricSpecification extends SpecificationElement {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetricSpecification.class);
     /**
      * Constructor
      * @param reader The XML Node containing data about the metric
@@ -136,12 +140,26 @@ public class MetricSpecification extends SpecificationElement {
 	
 	public Integer getFirstVariableID() throws SQLException
 	{
-	    return sourceOne.getVariable().getVariableID();
+	    if (sourceOne != null && sourceOne.getVariable() != null && sourceOne.getVariable().getVariableID() != null)
+	    {
+	        return sourceOne.getVariable().getVariableID();
+	    }
+	    else
+	    {
+	        return Integer.MIN_VALUE;
+	    }
 	}
 	
 	public Integer getSecondVariableID() throws SQLException
 	{
-	    return sourceTwo.getVariable().getVariableID();
+	    if (sourceTwo != null && sourceTwo.getVariable() != null && sourceTwo.getVariable().getVariableID() != null)
+	    {
+	        return sourceTwo.getVariable().getVariableID();
+	    }
+	    else
+	    {
+	        return Integer.MIN_VALUE;
+	    }
 	}
 
 	@Override
@@ -223,13 +241,22 @@ public class MetricSpecification extends SpecificationElement {
 	public ProjectDataSpecification getSecondSource() {
 	    return this.sourceTwo;
 	}
-	
+
 	public ProjectDataSpecification getBaselineSource() {
+        if (this.metricAggregate == null)
+        {
+            LOGGER.warn("getBaselineSource - returning null");
+        }
 	    return this.baseline;
 	}
-	
-	public AggregationSpecification getAggregationSpecification() {
-	    return this.metricAggregate;
+
+	public AggregationSpecification getAggregationSpecification()
+	{
+	    if (this.metricAggregate == null)
+	    {
+	        LOGGER.warn("getAggregationSpecification - returning null");
+	    }
+        return this.metricAggregate;
 	}
 	
 	public String getMetricType()
