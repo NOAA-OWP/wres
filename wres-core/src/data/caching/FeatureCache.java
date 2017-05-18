@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import data.details.FeatureDetails;
 import util.Database;
@@ -21,6 +22,10 @@ public class FeatureCache extends Cache<FeatureDetails, String> {
      *  Global cache for all Features
      */
 	private static FeatureCache internalCache = new FeatureCache();
+	
+	private FeatureCache() {
+	    this.details = new ConcurrentSkipListMap<>();
+	}
 	
 	/**
 	 * Returns the ID of a Feature from the global cache based on a full Feature specification
@@ -74,7 +79,23 @@ public class FeatureCache extends Cache<FeatureDetails, String> {
 			detail.station_name = stationName;
 			getID(detail);
 		}
-		FeatureDetails detail = details.get(keyIndex.get(lid));
+		FeatureDetails detail = null;
+		try
+		{
+	        detail = details.get(keyIndex.get(lid));
+		}
+		catch (NullPointerException error)
+		{
+		    System.err.println();
+		    System.err.println("A variable position could not be retrieved with the parameters of:");
+		    System.err.println("\tLID: " + lid);
+		    System.err.println("\tStation Name: " + stationName);
+		    System.err.println("\tVariableID: " + variableID);
+            System.err.println();
+		    error.printStackTrace();
+            System.err.println();
+            throw error;
+		}
 		return detail.getVariablePositionID(variableID);
 	}
 	
@@ -98,33 +119,36 @@ public class FeatureCache extends Cache<FeatureDetails, String> {
 	 */
 	@Override
     public synchronized void init() throws SQLException {
-        Connection connection = Database.getConnection();
-        Statement featureQuery = connection.createStatement();
-        featureQuery.setFetchSize(100);
-        
-        String loadScript = "SELECT F.lid, F.feature_id, F.feature_name" + System.lineSeparator();
-        loadScript += "FROM wres.Feature F" + System.lineSeparator();
-        loadScript += "INNER JOIN wres.FeaturePosition FP" + System.lineSeparator();
-        loadScript += " ON F.feature_id = FP.feature_id;";
-        
-        ResultSet features = featureQuery.executeQuery(loadScript);
-        
-        FeatureDetails detail = null;
-        
-        while (features.next()) {
-            detail = new FeatureDetails();
-            detail.setLID(features.getString("lid"));
-            detail.station_name = features.getString("feature_name");
-            detail.setID(features.getInt("feature_id"));
+	    synchronized (keyIndex)
+	    {
+            Connection connection = Database.getConnection();
+            Statement featureQuery = connection.createStatement();
+            featureQuery.setFetchSize(100);
             
-            detail.loadVariablePositionIDs();
+            String loadScript = "SELECT F.lid, F.feature_id, F.feature_name" + System.lineSeparator();
+            loadScript += "FROM wres.Feature F" + System.lineSeparator();
+            loadScript += "INNER JOIN wres.FeaturePosition FP" + System.lineSeparator();
+            loadScript += " ON F.feature_id = FP.feature_id;";
             
-            this.details.put(detail.getId(), detail);
-            this.keyIndex.put(detail.getKey(), detail.getId());
-        }
-        
-        features.close();
-        featureQuery.close();
-        Database.returnConnection(connection);
+            ResultSet features = featureQuery.executeQuery(loadScript);
+            
+            FeatureDetails detail = null;
+            
+            while (features.next()) {
+                detail = new FeatureDetails();
+                detail.setLID(features.getString("lid"));
+                detail.station_name = features.getString("feature_name");
+                detail.setID(features.getInt("feature_id"));
+                
+                detail.loadVariablePositionIDs();
+                
+                this.details.put(detail.getId(), detail);
+                this.keyIndex.put(detail.getKey(), detail.getId());
+            }
+            
+            features.close();
+            featureQuery.close();
+            Database.returnConnection(connection);
+	    }
 	}
 }

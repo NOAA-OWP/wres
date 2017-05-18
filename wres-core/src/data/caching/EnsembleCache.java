@@ -27,6 +27,12 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
      */
 	private static EnsembleCache internalCache = new EnsembleCache();
 	
+	private EnsembleCache()
+	{
+	    super();
+	    this.init();
+	}
+	
 	/**
 	 * Returns the ID of an Ensemble from the global cache
 	 * @param detail Specifications about an ensemble to retrieve
@@ -134,7 +140,7 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 	 * always supply all three values, we have to attempt to find the loaded key that is closest to the one
 	 * requested. If there aren't any values similar enough to match, a new ensemble is added.
 	 */
-	public Integer getID(final Triplet<String, String, String> grouping) throws Exception
+	public synchronized Integer getID(final Triplet<String, String, String> grouping) throws Exception
 	{
 		// Maps keys to the number of similarities between them and the passed in grouping
 		Map<Byte, ArrayList<Triplet<String, String, String>>> possibleKeys = new TreeMap<Byte, ArrayList<Triplet<String, String, String>>>();
@@ -144,48 +150,19 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 
 		// The closest existing key to what we are trying to retrieve
 		Triplet<String, String, String> mostSimilar = null;
-		
-		if (details.size() > 0)
-		{
-			// Attempt to find a key with all matching values from the grouping
-			mostSimilar = Utilities.find(keyIndex.keySet(), grouping, (Triplet<String, String, String> key, Triplet<String, String, String> comparator) -> {
-		        boolean equal = true;
-		        
-		        if (key.getItemOne() == null && comparator.getItemOne() != null || 
-		                key.getItemOne() != null && comparator.getItemOne() == null) {
-		            equal = false;
-		        } else if (key.getItemOne() != null && comparator.getItemOne() != null){
-		            equal = key.getItemOne().equalsIgnoreCase(comparator.getItemOne());
-		        }
-		        
-		        
-		        if (equal) {          
-		            if (key.getItemTwo() == null && comparator.getItemTwo() != null || 
-		                    key.getItemTwo() != null && comparator.getItemTwo() == null) {
-	                    equal = false;
-		            } else if (key.getItemTwo() != null && comparator.getItemTwo() != null){
-	                    equal = key.getItemTwo().equalsIgnoreCase(comparator.getItemTwo());
-		            }
-		        }
-		        
-		        if (equal) {       
-		            if (key.getItemThree() == null && comparator.getItemThree() != null || 
-		                    key.getItemThree() != null && comparator.getItemThree() == null) {
-	                    equal = false;
-		            } else if (key.getItemThree() != null && comparator.getItemThree() != null){
-	                    equal = key.getItemThree().equalsIgnoreCase(comparator.getItemThree());
-		            }
-		        }
-		        
-		        return equal;
-			});
-		}
+        Integer ID = keyIndex.get(grouping);
 		
 		// If no identical groupings are found and the grouping isn't full, attempt to find a similar one
-		if (details.size() > 0 && mostSimilar == null && !grouping.isFull())
+		if (keyIndex.size() > 0)// && mostSimilar == null && !grouping.isFull())
 		{
 			for (Triplet<String, String, String> key : keyIndex.keySet())
 			{
+			    ID = keyIndex.get(grouping);
+	            if (ID != null)
+	            {
+	                break;
+	            }
+	            
 				byte similarity = keySimilarity(grouping, key);
 				if (similarity == 3)
 				{
@@ -249,7 +226,7 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 		}
 		
 		// If a similar key wasn't found, insert a new element based on the grouping
-		if (mostSimilar == null)
+		if (ID == null && mostSimilar == null)
 		{
 			mostSimilar = grouping;
 			EnsembleDetails detail = new EnsembleDetails();
@@ -258,8 +235,13 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 			detail.qualifierID = grouping.getItemThree();
 			addElement(detail);
 		}
+		
+		if (mostSimilar != null)
+		{
+		    ID = keyIndex.get(mostSimilar);
+		}
 
-		return keyIndex.get(mostSimilar);
+		return ID;
 	}
 	
 	/**
@@ -335,34 +317,50 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 	
 	/**
 	 * Loads all pre-existing Ensembles into the instanced cache
-	 * @throws SQLException Thrown if the values could not be loaded from the database or added to the cache
 	 */
 	@Override
-    public synchronized void init() throws SQLException {
-        Connection connection = Database.getConnection();
-        Statement ensembleQuery = connection.createStatement();
+    public synchronized void init()
+	{
+        Connection connection = null;
         
-        String loadScript = "SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id" + newline;
-        loadScript += "FROM wres.ensemble" + newline;
-        loadScript += "LIMIT " + getMaxDetails();
-        
-        ResultSet ensembles = ensembleQuery.executeQuery(loadScript);
-        
-        EnsembleDetails detail = null;
-        
-        while (ensembles.next()) {
-            detail = new EnsembleDetails();
-            detail.setEnsembleName(ensembles.getString("ensemble_name"));
-            detail.setEnsembleMemberID(String.valueOf(ensembles.getInt("ensemblemember_id")));
-            detail.qualifierID = ensembles.getString("qualifier_id");
-            detail.setID(ensembles.getInt("ensemble_id"));
+        try
+        {
+            connection = Database.getConnection();
+            Statement ensembleQuery = connection.createStatement();
             
-            this.details.put(detail.getId(), detail);
-            this.keyIndex.put(detail.getKey(), detail.getId());
+            String loadScript = "SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id" + newline;
+            loadScript += "FROM wres.ensemble" + newline;
+            loadScript += "LIMIT " + getMaxDetails();
+            
+            ResultSet ensembles = ensembleQuery.executeQuery(loadScript);
+            
+            EnsembleDetails detail = null;
+            
+            while (ensembles.next()) {
+                detail = new EnsembleDetails();
+                detail.setEnsembleName(ensembles.getString("ensemble_name"));
+                detail.setEnsembleMemberID(String.valueOf(ensembles.getInt("ensemblemember_id")));
+                detail.qualifierID = ensembles.getString("qualifier_id");
+                detail.setID(ensembles.getInt("ensemble_id"));
+                
+                this.add(detail.getKey(), detail.getId());
+            }
+            
+            ensembles.close();
+            ensembleQuery.close();
         }
-        
-        ensembles.close();
-        ensembleQuery.close();
-        Database.returnConnection(connection);
+        catch (SQLException error)
+        {
+            System.err.println("An error was encountered when trying to populate the Ensemble cache.");
+            error.printStackTrace();
+            System.err.println();
+        }
+        finally
+        {
+            if (connection != null)
+            {
+                Database.returnConnection(connection);
+            }
+        }
 	}
 }

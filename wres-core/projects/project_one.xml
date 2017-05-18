@@ -34,7 +34,7 @@
         </observations>
         <forecasts lazyLoad="true" isForecast="true">
             <directories>
-                <directory load_all="false">
+                <directory load_all="true">
                     <path>testinput/sharedinput/forecasts/</path>
                     <file file_type="PIXML">
                         1985010112_DRRC2_SQIN_case_gefs_climatology_export.xml

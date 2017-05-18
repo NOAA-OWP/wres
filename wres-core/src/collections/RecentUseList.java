@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+@Deprecated
 /**
  * A set of values ordered by their order of addition
  * 
@@ -63,6 +64,7 @@ public class RecentUseList<U extends Comparable<U>>
 			if (head == null)
 			{
 				head = node;
+				tail = node;
 			}
 			else
 			{
@@ -323,6 +325,12 @@ public class RecentUseList<U extends Comparable<U>>
 				this.next.set_previous(next);
 				next.set_next(this.next);
 			}
+			else if (this == tail)
+			{
+			    tail = next;
+			}
+
+            next.previous = this;
 			this.next = next;
 		}
 		

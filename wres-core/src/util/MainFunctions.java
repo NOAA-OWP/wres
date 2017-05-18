@@ -24,9 +24,11 @@ import java.util.function.Function;
 
 import collections.Pair;
 import reading.BasicSource;
+import reading.ConfiguredLoader;
 import reading.SourceReader;
 import config.ProjectConfig;
 import config.specification.MetricSpecification;
+import config.specification.ProjectDataSpecification;
 import config.specification.ProjectSpecification;
 import collections.RealCollection;
 import collections.TwoTuple;
@@ -438,11 +440,7 @@ public final class MainFunctions {
 				{
 					if (connection != null)
 					{
-						try {
-							Database.returnConnection(connection);
-						} catch (SQLException e) {
-							e.printStackTrace();
-						}
+						Database.returnConnection(connection);
 					}
 				}
 			}
@@ -462,66 +460,7 @@ public final class MainFunctions {
 	private static final Consumer<String[]> systemMetrics()
 	{
 		return (String[] args) -> {
-			Runtime runtime = Runtime.getRuntime();
-		
-			// Add white space
-			System.out.println();
-			
-			/* Total number of processors or cores available to the JVM */
-			System.out.println("Available processors (cores):\t" + 
-			runtime.availableProcessors());
-			
-			/**
-			 * Function to whittle down and describe the memory in a human readable format
-			 * (i.e. not represented in raw number of bytes
-			 */
-			Function<Long, String> describeMemory = (Long memory) -> {
-				String memoryUnit = " bytes";
-				Double floatingMemory = memory.doubleValue();
-				
-				// Convert to KB if necessary
-				if (floatingMemory > 1000)
-				{
-					floatingMemory = floatingMemory / 1000.0;
-					memoryUnit = " KB";
-				}
-				
-				// Convert to MB if Necessary
-				if (floatingMemory > 1000)
-				{
-					floatingMemory = floatingMemory / 1000.0;
-					memoryUnit = " MB";
-				}
-				
-				// Convert to GB if necessary
-				if (floatingMemory > 1000)
-				{
-					floatingMemory = floatingMemory / 1000.0;
-					memoryUnit = " GB";
-				}
-				
-				// Convert to TB if necessary
-				if (floatingMemory > 1000)
-				{
-					floatingMemory = floatingMemory / 1000.0;
-					memoryUnit = " TB";
-				}
-				
-				return floatingMemory + memoryUnit;
-			};
-			
-			// Theoretical amount of free memory
-			System.out.println("Free memory:\t\t\t" + describeMemory.apply(runtime.freeMemory()));
-			
-			/* This will return Long.MAX_VALUE if there is no preset limit */
-			long maxMemory = runtime.maxMemory();
-			
-			/* Maximum amount of memory the JVM will attempt to use */
-			System.out.println("Maximum available memory:\t" + 
-							   (maxMemory == Long.MAX_VALUE ? "no limit" : describeMemory.apply(maxMemory)));
-			
-			/* Total memory currently in use by the JVM */
-			System.out.println("Total memory in use:\t\t" + describeMemory.apply(runtime.totalMemory()));
+		    System.out.println(Utilities.getSystemStats());
 
 			// Add white space
 			System.out.println();
@@ -608,14 +547,12 @@ public final class MainFunctions {
 	{
 		return (String[] args) -> {
 			String script = "";
-			script += "DELETE FROM wres.ForecastValue;" + newline;
-			script += "DELETE FROM wres.ForecastEnsemble;" + newline;
-			script += "DELETE FROM wres.Ensemble;" + newline;
-			script += "DELETE FROM wres.Forecast;" + newline;
-			script += "DELETE FROM wres.Observation;" + newline;
-			script += "DELETE FROM wres.FeaturePosition;" + newline;
-			script += "DELETE FROM wres.VariablePosition;" + newline;
-			script += "DELETE FROM wres.Variable;" + newline;
+			script += "TRUNCATE wres.Observation;" + newline;
+			script += "TRUNCATE wres.ForecastValue;" + newline;
+			script += "TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;" + newline;
+			script += "TRUNCATE wres.ForecastSource;" + newline;
+			script += "TRUNCATE wres.Source RESTART IDENTITY CASCADE;" + newline;
+			script += "TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;" + newline;
 			
 			try {
 				Database.execute(script);
@@ -637,7 +574,14 @@ public final class MainFunctions {
 	{
 		return (String[] args) -> {
 			String script = "";
-			script += "TRUNCATE wres.ForecastValue RESTART IDENTITY CASCADE;" + newline;
+            script += "TRUNCATE wres.ForecastSource;" + newline;
+			script += "DELETE FROM wres.Source S" + newline;
+			script += "WHERE NOT EXISTS (" + newline;
+			script += "      SELECT 1" + newline;
+			script += "      FROM wres.Observation O" + newline;
+			script += "      WHERE O.source_id = S.source_id" + newline;
+			script += ");" + newline;
+			script += "TRUNCATE wres.ForecastValue;" + newline;
 			script += "TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;" + newline;
 			script += "TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;" + newline;
 			
@@ -660,7 +604,14 @@ public final class MainFunctions {
 	private static final Consumer<String[]> flushObservations()
 	{
 		return (String[] args) -> {
-			String script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + newline;
+		    String script = "";
+			script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + newline;
+            script += "DELETE FROM wres.Source S" + newline;
+            script += "WHERE NOT EXISTS (" + newline;
+            script += "      SELECT 1" + newline;
+            script += "      FROM wres.ForecastSource FS" + newline;
+            script += "      WHERE FS.source_id = S.source_id" + newline;
+            script += ");" + newline;
 			
 			try {
 				Database.execute(script);
@@ -765,14 +716,7 @@ public final class MainFunctions {
             finally 
             {
                 if (connection != null) {
-                    try
-                    {
-                        Database.returnConnection(connection);
-                    }
-                    catch(SQLException e)
-                    {
-                        e.printStackTrace();
-                    }
+                    Database.returnConnection(connection);
                 }
             }
 	    };
@@ -866,6 +810,18 @@ public final class MainFunctions {
 	            
 	            ProjectSpecification project = ProjectConfig.getProject(projectName);
 	            
+	            for (ProjectDataSpecification datasource : project.getDatasources())
+	            {
+	                System.err.println("Loading datasource information if it doesn't already exist...");
+	                ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
+	                dataLoader.load();
+	                System.err.println("The data from this dataset has been loaded to the database");
+	                Utilities.MONITOR.reset();
+	                System.err.println();
+	            }
+	            
+	            System.err.println("All data specified for this project should now be loaded.");
+	            
 	            Map<String, List<TwoTuple<Integer, Double>>> results = new TreeMap();
 	            Map<String, Future<List<TwoTuple<Integer, Double>>>> futureResults = new TreeMap();
 	            
@@ -877,6 +833,7 @@ public final class MainFunctions {
     	                MetricExecutor metric = new MetricExecutor(specification);
     	                metric.setOnRun(Utilities.defaultOnThreadStartHandler());
     	                metric.setOnComplete(Utilities.defaultOnThreadCompleteHandler());
+    	                System.err.println("Now executing the metric named: " + specification.getName());
     	                futureResults.put(specification.getName(), Executor.submit(metric));
     	            }
 	            }
@@ -889,6 +846,7 @@ public final class MainFunctions {
 	                    MetricExecutor metric = new MetricExecutor(specification);
                         metric.setOnRun(Utilities.defaultOnThreadStartHandler());
                         metric.setOnComplete(Utilities.defaultOnThreadCompleteHandler());
+                        System.err.println("Now executing the metric named: " + specification.getName());
                         futureResults.put(specification.getName(), Executor.submit(metric));
 	                }
 	            }

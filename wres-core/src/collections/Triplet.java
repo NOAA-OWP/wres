@@ -3,6 +3,8 @@
  */
 package collections;
 
+import java.util.Objects;
+
 /**
  * A mutable grouping of three values
  * 
@@ -166,5 +168,32 @@ public class Triplet<T extends Comparable<T>, U extends Comparable<U>, V extends
         return "(" + String.valueOf(this.getItemOne()) + ", " + 
             String.valueOf(this.getItemTwo()) + ", " + 
             String.valueOf(this.getItemThree()) + ")"; 
+    }
+    
+    @Override
+    public boolean equals(Object obj)
+    {
+        boolean equivalent = false;
+        
+        if (obj.getClass() == ThreeTuple.class)
+        {
+            ThreeTuple other = (ThreeTuple)obj;
+            equivalent = this.getItemOne().equals(other.getItemOne()) && 
+                         this.getItemTwo().equals(other.getItemTwo()) && 
+                         this.getItemThree().equals(other.getItemThree());
+            
+        }
+        else if (obj.getClass() == this.getClass())
+        {
+            equivalent = this.compareTo((Triplet)obj) == 0;
+        }
+        
+        return equivalent;
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(this.getItemOne(), this.getItemTwo(), this.getItemThree());
     }
 }

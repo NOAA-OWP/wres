@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -461,6 +462,20 @@ public final class Utilities {
 		}
 		
 		return has_object;
+	}
+	
+	public static <U, V> U getKeyByValue(Map<U, V> mapping, V value)
+	{
+	    U key = null;
+	    for (Entry<U, V> entry : mapping.entrySet())
+	    {
+	        if (entry.getValue().equals(value)) {
+	            key = entry.getKey();
+	            break;
+	        }
+	    }
+	    
+	    return key;
 	}
 	
 	/**

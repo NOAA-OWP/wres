@@ -58,15 +58,6 @@ public class MetricExecutor extends WRESThread implements Callable<List<TwoTuple
                 stepExecutor.setOnRun(Utilities.defaultOnThreadStartHandler());
                 stepExecutor.setOnComplete(Utilities.defaultOnThreadCompleteHandler());
                 mappedPairs.put(step, Executor.submit(stepExecutor));
-                /*if (Metrics.hasFunction(specification.getMetricType()))
-                {
-                    List<PairOfDoubleAndVectorOfDoubles> pairs = Metrics.getPairs(specification, step);
-                    results.add(new TwoTuple(step,Metrics.call(specification.getMetricType(), pairs)));
-                }
-                else
-                {
-                    LOGGER.debug("The function: '" + specification + "' is not a valid function. Returning null...");
-                }*/
                 step++;
             }
             
