@@ -146,7 +146,8 @@ public class MetricSpecification extends SpecificationElement {
 	    }
 	    else
 	    {
-	        return Integer.MIN_VALUE;
+	        LOGGER.warn("One of these was null: sourceOne.getVariable().getVariableID()");
+	        return null;
 	    }
 	}
 	
@@ -158,7 +159,8 @@ public class MetricSpecification extends SpecificationElement {
 	    }
 	    else
 	    {
-	        return Integer.MIN_VALUE;
+            LOGGER.warn("One of these was null: sourceTwo.getVariable().getVariableID()");
+            return null;
 	    }
 	}
 
