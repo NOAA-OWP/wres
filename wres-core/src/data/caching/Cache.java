@@ -105,6 +105,10 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	{
 		element.save();
 		add(element.getKey(), element.getId());
+		if (this.details != null && !this.details.containsKey(element.getId()))
+		{
+		    this.details.put(element.getId(), element);
+		}
 	}
 	
 	/**

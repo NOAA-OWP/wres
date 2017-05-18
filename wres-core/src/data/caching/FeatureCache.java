@@ -130,36 +130,33 @@ public class FeatureCache extends Cache<FeatureDetails, String>
 	 */
 	@Override
     public synchronized void init() throws SQLException {
-	    synchronized (keyIndex)
-	    {
-            Connection connection = Database.getConnection();
-            Statement featureQuery = connection.createStatement();
-            featureQuery.setFetchSize(100);
+        Connection connection = Database.getConnection();
+        Statement featureQuery = connection.createStatement();
+        featureQuery.setFetchSize(100);
+        
+        String loadScript = "SELECT F.lid, F.feature_id, F.feature_name" + System.lineSeparator();
+        loadScript += "FROM wres.Feature F" + System.lineSeparator();
+        loadScript += "INNER JOIN wres.FeaturePosition FP" + System.lineSeparator();
+        loadScript += " ON F.feature_id = FP.feature_id;";
+        
+        ResultSet features = featureQuery.executeQuery(loadScript);
+        
+        FeatureDetails detail = null;
+        
+        while (features.next()) {
+            detail = new FeatureDetails();
+            detail.setLID(features.getString("lid"));
+            detail.station_name = features.getString("feature_name");
+            detail.setID(features.getInt("feature_id"));
             
-            String loadScript = "SELECT F.lid, F.feature_id, F.feature_name" + System.lineSeparator();
-            loadScript += "FROM wres.Feature F" + System.lineSeparator();
-            loadScript += "INNER JOIN wres.FeaturePosition FP" + System.lineSeparator();
-            loadScript += " ON F.feature_id = FP.feature_id;";
+            detail.loadVariablePositionIDs();
             
-            ResultSet features = featureQuery.executeQuery(loadScript);
-            
-            FeatureDetails detail = null;
-            
-            while (features.next()) {
-                detail = new FeatureDetails();
-                detail.setLID(features.getString("lid"));
-                detail.station_name = features.getString("feature_name");
-                detail.setID(features.getInt("feature_id"));
-                
-                detail.loadVariablePositionIDs();
-                
-                this.details.put(detail.getId(), detail);
-                this.keyIndex.put(detail.getKey(), detail.getId());
-            }
-            
-            features.close();
-            featureQuery.close();
-            Database.returnConnection(connection);
-	    }
+            this.details.put(detail.getId(), detail);
+            this.keyIndex.put(detail.getKey(), detail.getId());
+        }
+        
+        features.close();
+        featureQuery.close();
+        Database.returnConnection(connection);
 	}
 }
