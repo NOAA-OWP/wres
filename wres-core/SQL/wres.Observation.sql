@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS wres.Observation
   observation_time timestamp,
   observed_value FLOAT,
   measurementunit_id INT,
+  source_id INT,
   CONSTRAINT observation_featurevariable_fk FOREIGN KEY (variableposition_id)
 	REFERENCES wres.variableposition (variableposition_id) MATCH SIMPLE
 	ON DELETE CASCADE

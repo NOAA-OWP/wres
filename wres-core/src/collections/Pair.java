@@ -3,6 +3,8 @@
  */
 package collections;
 
+import java.util.Objects;
+
 /**
  * A mutable grouping of two values
  * 
@@ -136,5 +138,29 @@ public class Pair<T extends Comparable<T>, U extends Comparable<U>> implements G
     public String toString()
     {
         return "(" + String.valueOf(this.getItemOne()) + ", " + String.valueOf(this.getItemTwo()) + ")";
+    }
+    
+    @Override
+    public boolean equals(Object obj)
+    {
+        boolean equivalent = false;
+        
+        if (obj.getClass() == TwoTuple.class)
+        {
+            TwoTuple other = (TwoTuple)obj;
+            equivalent = this.getItemOne().equals(other.getItemOne()) && this.getItemTwo().equals(other.getItemTwo());
+        }
+        else if (obj.getClass() == this.getClass())
+        {
+            equivalent = this.compareTo((Pair)obj) == 0;
+        }        
+        
+        return equivalent;
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(this.getItemOne(), this.getItemTwo());
     }
 }

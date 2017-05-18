@@ -100,7 +100,7 @@ public class MetricSpecification extends SpecificationElement {
 		}
 	}
 	
-	public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> getPairs() throws IOException, XMLStreamException, SQLException, InterruptedException, ExecutionException
+	public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> getPairs() throws Exception
 	{
 	    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> results = new TreeMap<Integer, List<PairOfDoubleAndVectorOfDoubles>>();
 	    Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>>();
@@ -134,12 +134,12 @@ public class MetricSpecification extends SpecificationElement {
 	    return results;
 	}
 	
-	public Integer getFirstVariableID() throws SQLException
+	public Integer getFirstVariableID() throws Exception
 	{
 	    return sourceOne.getVariable().getVariableID();
 	}
 	
-	public Integer getSecondVariableID() throws SQLException
+	public Integer getSecondVariableID() throws Exception
 	{
 	    return sourceTwo.getVariable().getVariableID();
 	}
