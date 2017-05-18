@@ -12,7 +12,7 @@ BEGIN
 		FROM wres.featureposition FP
 		INNER JOIN wres.variableposition VP
 			ON FP.variableposition_id = VP.variableposition_id
-		WHERE F.feature_id = f_id
+		WHERE FP.feature_id = f_id
 			AND VP.variable_id = v_id
 	) THEN
 		WITH vp_insert AS
@@ -27,7 +27,7 @@ BEGIN
 			RETURNING variableposition_id
 		)
 		INSERT INTO wres.featureposition (variableposition_id, feature_id)
-		SELECT VI.variableposition_id, F.feature_id
+		SELECT VI.variableposition_id, f_id
 		FROM vp_insert VI;
 	END IF;
 

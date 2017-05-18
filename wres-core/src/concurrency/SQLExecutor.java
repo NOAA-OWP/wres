@@ -5,6 +5,9 @@ package concurrency;
 
 import java.sql.SQLException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import util.Database;
 
 /**
@@ -13,6 +16,7 @@ import util.Database;
  * @author Christopher Tubbs
  */
 public class SQLExecutor extends WRESThread implements Runnable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SQLExecutor.class);
 
 	/**
 	 * Creates the thread with the passed in SQL script
@@ -31,6 +35,7 @@ public class SQLExecutor extends WRESThread implements Runnable {
 		try {
 			Database.execute(this.script);
 		} catch (SQLException e) {
+		    LOGGER.debug("Script: {}", script);
 			e.printStackTrace();
 		}		
 		this.exectureOnComplete();
