@@ -120,11 +120,6 @@ public class Database {
 		}
 		catch (SQLException error)
 		{
-			if (connection != null)
-			{
-				connection.rollback();
-			}
-			
 			System.err.println("The following SQL call failed:");
 			if (query.length() > 1000)
 			{
