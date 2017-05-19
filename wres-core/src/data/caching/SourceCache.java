@@ -57,15 +57,22 @@ public class SourceCache extends Cache<SourceDetails, TwoTuple<String, String>> 
 	
 	@Override
     public Integer getID(TwoTuple<String, String> key) throws Exception {
-		if (!keyIndex.containsKey(key)) {
-			addElement(new SourceDetails(key));
-		}
-		return this.keyIndex.get(key);
+	    if (!this.hasID(key))
+	    {
+	        addElement(new SourceDetails(key));
+	    }
+
+	    Integer ID = null;
+	    synchronized(keyIndex)
+	    {
+	        ID = keyIndex.get(key);
+	    }
+		return ID;
 	}
 	
 	@Override
 	protected int getMaxDetails() {
-		return 100;
+		return 400;
 	}
 
 	/**
@@ -79,37 +86,34 @@ public class SourceCache extends Cache<SourceDetails, TwoTuple<String, String>> 
     @Override
     protected synchronized void init() throws SQLException
     {
-        // Exit if there are details populated and the keys and details are synced
-        if (details.size() > 0 && keyIndex.size() == details.size()) {
-            return;
-        }
-        
-        // Ensure that the cache is clear
-        clearCache();
-        
-        Connection connection = Database.getConnection();
-        Statement sourceQuery = connection.createStatement();
-        String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time" + System.lineSeparator();
-        loadScript += "FROM wres.Source" + System.lineSeparator();
-        loadScript += "LIMIT " + getMaxDetails();
-        
-        ResultSet sources = sourceQuery.executeQuery(loadScript);
-        SourceDetails detail = null;
-        
-        while (sources.next()) {
-            detail = new SourceDetails();
-            detail.setOutputTime(sources.getString("output_time"));
-            detail.setSourcePath(sources.getString("path"));
-            detail.setID(sources.getInt("source_id"));
+        synchronized (keyIndex)
+        {
+            // Exit if there are details populated and the keys and details are synced
+            if (keyIndex.size() > 0) {
+                this.clearCache();
+            }
             
-            this.details.put(detail.getId(), detail);
-            this.keyIndex.put(detail.getKey(), detail.getId());
+            Connection connection = Database.getConnection();
+            Statement sourceQuery = connection.createStatement();
+            String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time" + System.lineSeparator();
+            loadScript += "FROM wres.Source" + System.lineSeparator();
+            loadScript += "LIMIT " + getMaxDetails();
+            
+            ResultSet sources = sourceQuery.executeQuery(loadScript);
+            SourceDetails detail = null;
+            
+            while (sources.next()) {
+                detail = new SourceDetails();
+                detail.setOutputTime(sources.getString("output_time"));
+                detail.setSourcePath(sources.getString("path"));
+                
+                this.keyIndex.put(detail.getKey(), sources.getInt("source_id"));
+            }
+            
+            sources.close();
+            sourceQuery.close();
+            Database.returnConnection(connection);
         }
-        
-        sources.close();
-        sourceQuery.close();
-        Database.returnConnection(connection);
-        
     }
 	
 }

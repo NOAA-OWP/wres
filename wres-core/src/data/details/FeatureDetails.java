@@ -7,7 +7,11 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import util.Database;
 
@@ -17,13 +21,14 @@ import util.Database;
  */
 public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDetails.class);
 
 	private String lid = null;
 	public String station_name = null;
 	private Integer feature_id = null;
 	
 	// A concurrent mapping of the feature to its index for a variable
-	private ConcurrentSkipListMap<Integer, Integer> variablePositions = new ConcurrentSkipListMap<Integer, Integer>();
+	private ConcurrentMap<Integer, Integer> variablePositions = new ConcurrentSkipListMap<Integer, Integer>();
 	
 	/**
 	 * Finds the variable position id of the feature for a given variable. A position is
@@ -38,42 +43,21 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		{			
 			String script = "SELECT wres.get_variableposition_id(" + getId() + ", " + variableID + ") AS variableposition_id;";
 
-			variablePositions.put(variableID, Database.getResult(script, "variableposition_id"));
+			LOGGER.trace("getVariablePositionID - script: {}", script);
+
+			Integer dbResult = Database.getResult(script, "variableposition_id");
+
+            LOGGER.trace("getVariablePositionID - dbResult: {}", dbResult);
+
+            if (dbResult == null)
+            {
+                // TODO: throw an appropriate checked exception instead of RuntimeException
+                throw new RuntimeException("Possibly missing data in the wres.variableposition table?");
+            }
+			variablePositions.put(variableID, dbResult);
 		}
 		
 		return variablePositions.get(variableID);
-	}
-	
-	@Deprecated
-	/**
-	 * Finds the variable position id of the feature for a given variable. A position is
-	 * added if there is not one for this pair of variable and feature
-	 * 
-	 *  DEPRECATED: Replace with getVariablePositionID(variableID) once caching is fully implemented
-	 * @param lid
-	 * @param stationName
-	 * @param variableID
-	 * @return
-	 * @throws SQLException
-	 */
-	public Integer getVariablePositionID(String lid, String stationName, Integer variableID) throws SQLException
-	{
-		if (this.lid == null)
-		{
-			this.lid = lid;
-		}
-		
-		if (this.station_name == null)
-		{
-			this.station_name = stationName;
-		}
-		
-		if (this.feature_id == null)
-		{
-			this.save();
-		}
-		
-		return getVariablePositionID(variableID);
 	}
 	
 	/**
@@ -133,7 +117,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 
 	@Override
 	protected String getIDName() {
-		return "comid";
+		return "feature_id";
 	}
 
 	@Override
@@ -147,26 +131,22 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		
 		script += "WITH new_feature AS" + newline;
 		script += "(" + newline;
-		script += "		INSERT INTO wres.Feature (comid, lid, feature_name)" + newline;
-		script += "		SELECT COALESCE((" + newline;
-		script += "				SELECT MAX(feature_id) + 1" + newline;
-		script += "				FROM wres.Feature" + newline;
-		script += "			), 0)," + newline;
-		script += "			'" + lid + "'," + newline;
+		script += "		INSERT INTO wres.Feature (lid, feature_name)" + newline;
+		script += "		SELECT '" + lid + "'," + newline;
 		script += "			" + stationName() + newline;
 		script += "		WHERE NOT EXISTS (" + newline;
 		script += "			SELECT 1" + newline;
 		script += "			FROM wres.Feature" + newline;
 		script += "			WHERE lid = '" + lid + "'" + newline;
 		script += "		)" + newline;
-		script += "		RETURNING comid" + newline;
+		script += "		RETURNING feature_id" + newline;
 		script += ")" + newline;
-		script += "SELECT comid" + newline;
+		script += "SELECT feature_id" + newline;
 		script += "FROM new_feature" + newline + newline;
 		script += "";
 		script += "UNION" + newline + newline;
 		script += "";
-		script += "SELECT comid" + newline;
+		script += "SELECT feature_id" + newline;
 		script += "FROM wres.feature" + newline;
 		script += "WHERE lid = '" + lid + "'" + newline;
 		script += "LIMIT 1;";

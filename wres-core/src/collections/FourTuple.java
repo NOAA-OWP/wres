@@ -3,6 +3,8 @@
  */
 package collections;
 
+import java.util.Objects;
+
 /**
  * @author Christopher Tubbs
  * Immutable grouping of 4 comparable objects
@@ -149,5 +151,17 @@ public class FourTuple<T extends Comparable<T>, U extends Comparable<U>, V exten
                      String.valueOf(this.getItemTwo()) + ", " + 
                      String.valueOf(this.getItemThree()) + ", " + 
                      String.valueOf(this.getItemFour()) + ")";
+    }
+    
+    @Override
+    public boolean equals(Object obj)
+    {
+        return this.getClass() == obj.getClass() && this.compareTo((FourTuple)obj) == 0;
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(this.getItemOne(), this.getItemTwo(), this.getItemThree(), this.getItemFour());
     }
 }

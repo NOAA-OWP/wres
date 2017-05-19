@@ -50,6 +50,7 @@ public class ProjectSpecification extends SpecificationElement
         {
             LOGGER.trace("interpret - reader passed: {}", reader);
         }
+        
 		if (Utilities.tagIs(reader, "name"))
 		{
 			this.name = Utilities.getXMLText(reader);
@@ -177,23 +178,9 @@ public class ProjectSpecification extends SpecificationElement
 
         return metrics.size();
     }
-
-    /**
-     * Details about the observation data that needs to be present to execute a project
-     * @return Information about the data required for the project's observations
-     */
-    public ProjectDataSpecification getObservations()
-    {
-        return observations;
-    }
-
-    /**
-     * Details about the forecast data that needs to be present to execute a project
-     * @return Information about the data required for the project's forecasts
-     */
-    public ProjectDataSpecification getForecasts()
-    {
-        return forecasts;
+    
+    public List<ProjectDataSpecification> getDatasources() {
+        return this.dataSources;
     }
 
     public String getName()
@@ -224,21 +211,17 @@ public class ProjectSpecification extends SpecificationElement
         description += System.lineSeparator();
         description += System.lineSeparator();
 
-        description += "Observations:";
+        description += "Datasources:";
         description += System.lineSeparator();
+        description += " +   +   +   +   +   +   +   +   +";
         description += System.lineSeparator();
-        description += observations.toString();
-        description += System.lineSeparator();
-
-        description += "-----------------------------------";
-        description += System.lineSeparator();
-        description += System.lineSeparator();
-
-        description += "Forecasts:";
-        description += System.lineSeparator();
-        description += System.lineSeparator();
-        description += forecasts.toString();
-        description += System.lineSeparator();
+        
+        for (ProjectDataSpecification datasource : this.dataSources)
+        {
+            description += System.lineSeparator();
+            description += datasource.toString();
+            description += System.lineSeparator();
+        }
 
         description += "-----------------------------------";
         description += System.lineSeparator();
@@ -270,9 +253,8 @@ public class ProjectSpecification extends SpecificationElement
     }
 
     private ArrayList<MetricSpecification> metrics;
-    private ProjectDataSpecification observations;
-    private ProjectDataSpecification forecasts;
-    private List<ProjectDataSpecification> dataSources = new ArrayList<>();
+    private List<ProjectDataSpecification> dataSources;
+    
     private String name;
     @Override
     public String toXML()

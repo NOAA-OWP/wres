@@ -3,6 +3,8 @@
  */
 package collections;
 
+import java.util.Objects;
+
 /**
  * An immutable pairing of three values
  * 
@@ -127,5 +129,32 @@ public class ThreeTuple<T extends Comparable<T>, U extends Comparable<U>, V exte
         return "(" + String.valueOf(this.getItemOne()) + ", " + 
             String.valueOf(this.getItemTwo()) + ", " + 
             String.valueOf(this.getItemThree()) + ")"; 
+    }
+    
+    @Override
+    public boolean equals(Object obj)
+    {
+        boolean equivalent = false;
+        
+        if (obj.getClass() == Triplet.class)
+        {
+            Triplet other = (Triplet)obj;
+            equivalent = this.getItemOne().equals(other.getItemOne()) && 
+                         this.getItemTwo().equals(other.getItemTwo()) && 
+                         this.getItemThree().equals(other.getItemThree());
+            
+        }
+        else if (obj.getClass() == this.getClass())
+        {
+            equivalent = this.compareTo((ThreeTuple)obj) == 0;
+        }
+        
+        return equivalent;
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(this.getItemOne(), this.getItemTwo(), this.getItemThree());
     }
 }

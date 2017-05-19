@@ -37,11 +37,11 @@ public class MeasurementCache extends Cache<MeasurementDetails, String> {
 	 * Returns the ID of a unit of measurement from the global cache based on the name of the measurement
 	 * @param unit The name of the unit of measurement
 	 * @return The ID of the unit of measurement
-	 * @throws SQLException Thrown if the ID could not be retrieved from the database
+	 * @throws Exception 
 	 */
-	public static Integer getMeasurementUnitID(String unit) throws SQLException
+	public static Integer getMeasurementUnitID(String unit) throws Exception
 	{
-		return internalCache.getUnitID(unit);
+		return internalCache.getID(unit);
 	}
 	
 	/**
@@ -52,25 +52,6 @@ public class MeasurementCache extends Cache<MeasurementDetails, String> {
 	public static String getUnit(Integer measurementunitID)
 	{
 		return internalCache.getKey(measurementunitID);
-	}
-	
-	/**
-	 * Returns the ID of the unit of measurement from the instance cache based on its name
-	 * @param unit The name of the unit of measurement
-	 * @return The ID of the unit of measurement
-	 * @throws SQLException Thrown if the ID of the unit of measurement couldn't be loaded from the
-	 * database or stored in the cache
-	 */
-	public Integer getUnitID(String unit) throws SQLException
-	{
-		if (!keyIndex.containsKey(unit))
-		{
-			MeasurementDetails details = new MeasurementDetails();
-			details.setUnit(unit);
-			addElement(details);
-		}
-		
-		return keyIndex.get(unit);
 	}
 
 	@Override
@@ -92,28 +73,25 @@ public class MeasurementCache extends Cache<MeasurementDetails, String> {
 	 */
 	@Override
     public synchronized void init() throws SQLException {
-        Connection connection = Database.getConnection();
-        Statement measurementQuery = connection.createStatement();
-        measurementQuery.setFetchSize(100);
-        
-        String loadScript = "SELECT measurementunit_id, unit_name" + System.lineSeparator();
-        loadScript += "FROM wres.measurementunit";
-        
-        ResultSet measurements = measurementQuery.executeQuery(loadScript);
-        
-        MeasurementDetails detail = null;
-        
-        while (measurements.next()) {
-            detail = new MeasurementDetails();
-            detail.setUnit(measurements.getString("unit_name"));
-            detail.setID(measurements.getInt("measurementunit_id"));
+	    synchronized(keyIndex)
+	    {
+            Connection connection = Database.getConnection();
+            Statement measurementQuery = connection.createStatement();
+            measurementQuery.setFetchSize(100);
             
-            this.details.put(detail.getId(), detail);
-            this.keyIndex.put(detail.getKey(), detail.getId());
-        }
-        
-        measurements.close();
-        measurementQuery.close();
-        Database.returnConnection(connection);
+            String loadScript = "SELECT measurementunit_id, unit_name" + System.lineSeparator();
+            loadScript += "FROM wres.measurementunit" + newline;
+            loadScript += "LIMIT " + getMaxDetails() + ";";
+            
+            ResultSet measurements = measurementQuery.executeQuery(loadScript);
+            
+            while (measurements.next()) {                
+                this.keyIndex.put(measurements.getString("unit_name"), measurements.getInt("measurementunit_id"));
+            }
+            
+            measurements.close();
+            measurementQuery.close();
+            Database.returnConnection(connection);
+	    }
 	}
 }

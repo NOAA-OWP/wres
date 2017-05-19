@@ -63,11 +63,8 @@ public class ProjectDataSpecification extends SpecificationElement
 	{
 	    if (reader == null)
 	    {
-	        LOGGER.trace("interpret - reader was null");
-	    }
-	    else
-	    {
-	        LOGGER.trace("interpret - reader passed: {}", reader);
+            LOGGER.trace("interpret - reader was null");
+            throw new XMLStreamException("The XMLStreamReader was null and could not be used to process the project data source specification.");
 	    }
 
 		if (Utilities.tagIs(reader, "directories"))

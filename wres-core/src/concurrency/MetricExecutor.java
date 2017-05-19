@@ -3,12 +3,14 @@
  */
 package concurrency;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -46,10 +48,16 @@ public class MetricExecutor extends WRESThread implements Callable<List<TwoTuple
         if (Metrics.hasFunction(this.specification.getMetricType()))
         {
             Map<Integer, Future<Double>> mappedPairs = new TreeMap<>();
-            
+
             TwoTuple<String, String> lastLeadScript = ScriptBuilder.generateFindLastLead(specification.getSecondVariableID());
+
+            LOGGER.trace("call - about to call Database.getResult() with {} and {}",
+                         lastLeadScript.getItemOne(), lastLeadScript.getItemTwo());
+
             Integer finalLead = Database.getResult(lastLeadScript.getItemOne(), lastLeadScript.getItemTwo());
-            
+
+            LOGGER.trace("call - finished Database.getResult");
+
             int step = 1;
             
             while (specification.getAggregationSpecification().leadIsValid(step, finalLead))
@@ -58,15 +66,6 @@ public class MetricExecutor extends WRESThread implements Callable<List<TwoTuple
                 stepExecutor.setOnRun(Utilities.defaultOnThreadStartHandler());
                 stepExecutor.setOnComplete(Utilities.defaultOnThreadCompleteHandler());
                 mappedPairs.put(step, Executor.submit(stepExecutor));
-                /*if (Metrics.hasFunction(specification.getMetricType()))
-                {
-                    List<PairOfDoubleAndVectorOfDoubles> pairs = Metrics.getPairs(specification, step);
-                    results.add(new TwoTuple(step,Metrics.call(specification.getMetricType(), pairs)));
-                }
-                else
-                {
-                    LOGGER.debug("The function: '" + specification + "' is not a valid function. Returning null...");
-                }*/
                 step++;
             }
             
@@ -75,7 +74,8 @@ public class MetricExecutor extends WRESThread implements Callable<List<TwoTuple
                 results.add(new TwoTuple(entry.getKey(), entry.getValue().get()));
             }
         }
-        
+
+        LOGGER.debug("Results count: {}", results.size());
         this.exectureOnComplete();
         return results;
     }

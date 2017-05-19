@@ -3,6 +3,7 @@
  */
 package data.details;
 
+import data.caching.SourceCache;
 // TODO: Uncomment once development on source saving/caching resumes
 //import data.SourceCache;
 import util.Database;
@@ -17,6 +18,8 @@ public final class ForecastDetails {
 	private String sourcePath = null;
 	private String forecastDate = null;
 	private Integer forecast_id = null;
+	private String creationDate = null;
+	private String range = null;
 	
 	/**
 	 * The path to the file that contains data for the forecast
@@ -45,6 +48,23 @@ public final class ForecastDetails {
 			this.forecastDate = forecastDate;
 			forecast_id = null;
 		}
+	}
+	
+	public void setCreationDate(String creationDate)
+	{
+	    if (this.creationDate == null || !this.creationDate.equalsIgnoreCase(creationDate)) {
+	        this.creationDate = creationDate;
+	        this.forecast_id = null;
+	    }
+	}
+	
+	public void setRange(String range)
+	{
+	    if (this.range == null || !this.range.equalsIgnoreCase(range))
+	    {
+	        this.range = range;
+	        this.range = null;
+	    }
 	}
 	
 	/**
@@ -106,6 +126,21 @@ public final class ForecastDetails {
 		saveForecastSource();
 	}
 	
+	private String getSourceDate() {
+	    String date = null;
+	    
+	    if (this.creationDate == null)
+	    {
+	        date = this.creationDate;
+	    }
+	    else
+	    {
+	        date = this.forecastDate;
+	    }
+	    
+	    return date;
+	}
+	
 	/**
 	 * Links the forecast the information about the source of its data in the database
 	 * @throws Exception Thrown if the Forecast and its source could not be properly linked
@@ -113,8 +148,8 @@ public final class ForecastDetails {
 	private void saveForecastSource() throws Exception {
         
         // Uncomment when it is time to resume testing on ingest + source linking
-        /*
-        int sourceID = SourceCache.getSourceID(sourcePath, forecast_date);
+        
+        int sourceID = SourceCache.getSourceID(sourcePath, getSourceDate());
                 
         // Link the source to the forecast if there isn't one already
         String script = "";
@@ -127,6 +162,6 @@ public final class ForecastDetails {
         script += "         AND source_id = " + sourceID + newline;
         script += ");";
         
-        Database.execute(script);*/
+        Database.execute(script);
 	}
 }

@@ -37,7 +37,7 @@ public class VariableSpecification {
 		return this.unitOfMeasurement;
 	}
 	
-	public Integer getVariableID() throws SQLException {
+	public Integer getVariableID() throws Exception {
 	    return VariableCache.getVariableID(variableName, unitOfMeasurement);
 	}
 	

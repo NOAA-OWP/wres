@@ -31,10 +31,9 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 	 * @param variableName The short name of the variable
 	 * @param measurementUnit The name of the unit of measurement for the variable
 	 * @return The ID of the variable
-	 * @throws SQLException Thrown if an error was encountered while interacting with the database or storing
-	 * the result in the cache
+	 * @throws Exception 
 	 */
-	public static Integer getVariableID(String variableName, String measurementUnit) throws SQLException {
+	public static Integer getVariableID(String variableName, String measurementUnit) throws Exception {
 		return internalCache.getID(variableName, measurementUnit);
 	}
 	
@@ -146,10 +145,9 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 	 * @param variableName The short name of the variable
 	 * @param measurementUnit The name of the unit of measurement for the variable
 	 * @return The ID of the variable
-	 * @throws SQLException Thrown if an error was encountered while interacting with the database or storing
-	 * the result in the cache
+	 * @throws Exception 
 	 */
-	public Integer getID(String variableName, String measurementUnit) throws SQLException {
+	public Integer getID(String variableName, String measurementUnit) throws Exception {
 		if (!keyIndex.containsKey(variableName)) {
 			VariableDetails detail = new VariableDetails();
 			detail.setVariableName(variableName);
@@ -194,26 +192,27 @@ public final class VariableCache extends Cache<VariableDetails, String> {
     @Override
     protected void init() throws SQLException
     {       
-        Connection connection = Database.getConnection();
-        Statement variableQuery = connection.createStatement();
-        String loadScript = "SELECT variable_id, variable_name, measurementunit_id" + System.lineSeparator();
-        loadScript += "FROM wres.variable;";
-        
-        ResultSet variables = variableQuery.executeQuery(loadScript);
-        VariableDetails detail = null;
-        
-        while (variables.next()) {
-            detail = new VariableDetails();
-            detail.setVariableName(variables.getString("variable_name"));
-            detail.measurementunit_id = variables.getInt("measurementunit_id");
-            detail.setID(variables.getInt("variable_id"));
+        synchronized(keyIndex)
+        {
+            Connection connection = Database.getConnection();
+            Statement variableQuery = connection.createStatement();
+            String loadScript = "SELECT variable_id, variable_name, measurementunit_id" + System.lineSeparator();
+            loadScript += "FROM wres.variable;";
             
-            internalCache.details.put(detail.getId(), detail);
-            internalCache.keyIndex.put(detail.getKey(), detail.getId());
+            ResultSet variables = variableQuery.executeQuery(loadScript);
+            VariableDetails detail = null;
+            
+            while (variables.next()) {
+                detail = new VariableDetails();
+                detail.setVariableName(variables.getString("variable_name"));
+                detail.measurementunit_id = variables.getInt("measurementunit_id");
+                
+                keyIndex.put(detail.getKey(), variables.getInt("variable_id"));
+            }
+            
+            variables.close();
+            variableQuery.close();
+            Database.returnConnection(connection);
         }
-        
-        variables.close();
-        variableQuery.close();
-        Database.returnConnection(connection);        
     }
 }
