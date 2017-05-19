@@ -63,6 +63,10 @@ else
     psql -U $1 -d $3 -h $2 -f get_variableposition_id.sql >/dev/null
 
     echo ''
+    echo 'Adding wres.ForecastSource...'
+    psql -U $1 -d $3 -h $2 -f wres.ForecastSource.sql >/dev/null
+
+    echo ''
     echo 'The wres schema has been sucessfully added.'
     echo ''
     

@@ -13,7 +13,7 @@ import config.specification.VariableSpecification;
 import data.caching.EnsembleCache;
 import data.caching.FeatureCache;
 import data.caching.MeasurementCache;
-
+import data.caching.SourceCache;
 // TODO: Uncomment when work on the SourceCache continues
 //import data.SourceCache;
 import data.caching.VariableCache;
@@ -171,7 +171,6 @@ public final class PIXMLReader extends XMLReader
 		}
 		
 		if (insertCount >= SystemConfig.getMaximumCopies()) {
-		    LOGGER.debug("Insert count greater than maximum copies, saving.");
 			saveEntries();
 		}
 	}
@@ -227,6 +226,8 @@ public final class PIXMLReader extends XMLReader
 		currentScript += observedValue;
 		currentScript += delimiter;
 		currentScript += getMeasurementID();
+		currentScript += delimiter;
+		currentScript += getSourceID();
 		
 		insertCount++;
 	}
@@ -337,10 +338,10 @@ public final class PIXMLReader extends XMLReader
 					currentMissingValue = Float.parseFloat(Utilities.getXMLText(reader));
 				}
 				// TODO: Uncomment when work on the source saving continues
-				/*else if (localName.equalsIgnoreCase("startDate"))
+				else if (localName.equalsIgnoreCase("startDate"))
 				{				
 					startDate = parseDateTime(reader);
-				}*/
+				}
 				else if (Utilities.tagIs(reader, endDate))
 				{
 					endDate = parseDateTime(reader);
@@ -380,9 +381,9 @@ public final class PIXMLReader extends XMLReader
 			reader.next();
 		}
 	
-		/*if (isForecast && this.creationDate != null && this.creationTime != null) {
-			this.currentForecast.setForecastDate(this.creationDate + " " + this.creationTime);
-		}*/
+		if (isForecast && this.creationDate != null && this.creationTime != null) {
+			this.currentForecast.setCreationDate(this.creationDate + " " + this.creationTime);
+		}
 	}
 	
 	@Override
@@ -527,7 +528,7 @@ public final class PIXMLReader extends XMLReader
 	 * @return A valid ID for the source of this PIXML file from the database
 	 * @throws Exception Thrown if an ID could not be retrieved from the database
 	 */
-	/*private int getSourceID() throws Exception
+	private int getSourceID() throws Exception
 	{
 		if (currentSourceID == null)
 		{
@@ -541,10 +542,10 @@ public final class PIXMLReader extends XMLReader
 			else {
 				output_time = startDate;
 			}
-			currentSourceID = SourceCache.getSourceID(get_filename(), output_time);
+			currentSourceID = SourceCache.getSourceID(getFilename(), output_time);
 		}
 		return currentSourceID;
-	}*/
+	}
 	
 	/**
 	 * @return The String header for the copy statement for forecasts
@@ -559,7 +560,7 @@ public final class PIXMLReader extends XMLReader
 	 */
 	private static String getInsertObservationHeader()
 	{
-		return "wres.Observation(variableposition_id, observation_time, observed_value, measurementunit_id)";
+		return "wres.Observation(variableposition_id, observation_time, observed_value, measurementunit_id, source_id)";
 	}
 	
 	public void setSpecifiedEarliestDate(String earliestDate) {
@@ -677,7 +678,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The date that data in the source first started being captured
 	 */
-	//private String startDate = null;
+	private String startDate = null;
 	
 	/**
 	 * The date that data generation/collection ended
@@ -763,7 +764,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The ID for the current source file
 	 */
-	//private Integer currentSourceID = null;
+	private Integer currentSourceID = null;
 	
 	/**
 	 * The qualifier for the current ensemble

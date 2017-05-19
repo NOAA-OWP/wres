@@ -65,6 +65,8 @@ public class Main {
 				System.out.print("' took ");
 				System.out.print(String.valueOf(duration));
 				System.out.println(time_unit);
+				System.out.println();
+				System.out.println(Utilities.getSystemStats());
 			}
 			else
 			{

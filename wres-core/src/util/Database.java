@@ -88,12 +88,21 @@ public class Database {
 	/**
 	 * Returns the connection to the connection pool.
 	 * @param connection The connection to return
-	 * @throws SQLException
 	 */
-	public static void returnConnection(Connection connection) throws SQLException {
+	public static void returnConnection(Connection connection)
+	{
 	    if (connection != null) {
 	        // The implementation of the C3P0 Connection option returns the connection to the pool when "close"d
-	        connection.close();
+	        try
+            {
+                connection.close();
+            }
+            catch(SQLException error)
+            {
+                System.err.println("A connection could not be returned to the connection pool properly.");
+                error.printStackTrace();
+                System.err.println();
+            }
 	    }
 	}
 	
@@ -111,11 +120,6 @@ public class Database {
 		}
 		catch (SQLException error)
 		{
-			if (connection != null)
-			{
-				connection.rollback();
-			}
-			
 			System.err.println("The following SQL call failed:");
 			if (query.length() > 1000)
 			{

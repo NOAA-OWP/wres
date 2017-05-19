@@ -3,6 +3,8 @@
  */
 package collections;
 
+import java.util.Objects;
+
 import wres.datamodel.Pair;
 
 /**
@@ -106,5 +108,29 @@ public class TwoTuple<T extends Comparable<T>, U extends Comparable<U>> implemen
     public String toString()
     {
         return "(" + String.valueOf(this.getItemOne()) + ", " + String.valueOf(this.getItemTwo()) + ")";
+    }
+    
+    @Override
+    public boolean equals(Object obj)
+    {
+        boolean equivalent = false;
+        
+        if (obj.getClass() == Pair.class)
+        {
+            Pair other = (Pair)obj;
+            equivalent = this.getItemOne().equals(other.getItemOne()) && this.getItemTwo().equals(other.getItemTwo());
+        }
+        else if (obj.getClass() == this.getClass())
+        {
+            equivalent = this.compareTo((TwoTuple)obj) == 0;
+        }        
+        
+        return equivalent;
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(this.getItemOne(), this.getItemTwo());
     }
 }

@@ -4,10 +4,10 @@
 package data.caching;
 
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-
-import collections.RecentUseList;
 import data.details.CachedDetail;
+import util.Utilities;
 
 /**
  * An collection of details about concepts stored within the database
@@ -18,10 +18,27 @@ import data.details.CachedDetail;
 abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
     protected static final String newline = System.lineSeparator();
     
-	protected ConcurrentSkipListMap<Integer, T> details = new ConcurrentSkipListMap<Integer, T>();
-	protected ConcurrentSkipListMap<U, Integer> keyIndex = new ConcurrentSkipListMap<U, Integer>();
-	protected RecentUseList<Integer> recentlyUsedIDs = new RecentUseList<Integer>();
+    // Guarded by lock
+	protected LinkedHashMap<U, Integer> keyIndex;
+	protected ConcurrentSkipListMap<Integer, T> details;
 
+	public Cache() {
+	    keyIndex = new LinkedHashMap<U, Integer>(getMaxDetails(), 0.75F, true){
+	       
+	        @Override
+	        protected boolean removeEldestEntry(java.util.Map.Entry<U, Integer> eldest)
+	        {
+	            boolean remove = size() > getMaxDetails();
+	            
+	            if (details != null && remove)
+	            {
+	                details.remove(eldest.getValue());
+	            }
+	            
+	            return remove;
+	        }
+	    };
+	}
 	/**
 	 * @return The maximum number of details that may be cached at any given time
 	 */
@@ -36,10 +53,11 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	/**
 	 * Removes all items from the details and keys caches for the instance
 	 */
-	protected synchronized void clearCache() {
-        details.clear();
-        keyIndex.clear();
-        recentlyUsedIDs.clear();
+	protected void clearCache() {
+	    synchronized(keyIndex)
+	    {
+	        keyIndex.clear();
+	    }
 	}
 	
 	/**
@@ -51,7 +69,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 */
 	public Integer getID(T detail) throws Exception
 	{
-		if (!keyIndex.containsKey(detail.getKey())) {
+		if (!hasID(detail.getKey())) {
 			addElement(detail);
 		}
 		
@@ -66,8 +84,9 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	public U getKey(int id) {
 		U key = null;
 		
-		if (details.containsKey(id)) {
-			key = details.get(id).getKey();
+		synchronized (keyIndex)
+		{
+		    key = Utilities.getKeyByValue(keyIndex, id);
 		}
 
 		return key;
@@ -85,18 +104,12 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	public void addElement(T element) throws SQLException
 	{
 		element.save();
-		recentlyUsedIDs.add(element.getId());
-
-		details.put(element.getId(), element);
-		keyIndex.put(element.getKey(), element.getId());
-		
-		if (recentlyUsedIDs.size() >= getMaxDetails()) {
-			int lastID = recentlyUsedIDs.drop_last();
-			T last = details.get(lastID);
-			details.remove(lastID);
-			keyIndex.remove(last.getKey());
+		add(element.getKey(), element.getId());
+		if (this.details != null && !this.details.containsKey(element.getId()))
+		{
+		    this.details.put(element.getId(), element);
 		}
-	}	
+	}
 	
 	/**
 	 * Returns the ID of the cached details based on its key
@@ -108,10 +121,32 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	{
 		Integer id = null;
 		
-		if (keyIndex.containsKey(key)) {
-			id = keyIndex.get(key);
+		synchronized (keyIndex)
+		{
+    		if (keyIndex.containsKey(key)) {
+    			id = keyIndex.get(key);
+    		}
 		}
 		
 		return id;
+	}
+	
+	public boolean hasID(U key)
+	{
+	    boolean hasIt = false;
+	    
+	    synchronized (keyIndex)
+	    {
+	        hasIt = keyIndex.containsKey(key);
+	    }
+	    
+	    return hasIt;
+	}
+	
+	protected void add(U key, Integer id)
+	{
+	    synchronized (keyIndex) {
+	        keyIndex.put(key, id);
+	    }
 	}
 }
