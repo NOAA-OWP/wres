@@ -3,8 +3,6 @@ package wres.engine.statistics.metric;
 import java.util.ArrayList;
 import java.util.List;
 
-import wres.datamodel.AbstractDataFactory;
-import wres.datamodel.AbstractDataFactoryImpl;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
@@ -32,10 +30,10 @@ public final class MetricTestDataFactory
     {
         //Construct some single-valued pairs
         final List<PairOfDoubles> values = new ArrayList<>();
-        values.add(AbstractDataFactory.pairOf(22.9, 22.8));
-        values.add(AbstractDataFactory.of().pairOf(75.2, 80));
-        values.add(AbstractDataFactoryImpl.pairOf(63.2, 65));
-        values.add(AbstractDataFactoryImpl.of.pairOf(29, 30));
+        values.add(DataFactory.pairOf(22.9, 22.8));
+        values.add(DataFactory.pairOf(75.2, 80));
+        values.add(DataFactory.pairOf(63.2, 65));
+        values.add(DataFactory.pairOf(29, 30));
         values.add(DataFactory.pairOf(5, 2));
         values.add(DataFactory.pairOf(2.1, 3.1));
         values.add(DataFactory.pairOf(35000, 37000));
