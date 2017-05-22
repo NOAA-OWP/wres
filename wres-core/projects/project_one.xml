@@ -34,7 +34,7 @@
         </observations>
         <forecasts lazyLoad="true" isForecast="true">
             <directories>
-                <directory load_all="true">
+                <directory load_all="false">
                     <path>testinput/sharedinput/forecasts/</path>
                     <file file_type="PIXML">
                         1985010112_DRRC2_SQIN_case_gefs_climatology_export.xml
@@ -72,6 +72,75 @@
         <metrics>
             <metric type="mean_error" join_on_feature="false" measurement="CFS">
                 <name>ME</name>
+                <output combine_output="false">
+                    <graphic output="false" path="" format=""/>
+                    <numeric output="true" path="numeric_output" format="xml" />
+                </output>
+                <aggregation aggregate="false" range="1" unit="hour" mode="mean" first_lead="0" last_lead="" />
+                <datasource sourceID="one">
+                    <sources>
+                        <!--<source name="examplefilename.xml" /> -->
+                    </sources>
+                    <conditions>
+                        <dates earliest="NA" latest="NA" offset="0"/>
+                        <values minimum="-infinity" maximum="infinity"/>
+                    </conditions>
+                    <variables>
+                        <variable name="QINE" unit="CFS"/>
+                    </variables>
+                    <features all="false">
+                        <feature>
+                            <lid>DRRC2</lid>
+                            <comid></comid>
+                            <gage_id></gage_id>
+                            <huc></huc>
+                            <name>DOLORES - RICO, BLO</name>
+                        </feature>
+                        <!--<polygon>
+                            <point x="92" y="89"/>
+                            <point x="3032" y="2901"/>
+                            <point x="1000" y="1548"/>
+                        </polygon>-->
+                        <!--<range x_minimum="42" x_maximum="20000"/>-->
+                    </features>
+                </datasource>
+                <datasource isForecast="true" sourceID="two">
+                    <sources>
+                        <!--<source name="examplefilename.xml" /> -->
+                    </sources>
+                    <conditions>
+                        <dates earliest="NA" latest="NA" offset="0"/>
+                        <values minimum="-infinity" maximum="infinity" />
+                    </conditions>
+                    <aggregation aggregate="false" range="1" unit="hour" mode="mean" />
+                    <variables>
+                        <variable name="SQIN" unit="CFS"/>
+                    </variables>
+                    <features all="false">
+                        <feature>
+                            <lid>DRRC2</lid>
+                            <comid></comid>
+                            <gage_id></gage_id>
+                            <huc></huc>
+                            <name>DOLORES - RICO, BLO</name>
+                        </feature>
+                        <!--<polygon>
+                            <point x="92" y="89"/>
+                            <point x="3032" y="2901"/>
+                            <point x="1000" y="1548"/>
+                        </polygon>-->
+                        <!--<range x_minimum="42" x_maximum="20000"/>-->
+                    </features>
+                    <ensembles all="true">
+                        <ensemble name="MEFP" qualifier="SIM1" member_id="1961"/>
+                    </ensembles>
+                </datasource>
+                <!-- <datasource sourceID="baseline">
+                        Baselines can be defined like source_one and source_two
+                     </datasource> -->
+            </metric>
+            <metric type="correlation_coefficient">
+                <name>Correlation</name>
                 <output combine_output="false">
                     <graphic output="false" path="" format=""/>
                     <numeric output="true" path="numeric_output" format="xml" />

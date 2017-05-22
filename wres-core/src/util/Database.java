@@ -36,7 +36,7 @@ public class Database {
 		{
 			sqlTasks.shutdown();
 		}
-		return Executors.newFixedThreadPool(SystemConfig.maximumThreadCount());
+		return Executors.newFixedThreadPool(pool.getMaxPoolSize());
 	}
 	
 	/**
