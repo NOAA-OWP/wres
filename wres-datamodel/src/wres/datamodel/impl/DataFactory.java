@@ -1,7 +1,6 @@
 package wres.datamodel.impl;
 
 import wres.datamodel.Pair;
-import wres.datamodel.PairOfBooleans;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfBooleans;
@@ -40,25 +39,6 @@ public class DataFactory implements wres.datamodel.DataFactory
 
             @Override
             public double getItemTwo()
-            {
-                return second;
-            }
-        };
-    }
-
-    @Override
-    public PairOfBooleans pairOf(final boolean first, final boolean second)
-    {
-        return new PairOfBooleans()
-        {
-            @Override
-            public boolean getItemOne()
-            {
-                return first;
-            }
-
-            @Override
-            public boolean getItemTwo()
             {
                 return second;
             }

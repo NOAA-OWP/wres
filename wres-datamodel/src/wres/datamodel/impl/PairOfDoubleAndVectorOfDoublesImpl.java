@@ -57,5 +57,4 @@ implements PairOfDoubleAndVectorOfDoubles
         s.append("]");
         return s.toString();
     }
-
 }

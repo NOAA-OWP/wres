@@ -21,15 +21,6 @@ public interface DataFactory
     PairOfDoubles pairOf(double first, double second);
 
     /**
-     * Create a pair of primitive booleans
-     * 
-     * @param first the first value
-     * @param second the second value
-     * @return the paired values
-     */
-    PairOfBooleans pairOf(boolean first, boolean second);
-
-    /**
      * Create a primitive pair of double, double[]
      * 
      * @param first the double
