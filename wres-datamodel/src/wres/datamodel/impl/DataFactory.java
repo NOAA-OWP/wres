@@ -1,8 +1,5 @@
 package wres.datamodel.impl;
 
-import java.util.concurrent.locks.ReentrantLock;
-
-import net.jcip.annotations.GuardedBy;
 import wres.datamodel.PairOfBooleans;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
@@ -18,23 +15,14 @@ import wres.datamodel.VectorOfDoubles;
  */
 public class DataFactory implements wres.datamodel.DataFactory
 {
-    @GuardedBy("LOCK")
-    private static DataFactory INSTANCE;
-    private static final ReentrantLock LOCK = new ReentrantLock();
+    private static wres.datamodel.DataFactory INSTANCE = new DataFactory();
 
     /**
      * Get an instance with object creation methods.
      * @return the DataFactory instance
      */
-    public static DataFactory instance()
+    public static wres.datamodel.DataFactory instance()
     {
-        synchronized(LOCK)
-        {
-            if (INSTANCE == null)
-            {
-                INSTANCE = new DataFactory();
-            }
-        }
         return INSTANCE;
     }
 
@@ -58,8 +46,7 @@ public class DataFactory implements wres.datamodel.DataFactory
     }
 
     @Override
-    public PairOfBooleans pairOf(final boolean first,
-                                        final boolean second)
+    public PairOfBooleans pairOf(final boolean first, final boolean second)
     {
         return new PairOfBooleans()
         {
@@ -79,7 +66,7 @@ public class DataFactory implements wres.datamodel.DataFactory
 
     @Override
     public PairOfDoubleAndVectorOfDoubles pairOf(final double first,
-                                                        final double[] second)
+                                                 final double[] second)
     {
         return PairOfDoubleAndVectorOfDoublesImpl.of(first, second);
     }
