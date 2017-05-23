@@ -17,8 +17,10 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.TreeMap;
 
+import config.specification.ProjectDataSpecification;
 import config.specification.MetricSpecification;
-import config.specification.ScriptBuilder;
+import config.specification.ScriptFactory;
+import data.caching.MeasurementCache;
 import util.Database;
 import util.Utilities;
 import wres.datamodel.DataFactory;
@@ -29,16 +31,23 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
  * 
  * @author Christopher Tubbs
  */
-public final class Metrics {
+public abstract class Metrics {
 
+    private static final String NEWLINE = System.lineSeparator();
     private static final Logger LOGGER = LoggerFactory.getLogger(Metrics.class);
     
-    /**
-     * The Metrics class is a collection of functions; it should not be instantiated
-     */
-    private Metrics() {}
-    
     private static final Map<String, Function<List<PairOfDoubleAndVectorOfDoubles>, Double>> FUNCTIONS = createFunctionMap();
+    private static final Map<String, BiFunction<MetricSpecification, Integer, Double>> DIRECT_FUNCTIONS = createDirectFunctionMapping();
+    
+    private static Map<String, BiFunction<MetricSpecification, Integer, Double>> createDirectFunctionMapping()
+    {
+        Map<String, BiFunction<MetricSpecification, Integer, Double>> functions = new TreeMap<>();
+        
+        functions.put("correlation_coefficient", createDirectCorrelationCoefficient());
+        functions.put("mean_error", createDirectMeanError());
+        
+        return functions;
+    }
     
     private static Map<String, Function<List<PairOfDoubleAndVectorOfDoubles>, Double>> createFunctionMap()
     {
@@ -53,6 +62,27 @@ public final class Metrics {
     public static boolean hasFunction(String functionName)
     {
         return FUNCTIONS.containsKey(functionName);
+    }
+    
+    public static boolean hasDirectFunction(String functionName)
+    {
+        return DIRECT_FUNCTIONS.containsKey(functionName);
+    }
+    
+    public static Double call(MetricSpecification specification, Integer step)
+    {
+        Double result = null;
+        
+        if (hasDirectFunction(specification.getMetricType()))
+        {
+            result = DIRECT_FUNCTIONS.get(specification.getMetricType()).apply(specification, step);
+        }
+        else
+        {
+            System.err.println("The function named: '" + specification.getMetricType() + "' is not an available function. Returning null...");
+        }
+        
+        return result;
     }
     
     public static Double call(String functionName, List<PairOfDoubleAndVectorOfDoubles> pairs)
@@ -159,7 +189,7 @@ public final class Metrics {
         try
         {
             connection = Database.getConnection();
-            String script = ScriptBuilder.generateGetPairData(metricSpecification, progress);            
+            String script = ScriptFactory.generateGetPairData(metricSpecification, progress);            
             
             ResultSet resultingPairs = Database.getResults(connection, script);
             
@@ -190,6 +220,98 @@ public final class Metrics {
             }
         }
         return pairs;
+	}
+	
+	private static BiFunction<MetricSpecification, Integer, Double> createDirectCorrelationCoefficient()
+	{
+	    return (MetricSpecification specification, Integer progress) -> {
+	        Double correlationCoefficient = null;
+	        String script = "";        
+	        try
+	        {
+	            String leadQualifier = specification.getAggregationSpecification().getLeadQualifier(progress);
+	            ProjectDataSpecification sourceOne = specification.getFirstSource();
+	            ProjectDataSpecification sourceTwo = specification.getSecondSource();
+                
+                script += "SELECT CORR(O.observed_value * OUC.factor, FV.forecasted_value * UC.factor) AS correlation" + NEWLINE; 
+                script += "FROM wres.Forecast F" + NEWLINE;
+                script += "INNER JOIN wres.ForecastEnsemble FE" + NEWLINE;
+                script += "     ON FE.forecast_id = F.forecast_id" + NEWLINE;
+                script += "INNER JOIN wres.ForecastValue FV" + NEWLINE;
+                script += "     ON FE.forecastensemble_id = FV.forecastensemble_id" + NEWLINE;
+                script += "INNER JOIN wres.Observation O" + NEWLINE;
+                script += "     ON O.observation_time = F.forecast_date + INTERVAL '1 HOUR' * lead" + NEWLINE;  // What about the offset?
+                script += "INNER JOIN wres.UnitConversion UC" + NEWLINE;
+                script += "     ON UC.from_unit = FE.measurementunit_id" + NEWLINE;
+                script += "INNER JOIN wres.UnitConversion OUC" + NEWLINE;
+                script += "     ON OUC.from_unit = O.measurementunit_id" + NEWLINE;
+                script += "WHERE FE.variableposition_id = " + sourceTwo.getFirstVariablePositionID() + NEWLINE;
+                script += "     AND O.variableposition_id = " + sourceOne.getFirstVariablePositionID() + NEWLINE;
+                script += "     AND FV." + leadQualifier + NEWLINE;
+                script += "     AND UC.to_unit = " + MeasurementCache.getMeasurementUnitID(sourceTwo.getMeasurementUnit()) + NEWLINE;
+                script += "     AND OUC.to_unit = " + MeasurementCache.getMeasurementUnitID(sourceOne.getMeasurementUnit()) + ";" + NEWLINE;
+                
+                correlationCoefficient = Database.getResult(script, "correlation");
+	        }
+	        catch (Exception error)
+	        {
+	            System.err.println();
+	            System.err.println("An error was encountered");
+	            System.err.println();
+	            System.err.println("The script was:");
+	            System.err.println();
+	            System.err.println(String.valueOf(script));
+	            System.err.println();
+	            
+	            error.printStackTrace();
+	        }
+	        
+	        return correlationCoefficient;
+	    };
+	}
+	
+	private static BiFunction<MetricSpecification, Integer, Double> createDirectMeanError()
+	{
+	    return (MetricSpecification specification, Integer progress) -> {
+	        Double meanError = null;
+	        
+	        String script = "";
+	        try
+            {
+	            
+	            script += "SELECT AVG(FV.forecasted_value * UC.factor - O.observed_value * OUC.factor) AS mean_error" + NEWLINE;
+	            script += "FROM wres.Forecast F" + NEWLINE;
+	            script += "INNER JOIN wres.ForecastEnsemble FE" + NEWLINE;
+	            script += "    ON FE.forecast_id = F.forecast_id" + NEWLINE;
+	            script += "INNER JOIN wres.ForecastValue FV" + NEWLINE;
+	            script += "    ON FE.forecastensemble_id = FV.forecastensemble_id" + NEWLINE;
+	            script += "INNER JOIN wres.Observation O" + NEWLINE;
+	            script += "    ON O.observation_time = F.forecast_date + INTERVAL '1 hour' * lead" + NEWLINE;
+	            script += "INNER JOIN wres.UnitConversion UC" + NEWLINE;
+	            script += "    ON UC.from_unit = FE.measurementunit_id" + NEWLINE;
+	            script += "INNER JOIN wres.UnitConversion OUC" + NEWLINE;
+	            script += "    ON O.measurementunit_id = OUC.from_unit" + NEWLINE;
+                script += "WHERE FE.variableposition_id = " + specification.getSecondSource().getFirstVariablePositionID() + NEWLINE;
+                script += "    AND O.variableposition_id = " + specification.getFirstSource().getFirstVariablePositionID() + NEWLINE;
+                script += "    AND FV." + specification.getAggregationSpecification().getLeadQualifier(progress) + NEWLINE;
+                script += "    AND UC.to_unit = " + MeasurementCache.getMeasurementUnitID(specification.getSecondSource().getMeasurementUnit()) + NEWLINE;
+                script += "    AND OUC.to_unit = " + MeasurementCache.getMeasurementUnitID(specification.getFirstSource().getMeasurementUnit()) + NEWLINE;
+                
+                meanError = Database.getResult(script, "mean_error");
+            }
+            catch(Exception e)
+            {
+                System.err.println();
+                System.err.println("An error was encountered");
+                System.err.println();
+                System.err.println("The script was:");
+                System.err.println();
+                System.err.println(String.valueOf(script));
+                e.printStackTrace();
+            }
+	        
+	        return meanError;
+	    };
 	}
 	
 	private static Function<List<PairOfDoubleAndVectorOfDoubles>, Double> getMeanError()

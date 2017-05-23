@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import collections.TwoTuple;
 import config.specification.MetricSpecification;
-import config.specification.ScriptBuilder;
+import config.specification.ScriptFactory;
 import util.Database;
 import util.Utilities;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -49,7 +49,7 @@ public class MetricExecutor extends WRESThread implements Callable<List<TwoTuple
         {
             Map<Integer, Future<Double>> mappedPairs = new TreeMap<>();
 
-            TwoTuple<String, String> lastLeadScript = ScriptBuilder.generateFindLastLead(specification.getSecondVariableID());
+            TwoTuple<String, String> lastLeadScript = ScriptFactory.generateFindLastLead(specification.getSecondVariableID());
 
             LOGGER.trace("call - about to call Database.getResult() with {} and {}",
                          lastLeadScript.getItemOne(), lastLeadScript.getItemTwo());
