@@ -19,6 +19,6 @@ class VectorOfDoublesImpl implements VectorOfDoubles
     @Override
     public double[] getDoubles()
     {
-        return doubles;
+        return doubles.clone();
     }
 }
