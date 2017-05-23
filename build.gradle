@@ -206,3 +206,29 @@ project(':wres-io')
 
     }
 }
+
+/* Single report for test coverage, thanks to
+https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setups/12100/5
+ */
+
+apply plugin: 'jacoco'
+
+repositories
+{
+    mavenCentral()
+}
+
+task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [subprojects.test])
+{
+    description = 'Generates an all-subproject aggregate code coverage report.'
+
+    additionalSourceDirs = files(subprojects.sourceSets.main.allSource.srcDirs)
+    sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs, )
+    classDirectories = files(subprojects.sourceSets.main.output)
+    executionData = files(subprojects.jacocoTestReport.executionData)
+
+    doFirst
+    {
+        executionData = files(executionData.findAll { it.exists() })
+    }
+}
