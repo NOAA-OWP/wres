@@ -30,16 +30,17 @@ public final class MetricTestDataFactory
     {
         //Construct some single-valued pairs
         final List<PairOfDoubles> values = new ArrayList<>();
-        values.add(DataFactory.pairOf(22.9, 22.8));
-        values.add(DataFactory.pairOf(75.2, 80));
-        values.add(DataFactory.pairOf(63.2, 65));
-        values.add(DataFactory.pairOf(29, 30));
-        values.add(DataFactory.pairOf(5, 2));
-        values.add(DataFactory.pairOf(2.1, 3.1));
-        values.add(DataFactory.pairOf(35000, 37000));
-        values.add(DataFactory.pairOf(8, 7));
-        values.add(DataFactory.pairOf(12, 12));
-        values.add(DataFactory.pairOf(93, 94));
+        final DataFactory dataFactory = wres.datamodel.impl.DataFactory.instance();
+        values.add(dataFactory.pairOf(22.9, 22.8));
+        values.add(dataFactory.pairOf(75.2, 80));
+        values.add(dataFactory.pairOf(63.2, 65));
+        values.add(dataFactory.pairOf(29, 30));
+        values.add(dataFactory.pairOf(5, 2));
+        values.add(dataFactory.pairOf(2.1, 3.1));
+        values.add(dataFactory.pairOf(35000, 37000));
+        values.add(dataFactory.pairOf(8, 7));
+        values.add(dataFactory.pairOf(12, 12));
+        values.add(dataFactory.pairOf(93, 94));
 
         return MetricInputFactory.ofSingleValuedPairs(values, null);
     }
@@ -84,12 +85,13 @@ public final class MetricTestDataFactory
     {
         //Construct some probabilistic pairs, and use the same pairs as a reference for skill (i.e. skill = 0.0)
         final List<PairOfDoubles> values = new ArrayList<>();
-        values.add(DataFactory.pairOf(0, 3.0 / 5.0));
-        values.add(DataFactory.pairOf(0, 1.0 / 5.0));
-        values.add(DataFactory.pairOf(1, 2.0 / 5.0));
-        values.add(DataFactory.pairOf(1, 3.0 / 5.0));
-        values.add(DataFactory.pairOf(0, 0.0 / 5.0));
-        values.add(DataFactory.pairOf(1, 1.0 / 5.0));
+        final DataFactory dataFactory = wres.datamodel.impl.DataFactory.instance();
+        values.add(dataFactory.pairOf(0, 3.0 / 5.0));
+        values.add(dataFactory.pairOf(0, 1.0 / 5.0));
+        values.add(dataFactory.pairOf(1, 2.0 / 5.0));
+        values.add(dataFactory.pairOf(1, 3.0 / 5.0));
+        values.add(dataFactory.pairOf(0, 0.0 / 5.0));
+        values.add(dataFactory.pairOf(1, 1.0 / 5.0));
         return MetricInputFactory.ofDiscreteProbabilityPairs(values, values);
     }
 }

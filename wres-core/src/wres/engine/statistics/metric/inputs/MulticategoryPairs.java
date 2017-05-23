@@ -70,6 +70,8 @@ public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
         this.pairs = new ArrayList<>();
         this.basePairs = new ArrayList<>();
         final int outcomes = pairs[0].length / 2;
+        final DataFactory dataFactory = wres.datamodel.impl.DataFactory.instance();
+
         if(outcomes > 1 && outcomes % 2 != 0)
         {
             throw new MetricInputException("Expected a multicategory input with an equivalent number of observed and "
@@ -90,7 +92,7 @@ public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
                     throw new MetricInputException("Expected a multicategory baseline with " + outcomes + " outcomes.");
                 }
                 checkPair(outcomes, pair);
-                this.pairs.add(DataFactory.vectorOf(pair));
+                this.pairs.add(dataFactory.vectorOf(pair));
             }
         }
         //Set the pairs
@@ -101,7 +103,7 @@ public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
                 throw new MetricInputException("Expected multicategory pairs with with " + outcomes + " outcomes.");
             }
             checkPair(outcomes, pair);
-            this.pairs.add(DataFactory.vectorOf(pair));
+            this.pairs.add(dataFactory.vectorOf(pair));
         }
     }
 
