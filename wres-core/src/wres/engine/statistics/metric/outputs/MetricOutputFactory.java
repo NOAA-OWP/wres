@@ -1,7 +1,8 @@
 package wres.engine.statistics.metric.outputs;
 
 import wres.datamodel.DataFactory;
-import wres.engine.statistics.metric.inputs.Dimension;
+import wres.datamodel.metric.Dimension;
+import wres.datamodel.metric.MetricOutput;
 import wres.engine.statistics.metric.inputs.DoubleMatrix;
 
 /**
@@ -64,7 +65,8 @@ public class MetricOutputFactory
                                                                              final int sampleSize,
                                                                              final Dimension d)
     {
-        return (T)new VectorOutput(DataFactory.vectorOf(output), sampleSize);
+        final DataFactory dataFactory = wres.datamodel.impl.DataFactory.instance();
+        return (T)new VectorOutput(dataFactory.vectorOf(output), sampleSize);
     }
 
     /**

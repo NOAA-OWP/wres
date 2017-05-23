@@ -2,6 +2,8 @@ package wres.engine.statistics.metric.outputs;
 
 import java.util.ArrayList;
 
+import wres.datamodel.metric.MetricOutput;
+
 /**
  * A collection of metric outputs
  * 

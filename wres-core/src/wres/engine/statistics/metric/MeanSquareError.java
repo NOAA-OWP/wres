@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.metric.MetricOutput;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutput;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**

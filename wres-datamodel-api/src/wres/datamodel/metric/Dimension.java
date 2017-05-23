@@ -1,7 +1,7 @@
 /**
  * 
  */
-package wres.engine.statistics.metric.inputs;
+package wres.datamodel.metric;
 
 /**
  * Placeholder for a class that stores the dimension or unit of measurement associated with a dataset.

@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.metric.Dimension;
+import wres.datamodel.metric.MetricInput;
 
 /**
  * Class for storing verification pairs that comprise single-valued, continuous numerical, predictions and observations.

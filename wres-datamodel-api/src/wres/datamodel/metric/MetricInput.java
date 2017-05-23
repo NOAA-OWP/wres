@@ -1,6 +1,7 @@
-package wres.engine.statistics.metric.inputs;
+package wres.datamodel.metric;
 
 import java.util.List;
+
 
 /**
  * Generic class for an input to be iterated over by a metric. A metric input may comprise paired data or unpaired data

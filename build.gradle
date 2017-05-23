@@ -84,11 +84,6 @@ project(':wres-datamodel-api')
     {
         testCompile 'junit:junit:4.12'
     }
-
-    jar
-    {
-        exclude('wres/datamodel/**/*Impl*')
-    }
 }
 
 project(':wres-core')
@@ -103,7 +98,7 @@ project(':wres-core')
     {
         compile project(':utilities')
         compile project(':wres-datamodel-api')
-        runtime project(':wres-datamodel')
+        compile project(':wres-datamodel')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
@@ -212,14 +207,28 @@ project(':wres-io')
     }
 }
 
-task(fixEclipseDebugger)
+/* Single report for test coverage, thanks to
+https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setups/12100/5
+ */
+
+apply plugin: 'jacoco'
+
+repositories
 {
-    description 'Removes class files from the eclipse debugger\'s classpath that cause issues with debugging.'
-    group 'application'
-    doLast
+    mavenCentral()
+}
+
+task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [subprojects.test])
+{
+    description = 'Generates an all-subproject aggregate code coverage report.'
+
+    additionalSourceDirs = files(subprojects.sourceSets.main.allSource.srcDirs)
+    sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs, )
+    classDirectories = files(subprojects.sourceSets.main.output)
+    executionData = files(subprojects.jacocoTestReport.executionData)
+
+    doFirst
     {
-        FileTree toRemove = fileTree(dir: 'wres-datamodel-api/bin', include: '**/*Impl.class')
-        delete(toRemove)
-        println 'Cleaned up files to help eclipse debugger.'
+        executionData = files(executionData.findAll { it.exists() })
     }
 }
