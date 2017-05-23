@@ -1,15 +1,11 @@
-package wres.engine.statistics.metric.outputs;
-
-import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.inputs.Dimension;
-import wres.engine.statistics.metric.inputs.Sample;
+package wres.datamodel.metric;
 
 /**
  * <p>
  * A base class for metric outputs and corresponding sample sizes.
  * </p>
  * <p>
- * TODO: implement a method in the {@link Metric} class that provides an identification of the outputs.
+ * TODO: implement a method in the {@link MetricOutput} class that provides an identification of the outputs.
  * </p>
  * 
  * @author james.brown@hydrosolved.com

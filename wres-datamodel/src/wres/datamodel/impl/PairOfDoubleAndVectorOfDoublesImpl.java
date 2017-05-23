@@ -1,6 +1,8 @@
-package wres.datamodel;
+package wres.datamodel.impl;
 
 import java.util.stream.Stream;
+
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
 class PairOfDoubleAndVectorOfDoublesImpl
 implements PairOfDoubleAndVectorOfDoubles

@@ -1,7 +1,8 @@
 package wres.engine.statistics.metric.outputs;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.engine.statistics.metric.inputs.Dimension;
+import wres.datamodel.metric.Dimension;
+import wres.datamodel.metric.MetricOutput;
 
 /**
  * <p>

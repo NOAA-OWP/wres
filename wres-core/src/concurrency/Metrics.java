@@ -181,10 +181,11 @@ public abstract class Metrics {
 	        return sum / valueCount;
 	    };
 	}
-	
+
 	public static List<PairOfDoubleAndVectorOfDoubles> getPairs(MetricSpecification metricSpecification, int progress) throws Exception {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         Connection connection = null;
+        final DataFactory dataFactory = wres.datamodel.impl.DataFactory.instance();
 
         try
         {
@@ -197,7 +198,7 @@ public abstract class Metrics {
             {
                 Double observedValue = resultingPairs.getDouble("sourceOneValue");
                 Double[] forecasts = (Double[]) resultingPairs.getArray("measurements").getArray();
-                pairs.add(DataFactory.pairOf(observedValue, forecasts));
+                pairs.add(dataFactory.pairOf(observedValue, forecasts));
             }
         }
         catch (Exception error)
