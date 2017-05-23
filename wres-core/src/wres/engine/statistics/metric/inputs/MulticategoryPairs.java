@@ -6,6 +6,8 @@ import java.util.Objects;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.metric.Dimension;
+import wres.datamodel.metric.MetricInput;
 
 /**
  * Class for storing the verification pairs associated with the outcome (true or false) of a multi-category event. The

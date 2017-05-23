@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
 
-import wres.engine.statistics.metric.inputs.MetricInput;
-import wres.engine.statistics.metric.outputs.MetricOutput;
+import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.MetricOutput;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 import wres.engine.statistics.metric.parameters.MetricParameterException;
 
@@ -22,6 +22,8 @@ import wres.engine.statistics.metric.parameters.MetricParameterException;
  * or removing missing values (except for missing ensemble members whose treatment may be metric-specific and whose
  * inclusion may be important for recovering ensemble traces).
  * </p>
+ * 
+ * TODO: implement a method in the {@link Metric} class that provides an identification of the outputs.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
