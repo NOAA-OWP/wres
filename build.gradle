@@ -84,11 +84,6 @@ project(':wres-datamodel-api')
     {
         testCompile 'junit:junit:4.12'
     }
-
-    jar
-    {
-        exclude('wres/datamodel/**/*Impl*')
-    }
 }
 
 project(':wres-core')
@@ -103,7 +98,7 @@ project(':wres-core')
     {
         compile project(':utilities')
         compile project(':wres-datamodel-api')
-        runtime project(':wres-datamodel')
+        compile project(':wres-datamodel')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
@@ -209,17 +204,5 @@ project(':wres-io')
 		// connection pooling:
 		compile 'com.mchange:c3p0:0.9.5.2'
 
-    }
-}
-
-task(fixEclipseDebugger)
-{
-    description 'Removes class files from the eclipse debugger\'s classpath that cause issues with debugging.'
-    group 'application'
-    doLast
-    {
-        FileTree toRemove = fileTree(dir: 'wres-datamodel-api/bin', include: '**/*Impl.class')
-        delete(toRemove)
-        println 'Cleaned up files to help eclipse debugger.'
     }
 }
