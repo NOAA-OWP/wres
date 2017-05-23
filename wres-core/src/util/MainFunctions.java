@@ -30,6 +30,7 @@ import config.ProjectConfig;
 import config.specification.MetricSpecification;
 import config.specification.ProjectDataSpecification;
 import config.specification.ProjectSpecification;
+import config.specification.ScriptFactory;
 import collections.RealCollection;
 import collections.TwoTuple;
 

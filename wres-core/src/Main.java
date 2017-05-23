@@ -5,6 +5,7 @@
 import java.sql.SQLException;
 
 import util.MainFunctions;
+import util.Stopwatch;
 import util.Utilities;
 
 /**
@@ -36,7 +37,9 @@ public class Main {
                 }
 				args = Utilities.removeIndexFromArray(args, 0);
 				System.out.println("Beginning operation: '" + operation + "'...");
-				long start_time = System.nanoTime();
+
+                Stopwatch watch = new Stopwatch();
+                watch.start();
 				try
 				{
 					MainFunctions.call(operation, args);
@@ -45,26 +48,14 @@ public class Main {
 				{
 					e.printStackTrace();
 				}
-				float end_time = System.nanoTime();
-				float duration = (end_time - start_time) / 1000000.0f;
-				String time_unit = " milliseconds";
 				
-				if (duration > 60000)
-				{
-					duration = duration / 60000;
-					time_unit = " minutes";
-				}
-				else if (duration > 1000)
-				{
-					duration = duration / 1000;
-					time_unit = " seconds";
-				}
+				watch.stop();
 				
 				System.out.print("The function '");
 				System.out.print(operation);
 				System.out.print("' took ");
-				System.out.print(String.valueOf(duration));
-				System.out.println(time_unit);
+				System.out.println(watch.getFormattedDuration());
+
 				System.out.println();
 				System.out.println(Utilities.getSystemStats());
 			}
