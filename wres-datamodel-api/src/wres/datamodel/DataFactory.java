@@ -48,6 +48,18 @@ public interface DataFactory
     PairOfDoubleAndVectorOfDoubles pairOf(Double first, Double[] second);
 
     /**
+     * Create a pair of double[], double[].
+     *
+     * This is to model the case of ensemble vs ensemble. Therefore, the size
+     * of the vectors is not necessarily equal.
+     *
+     * @param first double[] of any length
+     * @param second double[] of any length
+     * @return the pair
+     */
+    Pair<VectorOfDoubles,VectorOfDoubles> pairOf(double[] first, double[] second);
+
+    /**
      * Create a VectorOfDoubles using a primitive double[]
      */
     VectorOfDoubles vectorOf(double[] vec);

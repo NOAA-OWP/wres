@@ -4,18 +4,58 @@ import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
 
+import wres.datamodel.Pair;
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.VectorOfDoubles;
 
 public class DataFactoryImplTest
 {
+    private static final wres.datamodel.DataFactory dataFactory =
+        wres.datamodel.impl.DataFactory.instance();
+
     @Test
     public void pairOfTest()
     {
         //Reference the constant member for a concrete instance of the factory
-        wres.datamodel.DataFactory df = wres.datamodel.impl.DataFactory.instance();
-        final PairOfDoubles tuple = df.pairOf(1.0, 2.0);
+        final PairOfDoubles tuple = dataFactory.pairOf(1.0, 2.0);
         assertNotNull(tuple);
         assert (tuple.getItemOne() == 1.0);
         assert (tuple.getItemTwo() == 2.0);
+    }
+
+    @Test
+    public void vectorOfDoublesTest()
+    {
+        double[] arrOne = {1.0, 2.0};
+        final VectorOfDoubles doubleVecOne = dataFactory.vectorOf(arrOne);
+        assertNotNull(doubleVecOne);
+        assert(doubleVecOne.getDoubles()[0] == 1.0);
+        assert(doubleVecOne.getDoubles()[1] == 2.0);
+    }
+
+    @Test
+    public void vectorOfDoublesMutationTest()
+    {
+        double[] arrOne = {1.0, 2.0};
+        final VectorOfDoubles doubleVecOne = dataFactory.vectorOf(arrOne);
+        arrOne[0] = 3.0;
+        arrOne[1] = 4.0;
+        assertNotNull(doubleVecOne);
+        assert(doubleVecOne.getDoubles()[0] == 1.0);
+        assert(doubleVecOne.getDoubles()[1] == 2.0);
+    }
+
+    @Test
+    public void pairOfVectorsTest()
+    {
+        double[] arrOne = {1.0, 2.0, 3.0};
+        double[] arrTwo = {4.0, 5.0};
+        final Pair<VectorOfDoubles,VectorOfDoubles> pair = dataFactory.pairOf(arrOne, arrTwo);
+        assertNotNull(pair);
+        assert(pair.getItemOne().getDoubles()[0] == 1.0);
+        assert(pair.getItemOne().getDoubles()[1] == 2.0);
+        assert(pair.getItemOne().getDoubles()[2] == 3.0);
+        assert(pair.getItemTwo().getDoubles()[0] == 4.0);
+        assert(pair.getItemTwo().getDoubles()[1] == 5.0);
     }
 }
