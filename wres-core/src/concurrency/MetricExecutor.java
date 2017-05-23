@@ -30,7 +30,7 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 public class MetricExecutor extends WRESThread implements Callable<List<TwoTuple<Integer, Double>>>
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CopyExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetricExecutor.class);
     /**
      * 
      */
@@ -51,8 +51,11 @@ public class MetricExecutor extends WRESThread implements Callable<List<TwoTuple
 
             TwoTuple<String, String> lastLeadScript = ScriptFactory.generateFindLastLead(specification.getSecondVariableID());
 
-            LOGGER.trace("call - about to call Database.getResult() with {} and {}",
-                         lastLeadScript.getItemOne(), lastLeadScript.getItemTwo());
+            if (LOGGER.isTraceEnabled())
+            {
+                LOGGER.trace("call - about to call Database.getResult() with {} and {}",
+                             lastLeadScript.getItemOne(), lastLeadScript.getItemTwo());
+            }
 
             Integer finalLead = Database.getResult(lastLeadScript.getItemOne(), lastLeadScript.getItemTwo());
 
@@ -75,7 +78,10 @@ public class MetricExecutor extends WRESThread implements Callable<List<TwoTuple
             }
         }
 
-        LOGGER.debug("Results count: {}", results.size());
+        if (LOGGER.isDebugEnabled())
+        {
+            LOGGER.debug("Results count: {}", results.size());
+        }
         this.exectureOnComplete();
         return results;
     }
