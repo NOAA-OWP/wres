@@ -69,6 +69,8 @@ public class DataFactoryImplTest
         assert (tuple.getItemOne() == 1.0);
         assert (tuple.getItemTwo()[0] == 2.0);
         assert (tuple.getItemTwo()[1] == 3.0);
+        // check that toString() does not throw exception and is not null
+        assertNotNull(tuple.toString());
     }
 
     @Test
@@ -82,5 +84,20 @@ public class DataFactoryImplTest
         assert (tuple.getItemOne() == 1.0);
         assert (tuple.getItemTwo()[0] == 2.0);
         assert (tuple.getItemTwo()[1] == 3.0);
+    }
+
+    @Test
+    public void pairOfDoubleAndVectorOfDoublesUsingBoxedMutationTest()
+    {
+        Double[] arrOne = {2.0, 3.0};
+        final PairOfDoubleAndVectorOfDoubles tuple = dataFactory.pairOf(1.0, arrOne);
+        assertNotNull(tuple);
+        arrOne[0] = 4.0;
+        arrOne[1] = 5.0;
+        assert (tuple.getItemOne() == 1.0);
+        assert (tuple.getItemTwo()[0] == 2.0);
+        assert (tuple.getItemTwo()[1] == 3.0);
+        // check that toString() does not throw exception and is not null
+        assertNotNull(tuple.toString());
     }
 }
