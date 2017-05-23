@@ -5,10 +5,10 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.metric.MetricOutput;
 import wres.engine.statistics.metric.inputs.MetricInputException;
 import wres.engine.statistics.metric.inputs.MulticategoryPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
-import wres.engine.statistics.metric.outputs.MetricOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 

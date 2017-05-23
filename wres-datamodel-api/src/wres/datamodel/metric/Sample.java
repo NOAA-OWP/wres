@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.inputs;
+package wres.datamodel.metric;
 
 /**
  * Identifies a dataset that represents a statistical sample.

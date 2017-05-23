@@ -2,8 +2,8 @@ package wres.engine.statistics.metric;
 
 import java.util.Arrays;
 
+import wres.datamodel.metric.MetricOutput;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.VectorOutput;
 

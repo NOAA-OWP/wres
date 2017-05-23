@@ -3,6 +3,7 @@ package wres.engine.statistics.metric.inputs;
 import java.util.List;
 
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.metric.Dimension;
 
 /**
  * A factory class for producing metric inputs.
