@@ -20,6 +20,7 @@ import java.util.TreeMap;
 import config.specification.MetricSpecification;
 import config.specification.ScriptBuilder;
 import util.Database;
+import util.Utilities;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
@@ -44,6 +45,7 @@ public final class Metrics {
         Map<String, Function<List<PairOfDoubleAndVectorOfDoubles>, Double>> functions = new TreeMap<>();
         
         functions.put("mean_error", getMeanError());
+        functions.put("correlation_coefficient", getCorrelationCoefficient());
         
         return functions;
     }
@@ -213,6 +215,24 @@ public final class Metrics {
 	        }
 	        
 	        return mean;
+	    };
+	}
+	
+	private static Function<List<PairOfDoubleAndVectorOfDoubles>, Double> getCorrelationCoefficient()
+	{
+	    return (List<PairOfDoubleAndVectorOfDoubles> pairs) -> {
+	        double CC = 0.0;
+	        
+	        double leftSTD = Utilities.getPairedDoubleStandardDeviation(pairs);
+	        double rightSTD = Utilities.getPairedDoubleVectorStandardDeviation(pairs);
+	        double covariance = Utilities.getCovariance(pairs);
+	        
+	        if (leftSTD != 0 && rightSTD != 0)
+	        {
+	            CC = covariance / (leftSTD * rightSTD);
+	        }
+	        
+	        return CC;
 	    };
 	}
 }
