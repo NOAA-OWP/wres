@@ -10,15 +10,9 @@ import data.caching.MeasurementCache;
  * @author Christopher Tubbs
  *
  */
-public final class ScriptBuilder
+public abstract class ScriptFactory
 {
     private static String newline = System.lineSeparator();
-
-    /**
-     * Private constructor; This should not be initialized since it is merely
-     * a store for functions
-     */
-    private ScriptBuilder() {}
 
     public static TwoTuple<String, String> generateFindLastLead(int variableID) {
         final String label = "last_lead";
@@ -33,6 +27,19 @@ public final class ScriptBuilder
         script += "WHERE VP.variable_id = " + variableID + newline;
         script += "ORDER BY FV.lead DESC" + newline;
         script += "LIMIT 1;";
+        
+        return new TwoTuple<String, String>(script, label);
+    }
+    
+    public static TwoTuple<String, String> generateCalculateCorrelationCoefficient(MetricSpecification specification, int progress) throws Exception
+    {        
+        ProjectDataSpecification firstSourceSpec = specification.getFirstSource();
+        ProjectDataSpecification secondSourceSpec = specification.getSecondSource();
+        
+        String leadSpecification = specification.getAggregationSpecification().getLeadQualifier(progress);
+        
+        String label = "coefficient";
+        String script = "";
         
         return new TwoTuple<String, String>(script, label);
     }

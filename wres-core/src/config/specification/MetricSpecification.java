@@ -102,6 +102,10 @@ public class MetricSpecification extends SpecificationElement {
 		{
 		    this.metricAggregate = new AggregationSpecification(reader);
 		}
+		else if (Utilities.tagIs(reader, "threshold"))
+		{
+		    this.threshold = new ThresholdSpecification(reader);
+		}
 	}
 	
 	public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> getPairs() throws Exception
@@ -112,7 +116,7 @@ public class MetricSpecification extends SpecificationElement {
 	    float threadsComplete = 0;
 	    float threadsAdded = 0;
 	    
-	    TwoTuple<String, String> lastLeadScript = ScriptBuilder.generateFindLastLead(sourceTwo.getVariable().getVariableID());
+	    TwoTuple<String, String> lastLeadScript = ScriptFactory.generateFindLastLead(sourceTwo.getVariable().getVariableID());
 	    
 	    Integer finalLead = Database.getResult(lastLeadScript.getItemOne(), lastLeadScript.getItemTwo());
         
@@ -267,6 +271,26 @@ public class MetricSpecification extends SpecificationElement {
 	{
 	    return this.metricType;
 	}
+	
+	public ThresholdSpecification.ThresholdMode getThresholdMode()
+	{
+	    if (this.threshold == null)
+	    {
+	        this.threshold = new ThresholdSpecification();
+	    }
+	    
+	    return this.threshold.getMode();
+	}
+	
+	public float getThresholdValue()
+	{
+	    if (this.threshold == null)
+	    {
+	        this.threshold = new ThresholdSpecification();
+	    }
+	    
+	    return this.threshold.getValue();
+	}
 
 	private String name;
 	private OutputSpecification metric_output;
@@ -275,6 +299,7 @@ public class MetricSpecification extends SpecificationElement {
 	private ProjectDataSpecification baseline;
 	private AggregationSpecification metricAggregate;
 	private String metricType;
+	private ThresholdSpecification threshold;
 	
     @Override
     public String toXML()
