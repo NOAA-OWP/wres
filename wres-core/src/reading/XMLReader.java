@@ -38,6 +38,7 @@ public class XMLReader
 	{
 	    this.filename = filename;
 	    this.find_on_classpath = find_on_classpath;
+        LOGGER.trace("Created XMLReader for file: {} find_on_classpath={}", filename, find_on_classpath);
 	}
 	
 	protected String getFilename()
