@@ -1,5 +1,6 @@
 package wres.datamodel.impl;
 
+import wres.datamodel.Pair;
 import wres.datamodel.PairOfBooleans;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
@@ -79,16 +80,29 @@ public class DataFactory implements wres.datamodel.DataFactory
     }
 
     @Override
-    public VectorOfDoubles vectorOf(final double[] vec)
+    public Pair<VectorOfDoubles, VectorOfDoubles> pairOf(final double[] first,
+                                                         final double[] second)
     {
-        return new VectorOfDoubles()
+        return new Pair<VectorOfDoubles,VectorOfDoubles>()
         {
             @Override
-            public double[] getDoubles()
+            public VectorOfDoubles getItemOne()
             {
-                return vec.clone();
+                return VectorOfDoublesImpl.of(first);
+            }
+
+            @Override
+            public VectorOfDoubles getItemTwo()
+            {
+                return VectorOfDoublesImpl.of(second);
             }
         };
+    }
+
+    @Override
+    public VectorOfDoubles vectorOf(final double[] vec)
+    {
+        return VectorOfDoublesImpl.of(vec);
     }
 
     @Override
@@ -103,7 +117,7 @@ public class DataFactory implements wres.datamodel.DataFactory
             }
         };
     }
-    
+
     private DataFactory()
     {
         // prevent direct construction
