@@ -54,7 +54,15 @@ public class MetricSpecification extends SpecificationElement {
             
             if (attribute_name.equalsIgnoreCase("type"))
             {
-                this.metricType = reader.getAttributeValue(attribute_index);
+                this.metricType = reader.getAttributeValue(attribute_index).trim();
+            }
+            else if(attribute_name.equalsIgnoreCase("measurement"))
+            {
+                this.desiredMeasurement = reader.getAttributeValue(attribute_index).trim();
+            }
+            else if(attribute_name.equalsIgnoreCase("evaluationLocation"))
+            {
+                this.evaluationLocation = reader.getAttributeValue(attribute_index).trim();
             }
         }
     }
@@ -168,6 +176,18 @@ public class MetricSpecification extends SpecificationElement {
             LOGGER.warn("One of these was null: sourceTwo.getVariable().getVariableID()");
 	    }
 	    return variableID;
+	}
+	
+	public String getDesiredMeasurementUnit()
+	{
+	    String desiredUnit = null;
+	    
+	    if (!this.desiredMeasurement.isEmpty())
+	    {
+	        desiredUnit = this.desiredMeasurement;
+	    }
+	    
+	    return desiredUnit;
 	}
 
 	@Override
@@ -300,6 +320,8 @@ public class MetricSpecification extends SpecificationElement {
 	private AggregationSpecification metricAggregate;
 	private String metricType;
 	private ThresholdSpecification threshold;
+	private String evaluationLocation;
+	private String desiredMeasurement;
 	
     @Override
     public String toXML()

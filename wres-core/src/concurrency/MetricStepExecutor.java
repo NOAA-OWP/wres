@@ -33,9 +33,19 @@ public class MetricStepExecutor extends WRESThread implements Callable<Double>
         Double result = null;
         this.executeOnRun();
         
-        if (Metrics.hasDirectFunction(specification.getMetricType()))
+        /*if (Metrics.hasDirectFunction(specification.getMetricType()))
         {
             result = Metrics.call(specification, step);
+        }
+        else
+        {
+            LOGGER.debug("The function: '" + specification + "' is not a valid function. Returning null...");
+        }*/
+        
+        if (Metrics.hasDirectFunction(specification.getMetricType()))
+        {
+            //List<PairOfDoubleAndVectorOfDoubles> pairs = Metrics.getPairs(specification, step);
+            result = Metrics.call(specification.getMetricType(), Metrics.getPairs(specification, step));
         }
         else
         {

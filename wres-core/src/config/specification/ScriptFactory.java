@@ -31,25 +31,26 @@ public abstract class ScriptFactory
         return new TwoTuple<String, String>(script, label);
     }
     
-    public static TwoTuple<String, String> generateCalculateCorrelationCoefficient(MetricSpecification specification, int progress) throws Exception
-    {        
-        ProjectDataSpecification firstSourceSpec = specification.getFirstSource();
-        ProjectDataSpecification secondSourceSpec = specification.getSecondSource();
-        
-        String leadSpecification = specification.getAggregationSpecification().getLeadQualifier(progress);
-        
-        String label = "coefficient";
-        String script = "";
-        
-        return new TwoTuple<String, String>(script, label);
-    }
-    
     public static String generateGetPairData(MetricSpecification metricSpecification, int progress) throws Exception {
         // TODO: Break into multiple functions
         
         // Expose members of the specification to reduce the depth of data accessors
         ProjectDataSpecification firstSourceSpec = metricSpecification.getFirstSource();
         ProjectDataSpecification secondSourceSpec = metricSpecification.getSecondSource();
+        
+        Integer firstDesiredMeasurementUnitID;
+        Integer secondDesiredMeasurementUnitID;
+        
+        if (metricSpecification.getDesiredMeasurementUnit() == null)
+        {
+            firstDesiredMeasurementUnitID = MeasurementCache.getMeasurementUnitID(firstSourceSpec.getMeasurementUnit());
+            secondDesiredMeasurementUnitID = MeasurementCache.getMeasurementUnitID(secondSourceSpec.getMeasurementUnit());
+        }
+        else
+        {
+            firstDesiredMeasurementUnitID = MeasurementCache.getMeasurementUnitID(metricSpecification.getDesiredMeasurementUnit());
+            secondDesiredMeasurementUnitID = firstDesiredMeasurementUnitID;
+        }
         
         String leadSpecification = metricSpecification.getAggregationSpecification().getLeadQualifier(progress);
         
@@ -82,7 +83,7 @@ public abstract class ScriptFactory
             script += "         AND FE.variableposition_id = ";
             script += String.valueOf(secondSourceSpec.getFirstVariablePositionID());
             script += "     -- Select the ensembles for variable values at a specific location" + newline;
-            script += "         AND UC.to_unit = " + MeasurementCache.getMeasurementUnitID(secondSourceSpec.getMeasurementUnit());
+            script += "         AND UC.to_unit = " + secondDesiredMeasurementUnitID;
             script += "     -- Determine to unit conversion based on the specification's indication of the desired unit to convert to"+ newline;
             
             if (secondSourceSpec.getEarliestDate() != null)
@@ -143,7 +144,7 @@ public abstract class ScriptFactory
             script += "     FROM wres.Observation O     -- Start by looking into observed values" + newline;
             script += "     INNER JOIN wres.UnitConversion UC       -- Find the unit conversion that will convert from the observed unit" + newline;
             script += "         ON UC.from_unit = O.measurementunit_id      -- Match the observation to the unit conversion based on the unit on the observation" + newline;
-            script += "     WHERE UC.to_unit = " + MeasurementCache.getMeasurementUnitID(secondSourceSpec.getMeasurementUnit());
+            script += "     WHERE UC.to_unit = " + secondDesiredMeasurementUnitID;
             script += "     -- Find the conversion factor based on the unit of measurement that we want to convert to" + newline;
             script += "         AND O.variableposition_id = ";
             script += String.valueOf(secondSourceSpec.getFirstVariablePositionID());
@@ -214,7 +215,7 @@ public abstract class ScriptFactory
             script += "WHERE FE.variableposition_id = ";
             script += String.valueOf(firstSourceSpec.getFirstVariablePositionID());
             script += "     -- Limit the forecast values to those attached to variable values at specific locations" + newline;
-            script += "     AND UC.to_unit = " + MeasurementCache.getMeasurementUnitID(firstSourceSpec.getMeasurementUnit()); 
+            script += "     AND UC.to_unit = " + firstDesiredMeasurementUnitID; 
             script += "     -- Determine the conversion factor based on the unit of measurement we want to convert to" + newline;
             script += "     AND " + leadSpecification + "        -- The range of Lead Times to select forecasted values from" + newline;
             
@@ -288,7 +289,7 @@ public abstract class ScriptFactory
             script += " = ST.sourceTwoDate      -- match the values based on their dates" + newline;
             script += "INNER JOIN wres.UnitConversion UC        -- Determine the conversion factor" + newline;
             script += "     ON UC.from_unit = O.measurementunit_id      -- Match on the unit to convert from" + newline;
-            script += "WHERE UC.to_unit = " + MeasurementCache.getMeasurementUnitID(firstSourceSpec.getMeasurementUnit());
+            script += "WHERE UC.to_unit = " + firstDesiredMeasurementUnitID;
             script += "     -- Find the correct conversion factor based on the unit of measurement to convert to" + newline;
             script += "     AND O.variableposition_id = ";
             script += String.valueOf(firstSourceSpec.getFirstVariablePositionID());
