@@ -22,7 +22,6 @@ import wres.engine.statistics.metric.parameters.MetricParameterException;
  * or removing missing values (except for missing ensemble members whose treatment may be metric-specific and whose
  * inclusion may be important for recovering ensemble traces).
  * </p>
- * 
  * TODO: implement a method in the {@link Metric} class that provides an identification of the outputs.
  * 
  * @author james.brown@hydrosolved.com
@@ -90,6 +89,17 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
     public boolean equals(final Object o)
     {
         return o != null && o instanceof Metric && ((Metric<?, ?>)o).getName().equals(getName());
+    }
+
+    /**
+     * Returns a hashcode from the unique metric name, {@link getName()}.
+     * 
+     * @return a hashcode
+     */
+    @Override
+    public int hashCode()
+    {
+        return getName().hashCode();
     }
 
     /**

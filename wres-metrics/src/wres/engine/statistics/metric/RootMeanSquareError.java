@@ -22,8 +22,7 @@ extends
     @Override
     public T apply(final S t)
     {
-        return MetricOutputFactory.getExtendsScalarOutput(Math.pow(((ScalarOutput)super.apply(t)).getData(),
-                                                                   0.5),
+        return MetricOutputFactory.getExtendsScalarOutput(Math.pow(super.apply(t).getData(), 0.5),
                                                           t.size(),
                                                           t.getDimension());
     }

@@ -26,7 +26,7 @@ public final class MetricFactory
 
     public static BrierScore<DiscreteProbabilityPairs, ScalarOutput> ofBrierScoreNoDecomp()
     {
-        return new BrierScore<DiscreteProbabilityPairs, ScalarOutput>();
+        return new BrierScore<>();
     }
 
     /**
@@ -37,7 +37,7 @@ public final class MetricFactory
 
     public static BrierSkillScore<DiscreteProbabilityPairs, ScalarOutput> ofBrierSkillScoreNoDecomp()
     {
-        return new BrierSkillScore<DiscreteProbabilityPairs, ScalarOutput>();
+        return new BrierSkillScore<>();
     }
 
     /**
@@ -48,7 +48,7 @@ public final class MetricFactory
 
     public static ContingencyTable<MulticategoryPairs, MatrixOutput> ofContingencyTable()
     {
-        return new ContingencyTable<MulticategoryPairs, MatrixOutput>();
+        return new ContingencyTable<>();
     }
 
     /**
@@ -59,7 +59,7 @@ public final class MetricFactory
 
     public static CriticalSuccessIndex<DichotomousPairs, ScalarOutput> ofCriticalSuccessIndex()
     {
-        return new CriticalSuccessIndex<DichotomousPairs, ScalarOutput>();
+        return new CriticalSuccessIndex<>();
     }
 
     /**
@@ -70,7 +70,7 @@ public final class MetricFactory
 
     public static EquitableThreatScore<DichotomousPairs, ScalarOutput> ofEquitableThreatScore()
     {
-        return new EquitableThreatScore<DichotomousPairs, ScalarOutput>();
+        return new EquitableThreatScore<>();
     }
 
     /**
@@ -81,7 +81,7 @@ public final class MetricFactory
 
     public static MeanAbsoluteError<SingleValuedPairs, ScalarOutput> ofMeanAbsoluteError()
     {
-        return new MeanAbsoluteError<SingleValuedPairs, ScalarOutput>();
+        return new MeanAbsoluteError<>();
     }
 
     /**
@@ -92,7 +92,7 @@ public final class MetricFactory
 
     public static MeanError<SingleValuedPairs, ScalarOutput> ofMeanError()
     {
-        return new MeanError<SingleValuedPairs, ScalarOutput>();
+        return new MeanError<>();
     }
 
     /**
@@ -103,7 +103,7 @@ public final class MetricFactory
 
     public static MeanSquareError<SingleValuedPairs, ScalarOutput> ofMeanSquareError()
     {
-        return new MeanSquareError<SingleValuedPairs, ScalarOutput>();
+        return new MeanSquareError<>();
     }
 
     /**
@@ -114,7 +114,7 @@ public final class MetricFactory
 
     public static MeanSquareErrorSkillScore<SingleValuedPairs, ScalarOutput> ofMeanSquareErrorSkillScore()
     {
-        return new MeanSquareErrorSkillScore<SingleValuedPairs, ScalarOutput>();
+        return new MeanSquareErrorSkillScore<>();
     }
 
     /**
@@ -125,7 +125,7 @@ public final class MetricFactory
 
     public static PeirceSkillScore<DichotomousPairs, ScalarOutput> ofPeirceSkillScore()
     {
-        return new PeirceSkillScore<DichotomousPairs, ScalarOutput>();
+        return new PeirceSkillScore<>();
     }
 
     /**
@@ -136,7 +136,7 @@ public final class MetricFactory
 
     public static ProbabilityOfDetection<DichotomousPairs, ScalarOutput> ofProbabilityOfDetection()
     {
-        return new ProbabilityOfDetection<DichotomousPairs, ScalarOutput>();
+        return new ProbabilityOfDetection<>();
     }
 
     /**
@@ -147,7 +147,7 @@ public final class MetricFactory
 
     public static ProbabilityOfFalseDetection<DichotomousPairs, ScalarOutput> ofProbabilityOfFalseDetection()
     {
-        return new ProbabilityOfFalseDetection<DichotomousPairs, ScalarOutput>();
+        return new ProbabilityOfFalseDetection<>();
     }
 
     /**
@@ -158,7 +158,7 @@ public final class MetricFactory
 
     public static RootMeanSquareError<SingleValuedPairs, ScalarOutput> ofRootMeanSquareError()
     {
-        return new RootMeanSquareError<SingleValuedPairs, ScalarOutput>();
+        return new RootMeanSquareError<>();
     }
 
     /**

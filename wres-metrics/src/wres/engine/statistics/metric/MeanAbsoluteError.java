@@ -16,12 +16,6 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
 {
 
     @Override
-    public T apply(final S s)
-    {
-        return super.apply(s);
-    }
-
-    @Override
     public void checkParameters(final MetricParameter... par)
     {
         // TODO Auto-generated method stub
