@@ -72,7 +72,7 @@ public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
         this.pairs = new ArrayList<>();
         this.basePairs = new ArrayList<>();
         final int outcomes = pairs[0].length / 2;
-        final DataFactory dataFactory = wres.datamodel.impl.DataFactory.instance();
+        final DataFactory dataFactory = wres.datamodel.DataFactory.instance();
 
         if(outcomes > 1 && outcomes % 2 != 0)
         {

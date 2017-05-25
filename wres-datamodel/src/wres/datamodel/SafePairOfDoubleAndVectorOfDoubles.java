@@ -1,16 +1,16 @@
-package wres.datamodel.impl;
+package wres.datamodel;
 
 import java.util.stream.Stream;
 
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
-class PairOfDoubleAndVectorOfDoublesImpl
+class SafePairOfDoubleAndVectorOfDoubles
 implements PairOfDoubleAndVectorOfDoubles
 {
     private final double itemOne;
     private final double[] itemTwo;
 
-    private PairOfDoubleAndVectorOfDoublesImpl(double key, double[] doubles)
+    private SafePairOfDoubleAndVectorOfDoubles(double key, double[] doubles)
     {
         this.itemOne = key;
         this.itemTwo = doubles.clone();
@@ -18,7 +18,7 @@ implements PairOfDoubleAndVectorOfDoubles
 
     static PairOfDoubleAndVectorOfDoubles of(double key, double[] doubles)
     {
-        return new PairOfDoubleAndVectorOfDoublesImpl(key, doubles);
+        return new SafePairOfDoubleAndVectorOfDoubles(key, doubles);
     }
 
     static PairOfDoubleAndVectorOfDoubles of(Double key, Double[] doubles)
@@ -26,7 +26,7 @@ implements PairOfDoubleAndVectorOfDoubles
         double[] unboxedDoubles = Stream.of(doubles)
                                         .mapToDouble(Double::doubleValue)
                                         .toArray();
-        return new PairOfDoubleAndVectorOfDoublesImpl(key.doubleValue(), unboxedDoubles);
+        return new SafePairOfDoubleAndVectorOfDoubles(key.doubleValue(), unboxedDoubles);
     }
 
     @Override

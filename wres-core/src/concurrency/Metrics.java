@@ -186,7 +186,7 @@ public abstract class Metrics {
 	public static List<PairOfDoubleAndVectorOfDoubles> getPairs(MetricSpecification metricSpecification, int progress) throws Exception {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         Connection connection = null;
-        final DataFactory dataFactory = wres.datamodel.impl.DataFactory.instance();
+        final DataFactory dataFactory = wres.datamodel.DataFactory.instance();
 
         try
         {

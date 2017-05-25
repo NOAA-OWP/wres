@@ -1,18 +1,13 @@
-package wres.datamodel.impl;
+package wres.datamodel;
 
 import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
 
-import wres.datamodel.Pair;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.VectorOfDoubles;
-
-public class DataFactoryImplTest
+public class DataFactoryTest
 {
     private static final wres.datamodel.DataFactory dataFactory =
-        wres.datamodel.impl.DataFactory.instance();
+        wres.datamodel.DataFactory.instance();
 
     @Test
     public void pairOfTest()

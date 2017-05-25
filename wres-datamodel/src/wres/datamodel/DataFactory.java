@@ -1,4 +1,4 @@
-package wres.datamodel.impl;
+package wres.datamodel;
 
 import wres.datamodel.Pair;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -13,9 +13,9 @@ import wres.datamodel.VectorOfDoubles;
  * @author james.brown@hydrosolved.com
  *
  */
-public class DataFactory implements wres.datamodel.DataFactory
+public class DataFactory
 {
-    private static final wres.datamodel.DataFactory INSTANCE = new DataFactory();
+    private static final DataFactory INSTANCE = new DataFactory();
 
     private DataFactory()
     {
@@ -31,7 +31,6 @@ public class DataFactory implements wres.datamodel.DataFactory
         return INSTANCE;
     }
 
-    @Override
     public PairOfDoubles pairOf(final double first, final double second)
     {
         return new PairOfDoubles()
@@ -50,21 +49,18 @@ public class DataFactory implements wres.datamodel.DataFactory
         };
     }
 
-    @Override
     public PairOfDoubleAndVectorOfDoubles pairOf(final double first,
                                                  final double[] second)
     {
-        return PairOfDoubleAndVectorOfDoublesImpl.of(first, second);
+        return SafePairOfDoubleAndVectorOfDoubles.of(first, second);
     }
 
-    @Override
     public PairOfDoubleAndVectorOfDoubles pairOf(final Double first,
                                                  final Double[] second)
     {
-        return PairOfDoubleAndVectorOfDoublesImpl.of(first, second);
+        return SafePairOfDoubleAndVectorOfDoubles.of(first, second);
     }
 
-    @Override
     public Pair<VectorOfDoubles, VectorOfDoubles> pairOf(final double[] first,
                                                          final double[] second)
     {
@@ -73,24 +69,22 @@ public class DataFactory implements wres.datamodel.DataFactory
             @Override
             public VectorOfDoubles getItemOne()
             {
-                return VectorOfDoublesImpl.of(first);
+                return SafeVectorOfDoubles.of(first);
             }
 
             @Override
             public VectorOfDoubles getItemTwo()
             {
-                return VectorOfDoublesImpl.of(second);
+                return SafeVectorOfDoubles.of(second);
             }
         };
     }
 
-    @Override
     public VectorOfDoubles vectorOf(final double[] vec)
     {
-        return VectorOfDoublesImpl.of(vec);
+        return SafeVectorOfDoubles.of(vec);
     }
 
-    @Override
     public VectorOfBooleans vectorOf(final boolean[] vec)
     {
         return new VectorOfBooleans()
