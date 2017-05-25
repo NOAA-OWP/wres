@@ -33,6 +33,8 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
 public final class Utilities {
 	
+    private Utilities(){};
+    
 	/**
 	 * The global format for time is {@value}
 	 */
@@ -54,7 +56,7 @@ public final class Utilities {
 	
 	private static Map<String, Double> mapTimeToHours()
 	{
-	    Map<String, Double> mapping = new TreeMap<String, Double>();
+	    Map<String, Double> mapping = new TreeMap<>();
         
         mapping.put("second", 1/3600.0);
         mapping.put("hour", 1.0);
@@ -65,29 +67,15 @@ public final class Utilities {
 	}
 	
 	public static Consumer<Object> defaultOnThreadStartHandler() {
-	    return new Consumer() {
-
-            @Override
-            public void accept(Object t)
-            {
-                MONITOR.addStep();
-                
-            }
-	        
+	    return (Object t) -> {
+            MONITOR.addStep();
 	    };
 	}
 	
 	public static Consumer<Object> defaultOnThreadCompleteHandler() {
-	    return new Consumer() {
-
-            @Override
-            public void accept(Object t)
-            {
-                MONITOR.UpdateMonitor();
-                
-            }
-	        
-	    };
+	    return (Object t) -> {
+            MONITOR.UpdateMonitor();                
+        };
 	}
 	
 	public static final Double secondsToHours(int seconds)
@@ -671,14 +659,16 @@ public final class Utilities {
         }
         
         final double mean = getPairedDoubleMean(pairs);
+        int pairCount = 0;
         double STD = 0.0;       
         
         for (PairOfDoubleAndVectorOfDoubles pair : pairs)
         {
             STD += Math.pow(pair.getItemOne() - mean, 2);
+            pairCount += pair.getItemTwo().length;
         }
         
-        STD /= (pairs.size() - 1);
+        STD /= (pairCount - 1);
         
         return Math.sqrt(STD);
 	}
