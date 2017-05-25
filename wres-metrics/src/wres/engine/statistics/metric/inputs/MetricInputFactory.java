@@ -135,7 +135,7 @@ public class MetricInputFactory
                                                         final List<PairOfDoubles> basePairs,
                                                         final Dimension dim)
     {
-        return new SingleValuedPairs(pairs, basePairs, null);
+        return new SingleValuedPairs(pairs, basePairs, dim);
     }
 
     /**

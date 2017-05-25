@@ -98,6 +98,11 @@ implements Score, Collectable<S, MetricOutput<?>, T>
             uniProd += (colSums[i] * colSums[i]);
             n += rowSums[i];
         }
+        if(n <= 0)
+        {
+            throw new MetricCalculationException("The sum product of the rows and columns in the contingency table "
+                + "must exceed zero when computing the Peice Skill Score: " + n);
+        }
         //Compose the result
         final double nSquared = n * n;
         final double result = ((diag / n) - (sumProd / nSquared)) / (1.0 - (uniProd / nSquared));
