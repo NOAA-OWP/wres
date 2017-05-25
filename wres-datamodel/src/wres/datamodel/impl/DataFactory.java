@@ -15,7 +15,12 @@ import wres.datamodel.VectorOfDoubles;
  */
 public class DataFactory implements wres.datamodel.DataFactory
 {
-    private static wres.datamodel.DataFactory INSTANCE = new DataFactory();
+    private static final wres.datamodel.DataFactory INSTANCE = new DataFactory();
+
+    private DataFactory()
+    {
+        // prevent direct construction
+    }
 
     /**
      * Get an instance with object creation methods.
@@ -98,8 +103,4 @@ public class DataFactory implements wres.datamodel.DataFactory
         };
     }
 
-    private DataFactory()
-    {
-        // prevent direct construction
-    }
 }
