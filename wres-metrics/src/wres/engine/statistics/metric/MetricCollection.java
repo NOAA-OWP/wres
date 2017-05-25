@@ -153,14 +153,14 @@ implements Function<S, MetricOutputCollection<T>>
 
     private MetricOutputCollection<T> applyInternal(final S s)
     {
-        final MetricOutputCollection<T> m = new MetricOutputCollection<T>(size());
+        final MetricOutputCollection<T> m = new MetricOutputCollection<>(size());
         //Collect the instances of Collectable by their getCollectionOf string, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
         @SuppressWarnings("unchecked")
         final Map<String, List<Collectable<S, MetricOutput<?>, T>>> collectable =
-                                                                                   stream().filter(Collectable.class::isInstance)
-                                                                                           .map(p -> (Collectable<S, MetricOutput<?>, T>)p)
-                                                                                           .collect(Collectors.groupingBy(Collectable::getCollectionOf));
+                                                                                stream().filter(Collectable.class::isInstance)
+                                                                                        .map(p -> (Collectable<S, MetricOutput<?>, T>)p)
+                                                                                        .collect(Collectors.groupingBy(Collectable::getCollectionOf));
         //Consumer that computes the intermediate output once and applies it to all grouped instances of Collectable
         final Consumer<List<Collectable<S, MetricOutput<?>, T>>> c = x -> {
             final MetricOutput<?> intermediate = x.get(0).getCollectionInput(s); //Compute intermediate output

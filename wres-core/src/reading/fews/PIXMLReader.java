@@ -4,7 +4,7 @@
 package reading.fews;
 
 import concurrency.CopyExecutor;
-import concurrency.Executor;
+
 import config.SystemConfig;
 import config.specification.EnsembleSpecification;
 import config.specification.FeatureSpecification;
@@ -24,14 +24,9 @@ import util.Database;
 import util.Utilities;
 
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.List;
 
-import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Christopher Tubbs
@@ -45,11 +40,11 @@ public final class PIXMLReader extends XMLReader
      */
 	private final static String newline = System.lineSeparator();
 
-	/**
-	 * Message logger for the PIXMLReader class
-	 */
-	private static final Logger LOGGER = LoggerFactory.getLogger(PIXMLReader.class);
-
+    /**
+     * @return The String header for the copy statement for forecasts
+     */
+	private final static String INSERT_FORECAST_HEADER = "wres.ForecastValue(forecastensemble_id, lead, forecasted_value)";
+	private final static String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, observation_time, observed_value, measurementunit_id, source_id)";
 	/**
 	 * Constructor for a reader for forecast data
 	 * @param filename The path to the file to read
@@ -189,7 +184,7 @@ public final class PIXMLReader extends XMLReader
 		if (insertCount > 0) {
 			currentScript += newline;
 		} else if(insertCount == 0) {
-			currentTableDefinition = getInsertForecastHeader();
+			currentTableDefinition = INSERT_FORECAST_HEADER;
 			currentScript = "";
 		}
 		
@@ -215,7 +210,7 @@ public final class PIXMLReader extends XMLReader
 		}
 		else
 		{
-			currentTableDefinition = getInsertObservationHeader();
+			currentTableDefinition = INSERT_OBSERVATION_HEADER;
 			currentScript = "";
 		}
 		
@@ -225,9 +220,9 @@ public final class PIXMLReader extends XMLReader
 		currentScript += delimiter;
 		currentScript += observedValue;
 		currentScript += delimiter;
-		currentScript += getMeasurementID();
+		currentScript += String.valueOf(getMeasurementID());
 		currentScript += delimiter;
-		currentScript += getSourceID();
+		currentScript += String.valueOf(getSourceID());
 		
 		insertCount++;
 	}
@@ -385,50 +380,6 @@ public final class PIXMLReader extends XMLReader
 			this.currentForecast.setCreationDate(this.creationDate + " " + this.creationTime);
 		}
 	}
-	
-	@Override
-	/**
-	 * Create a source for observations and attach it to all recorded values
-	 */
-	protected void completeParsing() {
-		// TODO: Uncomment when it is time to restart testing
-		/*if (!isForecast) {
-			Integer sourceID = null;
-			String massSave = "";
-			try {			
-				sourceID = getSourceID();
-				massSave += "INSERT INTO wres.ObservationSource (observation_id, source_id)" + newline;
-				massSave += "SELECT O.observation_id, '" + getSourceID() + newline;
-				massSave += "FROM wres.Observation O" + newline;
-				massSave += "WHERE O.variableposition_id = " + getVariablePositionID() + newline;
-				massSave += "	AND O.measurementunit_id = " + getMeasurementID() + newline;
-				
-				if (startDate != null) {
-					massSave += "	AND observation_time >= '" + startDate + "'" + newline;
-				}
-				
-				if (endDate != null) {
-					massSave += "	AND observation_time <= '" + endDate + "'" + newline;
-				}
-				massSave += "	AND NOT EXISTS (" + newline;
-				massSave += "		SELECT 1" + newline;
-				massSave += "		FROM wres.ObservationSource OS" + newline;
-				massSave += "		WHERE OS.observation_id = O.observation_id" + newline;
-				massSave += "			AND OS.source_id = " + getSourceID() + newline;
-				massSave += "	);";
-			} catch (Exception e) {
-				System.err.println();
-				System.err.println("The observations for this file could not be linked to any sources.");
-				System.err.println("The path to the observation file was: " + String.valueOf(this.get_filename()));
-				System.err.println("The id of the source was: " + String.valueOf(sourceID));
-				System.err.println();
-				System.err.println("The script to save the values was:");
-				System.err.println(massSave);
-				System.err.println();
-				e.printStackTrace();
-			}
-		}*/
-	}
 
 	/**
 	 * Reads the date and time from an XML reader that stores the date and time in separate attributes
@@ -523,7 +474,6 @@ public final class PIXMLReader extends XMLReader
 		return this.currentVariableID;
 	}
 	
-	// TODO: Uncomment when the above source saving is uncommented
 	/**
 	 * @return A valid ID for the source of this PIXML file from the database
 	 * @throws Exception Thrown if an ID could not be retrieved from the database
@@ -545,22 +495,6 @@ public final class PIXMLReader extends XMLReader
 			currentSourceID = SourceCache.getSourceID(getFilename(), output_time);
 		}
 		return currentSourceID;
-	}
-	
-	/**
-	 * @return The String header for the copy statement for forecasts
-	 */
-	private static String getInsertForecastHeader()
-	{
-		return "wres.ForecastValue(forecastensemble_id, lead, forecasted_value)";
-	}
-	
-	/**
-	 * @return The String header for the copy statement for observations
-	 */
-	private static String getInsertObservationHeader()
-	{
-		return "wres.Observation(variableposition_id, observation_time, observed_value, measurementunit_id, source_id)";
 	}
 	
 	public void setSpecifiedEarliestDate(String earliestDate) {

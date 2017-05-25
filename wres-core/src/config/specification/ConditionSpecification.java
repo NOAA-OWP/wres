@@ -17,6 +17,9 @@ import util.Utilities;
  */
 public final class ConditionSpecification extends SpecificationElement {
 
+    private final static String MAX_VALUE = "infinity";
+    private final static String MIN_VALUE = "-infinity";
+    
     /**
      * Creates and parses the condition
      * @param reader The XML node(s) containing the definitions for the conditions
@@ -40,25 +43,25 @@ public final class ConditionSpecification extends SpecificationElement {
 		// the name of the element is not important
 		for (int attribute_index = 0; attribute_index < reader.getAttributeCount(); ++attribute_index)
 		{
-			String attribute_name = reader.getAttributeLocalName(attribute_index);
+			String attributeName = reader.getAttributeLocalName(attribute_index);
 			
-			if (attribute_name.equalsIgnoreCase("earliest"))
+			if (attributeName.equalsIgnoreCase("earliest"))
 			{
 				this.latestDate = reader.getAttributeValue(attribute_index);
 			}
-			else if (attribute_name.equalsIgnoreCase("latest"))
+			else if (attributeName.equalsIgnoreCase("latest"))
 			{
 				this.earliestDate = reader.getAttributeValue(attribute_index);
 			}
-			else if (attribute_name.equalsIgnoreCase("minimum"))
+			else if (attributeName.equalsIgnoreCase("minimum"))
 			{
 				this.minimumValue = reader.getAttributeValue(attribute_index);
 			}
-			else if (attribute_name.equalsIgnoreCase("maximum"))
+			else if (attributeName.equalsIgnoreCase("maximum"))
 			{
 				this.maximumValue = reader.getAttributeValue(attribute_index);
 			}
-			if (attribute_name.equalsIgnoreCase("offset"))
+			if (attributeName.equalsIgnoreCase("offset"))
 			{
 			    this.offset = reader.getAttributeValue(attribute_index);
 			}
@@ -115,7 +118,7 @@ public final class ConditionSpecification extends SpecificationElement {
 	{
 		if (!Utilities.isNumeric(minimum))
 		{
-			minimum = "-infinity";
+			minimum = MIN_VALUE;
 		}
 		
 		this.minimumValue = minimum;
@@ -129,7 +132,7 @@ public final class ConditionSpecification extends SpecificationElement {
 	{
 		if (!Utilities.isNumeric(maximum))
 		{
-			maximum = "infinity";
+			maximum = MAX_VALUE;
 		}
 		this.maximumValue = maximum;
 	}
@@ -140,7 +143,7 @@ public final class ConditionSpecification extends SpecificationElement {
 	 */
 	private void setEarliestDate(String earliest) {
 		if (!Utilities.isTimestamp(earliest)) {
-			earliest = "-infinity";
+			earliest = MIN_VALUE;
 		}
 		this.earliestDate = earliest;
 	}
@@ -152,7 +155,7 @@ public final class ConditionSpecification extends SpecificationElement {
 	private void setLatestDate(String latest)
 	{
 		if (!Utilities.isTimestamp(latest)) {
-			latest = "infinity";
+			latest = MAX_VALUE;
 		}
 		this.latestDate = latest;
 	}
@@ -174,28 +177,28 @@ public final class ConditionSpecification extends SpecificationElement {
 	{
 	    return this.earliestDate != null && 
 	           !this.earliestDate.isEmpty() &&
-	           !this.earliestDate.equalsIgnoreCase("-infinity");
+	           !this.earliestDate.equalsIgnoreCase(MIN_VALUE);
 	}
 	
 	public boolean hasLatestDate()
 	{
 	    return this.latestDate != null && 
 	           !this.latestDate.isEmpty() && 
-	           !this.latestDate.equalsIgnoreCase("infinity");
+	           !this.latestDate.equalsIgnoreCase(MAX_VALUE);
 	}
 	
 	public boolean hasMinimumValue()
 	{
 	    return this.minimumValue != null && 
 	           !this.minimumValue.isEmpty() && 
-	           !this.minimumValue.equalsIgnoreCase("-infinity");
+	           !this.minimumValue.equalsIgnoreCase(MIN_VALUE);
 	}
 	
 	public boolean hasMaximumValue()
 	{
 	    return this.maximumValue != null &&
 	           !this.maximumValue.isEmpty() &&         
-	           !this.maximumValue.equalsIgnoreCase("infinity");
+	           !this.maximumValue.equalsIgnoreCase(MAX_VALUE);
 	}
 	
 	public boolean hasOffset()

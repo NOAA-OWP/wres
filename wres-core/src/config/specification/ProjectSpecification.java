@@ -91,11 +91,10 @@ public class ProjectSpecification extends SpecificationElement
         if (reader == null)
         {
             LOGGER.trace("parseMetrics - reader was null");
+            return;
         }
-        else
-        {
-            LOGGER.trace("parseMetrics - reader passed: {}", reader);
-        }
+        
+        LOGGER.trace("parseMetrics - reader passed: {}", reader);
 
         while (reader.hasNext())
         {

@@ -19,7 +19,9 @@ import org.postgresql.copy.CopyManager;
 
 import config.SystemConfig;
 
-public class Database {
+public final class Database {
+    
+    private Database(){}
 
     private static ComboPooledDataSource pool = SystemConfig.getConnectionPool();
 
@@ -136,7 +138,11 @@ public class Database {
 		}
 		finally
 		{
-			
+            if (statement != null)
+            {
+                statement.close();
+            }
+
 			if (connection != null)
 			{
 				returnConnection(connection);
@@ -243,9 +249,9 @@ public class Database {
 	 */
 	public static <T> T getResult(final String query, String label) throws SQLException
 	{
-		ResultSet results = null;
 		Connection connection = null;
 		Statement statement = null;
+		ResultSet results = null;
 		T result = null;
 		
 		try
@@ -278,17 +284,23 @@ public class Database {
 			throw error;
 		}
 		finally
-		{			
+		{
+            if (results != null)
+            {
+                results.close();
+            }
+
 			if (statement != null)
 			{
 				statement.close();
 			}
+
 			if (connection != null)
 			{
 				returnConnection(connection);
 			}
 		}
-		
+
 		return result;
 	}
 	
@@ -337,6 +349,11 @@ public class Database {
         }
         finally
         {           
+            if (results != null)
+            {
+                results.close();
+            }
+            
             if (statement != null)
             {
                 statement.close();

@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import java.util.function.DoubleBinaryOperator;
+
 import wres.datamodel.PairOfDoubles;
 
 /**
@@ -21,7 +22,7 @@ public final class FunctionFactory
 
     public static DoubleErrorFunction error()
     {
-        return (a) -> a.getItemOne() - a.getItemTwo();
+        return a -> a.getItemOne() - a.getItemTwo();
     }
 
     /**
@@ -33,7 +34,7 @@ public final class FunctionFactory
 
     public static DoubleErrorFunction absError()
     {
-        return (a) -> Math.abs(a.getItemOne() - a.getItemTwo());
+        return a -> Math.abs(a.getItemOne() - a.getItemTwo());
     }
 
     /**
@@ -45,7 +46,7 @@ public final class FunctionFactory
 
     public static DoubleErrorFunction squareError()
     {
-        return (a) -> Math.pow(a.getItemOne() - a.getItemTwo(), 2);
+        return a -> Math.pow(a.getItemOne() - a.getItemTwo(), 2);
     }
 
     /**

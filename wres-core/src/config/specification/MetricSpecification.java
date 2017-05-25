@@ -60,9 +60,9 @@ public class MetricSpecification extends SpecificationElement {
             {
                 this.desiredMeasurement = reader.getAttributeValue(attribute_index).trim();
             }
-            else if(attribute_name.equalsIgnoreCase("evaluationLocation"))
+            else if(attribute_name.equalsIgnoreCase("directProcess"))
             {
-                this.evaluationLocation = reader.getAttributeValue(attribute_index).trim();
+                this.directProcess = Utilities.isTrue(reader.getAttributeValue(attribute_index).trim());
             }
         }
     }
@@ -311,6 +311,11 @@ public class MetricSpecification extends SpecificationElement {
 	    
 	    return this.threshold.getValue();
 	}
+	
+	public boolean shouldProcessDirectly()
+	{
+	    return this.directProcess;
+	}
 
 	private String name;
 	private OutputSpecification metric_output;
@@ -320,7 +325,7 @@ public class MetricSpecification extends SpecificationElement {
 	private AggregationSpecification metricAggregate;
 	private String metricType;
 	private ThresholdSpecification threshold;
-	private String evaluationLocation;
+	private boolean directProcess;
 	private String desiredMeasurement;
 	
     @Override

@@ -5,21 +5,15 @@ import wres.engine.statistics.metric.outputs.ScalarOutput;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
- * The mean absolute error applies to continuous variables and is the average unsigned difference between a
- * single-valued predictand and verifying observation. It measures the first-order bias of the predictand.
+ * The mean error applies to continuous variables and is the average signed difference between a single-valued
+ * predictand and a verifying observation. It measures the first-order bias of the predictand.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends ScalarOutput> extends DoubleErrorScore<S, T>
+public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput> extends DoubleErrorScore<S, T>
 {
-
-    @Override
-    public T apply(final S s)
-    {
-        return super.apply(s);
-    }
 
     @Override
     public void checkParameters(final MetricParameter... par)
@@ -37,7 +31,7 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
     @Override
     public String getName()
     {
-        return "Mean Absolute Error";
+        return "Mean Error";
     }
 
     @Override
@@ -50,9 +44,9 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
      * Protected constructor.
      */
 
-    protected MeanAbsoluteError()
+    protected MeanError()
     {
-        super(FunctionFactory.absError());
+        super(FunctionFactory.error());
     }
 
 }

@@ -10,6 +10,9 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import config.specification.FeatureRangeSpecification;
 import data.details.VariableDetails;
 import util.Database;
@@ -20,7 +23,8 @@ import util.Database;
  * Manages the retrieval of variable information that may be shared across threads
  */
 public final class VariableCache extends Cache<VariableDetails, String> {
-	
+
+    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
     /**
      * The global cache of variables whose details may be accessed through static methods
      */
@@ -194,25 +198,51 @@ public final class VariableCache extends Cache<VariableDetails, String> {
     {       
         synchronized(keyIndex)
         {
-            Connection connection = Database.getConnection();
-            Statement variableQuery = connection.createStatement();
-            String loadScript = "SELECT variable_id, variable_name, measurementunit_id" + System.lineSeparator();
-            loadScript += "FROM wres.variable;";
-            
-            ResultSet variables = variableQuery.executeQuery(loadScript);
-            VariableDetails detail = null;
-            
-            while (variables.next()) {
-                detail = new VariableDetails();
-                detail.setVariableName(variables.getString("variable_name"));
-                detail.measurementunit_id = variables.getInt("measurementunit_id");
-                
-                keyIndex.put(detail.getKey(), variables.getInt("variable_id"));
+            Connection connection = null;
+            Statement variableQuery = null;
+            ResultSet variables = null;
+            try
+            {
+                connection = Database.getConnection();
+                variableQuery = connection.createStatement();
+
+                String loadScript = "SELECT variable_id, variable_name, measurementunit_id" + System.lineSeparator();
+                loadScript += "FROM wres.variable;";
+
+                variables = variableQuery.executeQuery(loadScript);
+                VariableDetails detail = null;
+
+                while (variables.next()) {
+                    detail = new VariableDetails();
+                    detail.setVariableName(variables.getString("variable_name"));
+                    detail.measurementunit_id = variables.getInt("measurementunit_id");
+                    
+                    keyIndex.put(detail.getKey(), variables.getInt("variable_id"));
+                }
             }
-            
-            variables.close();
-            variableQuery.close();
-            Database.returnConnection(connection);
+            catch (SQLException error)
+            {
+                LOGGER.error("An error was encountered when trying to populate the Variable cache. {}",
+                             error);
+                throw error;
+            }
+            finally
+            {
+                if (variables != null)
+                {
+                    variables.close();
+                }
+
+                if (variableQuery != null)
+                {
+                    variableQuery.close();
+                }
+
+                if (connection != null)
+                {
+                    Database.returnConnection(connection);
+                }
+            }
         }
     }
 }
