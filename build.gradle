@@ -228,6 +228,7 @@ https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setu
 apply plugin: 'jacoco'        // code coverage tool
 apply plugin: 'org.sonarqube' // static analysis tool
 
+/* used by sonarqube static analysis */
 buildscript
 {
     repositories
@@ -238,6 +239,12 @@ buildscript
     {
         classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.4'
     }
+}
+
+/* used by jacocoRootReport task */
+repositories
+{
+    mavenCentral()
 }
 
 task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [subprojects.test])
