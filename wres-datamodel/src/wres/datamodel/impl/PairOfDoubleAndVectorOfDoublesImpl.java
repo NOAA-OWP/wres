@@ -13,7 +13,7 @@ implements PairOfDoubleAndVectorOfDoubles
     private PairOfDoubleAndVectorOfDoublesImpl(double key, double[] doubles)
     {
         this.itemOne = key;
-        this.itemTwo = doubles;
+        this.itemTwo = doubles.clone();
     }
 
     static PairOfDoubleAndVectorOfDoubles of(double key, double[] doubles)
@@ -57,5 +57,4 @@ implements PairOfDoubleAndVectorOfDoubles
         s.append("]");
         return s.toString();
     }
-
 }

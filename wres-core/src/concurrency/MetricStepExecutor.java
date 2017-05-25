@@ -16,7 +16,7 @@ import config.specification.MetricSpecification;
 public class MetricStepExecutor extends WRESThread implements Callable<Double>
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CopyExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetricStepExecutor.class);
 
     /**
      * 
@@ -33,25 +33,20 @@ public class MetricStepExecutor extends WRESThread implements Callable<Double>
         Double result = null;
         this.executeOnRun();
         
-        /*if (Metrics.hasDirectFunction(specification.getMetricType()))
+        if (specification.shouldProcessDirectly() && Metrics.hasDirectFunction(specification.getMetricType()))
         {
             result = Metrics.call(specification, step);
         }
-        else
+        else if (Metrics.hasFunction(specification.getMetricType()))
         {
-            LOGGER.debug("The function: '" + specification + "' is not a valid function. Returning null...");
-        }*/
-        
-        if (Metrics.hasDirectFunction(specification.getMetricType()))
-        {
-            //List<PairOfDoubleAndVectorOfDoubles> pairs = Metrics.getPairs(specification, step);
             result = Metrics.call(specification.getMetricType(), Metrics.getPairs(specification, step));
         }
         else
         {
-            LOGGER.debug("The function: '" + specification + "' is not a valid function. Returning null...");
+            LOGGER.debug("The function: {} is not a valid function. Returning null...",
+                         specification);
         }
-        
+
         this.exectureOnComplete();
         return result;
     }

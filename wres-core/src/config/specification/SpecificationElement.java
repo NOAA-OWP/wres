@@ -34,11 +34,10 @@ public abstract class SpecificationElement
 	    if (reader == null)
 	    {
 	        LOGGER.trace("constructor - reader was null");
+	        return;
 	    }
-	    else
-	    {
-	        LOGGER.trace("constructor - reader passed : {}", reader);
-	    }
+
+	    LOGGER.trace("constructor - reader passed : {}", reader);
 
 		try
 		{
@@ -97,11 +96,11 @@ public abstract class SpecificationElement
         if (reader == null)
         {
             LOGGER.trace("next - reader was null");
+            return;
         }
-        else
-        {
-            LOGGER.trace("next - reader passed : {}", reader);
-        }
+
+        LOGGER.trace("next - reader passed : {}", reader);
+
 
         if (reader.hasNext()) {
 			reader.next();

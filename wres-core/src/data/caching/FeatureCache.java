@@ -23,6 +23,7 @@ public class FeatureCache extends Cache<FeatureDetails, String>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureCache.class);
+
     /**
      *  Global cache for all Features
      */
@@ -129,34 +130,61 @@ public class FeatureCache extends Cache<FeatureDetails, String>
 	 * @throws SQLException Thrown if Features could not be loaded from the database
 	 */
 	@Override
-    public synchronized void init() throws SQLException {
-        Connection connection = Database.getConnection();
-        Statement featureQuery = connection.createStatement();
-        featureQuery.setFetchSize(100);
-        
-        String loadScript = "SELECT F.lid, F.feature_id, F.feature_name" + System.lineSeparator();
-        loadScript += "FROM wres.Feature F" + System.lineSeparator();
-        loadScript += "INNER JOIN wres.FeaturePosition FP" + System.lineSeparator();
-        loadScript += " ON F.feature_id = FP.feature_id;";
-        
-        ResultSet features = featureQuery.executeQuery(loadScript);
-        
-        FeatureDetails detail = null;
-        
-        while (features.next()) {
-            detail = new FeatureDetails();
-            detail.setLID(features.getString("lid"));
-            detail.station_name = features.getString("feature_name");
-            detail.setID(features.getInt("feature_id"));
-            
-            detail.loadVariablePositionIDs();
-            
-            this.details.put(detail.getId(), detail);
-            this.keyIndex.put(detail.getKey(), detail.getId());
+    public synchronized void init() throws SQLException
+	{
+        Connection connection = null;
+        Statement featureQuery = null;
+        ResultSet features = null;
+
+        try
+        {
+            connection = Database.getConnection();
+            featureQuery = connection.createStatement();
+            featureQuery.setFetchSize(100);
+
+            String loadScript = "SELECT F.lid, F.feature_id, F.feature_name" + System.lineSeparator();
+            loadScript += "FROM wres.Feature F" + System.lineSeparator();
+            loadScript += "INNER JOIN wres.FeaturePosition FP" + System.lineSeparator();
+            loadScript += " ON F.feature_id = FP.feature_id;";
+
+            features = featureQuery.executeQuery(loadScript);
+
+            FeatureDetails detail = null;
+
+            while (features.next()) {
+                detail = new FeatureDetails();
+                detail.setLID(features.getString("lid"));
+                detail.station_name = features.getString("feature_name");
+                detail.setID(features.getInt("feature_id"));
+
+                detail.loadVariablePositionIDs();
+
+                this.details.put(detail.getId(), detail);
+                this.keyIndex.put(detail.getKey(), detail.getId());
+            }
         }
-        
-        features.close();
-        featureQuery.close();
-        Database.returnConnection(connection);
+        catch (SQLException error)
+        {
+            LOGGER.error("An error was encountered when trying to populate the Feature cache. {}",
+                         error);
+            throw error;
+        }
+        finally
+        {
+            if (features != null)
+            {
+                features.close();
+            }
+
+            if (featureQuery != null)
+            {
+                featureQuery.close();
+            }
+
+            if (connection != null)
+            {
+                Database.returnConnection(connection);
+            }
+        }
 	}
 }

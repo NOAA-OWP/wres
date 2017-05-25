@@ -88,16 +88,17 @@ public abstract class Metrics {
     public static Double call(String functionName, List<PairOfDoubleAndVectorOfDoubles> pairs)
     {
         Double result = null;
-        
+
         if (hasFunction(functionName))
         {
             result = FUNCTIONS.get(functionName).apply(pairs);
         }
         else
         {
-            LOGGER.debug("The function named: '" + functionName + "' is not an available function. Returning null...");
+            LOGGER.debug("The function named: {} is not an available function. Returning null...",
+                         functionName);
         }
-        
+
         return result;
     }
     

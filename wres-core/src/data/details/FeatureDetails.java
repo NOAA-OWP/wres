@@ -158,24 +158,50 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 	 * @throws SQLException Thrown if the database cannot adequately load values from the database
 	 */
 	public void loadVariablePositionIDs() throws SQLException {
-		Connection connection = Database.getConnection();
-		Statement loadQuery = connection.createStatement();
-		loadQuery.setFetchSize(100);
-		
-		String loadScript = "SELECT VP.variable_id, VP.variableposition_id" + System.lineSeparator();
-		loadScript += "FROM wres.FeaturePosition FP" + System.lineSeparator();
-		loadScript += "INNER JOIN wres.VariablePosition VP" + System.lineSeparator();
-		loadScript += "	ON VP.variableposition_id = FP.variableposition_id" + System.lineSeparator();
-		loadScript += "WHERE FP.feature_id = " + this.getId();
-		
-		ResultSet variablePositions = loadQuery.executeQuery(loadScript);
-		
-		while (variablePositions.next()) {
-			this.variablePositions.put(variablePositions.getInt("variable_id"), variablePositions.getInt("variableposition_id"));
+        Connection connection = null;
+        Statement loadQuery = null;
+        ResultSet variablePositions = null;
+
+		try
+		{
+		    connection = Database.getConnection();
+		    loadQuery = connection.createStatement();
+		    loadQuery.setFetchSize(100);
+
+    		String loadScript = "SELECT VP.variable_id, VP.variableposition_id" + System.lineSeparator();
+    		loadScript += "FROM wres.FeaturePosition FP" + System.lineSeparator();
+    		loadScript += "INNER JOIN wres.VariablePosition VP" + System.lineSeparator();
+    		loadScript += "	ON VP.variableposition_id = FP.variableposition_id" + System.lineSeparator();
+    		loadScript += "WHERE FP.feature_id = " + this.getId();
+    		
+    		variablePositions = loadQuery.executeQuery(loadScript);
+    		
+    		while (variablePositions.next()) {
+    			this.variablePositions.put(variablePositions.getInt("variable_id"), variablePositions.getInt("variableposition_id"));
+    		}
 		}
-		
-		variablePositions.close();
-		loadQuery.close();
-		Database.returnConnection(connection);
+        catch (SQLException error)
+		{
+            LOGGER.error("An error was encountered when trying to populate the FeatureDetails cache. {}",
+                         error);
+            throw error;
+        }
+		finally
+		{
+		    if (variablePositions != null)
+		    {
+		        variablePositions.close();
+		    }
+
+            if (loadQuery != null)
+            {
+                loadQuery.close();
+            }
+
+            if (connection != null)
+            {
+                Database.returnConnection(connection);
+            }
+		}
 	}
 }

@@ -66,7 +66,7 @@ public class SingleValuedPairs implements MetricInput<PairOfDoubles>
     {
         //Bounds check
         Objects.requireNonNull(pairs2, "Specify non-null input for the single-valued pairs.");
-        if(pairs2.size() == 0)
+        if(pairs2.isEmpty())
         {
             throw new MetricInputException("Provide an input with one or more pairs.");
         }
@@ -75,7 +75,7 @@ public class SingleValuedPairs implements MetricInput<PairOfDoubles>
         if(basePairs != null)
         {
             //Bounds check
-            if(basePairs.size() == 0)
+            if(basePairs.isEmpty())
             {
                 throw new MetricInputException("Provide a baseline with one or more pairs.");
             }
@@ -91,7 +91,7 @@ public class SingleValuedPairs implements MetricInput<PairOfDoubles>
             this.basePairs = null;
         }
         //Set the pairs
-        for(final PairOfDoubles pair : pairs2)
+        for(final PairOfDoubles pair: pairs2)
         {
             this.pairs.add(pair);
         }

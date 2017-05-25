@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Test;
 
 import wres.datamodel.Pair;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
 
@@ -57,5 +58,46 @@ public class DataFactoryImplTest
         assert(pair.getItemOne().getDoubles()[2] == 3.0);
         assert(pair.getItemTwo().getDoubles()[0] == 4.0);
         assert(pair.getItemTwo().getDoubles()[1] == 5.0);
+    }
+
+    @Test
+    public void pairOfDoubleAndVectorOfDoublesTest()
+    {
+        double[] arrOne = {2.0, 3.0};
+        final PairOfDoubleAndVectorOfDoubles tuple = dataFactory.pairOf(1.0, arrOne);
+        assertNotNull(tuple);
+        assert (tuple.getItemOne() == 1.0);
+        assert (tuple.getItemTwo()[0] == 2.0);
+        assert (tuple.getItemTwo()[1] == 3.0);
+        // check that toString() does not throw exception and is not null
+        assertNotNull(tuple.toString());
+    }
+
+    @Test
+    public void pairOfDoubleAndVectorOfDoublesMutationTest()
+    {
+        double[] arrOne = {2.0, 3.0};
+        final PairOfDoubleAndVectorOfDoubles tuple = dataFactory.pairOf(1.0, arrOne);
+        arrOne[0] = 4.0;
+        arrOne[1] = 5.0;
+        assertNotNull(tuple);
+        assert (tuple.getItemOne() == 1.0);
+        assert (tuple.getItemTwo()[0] == 2.0);
+        assert (tuple.getItemTwo()[1] == 3.0);
+    }
+
+    @Test
+    public void pairOfDoubleAndVectorOfDoublesUsingBoxedMutationTest()
+    {
+        Double[] arrOne = {2.0, 3.0};
+        final PairOfDoubleAndVectorOfDoubles tuple = dataFactory.pairOf(1.0, arrOne);
+        assertNotNull(tuple);
+        arrOne[0] = 4.0;
+        arrOne[1] = 5.0;
+        assert (tuple.getItemOne() == 1.0);
+        assert (tuple.getItemTwo()[0] == 2.0);
+        assert (tuple.getItemTwo()[1] == 3.0);
+        // check that toString() does not throw exception and is not null
+        assertNotNull(tuple.toString());
     }
 }

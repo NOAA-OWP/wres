@@ -3,14 +3,12 @@
  */
 package concurrency;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -21,7 +19,6 @@ import config.specification.MetricSpecification;
 import config.specification.ScriptFactory;
 import util.Database;
 import util.Utilities;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
 /**
  * @author Christopher Tubbs
@@ -30,7 +27,7 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 public class MetricExecutor extends WRESThread implements Callable<List<TwoTuple<Integer, Double>>>
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CopyExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetricExecutor.class);
     /**
      * 
      */
@@ -51,8 +48,11 @@ public class MetricExecutor extends WRESThread implements Callable<List<TwoTuple
 
             TwoTuple<String, String> lastLeadScript = ScriptFactory.generateFindLastLead(specification.getSecondVariableID());
 
-            LOGGER.trace("call - about to call Database.getResult() with {} and {}",
-                         lastLeadScript.getItemOne(), lastLeadScript.getItemTwo());
+            if (LOGGER.isTraceEnabled())
+            {
+                LOGGER.trace("call - about to call Database.getResult() with {} and {}",
+                             lastLeadScript.getItemOne(), lastLeadScript.getItemTwo());
+            }
 
             Integer finalLead = Database.getResult(lastLeadScript.getItemOne(), lastLeadScript.getItemTwo());
 
@@ -75,7 +75,10 @@ public class MetricExecutor extends WRESThread implements Callable<List<TwoTuple
             }
         }
 
-        LOGGER.debug("Results count: {}", results.size());
+        if (LOGGER.isDebugEnabled())
+        {
+            LOGGER.debug("Results count: {}", results.size());
+        }
         this.exectureOnComplete();
         return results;
     }

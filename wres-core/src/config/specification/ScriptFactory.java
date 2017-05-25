@@ -10,8 +10,10 @@ import data.caching.MeasurementCache;
  * @author Christopher Tubbs
  *
  */
-public abstract class ScriptFactory
+public final class ScriptFactory
 {
+    private ScriptFactory(){};
+    
     private static String newline = System.lineSeparator();
 
     public static TwoTuple<String, String> generateFindLastLead(int variableID) {
@@ -28,7 +30,7 @@ public abstract class ScriptFactory
         script += "ORDER BY FV.lead DESC" + newline;
         script += "LIMIT 1;";
         
-        return new TwoTuple<String, String>(script, label);
+        return new TwoTuple<>(script, label);
     }
     
     public static String generateGetPairData(MetricSpecification metricSpecification, int progress) throws Exception {

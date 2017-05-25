@@ -1,7 +1,6 @@
 package wres.datamodel.impl;
 
 import wres.datamodel.Pair;
-import wres.datamodel.PairOfBooleans;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfBooleans;
@@ -16,7 +15,12 @@ import wres.datamodel.VectorOfDoubles;
  */
 public class DataFactory implements wres.datamodel.DataFactory
 {
-    private static wres.datamodel.DataFactory INSTANCE = new DataFactory();
+    private static final wres.datamodel.DataFactory INSTANCE = new DataFactory();
+
+    private DataFactory()
+    {
+        // prevent direct construction
+    }
 
     /**
      * Get an instance with object creation methods.
@@ -40,25 +44,6 @@ public class DataFactory implements wres.datamodel.DataFactory
 
             @Override
             public double getItemTwo()
-            {
-                return second;
-            }
-        };
-    }
-
-    @Override
-    public PairOfBooleans pairOf(final boolean first, final boolean second)
-    {
-        return new PairOfBooleans()
-        {
-            @Override
-            public boolean getItemOne()
-            {
-                return first;
-            }
-
-            @Override
-            public boolean getItemTwo()
             {
                 return second;
             }
@@ -118,8 +103,4 @@ public class DataFactory implements wres.datamodel.DataFactory
         };
     }
 
-    private DataFactory()
-    {
-        // prevent direct construction
-    }
 }

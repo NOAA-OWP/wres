@@ -196,7 +196,8 @@ public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
     {
         if(outcomes > 1)
         {
-            int o = 0, p = 0;
+            int o = 0;
+            int p = 0;
             for(int i = 0; i < outcomes; i++)
             {
                 if(pair[i])
