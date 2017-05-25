@@ -2,6 +2,17 @@ package wres.datamodel;
 
 import wres.datamodel.VectorOfDoubles;
 
+/**
+ * A Safe way to share a double array between threads.
+ * 
+ * It is cloned on the way in, and cloned on the way out.
+ * 
+ * This way, if the original array is mutated after construction,
+ * the clone during construction prevents surprise. Likewise, the
+ * clone during get prevents state being leaked to other classes.
+ * 
+ * There does not yet seem to be a performance penalty.
+ */
 class SafeVectorOfDoubles implements VectorOfDoubles
 {
     private final double[] doubles;

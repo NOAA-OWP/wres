@@ -87,14 +87,6 @@ public class DataFactory
 
     public VectorOfBooleans vectorOf(final boolean[] vec)
     {
-        return new VectorOfBooleans()
-        {
-            @Override
-            public boolean[] getBooleans()
-            {
-                return vec.clone();
-            }
-        };
+        return SafeVectorOfBooleans.of(vec);
     }
-
 }
