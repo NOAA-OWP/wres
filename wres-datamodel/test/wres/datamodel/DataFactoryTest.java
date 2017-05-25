@@ -1,6 +1,6 @@
 package wres.datamodel;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -9,14 +9,16 @@ public class DataFactoryTest
     private static final wres.datamodel.DataFactory dataFactory =
         wres.datamodel.DataFactory.instance();
 
+    public static final double THRESHOLD = 0.00001;
+
     @Test
     public void pairOfTest()
     {
         //Reference the constant member for a concrete instance of the factory
         final PairOfDoubles tuple = dataFactory.pairOf(1.0, 2.0);
         assertNotNull(tuple);
-        assert (tuple.getItemOne() == 1.0);
-        assert (tuple.getItemTwo() == 2.0);
+        assertEquals(tuple.getItemOne(), 1.0, THRESHOLD);
+        assertEquals(tuple.getItemTwo(), 2.0, THRESHOLD);
     }
 
     @Test
@@ -25,8 +27,8 @@ public class DataFactoryTest
         double[] arrOne = {1.0, 2.0};
         final VectorOfDoubles doubleVecOne = dataFactory.vectorOf(arrOne);
         assertNotNull(doubleVecOne);
-        assert(doubleVecOne.getDoubles()[0] == 1.0);
-        assert(doubleVecOne.getDoubles()[1] == 2.0);
+        assertEquals(doubleVecOne.getDoubles()[0], 1.0, THRESHOLD);
+        assertEquals(doubleVecOne.getDoubles()[1], 2.0, THRESHOLD);
     }
 
     @Test
@@ -37,8 +39,8 @@ public class DataFactoryTest
         arrOne[0] = 3.0;
         arrOne[1] = 4.0;
         assertNotNull(doubleVecOne);
-        assert(doubleVecOne.getDoubles()[0] == 1.0);
-        assert(doubleVecOne.getDoubles()[1] == 2.0);
+        assertEquals(doubleVecOne.getDoubles()[0], 1.0, THRESHOLD);
+        assertEquals(doubleVecOne.getDoubles()[1], 2.0, THRESHOLD);
     }
 
     @Test
@@ -48,11 +50,11 @@ public class DataFactoryTest
         double[] arrTwo = {4.0, 5.0};
         final Pair<VectorOfDoubles,VectorOfDoubles> pair = dataFactory.pairOf(arrOne, arrTwo);
         assertNotNull(pair);
-        assert(pair.getItemOne().getDoubles()[0] == 1.0);
-        assert(pair.getItemOne().getDoubles()[1] == 2.0);
-        assert(pair.getItemOne().getDoubles()[2] == 3.0);
-        assert(pair.getItemTwo().getDoubles()[0] == 4.0);
-        assert(pair.getItemTwo().getDoubles()[1] == 5.0);
+        assertEquals(pair.getItemOne().getDoubles()[0], 1.0, THRESHOLD);
+        assertEquals(pair.getItemOne().getDoubles()[1], 2.0, THRESHOLD);
+        assertEquals(pair.getItemOne().getDoubles()[2], 3.0, THRESHOLD);
+        assertEquals(pair.getItemTwo().getDoubles()[0], 4.0, THRESHOLD);
+        assertEquals(pair.getItemTwo().getDoubles()[1], 5.0, THRESHOLD);
     }
 
     @Test
@@ -61,9 +63,9 @@ public class DataFactoryTest
         double[] arrOne = {2.0, 3.0};
         final PairOfDoubleAndVectorOfDoubles tuple = dataFactory.pairOf(1.0, arrOne);
         assertNotNull(tuple);
-        assert (tuple.getItemOne() == 1.0);
-        assert (tuple.getItemTwo()[0] == 2.0);
-        assert (tuple.getItemTwo()[1] == 3.0);
+        assertEquals(tuple.getItemOne(), 1.0, THRESHOLD);
+        assertEquals(tuple.getItemTwo()[0], 2.0, THRESHOLD);
+        assertEquals(tuple.getItemTwo()[1], 3.0, THRESHOLD);
         // check that toString() does not throw exception and is not null
         assertNotNull(tuple.toString());
     }
@@ -76,9 +78,9 @@ public class DataFactoryTest
         arrOne[0] = 4.0;
         arrOne[1] = 5.0;
         assertNotNull(tuple);
-        assert (tuple.getItemOne() == 1.0);
-        assert (tuple.getItemTwo()[0] == 2.0);
-        assert (tuple.getItemTwo()[1] == 3.0);
+        assertEquals(tuple.getItemOne(), 1.0, THRESHOLD);
+        assertEquals(tuple.getItemTwo()[0], 2.0, THRESHOLD);
+        assertEquals(tuple.getItemTwo()[1], 3.0, THRESHOLD);
     }
 
     @Test
@@ -87,12 +89,37 @@ public class DataFactoryTest
         Double[] arrOne = {2.0, 3.0};
         final PairOfDoubleAndVectorOfDoubles tuple = dataFactory.pairOf(1.0, arrOne);
         assertNotNull(tuple);
+
+        // mutate the original array
         arrOne[0] = 4.0;
         arrOne[1] = 5.0;
-        assert (tuple.getItemOne() == 1.0);
-        assert (tuple.getItemTwo()[0] == 2.0);
-        assert (tuple.getItemTwo()[1] == 3.0);
+
+        assertEquals(tuple.getItemOne(), 1.0, THRESHOLD);
+        assertEquals(tuple.getItemTwo()[0], 2.0, THRESHOLD);
+        assertEquals(tuple.getItemTwo()[1], 3.0, THRESHOLD);
         // check that toString() does not throw exception and is not null
         assertNotNull(tuple.toString());
+    }
+
+    @Test
+    public void vectorOfBooleanTest()
+    {
+        boolean[] arrOne = {false, true};
+        final VectorOfBooleans vec = dataFactory.vectorOf(arrOne);
+        assertEquals(vec.getBooleans()[0], false);
+        assertEquals(vec.getBooleans()[1], true);
+    }
+
+    @Test
+    public void vectorOfBooleanMutationTest()
+    {
+        boolean[] arrOne = {false, true};
+        final VectorOfBooleans vec = dataFactory.vectorOf(arrOne);
+        // mutate the values in the original array
+        arrOne[0] = true;
+        arrOne[1] = false;
+        // despite mutation, we should get the same result back
+        assertEquals(vec.getBooleans()[0], false);
+        assertEquals(vec.getBooleans()[1], true);
     }
 }
