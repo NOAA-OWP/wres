@@ -30,7 +30,7 @@ public final class MetricTestDataFactory
     {
         //Construct some single-valued pairs
         final List<PairOfDoubles> values = new ArrayList<>();
-        final DataFactory dataFactory = wres.datamodel.impl.DataFactory.instance();
+        final DataFactory dataFactory = wres.datamodel.DataFactory.instance();
         values.add(dataFactory.pairOf(22.9, 22.8));
         values.add(dataFactory.pairOf(75.2, 80));
         values.add(dataFactory.pairOf(63.2, 65));
@@ -85,7 +85,7 @@ public final class MetricTestDataFactory
     {
         //Construct some probabilistic pairs, and use the same pairs as a reference for skill (i.e. skill = 0.0)
         final List<PairOfDoubles> values = new ArrayList<>();
-        final DataFactory dataFactory = wres.datamodel.impl.DataFactory.instance();
+        final DataFactory dataFactory = wres.datamodel.DataFactory.instance();
         values.add(dataFactory.pairOf(0, 3.0 / 5.0));
         values.add(dataFactory.pairOf(0, 1.0 / 5.0));
         values.add(dataFactory.pairOf(1, 2.0 / 5.0));

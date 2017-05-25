@@ -63,7 +63,7 @@ public class MetricOutputFactory
                                                                              final int sampleSize,
                                                                              final Dimension d)
     {
-        final DataFactory dataFactory = wres.datamodel.impl.DataFactory.instance();
+        final DataFactory dataFactory = wres.datamodel.DataFactory.instance();
         return (T)new VectorOutput(dataFactory.vectorOf(output), sampleSize, d);
     }
 
