@@ -225,12 +225,19 @@ project(':wres-metrics')
 /* Single report for test coverage, thanks to
 https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setups/12100/5
  */
+apply plugin: 'jacoco'        // code coverage tool
+apply plugin: 'org.sonarqube' // static analysis tool
 
-apply plugin: 'jacoco'
-
-repositories
+buildscript
 {
-    mavenCentral()
+    repositories
+    {
+        mavenCentral()
+    }
+    dependencies
+    {
+        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.4'
+    }
 }
 
 task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [subprojects.test])
