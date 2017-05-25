@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric.outputs;
 
+import java.util.Objects;
+
 import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.MetricOutput;
 
@@ -72,10 +74,10 @@ public class ScalarOutput implements MetricOutput<Double>
     @Override
     public boolean equals(final Object o)
     {
-        final boolean start = o != null && o instanceof ScalarOutput
-            && ((ScalarOutput)o).getData().doubleValue() == output
-            && ((ScalarOutput)o).sampleSize == sampleSize
-            && (((ScalarOutput)o).dim == null) == (dim == null);
+        boolean start = o instanceof ScalarOutput && !Objects.isNull(o);
+        start = start && Math.abs(((ScalarOutput)o).getData().doubleValue() - output) < .00000001;
+        start = start && ((ScalarOutput)o).sampleSize == sampleSize;
+        start = start && (Objects.isNull(((ScalarOutput)o).dim) == Objects.isNull(dim));
         return (dim != null) ? start && ((ScalarOutput)o).dim.equals(dim) : start;
     }
 
