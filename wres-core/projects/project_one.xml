@@ -70,9 +70,9 @@
             </features>
         </forecasts>
         <metrics>
-            <metric type="mean_error" join_on_feature="false" measurement="CFS">
+            <metric type="mean_error" evaluationLocation="data" measurement="CMS">
                 <name>ME</name>
-                <output combine_output="false">
+                <output combine_output="false" measurement="CMS">
                     <graphic output="false" path="" format=""/>
                     <numeric output="true" path="numeric_output" format="xml" />
                 </output>
@@ -139,7 +139,7 @@
                         Baselines can be defined like source_one and source_two
                      </datasource> -->
             </metric>
-            <metric type="correlation_coefficient">
+            <metric type="correlation_coefficient" evaluationLocation="data" measurement="CMS">
                 <name>Correlation</name>
                 <output combine_output="false">
                     <graphic output="false" path="" format=""/>

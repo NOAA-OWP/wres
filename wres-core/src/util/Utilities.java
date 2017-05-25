@@ -671,14 +671,16 @@ public final class Utilities {
         }
         
         final double mean = getPairedDoubleMean(pairs);
+        int pairCount = 0;
         double STD = 0.0;       
         
         for (PairOfDoubleAndVectorOfDoubles pair : pairs)
         {
             STD += Math.pow(pair.getItemOne() - mean, 2);
+            pairCount += pair.getItemTwo().length;
         }
         
-        STD /= (pairs.size() - 1);
+        STD /= (pairCount - 1);
         
         return Math.sqrt(STD);
 	}
