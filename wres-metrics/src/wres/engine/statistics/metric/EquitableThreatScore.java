@@ -31,7 +31,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
 
     public static EquitableThreatScore<DichotomousPairs, ScalarOutput> newInstance()
     {
-        return new EquitableThreatScore<DichotomousPairs, ScalarOutput>();
+        return new EquitableThreatScore<>();
     }
 
     @Override

@@ -63,7 +63,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public MetricOutput getCollectionInput(final S input)
+    public MetricOutput<?> getCollectionInput(final S input)
     {
         return super.apply(input); //2x2 contingency table
     }

@@ -25,9 +25,7 @@ public class MetricOutputFactory
      * @return a {@link ScalarOutput}
      */
 
-    public static ScalarOutput getScalarOutput(final double output,
-                                               final int sampleSize,
-                                               final Dimension d)
+    public static ScalarOutput getScalarOutput(final double output, final int sampleSize, final Dimension d)
     {
         return new ScalarOutput(output, sampleSize, d);
     }
@@ -47,7 +45,7 @@ public class MetricOutputFactory
                                                                              final int sampleSize,
                                                                              final Dimension d)
     {
-        return (T)new MatrixOutput(new DoubleMatrix(output), sampleSize);
+        return (T)new MatrixOutput(new DoubleMatrix(output), sampleSize, d);
     }
 
     /**
@@ -66,7 +64,7 @@ public class MetricOutputFactory
                                                                              final Dimension d)
     {
         final DataFactory dataFactory = wres.datamodel.impl.DataFactory.instance();
-        return (T)new VectorOutput(dataFactory.vectorOf(output), sampleSize);
+        return (T)new VectorOutput(dataFactory.vectorOf(output), sampleSize, d);
     }
 
     /**
