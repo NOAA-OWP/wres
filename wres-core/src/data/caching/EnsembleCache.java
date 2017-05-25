@@ -11,6 +11,9 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import collections.Triplet;
 import data.details.EnsembleDetails;
 import util.Database;
@@ -22,6 +25,8 @@ import util.Utilities;
  */
 public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String, String>> {
 
+    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
+
     /**
      *  Internal cache that will store a global collection of details whose details may be accessed through static methods
      */
@@ -30,7 +35,14 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 	private EnsembleCache()
 	{
 	    super();
-	    this.init();
+        try
+        {
+            this.init();
+        }
+        catch (SQLException se)
+        {
+            LOGGER.error("Could not init EnsembleCache due to {}", se);
+        }
 	}
 	
 	/**
@@ -319,20 +331,21 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
 	 * Loads all pre-existing Ensembles into the instanced cache
 	 */
 	@Override
-    public synchronized void init()
+    public synchronized void init() throws SQLException
 	{
         Connection connection = null;
-        
+        Statement ensembleQuery = null;
+        ResultSet ensembles = null;
         try
         {
             connection = Database.getConnection();
-            Statement ensembleQuery = connection.createStatement();
+            ensembleQuery = connection.createStatement();
             
             String loadScript = "SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id" + newline;
             loadScript += "FROM wres.ensemble" + newline;
             loadScript += "LIMIT " + getMaxDetails();
             
-            ResultSet ensembles = ensembleQuery.executeQuery(loadScript);
+            ensembles = ensembleQuery.executeQuery(loadScript);
             
             EnsembleDetails detail = null;
             
@@ -345,18 +358,25 @@ public class EnsembleCache extends Cache<EnsembleDetails, Triplet<String, String
                 
                 this.add(detail.getKey(), detail.getId());
             }
-            
-            ensembles.close();
-            ensembleQuery.close();
         }
         catch (SQLException error)
         {
-            System.err.println("An error was encountered when trying to populate the Ensemble cache.");
-            error.printStackTrace();
-            System.err.println();
+            LOGGER.error("An error was encountered when trying to populate the Ensemble cache. {}",
+                         error);
+            throw error;
         }
         finally
         {
+            if (ensembles != null)
+            {
+                ensembles.close();
+            }
+
+            if (ensembleQuery != null)
+            {
+                ensembleQuery.close();
+            }
+
             if (connection != null)
             {
                 Database.returnConnection(connection);

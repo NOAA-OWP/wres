@@ -8,6 +8,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import data.details.MeasurementDetails;
 import util.Database;
 
@@ -17,6 +20,7 @@ import util.Database;
  */
 public class MeasurementCache extends Cache<MeasurementDetails, String> {
 
+    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
     /**
      *  Internal, Global cache of measurement details
      */
@@ -75,23 +79,49 @@ public class MeasurementCache extends Cache<MeasurementDetails, String> {
     public synchronized void init() throws SQLException {
 	    synchronized(keyIndex)
 	    {
-            Connection connection = Database.getConnection();
-            Statement measurementQuery = connection.createStatement();
-            measurementQuery.setFetchSize(100);
-            
-            String loadScript = "SELECT measurementunit_id, unit_name" + System.lineSeparator();
-            loadScript += "FROM wres.measurementunit" + newline;
-            loadScript += "LIMIT " + getMaxDetails() + ";";
-            
-            ResultSet measurements = measurementQuery.executeQuery(loadScript);
-            
-            while (measurements.next()) {                
-                this.keyIndex.put(measurements.getString("unit_name"), measurements.getInt("measurementunit_id"));
+            Connection connection = null;
+            Statement measurementQuery = null;
+            ResultSet measurements = null;
+
+            try
+            {
+                connection = Database.getConnection();
+                measurementQuery = connection.createStatement();
+                measurementQuery.setFetchSize(100);
+
+                String loadScript = "SELECT measurementunit_id, unit_name" + System.lineSeparator();
+                loadScript += "FROM wres.measurementunit" + newline;
+                loadScript += "LIMIT " + getMaxDetails() + ";";
+
+                measurements = measurementQuery.executeQuery(loadScript);
+
+                while (measurements.next()) {                
+                    this.keyIndex.put(measurements.getString("unit_name"), measurements.getInt("measurementunit_id"));
+                }
             }
-            
-            measurements.close();
-            measurementQuery.close();
-            Database.returnConnection(connection);
+            catch (SQLException error)
+            {
+                LOGGER.error("An error was encountered when trying to populate the Measurement cache. {}",
+                             error);
+                throw error;
+            }
+            finally
+            {
+                if (measurements != null)
+                {
+                    measurements.close();
+                }
+
+                if (measurementQuery != null)
+                {
+                    measurementQuery.close();
+                }
+
+                if (connection != null)
+                {
+                    Database.returnConnection(connection);
+                }
+            }
 	    }
 	}
 }
