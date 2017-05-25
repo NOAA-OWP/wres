@@ -18,9 +18,11 @@ import config.SystemConfig;
  * @author Christopher Tubbs
  */
 public final class Executor {
+
+    private static final AtomicLong submittedCount = new AtomicLong();
+
 	// The underlying thread executor
 	private static ExecutorService service = createService();
-	private static final AtomicLong submittedCount = new AtomicLong();
 
     private Executor()
     {
@@ -36,7 +38,10 @@ public final class Executor {
 		{
 			service.shutdown();
 		}
-        submittedCount.set(0);
+		if (submittedCount != null)
+		{
+		    submittedCount.set(0);
+		}
 		return Executors.newFixedThreadPool(SystemConfig.maximumThreadCount());
 	}
 	
