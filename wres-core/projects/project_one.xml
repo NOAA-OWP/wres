@@ -70,9 +70,10 @@
             </features>
         </forecasts>
         <metrics>
-            <metric type="mean_error" join_on_feature="false" measurement="CFS">
+            <metric type="mean_error" directProcess="ue" measurement="CMS">
                 <name>ME</name>
                 <output combine_output="false">
+                    <!-- combine_output is supposed to indicate that a pdf needs to be created to show both numerical and graphical data; needs to be reevaluated -->
                     <graphic output="false" path="" format=""/>
                     <numeric output="true" path="numeric_output" format="xml" />
                 </output>
@@ -139,9 +140,10 @@
                         Baselines can be defined like source_one and source_two
                      </datasource> -->
             </metric>
-            <metric type="correlation_coefficient">
+            <metric type="correlation_coefficient" directProcess="ue" measurement="CMS">
                 <name>Correlation</name>
                 <output combine_output="false">
+                    <!-- combine_output is supposed to indicate that a pdf needs to be created to show both numerical and graphical data; needs to be reevaluated -->
                     <graphic output="false" path="" format=""/>
                     <numeric output="true" path="numeric_output" format="xml" />
                 </output>

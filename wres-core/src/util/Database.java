@@ -19,7 +19,9 @@ import org.postgresql.copy.CopyManager;
 
 import config.SystemConfig;
 
-public class Database {
+public final class Database {
+    
+    private Database(){}
 
     private static ComboPooledDataSource pool = SystemConfig.getConnectionPool();
 
@@ -347,6 +349,11 @@ public class Database {
         }
         finally
         {           
+            if (results != null)
+            {
+                results.close();
+            }
+            
             if (statement != null)
             {
                 statement.close();

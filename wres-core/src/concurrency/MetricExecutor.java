@@ -3,14 +3,12 @@
  */
 package concurrency;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -21,7 +19,6 @@ import config.specification.MetricSpecification;
 import config.specification.ScriptFactory;
 import util.Database;
 import util.Utilities;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
 /**
  * @author Christopher Tubbs
