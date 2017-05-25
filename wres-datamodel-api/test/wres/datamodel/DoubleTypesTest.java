@@ -7,6 +7,22 @@ import org.junit.Test;
 
 public class DoubleTypesTest
 {
+
+    private static class VectorOfDoublesSimple implements VectorOfDoubles
+    {
+        private final double[] doubles;
+
+        public VectorOfDoublesSimple(double[] doubles)
+        {
+            this.doubles = doubles.clone();
+        }
+
+        @Override
+        public double[] getDoubles()
+        {
+            return this.doubles.clone();
+        }
+    }
     /**
      * Test demonstrating the hierarchy of the types
      * 
@@ -27,27 +43,13 @@ public class DoubleTypesTest
             @Override
             public VectorOfDoubles getItemOne()
             {
-                return new VectorOfDoubles()
-                {
-                    @Override
-                    public double[] getDoubles()
-                    {
-                        return ensembleA1;
-                    }
-                };
+                return new VectorOfDoublesSimple(ensembleA1);
             }
 
             @Override
             public VectorOfDoubles getItemTwo()
             {
-                return new VectorOfDoubles()
-                {
-                    @Override
-                    public double[] getDoubles()
-                    {
-                        return ensembleA2;
-                    }
-                };
+                return new VectorOfDoublesSimple(ensembleA2);
             }
 
         };
@@ -58,27 +60,13 @@ public class DoubleTypesTest
             @Override
             public VectorOfDoubles getItemOne()
             {
-                return new VectorOfDoubles()
-                {
-                    @Override
-                    public double[] getDoubles()
-                    {
-                        return ensembleB1;
-                    }
-                };
+                return new VectorOfDoublesSimple(ensembleB1);
             }
 
             @Override
             public VectorOfDoubles getItemTwo()
             {
-                return new VectorOfDoubles()
-                {
-                    @Override
-                    public double[] getDoubles()
-                    {
-                        return ensembleB2;
-                    }
-                };
+                return new VectorOfDoublesSimple(ensembleB2);
             }
         };
 
