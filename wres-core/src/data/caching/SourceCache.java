@@ -8,6 +8,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import collections.TwoTuple;
 import data.details.SourceDetails;
 import util.Database;
@@ -17,6 +20,8 @@ import util.Database;
  * @author Christopher Tubbs
  */
 public class SourceCache extends Cache<SourceDetails, TwoTuple<String, String>> {
+
+    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
     /**
      * Global Cache of basic source data
@@ -92,28 +97,53 @@ public class SourceCache extends Cache<SourceDetails, TwoTuple<String, String>> 
             if (keyIndex.size() > 0) {
                 this.clearCache();
             }
-            
-            Connection connection = Database.getConnection();
-            Statement sourceQuery = connection.createStatement();
-            String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time" + System.lineSeparator();
-            loadScript += "FROM wres.Source" + System.lineSeparator();
-            loadScript += "LIMIT " + getMaxDetails();
-            
-            ResultSet sources = sourceQuery.executeQuery(loadScript);
-            SourceDetails detail = null;
-            
-            while (sources.next()) {
-                detail = new SourceDetails();
-                detail.setOutputTime(sources.getString("output_time"));
-                detail.setSourcePath(sources.getString("path"));
+
+            Connection connection = null;
+            Statement sourceQuery = null;
+            ResultSet sources = null;
+
+            try
+            {
+                connection = Database.getConnection();
+                sourceQuery = connection.createStatement();
+                String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time" + System.lineSeparator();
+                loadScript += "FROM wres.Source" + System.lineSeparator();
+                loadScript += "LIMIT " + getMaxDetails();
                 
-                this.keyIndex.put(detail.getKey(), sources.getInt("source_id"));
+                sources = sourceQuery.executeQuery(loadScript);
+                SourceDetails detail = null;
+                
+                while (sources.next()) {
+                    detail = new SourceDetails();
+                    detail.setOutputTime(sources.getString("output_time"));
+                    detail.setSourcePath(sources.getString("path"));
+                    
+                    this.keyIndex.put(detail.getKey(), sources.getInt("source_id"));
+                }
             }
-            
-            sources.close();
-            sourceQuery.close();
-            Database.returnConnection(connection);
+            catch (SQLException error)
+            {
+                LOGGER.error("An error was encountered when trying to populate the Source cache. {}",
+                             error);
+                throw error;
+            }
+            finally
+            {
+                if (sources != null)
+                {
+                    sources.close();
+                }
+
+                if (sourceQuery != null)
+                {
+                    sourceQuery.close();
+                }
+
+                if (connection != null)
+                {
+                    Database.returnConnection(connection);
+                }
+            }
         }
     }
-	
 }
