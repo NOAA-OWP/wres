@@ -1,12 +1,7 @@
-/**
- * 
- */
-
-import java.sql.SQLException;
-
 import util.MainFunctions;
-import util.Stopwatch;
-import util.Utilities;
+import wres.util.FormattedStopwatch;
+import wres.util.Strings;
+import wres.util.Collections;
 
 /**
  * @author Christopher Tubbs
@@ -26,19 +21,11 @@ public class Main {
 			
 			if (MainFunctions.hasOperation(operation))
 			{
-			    try
-                {
-                    Utilities.initializeCaches();
-                }
-                catch(SQLException e1)
-                {
-                    System.err.println("The cache could not be initialized.");
-                    e1.printStackTrace();
-                }
-				args = Utilities.removeIndexFromArray(args, 0);
+
+				args = Collections.removeIndexFromArray(args, 0);
 				System.out.println("Beginning operation: '" + operation + "'...");
 
-                Stopwatch watch = new Stopwatch();
+                FormattedStopwatch watch = new FormattedStopwatch();
                 watch.start();
 				try
 				{
@@ -57,7 +44,7 @@ public class Main {
 				System.out.println(watch.getFormattedDuration());
 
 				System.out.println();
-				System.out.println(Utilities.getSystemStats());
+				System.out.println(Strings.getSystemStats());
 			}
 			else
 			{

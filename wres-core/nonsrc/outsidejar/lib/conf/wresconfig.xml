@@ -19,6 +19,8 @@
     <maximum_inserts>900</maximum_inserts>
     <maximum_copies>200</maximum_copies>
     <project_directory>projects</project_directory>
+    <should_log>false</should_log>
+    <in_development>true</in_development>
     <!--IOEP Username: pguser-->
     <!--IOEP Password: pass-->
     <!--IOEP database name: WRESDBTEST-->

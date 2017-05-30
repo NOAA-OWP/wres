@@ -1,6 +1,3 @@
-/**
- * 
- */
 package data.caching;
 
 import java.sql.Connection;
@@ -8,22 +5,17 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import data.definition.VariableDef;
-import collections.RecentUseList;
-import util.Database;
+import grouping.RecentUseList;
+import wres.io.utilities.Database;
 
 @Deprecated
-/**
- * @author Christopher Tubbs
- *
- * @deprecated: Relies on the old schema
- */
 public class Variable {
 
 	private static final int MAX_DEFINITIONS = 10;
 	
-	private static Map<Integer, VariableDef> definitions = new ConcurrentHashMap<Integer, VariableDef>();
-	private static Map<String, Integer> name_index = new ConcurrentHashMap<String, Integer>();
-	private static RecentUseList<Integer> recently_used_ids = new RecentUseList<Integer>();
+	private static Map<Integer, VariableDef> definitions = new ConcurrentHashMap<>();
+	private static Map<String, Integer> name_index = new ConcurrentHashMap<>();
+	private static RecentUseList<Integer> recently_used_ids = new RecentUseList<>();
 	
 	/**
 	 * Returns the ID from public.variable based on its name
@@ -127,9 +119,8 @@ public class Variable {
 	 * @return True if the variable was loaded from the database
 	 * @throws SQLException
 	 */
-	private static synchronized boolean load_by_id(int id) throws SQLException
+	private static synchronized void load_by_id(int id) throws SQLException
 	{
-		boolean loaded = false;
 		if (!definitions.containsKey(id))
 		{
 			String load_script = load_by_id + String.valueOf(id) + ";";
@@ -142,8 +133,7 @@ public class Variable {
 				String variable_name = new_variable.get_name();
 				name_index.put(variable_name, id);
 				definitions.put(id, new_variable);
-				update_recently_used(id);
-				loaded = true;
+				updateRecentlyUsed(id);
 			} catch (SQLException e) {
 				System.err.println("The variable with id: '" + String.valueOf(id) + "' could not be loaded...");
 				throw e;
@@ -153,8 +143,7 @@ public class Variable {
 			    }
 			}
 		}
-		
-		return loaded;
+
 	}
 	
 	/**
@@ -163,7 +152,7 @@ public class Variable {
 	 * @return True if the variable was successfully loaded
 	 * @throws SQLException An error is thrown if the database connection could not be adequately returned
 	 */
-	private static synchronized boolean load_by_name(String variable_name) throws SQLException
+	private static synchronized boolean load_by_name(String variable_name)
 	{
 		Integer id = null;
 		boolean loaded = false;
@@ -189,7 +178,7 @@ public class Variable {
 		
 		if (id != null)
 		{
-			update_recently_used(id);
+			updateRecentlyUsed(id);
 			loaded = true;
 		}		
 		
@@ -200,7 +189,7 @@ public class Variable {
 	 * Updates the list of recently used variables based on the ID of a variable
 	 * @param id The id of a recently used variable
 	 */
-	private static synchronized void update_recently_used(int id)
+	private static synchronized void updateRecentlyUsed(int id)
 	{
 		recently_used_ids.add(id);
 		if (recently_used_ids.size() >= MAX_DEFINITIONS)

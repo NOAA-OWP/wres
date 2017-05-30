@@ -1,11 +1,10 @@
-/**
- * 
- */
 package concurrency;
 import java.sql.SQLException;
 import java.util.HashMap;
-import util.Database;
-import util.Utilities;
+
+import wres.io.concurrency.WRESThread;
+import wres.io.utilities.Database;
+import wres.util.Collections;
 
 /**
  * @author ctubbs
@@ -52,7 +51,7 @@ public class ASCIIResultSaver extends WRESThread implements Runnable {
 					add_comma = true;
 				}
 				
-				String values = Utilities.toString(forecasted_values.get(forecast).get(hour));
+				String values = Collections.toString(forecasted_values.get(forecast).get(hour));
 				expression_builder.append("(");
 				expression_builder.append(forecast);
 				expression_builder.append(", ");

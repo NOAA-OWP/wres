@@ -1,19 +1,11 @@
-/**
- * 
- */
 package data.caching;
 
 import java.sql.SQLException;
 
 import data.definition.LocationDef;
-import util.Database;
+import wres.io.utilities.Database;
 
 @Deprecated
-/**
- * Interface for querying the database for information from public.ObservationLocation
- * @author Christopher Tubbs
- * @deprecated Use of any data from the public schema should be discontinued
- */
 public class ObservationLocation {
 	
     /**

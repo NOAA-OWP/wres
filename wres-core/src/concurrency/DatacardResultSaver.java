@@ -1,12 +1,11 @@
-/**
- * 
- */
 package concurrency;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
-import util.Database;
+import wres.io.utilities.Database;
+import wres.util.Time;
+import wres.io.concurrency.WRESThread;
 
 /**
  * @author ctubbs
@@ -58,7 +57,7 @@ public class DatacardResultSaver extends WRESThread implements Runnable {
 				expression.append("(");
 				expression.append(observation_id);
 				expression.append(", '");
-				expression.append(util.Utilities.convertDateToString(valid_time));
+				expression.append(Time.convertDateToString(valid_time));
 				expression.append("', ");
 				expression.append(dated_values.get(valid_time));
 				expression.append(", 1)");
