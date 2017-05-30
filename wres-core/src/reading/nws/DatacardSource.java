@@ -1,6 +1,3 @@
-/**
- * 
- */
 package reading.nws;
 
 import java.io.BufferedReader;
@@ -10,7 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import concurrency.DatacardResultSaver;
-import concurrency.Executor;
+import wres.io.concurrency.Executor;
 import data.caching.Variable;
 
 import java.sql.SQLException;
@@ -20,9 +17,9 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import reading.BasicSource;
-import reading.SourceType;
-import util.Database;
+import wres.io.reading.BasicSource;
+import wres.io.reading.SourceType;
+import wres.io.utilities.Database;
 
 /**
  * @author ctubbs
@@ -250,29 +247,26 @@ public class DatacardSource extends BasicSource {
 			int current_lead = 6;
 
 			//ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
-			HashMap<OffsetDateTime, String> dated_values = new HashMap<OffsetDateTime, String>();
+			HashMap<OffsetDateTime, String> dated_values = new HashMap<>();
 			int entry_count = 0;
 			while ((line = reader.readLine()) != null)
 			{
 				String[] values = line.substring(20).trim().split("\\s+");
-				
-				for (int row_index = 0; row_index < values.length; ++row_index)
-				{
-					if (!values[row_index].startsWith(missing_data_symbol) && !values[row_index].startsWith(accumulated_data_symbol))
-					{
+
+				for (String value : values) {
+					if (!value.startsWith(missing_data_symbol) && !value.startsWith(accumulated_data_symbol)) {
 						// TODO: Remove hard coded CST -> UTC time conversion
-						dated_values.put(datetime.plusHours((long)current_lead + 6), values[row_index]);
+						dated_values.put(datetime.plusHours((long) current_lead + 6), value);
 						entry_count++;
 					}
-					
-					if (entry_count >= MAX_INSERTS)
-					{
+
+					if (entry_count >= MAX_INSERTS) {
 						Runnable worker = new DatacardResultSaver(observation_id, dated_values);
 						Executor.execute(worker);
-						dated_values = new HashMap<OffsetDateTime, String>();
+						dated_values = new HashMap<>();
 						entry_count = 0;
 					}
-					
+
 					current_lead += get_time_interval();
 				}
 			}

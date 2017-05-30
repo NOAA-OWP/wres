@@ -1,17 +1,9 @@
-/**
- * 
- */
 package data.definition;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 @Deprecated
-/**
- * A definition for a variable in the public.Variable table
- * @author Christopher Tubbs
- * @deprecated All use of definitions for variables needs to be changed to use the VariableCache
- */
 public class VariableDef
 {
     /**
@@ -121,7 +113,7 @@ public class VariableDef
 	 */
 	public void validate() throws Exception
 	{
-		if (this.variable_name == null || this.variable_name == "")
+		if (this.variable_name == null || this.variable_name.isEmpty())
 		{
 			String message = "This variable definition lacks a name, and is thus invalid." +
 							 System.lineSeparator() +
@@ -134,11 +126,10 @@ public class VariableDef
 	@Override
 	public String toString()
 	{
-		String representation = "Variable Defintion:" + System.lineSeparator()
+
+		return "Variable Defintion:" + System.lineSeparator()
 								+ "		ID: '" + String.valueOf(get_variable_id()) + "'" + System.lineSeparator()
 								+ "		NAME: '" + get_name() + "'" + System.lineSeparator();
-		
-		return representation;
 	}
 	
 	private int variable_id;

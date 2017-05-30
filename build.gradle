@@ -60,17 +60,22 @@ project(':utilities')
 {
 	dependencies
 	{
+        compile project(':wres-datamodel-api')
+        compile project(':wres-datamodel')
+
         // maybe with some adjustments we can put logback
         // into runtime with slf4j in compile, but for now:
-        //compile 'org.slf4j:slf4j-api:1.7.25'
+        compile 'org.slf4j:slf4j-api:1.7.25'
 
         compile 'ch.qos.logback:logback-classic:1.2.3'
         compile 'ch.qos.logback:logback-core:1.2.3'
-        compile(group: 'edu.ucar', name: 'cdm', version: '4.6.9')
-        {
-            // because we are getting a later version from diff group:
-            exclude group: 'c3p0', module: 'c3p0'
-        }
+        //compile(group: 'edu.ucar', name: 'cdm', version: '4.6.9')
+        //{
+        //    // because we are getting a later version from diff group:
+        //    exclude group: 'c3p0', module: 'c3p0'
+        //}
+
+        compile 'com.google.guava:guava:22.0'
 
         testCompile 'junit:junit:4.12'
         testCompile files('../libs/external/EVS.jar')
@@ -99,6 +104,7 @@ project(':wres-core')
         compile project(':utilities')
         compile project(':wres-datamodel-api')
         compile project(':wres-datamodel')
+        compile project(':wres-io')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
@@ -106,6 +112,8 @@ project(':wres-core')
         {
             // because we are getting a later version from diff group:
             exclude group: 'c3p0', module: 'c3p0'
+            exclude group: 'ch.qos.logback', module: 'logback-classic'
+            exclude group: 'ch.qos.logback', module: 'logback-core'
         }
 
         // to use native postgres copy, need this on compile, otherwise runtime
@@ -113,6 +121,8 @@ project(':wres-core')
 
 		// connection pooling:
 		compile 'com.mchange:c3p0:0.9.5.2'
+
+        runtime 'ch.qos.logback:logback-classic:1.2.3'
 
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
@@ -166,11 +176,10 @@ project(':wres-datamodel')
     dependencies
     {
         compile project(':wres-datamodel-api')
-        compile project(':wres-io')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
-        runtime 'ch.qos.logback:logback-classic:1.2.3'
+        //runtime 'ch.qos.logback:logback-classic:1.2.3'
 
         testCompile 'junit:junit:4.12'
     }
@@ -192,11 +201,20 @@ project(':wres-io')
 {
     dependencies
     {
-    	compile('edu.ucar:cdm:4.6.8')
+        compile project(':utilities')
+        compile project(':wres-datamodel-api')
+        compile project(':wres-datamodel')
+
+        compile 'org.slf4j:slf4j-api:1.7.25'
+
+        compile('edu.ucar:cdm:4.6.8')
         {
             // because we are getting a later version from diff group:
             exclude group: 'c3p0', module: 'c3p0'
+            exclude group: 'ch.qos.logback', module: 'logback-classic'
+            exclude group: 'ch.qos.logback', module: 'logback-core'
         }
+
 
         // to use native postgres copy, need this on compile, otherwise runtime
         compile 'org.postgresql:postgresql:42.0.0'
@@ -204,6 +222,8 @@ project(':wres-io')
 		// connection pooling:
 		compile 'com.mchange:c3p0:0.9.5.2'
 
+        //JB @ 02/16/17
+        testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
     }
 }
 

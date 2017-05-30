@@ -1,11 +1,6 @@
-/**
- * 
- */
 package util;
 
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,40 +10,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import concurrency.Executor;
-import concurrency.ForecastSaver;
+import wres.io.concurrency.Executor;
+import wres.io.concurrency.ForecastSaver;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
-import collections.Pair;
-import reading.BasicSource;
-import reading.ConfiguredLoader;
-import reading.SourceReader;
-import config.ProjectConfig;
-import config.specification.MetricSpecification;
-import config.specification.ProjectDataSpecification;
-import config.specification.ProjectSpecification;
-import config.specification.ScriptFactory;
-import collections.RealCollection;
-import collections.TwoTuple;
+import wres.io.config.Projects;
+import wres.io.reading.BasicSource;
+import wres.io.reading.ConfiguredLoader;
+import wres.io.reading.SourceReader;
+import wres.io.config.specification.MetricSpecification;
+import wres.io.config.specification.ProjectDataSpecification;
+import wres.io.config.specification.ProjectSpecification;
 
 import java.util.concurrent.Future;
-import concurrency.FunctionRunner;
-import concurrency.MetricExecutor;
-import concurrency.Metrics;
-import concurrency.ObservationSaver;
-import data.caching.MeasurementCache;
-import data.caching.Variable;
-import data.caching.VariableCache;
+import wres.io.concurrency.MetricExecutor;
+import wres.io.concurrency.ObservationSaver;
+import wres.io.data.caching.MeasurementCache;
+import wres.io.data.caching.VariableCache;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.DataFactory;
+import wres.io.grouping.LeadResult;
+import wres.io.utilities.Database;
+import wres.util.ProgressMonitor;
+import wres.util.Strings;
 
 /**
  * @author ctubbs
  *
  */
-@SuppressWarnings("deprecation")
 public final class MainFunctions {
 
 	// Clean definition of the newline character for the system
@@ -62,7 +52,7 @@ public final class MainFunctions {
 	 * @param operation The desired operation to perform
 	 * @return True if there is a method mapped to the operation name
 	 */
-	public static final boolean hasOperation(String operation)
+	public static boolean hasOperation(String operation)
 	{
 		return functions.containsKey(operation.toLowerCase());
 	}
@@ -73,7 +63,7 @@ public final class MainFunctions {
 	 * @param operation The name of the desired method to call
 	 * @param args The desired arguments to use when calling the method
 	 */
-	public static final void call(String operation, String[] args)
+	public static void call(String operation, String[] args)
 	{
 		operation = operation.toLowerCase();
 		functions.get(operation).accept(args);	
@@ -84,9 +74,9 @@ public final class MainFunctions {
 	/**
 	 * Creates the mapping of operation names to their corresponding methods
 	 */
-	private static final Map<String, Consumer<String[]>> createMap()
+	private static Map<String, Consumer<String[]>> createMap()
 	{
-		Map<String, Consumer<String[]>> prototypes = new HashMap<String, Consumer<String[]>>();
+		Map<String, Consumer<String[]>> prototypes = new HashMap<>();
 		
 		prototypes.put("describenetcdf", describeNetCDF());
 		prototypes.put("connecttodb", connectToDB());
@@ -96,7 +86,6 @@ public final class MainFunctions {
 		prototypes.put("commands", printCommands());
 		prototypes.put("--help", printCommands());
 		prototypes.put("-h", printCommands());
-		prototypes.put("meanerror", meanError());
 		prototypes.put("systemmetrics", systemMetrics());
 		prototypes.put("saveobservations", saveObservations());
 		prototypes.put("saveforecasts", saveForecasts());
@@ -116,7 +105,7 @@ public final class MainFunctions {
 	 * Creates the "print_commands" method
 	 * @return Method that prints all available commands by name
 	 */
-	private static final Consumer<String[]> printCommands()
+	private static Consumer<String[]> printCommands()
 	{
 		return (String[] args) -> {
 			System.out.println("Available commands are:");
@@ -131,7 +120,7 @@ public final class MainFunctions {
 	 * Creates the "saveForecast" method
 	 * @return Method that will attempt to save the file at the given path to the database as forecasts
 	 */
-	private static final Consumer<String[]> saveForecast()
+	private static Consumer<String[]> saveForecast()
 	{
 		return (String[] args) -> {
 			if (args.length > 0)
@@ -162,7 +151,7 @@ public final class MainFunctions {
 	 * Creates the "saveForecasts" method
 	 * @return Method that will attempt to save all files in the given directory to the database as forecasts
 	 */
-	private static final Consumer<String[]> saveForecasts()
+	private static Consumer<String[]> saveForecasts()
 	{
 		return (String[] args) -> {
 			if (args.length > 0)
@@ -178,14 +167,13 @@ public final class MainFunctions {
 					System.out.println(String.format("Attempting to save all files in '%s' as forecasts to the database... (This might take a little while)", args[0]));
 					System.out.println();
 					
-					ArrayList<Future<?>> tasks = new ArrayList<Future<?>>();
-					//Utilities.MONITOR.setSteps(files.length);
-					Utilities.MONITOR.setShowPercentage(false);
+					ArrayList<Future<?>> tasks = new ArrayList<>();
+
 					for (File file : files)
 					{
 					    ForecastSaver saver = new ForecastSaver(file.getAbsolutePath());
-					    saver.setOnRun(Utilities.defaultOnThreadStartHandler());
-					    saver.setOnComplete(Utilities.defaultOnThreadCompleteHandler());
+					    saver.setOnRun(ProgressMonitor.onThreadStartHandler());
+					    saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 						tasks.add(Executor.execute(saver));
 					}
 					
@@ -216,7 +204,7 @@ public final class MainFunctions {
 	 * Creates the "saveObservation" method
 	 * @return Method that will attempt to save a file to the database as an observation
 	 */
-	private static final Consumer<String[]> saveObservation()
+	private static Consumer<String[]> saveObservation()
 	{
 		return (String[] args) -> {
 			if (args.length > 0)
@@ -247,7 +235,7 @@ public final class MainFunctions {
 	 * Creates a Method that will attempt to save all files in a directory as observations
 	 * @return Method that will attempt to save all files in a directory to the database as observations
 	 */
-	private static final Consumer<String[]> saveObservations() 
+	private static Consumer<String[]> saveObservations()
 	{
 		return (String[] args) -> {
 			if (args.length > 0)
@@ -256,7 +244,7 @@ public final class MainFunctions {
 				{
 					String directory = args[0];
 					File[] files = new File(directory).listFiles();
-					ArrayList<Future<?>> tasks = new ArrayList<Future<?>>();
+					ArrayList<Future<?>> tasks = new ArrayList<>();
 					System.out.println(String.format("Attempting to save all files in '%s' as observations to the database...", args[0]));
 					for (File file : files)
 					{
@@ -289,7 +277,7 @@ public final class MainFunctions {
 	 * Creates the "connectToDB" method
 	 * @return method that will attempt to connect to the database to prove that a connection is possible. The version of the connected database will be printed.
 	 */
-	private static final Consumer<String[]> connectToDB()
+	private static Consumer<String[]> connectToDB()
 	{
 		return (String[] args) -> {
 			try {
@@ -303,7 +291,7 @@ public final class MainFunctions {
 		};
 	}
 	
-	private static final Consumer<String[]> refreshForecasts()
+	private static Consumer<String[]> refreshForecasts()
 	{
 		return (String[] args) -> {
 			try {
@@ -341,127 +329,15 @@ public final class MainFunctions {
 		};
 	}
 	
-	@Deprecated
-	/**
-	 * Creates the "meanError" method
-	 * @deprecated Relies on an outdated schema. Like the pairing method above, details will need to be defined within an external
-	 * configuration file.
-	 * @return A method that will pair and determine the mean error for all matching data for the passed in variable name
-	 */
-	private static final Consumer<String[]> meanError()
-	{
-		return (String[] args) -> {
-			if (args.length > 0)
-			{
-				String variable = args[0];
-				String start_date = "'1/1/1800'";
-				String end_date = "'12/1/2400'";
-				int lead = 0;
-				String lead_script = "";
-				Connection connection = null;
-				
-				TreeMap<Integer, Future<Double>> computed_errors = new TreeMap<Integer, Future<Double>>();
-				TreeMap<Integer, Double> errors = new TreeMap<Integer, Double>();
-				
-				String script = "SELECT FR.lead_time\n"
-								+ "FROM Forecast F\n"
-								+ "INNER JOIN ForecastResult FR\n"
-								+ "		ON FR.forecast_id = F.forecast_id\n"
-								+ "INNER JOIN Variable V\n"
-								+ "		ON V.variable_id = F.variable_id\n"
-								+ "WHERE V.variable_name = '" + variable + "'\n"
-								+ "		AND F.forecast_date >= " + start_date + "\n"
-								+ "		AND F.forecast_date <= " + end_date + "\n";
-				
-				if (args.length > 1)
-				{
-					Path path = Paths.get(args[1]);
-					script += "		AND F.source = '" + path.toAbsolutePath().toString() + "'\n";
-				}
-				
-				script += "GROUP BY FR.lead_time;";
-				
-				try {
-					connection = Database.getConnection();
-					ResultSet results = Database.getResults(connection, script);
-					String variable_id = String.valueOf(Variable.get_variable_id(variable));
-					script = "SELECT R.measurement, FR.measurements\n"
-							+ "FROM Forecast F\n"
-							+ "INNER JOIN Observation O\n"
-							+ "		ON O.variable_id = F.variable_id\n"
-							+ "INNER JOIN ForecastResult FR\n"
-							+ "		ON F.forecast_id = FR.forecast_id\n"
-							+ "INNER JOIN ObservationResult R\n"
-							+ "		ON R.observation_id = O.observation_id\n"
-							+ "			AND R.valid_date = F.forecast_date + (INTERVAL '1 hour' * FR.lead_time)\n"
-							+ "WHERE F.variable_id = '" + variable_id + "'\n"
-							+ "		AND F.forecast_date >= " + start_date + "\n"
-							+ "		AND F.forecast_date <= " + end_date + "\n";
-					
-					if (args.length > 1)
-					{
-						Path path = Paths.get(args[1]);
-						script += "		AND F.source = '" + path.toAbsolutePath().toString() + "'\n";
-					}
-							
-					System.out.println("Farming out computations...");
-					while (results.next())
-					{
-						lead = results.getInt("lead_time");
-						lead_script = script + "		AND FR.lead_time = " + String.valueOf(lead) + ";";
-						Callable<Double> computation = new FunctionRunner<Double, Double>(lead_script, 
-																				  Metrics.calculateMeanError(), 
-																				  (Double value) -> { 
-																					  return value * 25.4;
-																				  }); 
-
-						Future<Double> future_computation = Executor.submit(computation);
-						computed_errors.put(lead, future_computation);
-					}					
-
-					for (Integer lead_time : computed_errors.keySet())
-					{
-						errors.put(lead_time, computed_errors.get(lead_time).get());
-					}
-					
-					System.out.println("Mean errors computed.");
-					System.out.println("Mean Error:");
-					for (Integer lead_time : errors.keySet())
-					{
-						System.out.print("\t");
-						System.out.print(lead_time);
-						System.out.print(" |\t");
-						System.out.println(errors.get(lead_time));
-					}
-					
-				} catch (SQLException | InterruptedException | ExecutionException e) {
-					e.printStackTrace();
-				}
-				finally
-				{
-					if (connection != null)
-					{
-						Database.returnConnection(connection);
-					}
-				}
-			}
-			else
-			{
-				System.out.println("Not enough arguments were passed.");
-				System.out.println("*.jar getPairs <variable name> [<source name>]");
-			}
-		};
-	}
-	
 	/**
 	 * Creates the "systemMetrics" method
 	 * @return A method that will display the available processors, the amount of free memory, the amount of maximum memory,
 	 * and the total memory of the system.
 	 */
-	private static final Consumer<String[]> systemMetrics()
+	private static Consumer<String[]> systemMetrics()
 	{
 		return (String[] args) -> {
-		    System.out.println(Utilities.getSystemStats());
+		    System.out.println(Strings.getSystemStats());
 
 			// Add white space
 			System.out.println();
@@ -473,7 +349,7 @@ public final class MainFunctions {
 	 * @return A method that will read a NetCDF file from the given path and output details about global attributes,
 	 * variable details, variable attributes, and sample data.
 	 */
-	private static final Consumer<String[]> describeNetCDF()
+	private static Consumer<String[]> describeNetCDF()
 	{
 		return (String[] args) -> {
 			if (args.length > 0)
@@ -496,7 +372,7 @@ public final class MainFunctions {
 	 * the given NetCDF file will be opened and the a value from the optional position for the given variable will be printed to
 	 * the screen.
 	 */
-	private static final Consumer<String[]> queryNetCDF()
+	private static Consumer<String[]> queryNetCDF()
 	{
 		return (String[] args) -> {
 			if (args.length > 1)
@@ -524,7 +400,7 @@ public final class MainFunctions {
 	 * @return A method that will print out details about every found project in the path indicated by the system
 	 * configuration in a more human readable format.
 	 */
-	private static final Consumer<String[]> describeProjects()
+	private static Consumer<String[]> describeProjects()
 	{
 		return (String[] args) -> {
 			System.out.println();
@@ -532,7 +408,7 @@ public final class MainFunctions {
 			System.out.println("The configured projects are:");
 			System.out.println();
 			System.out.println();
-			for (ProjectSpecification project : ProjectConfig.getProjects())
+			for (ProjectSpecification project : Projects.getProjects())
 			{
 				System.out.println(project.toString());
 			}
@@ -544,7 +420,7 @@ public final class MainFunctions {
 	 * @return A method that will remove all dynamic forecast, observation, and variable data from the database. Prepares the
 	 * database for a cold start.
 	 */
-	private static final Consumer<String[]> flushDatabase()
+	private static Consumer<String[]> flushDatabase()
 	{
 		return (String[] args) -> {
 			String script = "";
@@ -571,7 +447,7 @@ public final class MainFunctions {
 	 * Creates the "flushForecasts" method
 	 * @return A method that will remove all forecast data from the database.
 	 */
-	private static final Consumer<String[]> flushForecasts()
+	private static Consumer<String[]> flushForecasts()
 	{
 		return (String[] args) -> {
 			String script = "";
@@ -602,7 +478,7 @@ public final class MainFunctions {
 	 * Creates the "flushObservations" method
 	 * @return A method that will remove all observation data from the database.
 	 */
-	private static final Consumer<String[]> flushObservations()
+	private static Consumer<String[]> flushObservations()
 	{
 		return (String[] args) -> {
 		    String script = "";
@@ -631,7 +507,7 @@ public final class MainFunctions {
 	 * @return Prints the count and the first 10 pairs for all observations and forecasts for the passed in forecast variable,
 	 * observation variable, and lead time
 	 */
-	private static final Consumer<String[]> getPairs() {
+	private static Consumer<String[]> getPairs() {
 	    return (String[] args) -> {
 	        
 	        Connection connection = null;
@@ -647,8 +523,7 @@ public final class MainFunctions {
                 int forecastVariablePositionID = 0;
                 int observationVariablePositionID = 0;
                 
-                ArrayList<Pair<Float, RealCollection>> pairs = new ArrayList<Pair<Float, RealCollection>>();
-        
+                List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
                 String script = "";
                 
                 script = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = " + observationVariableID + ";";
@@ -685,15 +560,9 @@ public final class MainFunctions {
                 
                 connection = Database.getConnection();
                 ResultSet results = Database.getResults(connection, script);
-                
+                DataFactory valueFactory = wres.datamodel.DataFactory.instance();
                 while (results.next()) {
-                    Pair<Float, RealCollection> pair = new Pair<Float, RealCollection>();
-                    pair.setItemOne(results.getFloat("observation"));
-                    pair.setItemTwo(new RealCollection());
-                    for(Double result : (Double[])results.getArray("forecasts").getArray()) {
-                        pair.getItemTwo().add(result);
-                    }
-                    pairs.add(pair);
+                    pairs.add(valueFactory.pairOf((double)results.getFloat("observation"), (Double[])results.getArray("forecasts").getArray()));
                 }
                 
                 System.out.println();
@@ -734,7 +603,7 @@ public final class MainFunctions {
 	            int printCount = 0;
 	            int totalLimit = 10;
 	            int totalCount = 0;
-	            ProjectSpecification foundProject = ProjectConfig.getProject(projectName);
+	            ProjectSpecification foundProject = Projects.getProject(projectName);
 	            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping = null;
 	            
 	            if (foundProject == null)
@@ -784,7 +653,7 @@ public final class MainFunctions {
                     }
                     
                     System.out.println();
-                    System.out.println(Utilities.getSystemStats());
+                    System.out.println(Strings.getSystemStats());
                 }
                 catch(Exception e)
                 {
@@ -809,7 +678,7 @@ public final class MainFunctions {
 	                metricName = args[1];
 	            }
 	            
-	            ProjectSpecification project = ProjectConfig.getProject(projectName);
+	            ProjectSpecification project = Projects.getProject(projectName);
 	            
 	            for (ProjectDataSpecification datasource : project.getDatasources())
 	            {
@@ -817,14 +686,14 @@ public final class MainFunctions {
 	                ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
 	                dataLoader.load();
 	                System.err.println("The data from this dataset has been loaded to the database");
-	                Utilities.MONITOR.reset();
+	                ProgressMonitor.resetMonitor();
 	                System.err.println();
 	            }
 	            
 	            System.err.println("All data specified for this project should now be loaded.");
 	            
-	            Map<String, List<TwoTuple<Integer, Double>>> results = new TreeMap();
-	            Map<String, Future<List<TwoTuple<Integer, Double>>>> futureResults = new TreeMap();
+	            Map<String, List<LeadResult>> results = new TreeMap<>();
+	            Map<String, Future<List<LeadResult>>> futureResults = new TreeMap<>();
 	            
 	            if (metricName == null)
 	            {
@@ -832,8 +701,8 @@ public final class MainFunctions {
     	            {
     	                MetricSpecification specification = project.getMetric(metricIndex);
     	                MetricExecutor metric = new MetricExecutor(specification);
-    	                metric.setOnRun(Utilities.defaultOnThreadStartHandler());
-    	                metric.setOnComplete(Utilities.defaultOnThreadCompleteHandler());
+    	                metric.setOnRun(ProgressMonitor.onThreadStartHandler());
+    	                metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
     	                System.err.println("Now executing the metric named: " + specification.getName());
     	                futureResults.put(specification.getName(), Executor.submit(metric));
     	            }
@@ -845,14 +714,14 @@ public final class MainFunctions {
 	                if (specification != null)
 	                {
 	                    MetricExecutor metric = new MetricExecutor(specification);
-                        metric.setOnRun(Utilities.defaultOnThreadStartHandler());
-                        metric.setOnComplete(Utilities.defaultOnThreadCompleteHandler());
+                        metric.setOnRun(ProgressMonitor.onThreadStartHandler());
+                        metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                         System.err.println("Now executing the metric named: " + specification.getName());
                         futureResults.put(specification.getName(), Executor.submit(metric));
 	                }
 	            }
 	            
-	            for (Entry<String, Future<List<TwoTuple<Integer, Double>>>> entry : futureResults.entrySet())
+	            for (Entry<String, Future<List<LeadResult>>> entry : futureResults.entrySet())
 	            {
 	                try
                     {
@@ -868,17 +737,17 @@ public final class MainFunctions {
 	            System.out.println("Project: " + projectName);
 	            System.out.println();
 	            
-	            for (Entry<String, List<TwoTuple<Integer, Double>>> entry : results.entrySet())
+	            for (Entry<String, List<LeadResult>> entry : results.entrySet())
 	            {
 	                System.out.println();
 	                System.out.println(entry.getKey());
 	                System.out.println("--------------------------------------------------------------------------------------");
 	                
-	                for (TwoTuple<Integer, Double> metricResult : entry.getValue())
+	                for (LeadResult metricResult : entry.getValue())
 	                {
-	                    System.out.print(metricResult.getItemOne());
+	                    System.out.print(metricResult.getLead());
 	                    System.out.print("\t\t|\t");
-	                    System.out.println(metricResult.getItemTwo());
+	                    System.out.println(metricResult.getResult());
 	                }
 	                
 	                System.out.println();

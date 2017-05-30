@@ -1,15 +1,6 @@
-/**
- * 
- */
 package data.definition;
 
 @Deprecated
-/**
- * A definition for data used and retrieved from the public.ObservationLocation table
- * @author Christopher Tubbs
- * @deprecated Location information needs to be used from the FeatureCache rather than the old
- * location definitions
- */
 public class LocationDef {
 
 	/**
@@ -164,15 +155,14 @@ public class LocationDef {
 	@Override
 	public String toString()
 	{
-		String message = "Location Definition: " + System.lineSeparator()
+
+		return "Location Definition: " + System.lineSeparator()
 						+ "		LID: '" + get_location_id() + "'" + System.lineSeparator()
 						+ "		COMID: '" + get_feature_id() + "'" + System.lineSeparator()
 						+ "		LATITUDE: '" + String.valueOf(get_latitude()) + "'" + System.lineSeparator()
 						+ "		LONGITUDE: '" + String.valueOf(get_longitude()) + "'" + System.lineSeparator()
 						+ "		DATUM: '" + get_datum() + "'" + System.lineSeparator()
 						+ System.lineSeparator();
-		
-		return message;
 	}
 	
 	/**
@@ -180,7 +170,7 @@ public class LocationDef {
 	 */
 	public String add_script()
 	{
-		String script = "INSERT INTO ObservationLocation (\n" +
+		return "INSERT INTO ObservationLocation (\n" +
 						"	comid,\n"
 						+ "	lid,\n"
 						+ "	gage_id,\n"
@@ -198,7 +188,6 @@ public class LocationDef {
 						+ " " + get_latitude() + ",\n"
 						+ " " + get_longitude() + "\n"
 						+ ")";
-		return script;
 	}
 	
 	private Integer feature_id;

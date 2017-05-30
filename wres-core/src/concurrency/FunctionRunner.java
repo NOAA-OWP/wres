@@ -1,6 +1,3 @@
-/**
- * 
- */
 package concurrency;
 
 import java.sql.Connection;
@@ -9,7 +6,8 @@ import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import util.Database;
+import wres.io.utilities.Database;
+import wres.io.concurrency.WRESThread;
 
 /**
  * A callable thread that will perform a passed in function on a set of values that will be returned from the database
@@ -56,14 +54,7 @@ public class FunctionRunner<V, U> extends WRESThread implements Callable<V> {
 	}
 
 	@Override
-	/**
-	 * Executes the functions on the passed in result set
-	 * 
-	 * A ResultSet is created by selecting data based on the dictated query, then the function is called
-	 * with the retrieved values and either the default transform (just returns the unaltered value) or the
-	 * passed in transform.
-	 */
-	public V call() throws Exception {
+    public V call() throws Exception {
 		V functionResult = null;
 		Connection connection = null;
 		this.executeOnRun();

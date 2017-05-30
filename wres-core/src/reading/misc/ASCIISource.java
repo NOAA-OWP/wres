@@ -1,11 +1,9 @@
-/**
- * 
- */
 package reading.misc;
 
-import reading.BasicSource;
-import reading.SourceType;
-import util.Database;
+import wres.io.reading.BasicSource;
+import wres.io.reading.SourceType;
+import wres.io.utilities.Database;
+import wres.util.FormattedStopwatch;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,7 +15,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import concurrency.ASCIIResultSaver;
-import concurrency.Executor;
+import wres.io.concurrency.Executor;
 import data.caching.Variable;
 
 /**
@@ -76,7 +74,7 @@ public class ASCIISource extends BasicSource
 		
 		try(BufferedReader reader = Files.newBufferedReader(path))
 		{
-			util.Stopwatch stopwatch = new util.Stopwatch();
+			FormattedStopwatch stopwatch = new FormattedStopwatch();
 			stopwatch.start();
 			System.out.println("Removing all previous data for this datasource...");
 			String absolute_path = path.toAbsolutePath().toString();
@@ -92,8 +90,8 @@ public class ASCIISource extends BasicSource
 
 			int forecast_id = 0;
             int insert_count = 0;
-            HashMap<Integer, HashMap<String, String[]>> forecasted_values = new HashMap<Integer, HashMap<String, String[]>>();
-			HashMap<String, String[]> hourly_values = new HashMap<String, String[]>();
+            HashMap<Integer, HashMap<String, String[]>> forecasted_values = new HashMap<>();
+			HashMap<String, String[]> hourly_values = new HashMap<>();
 			while ((line = reader.readLine()) != null)
 			{
 				String[] ascii = line.split(" ");
@@ -110,12 +108,12 @@ public class ASCIISource extends BasicSource
 							insert_count = 0;
 							Runnable worker = new ASCIIResultSaver(forecasted_values, get_observationlocation_id());
 							Executor.execute(worker);
-		                    forecasted_values = new HashMap<Integer, HashMap<String, String[]>>();
+		                    forecasted_values = new HashMap<>();
 						}
 						
 					}
 					
-					hourly_values = new HashMap<String, String[]>();
+					hourly_values = new HashMap<>();
 					forecast_id = create_forecast(line);
 				}
 				current_step = step;
