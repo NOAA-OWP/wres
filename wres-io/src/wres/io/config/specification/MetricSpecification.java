@@ -121,10 +121,10 @@ public class MetricSpecification extends SpecificationElement {
 	{
 	    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> results = new TreeMap<Integer, List<PairOfDoubleAndVectorOfDoubles>>();
 	    Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>>();
-	    
-	    float threadsComplete = 0;
-	    float threadsAdded = 0;
-	    
+
+	    float tasksCompleted = 0;
+	    float tasksAdded = 0;
+
 	    LabeledScript lastLeadScript = ScriptFactory.generateFindLastLead(sourceTwo.getVariable().getVariableID());
 	    
 	    Integer finalLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
@@ -133,17 +133,17 @@ public class MetricSpecification extends SpecificationElement {
 	    
 	    while (metricAggregate.leadIsValid(step, finalLead)) {
             threadResults.put(step, Executor.submit(new PairFetcher(this, step)));
-            threadsAdded++;
+            tasksAdded++;
 	        step++;
 	    }
-        
-        System.err.println(threadsAdded + " operations were added to collect pairs. Waiting for results...");
+
+        System.err.println(tasksAdded + " operations were added to collect pairs. Waiting for results...");
 
         for (Entry<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> result : threadResults.entrySet())
         {
             results.put(result.getKey(), result.getValue().get());
-            threadsComplete++;
-            System.err.print("\r" +threadsComplete + "/" + threadsAdded + " operations complete. (" + (threadsComplete/threadsAdded) * 100 + "%)------------");
+            tasksCompleted++;
+            System.err.print("\r" +tasksCompleted + "/" + tasksAdded + " operations complete. ------------");
         }
         
         System.out.println();
