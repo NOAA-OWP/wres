@@ -168,9 +168,8 @@ public final class NetCDFReader {
 	 */
 	public void print_query(String variable_name, int... args)
 	{
-			NetcdfFile nc;
-			try {
-				nc = NetcdfFile.open(path);			
+			try (NetcdfFile nc = NetcdfFile.open(path))
+			{
 				Variable var = nc.findVariable(variable_name);
 				int[] origin = new int[var.getRank()];
 				Arrays.fill(origin, 0);
