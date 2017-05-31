@@ -112,11 +112,12 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 	    script += ";";
 	    
 	    Connection connection = null;
-	    
+	    ResultSet results = null;
+
 	    try
 	    {
 	        connection = Database.getConnection();
-	        ResultSet results = Database.getResults(connection, script);
+	        results = Database.getResults(connection, script);
 	        
 	        while (results.next())
 	        {
@@ -133,6 +134,11 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 	    }
 	    finally
 	    {
+	        if (results != null)
+	        {
+	            results.close();
+	        }
+
 	        if (connection != null)
 	        {
 	            Database.returnConnection(connection);
