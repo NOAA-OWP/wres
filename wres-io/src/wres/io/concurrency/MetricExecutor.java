@@ -64,7 +64,8 @@ public class MetricExecutor extends WRESThread implements Callable<List<LeadResu
                 MetricStepExecutor stepExecutor = new MetricStepExecutor(this.specification, step);
                 stepExecutor.setOnRun(ProgressMonitor.onThreadStartHandler());
                 stepExecutor.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                mappedPairs.put(step, Executor.submit(stepExecutor));
+                Future<Double> task = Executor.submit(stepExecutor);
+                mappedPairs.put(step, task);
                 step++;
             }
             
