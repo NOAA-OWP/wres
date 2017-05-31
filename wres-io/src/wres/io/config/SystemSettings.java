@@ -33,7 +33,7 @@ public final class SystemSettings extends XMLReader
     private boolean inDevelopment = false;
 
 	// The static path to the configuration path
-    private static final String config_path = "wresconfig.xml";
+    private static final String CONFIG_PATH = "wresconfig.xml";
 
     private final Logger LOGGER = LoggerFactory.getLogger(SystemSettings.class);
 
@@ -48,7 +48,7 @@ public final class SystemSettings extends XMLReader
 	 */
     private SystemSettings()
     {
-        super(config_path, true);
+        super(CONFIG_PATH, true);
         LOGGER.trace("Created SystemSettings using default constructor");
         parse();
     }
