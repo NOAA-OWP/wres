@@ -1,6 +1,8 @@
 package wres.io.data.details;
 
 import java.sql.SQLException;
+import java.util.Objects;
+
 import wres.io.data.details.SourceDetails.SourceKey;
 /**
  * Details about a source of observation or forecast data
@@ -146,11 +148,46 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
         @Override
         public int compareTo(SourceKey other)
         {
-            int equality = this.sourcePath.compareTo(other.sourcePath);
+
+            int equality = 0;
+
+            if (this.getSourcePath() == null && other.getSourcePath() == null)
+            {
+                equality = 0;
+            }
+            else if (this.getSourcePath() != null && other.getSourcePath() == null)
+            {
+                equality = 1;
+            }
+            else if (this.getSourcePath() == null && other.getSourcePath() != null)
+            {
+                equality = -1;
+            }
+            else
+            {
+                equality = this.getSourcePath().toLowerCase().compareTo(other.getSourcePath().toLowerCase());
+            }
+
             if (equality == 0)
             {
-                equality = this.sourceTime.compareTo(other.sourceTime);
+                if (this.getSourceTime() == null && other.getSourceTime() == null)
+                {
+                    equality = 0;
+                }
+                else if (this.getSourceTime() != null && other.getSourceTime() == null)
+                {
+                    equality = 1;
+                }
+                else if (this.getSourceTime() == null && other.getSourceTime() != null)
+                {
+                    equality = -1;
+                }
+                else
+                {
+                    equality = this.getSourceTime().toLowerCase().compareTo(other.getSourceTime().toLowerCase());
+                }
             }
+
             return equality;
         }
         
@@ -163,8 +200,25 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
         {
             return this.sourceTime;
         }
-	    
-	    private String sourcePath;
+
+		@Override
+		public boolean equals(Object obj) {
+	        boolean equivalent = false;
+
+	        if (obj instanceof SourceKey)
+            {
+                equivalent = this.compareTo((SourceKey)obj) == 0;
+            }
+
+			return equivalent;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hashCode(this.sourcePath) + Objects.hashCode(this.sourceTime);
+		}
+
+		private String sourcePath;
 	    private String sourceTime;
 	}
 }

@@ -65,12 +65,7 @@ public class SourceCache extends Cache<SourceDetails, SourceKey> {
 	        addElement(new SourceDetails(key));
 	    }
 
-	    Integer ID = null;
-	    synchronized(keyIndex)
-	    {
-	        ID = keyIndex.get(key);
-	    }
-		return ID;
+	    return super.getID(key);
 	}
 	
 	@Override
