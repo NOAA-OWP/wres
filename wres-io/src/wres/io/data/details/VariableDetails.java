@@ -65,26 +65,26 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	public String getInsertSelectStatement() {
 		String script = "";
 		
-		script += "WITH new_variable_id AS" + newline;
-		script += "(" + newline;
-		script += "		INSERT INTO wres.Variable(variable_name, variable_type, measurementunit_id)" + newline;
-		script += "		SELECT '" + variable_name + "'," + newline;
-		script += "			'Double'," + newline;
-		script += "			" + measurementunit_id + newline;
-		script += "		WHERE NOT EXISTS (" + newline;
-		script += "			SELECT 1" + newline;
-		script += "			FROM wres.Variable" + newline;
-		script += "			WHERE variable_name = '" + variable_name + "'" + newline;
-		script += "		)" + newline;
-		script += "		RETURNING variable_id" + newline;
-		script += ")" + newline;
-		script += "SELECT variable_id" + newline;
-		script += "FROM new_variable_id" + newline + newline;
+		script += "WITH new_variable_id AS" + NEWLINE;
+		script += "(" + NEWLINE;
+		script += "		INSERT INTO wres.Variable(variable_name, variable_type, measurementunit_id)" + NEWLINE;
+		script += "		SELECT '" + variable_name + "'," + NEWLINE;
+		script += "			'Double'," + NEWLINE;
+		script += "			" + measurementunit_id + NEWLINE;
+		script += "		WHERE NOT EXISTS (" + NEWLINE;
+		script += "			SELECT 1" + NEWLINE;
+		script += "			FROM wres.Variable" + NEWLINE;
+		script += "			WHERE variable_name = '" + variable_name + "'" + NEWLINE;
+		script += "		)" + NEWLINE;
+		script += "		RETURNING variable_id" + NEWLINE;
+		script += ")" + NEWLINE;
+		script += "SELECT variable_id" + NEWLINE;
+		script += "FROM new_variable_id" + NEWLINE + NEWLINE;
 		script += "";
-		script += "UNION" + newline + newline;
+		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT variable_id" + newline;
-		script += "FROM wres.Variable" + newline;
+		script += "SELECT variable_id" + NEWLINE;
+		script += "FROM wres.Variable" + NEWLINE;
 		script += "WHERE variable_name = '" + variable_name + "';";
 		
 		return script;

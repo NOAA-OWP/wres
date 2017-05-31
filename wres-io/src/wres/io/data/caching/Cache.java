@@ -13,7 +13,7 @@ import wres.util.Collections;
  * @param <U> The key for the type within the database
  */
 abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
-    protected static final String newline = System.lineSeparator();
+    protected static final String NEWLINE = System.lineSeparator();
     
     // Guarded by lock
 	protected final LinkedHashMap<U, Integer> keyIndex;

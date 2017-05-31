@@ -9,7 +9,7 @@ import wres.io.utilities.Database;
  * @author Christopher Tubbs
  */
 public final class ForecastEnsembleDetails {
-	private static final String newline = System.lineSeparator();
+	private static final String NEWLINE = System.lineSeparator();
 	
 	private Integer forecastID = null;
 	private Integer ensembleID = null;
@@ -95,33 +95,33 @@ public final class ForecastEnsembleDetails {
 	{
 		String script = "";
 		
-		script += "WITH new_forecastensemble AS" + newline;
-		script += "(" + newline;
-		script += "		INSERT INTO wres.forecastensemble (forecast_id, variableposition_id, ensemble_id, measurementunit_id)" + newline;
-		script += "		SELECT " + forecastID + "," + newline;
-		script += "			" + variablePositionID + "," + newline;
-		script += "			" + ensembleID + "," + newline;
-		script += "			" + measurementUnitID + newline;
-		script += "		WHERE NOT EXISTS (" + newline;
-		script += "			SELECT 1" + newline;
-		script += "			FROM wres.forecastensemble" + newline;
-		script += "			WHERE forecast_id = " + forecastID + newline;
-		script += "				AND variableposition_id = " + variablePositionID + newline;
-		script += "				AND ensemble_id = " + ensembleID + newline;
-		script += "				AND measurementunit_id = " + measurementUnitID + newline;
-		script += "		)" + newline;
-		script += "		RETURNING forecastensemble_id" + newline;
-		script += ")" + newline;
-		script += "SELECT forecastensemble_id" + newline;
-		script += "FROM new_forecastensemble" + newline + newline;
+		script += "WITH new_forecastensemble AS" + NEWLINE;
+		script += "(" + NEWLINE;
+		script += "		INSERT INTO wres.forecastensemble (forecast_id, variableposition_id, ensemble_id, measurementunit_id)" + NEWLINE;
+		script += "		SELECT " + forecastID + "," + NEWLINE;
+		script += "			" + variablePositionID + "," + NEWLINE;
+		script += "			" + ensembleID + "," + NEWLINE;
+		script += "			" + measurementUnitID + NEWLINE;
+		script += "		WHERE NOT EXISTS (" + NEWLINE;
+		script += "			SELECT 1" + NEWLINE;
+		script += "			FROM wres.forecastensemble" + NEWLINE;
+		script += "			WHERE forecast_id = " + forecastID + NEWLINE;
+		script += "				AND variableposition_id = " + variablePositionID + NEWLINE;
+		script += "				AND ensemble_id = " + ensembleID + NEWLINE;
+		script += "				AND measurementunit_id = " + measurementUnitID + NEWLINE;
+		script += "		)" + NEWLINE;
+		script += "		RETURNING forecastensemble_id" + NEWLINE;
+		script += ")" + NEWLINE;
+		script += "SELECT forecastensemble_id" + NEWLINE;
+		script += "FROM new_forecastensemble" + NEWLINE + NEWLINE;
 		script += "";
-		script += "UNION" + newline + newline;
+		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT forecastensemble_id" + newline;
-		script += "FROM wres.forecastensemble" + newline;
-		script += "WHERE forecast_id = " + forecastID + newline;
-		script += "		AND variableposition_id = " + variablePositionID + newline;
-		script += "		AND ensemble_id = " + ensembleID + newline;
+		script += "SELECT forecastensemble_id" + NEWLINE;
+		script += "FROM wres.forecastensemble" + NEWLINE;
+		script += "WHERE forecast_id = " + forecastID + NEWLINE;
+		script += "		AND variableposition_id = " + variablePositionID + NEWLINE;
+		script += "		AND ensemble_id = " + ensembleID + NEWLINE;
 		script += "		AND measurementunit_id = " + measurementUnitID + ";";
 		
 		forecastEnsembleID = Database.getResult(script, "forecastensemble_id");

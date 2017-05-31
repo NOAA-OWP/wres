@@ -42,7 +42,7 @@ import wres.util.Strings;
 public final class MainFunctions {
 
 	// Clean definition of the newline character for the system
-	private static final String newline = System.lineSeparator();
+	private static final String NEWLINE = System.lineSeparator();
 	
 	// Mapping of String names to corresponding methods
 	private static final Map<String, Consumer<String[]>> functions = createMap();
@@ -424,17 +424,17 @@ public final class MainFunctions {
 	{
 		return (String[] args) -> {
 			String script = "";
-			script += "TRUNCATE wres.Observation;" + newline;
-			script += "TRUNCATE wres.ForecastValue;" + newline;
-			script += "TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;" + newline;
-			script += "TRUNCATE wres.ForecastSource;" + newline;
-			script += "TRUNCATE wres.Source RESTART IDENTITY CASCADE;" + newline;
-			script += "TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;" + newline;
+			script += "TRUNCATE wres.Observation;" + NEWLINE;
+			script += "TRUNCATE wres.ForecastValue;" + NEWLINE;
+			script += "TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;" + NEWLINE;
+			script += "TRUNCATE wres.ForecastSource;" + NEWLINE;
+			script += "TRUNCATE wres.Source RESTART IDENTITY CASCADE;" + NEWLINE;
+			script += "TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;" + NEWLINE;
 			
 			try {
 				Database.execute(script);
 			} catch (SQLException e) {
-				System.err.println("WRES data could not be removed from the database." + newline);
+				System.err.println("WRES data could not be removed from the database." + NEWLINE);
 				System.err.println();
 				System.err.println(script);
 				System.err.println();
@@ -451,21 +451,21 @@ public final class MainFunctions {
 	{
 		return (String[] args) -> {
 			String script = "";
-            script += "TRUNCATE wres.ForecastSource;" + newline;
-			script += "DELETE FROM wres.Source S" + newline;
-			script += "WHERE NOT EXISTS (" + newline;
-			script += "      SELECT 1" + newline;
-			script += "      FROM wres.Observation O" + newline;
-			script += "      WHERE O.source_id = S.source_id" + newline;
-			script += ");" + newline;
-			script += "TRUNCATE wres.ForecastValue;" + newline;
-			script += "TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;" + newline;
-			script += "TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;" + newline;
+            script += "TRUNCATE wres.ForecastSource;" + NEWLINE;
+			script += "DELETE FROM wres.Source S" + NEWLINE;
+			script += "WHERE NOT EXISTS (" + NEWLINE;
+			script += "      SELECT 1" + NEWLINE;
+			script += "      FROM wres.Observation O" + NEWLINE;
+			script += "      WHERE O.source_id = S.source_id" + NEWLINE;
+			script += ");" + NEWLINE;
+			script += "TRUNCATE wres.ForecastValue;" + NEWLINE;
+			script += "TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;" + NEWLINE;
+			script += "TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;" + NEWLINE;
 			
 			try {
 				Database.execute(script);
 			} catch (SQLException e) {
-				System.err.println("WRES forecast data could not be removed from the database." + newline);
+				System.err.println("WRES forecast data could not be removed from the database." + NEWLINE);
 				System.err.println();
 				System.err.println(script);
 				System.err.println();
@@ -482,18 +482,18 @@ public final class MainFunctions {
 	{
 		return (String[] args) -> {
 		    String script = "";
-			script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + newline;
-            script += "DELETE FROM wres.Source S" + newline;
-            script += "WHERE NOT EXISTS (" + newline;
-            script += "      SELECT 1" + newline;
-            script += "      FROM wres.ForecastSource FS" + newline;
-            script += "      WHERE FS.source_id = S.source_id" + newline;
-            script += ");" + newline;
+			script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + NEWLINE;
+            script += "DELETE FROM wres.Source S" + NEWLINE;
+            script += "WHERE NOT EXISTS (" + NEWLINE;
+            script += "      SELECT 1" + NEWLINE;
+            script += "      FROM wres.ForecastSource FS" + NEWLINE;
+            script += "      WHERE FS.source_id = S.source_id" + NEWLINE;
+            script += ");" + NEWLINE;
 			
 			try {
 				Database.execute(script);
 			} catch (SQLException e) {
-				System.err.println("WRES Observation data could not be removed from the database." + newline);
+				System.err.println("WRES Observation data could not be removed from the database." + NEWLINE);
 				System.err.println();
 				System.err.println(script);
 				System.err.println();
@@ -533,29 +533,29 @@ public final class MainFunctions {
                 forecastVariablePositionID = Database.getResult(script, "variableposition_id");
                 
                 script = "";
-                script +=   "WITH forecast_measurements AS (" + newline;
-                script +=   "   SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + newline;
-                script +=   "       array_agg(FV.forecasted_value * UC.factor) AS forecasts" + newline;
-                script +=   "   FROM wres.Forecast F" + newline;
-                script +=   "   INNER JOIN wres.ForecastEnsemble FE" + newline;
-                script +=   "       ON F.forecast_id = FE.forecast_id" + newline;
-                script +=   "   INNER JOIN wres.ForecastValue FV" + newline;
-                script +=   "       ON FV.forecastensemble_id = FE.forecastensemble_id" + newline;
-                script +=   "   INNER JOIN wres.UnitConversion UC" + newline;
-                script +=   "       ON UC.from_unit = FE.measurementunit_id" + newline;
-                script +=   "   WHERE lead = " + lead + newline;
-                script +=   "       AND FE.variableposition_id = " + forecastVariablePositionID + newline;
-                script +=   "       AND UC.to_unit = " + targetUnitID + newline;
-                script +=   "   GROUP BY forecasted_date" + newline;
-                script +=   ")" + newline;
-                script +=   "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + newline;
-                script +=   "FROM forecast_measurements FM" + newline;
-                script +=   "INNER JOIN wres.Observation O" + newline;
-                script +=   "   ON O.observation_time = FM.forecasted_date" + newline;
-                script +=   "INNER JOIN wres.UnitConversion UC" + newline;
-                script +=   "   ON UC.from_unit = O.measurementunit_id" + newline;
-                script +=   "WHERE O.variableposition_id = " + observationVariablePositionID + newline;
-                script +=   "   AND UC.to_unit = " + targetUnitID + newline;
+                script +=   "WITH forecast_measurements AS (" + NEWLINE;
+                script +=   "   SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + NEWLINE;
+                script +=   "       array_agg(FV.forecasted_value * UC.factor) AS forecasts" + NEWLINE;
+                script +=   "   FROM wres.Forecast F" + NEWLINE;
+                script +=   "   INNER JOIN wres.ForecastEnsemble FE" + NEWLINE;
+                script +=   "       ON F.forecast_id = FE.forecast_id" + NEWLINE;
+                script +=   "   INNER JOIN wres.ForecastValue FV" + NEWLINE;
+                script +=   "       ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE;
+                script +=   "   INNER JOIN wres.UnitConversion UC" + NEWLINE;
+                script +=   "       ON UC.from_unit = FE.measurementunit_id" + NEWLINE;
+                script +=   "   WHERE lead = " + lead + NEWLINE;
+                script +=   "       AND FE.variableposition_id = " + forecastVariablePositionID + NEWLINE;
+                script +=   "       AND UC.to_unit = " + targetUnitID + NEWLINE;
+                script +=   "   GROUP BY forecasted_date" + NEWLINE;
+                script +=   ")" + NEWLINE;
+                script +=   "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + NEWLINE;
+                script +=   "FROM forecast_measurements FM" + NEWLINE;
+                script +=   "INNER JOIN wres.Observation O" + NEWLINE;
+                script +=   "   ON O.observation_time = FM.forecasted_date" + NEWLINE;
+                script +=   "INNER JOIN wres.UnitConversion UC" + NEWLINE;
+                script +=   "   ON UC.from_unit = O.measurementunit_id" + NEWLINE;
+                script +=   "WHERE O.variableposition_id = " + observationVariablePositionID + NEWLINE;
+                script +=   "   AND UC.to_unit = " + targetUnitID + NEWLINE;
                 script +=   "ORDER BY FM.forecasted_date;";
                 
                 connection = Database.getConnection();

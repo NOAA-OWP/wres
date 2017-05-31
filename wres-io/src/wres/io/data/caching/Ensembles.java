@@ -251,8 +251,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
             connection = Database.getConnection();
             ensembleQuery = connection.createStatement();
             
-            String loadScript = "SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id" + newline;
-            loadScript += "FROM wres.ensemble" + newline;
+            String loadScript = "SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id" + NEWLINE;
+            loadScript += "FROM wres.ensemble" + NEWLINE;
             loadScript += "LIMIT " + getMaxDetails();
             
             ensembles = ensembleQuery.executeQuery(loadScript);

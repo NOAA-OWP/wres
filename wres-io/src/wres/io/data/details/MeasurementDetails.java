@@ -76,24 +76,24 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	protected String getInsertSelectStatement() {
 		String script = "";
 
-		script += "WITH new_measurementunit_id AS" + newline;
-		script += "(" + newline;
-		script += "		INSERT INTO wres.MeasurementUnit (unit_name)" + newline;
-		script += "		SELECT '" + unit + "'" + newline;
-		script += "		WHERE NOT EXISTS (" + newline;
-		script += "			SELECT 1" + newline;
-		script += "			FROM wres.MeasurementUnit" + newline;
-		script += "			WHERE unit_name = '" + unit + "'" + newline;
-		script += "		)" + newline;
-		script += "		RETURNING measurementunit_id" + newline;
-		script += ")" + newline;
-		script += "SELECT measurementunit_id" + newline;
-		script += "FROM new_measurementunit_id" + newline + newline;
+		script += "WITH new_measurementunit_id AS" + NEWLINE;
+		script += "(" + NEWLINE;
+		script += "		INSERT INTO wres.MeasurementUnit (unit_name)" + NEWLINE;
+		script += "		SELECT '" + unit + "'" + NEWLINE;
+		script += "		WHERE NOT EXISTS (" + NEWLINE;
+		script += "			SELECT 1" + NEWLINE;
+		script += "			FROM wres.MeasurementUnit" + NEWLINE;
+		script += "			WHERE unit_name = '" + unit + "'" + NEWLINE;
+		script += "		)" + NEWLINE;
+		script += "		RETURNING measurementunit_id" + NEWLINE;
+		script += ")" + NEWLINE;
+		script += "SELECT measurementunit_id" + NEWLINE;
+		script += "FROM new_measurementunit_id" + NEWLINE + NEWLINE;
 		script += "";
-		script += "UNION" + newline + newline;
+		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT measurementunit_id" + newline;
-		script += "FROM wres.MeasurementUnit" + newline;
+		script += "SELECT measurementunit_id" + NEWLINE;
+		script += "FROM wres.MeasurementUnit" + NEWLINE;
 		script += "WHERE unit_name = '" + unit + "';";
 
 		return script;
@@ -102,14 +102,14 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
     private static String getUnitConversionInsertScript() {
 	    String script = "";
 	    
-	    script += "INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)" + newline;
-	    script += "SELECT measurementunit_id, measurementunit_id, 1" + newline;
-	    script += "FROM wres.MeasurementUnit M" + newline;
-	    script += "WHERE NOT EXISTS (" + newline;
-	    script += "    SELECT 1" + newline;
-	    script += "    FROM wres.UnitConversion UC" + newline;
-	    script += "    WHERE UC.from_unit = M.measurementunit_id" + newline;
-	    script += "        AND UC.from_unit = UC.to_unit" + newline;
+	    script += "INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)" + NEWLINE;
+	    script += "SELECT measurementunit_id, measurementunit_id, 1" + NEWLINE;
+	    script += "FROM wres.MeasurementUnit M" + NEWLINE;
+	    script += "WHERE NOT EXISTS (" + NEWLINE;
+	    script += "    SELECT 1" + NEWLINE;
+	    script += "    FROM wres.UnitConversion UC" + NEWLINE;
+	    script += "    WHERE UC.from_unit = M.measurementunit_id" + NEWLINE;
+	    script += "        AND UC.from_unit = UC.to_unit" + NEWLINE;
 	    script += ");";
 	    
 	    return script;

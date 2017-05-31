@@ -81,31 +81,31 @@ public final class VariableCache extends Cache<VariableDetails, String> {
 	    int variableID = this.getID(variableName);
 
 	    String script = "";
-	    script += "SELECT variableposition_id" + newline;
-	    script += "FROM wres.VariablePosition VP" + newline;
+	    script += "SELECT variableposition_id" + NEWLINE;
+	    script += "FROM wres.VariablePosition VP" + NEWLINE;
 	    script += "WHERE variable_id = " + variableID;
 	    
 	    if (range.xMinimum() != null)
 	    {
-	        script += newline;
+	        script += NEWLINE;
 	        script += "    AND x_position >= " + range.xMinimum();
 	    }
 	    
 	    if (range.xMaximum() != null)
 	    {
-	        script += newline;
+	        script += NEWLINE;
 	        script += "    AND x_position <= " + range.xMaximum();
 	    }
 	    
 	    if (range.yMinimum() != null)
 	    {
-	        script += newline;
+	        script += NEWLINE;
             script += "    AND y_position >= " + range.yMinimum();
 	    }
         
         if (range.yMaximum() != null)
         {
-            script += newline;
+            script += NEWLINE;
             script += "    AND y_position <= " + range.yMaximum();
         }
 
