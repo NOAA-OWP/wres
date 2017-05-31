@@ -172,16 +172,18 @@ public abstract class Metrics {
 
 	public static List<PairOfDoubleAndVectorOfDoubles> getPairs(MetricSpecification metricSpecification, int progress) throws Exception {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
-        Connection connection = null;
         final DataFactory dataFactory = wres.datamodel.DataFactory.instance();
+
+        Connection connection = null;
+        ResultSet resultingPairs = null;
 
         try
         {
             connection = Database.getConnection();
             String script = ScriptFactory.generateGetPairData(metricSpecification, progress);            
-            
-            ResultSet resultingPairs = Database.getResults(connection, script);
-            
+
+            resultingPairs = Database.getResults(connection, script);
+
             while (resultingPairs.next())
             {
                 Double observedValue = resultingPairs.getDouble("sourceOneValue");
@@ -200,6 +202,10 @@ public abstract class Metrics {
         }
         finally
         {
+            if (resultingPairs != null)
+            {
+                resultingPairs.close();
+            }
             if (connection != null)
             {
                 Database.returnConnection(connection);
