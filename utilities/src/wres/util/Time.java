@@ -105,7 +105,7 @@ public final class Time
         return day;
     }
     
-    public static OffsetDateTime convertStringtoDate(String date, String time, String offset) {
+    public static OffsetDateTime convertStringToDate(String date, String time, String offset) {
         return convertStringToDate(date + " " + time, offset);
     }
     
