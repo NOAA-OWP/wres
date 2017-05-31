@@ -19,7 +19,7 @@ import wres.io.utilities.Database;
  */
 public class ConfiguredLoader
 {
-    private final static String newline = System.lineSeparator();
+    private final static String NEWLINE = System.lineSeparator();
 
     /**
      * 
@@ -95,22 +95,22 @@ public class ConfiguredLoader
     private boolean dataExists(String sourceName) throws SQLException {
         String script = "";
         
-        script += "SELECT EXISTS (" + newline;
-        script += "     SELECT 1" + newline;
+        script += "SELECT EXISTS (" + NEWLINE;
+        script += "     SELECT 1" + NEWLINE;
         
         if (datasource.isForecast()) {
-            script += "     FROM wres.Forecast F" + newline;
-            script += "     INNER JOIN wres.ForecastSource SL" + newline;
-            script += "         ON SL.forecast_id = F.forecast_id" + newline;
+            script += "     FROM wres.Forecast F" + NEWLINE;
+            script += "     INNER JOIN wres.ForecastSource SL" + NEWLINE;
+            script += "         ON SL.forecast_id = F.forecast_id" + NEWLINE;
         }
         else
         {
-            script += "     FROM wres.Observation SL" + newline;
+            script += "     FROM wres.Observation SL" + NEWLINE;
         }
         
-        script += "     INNER JOIN wres.Source S" + newline;
-        script += "         ON S.source_id = SL.source_id" + newline;
-        script += "     WHERE S.path = '" + sourceName + "'" + newline;
+        script += "     INNER JOIN wres.Source S" + NEWLINE;
+        script += "         ON S.source_id = SL.source_id" + NEWLINE;
+        script += "     WHERE S.path = '" + sourceName + "'" + NEWLINE;
         script += ");";
         
         return Database.getResult(script, "exists");
