@@ -9,7 +9,7 @@ import wres.io.utilities.Database;
  * @author Christopher Tubbs
  */
 public final class ForecastDetails {
-	private final static String newline = System.lineSeparator();
+	private final static String NEWLINE = System.lineSeparator();
 	
 	private String sourcePath = null;
 	private String forecastDate = null;
@@ -97,24 +97,24 @@ public final class ForecastDetails {
 	{
 		String script = "";
 
-		script += "WITH new_forecast AS" + newline;
-		script += "(" + newline;
-		script += "		INSERT INTO wres.Forecast(forecast_date)" + newline;
-		script += "		SELECT '" + forecastDate + "'" + newline;
-		script += "		WHERE NOT EXISTS (" + newline;
-		script += "			SELECT 1" + newline;
-		script += "			FROM wres.Forecast" + newline;
-		script += "			WHERE forecast_date = '" + forecastDate + "'" + newline;
-		script += "		)" + newline;
-		script += "		RETURNING forecast_id" + newline;
-		script += ")" + newline;
-		script += "SELECT forecast_id" + newline;
-		script += "FROM new_forecast" + newline + newline;
+		script += "WITH new_forecast AS" + NEWLINE;
+		script += "(" + NEWLINE;
+		script += "		INSERT INTO wres.Forecast(forecast_date)" + NEWLINE;
+		script += "		SELECT '" + forecastDate + "'" + NEWLINE;
+		script += "		WHERE NOT EXISTS (" + NEWLINE;
+		script += "			SELECT 1" + NEWLINE;
+		script += "			FROM wres.Forecast" + NEWLINE;
+		script += "			WHERE forecast_date = '" + forecastDate + "'" + NEWLINE;
+		script += "		)" + NEWLINE;
+		script += "		RETURNING forecast_id" + NEWLINE;
+		script += ")" + NEWLINE;
+		script += "SELECT forecast_id" + NEWLINE;
+		script += "FROM new_forecast" + NEWLINE + NEWLINE;
 		script += "";
-		script += "UNION" + newline + newline;
+		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT forecast_id" + newline;
-		script += "FROM wres.Forecast" + newline;
+		script += "SELECT forecast_id" + NEWLINE;
+		script += "FROM wres.Forecast" + NEWLINE;
 		script += "WHERE forecast_date = '" + forecastDate + "';";
 		
 		forecast_id = Database.getResult(script, "forecast_id");
@@ -146,13 +146,13 @@ public final class ForecastDetails {
         int sourceID = SourceCache.getSourceID(sourcePath, getSourceDate());
 
         String script = "";
-        script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + newline;
-        script += "SELECT " + this.forecast_id + ", " + sourceID + newline;
-        script += "WHERE NOT EXISTS (" + newline;
-        script += "     SELECT 1" + newline;
-        script += "     FROM wres.ForecastSource" + newline;
-        script += "     WHERE forecast_id = " + this.forecast_id + newline;
-        script += "         AND source_id = " + sourceID + newline;
+        script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + NEWLINE;
+        script += "SELECT " + this.forecast_id + ", " + sourceID + NEWLINE;
+        script += "WHERE NOT EXISTS (" + NEWLINE;
+        script += "     SELECT 1" + NEWLINE;
+        script += "     FROM wres.ForecastSource" + NEWLINE;
+        script += "     WHERE forecast_id = " + this.forecast_id + NEWLINE;
+        script += "         AND source_id = " + sourceID + NEWLINE;
         script += ");";
         
         Database.execute(script);

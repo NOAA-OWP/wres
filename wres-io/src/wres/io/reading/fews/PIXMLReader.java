@@ -39,7 +39,7 @@ public final class PIXMLReader extends XMLReader
     /**
      * Alias for the system agnostic newline separator
      */
-	private final static String newline = System.lineSeparator();
+	private final static String NEWLINE = System.lineSeparator();
 
     /**
      * @return The String header for the copy statement for forecasts
@@ -183,7 +183,7 @@ public final class PIXMLReader extends XMLReader
 	    }
 	    
 		if (insertCount > 0) {
-			currentScript += newline;
+			currentScript += NEWLINE;
 		} else if(insertCount == 0) {
 			currentTableDefinition = INSERT_FORECAST_HEADER;
 			currentScript = "";
@@ -207,7 +207,7 @@ public final class PIXMLReader extends XMLReader
         
 		if (insertCount > 0)
 		{
-			currentScript += newline;
+			currentScript += NEWLINE;
 		}
 		else
 		{

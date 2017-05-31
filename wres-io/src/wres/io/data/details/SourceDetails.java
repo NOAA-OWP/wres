@@ -104,27 +104,27 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 	@Override
 	protected String getInsertSelectStatement() {
 		String script = "";
-		script += "WITH new_source AS" + newline;
-		script += "(" + newline;
-		script += "		INSERT INTO wres.Source (path, output_time)" + newline;
-		script += "		SELECT '" + this.sourcePath + "'," + newline;
-		script += "				'" + this.outputTime + "'" + newline;
-		script += "		WHERE NOT EXISTS (" + newline;
-		script += "			SELECT 1" + newline;
-		script += "			FROM wres.Source" + newline;
-		script += "			WHERE path = '" + this.sourcePath + "'" + newline;
-		script += "				AND output_time = '" + this.outputTime + "'" + newline;
-		script += "		)" + newline;
-		script += "		RETURNING source_id" + newline;
-		script += ")" + newline;
-		script += "SELECT source_id" + newline;
-		script += "FROM new_source" + newline + newline;
+		script += "WITH new_source AS" + NEWLINE;
+		script += "(" + NEWLINE;
+		script += "		INSERT INTO wres.Source (path, output_time)" + NEWLINE;
+		script += "		SELECT '" + this.sourcePath + "'," + NEWLINE;
+		script += "				'" + this.outputTime + "'" + NEWLINE;
+		script += "		WHERE NOT EXISTS (" + NEWLINE;
+		script += "			SELECT 1" + NEWLINE;
+		script += "			FROM wres.Source" + NEWLINE;
+		script += "			WHERE path = '" + this.sourcePath + "'" + NEWLINE;
+		script += "				AND output_time = '" + this.outputTime + "'" + NEWLINE;
+		script += "		)" + NEWLINE;
+		script += "		RETURNING source_id" + NEWLINE;
+		script += ")" + NEWLINE;
+		script += "SELECT source_id" + NEWLINE;
+		script += "FROM new_source" + NEWLINE + NEWLINE;
 		script += "";
-		script += "UNION" + newline + newline;
+		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT source_id" + newline;
-		script += "FROM wres.Source" + newline;
-		script += "WHERE path = '" + this.sourcePath + "'" + newline;
+		script += "SELECT source_id" + NEWLINE;
+		script += "FROM wres.Source" + NEWLINE;
+		script += "WHERE path = '" + this.sourcePath + "'" + NEWLINE;
 		script += "		AND output_time = '" + this.outputTime + "';";
 
 		return script;
