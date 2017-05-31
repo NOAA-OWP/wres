@@ -27,22 +27,26 @@ public final class DataModel
     
     public static double getPairedDoubleVectorMean(List<PairOfDoubleAndVectorOfDoubles> pairs)
     {
-        double mean = 0.0;
+        double total = 0.0;
         int totalVectorValues = 0;
         
         for (PairOfDoubleAndVectorOfDoubles pair : pairs)
         {
             for (int pairIndex = 0; pairIndex < pair.getItemTwo().length; ++pairIndex)
             {
-                mean += pair.getItemTwo()[pairIndex];
+                total += pair.getItemTwo()[pairIndex];
                 totalVectorValues++;
             }
         }
-        
-        mean /= totalVectorValues; 
-        return mean;
+
+        if (totalVectorValues <= 0)
+        {
+            throw new IllegalArgumentException("pairs must have some values inside");
+        }
+
+        return total / totalVectorValues;
     }
-    
+
     public static double getPairedDoubleStandardDeviation(List<PairOfDoubleAndVectorOfDoubles> pairs)
     {
         if (pairs.size() == 1)
