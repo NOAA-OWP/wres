@@ -356,8 +356,12 @@ public final class Database {
      */
     public static ResultSet getResults(final Connection connection, String query) throws SQLException
     {
-        Statement statement = connection.createStatement();
-        statement.setFetchSize(SystemSettings.fetchSize());
-        return statement.executeQuery(query);
+        ResultSet results = null;
+        try (Statement statement = connection.createStatement())
+        {
+            statement.setFetchSize(SystemSettings.fetchSize());
+            results = statement.executeQuery(query);
+        }
+        return results; 
     }
 }
