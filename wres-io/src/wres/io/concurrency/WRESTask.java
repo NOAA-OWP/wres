@@ -6,7 +6,7 @@ import java.util.function.Consumer;
  * @author Christopher Tubbs
  *
  */
-public abstract class WRESThread
+public abstract class WRESTask
 {
     public void setOnComplete(Consumer<Object> onComplete) {
         this.onComplete = onComplete;

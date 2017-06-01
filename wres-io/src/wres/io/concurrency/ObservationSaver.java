@@ -13,7 +13,7 @@ import wres.util.FormattedStopwatch;
  * 
  * @author Christopher Tubbs
  */
-public class ObservationSaver extends WRESThread implements Runnable {
+public class ObservationSaver extends WRESTask implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ObservationSaver.class);
     

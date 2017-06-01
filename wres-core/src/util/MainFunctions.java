@@ -1,6 +1,7 @@
 package util;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,11 +12,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
 import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.io.config.Projects;
+import wres.io.config.SystemSettings;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ConfiguredLoader;
 import wres.io.reading.SourceReader;
@@ -24,7 +32,8 @@ import wres.io.config.specification.ProjectDataSpecification;
 import wres.io.config.specification.ProjectSpecification;
 
 import java.util.concurrent.Future;
-import wres.io.concurrency.MetricExecutor;
+
+import wres.io.concurrency.MetricTask;
 import wres.io.concurrency.ObservationSaver;
 import wres.io.data.caching.MeasurementCache;
 import wres.io.data.caching.VariableCache;
@@ -39,7 +48,9 @@ import wres.util.Strings;
  * @author ctubbs
  *
  */
-public final class MainFunctions {
+public final class MainFunctions
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger(MainFunctions.class);
 
 	// Clean definition of the newline character for the system
 	private static final String NEWLINE = System.lineSeparator();
@@ -96,7 +107,7 @@ public final class MainFunctions {
 		prototypes.put("refreshforecasts", refreshForecasts());
 		prototypes.put("getpairs", getPairs());
 		prototypes.put("getprojectpairs", getProjectPairs());
-		prototypes.put("executeproject", executeProject());
+        prototypes.put("executeproject", new ExecuteProject());
 		
 		return prototypes;
 	}
@@ -667,97 +678,167 @@ public final class MainFunctions {
 	        }
 	    };
 	}
-	
-	private static Consumer<String[]> executeProject() {
-	    return (String[] args) -> {
-	        if (args.length > 0) {
-	            String projectName = args[0];
-	            String metricName = null;
-	            
-	            if (args.length > 1) {
-	                metricName = args[1];
-	            }
-	            
-	            ProjectSpecification project = Projects.getProject(projectName);
-	            
-	            for (ProjectDataSpecification datasource : project.getDatasources())
-	            {
-	                System.err.println("Loading datasource information if it doesn't already exist...");
-	                ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
-	                dataLoader.load();
-	                System.err.println("The data from this dataset has been loaded to the database");
-	                ProgressMonitor.resetMonitor();
-	                System.err.println();
-	            }
-	            
-	            System.err.println("All data specified for this project should now be loaded.");
-	            
-	            Map<String, List<LeadResult>> results = new TreeMap<>();
-	            Map<String, Future<List<LeadResult>>> futureResults = new TreeMap<>();
-	            
-	            if (metricName == null)
-	            {
-    	            for (int metricIndex = 0; metricIndex < project.metricCount(); ++metricIndex)
-    	            {
-    	                MetricSpecification specification = project.getMetric(metricIndex);
-    	                MetricExecutor metric = new MetricExecutor(specification);
-    	                metric.setOnRun(ProgressMonitor.onThreadStartHandler());
-    	                metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-    	                System.err.println("Now executing the metric named: " + specification.getName());
-    	                futureResults.put(specification.getName(), Executor.submit(metric));
-    	            }
-	            }
-	            else
-	            {
-	                MetricSpecification specification = project.getMetric(metricName);
-	                
-	                if (specification != null)
-	                {
-	                    MetricExecutor metric = new MetricExecutor(specification);
+
+    private static class ExecuteProject implements Consumer<String[]>
+    {
+        @Override
+        public void accept(String[] args)
+        {
+            if (args.length > 0) {
+                final String projectName = args[0];
+                String metricName = null;
+
+                if (args.length > 1) {
+                    metricName = args[1];
+                }
+
+                final ProjectSpecification project = Projects.getProject(projectName);
+
+                final List<Future> fileIngestTasks = new ArrayList<>();
+
+                try
+                {
+                    for (ProjectDataSpecification datasource : project.getDatasources())
+                    {
+                        LOGGER.info("Loading datasource information if it doesn't already exist...");
+                        final ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
+                        fileIngestTasks.addAll(dataLoader.load());
+                        if (LOGGER.isInfoEnabled())
+                        {
+                            LOGGER.info("Queued " + fileIngestTasks.size()
+                                        + " file(s) for ingest");
+                        }
+                        ProgressMonitor.resetMonitor();
+                    }
+                }
+                catch (IOException ioe)
+                {
+                    LOGGER.error("When trying to ingest files:", ioe);
+                    return;
+                }
+
+                try
+                {
+                    for (Future t : fileIngestTasks)
+                    {
+                        if (t != null)
+                        {
+                            t.get();
+                        }
+                        else
+                        {
+                            LOGGER.debug("Received a null object from ConfiguredLoader");
+                        }
+                    }
+                }
+                catch (InterruptedException ie)
+                {
+                    LOGGER.warn("Interrupted during ingest", ie);
+                    Thread.currentThread().interrupt();
+                }
+                catch (ExecutionException ee)
+                {
+                    LOGGER.error("Execution failed", ee);
+                    return;
+                }
+
+                LOGGER.info("The data from this dataset has been ingested into the database");
+
+                LOGGER.info("All data specified for this project should now be loaded.");
+
+                int maxThreadCount = SystemSettings.maximumThreadCount() / 2;
+                if (maxThreadCount == 0)
+                {
+                    maxThreadCount = 1;
+                }
+
+                // A secondary executor for second-level tasks, should help
+                // avoid race conditions.
+                final ExecutorService secondLevelExecutor = Executors.newFixedThreadPool(maxThreadCount);
+
+                final Map<String, List<LeadResult>> results = new TreeMap<>();
+                final Map<String, Future<List<LeadResult>>> futureResults = new TreeMap<>();
+
+                if (metricName == null)
+                {
+                    for (int metricIndex = 0; metricIndex < project.metricCount(); ++metricIndex)
+                    {
+                        final MetricSpecification specification = project.getMetric(metricIndex);
+                        final MetricTask metric = new MetricTask(specification, secondLevelExecutor);
                         metric.setOnRun(ProgressMonitor.onThreadStartHandler());
                         metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                        System.err.println("Now executing the metric named: " + specification.getName());
+                        if (LOGGER.isInfoEnabled())
+                        {
+                            LOGGER.info("Now executing the metric named: " + specification.getName());
+                        }
                         futureResults.put(specification.getName(), Executor.submit(metric));
-	                }
-	            }
-	            
-	            for (Entry<String, Future<List<LeadResult>>> entry : futureResults.entrySet())
-	            {
-	                try
+                    }
+                }
+                else
+                {
+                    MetricSpecification specification = project.getMetric(metricName);
+
+                    if (specification != null)
+                    {
+                        final MetricTask metric = new MetricTask(specification, secondLevelExecutor);
+                        metric.setOnRun(ProgressMonitor.onThreadStartHandler());
+                        metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                        if (LOGGER.isInfoEnabled())
+                        {
+                            LOGGER.info("Now executing the metric named: " + specification.getName());
+                        }
+                        futureResults.put(specification.getName(), Executor.submit(metric));
+                    }
+                }
+
+                for (Entry<String, Future<List<LeadResult>>> entry : futureResults.entrySet())
+                {
+                    try
                     {
                         results.put(entry.getKey(), entry.getValue().get());
                     }
-                    catch(InterruptedException | ExecutionException e)
+                    catch(InterruptedException ie)
                     {
-                        e.printStackTrace();
+                        LOGGER.warn("Interrupted", ie);
+                        secondLevelExecutor.shutdown();
+                        Thread.currentThread().interrupt();
                     }
-	            }
-	            
-	            System.out.println();
-	            System.out.println("Project: " + projectName);
-	            System.out.println();
-	            
-	            for (Entry<String, List<LeadResult>> entry : results.entrySet())
-	            {
-	                System.out.println();
-	                System.out.println(entry.getKey());
-	                System.out.println("--------------------------------------------------------------------------------------");
-	                
-	                for (LeadResult metricResult : entry.getValue())
-	                {
-	                    System.out.print(metricResult.getLead());
-	                    System.out.print("\t\t|\t");
-	                    System.out.println(metricResult.getResult());
-	                }
-	                
-	                System.out.println();
-	            }
-	        }
-	        else
-	        {
-	            System.err.println("There are not enough arguments to run 'executeProject'");
-	            System.err.println("usage: executeProject <project name> [<metric name>]");
-	        }
-	    };
-	}
+                    catch (ExecutionException e)
+                    {
+                        LOGGER.error("Execution failed", e);
+                        secondLevelExecutor.shutdown();
+                        return;
+                    }
+                }
+
+                secondLevelExecutor.shutdown();
+
+                if (LOGGER.isInfoEnabled())
+                {
+                    LOGGER.info("");
+                    LOGGER.info("Project: {}", projectName);
+                    LOGGER.info("");
+
+                    for (Entry<String, List<LeadResult>> entry : results.entrySet())
+                    {
+                        LOGGER.info("");
+                            LOGGER.info(entry.getKey());
+                        LOGGER.info("--------------------------------------------------------------------------------------");
+
+                        for (LeadResult metricResult : entry.getValue())
+                        {
+                            LOGGER.info(metricResult.getLead() + "\t\t|\t" + metricResult.getResult());
+                        }
+
+                        LOGGER.info("");
+                    }
+                }
+            }
+            else
+            {
+                LOGGER.error("There are not enough arguments to run 'executeProject'");
+                LOGGER.error("usage: executeProject <project name> [<metric name>]");
+            }
+        }
+    }
 }

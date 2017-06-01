@@ -12,7 +12,7 @@ import wres.io.utilities.Database;
  * 
  * @author Christopher Tubbs
  */
-public class SQLExecutor extends WRESThread implements Runnable {
+public class SQLExecutor extends WRESTask implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(SQLExecutor.class);
 
 	/**

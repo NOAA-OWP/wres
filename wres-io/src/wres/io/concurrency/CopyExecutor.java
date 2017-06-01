@@ -9,7 +9,7 @@ import wres.io.utilities.Database;
  * Executes the database copy operation for every value in the passed in string
  * @author Christopher Tubbs
  */
-public class CopyExecutor extends WRESThread implements Runnable
+public class CopyExecutor extends WRESTask implements Runnable
 {
     private final String table_definition;
     private final String values;
