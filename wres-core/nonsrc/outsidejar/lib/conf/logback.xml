@@ -1,7 +1,15 @@
 <configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- some prefer timestamps, thread name, level, class name, etc. -->
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>wres.log</file>
         <encoder>
           <pattern>%d{YYYY-MM-dd'T'HH:mm:ss.SSSZ} [%thread] %level %logger - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <!-- some prefer the message to be printed as formatted in the code -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+          <pattern>%msg%n</pattern>
         </encoder>
     </appender>
 
@@ -12,5 +20,6 @@
 
     <root level="info">
         <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
     </root>
 </configuration>
