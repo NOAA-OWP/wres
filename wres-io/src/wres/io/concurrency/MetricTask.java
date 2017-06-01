@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -16,25 +17,28 @@ import wres.io.config.specification.ScriptFactory;
 import wres.io.grouping.LabeledScript;
 import wres.io.grouping.LeadResult;
 import wres.io.utilities.Database;
-import wres.io.utilities.Debug;
-import wres.util.NullPrintStream;
 import wres.util.ProgressMonitor;
-import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs
  *
  */
-public class MetricExecutor extends WRESThread implements Callable<List<LeadResult>>
+public class MetricTask extends WRESTask implements Callable<List<LeadResult>>
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MetricExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetricTask.class);
+
+    private final MetricSpecification specification;
+    private final ExecutorService secondaryExecutor;
+
     /**
      * 
      */
-    public MetricExecutor(MetricSpecification specification)
+    public MetricTask(MetricSpecification specification,
+                      ExecutorService secondaryExecutor)
     {
         this.specification = specification;
+        this.secondaryExecutor = secondaryExecutor;
     }
 
     @Override
@@ -61,25 +65,32 @@ public class MetricExecutor extends WRESThread implements Callable<List<LeadResu
             
             while (specification.getAggregationSpecification().leadIsValid(step, finalLead))
             {
-                MetricStepExecutor stepExecutor = new MetricStepExecutor(this.specification, step);
-                stepExecutor.setOnRun(ProgressMonitor.onThreadStartHandler());
-                stepExecutor.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                Future<Double> task = Executor.submit(stepExecutor);
+                MetricStepTask stepTask = new MetricStepTask(this.specification, step);
+                stepTask.setOnRun(ProgressMonitor.onThreadStartHandler());
+                stepTask.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                Future<Double> task = secondaryExecutor.submit(stepTask);
                 mappedPairs.put(step, task);
                 step++;
             }
-            
+
             for (Entry<Integer, Future<Double>>  entry : mappedPairs.entrySet())
             {
-                results.add(new LeadResult(entry.getKey(), entry.getValue().get()));
+                Double result = entry.getValue().get();
+                if (result != null)
+                {
+                    LeadResult lr = new LeadResult(entry.getKey(), result);
+                    results.add(lr);
+                }
+                else
+                {
+                    LOGGER.debug("null result!");
+                }
             }
         }
 
-        LOGGER.trace("Results count: {}", results.size());
+        LOGGER.debug("Results count: {}", results.size());
 
         this.exectureOnComplete();
         return results;
     }
-
-    private final MetricSpecification specification;
 }

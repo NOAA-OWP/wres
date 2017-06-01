@@ -7,14 +7,14 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import wres.io.utilities.Database;
-import wres.io.concurrency.WRESThread;
+import wres.io.concurrency.WRESTask;
 
 /**
  * A callable thread that will perform a passed in function on a set of values that will be returned from the database
  * 
  * @author Christopher Tubbs
  */
-public class FunctionRunner<V, U> extends WRESThread implements Callable<V> {
+public class FunctionRunner<V, U> extends WRESTask implements Callable<V> {
 
 	/**
 	 * Creates a thread with the given query to select data and a function to call on the data selected

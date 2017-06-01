@@ -52,8 +52,8 @@ public abstract class Metrics {
     {
         Map<String, Function<List<PairOfDoubleAndVectorOfDoubles>, Double>> functions = new TreeMap<>();
         
-        functions.put("mean_error", getMeanError());
-        functions.put("correlation_coefficient", getCorrelationCoefficient());
+        functions.put("mean_error", new MeanError());
+        functions.put("correlation_coefficient", new CorrelationCoefficient());
         
         return functions;
     }
@@ -75,12 +75,18 @@ public abstract class Metrics {
         if (hasDirectFunction(specification.getMetricType()))
         {
             result = DIRECT_FUNCTIONS.get(specification.getMetricType()).apply(specification, step);
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Result came from " + specification.getMetricType()
+                             + " and step " + step);
+            }
         }
         else
         {
-            Debug.error(LOGGER, "The function named: '" + specification.getMetricType() + "' is not an available function. Returning null...");
+            LOGGER.debug("The function named: '" + specification.getMetricType()
+                         + "' is not an available function. Returning null...");
         }
-        
+
         return result;
     }
     
@@ -94,7 +100,7 @@ public abstract class Metrics {
         }
         else
         {
-            Debug.debug(LOGGER, "The function named: {} is not an available function. Returning null...", functionName);
+            LOGGER.debug("The function named: {} is not an available function. Returning null...", functionName);
         }
 
         return result;
@@ -298,9 +304,11 @@ public abstract class Metrics {
 	    };
 	}
 	
-	private static Function<List<PairOfDoubleAndVectorOfDoubles>, Double> getMeanError()
+	private static class MeanError implements Function<List<PairOfDoubleAndVectorOfDoubles>, Double>
 	{
-	    return (List<PairOfDoubleAndVectorOfDoubles> pairs) -> {
+	    @Override
+	    public Double apply(List<PairOfDoubleAndVectorOfDoubles> pairs)
+	    {
 	        double total = 0.0;
 	        int ensembleCount = 0;
 	        Double mean = null;
@@ -321,12 +329,14 @@ public abstract class Metrics {
 	        }
 	        
 	        return mean;
-	    };
+	    }
 	}
-	
-	private static Function<List<PairOfDoubleAndVectorOfDoubles>, Double> getCorrelationCoefficient()
+
+	private static class CorrelationCoefficient implements Function<List<PairOfDoubleAndVectorOfDoubles>, Double>
 	{
-	    return (List<PairOfDoubleAndVectorOfDoubles> pairs) -> {
+	    @Override
+	    public Double apply(List<PairOfDoubleAndVectorOfDoubles> pairs)
+	    {
 	        double CC = 0.0;
 	        
 	        double leftSTD = DataModel.getPairedDoubleStandardDeviation(pairs);
@@ -339,6 +349,6 @@ public abstract class Metrics {
 	        }
 	        
 	        return CC;
-	    };
+	    }
 	}
 }

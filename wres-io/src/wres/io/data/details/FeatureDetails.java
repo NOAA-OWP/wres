@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.Database;
-import wres.io.utilities.Debug;
 
 /**
  * Defines the important details of a feature as stored in the database
@@ -180,8 +179,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		}
         catch (SQLException error)
 		{
-            Debug.error(LOGGER, "An error was encountered when trying to populate the FeatureDetails cache.");
-            Debug.error(LOGGER, error.getMessage());
+            LOGGER.error("An error was encountered when trying to populate the FeatureDetails cache. ", error);
             throw error;
         }
 		finally

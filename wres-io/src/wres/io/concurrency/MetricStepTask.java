@@ -11,15 +11,15 @@ import wres.io.utilities.Debug;
  * @author Christopher Tubbs
  *
  */
-public class MetricStepExecutor extends WRESThread implements Callable<Double>
+public class MetricStepTask extends WRESTask implements Callable<Double>
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MetricStepExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetricStepTask.class);
 
     /**
      * 
      */
-    public MetricStepExecutor(MetricSpecification specification, int step)
+    public MetricStepTask(MetricSpecification specification, int step)
     {
         this.specification = specification;
         this.step = step;
@@ -33,15 +33,19 @@ public class MetricStepExecutor extends WRESThread implements Callable<Double>
         
         if (specification.shouldProcessDirectly() && Metrics.hasDirectFunction(specification.getMetricType()))
         {
+            LOGGER.debug("using first option");
             result = Metrics.call(specification, step);
+            LOGGER.debug("result is {}", result);
         }
         else if (Metrics.hasFunction(specification.getMetricType()))
         {
+            LOGGER.debug("using second option");
             result = Metrics.call(specification.getMetricType(), Metrics.getPairs(specification, step));
+            LOGGER.debug("result is {}", result);
         }
         else
         {
-            Debug.debug(LOGGER, "The function: {} is not a valid function. Returning null...", specification);
+            LOGGER.debug("The function: {} is not a valid function. Returning null...", specification);
         }
 
         this.exectureOnComplete();
