@@ -1,3 +1,10 @@
+ext
+{
+    gitCommitId = org.ajoberstar.grgit.Grgit.open(file('.')).head().id
+    gitCommitDate = org.ajoberstar.grgit.Grgit.open(file('.')).head().getDate()
+//    gitChangeCount = org.ajoberstar.grgit.Grgit.open(file('.')).head().commitDiff().getAllChanges().length
+}
+
 subprojects
 {
     apply plugin: 'java'
@@ -5,6 +12,13 @@ subprojects
 
 	sourceCompatibility = '1.8'
 	targetCompatibility = '1.8'
+
+    version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6];
+    // TODO: figure out how to add -dev (dirty flag)
+/*    if (gitChangeCount > 0)
+    {
+        version = version + '-dev' + gitChangeCount
+    }*/
 
     sourceSets
     {
@@ -148,6 +162,8 @@ project(':wres-core')
                     // Must also add the new directory to classpath under
                     // startScripts below.
                     'nonsrc/outsidejar'
+                    // trying to get project files, no need for classpath
+                    'project'
                 }
             }
         }
@@ -238,7 +254,7 @@ https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setu
 apply plugin: 'jacoco'        // code coverage tool
 apply plugin: 'org.sonarqube' // static analysis tool
 
-/* used by sonarqube static analysis */
+/* used by sonarqube static analysis (and git versioning, see top of file) */
 buildscript
 {
     repositories
@@ -247,7 +263,10 @@ buildscript
     }
     dependencies
     {
+        // for static analysis tool sonarqube:
         classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.4'
+        // for ability to use git ids for labeling jar files:
+        classpath 'org.ajoberstar:grgit:1.7.2'
     }
 }
 
