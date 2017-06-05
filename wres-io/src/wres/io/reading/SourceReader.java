@@ -1,5 +1,6 @@
 package wres.io.reading;
 
+import java.io.IOException;
 
 /**
  * @author ctubbs
@@ -12,18 +13,18 @@ public class SourceReader {
 		this.forecast_filename = forecast_file;
 	}
 	
-	public static BasicSource get_source(String filename) throws Exception
+	public static BasicSource get_source(String filename) throws IOException
 	{
 		return ReaderFactory.getReader(filename);
 	}
 	
-	public BasicSource get_observation() throws Exception
+	public BasicSource get_observation() throws IOException
 	{
 		observation = ReaderFactory.getReader(observation_filename);		
 		return observation;
 	}
 	
-	public BasicSource get_forecast() throws Exception
+	public BasicSource get_forecast() throws IOException
 	{
 		forecast = ReaderFactory.getReader(forecast_filename);		
 		return forecast;
