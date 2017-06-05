@@ -3,7 +3,6 @@ package wres.engine.statistics.metric.outputs;
 import wres.datamodel.DataFactory;
 import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.MetricOutput;
-import wres.engine.statistics.metric.inputs.DoubleMatrix;
 
 /**
  * A factory class for producing metric outputs. TODO: revisit the suppressed warnings.
@@ -25,9 +24,39 @@ public class MetricOutputFactory
      * @return a {@link ScalarOutput}
      */
 
-    public static ScalarOutput getScalarOutput(final double output, final int sampleSize, final Dimension d)
+    public static ScalarOutput ofScalarOutput(final double output, final int sampleSize, final Dimension d)
     {
         return new ScalarOutput(output, sampleSize, d);
+    }
+
+    /**
+     * Return a {@link VectorOutput}.
+     * 
+     * @param output the output data
+     * @param sampleSize the sample size
+     * @param d the dimension
+     * @return a {@link VectorOutput}
+     */
+
+    public static VectorOutput ofVectorOutput(final double[] output, final int sampleSize, final Dimension d)
+    {
+        final DataFactory dataFactory = DataFactory.instance();
+        return new VectorOutput(dataFactory.vectorOf(output), sampleSize, d);
+    }
+
+    /**
+     * Return a {@link MatrixOutput}.
+     * 
+     * @param output the output data
+     * @param sampleSize the sample size
+     * @param d the dimension
+     * @return a {@link MatrixOutput}
+     */
+
+    public static MatrixOutput ofMatrixOutput(final double[][] output, final int sampleSize, final Dimension d)
+    {
+        final DataFactory dataFactory = DataFactory.instance();
+        return new MatrixOutput(dataFactory.matrixOf(output), sampleSize, d);
     }
 
     /**
@@ -41,11 +70,11 @@ public class MetricOutputFactory
      */
 
     @SuppressWarnings("unchecked")
-    public static <T extends MetricOutput<?>> T getMatrixExtendsMetricOutput(final double[][] output,
-                                                                             final int sampleSize,
-                                                                             final Dimension d)
+    public static <T extends MetricOutput<?>> T ofMatrixExtendsMetricOutput(final double[][] output,
+                                                                            final int sampleSize,
+                                                                            final Dimension d)
     {
-        return (T)new MatrixOutput(new DoubleMatrix(output), sampleSize, d);
+        return (T)ofMatrixOutput(output, sampleSize, d);
     }
 
     /**
@@ -59,12 +88,11 @@ public class MetricOutputFactory
      */
 
     @SuppressWarnings("unchecked")
-    public static <T extends MetricOutput<?>> T getVectorExtendsMetricOutput(final double[] output,
-                                                                             final int sampleSize,
-                                                                             final Dimension d)
+    public static <T extends MetricOutput<?>> T ofVectorExtendsMetricOutput(final double[] output,
+                                                                            final int sampleSize,
+                                                                            final Dimension d)
     {
-        final DataFactory dataFactory = wres.datamodel.DataFactory.instance();
-        return (T)new VectorOutput(dataFactory.vectorOf(output), sampleSize, d);
+        return (T)ofVectorOutput(output, sampleSize, d);
     }
 
     /**
@@ -78,11 +106,11 @@ public class MetricOutputFactory
      */
 
     @SuppressWarnings("unchecked")
-    public static <T extends MetricOutput<?>> T getScalarExtendsMetricOutput(final double output,
-                                                                             final int sampleSize,
-                                                                             final Dimension d)
+    public static <T extends MetricOutput<?>> T ofScalarExtendsMetricOutput(final double output,
+                                                                            final int sampleSize,
+                                                                            final Dimension d)
     {
-        return (T)getScalarOutput(output, sampleSize, d);
+        return (T)ofScalarOutput(output, sampleSize, d);
     }
 
     /**
@@ -96,11 +124,28 @@ public class MetricOutputFactory
      */
 
     @SuppressWarnings("unchecked")
-    public static <T extends ScalarOutput> T getExtendsScalarOutput(final double output,
-                                                                    final int sampleSize,
-                                                                    final Dimension d)
+    public static <T extends ScalarOutput> T ofExtendsScalarOutput(final double output,
+                                                                   final int sampleSize,
+                                                                   final Dimension d)
     {
-        return (T)getScalarOutput(output, sampleSize, d);
+        return (T)ofScalarOutput(output, sampleSize, d);
+    }
+
+    /**
+     * Return a {@link VectorOutput}.
+     * 
+     * @param output the output data
+     * @param sampleSize the sample size
+     * @param d the dimension
+     * @return a {@link VectorOutput}
+     */
+
+    @SuppressWarnings("unchecked")
+    public static <T extends VectorOutput> T ofExtendsVectorOutput(final double[] output,
+                                                                   final int sampleSize,
+                                                                   final Dimension d)
+    {
+        return (T)ofVectorOutput(output, sampleSize, d);
     }
 
     /**

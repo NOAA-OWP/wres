@@ -3,7 +3,6 @@ package wres.engine.statistics.metric;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
-import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
  * As with the MSE, the Root Mean Square Error (RMSE) or Root Mean Square Deviation (RMSD) is a measure of accuracy.
@@ -16,28 +15,43 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  */
 public final class RootMeanSquareError<S extends SingleValuedPairs, T extends ScalarOutput>
 extends
-    MeanSquareError<S, T>
+    DoubleErrorScore<S, T>
 {
+    /**
+     * The metric name.
+     */
+
+    private static final String METRIC_NAME = "Root Mean Square Error";
 
     @Override
     public T apply(final S t)
     {
-        return MetricOutputFactory.getExtendsScalarOutput(Math.pow(super.apply(t).getData(), 0.5),
-                                                          t.size(),
-                                                          t.getDimension());
+        return MetricOutputFactory.ofExtendsScalarOutput(Math.pow(super.apply(t).getData(), 0.5),
+                                                         t.get(0).size(),
+                                                         t.getDimension());
     }
 
-    @Override
-    public void checkParameters(final MetricParameter... par)
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    public static class RootMeanSquareErrorBuilder<S extends SingleValuedPairs, T extends ScalarOutput>
+    extends
+        DoubleErrorScoreBuilder<S, T>
     {
-        // TODO Auto-generated method stub
+
+        @Override
+        public RootMeanSquareError<S, T> build()
+        {
+            return new RootMeanSquareError<>(this);
+        }
 
     }
 
     @Override
     public String getName()
     {
-        return "Root Mean Square Error";
+        return METRIC_NAME;
     }
 
     @Override
@@ -46,13 +60,27 @@ extends
         return false;
     }
 
+    @Override
+    public int getDecompositionID()
+    {
+        return MetricConstants.NONE;
+    }
+
+    @Override
+    public boolean isSkillScore()
+    {
+        return false;
+    }
+
     /**
-     * Protected constructor.
+     * Hidden constructor.
+     * 
+     * @param b the builder
      */
 
-    protected RootMeanSquareError()
+    private RootMeanSquareError(final RootMeanSquareErrorBuilder<S, T> b)
     {
-        super();
+        super(b.setErrorFunction(FunctionFactory.squareError()));
     }
 
 }

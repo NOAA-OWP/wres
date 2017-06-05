@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.MetricInput;
@@ -13,106 +12,29 @@ import wres.datamodel.metric.MetricInput;
  * Class for storing the verification pairs associated with the outcome (true or false) of a multi-category event. The
  * categorical outcomes may be ordered or unordered. For multi-category pairs with <b>more</b> than two possible
  * outcomes, each pair should contain exactly one occurrence (true value). For efficiency, a dichotomous pair can be
- * encoded with a single indicator.
+ * encoded with a single indicator. The observed outcomes are recorded first, followed by the predicted outcomes.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
+public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
 {
 
     /**
-     * The multicategory pairs.
+     * The verification pairs.
      */
 
-    final List<VectorOfBooleans> pairs;
+    private final List<List<VectorOfBooleans>> pairs;
 
     /**
-     * The multicategory pairs for the baseline.
+     * Dimension of the data (must be the same for all datasets).
      */
 
-    final List<VectorOfBooleans> basePairs;
-
-    /**
-     * Construct the multicategory input without any pairs for a baseline. The pairs have twice as many columns as
-     * possible outcomes, with the observed outcomes in the first columns and the predicted outcomes in the last
-     * columns. Throws an exception if the input is null or empty or contains an odd number of columns.
-     * 
-     * @param pairs the multicategory pairs
-     * @throws MetricInputException if the input is null or empty or contains an odd number of columns
-     */
-
-    protected MulticategoryPairs(final boolean[][] pairs)
-    {
-        this(pairs, null);
-    }
-
-    /**
-     * Construct the multicategory input with a baseline. The baseline may be null. The pairs have twice as many columns
-     * as possible outcomes, with the observed outcomes in the first columns and the predicted outcomes in the last
-     * columns. If the baseline pairs are non-null, they should have as many columns as the main pairs. Unless the pair
-     * refers to a dichotomous event (two possible outcomes), each pair should have exactly one observed occurrence and
-     * one predicted occurrence, denoted by a single true entry for each of the observed and predicted outcomes. Throws
-     * an exception if the input is null or empty or contains an odd number of columns or a the pair does not contain
-     * one observed occurrence and one predicted occurrence (for events with more than two possible outcomes).
-     * 
-     * @param pairs the multicategory pairs
-     * @param basePairs the multicategory baseline pairs
-     * @throws MetricInputException if the inputs are unexpected
-     */
-
-    protected MulticategoryPairs(final boolean[][] pairs, final boolean[][] basePairs)
-    {
-        //Bounds check
-        Objects.requireNonNull(pairs, "Specify non-null input for the multicategory pairs.");
-        if(pairs.length == 0)
-        {
-            throw new MetricInputException("Provide an input with one or more pairs.");
-        }
-        //Set the stores
-        this.pairs = new ArrayList<>();
-        this.basePairs = new ArrayList<>();
-        final int outcomes = pairs[0].length / 2;
-        final DataFactory dataFactory = wres.datamodel.DataFactory.instance();
-
-        if(outcomes > 1 && outcomes % 2 != 0)
-        {
-            throw new MetricInputException("Expected a multicategory input with an equivalent number of observed and "
-                + "predicted outcomes.");
-        }
-        if(basePairs != null)
-        {
-            //Bounds check
-            if(basePairs.length == 0)
-            {
-                throw new MetricInputException("Provide paired inputs for the baseline that contain one or more elements.");
-            }
-            //Set the baseline pairs
-            for(final boolean[] pair: basePairs)
-            {
-                if(pair.length / 2 != outcomes)
-                {
-                    throw new MetricInputException("Expected a multicategory baseline with " + outcomes + " outcomes.");
-                }
-                checkPair(outcomes, pair);
-                this.pairs.add(dataFactory.vectorOf(pair));
-            }
-        }
-        //Set the pairs
-        for(final boolean[] pair: pairs)
-        {
-            if(pair.length / 2 != outcomes)
-            {
-                throw new MetricInputException("Expected multicategory pairs with with " + outcomes + " outcomes.");
-            }
-            checkPair(outcomes, pair);
-            this.pairs.add(dataFactory.vectorOf(pair));
-        }
-    }
+    final Dimension dim;
 
     @Override
-    public boolean hasBaseline()
+    public boolean hasTwo()
     {
-        return basePairs != null;
+        return size() == 2;
     }
 
     @Override
@@ -122,38 +44,15 @@ public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
     }
 
     @Override
-    public List<VectorOfBooleans> getData()
+    public List<VectorOfBooleans> get(final int index)
     {
-        return pairs;
-    }
-
-    @Override
-    public List<VectorOfBooleans> getBaselineData()
-    {
-        return basePairs;
-    }
-
-    @Override
-    public MulticategoryPairs getBaseline()
-    {
-        MulticategoryPairs returnMe = null;
-        if(hasBaseline())
-        {
-            returnMe = new MulticategoryPairs(basePairs, null);
-        }
-        return returnMe;
+        return pairs.get(index);
     }
 
     @Override
     public int size()
     {
         return pairs.size();
-    }
-
-    @Override
-    public int baseSize()
-    {
-        return basePairs.size();
     }
 
     /**
@@ -164,23 +63,92 @@ public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
 
     public int getCategoryCount()
     {
-        return pairs.get(0).getBooleans().length / 2;
+        return pairs.get(0).get(0).getBooleans().length / 2;
     }
 
     /**
-     * Construct the multicategory input with a baseline. Throws an exception if the pairs are null or empty or if the
-     * baseline pairs are empty. The baseline pairs may be null.
-     * 
-     * @param pairs the single-valued pairs
-     * @param basePairs the baseline pairs
-     * @param dim the dimension of the input
-     * @throws MetricInputException
+     * A {@link MetricInputBuilder} to build the metric input.
      */
 
-    private MulticategoryPairs(final List<VectorOfBooleans> pairs, final List<VectorOfBooleans> basePairs)
+    public static class MulticategoryPairsBuilder implements MetricInputBuilder<List<VectorOfBooleans>>
     {
-        this.pairs = pairs;
-        this.basePairs = basePairs;
+
+        /**
+         * Pairs.
+         */
+        protected final List<List<VectorOfBooleans>> pairs = new ArrayList<>();
+
+        /**
+         * Dimension.
+         */
+        private Dimension dim = null;
+
+        @Override
+        public MulticategoryPairsBuilder add(final List<VectorOfBooleans> element)
+        {
+            pairs.add(element);
+            return this;
+        }
+
+        @Override
+        public MulticategoryPairs build()
+        {
+            return new MulticategoryPairs(this);
+        }
+
+        @Override
+        public MulticategoryPairsBuilder setDimension(final Dimension dim)
+        {
+            this.dim = dim;
+            return this;
+        }
+
+    }
+
+    /**
+     * Construct the single-valued pairs with a builder.
+     * 
+     * @param b the builder
+     * @throws MetricInputException if the pairs are invalid
+     */
+
+    protected MulticategoryPairs(final MulticategoryPairsBuilder b)
+    {
+        //Objects.requireNonNull(b.dim,"Specify a non-null dimension for the inputs."); //TODO may require in future
+        //Bounds checks
+        final List<Integer> size = new ArrayList<>();
+        b.pairs.stream().forEach(s -> {
+            if(Objects.isNull(s) || s.isEmpty())
+            {
+                throw new MetricInputException("One or more of the inputs is null or empty.");
+            }
+            if(s.contains(null))
+            {
+                throw new MetricInputException("One or more of the pairs is null.");
+            }
+            s.stream().forEach(t -> {
+                final int count = t.size();
+                if(size.isEmpty())
+                {
+                    size.add(count);
+                }
+                if(!size.contains(count))
+                {
+                    throw new MetricInputException("The inputs have an unequal number of categories.");
+                }
+                final int outcomes = count / 2;
+                if(outcomes > 1 && count % 2 != 0)
+                {
+                    throw new MetricInputException("Each multicategory input should have an equivalent number of "
+                        + "observed and predicted outcomes.");
+                }
+
+                checkPair(outcomes, t);
+            });
+
+        });
+        pairs = b.pairs;
+        dim = b.dim;
     }
 
     /**
@@ -192,17 +160,19 @@ public class MulticategoryPairs implements MetricInput<VectorOfBooleans>
      * @throws MetricInputException if the input does not contain one observed occurrence and one predicted occurrence
      */
 
-    private void checkPair(final int outcomes, final boolean[] pair)
+    private void checkPair(final int outcomes, final VectorOfBooleans pair)
     {
+
+        final boolean[] check = pair.getBooleans();
         if(outcomes > 1)
         {
             int o = 0;
             int p = 0;
             for(int i = 0; i < outcomes; i++)
             {
-                if(pair[i])
+                if(check[i])
                     o++;
-                if(pair[i + outcomes])
+                if(check[i + outcomes])
                     p++;
             }
             if(o != 1 || p != 1)

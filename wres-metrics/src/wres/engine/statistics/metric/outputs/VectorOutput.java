@@ -1,5 +1,8 @@
 package wres.engine.statistics.metric.outputs;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.MetricOutput;
@@ -33,33 +36,6 @@ public class VectorOutput implements MetricOutput<VectorOfDoubles>
 
     private final int sampleSize;
 
-    /**
-     * Construct a dimensionless output with a sample size.
-     * 
-     * @param output the verification output.
-     * @param sampleSize the sample size
-     */
-
-    public VectorOutput(final VectorOfDoubles output, final int sampleSize)
-    {
-        this(output, sampleSize, null);
-    }
-
-    /**
-     * Construct the output.
-     * 
-     * @param output the verification output.
-     * @param sampleSize the sample size
-     * @param dim the dimension.
-     */
-
-    public VectorOutput(final VectorOfDoubles output, final int sampleSize, final Dimension dim)
-    {
-        this.output = output;
-        this.sampleSize = sampleSize;
-        this.dim = dim;
-    }
-
     @Override
     public Dimension getDimension()
     {
@@ -82,6 +58,53 @@ public class VectorOutput implements MetricOutput<VectorOfDoubles>
     public VectorOfDoubles getData()
     {
         return output;
+    }
+
+    @Override
+    public boolean equals(final Object o)
+    {
+        boolean start = o instanceof VectorOutput && !Objects.isNull(o);
+        final VectorOutput v = (VectorOutput)o;
+        start = start && v.isDimensionless() == isDimensionless();
+        if(!isDimensionless())
+        {
+            start = start && getDimension().equals(v.getDimension());
+        }
+        start = start && v.getSampleSize() == getSampleSize();
+        return start && Arrays.equals(output.getDoubles(), v.getData().getDoubles());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Arrays.hashCode(output.getDoubles());
+    }
+
+    /**
+     * Construct a dimensionless output with a sample size.
+     * 
+     * @param output the verification output.
+     * @param sampleSize the sample size
+     */
+
+    protected VectorOutput(final VectorOfDoubles output, final int sampleSize)
+    {
+        this(output, sampleSize, null);
+    }
+
+    /**
+     * Construct the output.
+     * 
+     * @param output the verification output.
+     * @param sampleSize the sample size
+     * @param dim the dimension.
+     */
+
+    protected VectorOutput(final VectorOfDoubles output, final int sampleSize, final Dimension dim)
+    {
+        this.output = output;
+        this.sampleSize = sampleSize;
+        this.dim = dim;
     }
 
 }

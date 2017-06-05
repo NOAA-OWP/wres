@@ -11,6 +11,7 @@ import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
+import wres.engine.statistics.metric.inputs.MulticategoryPairs;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputCollection;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
@@ -77,6 +78,27 @@ implements Function<S, MetricOutputCollection<T>>
     }
 
     /**
+     * Construct a collection of metrics that consume {@link MulticategoryPairs} and return {@link ScalarOutput}.
+     * 
+     * @return a metric collection
+     */
+
+    public static MetricCollection<MulticategoryPairs, ScalarOutput> ofMulticategoryScalar()
+    {
+        final class MetricCollectionImpl extends MetricCollection<MulticategoryPairs, ScalarOutput>
+        {
+            private static final long serialVersionUID = 6841107246108197166L;
+
+            @Override
+            public MetricOutputCollection<ScalarOutput> apply(final MulticategoryPairs s)
+            {
+                return super.applyInternal(s);
+            }
+        }
+        return new MetricCollectionImpl();
+    }
+
+    /**
      * Construct a collection of metrics that consume {@link SingleValuedPairs} and return {@link VectorOutput}.
      * 
      * @return a metric collection
@@ -86,7 +108,6 @@ implements Function<S, MetricOutputCollection<T>>
     {
         final class MetricCollectionImpl extends MetricCollection<SingleValuedPairs, VectorOutput>
         {
-
             private static final long serialVersionUID = -2462430150463352477L;
 
             @Override
@@ -108,7 +129,6 @@ implements Function<S, MetricOutputCollection<T>>
     {
         final class MetricCollectionImpl extends MetricCollection<SingleValuedPairs, ScalarOutput>
         {
-
             private static final long serialVersionUID = -7002084211172866874L;
 
             @Override
@@ -121,20 +141,19 @@ implements Function<S, MetricOutputCollection<T>>
     }
 
     /**
-     * Construct a collection of metrics that consume {@link DiscreteProbabilityPairs} and return {@link MetricOutput}.
+     * Construct a collection of metrics that consume {@link DiscreteProbabilityPairs} and return {@link VectorOutput}.
      * 
      * @return a metric collection
      */
 
-    public static MetricCollection<DiscreteProbabilityPairs, ScalarOutput> ofDiscreteProbabilityScalarOutput()
+    public static MetricCollection<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVectorOutput()
     {
-        final class MetricCollectionImpl extends MetricCollection<DiscreteProbabilityPairs, ScalarOutput>
+        final class MetricCollectionImpl extends MetricCollection<DiscreteProbabilityPairs, VectorOutput>
         {
-
-            private static final long serialVersionUID = 9034583833774457407L;
+            private static final long serialVersionUID = 6081250204224558807L;
 
             @Override
-            public MetricOutputCollection<ScalarOutput> apply(final DiscreteProbabilityPairs s)
+            public MetricOutputCollection<VectorOutput> apply(final DiscreteProbabilityPairs s)
             {
                 return super.applyInternal(s);
             }

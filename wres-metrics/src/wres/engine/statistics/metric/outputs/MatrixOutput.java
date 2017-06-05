@@ -1,8 +1,11 @@
 package wres.engine.statistics.metric.outputs;
 
+import java.util.Arrays;
+import java.util.Objects;
+
+import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.MetricOutput;
-import wres.engine.statistics.metric.inputs.DoubleMatrix;
 
 /**
  * <p>
@@ -12,14 +15,14 @@ import wres.engine.statistics.metric.inputs.DoubleMatrix;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MatrixOutput implements MetricOutput<DoubleMatrix>
+public class MatrixOutput implements MetricOutput<MatrixOfDoubles>
 {
 
     /**
      * The output data.
      */
 
-    private final DoubleMatrix output;
+    private final MatrixOfDoubles output;
 
     /**
      * The dimension associated with the output or null for dimensionless output.
@@ -40,7 +43,7 @@ public class MatrixOutput implements MetricOutput<DoubleMatrix>
      * @param sampleSize the sample size
      */
 
-    public MatrixOutput(final DoubleMatrix output, final int sampleSize)
+    public MatrixOutput(final MatrixOfDoubles output, final int sampleSize)
     {
         this(output, sampleSize, null);
     }
@@ -53,7 +56,7 @@ public class MatrixOutput implements MetricOutput<DoubleMatrix>
      * @param dim the dimension.
      */
 
-    public MatrixOutput(final DoubleMatrix output, final int sampleSize, final Dimension dim)
+    public MatrixOutput(final MatrixOfDoubles output, final int sampleSize, final Dimension dim)
     {
         this.output = output;
         this.sampleSize = sampleSize;
@@ -79,9 +82,24 @@ public class MatrixOutput implements MetricOutput<DoubleMatrix>
     }
 
     @Override
-    public DoubleMatrix getData()
+    public MatrixOfDoubles getData()
     {
         return output;
+    }
+
+    @Override
+    public boolean equals(final Object o)
+    {
+        boolean start = o instanceof MatrixOutput && !Objects.isNull(o);
+        final MatrixOutput m = (MatrixOutput)o;
+        start = start && m.isDimensionless() == isDimensionless();
+        if(!isDimensionless())
+        {
+            start = start && getDimension().equals(m.getDimension());
+        }
+        start = start && m.getSampleSize() == getSampleSize();
+        start = start && m.output.rows() == output.rows() && m.output.columns() == output.columns();
+        return start && Arrays.deepEquals(output.getDoubles(), m.getData().getDoubles());
     }
 
 }

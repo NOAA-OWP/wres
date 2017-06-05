@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.MetricOutput;
+import wres.engine.statistics.metric.FunctionFactory;
 
 /**
  * A scalar outputs associated with a metric.
@@ -32,33 +33,6 @@ public class ScalarOutput implements MetricOutput<Double>
 
     private final int sampleSize;
 
-    /**
-     * Construct a dimensionless output with a sample size.
-     * 
-     * @param output the verification output.
-     * @param sampleSize the sample size
-     */
-
-    public ScalarOutput(final double output, final int sampleSize)
-    {
-        this(output, sampleSize, null);
-    }
-
-    /**
-     * Construct the output.
-     * 
-     * @param output the verification output.
-     * @param sampleSize the sample size
-     * @param dim the dimension.
-     */
-
-    public ScalarOutput(final double output, final int sampleSize, final Dimension dim)
-    {
-        this.output = output;
-        this.sampleSize = sampleSize;
-        this.dim = dim;
-    }
-
     @Override
     public Dimension getDimension()
     {
@@ -75,7 +49,7 @@ public class ScalarOutput implements MetricOutput<Double>
     public boolean equals(final Object o)
     {
         boolean start = o instanceof ScalarOutput && !Objects.isNull(o);
-        start = start && Math.abs(((ScalarOutput)o).getData().doubleValue() - output) < .00000001;
+        start = start && FunctionFactory.equals().test(((ScalarOutput)o).getData().doubleValue(), output);
         start = start && ((ScalarOutput)o).sampleSize == sampleSize;
         start = start && (Objects.isNull(((ScalarOutput)o).dim) == Objects.isNull(dim));
         return (dim != null) ? start && ((ScalarOutput)o).dim.equals(dim) : start;
@@ -102,6 +76,33 @@ public class ScalarOutput implements MetricOutput<Double>
     public Double getData()
     {
         return output;
+    }
+
+    /**
+     * Construct a dimensionless output with a sample size.
+     * 
+     * @param output the verification output.
+     * @param sampleSize the sample size
+     */
+
+    protected ScalarOutput(final double output, final int sampleSize)
+    {
+        this(output, sampleSize, null);
+    }
+
+    /**
+     * Construct the output.
+     * 
+     * @param output the verification output.
+     * @param sampleSize the sample size
+     * @param dim the dimension.
+     */
+
+    protected ScalarOutput(final double output, final int sampleSize, final Dimension dim)
+    {
+        this.output = output;
+        this.sampleSize = sampleSize;
+        this.dim = dim;
     }
 
 }

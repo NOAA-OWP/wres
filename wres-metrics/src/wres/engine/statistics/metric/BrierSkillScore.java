@@ -1,8 +1,7 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.MetricOutput;
 import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
-import wres.engine.statistics.metric.parameters.MetricParameter;
+import wres.engine.statistics.metric.outputs.VectorOutput;
 
 /**
  * <p>
@@ -15,30 +14,46 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * @version 0.1
  * @since 0.1
  */
-public final class BrierSkillScore<S extends DiscreteProbabilityPairs, T extends MetricOutput<?>>
+public final class BrierSkillScore<S extends DiscreteProbabilityPairs, T extends VectorOutput>
 extends
     MeanSquareErrorSkillScore<S, T>
 implements ProbabilityScore
 {
 
-    @Override
-    public T apply(final S s)
-    {
-        //TODO: implement any required decompositions, based on the instance parameters  
-        return super.apply(s); //Inputs are checked in super
-    }
+    /**
+     * The metric name.
+     */
 
-    @Override
-    public void checkParameters(final MetricParameter... par)
+    private static final String METRIC_NAME = "Brier Skill Score";
+
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    public static class BrierSkillScoreBuilder<S extends DiscreteProbabilityPairs, T extends VectorOutput>
+    extends
+        MeanSquareErrorSkillScoreBuilder<S, T>
     {
-        // TODO Auto-generated method stub
+
+        @Override
+        public BrierSkillScore<S, T> build()
+        {
+            return new BrierSkillScore<>(this);
+        }
+
+        @Override
+        public BrierSkillScoreBuilder<S, T> setDecompositionID(final int decompositionID)
+        {
+            super.setDecompositionID(decompositionID);
+            return this;
+        }
 
     }
 
     @Override
     public String getName()
     {
-        return "Brier Skill Score";
+        return METRIC_NAME;
     }
 
     @Override
@@ -60,12 +75,14 @@ implements ProbabilityScore
     }
 
     /**
-     * Protected constructor.
+     * Hidden constructor.
+     * 
+     * @param b the builder
      */
 
-    protected BrierSkillScore()
+    private BrierSkillScore(final BrierSkillScoreBuilder<S, T> b)
     {
-        super();
+        super(b);
     }
 
 }

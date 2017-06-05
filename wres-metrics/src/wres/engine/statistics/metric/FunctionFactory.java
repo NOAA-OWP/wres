@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric;
 
+import java.util.function.BiPredicate;
 import java.util.function.DoubleBinaryOperator;
 
 import wres.datamodel.PairOfDoubles;
@@ -63,6 +64,19 @@ public final class FunctionFactory
     public static DoubleBinaryOperator skill()
     {
         return (a, b) -> 1.0 - (a / b);
+    }
+
+    /**
+     * <p>
+     * Return a function that computes the equality of two doubles to 8 d.p.
+     * </p>
+     * 
+     * @return a function that computes the skill
+     */
+
+    public static BiPredicate<Double, Double> equals()
+    {
+        return (a, b) -> Math.abs(a - b) < .00000001;
     }
 
     /**
