@@ -10,6 +10,8 @@ import java.util.List;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.io.config.specification.ProjectSpecification;
 import wres.io.reading.XMLReader;
 import wres.util.Collections;
@@ -20,6 +22,8 @@ import wres.util.XML;
  * @author Christopher Tubbs
  */
 public final class Projects extends XMLReader {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
 
     /**
      *  The underlying storage structure for the project configurations
@@ -34,13 +38,20 @@ public final class Projects extends XMLReader {
 	 */
 	private Projects() {
 		super(SystemSettings.getProjectDirectory());
-		loadProjects();
+		try
+		{
+			loadProjects();
+		}
+		catch (IOException ioe)
+		{
+			LOGGER.error("Could not load project files.", ioe);
+		}
 	}
 	
 	/**
 	 * Loads all project configurations defined within a directory
 	 */
-	private void loadProjects()
+	private void loadProjects() throws IOException
 	{
 		File directory = new File(this.getFilename());
 		
