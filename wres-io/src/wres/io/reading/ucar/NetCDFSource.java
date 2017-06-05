@@ -196,13 +196,13 @@ public class NetCDFSource extends BasicSource {
 	}
 	
 	@Override
-	public void save_observation() throws Exception
+	public void save_observation() throws IOException
 	{
 		
 	}
 	
 	@Override
-	public void save_forecast() throws Exception
+	public void save_forecast() throws IOException
 	{
 		NetcdfFile source = get_source();
 		Attribute attr = source.findGlobalAttributeIgnoreCase("model_initialization_time");

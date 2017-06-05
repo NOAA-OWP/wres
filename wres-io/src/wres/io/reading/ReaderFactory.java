@@ -1,5 +1,6 @@
 package wres.io.reading;
 
+import java.io.IOException;
 
 /**
  * @author ctubbs
@@ -8,7 +9,7 @@ package wres.io.reading;
 public class ReaderFactory {
     private ReaderFactory(){}
     
-	public static BasicSource getReader(String filename) throws Exception
+	public static BasicSource getReader(String filename) throws IOException
 	{
 		SourceType type_of_file = getFiletype(filename);
 		
@@ -32,7 +33,7 @@ public class ReaderFactory {
 			break;
 		default:
 			String message = "The file '%s' is not a valid data file.";
-			throw new Exception(String.format(message, filename));
+			throw new IOException(String.format(message, filename));
 		}
 		
 		return source;

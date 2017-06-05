@@ -58,7 +58,14 @@ public class ConfiguredLoader
         {
             if (directory.shouldLoadAllFiles())
             {
-                results.addAll(loadDirectory(directory.getPath()));
+                if (directory.getPath() != null)
+                {
+                    results.addAll(loadDirectory(directory.getPath()));
+                }
+                else
+                {
+                    throw new IOException("Path did not exist");
+                }
             }
             else
             {
@@ -78,10 +85,10 @@ public class ConfiguredLoader
         {
             files = Files.list(pathToDirectory);
 
-            files.map(f -> saveFile(f))
-                 .filter(Objects::nonNull)
-                 .forEach(f -> results.add(f));
-            
+            files.filter(Objects::nonNull)
+                 .map(f -> saveFile(f))
+                 .forEach(results::add);
+
             files.close();
         }
         catch(IOException exception)

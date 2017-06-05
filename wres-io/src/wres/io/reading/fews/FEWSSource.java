@@ -3,6 +3,8 @@ package wres.io.reading.fews;
 import wres.io.reading.BasicSource;
 import wres.io.reading.XMLReader;
 
+import java.io.IOException;
+
 /**
  * @author Christopher Tubbs
  * Interprets a FEWS (PIXML) source into either forecast or observation data and stores them in the database
@@ -24,15 +26,17 @@ public class FEWSSource extends BasicSource {
 	}
 
 	@Override
-	public void save_forecast() {
+	public void save_forecast() throws IOException
+	{
 		XMLReader source_reader = new PIXMLReader(this.get_filename());
 		source_reader.parse();		
 	}
 
 	@Override
-	public void save_observation() {
+	public void save_observation() throws IOException
+	{
 		XMLReader source_reader = new PIXMLReader(this.get_absolute_filename(), false);
-		source_reader.parse();		
+		source_reader.parse();
 	}
 
 }
