@@ -40,6 +40,12 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
     private static final String METRIC_NAME = "Contingency Table";
 
     /**
+     * Null string warning, used in several places.
+     */
+
+    private final String nullString = "Specify non-null input for the '" + toString() + "'.";
+
+    /**
      * A {@link MetricBuilder} to build the metric.
      */
 
@@ -58,7 +64,7 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
     @Override
     public T apply(final S s)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        Objects.requireNonNull(s, nullString);
         final int outcomes = s.getCategoryCount();
         final double[][] returnMe = new double[outcomes][outcomes];
         //Function that returns the index within the contingency matrix to increment
@@ -95,17 +101,17 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
 
     protected void is2x2ContingencyTable(final MetricOutput<?> output, final Metric<?, ?> metric)
     {
-        Objects.requireNonNull(output, "Specify non-null input for the '" + toString() + "'.");
+        Objects.requireNonNull(output, nullString);
         if(!(output instanceof MatrixOutput))
         {
-            throw new MetricInputException("Expected an intermediate result in a matrix when " + "computing the '"
-                + metric + "'.");
+            throw new MetricInputException("Expected an intermediate result in a matrix when computing the '" + metric
+                + "'.");
         }
         final MatrixOfDoubles v = ((MatrixOutput)output).getData();
         if(v.rows() != 2 || v.columns() != 2)
         {
-            throw new MetricInputException("Expected an intermediate result with a 2x2 square matrix when "
-                + "computing the '" + metric + "': [" + v.rows() + ", " + v.columns() + "].");
+            throw new MetricInputException("Expected an intermediate result with a 2x2 square matrix when computing the '"
+                + metric + "': [" + v.rows() + ", " + v.columns() + "].");
         }
     }
 
@@ -120,7 +126,7 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
 
     protected void isContingencyTable(final MetricOutput<?> output, final Metric<?, ?> metric)
     {
-        Objects.requireNonNull(output, "Specify non-null input for the '" + toString() + "'.");
+        Objects.requireNonNull(output, nullString);
         if(!(output instanceof MatrixOutput))
         {
             throw new MetricInputException("Expected an intermediate result in a matrix when " + "computing the '"
