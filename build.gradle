@@ -2,7 +2,7 @@ ext
 {
     gitCommitId = org.ajoberstar.grgit.Grgit.open(file('.')).head().id
     gitCommitDate = org.ajoberstar.grgit.Grgit.open(file('.')).head().getDate()
-//    gitChangeCount = org.ajoberstar.grgit.Grgit.open(file('.')).head().commitDiff().getAllChanges().length
+    gitIsClean = org.ajoberstar.grgit.Grgit.open(file('.')).status().isClean()
 }
 
 subprojects
@@ -14,11 +14,10 @@ subprojects
 	targetCompatibility = '1.8'
 
     version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6];
-    // TODO: figure out how to add -dev (dirty flag)
-/*    if (gitChangeCount > 0)
+    if (!gitIsClean)
     {
-        version = version + '-dev' + gitChangeCount
-    }*/
+        version = version + '-dev'
+    }
 
     sourceSets
     {
