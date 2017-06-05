@@ -1,14 +1,17 @@
 package wres.datamodel.metric;
 
-import java.util.List;
-
-
 /**
+ * <p>
  * Generic class for an input to be iterated over by a metric. A metric input may comprise paired data or unpaired data
  * and may contain one or more individual datasets. In addition, a metric input may contain a baseline dataset to be
  * used in the same context (e.g. for skill scores). Each dataset should contain one or more elements with no, explicit,
  * missing values. Missing values should be handled in advance. For ensemble forecasts, metrics should anticipate the
  * possibility of an inconsistent number of ensemble members (e.g. due to missing values).
+ * </p>
+ * <p>
+ * By convention, the two datasets required for a skill calculation should be stored with the reference dataset or
+ * baseline in the second index.
+ * </p>
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -16,12 +19,44 @@ public interface MetricInput<S>
 {
 
     /**
-     * Returns true if the input has a baseline associated with it, false otherwise.
-     * 
-     * @return true if the input has a baseline, false otherwise
+     * An abstract builder to build the collection od datasets.
      */
 
-    boolean hasBaseline();
+    public interface MetricInputBuilder<S>
+    {
+
+        /**
+         * Adds an element to the collection.
+         * 
+         * @param element the element to add.
+         */
+
+        public MetricInputBuilder<S> add(S element);
+
+        /**
+         * Sets the dimension associated with the input.
+         * 
+         * @param dim the dimension
+         */
+
+        public MetricInputBuilder<S> setDimension(Dimension dim);
+
+        /**
+         * Builds the metric collection.
+         * 
+         * @return the metric collection
+         */
+
+        public MetricInput<S> build();
+    }
+
+    /**
+     * Convenience method that returns true if two datasets are available for a skill calculation, false otherwise.
+     * 
+     * @return true if two datasets are available
+     */
+
+    boolean hasTwo();
 
     /**
      * Returns the dimension associated with the input or null if the input is dimensionless.
@@ -32,20 +67,13 @@ public interface MetricInput<S>
     Dimension getDimension();
 
     /**
-     * Returns a list of {@link S}.
+     * Returns the data at a prescribed index.
      * 
      * @return the data
+     * @throws {@link IndexOutOfBoundsException} if the index is out of range (index < 0 || index >= size())
      */
 
-    List<S> getData();
-
-    /**
-     * Returns a list of {@link S} representing a baseline.
-     * 
-     * @return a list of baseline data
-     */
-
-    List<S> getBaselineData();
+    S get(int index);
 
     /**
      * Returns the number of items in the dataset.
@@ -53,21 +81,5 @@ public interface MetricInput<S>
      * @return the size of the dataset
      */
     int size();
-
-    /**
-     * Returns the number of items in the baseline dataset.
-     * 
-     * @return the size of the baseline
-     */
-
-    int baseSize();
-
-    /**
-     * Returns the baseline or null if no baseline exists. See {@link #hasBaseline()}.
-     * 
-     * @return the baseline
-     */
-
-    MetricInput<S> getBaseline();
 
 }

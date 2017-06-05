@@ -1,11 +1,10 @@
 package wres.engine.statistics.metric;
 
-import java.util.Arrays;
+import java.util.Objects;
 
-import wres.datamodel.metric.MetricOutput;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.VectorOutput;
+import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
  * A generic implementation of an error score that applies a {@link DoubleErrorFunction} to each pair within a
@@ -15,29 +14,62 @@ import wres.engine.statistics.metric.outputs.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public abstract class DoubleErrorScore<S extends SingleValuedPairs, T extends MetricOutput<?>>
-extends
-    DoubleErrorMetric<S, T>
+public abstract class DoubleErrorScore<S extends SingleValuedPairs, T extends ScalarOutput> extends Metric<S, T>
 implements Score
 {
     /**
-     * Construct the error score.
-     * 
-     * @param f the error function
+     * The error function.
      */
 
-    public DoubleErrorScore(final DoubleErrorFunction f)
+    DoubleErrorFunction f;
+
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    public static abstract class DoubleErrorScoreBuilder<S extends SingleValuedPairs, T extends ScalarOutput>
+    implements MetricBuilder<S, T>
     {
-        super(f);
+
+        /**
+         * The error function associated with the score.
+         */
+        private DoubleErrorFunction f;
+
+        /**
+         * Sets the error function.
+         * 
+         * @param f the error function
+         */
+
+        public DoubleErrorScoreBuilder<S, T> setErrorFunction(final DoubleErrorFunction f)
+        {
+            this.f = f;
+            return this;
+        }
+
     }
 
     @Override
     public T apply(final S s)
     {
-        return MetricOutputFactory.getScalarExtendsMetricOutput((Arrays.stream(((VectorOutput)super.apply(s)).getData()
-                                                                                                             .getDoubles())
-                                                                       .sum()
-            / s.size()), s.size(), s.getDimension());
+        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        //Compute the atomic errors in a stream
+        return MetricOutputFactory.ofScalarExtendsMetricOutput(s.get(0).stream().mapToDouble(f).average().getAsDouble(),
+                                                               s.get(0).size(),
+                                                               s.getDimension());
+    }
+
+    /**
+     * Hidden constructor.
+     * 
+     * @param b the builder
+     */
+
+    protected DoubleErrorScore(final DoubleErrorScoreBuilder<S, T> b)
+    {
+        Objects.requireNonNull(b.f, "Specify a non-null function from which to construct the metric.");
+        this.f = b.f;
     }
 
 }

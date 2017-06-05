@@ -2,13 +2,13 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.metric.MetricOutput;
-import wres.engine.statistics.metric.inputs.MetricInputException;
+import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.inputs.MulticategoryPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
-import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
  * The Peirce Skill Score is a categorical measure of the average accuracy of a predictand for a multi-category event,
@@ -24,6 +24,44 @@ public final class PeirceSkillScore<S extends MulticategoryPairs, T extends Scal
 implements Score, Collectable<S, MetricOutput<?>, T>
 {
 
+    /**
+     * The metric name.
+     */
+
+    private static final String METRIC_NAME = "Peirce Skill Score";
+
+    /**
+     * A {@link MetricBuilder} to build the dichotomous metric.
+     */
+
+    public static class PeirceSkillScoreBuilder<S extends DichotomousPairs, T extends ScalarOutput>
+    implements MetricBuilder<S, T>
+    {
+
+        @Override
+        public PeirceSkillScore<S, T> build()
+        {
+            return new PeirceSkillScore<>();
+        }
+
+    }
+
+    /**
+     * A {@link MetricBuilder} to build the multi-category metric.
+     */
+
+    public static class PeirceSkillScoreMulticategoryBuilder<S extends MulticategoryPairs, T extends ScalarOutput>
+    implements MetricBuilder<S, T>
+    {
+
+        @Override
+        public PeirceSkillScore<S, T> build()
+        {
+            return new PeirceSkillScore<>();
+        }
+
+    }
+
     @Override
     public T apply(final S s)
     {
@@ -31,47 +69,20 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public void checkParameters(final MetricParameter... par)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public String getName()
-    {
-        return "Peirce Skill Score";
-    }
-
-    @Override
-    public boolean isSkillScore()
-    {
-        return true;
-    }
-
-    @Override
-    public boolean isDecomposable()
-    {
-        return false;
-    }
-
-    @Override
     public T apply(final MetricOutput<?> output)
     {
         Objects.requireNonNull(output, "Specify non-null input for the '" + toString() + "'.");
-        if(!(output instanceof MatrixOutput))
-        {
-            throw new MetricInputException("Expected an intermediate result with the Contingency Table when "
-                + "computing the '" + this + "'.");
-        }
-        final MatrixOutput v = (MatrixOutput)output;
-        final double[][] cm = v.getData().getValues();
+        //Check the input
+        isContingencyTable(output, this);
+
+        final MatrixOfDoubles v = ((MatrixOutput)output).getData();
+        final double[][] cm = v.getDoubles();
 
         //Dichotomous predictand
-        if(v.getData().size() == 4)
+        if(v.rows() == 2)
         {
-            return MetricOutputFactory.getExtendsScalarOutput((cm[0][0] / (cm[0][0] + cm[1][0]))
-                - (cm[0][1] / (cm[0][1] + cm[1][1])), v.getSampleSize(), output.getDimension());
+            return MetricOutputFactory.ofExtendsScalarOutput((cm[0][0] / (cm[0][0] + cm[1][0]))
+                - (cm[0][1] / (cm[0][1] + cm[1][1])), ((MatrixOutput)output).getSampleSize(), output.getDimension());
         }
 
         //Multicategory predictand
@@ -101,12 +112,38 @@ implements Score, Collectable<S, MetricOutput<?>, T>
         if(n <= 0)
         {
             throw new MetricCalculationException("The sum product of the rows and columns in the contingency table "
-                + "must exceed zero when computing the Peice Skill Score: " + n);
+                + "must exceed zero when computing the '" + this + "': " + n);
         }
         //Compose the result
         final double nSquared = n * n;
         final double result = ((diag / n) - (sumProd / nSquared)) / (1.0 - (uniProd / nSquared));
-        return MetricOutputFactory.getExtendsScalarOutput(result, v.getSampleSize(), output.getDimension());
+        return MetricOutputFactory.ofExtendsScalarOutput(result,
+                                                         ((MatrixOutput)output).getSampleSize(),
+                                                         output.getDimension());
+    }
+
+    @Override
+    public String getName()
+    {
+        return METRIC_NAME;
+    }
+
+    @Override
+    public boolean isSkillScore()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isDecomposable()
+    {
+        return false;
+    }
+
+    @Override
+    public int getDecompositionID()
+    {
+        return MetricConstants.NONE;
     }
 
     @Override
@@ -122,10 +159,10 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     /**
-     * Protected constructor.
+     * Hidden constructor.
      */
 
-    protected PeirceSkillScore()
+    private PeirceSkillScore()
     {
         super();
     }

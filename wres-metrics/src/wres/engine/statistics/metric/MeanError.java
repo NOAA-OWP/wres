@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
-import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
  * The mean error applies to continuous variables and is the average signed difference between a single-valued
@@ -15,10 +14,26 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
 public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput> extends DoubleErrorScore<S, T>
 {
 
-    @Override
-    public void checkParameters(final MetricParameter... par)
+    /**
+     * The metric name.
+     */
+
+    private static final String METRIC_NAME = "Mean Error";
+
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    public static class MeanErrorBuilder<S extends SingleValuedPairs, T extends ScalarOutput>
+    extends
+        DoubleErrorScoreBuilder<S, T>
     {
-        // TODO Auto-generated method stub
+
+        @Override
+        public MeanError<S, T> build()
+        {
+            return new MeanError<>(this);
+        }
 
     }
 
@@ -31,7 +46,7 @@ public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput
     @Override
     public String getName()
     {
-        return "Mean Error";
+        return METRIC_NAME;
     }
 
     @Override
@@ -40,13 +55,21 @@ public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput
         return false;
     }
 
+    @Override
+    public int getDecompositionID()
+    {
+        return MetricConstants.NONE;
+    }
+
     /**
-     * Protected constructor.
+     * Hidden constructor.
+     * 
+     * @param b the builder
      */
 
-    protected MeanError()
+    private MeanError(final MeanErrorBuilder<S, T> b)
     {
-        super(FunctionFactory.error());
+        super(b.setErrorFunction(FunctionFactory.error()));
     }
 
 }

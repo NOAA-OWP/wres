@@ -6,6 +6,7 @@ import wres.engine.statistics.metric.inputs.MulticategoryPairs;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
+import wres.engine.statistics.metric.outputs.VectorOutput;
 
 /**
  * A factory class for constructing metrics.
@@ -24,9 +25,21 @@ public final class MetricFactory
      * @return a default {@link BrierScore} function.
      */
 
-    public static BrierScore<DiscreteProbabilityPairs, ScalarOutput> ofBrierScoreNoDecomp()
+    public static BrierScore<DiscreteProbabilityPairs, VectorOutput> ofBrierScore()
     {
-        return new BrierScore<>();
+        return new BrierScore.BrierScoreBuilder<>().build();
+    }
+
+    /**
+     * Return a {@link BrierScore} function with a prescribed decomposition. See {@link Score#getDecompositionID()}.
+     * 
+     * @param decompositionID the decompositionID
+     * @return a {@link BrierScore} function.
+     */
+
+    public static BrierScore<DiscreteProbabilityPairs, VectorOutput> ofBrierScore(final int decompositionID)
+    {
+        return new BrierScore.BrierScoreBuilder<>().setDecompositionID(decompositionID).build();
     }
 
     /**
@@ -35,9 +48,9 @@ public final class MetricFactory
      * @return a default {@link BrierSkillScore} function.
      */
 
-    public static BrierSkillScore<DiscreteProbabilityPairs, ScalarOutput> ofBrierSkillScoreNoDecomp()
+    public static BrierSkillScore<DiscreteProbabilityPairs, VectorOutput> ofBrierSkillScore()
     {
-        return new BrierSkillScore<>();
+        return new BrierSkillScore.BrierSkillScoreBuilder<>().build();
     }
 
     /**
@@ -48,7 +61,7 @@ public final class MetricFactory
 
     public static ContingencyTable<MulticategoryPairs, MatrixOutput> ofContingencyTable()
     {
-        return new ContingencyTable<>();
+        return new ContingencyTable.ContingencyTableBuilder<>().build();
     }
 
     /**
@@ -59,7 +72,7 @@ public final class MetricFactory
 
     public static CriticalSuccessIndex<DichotomousPairs, ScalarOutput> ofCriticalSuccessIndex()
     {
-        return new CriticalSuccessIndex<>();
+        return new CriticalSuccessIndex.CriticalSuccessIndexBuilder<>().build();
     }
 
     /**
@@ -70,7 +83,7 @@ public final class MetricFactory
 
     public static EquitableThreatScore<DichotomousPairs, ScalarOutput> ofEquitableThreatScore()
     {
-        return new EquitableThreatScore<>();
+        return new EquitableThreatScore.EquitableThreatScoreBuilder<>().build();
     }
 
     /**
@@ -81,7 +94,7 @@ public final class MetricFactory
 
     public static MeanAbsoluteError<SingleValuedPairs, ScalarOutput> ofMeanAbsoluteError()
     {
-        return new MeanAbsoluteError<>();
+        return new MeanAbsoluteError.MeanAbsoluteErrorBuilder<>().build();
     }
 
     /**
@@ -92,7 +105,7 @@ public final class MetricFactory
 
     public static MeanError<SingleValuedPairs, ScalarOutput> ofMeanError()
     {
-        return new MeanError<>();
+        return new MeanError.MeanErrorBuilder<>().build();
     }
 
     /**
@@ -101,9 +114,9 @@ public final class MetricFactory
      * @return a default {@link MeanSquareError} function.
      */
 
-    public static MeanSquareError<SingleValuedPairs, ScalarOutput> ofMeanSquareError()
+    public static MeanSquareError<SingleValuedPairs, VectorOutput> ofMeanSquareError()
     {
-        return new MeanSquareError<>();
+        return new MeanSquareError.MeanSquareErrorBuilder<>().build();
     }
 
     /**
@@ -112,9 +125,9 @@ public final class MetricFactory
      * @return a default {@link MeanSquareErrorSkillScore} function.
      */
 
-    public static MeanSquareErrorSkillScore<SingleValuedPairs, ScalarOutput> ofMeanSquareErrorSkillScore()
+    public static MeanSquareErrorSkillScore<SingleValuedPairs, VectorOutput> ofMeanSquareErrorSkillScore()
     {
-        return new MeanSquareErrorSkillScore<>();
+        return new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>().build();
     }
 
     /**
@@ -125,7 +138,18 @@ public final class MetricFactory
 
     public static PeirceSkillScore<DichotomousPairs, ScalarOutput> ofPeirceSkillScore()
     {
-        return new PeirceSkillScore<>();
+        return new PeirceSkillScore.PeirceSkillScoreBuilder<>().build();
+    }
+
+    /**
+     * Return a default {@link PeirceSkillScore} function for a multicategory event.
+     * 
+     * @return a default {@link PeirceSkillScore} function for a multicategory event.
+     */
+
+    public static PeirceSkillScore<MulticategoryPairs, ScalarOutput> ofPeirceSkillScoreMulti()
+    {
+        return new PeirceSkillScore.PeirceSkillScoreMulticategoryBuilder<>().build();
     }
 
     /**
@@ -136,7 +160,7 @@ public final class MetricFactory
 
     public static ProbabilityOfDetection<DichotomousPairs, ScalarOutput> ofProbabilityOfDetection()
     {
-        return new ProbabilityOfDetection<>();
+        return new ProbabilityOfDetection.ProbabilityOfDetectionBuilder<>().build();
     }
 
     /**
@@ -147,7 +171,7 @@ public final class MetricFactory
 
     public static ProbabilityOfFalseDetection<DichotomousPairs, ScalarOutput> ofProbabilityOfFalseDetection()
     {
-        return new ProbabilityOfFalseDetection<>();
+        return new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder<>().build();
     }
 
     /**
@@ -158,7 +182,7 @@ public final class MetricFactory
 
     public static RootMeanSquareError<SingleValuedPairs, ScalarOutput> ofRootMeanSquareError()
     {
-        return new RootMeanSquareError<>();
+        return new RootMeanSquareError.RootMeanSquareErrorBuilder<>().build();
     }
 
     /**

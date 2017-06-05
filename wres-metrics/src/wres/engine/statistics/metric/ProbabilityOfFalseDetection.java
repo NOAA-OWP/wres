@@ -5,7 +5,6 @@ import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
-import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
  * The Probability of False Detection (PoD) measures the fraction of observed non-occurrences that were false alarms.
@@ -20,6 +19,28 @@ extends
 implements Score, Collectable<S, MetricOutput<?>, T>
 {
 
+    /**
+     * The metric name.
+     */
+
+    private static final String METRIC_NAME = "Probability of False Detection";
+
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    public static class ProbabilityOfFalseDetectionBuilder<S extends DichotomousPairs, T extends ScalarOutput>
+    implements MetricBuilder<S, T>
+    {
+
+        @Override
+        public ProbabilityOfFalseDetection<S, T> build()
+        {
+            return new ProbabilityOfFalseDetection<>();
+        }
+
+    }
+
     @Override
     public T apply(final S s)
     {
@@ -27,16 +48,20 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public void checkParameters(final MetricParameter... par)
+    public T apply(final MetricOutput<?> output)
     {
-        // TODO Auto-generated method stub
-
+        is2x2ContingencyTable(output, this);
+        final MatrixOutput v = (MatrixOutput)output;
+        final double[][] cm = v.getData().getDoubles();
+        return MetricOutputFactory.ofExtendsScalarOutput(cm[0][1] / (cm[0][1] + cm[1][1]),
+                                                         v.getSampleSize(),
+                                                         output.getDimension());
     }
 
     @Override
     public String getName()
     {
-        return "Probability of False Detection";
+        return METRIC_NAME;
     }
 
     @Override
@@ -52,14 +77,9 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public T apply(final MetricOutput<?> output)
+    public int getDecompositionID()
     {
-        is2x2ContingencyTable(output, this);
-        final MatrixOutput v = (MatrixOutput)output;
-        final double[][] cm = v.getData().getValues();
-        return MetricOutputFactory.getExtendsScalarOutput(cm[0][1] / (cm[0][1] + cm[1][1]),
-                                                          v.getSampleSize(),
-                                                          output.getDimension());
+        return MetricConstants.NONE;
     }
 
     @Override
@@ -75,10 +95,10 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     /**
-     * Protected constructor.
+     * Hidden constructor.
      */
 
-    protected ProbabilityOfFalseDetection()
+    private ProbabilityOfFalseDetection()
     {
         super();
     }

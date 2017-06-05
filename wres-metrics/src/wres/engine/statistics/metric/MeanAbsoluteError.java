@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
-import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
  * The mean absolute error applies to continuous variables and is the average unsigned difference between a
@@ -15,10 +14,26 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
 public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends ScalarOutput> extends DoubleErrorScore<S, T>
 {
 
-    @Override
-    public void checkParameters(final MetricParameter... par)
+    /**
+     * The metric name.
+     */
+
+    private static final String METRIC_NAME = "Mean Absolute Error";
+
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    public static class MeanAbsoluteErrorBuilder<S extends SingleValuedPairs, T extends ScalarOutput>
+    extends
+        DoubleErrorScoreBuilder<S, T>
     {
-        // TODO Auto-generated method stub
+
+        @Override
+        public MeanAbsoluteError<S, T> build()
+        {
+            return new MeanAbsoluteError<>(this);
+        }
 
     }
 
@@ -31,7 +46,7 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
     @Override
     public String getName()
     {
-        return "Mean Absolute Error";
+        return METRIC_NAME;
     }
 
     @Override
@@ -40,13 +55,21 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
         return false;
     }
 
+    @Override
+    public int getDecompositionID()
+    {
+        return MetricConstants.NONE;
+    }
+
     /**
-     * Protected constructor.
+     * Hidden constructor.
+     * 
+     * @param b the builder
      */
 
-    protected MeanAbsoluteError()
+    private MeanAbsoluteError(final MeanAbsoluteErrorBuilder<S, T> b)
     {
-        super(FunctionFactory.absError());
+        super(b.setErrorFunction(FunctionFactory.absError()));
     }
 
 }
