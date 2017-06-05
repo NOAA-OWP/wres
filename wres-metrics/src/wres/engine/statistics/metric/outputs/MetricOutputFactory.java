@@ -137,6 +137,7 @@ public class MetricOutputFactory
      * @param output the output data
      * @param sampleSize the sample size
      * @param d the dimension
+     * @param <T> the type of output
      * @return a {@link VectorOutput}
      */
 

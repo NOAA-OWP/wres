@@ -23,7 +23,7 @@ public class MetricInputFactory
      * empty or if any individual pairs do not contain two values.
      * 
      * @param pairs the verification pairs
-     * @param dim the dimension of the input
+     * @return the pairs
      * @throws MetricInputException if the pairs are invalid
      */
 
@@ -37,7 +37,7 @@ public class MetricInputFactory
      * empty or if any individual pairs do not contain two values.
      * 
      * @param pairs the verification pairs
-     * @param dim the dimension of the input
+     * @return the pairs
      * @throws MetricInputException if the pairs are invalid
      */
 
@@ -52,6 +52,7 @@ public class MetricInputFactory
      * 
      * @param pairs the discrete probability pairs
      * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
+     * @return the pairs
      */
 
     public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs)
@@ -66,6 +67,7 @@ public class MetricInputFactory
      * @param pairs the discrete probability pairs
      * @param basePairs the baseline pairs
      * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
+     * @return the pairs
      */
 
     public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
@@ -87,6 +89,7 @@ public class MetricInputFactory
      * 
      * @param pairs the verification pairs
      * @param dim the dimension of the input
+     * @return the pairs
      * @throws MetricInputException if the pairs are invalid
      */
 
@@ -102,6 +105,7 @@ public class MetricInputFactory
      * @param pairs the single-valued pairs
      * @param basePairs the baseline pairs
      * @param dim the dimension of the input
+     * @return the pairs
      * @throws MetricInputException if the pairs are invalid
      */
 
@@ -124,7 +128,7 @@ public class MetricInputFactory
      * 
      * @param pairs the input pairs
      * @param <T> the output pairs
-     * @return the cast pairs
+     * @return the casted pairs
      */
 
     @SuppressWarnings("unchecked")

@@ -40,6 +40,7 @@ implements Score
          * Sets the error function.
          * 
          * @param f the error function
+         * @return the metric builder
          */
 
         public DoubleErrorScoreBuilder<S, T> setErrorFunction(final DoubleErrorFunction f)

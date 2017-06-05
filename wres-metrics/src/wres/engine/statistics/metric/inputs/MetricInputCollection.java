@@ -18,7 +18,7 @@ public interface MetricInputCollection<S extends MetricInput<?>>
      * 
      * @param index the index
      * @return the element
-     * @throws IndexOutOfBoundsException
+     * @throws IndexOutOfBoundsException if the index is out of range
      */
 
     public S get(int index);
