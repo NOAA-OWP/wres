@@ -74,7 +74,7 @@ public final class FunctionFactory
      * @return a function that computes the skill
      */
 
-    public static BiPredicate<Double, Double> equals()
+    public static BiPredicate<Double, Double> doubleEquals()
     {
         return (a, b) -> Math.abs(a - b) < .00000001;
     }

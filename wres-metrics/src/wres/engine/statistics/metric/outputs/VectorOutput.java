@@ -77,7 +77,13 @@ public class VectorOutput implements MetricOutput<VectorOfDoubles>
     @Override
     public int hashCode()
     {
-        return Arrays.hashCode(output.getDoubles());
+        int code = 0;
+        if(!isDimensionless())
+        {
+            code += getDimension().hashCode();
+        }
+        code += Integer.valueOf(sampleSize).hashCode();
+        return code += Arrays.hashCode(output.getDoubles());
     }
 
     /**

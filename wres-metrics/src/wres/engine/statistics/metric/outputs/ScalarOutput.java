@@ -49,7 +49,7 @@ public class ScalarOutput implements MetricOutput<Double>
     public boolean equals(final Object o)
     {
         boolean start = o instanceof ScalarOutput && !Objects.isNull(o);
-        start = start && FunctionFactory.equals().test(((ScalarOutput)o).getData().doubleValue(), output);
+        start = start && FunctionFactory.doubleEquals().test(((ScalarOutput)o).getData(), output);
         start = start && ((ScalarOutput)o).sampleSize == sampleSize;
         start = start && (Objects.isNull(((ScalarOutput)o).dim) == Objects.isNull(dim));
         return (dim != null) ? start && ((ScalarOutput)o).dim.equals(dim) : start;

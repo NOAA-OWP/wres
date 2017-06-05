@@ -57,7 +57,7 @@ public class MetricCollectionTest
         final Double actualSecond = d.get(1).getData();
         final Double actualThird = d.get(2).getData();
 
-        final BiPredicate<Double, Double> testMe = FunctionFactory.equals();
+        final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
         assertTrue("Expected value: " + expectedFirst + ". Actual value: " + actualFirst + ".",
                    testMe.test(actualFirst, expectedFirst));
@@ -108,7 +108,7 @@ public class MetricCollectionTest
         final Double actualFourth = c.get(3).getData();
         final Double actualFifth = c.get(4).getData();
 
-        final BiPredicate<Double, Double> testMe = FunctionFactory.equals();
+        final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
         assertTrue("Expected value: " + expectedFirst + ". Actual value: " + actualFirst + ".",
                    testMe.test(actualFirst, expectedFirst));
@@ -152,7 +152,7 @@ public class MetricCollectionTest
         final Double actualFirst = d.get(0).getData().getDoubles()[0];
         final Double actualSecond = d.get(1).getData().getDoubles()[0];
 
-        final BiPredicate<Double, Double> testMe = FunctionFactory.equals();
+        final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
         assertTrue("Expected value: " + expectedFirst + ". Actual value: " + actualFirst + ".",
                    testMe.test(expectedFirst, actualFirst));
@@ -189,7 +189,7 @@ public class MetricCollectionTest
         final Double actualFirst = d.get(0).getData().getDoubles()[0];
         final Double actualSecond = d.get(1).getData().getDoubles()[0];
 
-        final BiPredicate<Double, Double> testMe = FunctionFactory.equals();
+        final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
         assertTrue("Expected value: " + expectedFirst + ". Actual value: " + actualFirst + ".",
                    testMe.test(expectedFirst, actualFirst));
@@ -224,7 +224,7 @@ public class MetricCollectionTest
         final Double expectedFirst = 0.05057466520850963;
         final Double actualFirst = c.get(0).getData();
 
-        final BiPredicate<Double, Double> testMe = FunctionFactory.equals();
+        final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
         assertTrue("Expected value: " + expectedFirst + ". Actual value: " + actualFirst + ".",
                    testMe.test(actualFirst, expectedFirst));

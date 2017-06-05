@@ -102,4 +102,16 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>
         return start && Arrays.deepEquals(output.getDoubles(), m.getData().getDoubles());
     }
 
+    @Override
+    public int hashCode()
+    {
+        int code = 0;
+        if(!isDimensionless())
+        {
+            code += getDimension().hashCode();
+        }
+        code += Integer.valueOf(sampleSize).hashCode();
+        return code += Arrays.deepHashCode(output.getDoubles());
+    }
+
 }

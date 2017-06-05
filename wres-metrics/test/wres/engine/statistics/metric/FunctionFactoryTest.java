@@ -28,7 +28,7 @@ public final class FunctionFactoryTest
     public void test1FunctionFactory()
     {
         final DataFactory d = DataFactory.instance();
-        final BiPredicate<Double, Double> testMe = FunctionFactory.equals();
+        final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
         assertTrue("Failure on inequality test.", !testMe.test(-1.0, 0.0));
         assertTrue("Failure on absolute error function.",
                    testMe.test(FunctionFactory.absError().applyAsDouble(d.pairOf(-1, 1)), 2.0));
