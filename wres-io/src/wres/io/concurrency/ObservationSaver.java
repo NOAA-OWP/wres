@@ -5,8 +5,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.reading.BasicSource;
 import wres.io.reading.SourceReader;
-import wres.io.utilities.Debug;
 import wres.util.FormattedStopwatch;
+
+import java.io.IOException;
 
 /**
  * Saves the observation at the given location
@@ -31,17 +32,29 @@ public class ObservationSaver extends WRESTask implements Runnable {
     public void run() {
 		BasicSource source;
 		this.executeOnRun();
-		try {
+		try
+        {
 			source = SourceReader.get_source(this.filepath);
-			FormattedStopwatch watch = new FormattedStopwatch();
-			watch.start();
-			Debug.debug(LOGGER, "Attempting to save '%s' to the database...", System.out, this.filepath);
+            FormattedStopwatch watch = new FormattedStopwatch();
+			if (LOGGER.isDebugEnabled())
+            {
+                watch.start();
+                LOGGER.debug("Attempting to save '" + this.filepath +"' to the database...");
+			}
+
 			source.save_observation();
-			watch.stop();
-			Debug.debug(LOGGER, "'" + this.filepath + "' has been saved to the database after " + watch.getFormattedDuration(), System.out);
-		} catch (Exception e) {
-			System.err.println("Failed to save '" + String.valueOf(filepath) + " as an observation.");
-			e.printStackTrace();
+
+            if (LOGGER.isDebugEnabled())
+			{
+				watch.stop();
+				LOGGER.debug("'" + this.filepath+ "' attempt to save to the database took "
+						     + watch.getFormattedDuration());
+			}
+        }
+        catch (IOException ioe)
+        {
+			LOGGER.error("Failed to save '{}' as an observation", filepath);
+			LOGGER.error("The exception:", ioe);
 		}
 		this.exectureOnComplete();
 	}

@@ -1,5 +1,6 @@
 package wres.io.reading;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
 
@@ -17,15 +18,15 @@ import wres.io.config.specification.ProjectDataSpecification;
 public abstract class BasicSource {
 	
 	@SuppressWarnings("static-method")
-    public void save_forecast() throws Exception
+    public void save_forecast() throws IOException
 	{
-		throw new Exception("Forecasts may not be saved using this type of source.");
+		throw new IOException("Forecasts may not be saved using this type of source.");
 	}
 	
 	@SuppressWarnings("static-method")
-    public void save_observation() throws Exception
+    public void save_observation() throws IOException
 	{
-		throw new Exception("Observations may not be saved using this type of source.");
+		throw new IOException("Observations may not be saved using this type of source.");
 	}
 
 	public String get_filename()

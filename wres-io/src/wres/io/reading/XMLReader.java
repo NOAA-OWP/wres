@@ -12,6 +12,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamConstants;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -53,7 +54,7 @@ public class XMLReader
 	    return ClassLoader.getSystemResourceAsStream(filename);
 	}
 
-	public void parse()
+	public void parse() throws IOException
 	{
 	    XMLStreamReader reader = null;
 		try
@@ -74,7 +75,7 @@ public class XMLReader
 		}
 		catch (XMLStreamException | FileNotFoundException error)
 		{
-			Debug.error(LOGGER, error);
+			throw new IOException("Could not parse file", error);
 		}
 		finally
 		{

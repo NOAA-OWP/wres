@@ -303,7 +303,7 @@ public class ProjectDataSpecification extends SpecificationElement
 	{
 		if (this.directories == null)
 		{
-			this.directories = new ArrayList<DirectorySpecification>();
+			this.directories = new ArrayList<>();
 		}
 		return directories;
 	}
