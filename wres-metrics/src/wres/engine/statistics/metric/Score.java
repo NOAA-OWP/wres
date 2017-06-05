@@ -15,17 +15,17 @@ public interface Score
 {
 
     /**
+     * <p>
      * Returns true if the input is a supported decomposition identifier, false otherwise. The supported decomposition
      * identifiers are:
-     * <p>
+     * </p>
      * <ol>
-     * <li>{@link MetricConstants##NONE}, indicating no decomposition</li>
-     * <li>{@link MetricConstants##CR}, indicating the calibration-refinement decomposition</li>
-     * <li>{@link MetricConstants##LBR}, indicating the likelihood base-rate decomposition</li>
-     * <li>{@link MetricConstants##CR_AND_LBR}, indicating both the calibration-refinement and likelihood-base-rate
+     * <li>{@link MetricConstants#NONE}, indicating no decomposition</li>
+     * <li>{@link MetricConstants#CR}, indicating the calibration-refinement decomposition</li>
+     * <li>{@link MetricConstants#LBR}, indicating the likelihood base-rate decomposition</li>
+     * <li>{@link MetricConstants#CR_AND_LBR}, indicating both the calibration-refinement and likelihood-base-rate
      * decompositions</li>
      * </ol>
-     * </p>
      * 
      * @param decompositionID the decomposition identifier to test
      * @return true if the decomposition identifier is valid, false otherwise
@@ -54,7 +54,7 @@ public interface Score
     boolean isSkillScore();
 
     /**
-     * Returns true if the score is an instance of {@link DecomposableScore}, false otherwise.
+     * Returns true if the score is decomposable, false otherwise.
      * 
      * @return true if the score is decomposable, false otherwise
      */
@@ -62,8 +62,9 @@ public interface Score
     boolean isDecomposable();
 
     /**
-     * Returns the identifier associated with the decomposition. One of:
      * <p>
+     * Returns the identifier associated with the decomposition. One of:
+     * </p>
      * <ol>
      * <li>{@link MetricConstants#NONE}, indicating no decomposition</li>
      * <li>{@link MetricConstants#CR}, indicating the calibration-refinement decomposition</li>
@@ -71,9 +72,8 @@ public interface Score
      * <li>{@link MetricConstants#CR_AND_LBR}, indicating both the calibration-refinement and likelihood-base-rate
      * decompositions</li>
      * </ol>
-     * </p>
      * <p>
-     * Must return {@link Score#NONE} when {@link #isDecomposable()} returns false.
+     * Must return {@link MetricConstants#NONE} when {@link #isDecomposable()} returns false.
      * </p>
      * 
      * @return the type of score decomposition

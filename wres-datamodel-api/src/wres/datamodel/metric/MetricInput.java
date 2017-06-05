@@ -26,9 +26,10 @@ public interface MetricInput<S>
     {
 
         /**
-         * Adds an element to the collection.
+         * Adds an input to the collection.
          * 
-         * @param element the element to add.
+         * @param element the input to add
+         * @return the builder
          */
 
         public MetricInputBuilder<S> add(S element);
@@ -37,14 +38,15 @@ public interface MetricInput<S>
          * Sets the dimension associated with the input.
          * 
          * @param dim the dimension
+         * @return the builder
          */
 
         public MetricInputBuilder<S> setDimension(Dimension dim);
 
         /**
-         * Builds the metric collection.
+         * Builds the metric input.
          * 
-         * @return the metric collection
+         * @return the metric input
          */
 
         public MetricInput<S> build();
@@ -69,8 +71,9 @@ public interface MetricInput<S>
     /**
      * Returns the data at a prescribed index.
      * 
+     * @param index the index
+     * @throws IndexOutOfBoundsException if the index is out of range
      * @return the data
-     * @throws {@link IndexOutOfBoundsException} if the index is out of range (index < 0 || index >= size())
      */
 
     S get(int index);
