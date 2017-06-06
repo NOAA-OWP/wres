@@ -58,14 +58,7 @@ public class ConfiguredLoader
         {
             if (directory.shouldLoadAllFiles())
             {
-                if (directory.getPath() != null)
-                {
-                    results.addAll(loadDirectory(directory.getPath()));
-                }
-                else
-                {
-                    throw new IOException("Path did not exist");
-                }
+                results.addAll(loadDirectory(directory.getPath()));
             }
             else
             {
@@ -75,10 +68,9 @@ public class ConfiguredLoader
         return Collections.unmodifiableList(results);
     }
 
-    private List<Future> loadDirectory(String path) throws IOException
+    private List<Future> loadDirectory(Path pathToDirectory) throws IOException
     {
         List<Future> results = new ArrayList<>();
-        Path pathToDirectory = Paths.get(path);
 
         Stream<Path> files;
         try
@@ -93,20 +85,22 @@ public class ConfiguredLoader
         }
         catch(IOException exception)
         {
-            LOGGER.error("Data with the directory '{}' could not be accessed for loading.", path);
+            LOGGER.error("Data with the directory '{}' could not be accessed for loading.",
+                         pathToDirectory);
             LOGGER.error("Exception was: ", exception);
             throw exception;
         }
         return Collections.unmodifiableList(results);
     }
 
-    private List<Future> saveFiles(DirectorySpecification directory)
+    private List<Future> saveFiles(DirectorySpecification directory) throws IOException
     {
         List<Future> results = new ArrayList<>();
 
+
         for (FileSpecification file : directory.get_files())
         {
-            Future f = saveFile(Paths.get(directory.getPath(), file.getPath()));
+            Future f = saveFile(directory.getPath().resolve(file.getPath()));
             if (f != null)
             {
                 results.add(f);
