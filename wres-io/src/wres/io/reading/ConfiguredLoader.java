@@ -79,6 +79,7 @@ public class ConfiguredLoader
 
             files.filter(Objects::nonNull)
                  .map(f -> saveFile(f))
+                 .filter(Objects::nonNull)
                  .forEach(results::add);
 
             files.close();
