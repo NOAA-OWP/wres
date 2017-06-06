@@ -3,6 +3,7 @@
  */
 package wres.io.config.specification;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,7 +84,7 @@ public class DirectorySpecification extends SpecificationElement
 	    }
 	    else
 		{
-			throw new IOException(this.path + " was not found");
+			throw new FileNotFoundException(this.path + " was not found");
 		}
 	}
 	
