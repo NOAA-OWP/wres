@@ -1,6 +1,6 @@
 package wres.datamodel;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -14,34 +14,26 @@ public class Slicer
     }
 
     /**
-     * Get a flattened array of values from a list of pairs.
+     * Get repeated left doubles based on double count in right side
+     *
      * No guarantees on order.
-     * @param pairs the list of pairs
-     * @return a double[] of all the values in the list of pairs.
+     *
+     * @param pairs the list of pairs to use
+     * @return a double[] of the values of the left side repeated for count in right side
      */
-    public static double[] flatArray(List<PairOfDoubleAndVectorOfDoubles> pairs)
+    public static double[] getItemsOneForEachItemTwo(List<PairOfDoubleAndVectorOfDoubles> pairs)
     {
-        double[] first = pairs.stream()
-                              .mapToDouble(PairOfDoubleAndVectorOfDoubles::getItemOne)
-                              .toArray();
-        double[] second = pairs.stream()
-                               .flatMapToDouble(p ->
-                                                Arrays.stream(p.getItemTwo()))
-                               .toArray();
+        List<Double> result = new ArrayList<>();
 
-        double[] result = new double[first.length+second.length];
-
-        int i = 0;
-        for (int j = 0; j < first.length; i++, j++)
+        for (PairOfDoubleAndVectorOfDoubles pair : pairs)
         {
-            result[i] = first[j];
+            for (int i = 0; i < pair.getItemTwo().length; i++)
+            {
+                result.add(pair.getItemOne());
+            }
         }
-
-        for (int k = 0; k < second.length; i++, k++)
-        {
-            result[i] = second[k];
-        }
-
-        return result;
+        return result.stream()
+                     .mapToDouble(Double::doubleValue)
+                     .toArray();
     }
 }
