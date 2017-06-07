@@ -12,7 +12,7 @@ import static org.junit.Assert.*;
  */
 public class SlicerTest
 {
-    @Test public void flattenPairValuesTest()
+    @Test public void getAnItemOneForEachItemTwoValueTest()
     {
         List<PairOfDoubleAndVectorOfDoubles> pairList = new ArrayList<>();
         DataFactory df = DataFactory.instance();
@@ -23,33 +23,34 @@ public class SlicerTest
         pairList.add(df.pairOf(1, arrOne));
         pairList.add(df.pairOf(10, arrTwo));
 
-        double[] arrFlat = Slicer.flatArray(pairList);
+        double[] arrFlat = Slicer.getItemsOneForEachItemTwo(pairList);
 
-        int expectedSize = arrOne.length + arrTwo.length + pairList.size();
+        int expectedSize = arrOne.length + arrTwo.length;
 
         assertEquals(expectedSize, arrFlat.length);
-        assertTrue(doubleArrayContains(arrFlat, 1));
-        assertTrue(doubleArrayContains(arrFlat, 2));
-        assertTrue(doubleArrayContains(arrFlat, 3));
-        assertTrue(doubleArrayContains(arrFlat, 4));
-        assertTrue(doubleArrayContains(arrFlat, 5));
-        assertTrue(doubleArrayContains(arrFlat, 6));
-        assertTrue(doubleArrayContains(arrFlat, 7));
-        assertTrue(doubleArrayContains(arrFlat, 8));
-        assertTrue(doubleArrayContains(arrFlat, 9));
-        assertTrue(doubleArrayContains(arrFlat, 10));
+        assertEquals(5, countOfValueInDoubleArray(arrFlat, 1));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 2));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 3));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 4));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 5));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 6));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 7));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 8));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 9));
+        assertEquals(3, countOfValueInDoubleArray(arrFlat, 10));
     }
 
-    private boolean doubleArrayContains(double[] theArray, double valueToFind)
+    private int countOfValueInDoubleArray(double[] theArray, double valueToFind)
     {
+        int result = 0;
         for (int i = 0; i < theArray.length; i++)
         {
             if (theArray[i] == valueToFind)
             {
-                return true;
+                result++;
             }
         }
-        return false;
+        return result;
     }
 }
 
