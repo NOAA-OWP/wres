@@ -224,7 +224,7 @@ public final class Database {
 		
 		return success;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public static <T> T getResult(final String query, String label) throws SQLException
 	{
@@ -349,6 +349,7 @@ public final class Database {
     
     /**
      * Creates set of results from the given query through the given connection
+	 *
      * @param connection The connection used to connect to the database
      * @param query The text for the query to call
      * @return The results of the query
@@ -357,11 +358,12 @@ public final class Database {
     public static ResultSet getResults(final Connection connection, String query) throws SQLException
     {
         ResultSet results = null;
-        try (Statement statement = connection.createStatement())
-        {
-            statement.setFetchSize(SystemSettings.fetchSize());
-            results = statement.executeQuery(query);
-        }
+        Statement statement = connection.createStatement();
+        // statement is purposely left open so that the returned ResultSet is
+        // not closed. We count on c3p0 to magically take care of closing any
+        // open resources when it should?
+		statement.setFetchSize(SystemSettings.fetchSize());
+		results = statement.executeQuery(query);
         return results; 
     }
 }
