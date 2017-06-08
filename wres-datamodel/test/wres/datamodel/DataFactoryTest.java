@@ -122,4 +122,26 @@ public class DataFactoryTest
         assertEquals(vec.getBooleans()[0], false);
         assertEquals(vec.getBooleans()[1], true);
     }
+
+    @Test
+    public void pairOfBooleansTest()
+    {
+        boolean one = true;
+        boolean two = false;
+        final PairOfBooleans bools = dataFactory.pairOf(one, two);
+        assertEquals(true, bools.getItemOne());
+        assertEquals(false, bools.getItemTwo());
+    }
+
+    @Test
+    public void pairOfBooleansMutationTest()
+    {
+        boolean one = true;
+        boolean two = false;
+        final PairOfBooleans bools = dataFactory.pairOf(one, two);
+        one = false;
+        two = true;
+        assertEquals(true, bools.getItemOne());
+        assertEquals(false, bools.getItemTwo());
+    }
 }
