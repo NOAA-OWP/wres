@@ -43,6 +43,23 @@ public class DataFactory
         };
     }
 
+    public PairOfBooleans pairOf(final boolean first, final boolean second)
+    {
+        return new PairOfBooleans()
+        {
+            @Override
+            public boolean getItemOne()
+            {
+                return first;
+            }
+
+            @Override
+            public boolean getItemTwo()
+            {
+                return second;
+            }
+        };
+    }
     public PairOfDoubleAndVectorOfDoubles pairOf(final double first, final double[] second)
     {
         return SafePairOfDoubleAndVectorOfDoubles.of(first, second);
