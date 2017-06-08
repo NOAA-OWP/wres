@@ -1,0 +1,56 @@
+package wres.datamodel;
+
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.*;
+
+/**
+ * Created by jesse on 6/7/17.
+ */
+public class SlicerTest
+{
+    @Test public void getAnItemOneForEachItemTwoValueTest()
+    {
+        List<PairOfDoubleAndVectorOfDoubles> pairList = new ArrayList<>();
+        DataFactory df = DataFactory.instance();
+
+        double[] arrOne = { 2, 3, 4, 5, 6 };
+        double[] arrTwo = { 7, 8, 9 };
+
+        pairList.add(df.pairOf(1, arrOne));
+        pairList.add(df.pairOf(10, arrTwo));
+
+        double[] arrFlat = Slicer.getItemsOneForEachItemTwo(pairList);
+
+        int expectedSize = arrOne.length + arrTwo.length;
+
+        assertEquals(expectedSize, arrFlat.length);
+        assertEquals(5, countOfValueInDoubleArray(arrFlat, 1));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 2));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 3));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 4));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 5));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 6));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 7));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 8));
+        assertEquals(0, countOfValueInDoubleArray(arrFlat, 9));
+        assertEquals(3, countOfValueInDoubleArray(arrFlat, 10));
+    }
+
+    private int countOfValueInDoubleArray(double[] theArray, double valueToFind)
+    {
+        int result = 0;
+        for (int i = 0; i < theArray.length; i++)
+        {
+            if (theArray[i] == valueToFind)
+            {
+                result++;
+            }
+        }
+        return result;
+    }
+}
+

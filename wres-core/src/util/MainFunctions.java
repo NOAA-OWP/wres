@@ -753,7 +753,9 @@ public final class MainFunctions
                 }
 
                 // A secondary executor for second-level tasks, should help
-                // avoid race conditions.
+                // avoid the situation where task A is waiting for another
+                // task B in the queue that won't be executed until
+                // tasks in the executor (task A) complete (possible deadlock?)
                 final ExecutorService secondLevelExecutor = Executors.newFixedThreadPool(maxThreadCount);
 
                 final Map<String, List<LeadResult>> results = new TreeMap<>();
