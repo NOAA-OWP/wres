@@ -15,11 +15,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Function;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Another Main. The reason for creating this class separately from Main
@@ -36,6 +34,43 @@ import java.util.function.Function;
 public class Control
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
+    public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
+    private static final AtomicLong lastMessageTime = new AtomicLong();
+
+    /** System property used to retrieve max thread count, passed as -D*/
+    public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
+    /** When system property is absent, multiply count of cores by this */
+    public static final int MAX_THREADS_DEFAULT_MULTIPLIER = 8;
+    public static final int MAX_THREADS;
+    // Figure out the max threads from property or by default rule.
+    // Ideally priority order would be: -D, SystemSettings, default rule.
+    static
+    {
+        String maxThreadsStr = System.getProperty(MAX_THREADS_PROP_NAME);
+        // TODO: try setting using SystemSettings first, -DmaxThreads second. Priority goes to -D.
+        int maxThreads;
+        try
+        {
+            maxThreads = Integer.parseInt(maxThreadsStr);
+        }
+        catch (NumberFormatException nfe)
+        {
+            maxThreads = Runtime.getRuntime().availableProcessors()
+                         * MAX_THREADS_DEFAULT_MULTIPLIER;
+            LOGGER.warn("Java -D property {} not set, defaulting Control.MAX_THREADS to {}",
+                        MAX_THREADS_PROP_NAME, maxThreads);
+        }
+        if (maxThreads >= 1)
+        {
+            MAX_THREADS = maxThreads;
+        }
+        else
+        {
+            LOGGER.warn("Java -D property {} was likely less than 1, setting Control.MAX_THREADS to 1",
+                        MAX_THREADS_PROP_NAME);
+            MAX_THREADS = 1;
+        }
+    }
 
     private static final String NEWLINE = System.lineSeparator();
 
@@ -51,38 +86,93 @@ public class Control
                 "QINE",
                 "CFS");
 
-        PairGetterByLeadTime pairFunc = new PairGetterByLeadTime(config);
+        List<Future<List<PairOfDoubleAndVectorOfDoubles>>> pairs = new ArrayList<>();
 
-        List<PairOfDoubleAndVectorOfDoubles> pairsOneDay = pairFunc.apply(24);
+        int maxExecThreads = Control.MAX_THREADS / 2;
+        ExecutorService executor = Executors.newFixedThreadPool(maxExecThreads);
 
-        List<PairOfDoubleAndVectorOfDoubles> pairsTwoDays = pairFunc.apply(48);
+        final int leadTimesCount = 2880;
+        for (int i = 0; i < leadTimesCount; i++)
+        {
+            PairGetterByLeadTime pair = new PairGetterByLeadTime(config, i);
+            pairs.add(executor.submit(pair));
+        }
 
-        pairsOneDay.stream()
-                   .forEach(p ->
-                            LOGGER.info("With lead time 24: {}", p));
-        pairsTwoDays.stream()
-                    .forEach(p ->
-                             LOGGER.info("With lead time 48: {}", p));
+        try
+        {
+            for (int i = 0; i < pairs.size(); i++)
+            {
+                // Here, using index in list to communicate the lead time.
+                // Another structure might be appropriate, for example,
+                // see getPairs in
+                // wres.io.config.specification.MetricSpecification
+                // which uses a Map.
+                final int leadTime = i;
+                pairs.get(leadTime)          // we put them into this list in order, by lead
+                     .get()                  // block until result is here in order by lead
+                     .stream().forEach(p ->  // now we have PairOfDoubleAndVectorOfDoubles
+                                       LOGGER.trace("With lead time {}: {}", leadTime, p));
+
+                if (LOGGER.isInfoEnabled()
+                        && executor instanceof ThreadPoolExecutor)
+                {
+                    long curTime = System.currentTimeMillis();
+                    long lastTime = lastMessageTime.get();
+                    if (curTime - lastTime > LOG_PROGRESS_INTERVAL_MILLIS
+                        && lastMessageTime.compareAndSet(lastTime, curTime))
+                    {
+                        ThreadPoolExecutor tpe = (ThreadPoolExecutor) executor;
+                        LOGGER.info("Around {} pair lists completed. Around {} still in the queue.",
+                                    tpe.getCompletedTaskCount(),
+                                    tpe.getQueue().size());
+                    }
+                }
+            }
+        }
+        catch (InterruptedException ie)
+        {
+            LOGGER.error("Interrupted while getting pairs", ie);
+            Thread.currentThread().interrupt();
+        }
+        catch (ExecutionException ee)
+        {
+            LOGGER.error("While getting pairs", ee);
+        }
+        finally
+        {
+            executor.shutdown();
+        }
+        if (LOGGER.isInfoEnabled()
+                && executor instanceof ThreadPoolExecutor)
+        {
+            ThreadPoolExecutor tpe = (ThreadPoolExecutor) executor;
+            LOGGER.info("Total of {} pair lists completed. Done.",
+                        tpe.getCompletedTaskCount());
+
+        }
     }
 
-    private static class PairGetterByLeadTime implements Function<Integer, List<PairOfDoubleAndVectorOfDoubles>>
+    private static class PairGetterByLeadTime implements Callable<List<PairOfDoubleAndVectorOfDoubles>>
     {
         private final PairConfig config;
+        private final int leadTime;
 
-        public PairGetterByLeadTime(PairConfig config)
+        private PairGetterByLeadTime(PairConfig config,
+                                     int leadTime)
         {
             this.config = config;
+            this.leadTime = leadTime;
         }
 
         @Override
-        public List<PairOfDoubleAndVectorOfDoubles> apply(Integer lead)
+        public List<PairOfDoubleAndVectorOfDoubles> call()
         {
             List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
             String sql;
 
             try
             {
-                sql = getPairSqlFromConfigForLead(this.config, lead);
+                sql = getPairSqlFromConfigForLead(this.config, this.leadTime);
             }
             catch (IOException ioe)
             {
@@ -115,8 +205,8 @@ public class Control
             }
             finally
             {
-                LOGGER.debug("Query: ");
-                LOGGER.debug(sql);
+                LOGGER.trace("Query: ");
+                LOGGER.trace(sql);
             }
 
             return result;
