@@ -4,6 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.PairOfDoubles;
+import wres.datamodel.Slicer;
+import wres.engine.statistics.metric.MetricCollection;
+import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.inputs.MetricInputFactory;
+import wres.engine.statistics.metric.inputs.SingleValuedPairs;
+import wres.engine.statistics.metric.outputs.MetricOutputCollection;
+import wres.engine.statistics.metric.outputs.ScalarOutput;
 import wres.io.data.caching.MeasurementCache;
 import wres.io.data.caching.VariableCache;
 import wres.io.utilities.Database;
@@ -77,6 +85,17 @@ public class Control
     private static final String SQL_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final DateTimeFormatter SQL_FORMATTER = DateTimeFormatter.ofPattern(SQL_FORMAT);
 
+    /**
+     * Processes *existing* pairs non-lazily (lacking specification for ingest).
+     *
+     * Creates two execution queues for pair processing.
+     *
+     * The first queue is responsible for retrieving data from the data store.
+     *
+     * The second queue is responsible for doing something with retrieved data.
+     *
+     * @param args
+     */
     public static void main(String[] args)
     {
         PairConfig config = PairConfig.of(
@@ -88,70 +107,267 @@ public class Control
 
         List<Future<List<PairOfDoubleAndVectorOfDoubles>>> pairs = new ArrayList<>();
 
-        int maxExecThreads = Control.MAX_THREADS / 2;
-        ExecutorService executor = Executors.newFixedThreadPool(maxExecThreads);
+        // Create the first-level Queue of work: fetching pairs.
+        // Devote 9/10 of the max threads to working this Q (more waiting/sleeping here)
+        int maxFetchThreads = (Control.MAX_THREADS / 10) * 9;
+        ExecutorService fetchPairExecutor = Executors.newFixedThreadPool(maxFetchThreads);
 
+        // Queue up fetching the pairs from the database.
         final int leadTimesCount = 2880;
         for (int i = 0; i < leadTimesCount; i++)
         {
-            PairGetterByLeadTime pair = new PairGetterByLeadTime(config, i);
-            pairs.add(executor.submit(pair));
+            final int leadTime = i + 1;
+            Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair =
+                    getFuturePairByLeadTime(config, leadTime, fetchPairExecutor);
+            pairs.add(futurePair);
         }
 
+        // Create the second-level Queue of work: displaying or processing fetched pairs.
+        // Devote 1/10 of the max threads to working this Q (less waiting/sleeping here)
+        int maxProcessThreads = Control.MAX_THREADS / 10;
+        ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
+
+        List<Future<MetricOutputCollection<ScalarOutput>>> futureMetrics = new ArrayList<>();
+
+        // Queue up processing of fetched pairs.
+        for (int i = 0; i < pairs.size(); i++)
+        {
+            // Here, using index in list to communicate the lead time.
+            // Another structure might be appropriate, for example,
+            // see getPairs in
+            // wres.io.config.specification.MetricSpecification
+            // which uses a Map.
+            final int leadTime = i + 1;
+            PairsByLeadProcessor processTask =
+                    new PairsByLeadProcessor(pairs.get(i), leadTime);
+            Future<MetricOutputCollection<ScalarOutput>> futureMetric =
+                    processPairExecutor.submit(processTask);
+            futureMetrics.add(futureMetric);
+        }
+
+        Map<Integer, MetricOutputCollection<ScalarOutput>> finalResults = new HashMap<>();
+        // Retrieve metric results from processing queue.
         try
         {
-            for (int i = 0; i < pairs.size(); i++)
+            // counting on communication of data with index for this example
+            for (int i = 0; i < futureMetrics.size(); i++)
             {
-                // Here, using index in list to communicate the lead time.
-                // Another structure might be appropriate, for example,
-                // see getPairs in
-                // wres.io.config.specification.MetricSpecification
-                // which uses a Map.
-                final int leadTime = i;
-                pairs.get(leadTime)          // we put them into this list in order, by lead
-                     .get()                  // block until result is here in order by lead
-                     .stream().forEach(p ->  // now we have PairOfDoubleAndVectorOfDoubles
-                                       LOGGER.trace("With lead time {}: {}", leadTime, p));
+                // get each result
+                MetricOutputCollection<ScalarOutput> metrics = futureMetrics.get(i).get();
+
+                final int leadTime = i + 1;
+                finalResults.put(leadTime, metrics);
 
                 if (LOGGER.isInfoEnabled()
-                        && executor instanceof ThreadPoolExecutor)
+                        && fetchPairExecutor instanceof ThreadPoolExecutor
+                        && processPairExecutor instanceof ThreadPoolExecutor)
                 {
                     long curTime = System.currentTimeMillis();
                     long lastTime = lastMessageTime.get();
                     if (curTime - lastTime > LOG_PROGRESS_INTERVAL_MILLIS
-                        && lastMessageTime.compareAndSet(lastTime, curTime))
+                            && lastMessageTime.compareAndSet(lastTime, curTime))
                     {
-                        ThreadPoolExecutor tpe = (ThreadPoolExecutor) executor;
-                        LOGGER.info("Around {} pair lists completed. Around {} still in the queue.",
-                                    tpe.getCompletedTaskCount(),
-                                    tpe.getQueue().size());
+                        ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor) fetchPairExecutor;
+                        ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor) processPairExecutor;
+                        LOGGER.info("Around {} pair lists fetched. Around {} in the fetch queue. Around {} fetched pairs processed. Around {} in processing queue.",
+                                tpeFetch.getCompletedTaskCount(),
+                                tpeFetch.getQueue().size(),
+                                tpeProcess.getCompletedTaskCount(),
+                                tpeProcess.getQueue().size());
                     }
                 }
             }
         }
         catch (InterruptedException ie)
         {
-            LOGGER.error("Interrupted while getting pairs", ie);
+            LOGGER.error("Interrupted while getting results", ie);
             Thread.currentThread().interrupt();
         }
         catch (ExecutionException ee)
         {
-            LOGGER.error("While getting pairs", ee);
+            LOGGER.error("While getting results", ee);
         }
         finally
         {
-            executor.shutdown();
+            fetchPairExecutor.shutdown();
+            processPairExecutor.shutdown();
         }
-        if (LOGGER.isInfoEnabled()
-                && executor instanceof ThreadPoolExecutor)
-        {
-            ThreadPoolExecutor tpe = (ThreadPoolExecutor) executor;
-            LOGGER.info("Total of {} pair lists completed. Done.",
-                        tpe.getCompletedTaskCount());
 
+        if (LOGGER.isInfoEnabled()
+                && fetchPairExecutor instanceof ThreadPoolExecutor
+                && processPairExecutor instanceof ThreadPoolExecutor)
+        {
+            ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor) fetchPairExecutor;
+            ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor) processPairExecutor;
+            LOGGER.info("Total of around {} pair lists completed. Total of around {} pairs processed. Done.",
+                        tpeFetch.getCompletedTaskCount(),
+                        tpeProcess.getCompletedTaskCount());
+        }
+
+        if (LOGGER.isInfoEnabled())
+        {
+            for (Map.Entry<Integer, MetricOutputCollection<ScalarOutput>> e : finalResults.entrySet())
+            {
+                LOGGER.info("For lead time " + e.getKey() + " " + e.getValue().toString());
+            }
+        }
+
+        shutDownGracefully(fetchPairExecutor, processPairExecutor);
+    }
+
+    /**
+     * Kill off the executors passed in even if there are remaining tasks.
+     * @param fetchPairExecutor
+     * @param processPairExecutor
+     */
+    private static void shutDownGracefully(ExecutorService fetchPairExecutor,
+                                           ExecutorService processPairExecutor)
+    {
+        // (There are probably better ways to do this, e.g. awaitTermination)
+        int fetchesSkipped = 0;
+        int processingSkipped = 0;
+        int i = 0;
+        boolean deathTime = false;
+        while (!fetchPairExecutor.isTerminated() || !processPairExecutor.isTerminated())
+        {
+            if (i == 0)
+            {
+                LOGGER.info("Some processing is finishing up before exit.");
+            }
+
+            if (i > 10)
+            {
+                deathTime = true;
+            }
+
+            try
+            {
+                Thread.currentThread().sleep(500);
+            }
+            catch (InterruptedException ie)
+            {
+                deathTime = true;
+                Thread.currentThread().interrupt();
+            }
+            finally
+            {
+                if (deathTime)
+                {
+                    LOGGER.info("Forcing shutdown.");
+                    fetchesSkipped += fetchPairExecutor.shutdownNow().size();
+                    processingSkipped += processPairExecutor.shutdownNow().size();
+                }
+            }
+            i++;
+        }
+
+        if (fetchesSkipped > 0 || processingSkipped > 0)
+        {
+            LOGGER.info("Abandoned {} pair fetch tasks, abandoned {} processing tasks.",
+                    fetchesSkipped, processingSkipped);
         }
     }
 
+    /**
+     * Task whose job is to wait for pairs to arrive, then run metrics on them.
+     */
+    private static class PairsByLeadProcessor implements Callable<MetricOutputCollection<ScalarOutput>>
+    {
+        private final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair;
+        private final int leadTime;
+
+        private PairsByLeadProcessor(Future<List<PairOfDoubleAndVectorOfDoubles>> futurePairs,
+                int leadTime)
+        {
+            this.futurePair = futurePairs;
+            this.leadTime = leadTime;
+        }
+
+        @Override
+        public MetricOutputCollection<ScalarOutput> call() throws ProcessingException
+        {
+            // initialized to empty list in case of failure
+            List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+
+            // Wait for the result from whichever queue is executing it.
+            try
+            {
+                pairs = futurePair.get();
+            }
+            catch (InterruptedException ie)
+            {
+                LOGGER.error("Interrupted while getting pair for lead time {}",
+                             this.leadTime);
+                Thread.currentThread().interrupt();
+            }
+            catch (ExecutionException ee)
+            {
+                // This is when execution from the upstream queue has failed.
+                // Propagate an exception back up.
+                String message = "While getting pair for lead time " + this.leadTime;
+                throw new ProcessingException(message, ee);
+            }
+
+            // Grow a List of PairOfDoubleAndVectorOfDoubles into a simpler
+            // List of PairOfDouble for metric calculation.
+            List<PairOfDoubles> simplePairs = Slicer.getFlatDoublePairs(pairs);
+
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("metric input for leadTime " + this.leadTime
+                        + " should have count " + simplePairs.size());
+            }
+
+            // What follows for the rest of call() is from MetricCollectionTest.
+
+            // Convert pairs into metric input
+            SingleValuedPairs input =
+                    MetricInputFactory.ofSingleValuedPairs(simplePairs, null);
+
+            // Create a collection of metrics that consume single-valued pairs
+            // and produce a scalar output
+            final MetricCollection<SingleValuedPairs, ScalarOutput> n =
+                    MetricCollection.ofSingleValuedScalar();
+
+            n.add(MetricFactory.ofMeanError());
+            n.add(MetricFactory.ofMeanAbsoluteError());
+            n.add(MetricFactory.ofRootMeanSquareError());
+
+            return n.apply(input);
+        }
+    }
+
+    /**
+     * A label for our own checked exception distinct from
+     * ExecutionException which can be thrown by an executor while getting
+     * a task. Might help distinguish exceptions in Q1 from exceptions in Q2
+     */
+    private static class ProcessingException extends Exception
+    {
+        public ProcessingException(String s, Throwable t)
+        {
+            super(s,t);
+        }
+    }
+
+    /**
+     * Calls executorService.submit on a list of pairs for leadTime with config.
+     * @param config
+     * @param leadTime
+     * @param executorService
+     * @return the Future from the executorService
+     */
+    private static Future<List<PairOfDoubleAndVectorOfDoubles>> getFuturePairByLeadTime(PairConfig config,
+            int leadTime,
+            ExecutorService executorService)
+    {
+        PairGetterByLeadTime pair = new PairGetterByLeadTime(config, leadTime);
+        return executorService.submit(pair);
+    }
+
+    /**
+     * Retrieves a list of pairs from the database by lead time.
+     */
     private static class PairGetterByLeadTime implements Callable<List<PairOfDoubleAndVectorOfDoubles>>
     {
         private final PairConfig config;
@@ -165,7 +381,7 @@ public class Control
         }
 
         @Override
-        public List<PairOfDoubleAndVectorOfDoubles> call()
+        public List<PairOfDoubleAndVectorOfDoubles> call() throws IOException
         {
             List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
             String sql;
@@ -177,7 +393,7 @@ public class Control
             catch (IOException ioe)
             {
                 LOGGER.error("When trying to build sql for pairs:", ioe);
-                return result;
+                throw ioe;
             }
 
             DataFactory valueFactory = wres.datamodel.DataFactory.instance();
@@ -200,8 +416,8 @@ public class Control
             }
             catch (SQLException se)
             {
-                LOGGER.error("When getting pair results from database:", se);
-                return result;
+                String message = "Failed to get pair results for lead " + this.leadTime;
+                throw new IOException(message, se);
             }
             finally
             {
@@ -308,8 +524,7 @@ public class Control
             + "    INNER JOIN wres.UnitConversion UC" + NEWLINE
             + "        ON UC.from_unit = FE.measurementunit_id" + NEWLINE
             + "    WHERE lead = " + lead + NEWLINE
-            + "        AND FE.variableposition_id = "
-            + forecastVariablePositionID + NEWLINE
+            + "        AND FE.variableposition_id = " + forecastVariablePositionID + NEWLINE
             + "        AND UC.to_unit = " + targetUnitID + NEWLINE
             + "        AND " + innerWhere + NEWLINE
             + "    GROUP BY forecasted_date" + NEWLINE
