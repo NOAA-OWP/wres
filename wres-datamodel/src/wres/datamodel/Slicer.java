@@ -1,6 +1,7 @@
 package wres.datamodel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -53,6 +54,6 @@ public class Slicer
                 result.add(p);
             }
         }
-        return result;
+        return Collections.unmodifiableList(result);
     }
 }
