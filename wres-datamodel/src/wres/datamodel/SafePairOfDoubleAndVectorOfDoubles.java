@@ -2,8 +2,6 @@ package wres.datamodel;
 
 import java.util.stream.Stream;
 
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-
 class SafePairOfDoubleAndVectorOfDoubles
 implements PairOfDoubleAndVectorOfDoubles
 {
