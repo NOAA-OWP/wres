@@ -1,6 +1,7 @@
 package wres.datamodel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,5 +36,24 @@ public class Slicer
         return result.stream()
                      .mapToDouble(Double::doubleValue)
                      .toArray();
+    }
+
+    /**
+     * Get a List of simple pairs from a List of PairOfDoubleAndVectorOfDoubles
+     */
+    public static List<PairOfDoubles> getFlatDoublePairs(List<PairOfDoubleAndVectorOfDoubles> pairs)
+    {
+        List<PairOfDoubles> result = new ArrayList<>();
+        DataFactory df = DataFactory.instance();
+        for (PairOfDoubleAndVectorOfDoubles pair : pairs)
+        {
+            double[] itemTwo = pair.getItemTwo();
+            for (int i = 0; i < itemTwo.length; i++)
+            {
+                PairOfDoubles p = df.pairOf(pair.getItemOne(), itemTwo[i]);
+                result.add(p);
+            }
+        }
+        return Collections.unmodifiableList(result);
     }
 }

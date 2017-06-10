@@ -121,6 +121,7 @@ project(':wres-core')
         compile project(':wres-datamodel-api')
         compile project(':wres-datamodel')
         compile project(':wres-io')
+        compile project(':wres-metrics')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
