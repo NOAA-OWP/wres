@@ -78,6 +78,12 @@ public class ScalarOutput implements MetricOutput<Double>
         return output;
     }
 
+    @Override
+    public String toString()
+    {
+        return Double.toString(output);
+    }
+
     /**
      * Construct a dimensionless output with a sample size.
      * 

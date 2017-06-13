@@ -10,9 +10,7 @@ import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
- * <p>
  * Tests the {@link Metric}.
- * </p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

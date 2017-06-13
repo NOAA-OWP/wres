@@ -1,5 +1,7 @@
 package wres.datamodel;
 
+import java.util.stream.Stream;
+
 /**
  * A Safe way to share a double array between threads. It is cloned on the way in, and cloned on the way out. This way,
  * if the original array is mutated after construction, the clone during construction prevents surprise. Likewise, the
@@ -17,6 +19,11 @@ class SafeVectorOfDoubles implements VectorOfDoubles
     static VectorOfDoubles of(final double[] doubles)
     {
         return new SafeVectorOfDoubles(doubles);
+    }
+
+    static VectorOfDoubles of(final Double[] doubles)
+    {
+        return of(Stream.of(doubles).mapToDouble(Double::doubleValue).toArray());
     }
 
     @Override

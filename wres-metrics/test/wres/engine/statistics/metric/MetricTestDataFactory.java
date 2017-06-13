@@ -83,6 +83,24 @@ public final class MetricTestDataFactory
     }
 
     /**
+     * Returns a large dataset of single-valued pairs without a baseline or dimension.
+     * 
+     * @return single-valued pairs
+     */
+
+    public static SingleValuedPairs getSingleValuedPairsThree()
+    {
+        //Construct some single-valued pairs
+        final List<PairOfDoubles> values = new ArrayList<>();
+        final DataFactory dataFactory = DataFactory.instance();
+        for(int i = 0; i < 70000000; i++)
+        {
+            values.add(dataFactory.pairOf(5, 10));
+        }
+        return MetricInputFactory.ofSingleValuedPairs(values, null);
+    }
+
+    /**
      * Returns a set of dichotomous pairs based on http://www.cawcr.gov.au/projects/verification/#Contingency_table. The
      * test data comprises 83 hits, 38 false alarms, 23 misses and 222 correct negatives, i.e. N=365.
      * 

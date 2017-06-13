@@ -41,9 +41,10 @@ public final class DichotomousPairs extends MulticategoryPairs
     private DichotomousPairs(final DichotomousPairsBuilder b)
     {
         super(b);
-        if(b.pairs.get(0).get(0).size() != 2)
+        final int check = b.pairs.get(0).get(0).size();
+        if(check != 2 && check != 4) //Allow for shorthand and longhand construction of a dichotomous event  
         {
-            throw new MetricInputException("Expected two columns (one outcome) in the dichotomous input.");
+            throw new MetricInputException("Expected one outcome in the dichotomous input (two or four columns).");
         }
     }
 

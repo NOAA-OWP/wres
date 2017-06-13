@@ -11,9 +11,7 @@ import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.VectorOutput;
 
 /**
- * <p>
  * Tests the {@link MeanSquareErrorSkillScore}.
- * </p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

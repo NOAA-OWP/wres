@@ -6,9 +6,13 @@ package wres.engine.statistics.metric.inputs;
  * @author james.brown@hydrosolved.com
  */
 
-@SuppressWarnings("serial")
-public class MetricInputException extends RuntimeException
+public final class MetricInputException extends RuntimeException
 {
+
+    /**
+     * Serial identifier.
+     */
+    private static final long serialVersionUID = -382138122319205095L;
 
     /**
      * Constructs an {@link MetricInputException} with no message.
