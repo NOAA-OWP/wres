@@ -28,7 +28,7 @@ public interface MatrixOfDoubles
     /**
      * Return the number of columns in the matrix.
      * 
-     * @return the number of rows
+     * @return the number of columns
      */
 
     int columns();

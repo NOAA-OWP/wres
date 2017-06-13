@@ -3,25 +3,24 @@ package wres.engine.statistics.metric;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
-import wres.engine.statistics.metric.inputs.MulticategoryPairs;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputCollection;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
-import wres.engine.statistics.metric.outputs.VectorOutput;
 
 /**
  * <p>
- * An abstract base class for a collection of {@link Metric} that apply to a common class of {@link MetricInput} and
- * return a common class of {@link MetricOutput}. Multiple instances of the same metric are allowed (e.g. with different
- * parameter values).
+ * An immutable collection of {@link Metric} that consume a common class of {@link MetricInput} and return a common
+ * class of {@link MetricOutput}. Multiple instances of the same metric are allowed (e.g. with different parameter
+ * values).
  * </p>
  * <p>
  * For metrics that implement {@link Collectable} and whose method {@link Collectable#getCollectionOf()} returns a
@@ -31,12 +30,12 @@ import wres.engine.statistics.metric.outputs.VectorOutput;
  * dependent scores using this result.
  * </p>
  * <p>
- * Factory methods are included for constructing concrete collections. For example, {@link #ofDichotomousScalar()} will
- * return a concrete collection for storing instances of {@link Metric} that consume {@link DichotomousPairs} and
- * produce {@link ScalarOutput}.
+ * Build a collection with a {@link MetricCollectionBuilder#of()}.
  * </p>
  * <p>
- * Currently, each metric within a {@link MetricCollection} is computed sequentially.
+ * In order to compute the metrics within a collection asynchronously, the {@link MetricCollection} implements
+ * {@link Callable}. In order for {@link Callable#call()} to complete successfully, the {@link MetricCollection} must be
+ * constructed with an {@link ExecutorService} and a {@link MetricInput} wrapped in a {@link Future}.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
@@ -44,121 +43,131 @@ import wres.engine.statistics.metric.outputs.VectorOutput;
  * @since 0.1
  */
 
-public abstract class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
-extends
-    ArrayList<Metric<S, T>>
-implements Function<S, MetricOutputCollection<T>>
+public final class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
+implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollection<T>>
 {
 
     /**
-     * Serial ID.
+     * The collection of {@link Metric}
      */
 
-    private static final long serialVersionUID = -1302714449019049419L;
+    private final ArrayList<Metric<S, T>> metrics;
 
     /**
-     * Construct a collection of metrics that consume {@link DichotomousPairs} and return {@link ScalarOutput}.
-     * 
-     * @return a metric collection
+     * The metric input.
      */
 
-    public static MetricCollection<DichotomousPairs, ScalarOutput> ofDichotomousScalar()
-    {
-        final class MetricCollectionImpl extends MetricCollection<DichotomousPairs, ScalarOutput>
-        {
-            private static final long serialVersionUID = -8001239422255786923L;
+    private final Future<S> input;
 
-            @Override
-            public MetricOutputCollection<ScalarOutput> apply(final DichotomousPairs s)
-            {
-                return super.applyInternal(s);
-            }
-        }
-        return new MetricCollectionImpl();
+    /**
+     * Executor service.
+     */
+
+    private final ExecutorService metricPool;
+
+    @Override
+    public MetricOutputCollection<T> call() throws MetricCalculationException, InterruptedException, ExecutionException
+    {
+        return callInternal();
+    }
+
+    @Override
+    public MetricOutputCollection<T> apply(final S input)
+    {
+        return applyInternal(input);
     }
 
     /**
-     * Construct a collection of metrics that consume {@link MulticategoryPairs} and return {@link ScalarOutput}.
-     * 
-     * @return a metric collection
+     * A builder to build the immutable collection.
      */
 
-    public static MetricCollection<MulticategoryPairs, ScalarOutput> ofMulticategoryScalar()
+    public static class MetricCollectionBuilder<S extends MetricInput<?>, T extends MetricOutput<?>>
     {
-        final class MetricCollectionImpl extends MetricCollection<MulticategoryPairs, ScalarOutput>
+
+        /**
+         * The metric input.
+         */
+
+        private Future<S> builderInput;
+
+        /**
+         * Executor service.
+         */
+
+        private ExecutorService metricPool;
+
+        /**
+         * The list of {@link Metric}.
+         */
+
+        private final ArrayList<Metric<S, T>> builderMetrics = new ArrayList<>();
+
+        /**
+         * Returns a builder.
+         * 
+         * @param <P> the type of metric input
+         * @param <Q> the type of metric output
+         * @return a builder
+         */
+
+        public static <P extends MetricInput<?>, Q extends MetricOutput<?>> MetricCollectionBuilder<P, Q> of()
         {
-            private static final long serialVersionUID = 6841107246108197166L;
-
-            @Override
-            public MetricOutputCollection<ScalarOutput> apply(final MulticategoryPairs s)
-            {
-                return super.applyInternal(s);
-            }
+            return new MetricCollectionBuilder<>();
         }
-        return new MetricCollectionImpl();
-    }
 
-    /**
-     * Construct a collection of metrics that consume {@link SingleValuedPairs} and return {@link VectorOutput}.
-     * 
-     * @return a metric collection
-     */
+        /**
+         * Add a {@link Metric} to the collection.
+         * 
+         * @param metric the metric
+         * @return the builder
+         */
 
-    public static MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVector()
-    {
-        final class MetricCollectionImpl extends MetricCollection<SingleValuedPairs, VectorOutput>
+        public MetricCollectionBuilder<S, T> add(final Metric<S, T> metric)
         {
-            private static final long serialVersionUID = -2462430150463352477L;
-
-            @Override
-            public MetricOutputCollection<VectorOutput> apply(final SingleValuedPairs s)
-            {
-                return super.applyInternal(s);
-            }
+            Objects.requireNonNull(metric, "Add a non-null metric to the collection.");
+            builderMetrics.add(metric);
+            return this;
         }
-        return new MetricCollectionImpl();
-    }
 
-    /**
-     * Construct a collection of metrics that consume {@link SingleValuedPairs} and return {@link VectorOutput}.
-     * 
-     * @return a metric collection
-     */
+        /**
+         * Sets the {@link MetricInput}.
+         * 
+         * @param input the metric input
+         * @return the builder
+         */
 
-    public static MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalar()
-    {
-        final class MetricCollectionImpl extends MetricCollection<SingleValuedPairs, ScalarOutput>
+        public MetricCollectionBuilder<S, T> setMetricInput(final Future<S> input)
         {
-            private static final long serialVersionUID = -7002084211172866874L;
-
-            @Override
-            public MetricOutputCollection<ScalarOutput> apply(final SingleValuedPairs s)
-            {
-                return super.applyInternal(s);
-            }
+            Objects.requireNonNull(input, "Add a non-null metric input to the collection.");
+            builderInput = input;
+            return this;
         }
-        return new MetricCollectionImpl();
-    }
 
-    /**
-     * Construct a collection of metrics that consume {@link DiscreteProbabilityPairs} and return {@link VectorOutput}.
-     * 
-     * @return a metric collection
-     */
+        /**
+         * Sets the {@link ExecutorService} for parallel computations.
+         * 
+         * @param metricPool the executor service
+         * @return the builder
+         */
 
-    public static MetricCollection<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVectorOutput()
-    {
-        final class MetricCollectionImpl extends MetricCollection<DiscreteProbabilityPairs, VectorOutput>
+        public MetricCollectionBuilder<S, T> setExecutorService(final ExecutorService metricPool)
         {
-            private static final long serialVersionUID = 6081250204224558807L;
-
-            @Override
-            public MetricOutputCollection<VectorOutput> apply(final DiscreteProbabilityPairs s)
-            {
-                return super.applyInternal(s);
-            }
+            Objects.requireNonNull(metricPool, "Add a non-null executor service to the collection.");
+            this.metricPool = metricPool;
+            return this;
         }
-        return new MetricCollectionImpl();
+
+        /**
+         * Build the metric collection.
+         * 
+         * @return the metric
+         */
+
+        public MetricCollection<S, T> build()
+        {
+            return new MetricCollection<>(this);
+        }
+
     }
 
     /**
@@ -170,20 +179,25 @@ implements Function<S, MetricOutputCollection<T>>
      * @return the output for each metric, contained in a collection
      */
 
-    private MetricOutputCollection<T> applyInternal(final S s)
+    private MetricOutputCollection<T> applyInternal(final S s) throws MetricCalculationException
     {
-        final MetricOutputCollection<T> m = new MetricOutputCollection<>(size());
+        if(!Objects.isNull(this.input))
+        {
+            throw new MetricCalculationException("The collection has already been constructed with a fixed input.");
+        }
+        final MetricOutputCollection<T> m = new MetricOutputCollection<>(metrics.size());
         //Collect the instances of Collectable by their getCollectionOf string, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
         @SuppressWarnings("unchecked")
         final Map<String, List<Collectable<S, MetricOutput<?>, T>>> collectable =
-                                                                                stream().filter(Collectable.class::isInstance)
-                                                                                        .map(p -> (Collectable<S, MetricOutput<?>, T>)p)
-                                                                                        .collect(Collectors.groupingBy(Collectable::getCollectionOf));
+                                                                                metrics.stream()
+                                                                                       .filter(Collectable.class::isInstance)
+                                                                                       .map(p -> (Collectable<S, MetricOutput<?>, T>)p)
+                                                                                       .collect(Collectors.groupingBy(Collectable::getCollectionOf));
         //Consumer that computes the intermediate output once and applies it to all grouped instances of Collectable
         final Consumer<List<Collectable<S, MetricOutput<?>, T>>> c = x -> {
             final MetricOutput<?> intermediate = x.get(0).getCollectionInput(s); //Compute intermediate output
-            x.forEach(y -> m.add(indexOf(y), y.apply(intermediate))); //Use intermediate output to compute all measures
+            x.forEach(y -> m.add(metrics.indexOf(y), y.apply(intermediate))); //Use intermediate output to compute all measures
         };
 
         //Compute the collectable metrics    
@@ -191,16 +205,104 @@ implements Function<S, MetricOutputCollection<T>>
         //collectable.values().parallelStream().forEach(c); //Parallel
 
         //Compute the non-collectable metrics: must be sequential at present as the lambda is stateful
-        stream().filter(p -> !(p instanceof Collectable)).forEach(y -> m.add(indexOf(y), y.apply(s)));
+        metrics.stream().filter(p -> !(p instanceof Collectable)).forEach(y -> m.add(metrics.indexOf(y), y.apply(s)));
         return m;
     }
 
     /**
-     * Default constructor. Use the factory methods.
+     * Default method for computing the metric results and returning them in a collection with a prescribed type.
+     * Collects instances of {@link Collectable} by {@link Collectable#getCollectionOf()} and computes their common
+     * (intermediate) input once. Each metric is computed asynchronously.
+     * 
+     * @return the output for each metric, contained in a collection
+     * @throws InterruptedException
      */
 
-    private MetricCollection()
+    private MetricOutputCollection<T> callInternal() throws MetricCalculationException,
+                                                     InterruptedException,
+                                                     ExecutionException
     {
+        if(Objects.isNull(input))
+        {
+            throw new MetricCalculationException("No metric input from which to compute the metric collection: "
+                + "construct the metric collection with an input.");
+        }
+        if(Objects.isNull(metricPool))
+        {
+            throw new UnsupportedOperationException("No executor service from which to compute the metric collection: "
+                + "construct the metric collection with an executor service.");
+        }
+
+        final MetricOutputCollection<T> m = new MetricOutputCollection<>(metrics.size());
+        //Collect the instances of Collectable by their getCollectionOf string, which denotes the superclass that
+        //provides the intermediate result for all metrics of that superclass
+        @SuppressWarnings("unchecked")
+        final Map<String, List<Collectable<S, MetricOutput<?>, T>>> collectable =
+                                                                                metrics.stream()
+                                                                                       .filter(Collectable.class::isInstance)
+                                                                                       .map(p -> (Collectable<S, MetricOutput<?>, T>)p)
+                                                                                       .collect(Collectors.groupingBy(Collectable::getCollectionOf));
+        //For each group of Collectable, create a task       
+        final ArrayList<Callable<T>> tasks = new ArrayList<>();
+        collectable.forEach((a, b) -> {
+            final Callable<MetricOutput<?>> intermediate = getCollectableTask(b.get(0));
+            final Future<MetricOutput<?>> result = metricPool.submit(intermediate); //Compute once
+            b.forEach(c -> tasks.add(metrics.indexOf(c), new CollectableTask<>(c, result)));
+        });
+
+        //For each non-Collectable metric, add a task
+        metrics.stream()
+               .filter(p -> !(p instanceof Collectable))
+               .forEach(y -> tasks.add(metrics.indexOf(y), new MetricTask<>(y, input)));
+        //Compute
+        final List<Future<T>> results = metricPool.invokeAll(tasks);
+        for(final Future<T> next: results)
+        {
+            m.add(next.get());
+        }
+        return m;
+    }
+
+    /**
+     * Hidden constructor.
+     */
+
+    private MetricCollection(final MetricCollectionBuilder<S, T> builder)
+    {
+        if(builder.builderMetrics.isEmpty())
+        {
+            throw new UnsupportedOperationException("Cannot construct a metric collection with an empty list of "
+                + "metrics.");
+        }
+        if(Objects.isNull(builder.builderInput) != Objects.isNull(builder.metricPool))
+        {
+            throw new UnsupportedOperationException("Cannot construct a metric collection whose input and execution "
+                + "service are not both empty or both defined.");
+        }
+        metrics = new ArrayList<>();
+        metrics.addAll(builder.builderMetrics);
+        input = builder.builderInput;
+        metricPool = builder.metricPool;
+    }
+
+    /**
+     * Returns a {@link Future} containing a {@link MetricOutput}, which is used to compute the intermediate output
+     * associated with a {@link Collectable}.
+     * 
+     * @param metric a metric
+     * @return a future metric output
+     */
+
+    private Callable<MetricOutput<?>> getCollectableTask(final Collectable<S, MetricOutput<?>, T> metric)
+    {
+        return new Callable<MetricOutput<?>>()
+        {
+            @Override
+            public MetricOutput<?> call() throws Exception
+            {
+                return metric.getCollectionInput(input.get());
+            }
+        };
 
     }
 

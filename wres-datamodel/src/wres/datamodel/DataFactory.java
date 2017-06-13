@@ -60,6 +60,7 @@ public class DataFactory
             }
         };
     }
+
     public PairOfDoubleAndVectorOfDoubles pairOf(final double first, final double[] second)
     {
         return SafePairOfDoubleAndVectorOfDoubles.of(first, second);
@@ -89,6 +90,11 @@ public class DataFactory
     }
 
     public VectorOfDoubles vectorOf(final double[] vec)
+    {
+        return SafeVectorOfDoubles.of(vec);
+    }
+
+    public VectorOfDoubles vectorOf(final Double[] vec)
     {
         return SafeVectorOfDoubles.of(vec);
     }

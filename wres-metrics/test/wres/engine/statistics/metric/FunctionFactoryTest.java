@@ -9,9 +9,7 @@ import org.junit.Test;
 import wres.datamodel.DataFactory;
 
 /**
- * <p>
  * Tests the {@link FunctionFactory}.
- * </p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

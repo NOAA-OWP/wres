@@ -11,9 +11,7 @@ import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 
 /**
- * <p>
  * Tests the {@link ContingencyTable}.
- * </p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

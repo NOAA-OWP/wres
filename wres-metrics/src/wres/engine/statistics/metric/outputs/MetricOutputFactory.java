@@ -12,7 +12,7 @@ import wres.datamodel.metric.MetricOutput;
  * @since 0.1
  */
 
-public class MetricOutputFactory
+public final class MetricOutputFactory
 {
 
     /**
@@ -75,24 +75,6 @@ public class MetricOutputFactory
                                                                             final Dimension d)
     {
         return (T)ofMatrixOutput(output, sampleSize, d);
-    }
-
-    /**
-     * Return a {@link VectorOutput} wrapped as a {@link MetricOutput}.
-     * 
-     * @param output the output data
-     * @param sampleSize the sample size
-     * @param d the dimension
-     * @param <T> the metric output
-     * @return a {@link VectorOutput}
-     */
-
-    @SuppressWarnings("unchecked")
-    public static <T extends MetricOutput<?>> T ofVectorExtendsMetricOutput(final double[] output,
-                                                                            final int sampleSize,
-                                                                            final Dimension d)
-    {
-        return (T)ofVectorOutput(output, sampleSize, d);
     }
 
     /**

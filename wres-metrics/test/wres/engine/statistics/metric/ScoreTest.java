@@ -5,9 +5,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 /**
- * <p>
  * Tests the {@link Score}.
- * </p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

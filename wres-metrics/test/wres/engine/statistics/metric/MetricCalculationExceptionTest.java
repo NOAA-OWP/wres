@@ -3,9 +3,7 @@ package wres.engine.statistics.metric;
 import org.junit.Test;
 
 /**
- * <p>
  * Tests the {@link MetricCalculationException}.
- * </p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

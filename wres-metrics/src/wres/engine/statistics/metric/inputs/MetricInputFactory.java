@@ -15,7 +15,7 @@ import wres.datamodel.metric.Dimension;
  * @since 0.1
  */
 
-public class MetricInputFactory
+public final class MetricInputFactory
 {
 
     /**
@@ -127,6 +127,7 @@ public class MetricInputFactory
      * Return a cast of the inputs pairs.
      * 
      * @param pairs the input pairs
+     * @param dim the dimension
      * @param <T> the output pairs
      * @return the casted pairs
      */

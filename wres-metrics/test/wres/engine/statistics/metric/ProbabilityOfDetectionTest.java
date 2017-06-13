@@ -10,9 +10,7 @@ import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
- * <p>
  * Tests the {@link ProbabilityOfDetection}.
- * </p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
