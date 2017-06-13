@@ -336,10 +336,9 @@ public class ControlTemp
                                              valueFactory.pairOf(observationValue,
                                                                  mean.applyAsDouble(valueFactory.vectorOf(forecastValues)));
 
-                    //This is going to be slow
-                    //LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
-                    //             pair.getItemOne(),
-                    //             pair.getItemTwo());
+                    LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
+                                 pair.getItemOne(),
+                                 pair.getItemTwo());
 
                     result.add(pair);
                 }
