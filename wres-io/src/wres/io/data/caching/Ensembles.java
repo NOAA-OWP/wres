@@ -110,7 +110,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
      */
 	public Integer getID(String name, String memberID) throws Exception
 	{
-		return getID(EnsembleDetails.createKey(name, memberID, null));
+		return getID(EnsembleDetails.createKey(name, null, memberID));
 	}
     
     /**
@@ -123,7 +123,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
      * @throws Exception Thrown if the ID could not be retrieved from the database
      */
 	public Integer getID(String name, String memberID, String qualifierID) throws Exception {
-		return getID(EnsembleDetails.createKey(name, memberID, qualifierID));
+		return getID(EnsembleDetails.createKey(name, qualifierID, memberID));
 	}
 	
 	@Override
@@ -145,7 +145,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
         Integer ID = keyIndex.get(grouping);
 		
 		// If no identical groupings are found and the grouping isn't full, attempt to find a similar one
-		if (keyIndex.size() > 0)// && mostSimilar == null && !grouping.isFull())
+		if (keyIndex.size() > 0)
 		{
 			for (EnsembleKey key : keyIndex.keySet())
 			{
@@ -180,20 +180,6 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 				mostSimilar = Collections.find(similarKeys, (EnsembleKey key) -> {
 					return key.getEnsembleName().equalsIgnoreCase(grouping.getEnsembleName()) && key.getMemberIndex().equalsIgnoreCase(grouping.getMemberIndex());
 				});
-				
-				if (mostSimilar == null)
-				{
-					mostSimilar = Collections.find(similarKeys, (EnsembleKey key) -> {
-						return key.getEnsembleName().equalsIgnoreCase(grouping.getEnsembleName()) && key.getQualifierID().equalsIgnoreCase(grouping.getQualifierID());
-					});
-				}
-				
-				if (mostSimilar == null)
-				{
-					mostSimilar = Collections.find(similarKeys, (EnsembleKey key) -> {
-						return key.getMemberIndex().equalsIgnoreCase(grouping.getMemberIndex()) && key.getQualifierID().equalsIgnoreCase(grouping.getQualifierID());
-					});
-				}
 			}
 			else if (possibleKeys.containsKey(1)) {
 				similarKeys = possibleKeys.get(1);
@@ -206,13 +192,6 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 				{
 					mostSimilar = Collections.find(similarKeys, (EnsembleKey key) -> {
 						return key.getMemberIndex().equalsIgnoreCase(grouping.getMemberIndex());
-					});
-				}
-				
-				if (mostSimilar == null)
-				{
-					mostSimilar = Collections.find(similarKeys, (EnsembleKey key) -> {
-						return key.getQualifierID().equalsIgnoreCase(grouping.getQualifierID());
 					});
 				}
 			}
