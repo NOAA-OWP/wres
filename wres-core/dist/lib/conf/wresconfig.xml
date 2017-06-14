@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wresconfig>
 	<database>
-        <url>***REMOVED***eds-dev1.***REMOVED***.***REMOVED***</url>
+        <url>localhost</url>
         <!--<ausername>wres_user</ausername>
         <apassword>EvalWaterRes</apassword>-->
-        <username>christopher.tubbs</username>
+        <username>wres_user</username>
         <password>changeme</password>
         <name>wres</name>
         <port>5432</port>
