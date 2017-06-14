@@ -16,12 +16,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.ToDoubleFunction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.DataFactory;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.VectorOfDoubles;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.inputs.MetricInputFactory;
@@ -100,6 +104,7 @@ public class ControlTemp
                                                 "QINE",
                                                 "CFS");
 
+        //Final pairs of ensemble mean and observation
         final List<Future<SingleValuedPairs>> pairs = new ArrayList<>();
 
         // Create the first-level queue of work: fetching pairs.
@@ -107,19 +112,21 @@ public class ControlTemp
         final int maxFetchThreads = (ControlTemp.MAX_THREADS / 10) * 8;
         final ExecutorService fetchPairExecutor = Executors.newFixedThreadPool(maxFetchThreads);
 
-        // Queue up fetching the pairs from the database.
+        // Create the second-level queue of work: processing the pairs (computing the ensemble mean in this example).
+        // Devote 1/10 of the max threads to working this queue (less waiting/sleeping here)
+        final int maxProcessThreads = ControlTemp.MAX_THREADS / 10;
+        final ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
+
+        // Queue fetching the pairs from the database and processing the pairs (computing the ensemble mean)
         final int leadTimesCount = 2880;
         for(int i = 0; i < leadTimesCount; i++)
         {
             final int leadTime = i + 1;
-            final Future<SingleValuedPairs> futurePair = getFuturePairByLeadTime(config, leadTime, fetchPairExecutor);
-            pairs.add(futurePair);
+            final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair = getFuturePairByLeadTime(config,
+                                                                                                    leadTime,
+                                                                                                    fetchPairExecutor);
+            pairs.add(getFutureSingleValuedPairs(futurePair, processPairExecutor));
         }
-
-        // Create the second-level queue of work: displaying or processing fetched pairs.
-        // Devote 1/10 of the max threads to working this queue (less waiting/sleeping here)
-        final int maxProcessThreads = ControlTemp.MAX_THREADS / 10;
-        final ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
 
         // Create a third-level Queue of work for executing the verification metrics
         // Devote 1/10 of the max threads to working this queue (less waiting/sleeping here)
@@ -307,18 +314,52 @@ public class ControlTemp
      * @param executorService
      * @return the Future from the executorService
      */
-    private static Future<SingleValuedPairs> getFuturePairByLeadTime(final PairConfig config,
-                                                                     final int leadTime,
-                                                                     final ExecutorService executorService)
+    private static Future<List<PairOfDoubleAndVectorOfDoubles>> getFuturePairByLeadTime(final PairConfig config,
+                                                                                        final int leadTime,
+                                                                                        final ExecutorService executorService)
     {
         final PairGetterByLeadTime pair = new PairGetterByLeadTime(config, leadTime);
         return executorService.submit(pair);
     }
 
     /**
+     * Computes the ensemble mean of each future pair.
+     * 
+     * @param config
+     * @param leadTime
+     * @param executorService
+     * @return the Future from the executorService
+     */
+    private static Future<SingleValuedPairs> getFutureSingleValuedPairs(final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePairs,
+                                                                        final ExecutorService executorService)
+    {
+        class EnsembleMeanProcessor implements Callable<SingleValuedPairs>
+        {
+            @Override
+            public SingleValuedPairs call() throws InterruptedException, ExecutionException
+            {
+                final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
+                final ToDoubleFunction<VectorOfDoubles> mean = FunctionFactory.mean();
+                final List<PairOfDoubles> returnMe = new ArrayList<>();
+                //Wait for the pairs
+                final List<PairOfDoubleAndVectorOfDoubles> pairs = futurePairs.get();
+                for(final PairOfDoubleAndVectorOfDoubles nextPair: pairs)
+                {
+                    final PairOfDoubles pair =
+                                             valueFactory.pairOf(nextPair.getItemOne(),
+                                                                 mean.applyAsDouble(valueFactory.vectorOf(nextPair.getItemTwo())));
+                    returnMe.add(pair);
+                }
+                return MetricInputFactory.ofSingleValuedPairs(returnMe, null);
+            }
+        }
+        return executorService.submit(new EnsembleMeanProcessor());
+    }
+
+    /**
      * Retrieves a list of pairs from the database by lead time.
      */
-    private static class PairGetterByLeadTime implements Callable<SingleValuedPairs>
+    private static class PairGetterByLeadTime implements Callable<List<PairOfDoubleAndVectorOfDoubles>>
     {
         private final PairConfig config;
         private final int leadTime;
@@ -330,17 +371,16 @@ public class ControlTemp
         }
 
         @Override
-        public SingleValuedPairs call() throws IOException
+        public List<PairOfDoubleAndVectorOfDoubles> call() throws IOException
         {
 
 //TODO: REMOVE THIS LINE WHEN DATABASE UPLOAD IS WORKING            
 
             return getImaginaryPairsTemp();
 
-//TODO: UNCOMMENT FROM HERE WHEN DATABASE UPLOAD IS WORKING            
+//TODO: UNCOMMENT FROM HERE WHEN DATABASE UPLOAD IS WORKING                  
 
-//            SingleValuedPairs returnMe = null;
-//            final List<PairOfDoubles> result = new ArrayList<>();
+//            final List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
 //            String sql;
 //
 //            try
@@ -355,9 +395,6 @@ public class ControlTemp
 //
 //            final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
 //
-//            //Function to compute the ensemble mean from the VectorOfDoubles that contains the ensemble members
-//            //This assumes none of the ensemble members correspond to the missing value
-//            final ToDoubleFunction<VectorOfDoubles> mean = FunctionFactory.mean();
 //            try (Connection con = Database.getConnection();
 //            Statement statement = con.createStatement();
 //            ResultSet resultSet = statement.executeQuery(sql))
@@ -366,18 +403,13 @@ public class ControlTemp
 //                {
 //                    final double observationValue = resultSet.getFloat("observation");
 //                    final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
-//                    final PairOfDoubles pair =
-//                                             valueFactory.pairOf(observationValue,
-//                                                                 mean.applyAsDouble(valueFactory.vectorOf(forecastValues)));
+//                    final PairOfDoubleAndVectorOfDoubles pair = valueFactory.pairOf(observationValue, forecastValues);
+//
 //                    LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
 //                                 pair.getItemOne(),
 //                                 pair.getItemTwo());
 //
 //                    result.add(pair);
-//                }
-//                if(!result.isEmpty())
-//                {
-//                    returnMe = MetricInputFactory.ofSingleValuedPairs(result, null);
 //                }
 //            }
 //            catch(final SQLException se)
@@ -391,7 +423,7 @@ public class ControlTemp
 //                LOGGER.trace(sql);
 //            }
 //
-//            return returnMe;
+//            return result;
         }
     }
 
@@ -401,16 +433,16 @@ public class ControlTemp
      * @return single-valued pairs
      */
 
-    private static SingleValuedPairs getImaginaryPairsTemp()
+    private static List<PairOfDoubleAndVectorOfDoubles> getImaginaryPairsTemp()
     {
         //Construct some single-valued pairs
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         final DataFactory dataFactory = DataFactory.instance();
         for(int i = 0; i < 10000; i++)
         {
-            values.add(dataFactory.pairOf(5, 10));
+            values.add(dataFactory.pairOf(5.0, new double[]{10.0})); //Single member
         }
-        return MetricInputFactory.ofSingleValuedPairs(values, null);
+        return values;
     }
 
     /**
