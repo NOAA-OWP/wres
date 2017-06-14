@@ -1,16 +1,14 @@
 package wres;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -18,15 +16,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.ToDoubleFunction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.VectorOfDoubles;
-import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.inputs.MetricInputFactory;
@@ -107,9 +102,9 @@ public class ControlTemp
 
         final List<Future<SingleValuedPairs>> pairs = new ArrayList<>();
 
-        // Create the first-level Queue of work: fetching pairs.
-        // Devote 9/10 of the max threads to working this Q (more waiting/sleeping here)
-        final int maxFetchThreads = (ControlTemp.MAX_THREADS / 10) * 9;
+        // Create the first-level queue of work: fetching pairs.
+        // Devote 8/10 of the max threads to working this queue (more waiting/sleeping here)
+        final int maxFetchThreads = (ControlTemp.MAX_THREADS / 10) * 8;
         final ExecutorService fetchPairExecutor = Executors.newFixedThreadPool(maxFetchThreads);
 
         // Queue up fetching the pairs from the database.
@@ -121,48 +116,80 @@ public class ControlTemp
             pairs.add(futurePair);
         }
 
-        // Create the second-level Queue of work: displaying or processing fetched pairs.
-        // Devote 1/10 of the max threads to working this Q (less waiting/sleeping here)
+        // Create the second-level queue of work: displaying or processing fetched pairs.
+        // Devote 1/10 of the max threads to working this queue (less waiting/sleeping here)
         final int maxProcessThreads = ControlTemp.MAX_THREADS / 10;
         final ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
 
         // Create a third-level Queue of work for executing the verification metrics
-        final ExecutorService metricPoolExecutor = Executors.newFixedThreadPool(maxFetchThreads);
-        final List<Future<MetricOutputCollection<ScalarOutput>>> futureMetrics = new ArrayList<>();
+        // Devote 1/10 of the max threads to working this queue (less waiting/sleeping here)
+        final ExecutorService metricPoolExecutor = Executors.newFixedThreadPool(maxProcessThreads);
+
+        //Metric results indexed by lead time in a list (each list index contains a collection of metric outputs)
+        final Map<Integer, List<Future<MetricOutputCollection<ScalarOutput>>>> futureMetrics = new TreeMap<>();
 
         // Create builder for an immutable collection of metrics that consume single-valued pairs
         // and produce a scalar output
         MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
-        // Add some metrics and set the executor service for parallel execution
+        // Add some metrics and set the executor service for parallel execution of the metrics
         builder = builder.add(MetricFactory.ofMeanError())
                          .add(MetricFactory.ofMeanAbsoluteError())
                          .add(MetricFactory.ofRootMeanSquareError())
                          .setExecutorService(metricPoolExecutor);
+        // Add the builder to a list: this will allow additional metric collections with SingleValuedPairs and 
+        // ScalarOutput to be appended 
+        // as desired
+        final List<MetricCollectionBuilder<SingleValuedPairs, ScalarOutput>> collections = new ArrayList<>();
+        collections.add(builder);
 
-        // Queue up processing of fetched pairs.
-        for(final Future<SingleValuedPairs> nextFuturePairs: pairs)
+        //Mock the addition of another metric collection
+        //collections.add(builder);
+
+        // Queue up processing of fetched pairs and execution of metrics
+        for(int i = 0; i < leadTimesCount; i++)
         {
-            // Set the future pairs
-            builder.setMetricInput(nextFuturePairs);
-            // Build and submit the metric task
-            futureMetrics.add(processPairExecutor.submit(builder.build()));
+            // Append the future results to the list of existing results
+            final List<Future<MetricOutputCollection<ScalarOutput>>> addMe = new ArrayList<>();
+            for(final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> b: collections)
+            {
+                // Assign the future pairs for the current lead time to the immutable collection
+                b.setMetricInput(pairs.get(i));
+                // Build the immutable collection and submit the metric task
+                addMe.add(processPairExecutor.submit(b.build()));
+            }
+            futureMetrics.put(i, addMe);
         }
 
         final Map<Integer, MetricOutputCollection<ScalarOutput>> finalResults = new HashMap<>();
         // Retrieve metric results from processing queue.
         try
         {
-            // counting on communication of data with index for this example
+            // Counting on communication of data with index for this example
             for(int i = 0; i < futureMetrics.size(); i++)
             {
-                // get each result
-                final MetricOutputCollection<ScalarOutput> metrics = futureMetrics.get(i).get();
-
+                // Get each collection of results and combine into an uber collection of ScalarOutput
+                final MetricOutputCollection<ScalarOutput> uber = new MetricOutputCollection<>();
+                futureMetrics.get(i).forEach(a -> {
+                    try
+                    {
+                        uber.addAll(a.get());
+                    }
+                    catch(final InterruptedException ie)
+                    {
+                        LOGGER.error("Interrupted while getting results", ie);
+                        Thread.currentThread().interrupt();
+                    }
+                    catch(final ExecutionException ee)
+                    {
+                        LOGGER.error("While getting results", ee);
+                    }
+                });
                 final int leadTime = i + 1;
-                finalResults.put(leadTime, metrics);
+                finalResults.put(leadTime, uber);
 
                 if(LOGGER.isInfoEnabled() && fetchPairExecutor instanceof ThreadPoolExecutor
-                    && processPairExecutor instanceof ThreadPoolExecutor)
+                    && processPairExecutor instanceof ThreadPoolExecutor
+                    && metricPoolExecutor instanceof ThreadPoolExecutor)
                 {
                     final long curTime = System.currentTimeMillis();
                     final long lastTime = lastMessageTime.get();
@@ -171,23 +198,19 @@ public class ControlTemp
                     {
                         final ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor)fetchPairExecutor;
                         final ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor)processPairExecutor;
-                        LOGGER.info("Around {} pair lists fetched. Around {} in the fetch queue. Around {} fetched pairs processed. Around {} in processing queue.",
+                        final ThreadPoolExecutor metProcess = (ThreadPoolExecutor)metricPoolExecutor;
+                        LOGGER.info("Around {} paired datasets fetched. Around {} in the fetch queue. Around {} paired "
+                            + "datasets processed. Around {} in processing queue. Around {} metrics processed. "
+                            + "Around {} in the metric queue.",
                                     tpeFetch.getCompletedTaskCount(),
                                     tpeFetch.getQueue().size(),
                                     tpeProcess.getCompletedTaskCount(),
-                                    tpeProcess.getQueue().size());
+                                    tpeProcess.getQueue().size(),
+                                    metProcess.getCompletedTaskCount(),
+                                    metProcess.getQueue().size());
                     }
                 }
             }
-        }
-        catch(final InterruptedException ie)
-        {
-            LOGGER.error("Interrupted while getting results", ie);
-            Thread.currentThread().interrupt();
-        }
-        catch(final ExecutionException ee)
-        {
-            LOGGER.error("While getting results", ee);
         }
         finally
         {
@@ -200,7 +223,7 @@ public class ControlTemp
         {
             final ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor)fetchPairExecutor;
             final ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor)processPairExecutor;
-            LOGGER.info("Total of around {} pair lists completed. Total of around {} pairs processed. Done.",
+            LOGGER.info("Total of around {} paired datasets completed. Total of around {} paired datasets processed. Done.",
                         tpeFetch.getCompletedTaskCount(),
                         tpeProcess.getCompletedTaskCount());
         }
@@ -213,7 +236,7 @@ public class ControlTemp
             }
         }
 
-        shutDownGracefully(fetchPairExecutor, processPairExecutor);
+        shutDownGracefully(fetchPairExecutor, processPairExecutor, metricPoolExecutor);
     }
 
     /**
@@ -223,14 +246,17 @@ public class ControlTemp
      * @param processPairExecutor
      */
     private static void shutDownGracefully(final ExecutorService fetchPairExecutor,
-                                           final ExecutorService processPairExecutor)
+                                           final ExecutorService processPairExecutor,
+                                           final ExecutorService metricPoolExecutor)
     {
         // (There are probably better ways to do this, e.g. awaitTermination)
         int fetchesSkipped = 0;
         int processingSkipped = 0;
+        int metricSkipped = 0;
         int i = 0;
         boolean deathTime = false;
-        while(!fetchPairExecutor.isTerminated() || !processPairExecutor.isTerminated())
+        while(!fetchPairExecutor.isTerminated() || !processPairExecutor.isTerminated()
+            || !metricPoolExecutor.isTerminated())
         {
             if(i == 0)
             {
@@ -258,16 +284,18 @@ public class ControlTemp
                     LOGGER.info("Forcing shutdown.");
                     fetchesSkipped += fetchPairExecutor.shutdownNow().size();
                     processingSkipped += processPairExecutor.shutdownNow().size();
+                    metricSkipped += metricPoolExecutor.shutdownNow().size();
                 }
             }
             i++;
         }
 
-        if(fetchesSkipped > 0 || processingSkipped > 0)
+        if(fetchesSkipped > 0 || processingSkipped > 0 || metricSkipped > 0)
         {
-            LOGGER.info("Abandoned {} pair fetch tasks, abandoned {} processing tasks.",
+            LOGGER.info("Abandoned {} pair fetch tasks, abandoned {} processing tasks, abandoned {} metric tasks",
                         fetchesSkipped,
-                        processingSkipped);
+                        processingSkipped,
+                        metricSkipped);
         }
     }
 
@@ -304,58 +332,85 @@ public class ControlTemp
         @Override
         public SingleValuedPairs call() throws IOException
         {
-            final List<PairOfDoubles> result = new ArrayList<>();
-            String sql;
 
-            try
-            {
-                sql = getPairSqlFromConfigForLead(this.config, this.leadTime);
-            }
-            catch(final IOException ioe)
-            {
-                LOGGER.error("When trying to build sql for pairs:", ioe);
-                throw ioe;
-            }
+//TODO: REMOVE THIS LINE WHEN DATABASE UPLOAD IS WORKING            
 
-            final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
+            return getImaginaryPairsTemp();
 
-            //Function to compute the ensemble mean from the VectorOfDoubles that contains the ensemble members
-            //This assumes none of the ensemble members correspond to the missing value
-            final ToDoubleFunction<VectorOfDoubles> mean = FunctionFactory.mean();
+//TODO: UNCOMMENT FROM HERE WHEN DATABASE UPLOAD IS WORKING            
 
-            try (Connection con = Database.getConnection();
-            Statement statement = con.createStatement();
-            ResultSet resultSet = statement.executeQuery(sql))
-
-            {
-                while(resultSet.next())
-                {
-                    final double observationValue = resultSet.getFloat("observation");
-                    final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
-                    final PairOfDoubles pair =
-                                             valueFactory.pairOf(observationValue,
-                                                                 mean.applyAsDouble(valueFactory.vectorOf(forecastValues)));
-
-                    LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
-                                 pair.getItemOne(),
-                                 pair.getItemTwo());
-
-                    result.add(pair);
-                }
-            }
-            catch(final SQLException se)
-            {
-                final String message = "Failed to get pair results for lead " + this.leadTime;
-                throw new IOException(message, se);
-            }
-            finally
-            {
-                LOGGER.trace("Query: ");
-                LOGGER.trace(sql);
-            }
-
-            return MetricInputFactory.ofSingleValuedPairs(result, null);
+//            SingleValuedPairs returnMe = null;
+//            final List<PairOfDoubles> result = new ArrayList<>();
+//            String sql;
+//
+//            try
+//            {
+//                sql = getPairSqlFromConfigForLead(this.config, this.leadTime);
+//            }
+//            catch(final IOException ioe)
+//            {
+//                LOGGER.error("When trying to build sql for pairs:", ioe);
+//                throw ioe;
+//            }
+//
+//            final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
+//
+//            //Function to compute the ensemble mean from the VectorOfDoubles that contains the ensemble members
+//            //This assumes none of the ensemble members correspond to the missing value
+//            final ToDoubleFunction<VectorOfDoubles> mean = FunctionFactory.mean();
+//            try (Connection con = Database.getConnection();
+//            Statement statement = con.createStatement();
+//            ResultSet resultSet = statement.executeQuery(sql))
+//            {
+//                while(resultSet.next())
+//                {
+//                    final double observationValue = resultSet.getFloat("observation");
+//                    final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
+//                    final PairOfDoubles pair =
+//                                             valueFactory.pairOf(observationValue,
+//                                                                 mean.applyAsDouble(valueFactory.vectorOf(forecastValues)));
+//                    LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
+//                                 pair.getItemOne(),
+//                                 pair.getItemTwo());
+//
+//                    result.add(pair);
+//                }
+//                if(!result.isEmpty())
+//                {
+//                    returnMe = MetricInputFactory.ofSingleValuedPairs(result, null);
+//                }
+//            }
+//            catch(final SQLException se)
+//            {
+//                final String message = "Failed to get pair results for lead " + this.leadTime;
+//                throw new IOException(message, se);
+//            }
+//            finally
+//            {
+//                LOGGER.trace("Query: ");
+//                LOGGER.trace(sql);
+//            }
+//
+//            return returnMe;
         }
+    }
+
+    /**
+     * Returns a moderately-sized (10k) test dataset of single-valued pairs, {5,10}, without a baseline or a dimension.
+     * 
+     * @return single-valued pairs
+     */
+
+    private static SingleValuedPairs getImaginaryPairsTemp()
+    {
+        //Construct some single-valued pairs
+        final List<PairOfDoubles> values = new ArrayList<>();
+        final DataFactory dataFactory = DataFactory.instance();
+        for(int i = 0; i < 10000; i++)
+        {
+            values.add(dataFactory.pairOf(5, 10));
+        }
+        return MetricInputFactory.ofSingleValuedPairs(values, null);
     }
 
     /**
