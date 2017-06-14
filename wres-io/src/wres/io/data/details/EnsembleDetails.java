@@ -89,11 +89,20 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	 */
 	private String getEnsembleMemberID()
 	{
-		String id = "0";
+		String id = "'0'";
 		
 		if (ensembleMemberID != null)
 		{
 			id = this.ensembleMemberID;
+			if (!id.startsWith("'"))
+			{
+				id = "'" + id;
+			}
+
+			if (!id.endsWith("'"))
+			{
+				id += "'";
+			}
 		}
 		
 		return id;
