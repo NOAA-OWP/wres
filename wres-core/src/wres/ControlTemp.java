@@ -98,11 +98,17 @@ public class ControlTemp
      */
     public static void main(final String[] args)
     {
+        final long start = System.currentTimeMillis();
         final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 0, 0),
                                                 LocalDateTime.of(1999, 12, 31, 23, 59),
                                                 "SQIN",
                                                 "QINE",
                                                 "CFS");
+
+        //Create three processing queues:
+        //1. Queue the verification pairs and process them into single-valued pairs (ensemble mean);
+        //2. Queue one or more collections of verification metrics (each collection handles several metrics for one data pool, in this case one lead time)
+        //3. Queue the processing of individual metrics within each collection
 
         //Final pairs of ensemble mean and observation
         final List<Future<SingleValuedPairs>> pairs = new ArrayList<>();
@@ -112,7 +118,7 @@ public class ControlTemp
         final int maxFetchThreads = (ControlTemp.MAX_THREADS / 10) * 8;
         final ExecutorService fetchPairExecutor = Executors.newFixedThreadPool(maxFetchThreads);
 
-        // Create the second-level queue of work: processing the pairs (computing the ensemble mean in this example).
+        // Create the second-level queue of work: processing the metric collection tasks
         // Devote 1/10 of the max threads to working this queue (less waiting/sleeping here)
         final int maxProcessThreads = ControlTemp.MAX_THREADS / 10;
         final ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
@@ -125,10 +131,10 @@ public class ControlTemp
             final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair = getFuturePairByLeadTime(config,
                                                                                                     leadTime,
                                                                                                     fetchPairExecutor);
-            pairs.add(getFutureSingleValuedPairs(futurePair, processPairExecutor));
+            pairs.add(getFutureSingleValuedPairs(futurePair, fetchPairExecutor));
         }
 
-        // Create a third-level Queue of work for executing the verification metrics
+        // Create a third-level queue of work for executing the individual verification metrics
         // Devote 1/10 of the max threads to working this queue (less waiting/sleeping here)
         final ExecutorService metricPoolExecutor = Executors.newFixedThreadPool(maxProcessThreads);
 
@@ -150,7 +156,7 @@ public class ControlTemp
         collections.add(builder);
 
         //Mock the addition of another metric collection
-        //collections.add(builder);
+        collections.add(builder);
 
         // Queue up processing of fetched pairs and execution of metrics
         for(int i = 0; i < leadTimesCount; i++)
@@ -204,15 +210,11 @@ public class ControlTemp
                         && lastMessageTime.compareAndSet(lastTime, curTime))
                     {
                         final ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor)fetchPairExecutor;
-                        final ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor)processPairExecutor;
                         final ThreadPoolExecutor metProcess = (ThreadPoolExecutor)metricPoolExecutor;
-                        LOGGER.info("Around {} paired datasets fetched. Around {} in the fetch queue. Around {} paired "
-                            + "datasets processed. Around {} in processing queue. Around {} metrics processed. "
-                            + "Around {} in the metric queue.",
+                        LOGGER.info("Around {} paired datasets fetched. Around {} in the fetch queue. Around {} "
+                            + "metrics processed. Around {} in the metric queue.",
                                     tpeFetch.getCompletedTaskCount(),
                                     tpeFetch.getQueue().size(),
-                                    tpeProcess.getCompletedTaskCount(),
-                                    tpeProcess.getQueue().size(),
                                     metProcess.getCompletedTaskCount(),
                                     metProcess.getQueue().size());
                     }
@@ -223,16 +225,17 @@ public class ControlTemp
         {
             fetchPairExecutor.shutdown();
             processPairExecutor.shutdown();
+            metricPoolExecutor.shutdown();
         }
-
+        final long stop = System.currentTimeMillis();
         if(LOGGER.isInfoEnabled() && fetchPairExecutor instanceof ThreadPoolExecutor
             && processPairExecutor instanceof ThreadPoolExecutor)
         {
             final ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor)fetchPairExecutor;
-            final ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor)processPairExecutor;
-            LOGGER.info("Total of around {} paired datasets completed. Total of around {} paired datasets processed. Done.",
+            final ThreadPoolExecutor metProcess = (ThreadPoolExecutor)metricPoolExecutor;
+            LOGGER.info("Done. {} paired datasets fetched. {} metrics processed. ",
                         tpeFetch.getCompletedTaskCount(),
-                        tpeProcess.getCompletedTaskCount());
+                        metProcess.getCompletedTaskCount());
         }
 
         if(LOGGER.isInfoEnabled())
@@ -241,6 +244,7 @@ public class ControlTemp
             {
                 LOGGER.info("For lead time " + e.getKey() + " " + e.getValue().toString());
             }
+            LOGGER.info("Total time to conduct verification " + ((stop - start) / 1000.0) + " seconds.");
         }
 
         shutDownGracefully(fetchPairExecutor, processPairExecutor, metricPoolExecutor);
@@ -341,7 +345,7 @@ public class ControlTemp
                 final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
                 final ToDoubleFunction<VectorOfDoubles> mean = FunctionFactory.mean();
                 final List<PairOfDoubles> returnMe = new ArrayList<>();
-                //Wait for the pairs
+                //BLOCK: wait for the pairs
                 final List<PairOfDoubleAndVectorOfDoubles> pairs = futurePairs.get();
                 for(final PairOfDoubleAndVectorOfDoubles nextPair: pairs)
                 {
@@ -438,9 +442,11 @@ public class ControlTemp
         //Construct some single-valued pairs
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         final DataFactory dataFactory = DataFactory.instance();
+        final double[] ensemble = new double[]{10, 3, 43, 12, 54, 78, 34, 2, 55, 3, 2, 34, 1, 3, 98, 12};
         for(int i = 0; i < 10000; i++)
         {
-            values.add(dataFactory.pairOf(5.0, new double[]{10.0})); //Single member
+            //Add an ensemble forecast
+            values.add(dataFactory.pairOf(5.0, ensemble));
         }
         return values;
     }
