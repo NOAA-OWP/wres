@@ -257,6 +257,17 @@ project(':wres-metrics')
     }
 }
 
+project(':wres-vis')
+{
+    dependencies
+    {
+        compile project(':wres-datamodel-api')
+        compile project(':wres-datamodel')
+
+        testCompile 'junit:junit:4.12'
+    }
+}
+
 /* Single report for test coverage, thanks to
 https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setups/12100/5
  */
