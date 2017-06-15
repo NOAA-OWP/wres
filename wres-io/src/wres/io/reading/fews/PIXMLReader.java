@@ -183,13 +183,13 @@ public final class PIXMLReader extends XMLReader
 	    }
 	    
 		if (insertCount > 0) {
-			currentScript += NEWLINE;
+			currentScript.append(NEWLINE);
 		} else if(insertCount == 0) {
 			currentTableDefinition = INSERT_FORECAST_HEADER;
-			currentScript = "";
+			currentScript = new StringBuilder();
 		}
 		
-		currentScript += getForecastEnsembleID() + delimiter + leadTime + delimiter + forecastedValue;
+		currentScript.append(getForecastEnsembleID()).append(delimiter).append(leadTime).append(delimiter).append(forecastedValue);
 		
 		insertCount++;
 	}
@@ -207,23 +207,23 @@ public final class PIXMLReader extends XMLReader
         
 		if (insertCount > 0)
 		{
-			currentScript += NEWLINE;
+			currentScript.append(NEWLINE);
 		}
 		else
 		{
 			currentTableDefinition = INSERT_OBSERVATION_HEADER;
-			currentScript = "";
+			currentScript = new StringBuilder();
 		}
 		
-		currentScript += Features.getVariablePositionID(currentLID, currentStationName, getVariableID());
-		currentScript += delimiter;
-		currentScript += "'" + observedTime + "'";
-		currentScript += delimiter;
-		currentScript += observedValue;
-		currentScript += delimiter;
-		currentScript += String.valueOf(getMeasurementID());
-		currentScript += delimiter;
-		currentScript += String.valueOf(getSourceID());
+		currentScript.append(Features.getVariablePositionID(currentLID, currentStationName, getVariableID()));
+		currentScript.append(delimiter);
+		currentScript.append("'" + observedTime + "'");
+		currentScript.append(delimiter);
+		currentScript.append(observedValue);
+		currentScript.append(delimiter);
+		currentScript.append(String.valueOf(getMeasurementID()));
+		currentScript.append(delimiter);
+		currentScript.append(String.valueOf(getSourceID()));
 		
 		insertCount++;
 	}
@@ -236,7 +236,7 @@ public final class PIXMLReader extends XMLReader
 		if (insertCount > 0)
 		{
 			insertCount = 0;
-			CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript, delimiter);
+			CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript.toString(), delimiter);
 			copier.setOnRun(ProgressMonitor.onThreadStartHandler());
 			copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 			Database.execute(copier);
@@ -648,7 +648,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The current state of a script that will be sent to the database
 	 */
-	private String currentScript = "";
+	private StringBuilder currentScript;
 	
 	/**
 	 * The current definition of the table in which the data will be saved
