@@ -151,7 +151,8 @@ public final class Database {
 		}
 		
 		Connection connection = null;
-		
+        PushbackReader reader = null;
+
 		try
 		{
 			connection = getConnection();
@@ -173,7 +174,7 @@ public final class Database {
 			
 			copy_definition += delimiter;
 
-			PushbackReader reader = new PushbackReader(new StringReader(""), values.length() + 1000);
+			reader = new PushbackReader(new StringReader(""), values.length() + 1000);
 			reader.unread(values.toCharArray());
 			manager.copyIn(copy_definition, reader);
 		}
@@ -194,7 +195,11 @@ public final class Database {
 		}
 		finally
 		{
-			
+            if (reader != null)
+            {
+                reader.close();
+            }
+
 			if (connection != null)
 			{
 				returnConnection(connection);

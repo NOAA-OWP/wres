@@ -83,7 +83,7 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a large dataset of single-valued pairs without a baseline or dimension.
+     * Returns a moderately-sized (10k) test dataset of single-valued pairs, {5,10}, without a baseline or a dimension.
      * 
      * @return single-valued pairs
      */
@@ -93,7 +93,7 @@ public final class MetricTestDataFactory
         //Construct some single-valued pairs
         final List<PairOfDoubles> values = new ArrayList<>();
         final DataFactory dataFactory = DataFactory.instance();
-        for(int i = 0; i < 70000000; i++)
+        for(int i = 0; i < 10000; i++)
         {
             values.add(dataFactory.pairOf(5, 10));
         }
