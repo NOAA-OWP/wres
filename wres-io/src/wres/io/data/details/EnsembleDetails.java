@@ -1,6 +1,7 @@
 package wres.io.data.details;
 
 import java.sql.SQLException;
+import java.util.Objects;
 
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
 
@@ -176,17 +177,84 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         @Override
         public int compareTo(EnsembleKey other)
         {
-            int equality = this.ensembleName.compareTo(other.getEnsembleName());
-            if (equality == 0) {
-                equality = this.memberIndex.compareTo(other.getMemberIndex());
+            int equality = -1;
+
+            if (this.ensembleName == null && other.ensembleName == null)
+            {
+                equality = 0;
             }
+            else if (this.ensembleName == null && other.ensembleName != null)
+            {
+                equality = -1;
+            }
+            else
+            {
+                equality = this.ensembleName.compareTo(other.getEnsembleName());
+            }
+
+            if (equality == 0) {
+                if (this.memberIndex == null && other.memberIndex == null)
+                {
+                    equality = 0;
+                }
+                else if (this.memberIndex == null && other.memberIndex != null)
+                {
+                    equality = -1;
+                }
+                else {
+                    equality = this.memberIndex.compareTo(other.getMemberIndex());
+                }
+            }
+
             if (equality == 0)
             {
-                equality = this.qualifierID.compareTo(other.getQualifierID());
+                if (this.qualifierID == null && other.qualifierID == null)
+                {
+                    equality = 0;
+                }
+                else if (this.qualifierID == null && other.qualifierID != null)
+                {
+                    equality = -1;
+                }
+                else {
+                    equality = this.qualifierID.compareTo(other.getQualifierID());
+                }
             }
             return equality;
         }
-        
+
+        public short fillCount()
+        {
+            short count = 0;
+
+            if (!(this.getEnsembleName() == null || this.getEnsembleName().isEmpty()))
+            {
+                count++;
+            }
+
+            if (!(this.getMemberIndex() == null || this.getMemberIndex().isEmpty()))
+            {
+                count++;
+            }
+
+            if (!(this.getQualifierID() == null || this.getQualifierID().isEmpty()))
+            {
+                count++;
+            }
+
+            return count;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof EnsembleDetails.EnsembleKey && this.compareTo((EnsembleKey)obj) == 0;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.ensembleName, this.memberIndex, this.qualifierID);
+        }
+
         public String getEnsembleName()
         {
             return this.ensembleName;
@@ -201,41 +269,78 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         {
             return this.memberIndex;
         }
-        
+
+        private boolean hasName()
+        {
+            return !(this.getEnsembleName() == null || this.getEnsembleName().isEmpty());
+        }
+
+        private boolean hasMemberIndex()
+        {
+            return !(this.getMemberIndex() == null || this.getMemberIndex().isEmpty());
+        }
+
+        private boolean hasQualifier()
+        {
+            return !(this.getQualifierID() == null || this.getQualifierID().isEmpty());
+        }
+
+        /**
+         * Returns the degree of similarity (0-3) between this key and the other.
+         * The similarity is 1 if they both have the same name
+         * The similarity is 2 if they both have the same name and member index
+         * The similarity is 3 if they both have the same name, member index, and qualifier
+         * The similarity is 0 in all other cases
+         * @param other The other key to compare against
+         * @return The degree of similarity
+         */
         public Integer getSimilarity(EnsembleKey other)
         {
-            if (this.equals(other))
+            if (other == null || this.fillCount() > other.fillCount())
+            {
+                return 0;
+            }
+            else if (this.equals(other))
             {
                 return 3;
             }
 
 			Integer similarity = 0;
-            
-            if (!(this.getEnsembleName() == null || this.getEnsembleName().isEmpty()) &&
-                !(other.getEnsembleName() == null || other.getEnsembleName().isEmpty()) &&
-                this.getEnsembleName().equalsIgnoreCase(other.getEnsembleName()))
+
+            if ((this.hasName() && other.hasName()) && this.getEnsembleName().equalsIgnoreCase(other.getEnsembleName()))
             {
-                similarity++;
-            }
-            
-            if (similarity == 1 && !(this.getMemberIndex() == null || other.getMemberIndex() == null))
-            {
-                if (this.getMemberIndex().equalsIgnoreCase(other.getMemberIndex()))
+                if(!(this.hasMemberIndex() || other.hasMemberIndex()) || !this.hasMemberIndex())
                 {
-                    similarity++;
+                    return 1;
                 }
+                else if ((this.hasMemberIndex() && !other.hasMemberIndex()) ||
+                        !this.getMemberIndex().equalsIgnoreCase(other.getMemberIndex()))
+                {
+                    return 0;
+                }
+
+                if (!(this.hasQualifier() || other.hasQualifier()) || !this.hasQualifier())
+                {
+                    return 2;
+                }
+                else if ((this.hasQualifier() && !other.hasQualifier()) || !this.getQualifierID().equalsIgnoreCase(other.getQualifierID()))
+                {
+                    return 0;
+                }
+
+                return 3;
             }
-            
-            if (similarity == 2 &&
-                !(this.getQualifierID() == null || other.getQualifierID() == null) &&
-                this.getQualifierID().equalsIgnoreCase(other.getQualifierID()))
-            {
-                similarity++;
-            }
-            
-            return similarity;
+
+            return 0;
         }
-	    
+
+        @Override
+        public String toString() {
+            return "EnsembleKey: " + String.valueOf(this.ensembleName) + ", " +
+                    String.valueOf(this.memberIndex) + ", " +
+                    String.valueOf(this.qualifierID);
+        }
+
         private String ensembleName;
         private String qualifierID;
         private String memberIndex;

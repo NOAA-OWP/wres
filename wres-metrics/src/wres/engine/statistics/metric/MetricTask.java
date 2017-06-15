@@ -48,7 +48,12 @@ public final class MetricTask<S extends MetricInput<?>, T extends MetricOutput<?
     @Override
     public T call() throws MetricCalculationException, InterruptedException, ExecutionException
     {
-        return metric.apply(input.get());
+        final S in = input.get();
+        if(Objects.isNull(in))
+        {
+            throw new MetricCalculationException("Cannot compute a metric with null input.");
+        }
+        return metric.apply(in);
     }
 
 }
