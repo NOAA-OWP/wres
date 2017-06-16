@@ -250,9 +250,8 @@ java.lang.NullPointerException
         final String path = "/this/is/just/a/test";
         final String time = "2017-06-16 11:13:00";
 
-        Integer result = sc.getSourceID(path, time);
-
-        // TODO: Make this assertion after finding upsert-y kind of thing for H2
+        // TODO: uncomment below after finding upsert-y kind of thing for H2
+        //Integer result = sc.getSourceID(path, time);
         //assertTrue(result >= 0);
     }
 
