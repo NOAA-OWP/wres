@@ -274,10 +274,16 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
             throw new UnsupportedOperationException("Cannot construct a metric collection with an empty list of "
                 + "metrics.");
         }
-        if(Objects.isNull(builder.builderInput) != Objects.isNull(builder.metricPool))
+        final boolean inputNull = Objects.isNull(builder.builderInput);
+        if(inputNull != Objects.isNull(builder.metricPool))
         {
-            throw new UnsupportedOperationException("Cannot construct a metric collection whose input and execution "
-                + "service are not both empty or both defined.");
+            if(inputNull) {
+                throw new UnsupportedOperationException("Cannot build a metric collection with a null input and a "
+                    + "non-null executor service. Add an input.");
+            } else {
+                throw new UnsupportedOperationException("Cannot build a metric collection with a non-null input and a "
+                + "null executor service. Add an executor service.");
+            }
         }
         metrics = new ArrayList<>();
         metrics.addAll(builder.builderMetrics);
