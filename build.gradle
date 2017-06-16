@@ -215,6 +215,13 @@ project(':wres-experiment')
 
 project(':wres-io')
 {
+    // exclude/remove postgres from the testing classpaths, h2 subbed in below.
+    configurations
+    {
+        testCompile.exclude group: 'org.postgresql',  module: 'postgresql'
+        testRuntime.exclude group: 'org.postgresql', module: 'postgresql'
+    }
+
     dependencies
     {
         compile project(':utilities')
@@ -241,6 +248,18 @@ project(':wres-io')
 
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
+
+        testCompile 'junit:junit:4.12'
+
+        // Mocking help
+        testCompile 'org.mockito:mockito-core:2.8.9'
+
+        // super-duper mocking help (mocking static, private methods)
+        testCompile 'org.powermock:powermock-api-mockito2:1.7.0RC4'
+        testCompile 'org.powermock:powermock-module-junit4:1.7.0RC4'
+
+        // use h2 at test time for db tests, postgres removed from cp above.
+        testCompile 'com.h2database:h2:1.4.196'
     }
 }
 
