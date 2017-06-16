@@ -1,4 +1,4 @@
-﻿DO $$
+DO $$
 BEGIN
 	-- WRES
 	DROP TABLE IF EXISTS wres.UnitConversion CASCADE;
