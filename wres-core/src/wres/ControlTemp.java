@@ -113,6 +113,7 @@ public class ControlTemp
             // 1. Get some pairs from the database 
             // 2. When available, compute the single-valued pairs from them (ensemble mean)
             // 3. Compute the metrics
+            // 4. Do something with the results
             CompletableFuture.supplyAsync(new PairGetterByLeadTime(config, leadTime)) //Get the pairs
                              .thenApplyAsync(new SingleValuedPairProcessor()) //Derive the ensemble means
                              .thenApplyAsync(builder.build()) //Compute the metrics
@@ -145,7 +146,6 @@ public class ControlTemp
             final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
             final ToDoubleFunction<VectorOfDoubles> mean = FunctionFactory.mean();
             final List<PairOfDoubles> returnMe = new ArrayList<>();
-            //BLOCK: wait for the pairs
             for(final PairOfDoubleAndVectorOfDoubles nextPair: t)
             {
                 final PairOfDoubles pair =
