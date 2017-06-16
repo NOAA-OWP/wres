@@ -255,6 +255,7 @@ java.lang.NullPointerException
         //assertTrue(result >= 0);
     }
 
+    /* TODO: uncomment tearDown after finding DO $$ kind of thing for H2
     @After
     public void tearDown() throws SQLException, IOException
     {
@@ -264,4 +265,5 @@ java.lang.NullPointerException
             RunScript.execute(con, dropReader);
         }
     }
+    */
 }
