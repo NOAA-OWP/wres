@@ -99,23 +99,23 @@ public class ControlTemp
                                                 "QINE",
                                                 "CFS");
 
-        //Build a metric collection, to be computed at all forecast lead times
+        //Build an immutable collection of metrics, to be computed at each of several forecast lead times
         MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
         builder = builder.add(MetricFactory.ofMeanError())
                          .add(MetricFactory.ofMeanAbsoluteError())
                          .add(MetricFactory.ofRootMeanSquareError());
-        // Queue fetching the pairs from the database and processing the pairs (computing the ensemble mean)
+        // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final int leadTimesCount = 2880;
         for(int i = 0; i < leadTimesCount; i++)
         {
             final int leadTime = i + 1;
             // Complete all tasks asynchronously:
             // 1. Get some pairs from the database 
-            // 2. When available, compute the single-valued pairs from them (ensemble mean)
+            // 2. When available, compute the single-valued pairs from them ({observation, ensemble mean})
             // 3. Compute the metrics
             // 4. Do something with the results
-            CompletableFuture.supplyAsync(new PairGetterByLeadTime(config, leadTime)) //Get the pairs
-                             .thenApplyAsync(new SingleValuedPairProcessor()) //Derive the ensemble means
+            CompletableFuture.supplyAsync(new PairGetterByLeadTime(config, leadTime)) //Get the atomic pairs
+                             .thenApplyAsync(new SingleValuedPairProcessor()) //Derive the processed pairs
                              .thenApplyAsync(builder.build()) //Compute the metrics
                              .thenAcceptAsync(new ResultProcessor(leadTime)); //Do something with the results
         }
@@ -164,8 +164,16 @@ public class ControlTemp
     private static class ResultProcessor implements Consumer<MetricOutputCollection<ScalarOutput>>
     {
 
+        /**
+         * Forecast lead time.
+         */
         int leadTime;
 
+        /**
+         * Construct the processor with a lead time.
+         * 
+         * @param leadTime the forecast lead time
+         */
         public ResultProcessor(final int leadTime)
         {
             this.leadTime = leadTime;
