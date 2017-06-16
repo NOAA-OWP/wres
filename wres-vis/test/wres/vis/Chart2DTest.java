@@ -13,6 +13,7 @@ import junit.framework.TestCase;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartPanelTools;
 import ohd.hseb.charter.ChartTools;
+import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
 import wres.engine.statistics.metric.inputs.MetricInputFactory;
@@ -22,7 +23,6 @@ public class Chart2DTest extends TestCase
 {
     public void test1SingleValuedPairsScatter()
     {
-
         //Construct some single-valued pairs
         final List<PairOfDoubles> values = new ArrayList<>();
         final DataFactory dataFactory = DataFactory.instance();
@@ -63,9 +63,9 @@ public class Chart2DTest extends TestCase
                                                500);
 
             //Compare against OS specific image benchmark.
-//            FileComparisonUtilities.assertImageFileIdenticalToBenchmark(new File("testoutput/chart2DTest/"
-//                + scenarioName
-//                + "_output.png"), new File("testinput/chart2DTest/benchmark." + scenarioName + "_output.png"));
+            FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/"
+                + scenarioName
+                + "_output.png"), new File("testinput/chart2DTest/benchmark." + scenarioName + "_output.png"), 8, true, false);
         }
         catch(final Throwable t)
         {
