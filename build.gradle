@@ -61,7 +61,8 @@ subprojects
         mavenCentral()
         maven 
         {
-            url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/"
+            url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/"// 
+            
         }
     }
 
@@ -284,15 +285,15 @@ project(':wres-vis')
         compile project(':wres-datamodel')
         compile project(':wres-metrics')
         
+        compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
+        compile group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '1.2.6'
         compile 'com.google.guava:guava:22.0'
         compile 'org.slf4j:slf4j-api:1.7.25'
         runtime 'ch.qos.logback:logback-classic:1.2.3'
-        
-        compile files('../libs/external/ohdcommonchps.jar')
-        compile files('../libs/external/commons-lang-2.1.jar')
-        compile files('../libs/external/FastInfoset-1.2.6.jar')
+
         compile files('../libs/external/jcommon-1.0.12.jar')
         compile files('../libs/external/jfreechart-1.0.9.jar')
+        compile files('../libs/external/ohdcommonchps.jar')
         compile files('../libs/external/log4j-1.2.14.jar')
 
         testCompile 'junit:junit:4.12'

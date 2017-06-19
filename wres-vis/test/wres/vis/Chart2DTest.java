@@ -42,6 +42,9 @@ public class Chart2DTest extends TestCase
         //The order index indicates the order in which the different sources are rendered.
         final MetricInputXYChartDataSource source = new MetricInputXYChartDataSource(0, pairs);
 
+        //Forward log4j to logback.
+        Log4jMessageForwarderAppender.setupMessageForwarding("ohd.hseb");
+        
         final String scenarioName = "test1";
         try
         {
@@ -70,9 +73,11 @@ public class Chart2DTest extends TestCase
         catch(final Throwable t)
         {
             t.printStackTrace();
+            Log4jMessageForwarderAppender.removeMessageForwarding("ohd.hseb");
             fail("Unexpected exception: " + t.getMessage());
         }
 
+        Log4jMessageForwarderAppender.removeMessageForwarding("ohd.hseb");
     }
 
     public static void main(final String[] args)
