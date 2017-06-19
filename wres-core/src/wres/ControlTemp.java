@@ -109,7 +109,7 @@ public class ControlTemp
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<Void>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
         final int leadTimesCount = 2880;
-        
+
         //Sink for the results
         final ConcurrentSkipListMap<Integer, MetricOutputCollection<ScalarOutput>> results =
                                                                                            new ConcurrentSkipListMap<>();
@@ -148,17 +148,13 @@ public class ControlTemp
         //Wait for all the futures to complete: this is blocking, representing a final sink for the results
         CompletableFuture.allOf(listOfFutures.toArray(new CompletableFuture[listOfFutures.size()])).join();
         //Print to logger
-        results.forEach((lead, result) -> {
-            if(LOGGER.isInfoEnabled())
-            {
-                LOGGER.info("For lead time " + lead + " " + result);
-            }
-        });
-
-        final long stop = System.currentTimeMillis(); //End time
-        //Print a summary
         if(LOGGER.isInfoEnabled())
         {
+            results.forEach((lead, result) -> {
+                LOGGER.info("For lead time " + lead + " " + result);
+            });
+            
+            final long stop = System.currentTimeMillis(); //End time
             LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
         }
     }
