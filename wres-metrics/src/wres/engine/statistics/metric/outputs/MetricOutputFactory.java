@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric.outputs;
 
+import java.util.List;
+
 import wres.datamodel.DataFactory;
 import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.MetricOutput;
@@ -129,6 +131,20 @@ public final class MetricOutputFactory
                                                                    final Dimension d)
     {
         return (T)ofVectorOutput(output, sampleSize, d);
+    }
+
+    /**
+     * Returns a collection of outputs from the prescribed list of inputs.
+     * 
+     * @param input the list of metric outputs
+     * @return a collection of metric outputs
+     */
+
+    public static <T extends MetricOutput<?>> MetricOutputCollection<T> ofCollection(final List<T> input)
+    {
+        final MetricOutputCollection<T> returnMe = new MetricOutputCollection<>();
+        returnMe.addAll(input);
+        return returnMe;
     }
 
     /**

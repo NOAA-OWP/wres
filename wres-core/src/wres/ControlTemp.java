@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -93,6 +94,7 @@ public class ControlTemp
      */
     public static void main(final String[] args)
     {
+        final long start = System.currentTimeMillis(); //Start time
         final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 0, 0),
                                                 LocalDateTime.of(1999, 12, 31, 23, 59),
                                                 "SQIN",
@@ -105,7 +107,12 @@ public class ControlTemp
                          .add(MetricFactory.ofMeanAbsoluteError())
                          .add(MetricFactory.ofRootMeanSquareError());
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
+        final List<CompletableFuture<Void>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
         final int leadTimesCount = 2880;
+        
+        //Sink for the results
+        final ConcurrentSkipListMap<Integer, MetricOutputCollection<ScalarOutput>> results =
+                                                                                           new ConcurrentSkipListMap<>();
         for(int i = 0; i < leadTimesCount; i++)
         {
             final int leadTime = i + 1;
@@ -113,22 +120,46 @@ public class ControlTemp
             // 1. Get some pairs from the database 
             // 2. When available, compute the single-valued pairs from them ({observation, ensemble mean})
             // 3. Compute the metrics
-            // 4. Do something with the results
-            CompletableFuture.supplyAsync(new PairGetterByLeadTime(config, leadTime)) //Get the atomic pairs
-                             .thenApplyAsync(new SingleValuedPairProcessor()) //Derive the processed pairs
-                             .thenApplyAsync(builder.build()) //Compute the metrics
-                             .thenAcceptAsync(new ResultProcessor(leadTime)); //Do something with the results
+            // 4. Do something with the results (store them)
+            // 5. Handle exceptions
+            final CompletableFuture<Void> result = CompletableFuture
+                                                                    .supplyAsync(new PairGetterByLeadTime(config,
+                                                                                                          leadTime))
+                                                                    .thenApplyAsync(new SingleValuedPairProcessor())
+                                                                    .thenApplyAsync(builder.build())
+                                                                    .thenAcceptAsync(new ResultProcessor(leadTime,
+                                                                                                         results))
+                                                                    .exceptionally(error -> { //Handle exceptions
+                                                                        LOGGER.error("While computing results at lead time "
+                                                                            + leadTime, error);
+                                                                        return null;
+                                                                    })
+                                                                    .thenAccept(a -> {
+                                                                        if(LOGGER.isInfoEnabled())
+                                                                        {
+                                                                            LOGGER.info("Completed lead time "
+                                                                                + leadTime);
+                                                                        }
+                                                                    });
+            //Add the future to the list
+            listOfFutures.add(result);
         }
 
-        // MUST wait here because this is being invoked in main and the above tasks are all being completed 
-        // asynchronously - this is just a demo. Note that the outputs will be printed asynchronously as completed
-        try
+        //Wait for all the futures to complete: this is blocking, representing a final sink for the results
+        CompletableFuture.allOf(listOfFutures.toArray(new CompletableFuture[listOfFutures.size()])).join();
+        //Print to logger
+        results.forEach((lead, result) -> {
+            if(LOGGER.isInfoEnabled())
+            {
+                LOGGER.info("For lead time " + lead + " " + result);
+            }
+        });
+
+        final long stop = System.currentTimeMillis(); //End time
+        //Print a summary
+        if(LOGGER.isInfoEnabled())
         {
-            Thread.sleep(60000);
-        }
-        catch(final Exception e)
-        {
-            e.printStackTrace();
+            LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
         }
     }
 
@@ -170,23 +201,27 @@ public class ControlTemp
         int leadTime;
 
         /**
+         * A store of the results.
+         */
+
+        private final ConcurrentSkipListMap<Integer, MetricOutputCollection<ScalarOutput>> results;
+
+        /**
          * Construct the processor with a lead time.
          * 
          * @param leadTime the forecast lead time
          */
-        public ResultProcessor(final int leadTime)
+        public ResultProcessor(final int leadTime,
+                               final ConcurrentSkipListMap<Integer, MetricOutputCollection<ScalarOutput>> results)
         {
             this.leadTime = leadTime;
+            this.results = results;
         }
 
         @Override
         public void accept(final MetricOutputCollection<ScalarOutput> t)
         {
-
-            if(LOGGER.isInfoEnabled())
-            {
-                LOGGER.info("For lead time " + leadTime + " " + t);
-            }
+            results.put(leadTime, t);
         }
     }
 
@@ -261,9 +296,10 @@ public class ControlTemp
     }
 
     /**
-     * Returns a moderately-sized (10k) test dataset of single-valued pairs, {5,10}, without a baseline or a dimension.
+     * Returns a moderately-sized (10k) test dataset of pairs comprising an observation and a vector of ensemble
+     * forecast values.
      * 
-     * @return single-valued pairs
+     * @return a set of pairs
      */
 
     private static List<PairOfDoubleAndVectorOfDoubles> getImaginaryPairsTemp()

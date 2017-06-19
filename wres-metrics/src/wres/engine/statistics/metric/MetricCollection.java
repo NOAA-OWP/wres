@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputCollection;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 
 /**
  * <p>
@@ -60,7 +63,7 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
     private final Future<S> input;
 
     /**
-     * Executor service.
+     * Executor service. By default, the {@link ForkJoinPool#commonPool()}
      */
 
     private final ExecutorService metricPool;
@@ -74,7 +77,7 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
     @Override
     public MetricOutputCollection<T> apply(final S input)
     {
-        return applyInternal(input);
+        return applyParallel(input);
     }
 
     /**
@@ -91,7 +94,7 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
         private Future<S> builderInput;
 
         /**
-         * Executor service.
+         * Executor service. By default, uses {@link ForkJoinPool#commonPool()}.
          */
 
         private ExecutorService metricPool;
@@ -173,19 +176,23 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
     /**
      * Default method for computing the metric results and returning them in a collection with a prescribed type.
      * Collects instances of {@link Collectable} by {@link Collectable#getCollectionOf()} and computes their common
-     * (intermediate) input once. Each metric is computed sequentially.
+     * (intermediate) input once. Computes the metrics in parallel using the supplied {@link #metricPool} or, where
+     * not supplied, the {@link ForkJoinPool#commonPool()}
      * 
      * @param s the metric input
      * @return the output for each metric, contained in a collection
      */
 
-    private MetricOutputCollection<T> applyInternal(final S s) throws MetricCalculationException
+    private MetricOutputCollection<T> applyParallel(final S s) throws MetricCalculationException
     {
         if(!Objects.isNull(this.input))
         {
             throw new MetricCalculationException("The collection has already been constructed with a fixed input.");
         }
-        final MetricOutputCollection<T> m = new MetricOutputCollection<>(metrics.size());
+
+        //Collection of future metric results
+        final List<CompletableFuture<T>> metricFutures = new ArrayList<>(metrics.size());
+
         //Collect the instances of Collectable by their getCollectionOf string, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
         @SuppressWarnings("unchecked")
@@ -196,17 +203,26 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
                                                                                        .collect(Collectors.groupingBy(Collectable::getCollectionOf));
         //Consumer that computes the intermediate output once and applies it to all grouped instances of Collectable
         final Consumer<List<Collectable<S, MetricOutput<?>, T>>> c = x -> {
-            final MetricOutput<?> intermediate = x.get(0).getCollectionInput(s); //Compute intermediate output
-            x.forEach(y -> m.add(metrics.indexOf(y), y.apply(intermediate))); //Use intermediate output to compute all measures
+            //Compute a future of the dependent (intermediate) result
+            final CompletableFuture<MetricOutput<?>> base = CompletableFuture.supplyAsync(
+                                                                                          () -> x.get(0)
+                                                                                                 .getCollectionInput(s),
+                                                                                          metricPool);
+            //Using the future dependent result, compute a future of each of the independent results
+            x.forEach(y -> metricFutures.add(metrics.indexOf(y), base.thenApplyAsync(y::apply)));
         };
 
         //Compute the collectable metrics    
         collectable.values().forEach(c);
-        //collectable.values().parallelStream().forEach(c); //Parallel
 
-        //Compute the non-collectable metrics: must be sequential at present as the lambda is stateful
-        metrics.stream().filter(p -> !(p instanceof Collectable)).forEach(y -> m.add(metrics.indexOf(y), y.apply(s)));
-        return m;
+        //Pool all the future results from the non-collectable metrics into the collection
+        //When the collection completes, aggregate the results and return them
+        metrics.stream()
+               .filter(p -> !(p instanceof Collectable)) //Only work with non-collectable metrics here
+               .forEach(y -> metricFutures.add(metrics.indexOf(y),
+                                               CompletableFuture.supplyAsync(() -> y.apply(s), metricPool)));
+        final CompletableFuture<List<T>> results = sequence(metricFutures);
+        return MetricOutputFactory.ofCollection(results.join()); //This is blocking
     }
 
     /**
@@ -226,11 +242,6 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
         {
             throw new MetricCalculationException("No metric input from which to compute the metric collection: "
                 + "construct the metric collection with an input.");
-        }
-        if(Objects.isNull(metricPool))
-        {
-            throw new UnsupportedOperationException("No executor service from which to compute the metric collection: "
-                + "construct the metric collection with an executor service.");
         }
 
         final MetricOutputCollection<T> m = new MetricOutputCollection<>(metrics.size());
@@ -274,21 +285,14 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
             throw new UnsupportedOperationException("Cannot construct a metric collection with an empty list of "
                 + "metrics.");
         }
-        final boolean inputNull = Objects.isNull(builder.builderInput);
-        if(inputNull != Objects.isNull(builder.metricPool))
-        {
-            if(inputNull) {
-                throw new UnsupportedOperationException("Cannot build a metric collection with a null input and a "
-                    + "non-null executor service. Add an input.");
-            } else {
-                throw new UnsupportedOperationException("Cannot build a metric collection with a non-null input and a "
-                + "null executor service. Add an executor service.");
-            }
-        }
         metrics = new ArrayList<>();
         metrics.addAll(builder.builderMetrics);
         input = builder.builderInput;
-        metricPool = builder.metricPool;
+        if(Objects.isNull(builder.metricPool)) {
+            metricPool = ForkJoinPool.commonPool();
+        } else {
+            metricPool = builder.metricPool;
+        }
     }
 
     /**
@@ -309,7 +313,23 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
                 return metric.getCollectionInput(input.get());
             }
         };
+    }
 
+    /**
+     * Utility method that waits for the completion of a collection of futures and, once complete, returns them in a
+     * future collection.
+     * 
+     * @param futures the list of futures
+     * @return the completed list
+     */
+
+    private static <T> CompletableFuture<List<T>> sequence(final List<CompletableFuture<T>> futures)
+    {
+        final CompletableFuture<Void> allDoneFuture =
+                                                    CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+        return allDoneFuture.thenApply(v -> futures.stream()
+                                                   .map(CompletableFuture::join)
+                                                   .collect(Collectors.<T>toList()));
     }
 
 }
