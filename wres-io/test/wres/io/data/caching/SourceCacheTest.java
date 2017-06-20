@@ -237,7 +237,7 @@ java.lang.NullPointerException
         final String path = "/this/is/just/a/test";
         final String time = "2017-06-16 11:13:00";
 
-/*        Integer result = sc.getSourceID(path, time);
+        Integer result = sc.getSourceID(path, time);
 
         // The id should be an integer greater than or equal to zero.
         assertTrue(result >= 0);
@@ -249,15 +249,15 @@ java.lang.NullPointerException
 
         int countOfRows;
         try (Connection con = connectionPoolDataSource.getConnection();
-             Statement statement = con.createStatement())
+             Statement statement = con.createStatement();
+             ResultSet r = statement.executeQuery("SELECT COUNT(*) FROM wres.Source"))
         {
-            ResultSet r = statement.executeQuery("SELECT COUNT(*) FROM wres.Source");
             r.next();
             countOfRows = r.getInt(1);
         }
 
         // There should be only one row in the wres.Source table
-        assertEquals(1, countOfRows);*/
+        assertEquals(1, countOfRows);
     }
 
     @After
