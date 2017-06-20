@@ -216,13 +216,6 @@ project(':wres-experiment')
 
 project(':wres-io')
 {
-    // exclude/remove postgres from the testing classpaths, h2 subbed in below.
-    configurations
-    {
-        testCompile.exclude group: 'org.postgresql',  module: 'postgresql'
-        testRuntime.exclude group: 'org.postgresql', module: 'postgresql'
-    }
-
     dependencies
     {
         compile project(':utilities')
@@ -259,8 +252,8 @@ project(':wres-io')
         testCompile 'org.powermock:powermock-api-mockito2:1.7.0RC4'
         testCompile 'org.powermock:powermock-module-junit4:1.7.0RC4'
 
-        // use h2 at test time for db tests, postgres removed from cp above.
-        testCompile 'com.h2database:h2:1.4.196'
+        // try out an embedded postgres
+        testCompile 'ru.yandex.qatools.embed:postgresql-embedded:2.2'
     }
 }
 

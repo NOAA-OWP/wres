@@ -1,7 +1,7 @@
 package wres.io.data.caching;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import org.h2.tools.RunScript;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,22 +13,19 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// some unused imports are from mockito (sans powermock) attempt:
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import ru.yandex.qatools.embed.postgresql.EmbeddedPostgres;
 import wres.io.config.SystemSettings;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
-
-import javax.sql.ConnectionPoolDataSource;
-import javax.sql.DataSource;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
+import static ru.yandex.qatools.embed.postgresql.distribution.Version.Main.V9_6;
+import static ru.yandex.qatools.embed.postgresql.EmbeddedPostgres.cachedRuntimeConfig;
 
 import java.io.*;
+import java.nio.file.Paths;
 import java.sql.*;
+import java.util.ArrayList;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(SystemSettings.class)
@@ -195,47 +192,37 @@ java.lang.NullPointerException
 
     */
 
+    private EmbeddedPostgres pgInstance;
     private ComboPooledDataSource connectionPoolDataSource;
 
     @Before
     public void setup()
             throws SQLException, IOException
     {
-        // create our own data source connecting to in-memory H2 database
+        // Create our own data source to connect to temp database
         connectionPoolDataSource = new ComboPooledDataSource();
-        //connectionPoolDataSource.setJdbcUrl("jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1");
-        // helps h2 use a subset of postgres' syntax or features:
-        //connectionPoolDataSource.setJdbcUrl("jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
-        // Use this verbose one to figure out issues with queries/files/h2/etc:
-        connectionPoolDataSource.setJdbcUrl("jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;TRACE_LEVEL_SYSTEM_OUT=3");
-        connectionPoolDataSource.setUser("SA");
-        connectionPoolDataSource.setPassword("");
 
-        try (Reader sourceReader = new FileReader("SQL/wres.Source.sql");
-             Connection con = connectionPoolDataSource.getConnection())
-        {
-            Statement s = con.createStatement();
-            s.execute("CREATE USER WRES PASSWORD '' ADMIN");
-            // Fails when there is a BOM in the file! Save files as ASCII,
-            // (or we could use a kludgy wrapper class.)
-            RunScript.execute(con, sourceReader);
-        }
+        // Create a temporary db instance, but keep the binaries in one place.
+        pgInstance = new EmbeddedPostgres(V9_6);
+        final String jdbcUrl = pgInstance.start(cachedRuntimeConfig(Paths.get(".postgres_testinstance")),
+                                                "localhost",
+                                                5555,
+                                                "wrestest",
+                                                "wres",
+                                                "test",
+                                                new ArrayList<>());
 
-        /* this works.... no Byte Order Mark because there is no file!
-        try (Connection con = DriverManager.getConnection("jdbc:h2:mem:wres;DB_CLOSE_DELAY=-1;TRACE_LEVEL_SYSTEM_OUT=3");
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT 'Hello' AS CHICKEN;"))
-        {
-            while (rs.next())
-            {
-                LOGGER.info("Here is the next: {}", rs.getString(1));
-            }
-        }
-        */
+        // Connect to the temporary database
+        connectionPoolDataSource.setJdbcUrl(jdbcUrl);
+
+        // Create the tables needed for this test
+        pgInstance.getProcess()
+                  .ifPresent(p ->
+                             p.importFromFile(new File("SQL/wres.Source.sql")));
     }
 
     @Test
-    public void initSourceCache()
+    public void getTwiceFromSourceCache()
             throws Exception // TODO: update when SourceCache throws checked exceptions
     {
         // The sticky situation is in SystemSettings, static method getConnectionPool():
@@ -250,20 +237,32 @@ java.lang.NullPointerException
         final String path = "/this/is/just/a/test";
         final String time = "2017-06-16 11:13:00";
 
-        // TODO: uncomment below after finding upsert-y kind of thing for H2
-        //Integer result = sc.getSourceID(path, time);
-        //assertTrue(result >= 0);
+        Integer result = sc.getSourceID(path, time);
+
+        // The id should be an integer greater than or equal to zero.
+        assertTrue(result >= 0);
+
+        Integer result2 = sc.getSourceID(path, time);
+
+        // Getting an id with the same path and time should yield the same result.
+        assertEquals(result2, result);
+
+        int countOfRows;
+        try (Connection con = connectionPoolDataSource.getConnection();
+             Statement statement = con.createStatement())
+        {
+            ResultSet r = statement.executeQuery("SELECT COUNT(*) FROM wres.Source");
+            r.next();
+            countOfRows = r.getInt(1);
+        }
+
+        // There should be only one row in the wres.Source table
+        assertEquals(1, countOfRows);
     }
 
-    /* TODO: uncomment tearDown after finding DO $$ kind of thing for H2
     @After
-    public void tearDown() throws SQLException, IOException
+    public void tearDown()
     {
-        try (Reader dropReader = new FileReader("SQL/DropTables.sql");
-             Connection con = connectionPoolDataSource.getConnection())
-        {
-            RunScript.execute(con, dropReader);
-        }
+        pgInstance.stop();
     }
-    */
 }
