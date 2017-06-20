@@ -23,6 +23,9 @@ import static ru.yandex.qatools.embed.postgresql.distribution.Version.Main.V9_6;
 import static ru.yandex.qatools.embed.postgresql.EmbeddedPostgres.cachedRuntimeConfig;
 
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
@@ -216,9 +219,17 @@ java.lang.NullPointerException
         connectionPoolDataSource.setJdbcUrl(jdbcUrl);
 
         // Create the tables needed for this test
-        pgInstance.getProcess()
+        try (Connection con = connectionPoolDataSource.getConnection();
+             Statement s = con.createStatement())
+        {
+            s.execute(readStringFromFile("SQL/wres.Source.sql",
+                    StandardCharsets.US_ASCII));
+        }
+
+        /*pgInstance.getProcess()
                   .ifPresent(p ->
                              p.importFromFile(new File("SQL/wres.Source.sql")));
+        */
     }
 
     @Test
@@ -237,7 +248,7 @@ java.lang.NullPointerException
         final String path = "/this/is/just/a/test";
         final String time = "2017-06-16 11:13:00";
 
-/*        Integer result = sc.getSourceID(path, time);
+        Integer result = sc.getSourceID(path, time);
 
         // The id should be an integer greater than or equal to zero.
         assertTrue(result >= 0);
@@ -257,12 +268,22 @@ java.lang.NullPointerException
         }
 
         // There should be only one row in the wres.Source table
-        assertEquals(1, countOfRows);*/
+        assertEquals(1, countOfRows);
     }
 
     @After
     public void tearDown()
     {
         pgInstance.stop();
+    }
+
+    /**
+     * Thanks, https://stackoverflow.com/questions/326390/how-do-i-create-a-java-string-from-the-contents-of-a-file#326440
+     */
+    static String readStringFromFile(String path, Charset encoding)
+            throws IOException
+    {
+        byte[] encodedBytes = Files.readAllBytes(Paths.get(path));
+        return new String(encodedBytes, encoding);
     }
 }
