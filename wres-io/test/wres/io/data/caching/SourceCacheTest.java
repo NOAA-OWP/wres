@@ -249,10 +249,9 @@ java.lang.NullPointerException
         PowerMockito.when(SystemSettings.getConnectionPool())
                 .thenReturn(connectionPoolDataSource);
 
-        // Because Database.java does not use a getPool() method, instead refers
-        // to static member initialized statically:
-        Field field = PowerMockito.field(Database.class, "pool");
-        field.set(Database.class, connectionPoolDataSource);
+        // Need Database behavior to be actual methods except for getPool()
+        PowerMockito.spy(Database.class);
+        PowerMockito.when(Database.getPool()).thenReturn(connectionPoolDataSource);
         // Above was necessary for isolation, otherwise, during the single-jvm
         // run of two tests, the first connectionPoolDataSource ended up
         // being used during the second test, and of course that one was closed.

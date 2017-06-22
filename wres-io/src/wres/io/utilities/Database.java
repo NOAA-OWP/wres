@@ -42,8 +42,8 @@ public final class Database {
 		{
 			sqlTasks.shutdown();
 		}
-		return Executors.newFixedThreadPool(pool.getMaxPoolSize());
-	}
+        return Executors.newFixedThreadPool(getPool().getMaxPoolSize());
+    }
 	
 	/**
 	 * Submits the passed in runnable task for execution
@@ -73,15 +73,15 @@ public final class Database {
 	}
 
 	public static void close() {
-		pool.close();
-	}
-	
+        getPool().close();
+    }
+
 	public static Connection getConnection() throws SQLException
 	{
 		Connection connection = null;
 		
 		try {
-			connection = pool.getConnection();
+			connection = getPool().getConnection();
 		} catch (SQLException error) {
 		    Debug.error(LOGGER, System.lineSeparator() + "A connection to the database could not be created" + System.lineSeparator());
 			throw error;
@@ -370,5 +370,10 @@ public final class Database {
 		statement.setFetchSize(SystemSettings.fetchSize());
 		results = statement.executeQuery(query);
         return results; 
+    }
+
+    public static ComboPooledDataSource getPool()
+    {
+        return Database.pool;
     }
 }
