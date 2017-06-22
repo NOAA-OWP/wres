@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.inputs;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -9,7 +10,7 @@ import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.MetricInput;
 
 /**
- * Class for storing the verification pairs associated with the outcome (true or false) of a multi-category event. The
+ * Immutable store of verification pairs associated with the outcome (true or false) of a multi-category event. The
  * categorical outcomes may be ordered or unordered. For multi-category pairs with <b>more</b> than two possible
  * outcomes, each pair should contain exactly one occurrence (true value). For efficiency, a dichotomous pair can be
  * encoded with a single indicator. The observed outcomes are recorded first, followed by the predicted outcomes.
@@ -20,7 +21,8 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
 {
 
     /**
-     * The verification pairs.
+     * The verification pairs. There is one list of pairs for each variable stored in the input (e.g. including a
+     * baseline).
      */
 
     private final List<List<VectorOfBooleans>> pairs;
@@ -40,13 +42,13 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
     @Override
     public Dimension getDimension()
     {
-        return null;
+        return dim;
     }
 
     @Override
     public List<VectorOfBooleans> get(final int index)
     {
-        return pairs.get(index);
+        return Collections.unmodifiableList(pairs.get(index));
     }
 
     @Override
@@ -63,7 +65,8 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
 
     public int getCategoryCount()
     {
-        return pairs.get(0).get(0).getBooleans().length / 2;
+        final int elements = pairs.get(0).get(0).getBooleans().length;
+        return elements == 2 ? 2 : elements / 2;
     }
 
     /**
@@ -114,13 +117,12 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
 
     protected MulticategoryPairs(final MulticategoryPairsBuilder b)
     {
-        //Objects.requireNonNull(b.dim,"Specify a non-null dimension for the inputs."); //TODO may require in future
         //Bounds checks
         final List<Integer> size = new ArrayList<>();
         b.pairs.stream().forEach(s -> {
-            if(Objects.isNull(s) || s.isEmpty())
+            if(Objects.isNull(s))
             {
-                throw new MetricInputException("One or more of the inputs is null or empty.");
+                throw new MetricInputException("One or more of the inputs is null.");
             }
             if(s.contains(null))
             {

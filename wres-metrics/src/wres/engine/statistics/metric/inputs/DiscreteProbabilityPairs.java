@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric.inputs;
 
 /**
- * Class for storing verification pairs that comprise probabilistic observations and predictions.
+ * Immutable store of verification pairs that comprise probabilistic observations and predictions.
  * 
  * @author james.brown@hydrosolved.com
  */

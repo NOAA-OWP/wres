@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.inputs;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -9,9 +10,10 @@ import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.MetricInput;
 
 /**
- * Class for storing verification pairs that comprise single-valued, continuous numerical, predictions and observations.
- * In this context, the designation "single-valued" should not be confused with "deterministic". Rather, it is an input
- * that comprises a single value. Each pair contains a single-valued observation and a corresponding prediction.
+ * Immutable store of verification pairs that comprise single-valued, continuous numerical, predictions and
+ * observations. In this context, the designation "single-valued" should not be confused with "deterministic". Rather,
+ * it is an input that comprises a single value. Each pair contains a single-valued observation and a corresponding
+ * prediction.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -19,7 +21,8 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
 {
 
     /**
-     * The verification pairs.
+     * The verification pairs. There is one list of pairs for each variable stored in the input (e.g. including a
+     * baseline).
      */
 
     private final List<List<PairOfDoubles>> pairs;
@@ -45,7 +48,7 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
     @Override
     public List<PairOfDoubles> get(final int index)
     {
-        return pairs.get(index);
+        return Collections.unmodifiableList(pairs.get(index));
     }
 
     @Override
@@ -105,9 +108,9 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
         //Objects.requireNonNull(b.dim,"Specify a non-null dimension for the inputs."); //TODO may require in future
         //Bounds checks
         b.pairs.stream().forEach(s -> {
-            if(Objects.isNull(s) || s.isEmpty())
+            if(Objects.isNull(s))
             {
-                throw new MetricInputException("One or more of the inputs is null or empty.");
+                throw new MetricInputException("One or more of the inputs is null.");
             }
             if(s.contains(null))
             {

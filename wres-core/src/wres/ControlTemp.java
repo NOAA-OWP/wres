@@ -1,12 +1,15 @@
 package wres;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -95,8 +98,8 @@ public class ControlTemp
     public static void main(final String[] args)
     {
         final long start = System.currentTimeMillis(); //Start time
-        final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 0, 0),
-                                                LocalDateTime.of(1999, 12, 31, 23, 59),
+        final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 1, 0),
+                                                LocalDateTime.of(2010, 12, 31, 23, 59),
                                                 "SQIN",
                                                 "QINE",
                                                 "CFS");
@@ -120,8 +123,9 @@ public class ControlTemp
             // 1. Get some pairs from the database 
             // 2. When available, compute the single-valued pairs from them ({observation, ensemble mean})
             // 3. Compute the metrics
-            // 4. Do something with the results (store them)
+            // 4. Do something with the verification results (store them)
             // 5. Handle exceptions
+            // 6. Monitor progress per lead time
             final CompletableFuture<Void> result = CompletableFuture
                                                                     .supplyAsync(new PairGetterByLeadTime(config,
                                                                                                           leadTime))
@@ -130,8 +134,8 @@ public class ControlTemp
                                                                     .thenAcceptAsync(new ResultProcessor(leadTime,
                                                                                                          results))
                                                                     .exceptionally(error -> { //Handle exceptions
-                                                                        LOGGER.error("While computing results at lead time "
-                                                                            + leadTime, error);
+                                                                        LOGGER.error("While computing results at "
+                                                                            + "lead time " + leadTime, error);
                                                                         return null;
                                                                     })
                                                                     .thenAccept(a -> {
@@ -150,10 +154,7 @@ public class ControlTemp
         //Print to logger
         if(LOGGER.isInfoEnabled())
         {
-            results.forEach((lead, result) -> {
-                LOGGER.info("For lead time " + lead + " " + result);
-            });
-            
+            results.forEach((lead, result) -> LOGGER.info("For lead time " + lead + " " + result));
             final long stop = System.currentTimeMillis(); //End time
             LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
         }
@@ -200,7 +201,7 @@ public class ControlTemp
          * A store of the results.
          */
 
-        private final ConcurrentSkipListMap<Integer, MetricOutputCollection<ScalarOutput>> results;
+        private final ConcurrentMap<Integer, MetricOutputCollection<ScalarOutput>> results;
 
         /**
          * Construct the processor with a lead time.
@@ -208,7 +209,7 @@ public class ControlTemp
          * @param leadTime the forecast lead time
          */
         public ResultProcessor(final int leadTime,
-                               final ConcurrentSkipListMap<Integer, MetricOutputCollection<ScalarOutput>> results)
+                               final ConcurrentMap<Integer, MetricOutputCollection<ScalarOutput>> results)
         {
             this.leadTime = leadTime;
             this.results = results;
@@ -236,58 +237,52 @@ public class ControlTemp
         }
 
         @Override
-        public List<PairOfDoubleAndVectorOfDoubles> get()
+        public List<PairOfDoubleAndVectorOfDoubles> get() 
         {
 //TODO: REMOVE THIS LINE WHEN DATABASE UPLOAD IS WORKING            
 
-            return getImaginaryPairsTemp();
+//            return getImaginaryPairsTemp();
 
 //TODO: UNCOMMENT FROM HERE WHEN DATABASE UPLOAD IS WORKING                  
 
-//            final List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
-//            String sql;
-//
-//            try
-//            {
-//                sql = getPairSqlFromConfigForLead(this.config, this.leadTime);
-//            }
-//            catch(final IOException ioe)
-//            {
-//                LOGGER.error("When trying to build sql for pairs:", ioe);
-//                throw ioe;
-//            }
-//
-//            final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
-//
-//            try (Connection con = Database.getConnection();
-//            Statement statement = con.createStatement();
-//            ResultSet resultSet = statement.executeQuery(sql))
-//            {
-//                while(resultSet.next())
-//                {
-//                    final double observationValue = resultSet.getFloat("observation");
-//                    final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
-//                    final PairOfDoubleAndVectorOfDoubles pair = valueFactory.pairOf(observationValue, forecastValues);
-//
-//                    LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
-//                                 pair.getItemOne(),
-//                                 pair.getItemTwo());
-//
-//                    result.add(pair);
-//                }
-//            }
-//            catch(final SQLException se)
-//            {
-//                final String message = "Failed to get pair results for lead " + this.leadTime;
-//                throw new IOException(message, se);
-//            }
-//            finally
-//            {
-//                LOGGER.trace("Query: ");
-//                LOGGER.trace(sql);
-//            }
-//
-//            return result;
+            final List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
+            String sql = "";
+            try
+            {
+                sql = getPairSqlFromConfigForLead(this.config, this.leadTime);
+            }
+            catch(final IOException ioe)
+            {
+                LOGGER.error("When trying to build sql for pairs:", ioe);
+                //throw ioe;
+            }
+
+            final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
+            try (Connection con = Database.getConnection();
+            ResultSet resultSet = Database.getResults(con,sql))
+            {
+                while(resultSet.next())
+                {
+                    final double observationValue = resultSet.getFloat("observation");
+                    final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
+                    final PairOfDoubleAndVectorOfDoubles pair = valueFactory.pairOf(observationValue, forecastValues);
+                    LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
+                                 pair.getItemOne(),
+                                 pair.getItemTwo());                    
+                    result.add(pair);
+                }
+            }
+            catch(final SQLException se)
+            {
+                LOGGER.error("Failed to get pair results for lead " + this.leadTime, se);
+                //throw new IOException(message, se);
+            }
+            finally
+            {
+                LOGGER.trace("Query: ");
+                LOGGER.trace(sql);
+            }
+            return result;
         }
     }
 
@@ -303,7 +298,12 @@ public class ControlTemp
         //Construct some single-valued pairs
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         final DataFactory dataFactory = DataFactory.instance();
-        final double[] ensemble = new double[]{10, 3, 43, 12, 54, 78, 34, 2, 55, 3, 2, 34, 1, 3, 98, 12};
+        final double[] ensemble = new double[50];
+        //Add 50 members with the same value
+        for(int i = 0; i < ensemble.length; i++) {
+            ensemble[i]=10;
+        }
+        //Add 10k pairs
         for(int i = 0; i < 10000; i++)
         {
             //Add an ensemble forecast
