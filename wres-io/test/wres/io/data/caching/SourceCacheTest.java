@@ -6,6 +6,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -15,23 +16,26 @@ import org.slf4j.LoggerFactory;
 
 import ru.yandex.qatools.embed.postgresql.EmbeddedPostgres;
 import wres.io.config.SystemSettings;
+import wres.io.utilities.Database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.*;
 import static ru.yandex.qatools.embed.postgresql.distribution.Version.Main.V9_6;
 import static ru.yandex.qatools.embed.postgresql.EmbeddedPostgres.cachedRuntimeConfig;
 
+import java.beans.PropertyVetoException;
 import java.io.*;
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest(SystemSettings.class)
+@PrepareForTest({SystemSettings.class, Database.class})
 @PowerMockIgnore("javax.management.*") // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
 public class SourceCacheTest
 {
@@ -197,23 +201,34 @@ java.lang.NullPointerException
 
     private EmbeddedPostgres pgInstance;
     private ComboPooledDataSource connectionPoolDataSource;
+    private static final AtomicInteger port = new AtomicInteger(5555);
 
     @Before
     public void setup()
-            throws SQLException, IOException
+            throws SQLException, IOException, PropertyVetoException, IllegalAccessException
     {
-        // Create our own data source to connect to temp database
-        connectionPoolDataSource = new ComboPooledDataSource();
-
+        LOGGER.trace("setup began");
         // Create a temporary db instance, but keep the binaries in one place.
         pgInstance = new EmbeddedPostgres(V9_6);
-        final String jdbcUrl = pgInstance.start(cachedRuntimeConfig(Paths.get(".postgres_testinstance")),
-                                                "localhost",
-                                                5555,
-                                                "wrestest",
-                                                "wres",
-                                                "test",
-                                                new ArrayList<>());
+
+        // Guarantee test isolation with a different port for different tests
+        int portNumber = port.getAndIncrement();
+
+        LOGGER.debug("Port number is {}", portNumber);
+        String jdbcUrl = pgInstance.start(cachedRuntimeConfig(Paths.get(".postgres_testinstance")),
+                "localhost",
+                portNumber,
+                "wrestest",
+                "wres",
+                "test",
+                new ArrayList<>());
+
+        // Create our own data source to connect to temp database
+        connectionPoolDataSource = new ComboPooledDataSource();
+        connectionPoolDataSource.setDriverClass("org.postgresql.Driver");
+        connectionPoolDataSource.setAutoCommitOnClose(true);
+
+        LOGGER.debug("JDBC url is {}", jdbcUrl);
 
         // Connect to the temporary database
         connectionPoolDataSource.setJdbcUrl(jdbcUrl);
@@ -226,42 +241,48 @@ java.lang.NullPointerException
                     StandardCharsets.US_ASCII));
         }
 
-        /*pgInstance.getProcess()
-                  .ifPresent(p ->
-                             p.importFromFile(new File("SQL/wres.Source.sql")));
-        */
+        // Because SystemSettings is static, and parses XML in constructor,
+        // and referred to elsewhere, need to use powermock to replace it
+        // instead of a simpler mock:
+        PowerMockito.mockStatic(SystemSettings.class);
+        LOGGER.debug("setup using connectionPoolDataSource: {}", connectionPoolDataSource);
+        PowerMockito.when(SystemSettings.getConnectionPool())
+                .thenReturn(connectionPoolDataSource);
+
+        // Because Database.java does not use a getPool() method, instead refers
+        // to static member initialized statically:
+        Field field = PowerMockito.field(Database.class, "pool");
+        field.set(Database.class, connectionPoolDataSource);
+        // Above was necessary for isolation, otherwise, during the single-jvm
+        // run of two tests, the first connectionPoolDataSource ended up
+        // being used during the second test, and of course that one was closed.
+
+        LOGGER.trace("setup ended");
     }
 
     @Test
     public void getTwiceFromSourceCache()
             throws Exception // TODO: update when SourceCache throws checked exceptions
     {
-        // The sticky situation is in SystemSettings, static method getConnectionPool():
-        PowerMockito.mockStatic(SystemSettings.class);
-        // Substitute our H2 connection pool:
-        when(SystemSettings.getConnectionPool()).thenReturn(this.connectionPoolDataSource);
-
-        // Begin the actual test
-        SourceCache sc = new SourceCache(); // no issue here, essentially a no-op
-        sc.init();                          // requires the SystemSettings calls
+        LOGGER.trace("getTwiceFromSourceCache began");
 
         final String path = "/this/is/just/a/test";
         final String time = "2017-06-16 11:13:00";
 
-        Integer result = sc.getSourceID(path, time);
+        Integer result = SourceCache.getSourceID(path, time);
 
         // The id should be an integer greater than or equal to zero.
         assertTrue(result >= 0);
 
-        Integer result2 = sc.getSourceID(path, time);
+        Integer result2 = SourceCache.getSourceID(path, time);
 
         // Getting an id with the same path and time should yield the same result.
         assertEquals(result2, result);
 
         int countOfRows;
         try (Connection con = connectionPoolDataSource.getConnection();
-             Statement statement = con.createStatement();
-             ResultSet r = statement.executeQuery("SELECT COUNT(*) FROM wres.Source"))
+                Statement statement = con.createStatement();
+                ResultSet r = statement.executeQuery("SELECT COUNT(*) FROM wres.Source"))
         {
             r.next();
             countOfRows = r.getInt(1);
@@ -269,18 +290,49 @@ java.lang.NullPointerException
 
         // There should be only one row in the wres.Source table
         assertEquals(1, countOfRows);
+
+        LOGGER.trace("getTwiceFromSourceCache ended");
+    }
+
+    @Test
+    public void initializeCacheWithExistingData()
+            throws Exception // TODO: update when SourceCache throws checked exceptions
+    {
+        LOGGER.trace("initializeCacheWithExistingData began");
+
+        // Create one cache that inserts data to set us up for 2nd cache init.
+        SourceCache sc = new SourceCache();
+        sc.init();
+        final String path = "/this/is/just/a/test";
+        final String time = "2017-06-20 16:55:00";
+        Integer firstId = sc.getID(path, time);
+
+        // Initialize a second cache, it should find the same data already present
+        SourceCache scTwo = new SourceCache();
+        scTwo.init();
+        Integer secondId = scTwo.getID(path, time);
+
+        assertEquals(firstId, secondId);
+
+        LOGGER.trace("initializeCacheWithExistingData ended");
     }
 
     @After
     public void tearDown()
     {
+        LOGGER.trace("tearDown began");
+
+        connectionPoolDataSource.close();
+
         pgInstance.stop();
+
+        LOGGER.trace("tearDown ended");
     }
 
     /**
      * Thanks, https://stackoverflow.com/questions/326390/how-do-i-create-a-java-string-from-the-contents-of-a-file#326440
      */
-    static String readStringFromFile(String path, Charset encoding)
+    private static String readStringFromFile(String path, Charset encoding)
             throws IOException
     {
         byte[] encodedBytes = Files.readAllBytes(Paths.get(path));
