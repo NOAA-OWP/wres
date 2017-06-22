@@ -270,13 +270,13 @@ java.lang.NullPointerException
 
         Integer result = SourceCache.getSourceID(path, time);
 
-        // The id should be an integer greater than or equal to zero.
-        assertTrue(result >= 0);
+        assertTrue("The id should be an integer greater than zero.",
+                   result > 0);
 
         Integer result2 = SourceCache.getSourceID(path, time);
 
-        // Getting an id with the same path and time should yield the same result.
-        assertEquals(result2, result);
+        assertEquals("Getting an id with the same path and time should yield the same result.",
+                     result2, result);
 
         int countOfRows;
         try (Connection con = connectionPoolDataSource.getConnection();
@@ -287,8 +287,8 @@ java.lang.NullPointerException
             countOfRows = r.getInt(1);
         }
 
-        // There should be only one row in the wres.Source table
-        assertEquals(1, countOfRows);
+        assertEquals("There should be only one row in the wres.Source table",
+                     1, countOfRows);
 
         LOGGER.trace("getTwiceFromSourceCache ended");
     }
@@ -311,7 +311,8 @@ java.lang.NullPointerException
         scTwo.init();
         Integer secondId = scTwo.getID(path, time);
 
-        assertEquals(firstId, secondId);
+        assertEquals("Second cache should find id in database from first cache",
+                    firstId, secondId);
 
         LOGGER.trace("initializeCacheWithExistingData ended");
     }
