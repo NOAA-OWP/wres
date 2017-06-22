@@ -43,7 +43,8 @@ public final class DichotomousPairsTest
         //Check category count
         assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);
 
-        //Check the exceptions
+        //Check the exceptions 
+        //Too many categories
         try
         {
             values.clear();
@@ -55,6 +56,7 @@ public final class DichotomousPairsTest
         {
 
         }
+        //Valid data
         try
         {
             values.clear();

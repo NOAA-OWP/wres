@@ -35,6 +35,8 @@ public final class FunctionFactoryTest
         assertTrue("Failure on square error function.",
                    testMe.test(FunctionFactory.squareError().applyAsDouble(d.pairOf(-5, 5)), 100.0));
         assertTrue("Failure on skill function.", testMe.test(FunctionFactory.skill().applyAsDouble(1.0, 2.0), 0.5));
+        assertTrue("Failure on mean function.",
+                   testMe.test(FunctionFactory.mean().applyAsDouble(d.vectorOf(new double[]{1.0, 2.0, 3.0})), 2.0));
     }
 
 }
