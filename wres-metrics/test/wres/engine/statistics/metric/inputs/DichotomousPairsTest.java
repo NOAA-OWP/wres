@@ -10,6 +10,8 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
 import wres.engine.statistics.metric.inputs.DichotomousPairs.DichotomousPairsBuilder;
 
 /**
@@ -38,7 +40,13 @@ public final class DichotomousPairsTest
         {
             values.add(d.vectorOf(new boolean[]{true, true}));
         }
-        final DichotomousPairs p = (DichotomousPairs)b.add(values).build();
+        
+        final Metadata meta = MetadataFactory.getMetadata(values.size(),
+                                                          MetadataFactory.getDimension(),
+                                                          "Main",
+                                                          null);  
+        
+        final DichotomousPairs p = (DichotomousPairs)b.add(values).setMetadata(meta).build();
 
         //Check category count
         assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);

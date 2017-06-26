@@ -1,5 +1,8 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.VectorOutput;
@@ -17,12 +20,6 @@ public class MeanSquareError<S extends SingleValuedPairs, T extends VectorOutput
 extends
     DecomposableDoubleErrorScore<S, T>
 {
-
-    /**
-     * The metric name.
-     */
-
-    private static final String METRIC_NAME = "Mean Square Error";
 
     /**
      * The decomposition identifier. See {@link MetricConstants#getDecompositionID()}.
@@ -82,9 +79,9 @@ extends
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return METRIC_NAME;
+        return MetricConstants.MEAN_SQUARE_ERROR;
     }
 
     @Override
@@ -92,6 +89,12 @@ extends
     {
         return true;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return true;
+    }        
 
     @Override
     public int getDecompositionID()
@@ -124,8 +127,16 @@ extends
     private T getMSENoDecomp(final S s)
     {
         final double[] result = new double[]{
-            s.get(0).stream().mapToDouble(FunctionFactory.squareError()).average().getAsDouble()};
-        return MetricOutputFactory.ofExtendsVectorOutput(result, s.get(0).size(), s.getDimension());
+            s.getData(0).stream().mapToDouble(FunctionFactory.squareError()).average().getAsDouble()};
+        //Metadata
+        final Metadata metIn = s.getMetadata();
+        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
+                                                                        metIn.getDimension(),
+                                                                        getID(),
+                                                                        MetricConstants.MAIN,
+                                                                        metIn.getID(),
+                                                                        null);
+        return MetricOutputFactory.ofExtendsVectorOutput(result, metOut);
     }
 
 }

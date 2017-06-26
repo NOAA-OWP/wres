@@ -6,6 +6,8 @@ import java.util.List;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
 import wres.engine.statistics.metric.inputs.MetricInputFactory;
@@ -23,7 +25,7 @@ public final class MetricTestDataFactory
 {
 
     /**
-     * Returns a set of single-valued pairs without a baseline or dimension.
+     * Returns a set of single-valued pairs without a baseline.
      * 
      * @return single-valued pairs
      */
@@ -43,12 +45,11 @@ public final class MetricTestDataFactory
         values.add(dataFactory.pairOf(8, 7));
         values.add(dataFactory.pairOf(12, 12));
         values.add(dataFactory.pairOf(93, 94));
-
-        return MetricInputFactory.ofSingleValuedPairs(values, null);
+        return MetricInputFactory.ofSingleValuedPairs(values, MetadataFactory.getMetadata(values.size()));
     }
 
     /**
-     * Returns a set of single-valued pairs with a baseline and without a dimension.
+     * Returns a set of single-valued pairs with a baseline.
      * 
      * @return single-valued pairs
      */
@@ -79,11 +80,15 @@ public final class MetricTestDataFactory
         baseline.add(dataFactory.pairOf(8.8, 7.1));
         baseline.add(dataFactory.pairOf(12.1, 13));
         baseline.add(dataFactory.pairOf(93.2, 94.8));
-        return MetricInputFactory.ofSingleValuedPairs(values, baseline, null);
+        final Metadata meta = MetadataFactory.getMetadata(values.size(),
+                                                    MetadataFactory.getDimension("CMS"),
+                                                    "Main",
+                                                    "Baseline");
+        return MetricInputFactory.ofSingleValuedPairs(values, baseline, meta);
     }
 
     /**
-     * Returns a moderately-sized (10k) test dataset of single-valued pairs, {5,10}, without a baseline or a dimension.
+     * Returns a moderately-sized (10k) test dataset of single-valued pairs, {5,10}, without a baseline.
      * 
      * @return single-valued pairs
      */
@@ -97,7 +102,11 @@ public final class MetricTestDataFactory
         {
             values.add(dataFactory.pairOf(5, 10));
         }
-        return MetricInputFactory.ofSingleValuedPairs(values, null);
+        final Metadata meta = MetadataFactory.getMetadata(values.size(),
+                                                          MetadataFactory.getDimension("CMS"),
+                                                          "Main",
+                                                          null);
+        return MetricInputFactory.ofSingleValuedPairs(values, meta);
     }
 
     /**
@@ -134,7 +143,11 @@ public final class MetricTestDataFactory
         {
             values.add(d.vectorOf(new boolean[]{false, false}));
         }
-        return MetricInputFactory.ofDichotomousPairs(values); //Construct the pairs
+        final Metadata meta = MetadataFactory.getMetadata(values.size(),
+                                                          MetadataFactory.getDimension(),
+                                                          "Main",
+                                                          null);        
+        return MetricInputFactory.ofDichotomousPairs(values,meta); //Construct the pairs
     }
 
     /**
@@ -196,7 +209,11 @@ public final class MetricTestDataFactory
         {
             values.add(d.vectorOf(new boolean[]{false, false, true, false, false, true}));
         }
-        return MetricInputFactory.ofMulticategoryPairs(values); //Construct the pairs
+        final Metadata meta = MetadataFactory.getMetadata(values.size(),
+                                                          MetadataFactory.getDimension(),
+                                                          "Main",
+                                                          null); 
+        return MetricInputFactory.ofMulticategoryPairs(values,meta); //Construct the pairs
     }
 
     /**
@@ -216,7 +233,11 @@ public final class MetricTestDataFactory
         values.add(dataFactory.pairOf(1, 3.0 / 5.0));
         values.add(dataFactory.pairOf(0, 0.0 / 5.0));
         values.add(dataFactory.pairOf(1, 1.0 / 5.0));
-        return MetricInputFactory.ofDiscreteProbabilityPairs(values);
+        final Metadata meta = MetadataFactory.getMetadata(values.size(),
+                                                          MetadataFactory.getDimension(),
+                                                          "Main",
+                                                          null); 
+        return MetricInputFactory.ofDiscreteProbabilityPairs(values,meta);
     }
 
     /**
@@ -243,6 +264,10 @@ public final class MetricTestDataFactory
         baseline.add(dataFactory.pairOf(1, 3.0 / 5.0));
         baseline.add(dataFactory.pairOf(0, 4.0 / 5.0));
         baseline.add(dataFactory.pairOf(1, 1.0 / 5.0));
-        return MetricInputFactory.ofDiscreteProbabilityPairs(values, baseline);
+        final Metadata meta = MetadataFactory.getMetadata(values.size(),
+                                                          MetadataFactory.getDimension(),
+                                                          "Main",
+                                                          "Baseline"); 
+        return MetricInputFactory.ofDiscreteProbabilityPairs(values, baseline,meta);
     }
 }

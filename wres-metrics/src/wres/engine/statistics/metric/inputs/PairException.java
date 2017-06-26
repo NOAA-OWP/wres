@@ -4,6 +4,8 @@ package wres.engine.statistics.metric.inputs;
  * A runtime exception associated with an incorrect verification pair.
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 
 @SuppressWarnings("serial")

@@ -15,12 +15,6 @@ public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput
 {
 
     /**
-     * The metric name.
-     */
-
-    private static final String METRIC_NAME = "Mean Error";
-
-    /**
      * A {@link MetricBuilder} to build the metric.
      */
 
@@ -44,9 +38,9 @@ public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return METRIC_NAME;
+        return MetricConstants.MEAN_ERROR;
     }
 
     @Override
@@ -60,6 +54,12 @@ public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput
     {
         return MetricConstants.NONE;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return true;
+    }        
 
     /**
      * Hidden constructor.

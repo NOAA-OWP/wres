@@ -57,7 +57,8 @@ public final class MetricTest
         final MeanError<SingleValuedPairs, ScalarOutput> me = b.build();
 
         //Check for equality of names
-        assertTrue("Unexpected metric name.", "Mean Error".equals(me.toString()));
+        assertTrue("Unexpected metric name.",
+                   MetricConstants.getMetricName(MetricConstants.MEAN_ERROR).equals(me.toString()));
     }
 
 }

@@ -1,5 +1,8 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
@@ -17,18 +20,20 @@ public final class RootMeanSquareError<S extends SingleValuedPairs, T extends Sc
 extends
     DoubleErrorScore<S, T>
 {
-    /**
-     * The metric name.
-     */
-
-    private static final String METRIC_NAME = "Root Mean Square Error";
 
     @Override
     public T apply(final S t)
     {
+        //Metadata
+        final Metadata metIn = t.getMetadata();
+        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
+                                                                        metIn.getDimension(),
+                                                                        getID(),
+                                                                        MetricConstants.MAIN,
+                                                                        metIn.getID(),
+                                                                        null);
         return MetricOutputFactory.ofExtendsScalarOutput(Math.pow(super.apply(t).getData(), 0.5),
-                                                         t.get(0).size(),
-                                                         t.getDimension());
+                                                         metOut);
     }
 
     /**
@@ -49,9 +54,9 @@ extends
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return METRIC_NAME;
+        return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
     }
 
     @Override
@@ -59,6 +64,12 @@ extends
     {
         return false;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return true;
+    }        
 
     @Override
     public int getDecompositionID()
