@@ -2,6 +2,10 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.metric.Dimension;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
@@ -55,10 +59,26 @@ implements Score
     public T apply(final S s)
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        //Metadata
+        final Metadata metIn = s.getMetadata();
+        Dimension d = null;
+        if(hasRealUnits())
+        {
+            d = metIn.getDimension();
+        }
+        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
+                                                                        d,
+                                                                        getID(),
+                                                                        MetricConstants.MAIN,
+                                                                        metIn.getID(),
+                                                                        metIn.getIDForBaseline());
         //Compute the atomic errors in a stream
-        return MetricOutputFactory.ofScalarExtendsMetricOutput(s.get(0).stream().mapToDouble(f).average().getAsDouble(),
-                                                               s.get(0).size(),
-                                                               s.getDimension());
+        return MetricOutputFactory.ofScalarExtendsMetricOutput(s.getData(0)
+                                                                .stream()
+                                                                .mapToDouble(f)
+                                                                .average()
+                                                                .getAsDouble(),
+                                                               metOut);
     }
 
     /**

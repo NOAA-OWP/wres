@@ -4,6 +4,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.MeanError.MeanErrorBuilder;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
@@ -30,18 +32,26 @@ public final class MeanErrorTest
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
+        //Metadata for the output
+        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData(0).size(),
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.MEAN_ERROR,
+                                                                    MetricConstants.MAIN,
+                                                                    null,
+                                                                    null);
         //Build the metric
         final MeanErrorBuilder<SingleValuedPairs, ScalarOutput> b = new MeanError.MeanErrorBuilder<>();
         final MeanError<SingleValuedPairs, ScalarOutput> me = b.build();
 
         //Check the results
         final ScalarOutput actual = me.apply(input);
-        final ScalarOutput expected = MetricOutputFactory.ofScalarOutput(-200.55, 10, null);
+        final ScalarOutput expected = MetricOutputFactory.ofScalarOutput(-200.55, m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));
 
         //Check the parameters
-        assertTrue("Unexpected name for the Mean Error.", me.getName().equals("Mean Error"));
+        assertTrue("Unexpected name for the Mean Error.",
+                   me.getName().equals(MetricConstants.getMetricName(MetricConstants.MEAN_ERROR)));
         assertTrue("The Mean Error is not decomposable.", !me.isDecomposable());
         assertTrue("The Mean Error is not a skill score.", !me.isSkillScore());
         assertTrue("The Mean Error cannot be decomposed.", me.getDecompositionID() == MetricConstants.NONE);

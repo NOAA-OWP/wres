@@ -2,7 +2,9 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
@@ -21,12 +23,6 @@ extends
     ContingencyTable<S, T>
 implements Score, Collectable<S, MetricOutput<?>, T>
 {
-
-    /**
-     * The metric name.
-     */
-
-    private static final String METRIC_NAME = "Equitable Threat Score";
 
     /**
      * A {@link MetricBuilder} to build the metric.
@@ -59,15 +55,21 @@ implements Score, Collectable<S, MetricOutput<?>, T>
         final double[][] cm = v.getData().getDoubles();
         final double t = cm[0][0] + cm[0][1] + cm[1][0];
         final double hitsRandom = ((cm[0][0] + cm[1][0]) * (cm[0][0] + cm[0][1])) / (t + cm[1][1]);
-        return MetricOutputFactory.ofExtendsScalarOutput((cm[0][0] - hitsRandom) / (t - hitsRandom),
-                                                         v.getSampleSize(),
-                                                         null);
+        //Metadata
+        final MetricOutputMetadata metIn = output.getMetadata();
+        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
+                                                                        metIn.getDimension(),
+                                                                        getID(),
+                                                                        MetricConstants.MAIN,
+                                                                        metIn.getID(),
+                                                                        null);
+        return MetricOutputFactory.ofExtendsScalarOutput((cm[0][0] - hitsRandom) / (t - hitsRandom), metOut);
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return METRIC_NAME;
+        return MetricConstants.EQUITABLE_THREAT_SCORE;
     }
 
     @Override
@@ -89,15 +91,21 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
+    public boolean hasRealUnits()
+    {
+        return false;
+    }        
+    
+    @Override
     public MetricOutput<?> getCollectionInput(final S input)
     {
         return super.apply(input); //2x2 contingency table
     }
 
     @Override
-    public String getCollectionOf()
+    public int getCollectionOf()
     {
-        return super.getName();
+        return super.getID();
     }
 
     /**

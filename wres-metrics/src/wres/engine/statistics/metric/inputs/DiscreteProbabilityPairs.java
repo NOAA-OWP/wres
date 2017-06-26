@@ -1,9 +1,13 @@
 package wres.engine.statistics.metric.inputs;
 
+import wres.datamodel.metric.MetricInputBuilder;
+
 /**
  * Immutable store of verification pairs that comprise probabilistic observations and predictions.
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 public final class DiscreteProbabilityPairs extends SingleValuedPairs
 {

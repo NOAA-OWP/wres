@@ -1,11 +1,15 @@
 package wres.engine.statistics.metric.inputs;
 
+import wres.datamodel.metric.MetricInputBuilder;
+
 /**
  * Immutable store of verification pairs associated with a dichotomous input, i.e. a single event whose outcome is
  * recorded as occurring (true) or not occurring (false). The event is not defined as part of the input. A dichotomous
  * pair is be encoded with a single indicator.
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 public final class DichotomousPairs extends MulticategoryPairs
 {

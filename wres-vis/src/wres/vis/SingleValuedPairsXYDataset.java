@@ -40,19 +40,19 @@ public class SingleValuedPairsXYDataset extends AbstractXYDataset //implements D
     @Override
     public int getItemCount(final int series)
     {
-        return pairs.get(series).size();
+        return pairs.getData(series).size();
     }
 
     @Override
     public Number getX(final int series, final int item)
     {
-        return pairs.get(series).get(item).getItemOne();
+        return pairs.getData(series).get(item).getItemOne();
     }
 
     @Override
     public Number getY(final int series, final int item)
     {
-        return pairs.get(series).get(item).getItemTwo();
+        return pairs.getData(series).get(item).getItemTwo();
     }
 
     @Override

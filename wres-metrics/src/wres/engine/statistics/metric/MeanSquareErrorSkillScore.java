@@ -2,6 +2,9 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.inputs.MetricInputException;
 import wres.engine.statistics.metric.inputs.MetricInputFactory;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
@@ -21,28 +24,30 @@ extends
     MeanSquareError<S, T>
 {
 
-    /**
-     * The metric name.
-     */
-
-    private static final String METRIC_NAME = "Mean Square Error Skill Score";
-
     @Override
     public T apply(final S s)
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
-        if(!s.hasTwo())
+        if(!s.hasBaselineForSkill())
         {
             throw new MetricInputException("Specify a non-null baseline for the '" + toString() + "'.");
         }
         //TODO: implement any required decompositions, based on the instance parameters  
+        //Metadata
+        final Metadata metIn = s.getMetadata();
+        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
+                                                                        metIn.getDimension(),
+                                                                        getID(),
+                                                                        MetricConstants.MAIN,
+                                                                        metIn.getID(),
+                                                                        metIn.getIDForBaseline());
         final VectorOutput numerator = super.apply(s);
-        final VectorOutput denominator = super.apply(MetricInputFactory.ofExtendsSingleValuedPairs(s.get(1),
-                                                                                                   s.getDimension()));
+        final VectorOutput denominator = super.apply(MetricInputFactory.ofExtendsSingleValuedPairs(s.getData(1),
+                                                                                                   metOut));
         final double[] result = new double[]{
             FunctionFactory.skill().applyAsDouble(numerator.getData().getDoubles()[0],
                                                   denominator.getData().getDoubles()[0])};
-        return MetricOutputFactory.ofExtendsVectorOutput(result, s.get(0).size(), s.getDimension());
+        return MetricOutputFactory.ofExtendsVectorOutput(result,metOut);
     }
 
     /**
@@ -63,9 +68,9 @@ extends
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return METRIC_NAME;
+        return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE;
     }
 
     @Override
@@ -73,6 +78,12 @@ extends
     {
         return true;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return false;
+    }        
 
     /**
      * Prevent direct construction.

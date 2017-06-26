@@ -1,6 +1,8 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
@@ -18,12 +20,6 @@ extends
     ContingencyTable<S, T>
 implements Score, Collectable<S, MetricOutput<?>, T>
 {
-
-    /**
-     * The metric name.
-     */
-
-    private static final String METRIC_NAME = "Probability of Detection";
 
     /**
      * A {@link MetricBuilder} to build the metric.
@@ -53,15 +49,22 @@ implements Score, Collectable<S, MetricOutput<?>, T>
         is2x2ContingencyTable(output, this);
         final MatrixOutput v = (MatrixOutput)output;
         final double[][] cm = v.getData().getDoubles();
-        return MetricOutputFactory.ofExtendsScalarOutput(cm[0][0] / (cm[0][0] + cm[1][0]),
-                                                         v.getSampleSize(),
-                                                         output.getDimension());
+        //Metadata
+        final MetricOutputMetadata metIn = output.getMetadata();
+        final MetricOutputMetadata metOut =
+                                  MetadataFactory.getMetadata(metIn.getSampleSize(),
+                                                              metIn.getDimension(),
+                                                              getID(),
+                                                              MetricConstants.MAIN,
+                                                              metIn.getID(),
+                                                              null); 
+        return MetricOutputFactory.ofExtendsScalarOutput(cm[0][0] / (cm[0][0] + cm[1][0]), metOut);
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return METRIC_NAME;
+        return MetricConstants.PROBABILITY_OF_DETECTION;
     }
 
     @Override
@@ -75,6 +78,12 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     {
         return false;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return false;
+    }        
 
     @Override
     public int getDecompositionID()
@@ -89,9 +98,9 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public String getCollectionOf()
+    public int getCollectionOf()
     {
-        return super.getName();
+        return super.getID();
     }
 
     /**

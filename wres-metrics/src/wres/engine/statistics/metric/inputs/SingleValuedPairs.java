@@ -6,8 +6,9 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.Dimension;
+import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.MetricInputBuilder;
 
 /**
  * Immutable store of verification pairs that comprise single-valued, continuous numerical, predictions and
@@ -16,6 +17,8 @@ import wres.datamodel.metric.MetricInput;
  * prediction.
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
 {
@@ -28,25 +31,25 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
     private final List<List<PairOfDoubles>> pairs;
 
     /**
-     * Dimension of the data (must be the same for all datasets).
+     * Metadata associated with the data (must be the same for all datasets).
      */
 
-    final Dimension dim;
+    final Metadata meta;
 
     @Override
-    public boolean hasTwo()
+    public boolean hasBaselineForSkill()
     {
         return size() == 2;
     }
 
     @Override
-    public Dimension getDimension()
+    public Metadata getMetadata()
     {
-        return dim;
+        return meta;
     }
 
     @Override
-    public List<PairOfDoubles> get(final int index)
+    public List<PairOfDoubles> getData(final int index)
     {
         return Collections.unmodifiableList(pairs.get(index));
     }
@@ -70,9 +73,9 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
         private final List<List<PairOfDoubles>> pairs = new ArrayList<>();
 
         /**
-         * Dimension.
+         * Metadata.
          */
-        private Dimension dim = null;
+        private Metadata meta = null;
 
         @Override
         public SingleValuedPairsBuilder add(final List<PairOfDoubles> element)
@@ -88,9 +91,9 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
         }
 
         @Override
-        public SingleValuedPairsBuilder setDimension(final Dimension dim)
+        public SingleValuedPairsBuilder setMetadata(final Metadata meta)
         {
-            this.dim = dim;
+            this.meta = meta;
             return this;
         }
 
@@ -105,7 +108,9 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
 
     protected SingleValuedPairs(final SingleValuedPairsBuilder b)
     {
-        //Objects.requireNonNull(b.dim,"Specify a non-null dimension for the inputs."); //TODO may require in future
+        if(Objects.isNull(b.meta)) {
+            throw new MetricInputException("Specify non-null metadata for the metric input.");
+        }
         //Bounds checks
         b.pairs.stream().forEach(s -> {
             if(Objects.isNull(s))
@@ -118,6 +123,6 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
             }
         });
         pairs = b.pairs;
-        dim = b.dim;
+        meta = b.meta;
     }
 }

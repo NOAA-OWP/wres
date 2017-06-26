@@ -8,7 +8,7 @@ package wres.engine.statistics.metric;
  * @since 0.1
  */
 
-public final class MetricCalculationException extends RuntimeException
+public final class MetricCalculationException extends MetricException
 {
 
     /**

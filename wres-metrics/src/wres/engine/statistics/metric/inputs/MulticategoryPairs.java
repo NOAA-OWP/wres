@@ -6,8 +6,9 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.Dimension;
+import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.MetricInputBuilder;
 
 /**
  * Immutable store of verification pairs associated with the outcome (true or false) of a multi-category event. The
@@ -16,6 +17,8 @@ import wres.datamodel.metric.MetricInput;
  * encoded with a single indicator. The observed outcomes are recorded first, followed by the predicted outcomes.
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
 {
@@ -28,25 +31,25 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
     private final List<List<VectorOfBooleans>> pairs;
 
     /**
-     * Dimension of the data (must be the same for all datasets).
+     * Metadata (must be the same for all datasets).
      */
 
-    final Dimension dim;
+    final Metadata meta;
 
     @Override
-    public boolean hasTwo()
+    public boolean hasBaselineForSkill()
     {
         return size() == 2;
     }
 
     @Override
-    public Dimension getDimension()
+    public Metadata getMetadata()
     {
-        return dim;
+        return meta;
     }
 
     @Override
-    public List<VectorOfBooleans> get(final int index)
+    public List<VectorOfBooleans> getData(final int index)
     {
         return Collections.unmodifiableList(pairs.get(index));
     }
@@ -82,9 +85,9 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
         protected final List<List<VectorOfBooleans>> pairs = new ArrayList<>();
 
         /**
-         * Dimension.
+         * Metadata.
          */
-        private Dimension dim = null;
+        private Metadata meta = null;
 
         @Override
         public MulticategoryPairsBuilder add(final List<VectorOfBooleans> element)
@@ -100,12 +103,11 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
         }
 
         @Override
-        public MulticategoryPairsBuilder setDimension(final Dimension dim)
+        public MulticategoryPairsBuilder setMetadata(final Metadata meta)
         {
-            this.dim = dim;
+            this.meta = meta;
             return this;
         }
-
     }
 
     /**
@@ -117,6 +119,9 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
 
     protected MulticategoryPairs(final MulticategoryPairsBuilder b)
     {
+        if(Objects.isNull(b.meta)) {
+            throw new MetricInputException("Specify non-null metadata for the metric input.");
+        }
         //Bounds checks
         final List<Integer> size = new ArrayList<>();
         b.pairs.stream().forEach(s -> {
@@ -150,7 +155,7 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
 
         });
         pairs = b.pairs;
-        dim = b.dim;
+        meta = b.meta;
     }
 
     /**

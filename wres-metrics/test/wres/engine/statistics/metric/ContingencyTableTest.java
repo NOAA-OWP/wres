@@ -5,6 +5,8 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.ContingencyTable.ContingencyTableBuilder;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
@@ -30,21 +32,29 @@ public final class ContingencyTableTest
     {
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
+        
+        //Metadata for the output
+        final MetricOutputMetadata m1 =
+                                      MetadataFactory.getMetadata(input.getData(0).size(),
+                                                                  MetadataFactory.getDimension(),
+                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                  MetricConstants.MAIN,
+                                                                  "Main",
+                                                                  null);
 
         //Build the metric
         final ContingencyTableBuilder<DichotomousPairs, MatrixOutput> b =
                                                                         new ContingencyTable.ContingencyTableBuilder<>();
 
         final ContingencyTable<DichotomousPairs, MatrixOutput> table = b.build();
-
         final double[][] benchmark = new double[][]{{82.0, 38.0}, {23.0, 222.0}};
         final MatrixOutput actual = table.apply(input);
-        final MatrixOutput expected = MetricOutputFactory.ofMatrixOutput(benchmark, 365, null);
+        final MatrixOutput expected = MetricOutputFactory.ofMatrixOutput(benchmark,m1);       
         assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
             + ".", actual.equals(expected));
 
         //Check the parameters
-        assertTrue(table.getName().equals("Contingency Table"));
+        assertTrue(table.getName().equals(MetricConstants.getMetricName(MetricConstants.CONTINGENCY_TABLE)));
         //Check the exceptions
         try
         {
@@ -52,20 +62,20 @@ public final class ContingencyTableTest
         }
         catch(final Exception e)
         {
-            fail("Expected a 2x2 contingency table.");
+            fail("Expected a 2x2 contingency table: "+e.getMessage());
         }
         try
         {
-            table.is2x2ContingencyTable(MetricOutputFactory.ofScalarOutput(1, 1, null), table);
-            fail("Expected a 2x2 contingency table.");
+            table.is2x2ContingencyTable(MetricOutputFactory.ofScalarOutput(1,m1), table);
+            fail("Expected an exception on construction with a scalar output.");
         }
         catch(final Exception e)
         {
         }
         try
         {
-            table.is2x2ContingencyTable(MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}}, 1, null), table);
-            fail("Expected a 2x2 contingency table.");
+            table.is2x2ContingencyTable(MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}},m1), table);
+            fail("Expected an exception on construction with an incorrectly sized matrix.");
         }
         catch(final Exception e)
         {
@@ -73,8 +83,8 @@ public final class ContingencyTableTest
         try
         {
             table.is2x2ContingencyTable(MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0, 1.0, 1.0},
-                {1.0, 1.0, 1.0}}, 1, null), table);
-            fail("Expected a 2x2 contingency table.");
+                {1.0, 1.0, 1.0}},m1), table);
+            fail("Expected an exception on construction with a non-square matrix.");
         }
         catch(final Exception e)
         {
