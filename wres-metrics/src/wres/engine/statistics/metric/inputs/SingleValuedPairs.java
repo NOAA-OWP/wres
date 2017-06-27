@@ -1,6 +1,5 @@
 package wres.engine.statistics.metric.inputs;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -8,7 +7,6 @@ import java.util.Objects;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.MetricInputBuilder;
 
 /**
  * Immutable store of verification pairs that comprise single-valued, continuous numerical, predictions and
@@ -24,40 +22,57 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
 {
 
     /**
-     * The verification pairs. There is one list of pairs for each variable stored in the input (e.g. including a
-     * baseline).
+     * The verification pairs.
      */
 
-    private final List<List<PairOfDoubles>> pairs;
+    private final List<PairOfDoubles> mainInput;
 
     /**
-     * Metadata associated with the data (must be the same for all datasets).
+     * Metadata associated with the verification pairs.
      */
 
-    final Metadata meta;
+    private final Metadata mainMeta;
+
+    /**
+     * The verification pairs for a baseline (may be null).
+     */
+
+    private final List<PairOfDoubles> baselineInput;
+
+    /**
+     * Metadata associated with the baseline verification pairs (may be null).
+     */
+
+    private final Metadata baselineMeta;
 
     @Override
-    public boolean hasBaselineForSkill()
+    public boolean hasBaseline()
     {
-        return size() == 2;
+        return !Objects.isNull(baselineInput);
+    }
+
+    @Override
+    public List<PairOfDoubles> getData()
+    {
+        return Collections.unmodifiableList(mainInput);
     }
 
     @Override
     public Metadata getMetadata()
     {
-        return meta;
+        return mainMeta;
     }
 
     @Override
-    public List<PairOfDoubles> getData(final int index)
+    public List<PairOfDoubles> getDataForBaseline()
     {
-        return Collections.unmodifiableList(pairs.get(index));
+        return Collections.unmodifiableList(baselineInput);
     }
 
     @Override
-    public int size()
+    public Metadata getMetadataForBaseline()
     {
-        return pairs.size();
+        return baselineMeta;
     }
 
     /**
@@ -70,17 +85,50 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
         /**
          * Pairs.
          */
-        private final List<List<PairOfDoubles>> pairs = new ArrayList<>();
+        private List<PairOfDoubles> mainInput;
 
         /**
-         * Metadata.
+         * Pairs for baseline.
          */
-        private Metadata meta = null;
+        private List<PairOfDoubles> baselineInput;
+
+        /**
+         * Metadata for input.
+         */
+
+        private Metadata mainMeta;
+
+        /**
+         * Metadata for baseline.
+         */
+
+        private Metadata baselineMeta;
 
         @Override
-        public SingleValuedPairsBuilder add(final List<PairOfDoubles> element)
+        public SingleValuedPairsBuilder setData(final List<PairOfDoubles> mainInput)
         {
-            pairs.add(element);
+            this.mainInput = mainInput;
+            return this;
+        }
+
+        @Override
+        public SingleValuedPairsBuilder setMetadata(final Metadata mainMeta)
+        {
+            this.mainMeta = mainMeta;
+            return this;
+        }
+
+        @Override
+        public SingleValuedPairsBuilder setDataForBaseline(final List<PairOfDoubles> baselineInput)
+        {
+            this.baselineInput = baselineInput;
+            return this;
+        }
+
+        @Override
+        public SingleValuedPairsBuilder setMetadataForBaseline(final Metadata baselineMeta)
+        {
+            this.baselineMeta = baselineMeta;
             return this;
         }
 
@@ -88,13 +136,6 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
         public SingleValuedPairs build()
         {
             return new SingleValuedPairs(this);
-        }
-
-        @Override
-        public SingleValuedPairsBuilder setMetadata(final Metadata meta)
-        {
-            this.meta = meta;
-            return this;
         }
 
     }
@@ -108,21 +149,28 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
 
     protected SingleValuedPairs(final SingleValuedPairsBuilder b)
     {
-        if(Objects.isNull(b.meta)) {
+        //Bounds checks
+        if(Objects.isNull(b.mainMeta))
+        {
             throw new MetricInputException("Specify non-null metadata for the metric input.");
         }
-        //Bounds checks
-        b.pairs.stream().forEach(s -> {
-            if(Objects.isNull(s))
-            {
-                throw new MetricInputException("One or more of the inputs is null.");
-            }
-            if(s.contains(null))
-            {
-                throw new MetricInputException("One or more of the pairs is null.");
-            }
-        });
-        pairs = b.pairs;
-        meta = b.meta;
+        if(Objects.isNull(b.mainInput))
+        {
+            throw new MetricInputException("Specify a non-null dataset for the metric input.");
+        }
+        if(Objects.isNull(b.baselineInput) != Objects.isNull(b.baselineMeta))
+        {
+            throw new MetricInputException("Specify a non-null baseline input and associated metadata or leave both null.");
+        }
+        if(b.mainInput.contains(null)) {
+            throw new MetricInputException("One or more of the pairs is null.");
+        }
+        if(!Objects.isNull(b.baselineInput) && b.baselineInput.contains(null)) {
+            throw new MetricInputException("One or more of the baseline pairs is null.");
+        }      
+        mainInput = b.mainInput;
+        mainMeta = b.mainMeta;
+        baselineInput = b.baselineInput;
+        baselineMeta = b.baselineMeta;
     }
 }

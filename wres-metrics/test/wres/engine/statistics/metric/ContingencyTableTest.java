@@ -35,7 +35,7 @@ public final class ContingencyTableTest
         
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                                      MetadataFactory.getMetadata(input.getData(0).size(),
+                                      MetadataFactory.getMetadata(input.getData().size(),
                                                                   MetadataFactory.getDimension(),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,

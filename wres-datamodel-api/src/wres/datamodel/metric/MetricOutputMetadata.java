@@ -26,4 +26,14 @@ public interface MetricOutputMetadata extends Metadata
     
     public int getMetricComponentID();
     
+    /**
+     * Allows for an identifier to be associated with a baseline used for computing forecast skill. The identifier
+     * should be meaningful to a user, such as the modeling scenario to which the baseline refers. May be null.
+     * 
+     * @return the identifier associated with the baseline metric data or null
+     */
+
+    public String getIDForBaseline();    
+
+
 }

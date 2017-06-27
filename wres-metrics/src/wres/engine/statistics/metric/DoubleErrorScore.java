@@ -60,20 +60,24 @@ implements Score
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         //Metadata
-        final Metadata metIn = s.getMetadata();
+        final Metadata mainMeta = s.getMetadata();
+        String baseID = null;
         Dimension d = null;
         if(hasRealUnits())
         {
-            d = metIn.getDimension();
+            d = mainMeta.getDimension();
         }
-        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
+        if(s.hasBaseline() && isSkillScore()) {
+            baseID = s.getMetadataForBaseline().getID();
+        }
+        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(mainMeta.getSampleSize(),
                                                                         d,
                                                                         getID(),
                                                                         MetricConstants.MAIN,
-                                                                        metIn.getID(),
-                                                                        metIn.getIDForBaseline());
+                                                                        mainMeta.getID(),
+                                                                        baseID);
         //Compute the atomic errors in a stream
-        return MetricOutputFactory.ofScalarExtendsMetricOutput(s.getData(0)
+        return MetricOutputFactory.ofScalarExtendsMetricOutput(s.getData()
                                                                 .stream()
                                                                 .mapToDouble(f)
                                                                 .average()

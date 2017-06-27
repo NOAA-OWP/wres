@@ -41,19 +41,20 @@ public final class SingleValuedPairsTest
             values.add(d.pairOf(1, 1));
         }
         final Metadata meta = MetadataFactory.getMetadata(values.size());
-        SingleValuedPairs p = b.add(values).setMetadata(meta).build();
-        
+        SingleValuedPairs p = b.setData(values).setMetadata(meta).build();
+
         //Check dataset count
-        assertTrue("Expected dataset count of one [false," + p.hasBaselineForSkill() + "].", !p.hasBaselineForSkill()); 
-        p = b.add(values).build(); //Add another
+        assertTrue("Expected dataset count of one [false," + p.hasBaseline() + "].", !p.hasBaseline());
+        p = b.setDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
         //Check that a returned dataset is not null
-        assertTrue("Expected a dataset with ten pairs in the first index [10,"+p.getData(0).size()+"].",p.getData(0).size()==10); 
+        assertTrue("Expected a dataset with ten pairs in the first index [10," + p.getData().size() + "].",
+                   p.getData().size() == 10);
         //Check the addition of a Dimension 
-        assertTrue("Expected dataset count of two [true," + p.hasBaselineForSkill() + "].", p.hasBaselineForSkill());        
+        assertTrue("Expected dataset count of two [true," + p.hasBaseline() + "].", p.hasBaseline());
         b.setMetadata(meta);
         p = b.build();
-        assertTrue("Expected equal metadata.", p.getMetadata().equals(meta) );           
-        
+        assertTrue("Expected equal metadata.", p.getMetadata().equals(meta));
+
         //Test the exceptions
         //Null pair
         try
@@ -61,23 +62,23 @@ public final class SingleValuedPairsTest
             values.clear();
             values.add(null);
             final SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
-            c.add(values).setMetadata(meta).build();
+            c.setData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: null pair.");
         }
         catch(final Exception e)
         {
-        }   
+        }
         //Null pair list
         try
         {
             final SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
-            c.add(null).setMetadata(meta).build();
+            c.setData(null).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: null pair list.");
         }
         catch(final Exception e)
         {
-        }        
-        
+        }
+
     }
 
 }

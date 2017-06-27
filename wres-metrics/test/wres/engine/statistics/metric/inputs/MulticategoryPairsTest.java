@@ -42,26 +42,25 @@ public final class MulticategoryPairsTest
         }        
         final Metadata meta = MetadataFactory.getMetadata(values.size(),
                                                           MetadataFactory.getDimension(),
-                                                          "Main",
-                                                          null);         
-        MulticategoryPairs p = b.add(values).setMetadata(meta).build();
+                                                          "Main");         
+        MulticategoryPairs p = b.setData(values).setMetadata(meta).build();
 
         //Check category count
         assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);
         //Check pair count
-        assertTrue("Unexpected pair count at first index [10," + p.getData(0).size() + "].", p.getData(0).size() == 10); 
+        assertTrue("Unexpected pair count at first index [10," + p.getData().size() + "].", p.getData().size() == 10); 
         //Check category count of two when fully expanded
         final MulticategoryPairsBuilder bn = new MulticategoryPairsBuilder();
         values.clear();
         values.add(d.vectorOf(new boolean[]{true, false, true, false}));
-        final MulticategoryPairs q = bn.add(values).setMetadata(meta).build();
+        final MulticategoryPairs q = bn.setData(values).setMetadata(meta).build();
         assertTrue("Unexpected category count on inputs [2," + q.getCategoryCount() + "].", q.getCategoryCount() == 2);
         //Check dataset count
-        assertTrue("Expected dataset count of one [false," + p.hasBaselineForSkill() + "].", !p.hasBaselineForSkill());
+        assertTrue("Expected dataset count of one [false," + p.hasBaseline() + "].", !p.hasBaseline());
         //Check dataset count of two
-        p = b.add(values).build(); //Add another
+        p = b.setDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
         //Check the addition of a Dimension 
-        assertTrue("Expected dataset count of two [true," + p.hasBaselineForSkill() + "].", p.hasBaselineForSkill());        
+        assertTrue("Expected dataset count of two [true," + p.hasBaseline() + "].", p.hasBaseline());        
         final Metadata t = MetadataFactory.getMetadata(10);
         b.setMetadata(t);
         p= b.build();
@@ -74,7 +73,7 @@ public final class MulticategoryPairsTest
             values.clear();
             values.add(d.vectorOf(new boolean[]{true, false, false, true, false, true}));
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            c.add(values).setMetadata(meta).build();
+            c.setData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: duplicate predicted outcome.");
         }
         catch(final Exception e)
@@ -86,7 +85,7 @@ public final class MulticategoryPairsTest
             values.clear();
             values.add(d.vectorOf(new boolean[]{true, true, false, true, false, false}));
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            c.add(values).setMetadata(meta).build();
+            c.setData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: duplicate observed outcome.");
         }
         catch(final Exception e)
@@ -98,7 +97,7 @@ public final class MulticategoryPairsTest
             values.clear();
             values.add(null);
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            c.add(values).setMetadata(meta).build();
+            c.setData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: null pair.");
         }
         catch(final Exception e)
@@ -111,7 +110,7 @@ public final class MulticategoryPairsTest
             values.clear();
             values.add(d.vectorOf(new boolean[]{true, false, false, true, false, false}));
             values.add(d.vectorOf(new boolean[]{true, false, false, false, true, false, false, false}));
-            c.add(values).setMetadata(meta).build();
+            c.setData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: one or more pairs with a varying number of "
                 + "categories.");
         }
@@ -124,7 +123,7 @@ public final class MulticategoryPairsTest
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
             values.clear();
             values.add(d.vectorOf(new boolean[]{true, false, false, false, true, false, false}));
-            c.add(values).setMetadata(meta).build();
+            c.setData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: observations and predictions have "
                 + "different numbers of categories.");
         }
@@ -136,7 +135,7 @@ public final class MulticategoryPairsTest
         try
         {
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            c.add(null).setMetadata(meta).build();
+            c.setData(null).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: null pair list.");
         }
         catch(final Exception e)
@@ -149,7 +148,7 @@ public final class MulticategoryPairsTest
             values.clear();
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
             values.add(d.vectorOf(new boolean[]{true, false, true, false}));
-            c.add(values).setMetadata(meta).build();
+            c.setData(values).setMetadata(meta).build();
         }
         catch(final Exception e)
         {

@@ -22,7 +22,7 @@ public final class MetadataFactory
 
     public static Metadata getMetadata(final int sampleSize)
     {
-        return getMetadata(sampleSize, getDimension(), null, null);
+        return getMetadata(sampleSize, getDimension(), null);
     }
 
     /**
@@ -31,17 +31,15 @@ public final class MetadataFactory
      * 
      * @param sampleSize the sample size
      * @param dim the dimension
-     * @param mainID an identifier associated with the metric data (may be null)
-     * @param baseID an identifier associated with the baseline metric data (may be null)
+     * @param id an identifier associated with the metric data (may be null)
      * @return a {@link Metadata} object
      */
 
     public static Metadata getMetadata(final int sampleSize,
                                        final Dimension dim,
-                                       final String mainID,
-                                       final String baseID)
+                                       final String id)
     {
-        return new MetadataImpl(sampleSize, dim, mainID, baseID);
+        return new MetadataImpl(sampleSize, dim, id);
     }
 
     /**
@@ -54,7 +52,7 @@ public final class MetadataFactory
      * @param mainID an identifier associated with the metric data (may be null)
      * @param baseID an identifier associated with the baseline metric data (may be null)
      * @param componentID the metric component identifier
-     * @return a {@link MetricOutputMetadata} object 
+     * @return a {@link MetricOutputMetadata} object
      */
 
     public static MetricOutputMetadata getMetadata(final int sampleSize,
@@ -67,10 +65,11 @@ public final class MetadataFactory
         class MetricOutputMetadataImpl extends MetadataImpl implements MetricOutputMetadata
         {
 
-            private MetricOutputMetadataImpl() {
-                super(sampleSize,dim,mainID,baseID);
+            private MetricOutputMetadataImpl()
+            {
+                super(sampleSize, dim, mainID);
             }
-            
+
             @Override
             public int getMetricID()
             {
@@ -84,17 +83,39 @@ public final class MetadataFactory
             }
 
             @Override
+            public String getIDForBaseline()
+            {
+                return baseID;
+            }
+
+            @Override
             public boolean equals(final Object o)
             {
-                return super.equals(o) && o instanceof MetricOutputMetadata
+                boolean returnMe = super.equals(o) && o instanceof MetricOutputMetadata
                     && ((MetricOutputMetadata)o).getMetricID() == getMetricID()
-                    && ((MetricOutputMetadata)o).getMetricComponentID() == getMetricComponentID();
+                    && ((MetricOutputMetadata)o).getMetricComponentID() == getMetricComponentID()
+                    && Objects.isNull(((MetricOutputMetadata)o).getIDForBaseline()) == Objects.isNull(getIDForBaseline());
+                if(!Objects.isNull(getID()))
+                {
+                    returnMe = returnMe && getID().equals(((Metadata)o).getID());
+                }
+                if(!Objects.isNull(getIDForBaseline()))
+                {
+                    returnMe = returnMe && getIDForBaseline().equals(((MetricOutputMetadata)o).getIDForBaseline());
+                }
+                return returnMe;
             }
 
             @Override
             public int hashCode()
             {
-                return super.hashCode() + Integer.hashCode(metricID) + Integer.hashCode(componentID);
+                int returnMe = super.hashCode() + Integer.hashCode(metricID) + Integer.hashCode(componentID)
+                    + Boolean.hashCode(Objects.isNull(getIDForBaseline()));
+                if(!Objects.isNull(getIDForBaseline()))
+                {
+                    returnMe += getIDForBaseline().hashCode();
+                }
+                return returnMe;
             }
 
             @Override
@@ -112,7 +133,8 @@ public final class MetadataFactory
                  .append(",")
                  .append(mainID)
                  .append(",")
-                 .append(baseID).append("].");
+                 .append(baseID)
+                 .append("].");
                 return b.toString();
             }
 
@@ -197,14 +219,12 @@ public final class MetadataFactory
         private final int sampleSize;
         private final Dimension dim;
         private final String mainID;
-        private final String baseID;
 
-        private MetadataImpl(final int sampleSize, final Dimension dim, final String mainID, final String baseID)
+        private MetadataImpl(final int sampleSize, final Dimension dim, final String mainID)
         {
             this.sampleSize = sampleSize;
             this.dim = dim;
             this.mainID = mainID;
-            this.baseID = baseID;
         }
 
         @Override
@@ -226,25 +246,14 @@ public final class MetadataFactory
         }
 
         @Override
-        public String getIDForBaseline()
-        {
-            return baseID;
-        }
-
-        @Override
         public boolean equals(final Object o)
         {
             boolean returnMe = o instanceof Metadata && ((Metadata)o).getSampleSize() == getSampleSize()
                 && ((Metadata)o).getDimension().equals(getDimension())
-                && Objects.isNull(((Metadata)o).getID()) == Objects.isNull(getID())
-                && Objects.isNull(((Metadata)o).getIDForBaseline()) == Objects.isNull(getIDForBaseline());
+                && Objects.isNull(((Metadata)o).getID()) == Objects.isNull(getID());
             if(!Objects.isNull(getID()))
             {
                 returnMe = returnMe && getID().equals(((Metadata)o).getID());
-            }
-            if(!Objects.isNull(getIDForBaseline()))
-            {
-                returnMe = returnMe && getIDForBaseline().equals(((Metadata)o).getIDForBaseline());
             }
             return returnMe;
         }
@@ -253,14 +262,10 @@ public final class MetadataFactory
         public int hashCode()
         {
             int returnMe = Integer.hashCode(sampleSize) + getDimension().hashCode()
-                + Boolean.hashCode(Objects.isNull(getID())) + Boolean.hashCode(Objects.isNull(getIDForBaseline()));
+                + Boolean.hashCode(Objects.isNull(getID()));
             if(!Objects.isNull(getID()))
             {
                 returnMe += getID().hashCode();
-            }
-            if(!Objects.isNull(getIDForBaseline()))
-            {
-                returnMe += getIDForBaseline().hashCode();
             }
             return returnMe;
         }
@@ -275,8 +280,6 @@ public final class MetadataFactory
              .append(dim)
              .append(",")
              .append(mainID)
-             .append(",")
-             .append(baseID)
              .append("].");
             return b.toString();
         }

@@ -28,7 +28,7 @@ extends
     public T apply(final S s)
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
-        if(!s.hasBaselineForSkill())
+        if(!s.hasBaseline())
         {
             throw new MetricInputException("Specify a non-null baseline for the '" + toString() + "'.");
         }
@@ -40,9 +40,9 @@ extends
                                                                         getID(),
                                                                         MetricConstants.MAIN,
                                                                         metIn.getID(),
-                                                                        metIn.getIDForBaseline());
+                                                                        s.getMetadataForBaseline().getID());
         final VectorOutput numerator = super.apply(s);
-        final VectorOutput denominator = super.apply(MetricInputFactory.ofExtendsSingleValuedPairs(s.getData(1),
+        final VectorOutput denominator = super.apply(MetricInputFactory.ofExtendsSingleValuedPairs(s.getDataForBaseline(),
                                                                                                    metOut));
         final double[] result = new double[]{
             FunctionFactory.skill().applyAsDouble(numerator.getData().getDoubles()[0],

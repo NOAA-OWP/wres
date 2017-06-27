@@ -127,7 +127,7 @@ extends
     private T getMSENoDecomp(final S s)
     {
         final double[] result = new double[]{
-            s.getData(0).stream().mapToDouble(FunctionFactory.squareError()).average().getAsDouble()};
+            s.getData().stream().mapToDouble(FunctionFactory.squareError()).average().getAsDouble()};
         //Metadata
         final Metadata metIn = s.getMetadata();
         final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),

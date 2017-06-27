@@ -1,7 +1,5 @@
 package wres.engine.statistics.metric.inputs;
 
-import wres.datamodel.metric.MetricInputBuilder;
-
 /**
  * Immutable store of verification pairs associated with a dichotomous input, i.e. a single event whose outcome is
  * recorded as occurring (true) or not occurring (false). The event is not defined as part of the input. A dichotomous
@@ -45,7 +43,7 @@ public final class DichotomousPairs extends MulticategoryPairs
     private DichotomousPairs(final DichotomousPairsBuilder b)
     {
         super(b);
-        final int check = b.pairs.get(0).get(0).size();
+        final int check = b.mainInput.get(0).size();
         if(check != 2 && check != 4) //Allow for shorthand and longhand construction of a dichotomous event  
         {
             throw new MetricInputException("Expected one outcome in the dichotomous input (two or four columns).");
