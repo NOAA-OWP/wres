@@ -24,12 +24,6 @@ implements ProbabilityScore
 {
 
     /**
-     * The metric name.
-     */
-
-    private static final String METRIC_NAME = "Brier Score";
-
-    /**
      * A {@link MetricBuilder} to build the metric.
      */
 
@@ -54,9 +48,9 @@ implements ProbabilityScore
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return METRIC_NAME;
+        return MetricConstants.BRIER_SCORE;
     }
 
     @Override
@@ -76,6 +70,12 @@ implements ProbabilityScore
     {
         return true;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return false;
+    }    
 
     /**
      * Hidden constructor.

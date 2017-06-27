@@ -2,11 +2,11 @@ package wres.datamodel.metric;
 
 /**
  * <p>
- * Generic class for an input to be iterated over by a metric. A metric input may comprise paired data or unpaired data
- * and may contain one or more individual datasets. In addition, a metric input may contain a baseline dataset to be
- * used in the same context (e.g. for skill scores). Each dataset should contain one or more elements with no, explicit,
- * missing values. Missing values should be handled in advance. For ensemble forecasts, metrics should anticipate the
- * possibility of an inconsistent number of ensemble members (e.g. due to missing values).
+ * An input to be iterated over by a metric. A metric input may comprise paired data or unpaired data and may contain
+ * one or more individual datasets. In addition, a metric input may contain a baseline dataset to be used in the same
+ * context (e.g. for skill scores). Each dataset should contain one or more elements with no, explicit, missing values.
+ * Missing values should be handled in advance. For ensemble forecasts, metrics should anticipate the possibility of an
+ * inconsistent number of ensemble members (e.g. due to missing values).
  * </p>
  * <p>
  * By convention, the two datasets required for a skill calculation should be stored with the reference dataset or
@@ -14,75 +14,51 @@ package wres.datamodel.metric;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 public interface MetricInput<S>
 {
 
     /**
-     * An abstract builder to build the collection od datasets.
+     * Returns the raw input.
+     * 
+     * @return the raw input
      */
 
-    public interface MetricInputBuilder<S>
-    {
-
-        /**
-         * Adds an input to the collection.
-         * 
-         * @param element the input to add
-         * @return the builder
-         */
-
-        public MetricInputBuilder<S> add(S element);
-
-        /**
-         * Sets the dimension associated with the input.
-         * 
-         * @param dim the dimension
-         * @return the builder
-         */
-
-        public MetricInputBuilder<S> setDimension(Dimension dim);
-
-        /**
-         * Builds the metric input.
-         * 
-         * @return the metric input
-         */
-
-        public MetricInput<S> build();
-    }
+    S getData();
 
     /**
-     * Convenience method that returns true if two datasets are available for a skill calculation, false otherwise.
+     * Returns the metadata associated with the input.
      * 
-     * @return true if two datasets are available
+     * @return the metadata associated with the input
      */
 
-    boolean hasTwo();
+    Metadata getMetadata();
 
     /**
-     * Returns the dimension associated with the input or null if the input is dimensionless.
+     * Returns the raw input associated with a baseline/reference for skill calculations or null if no baseline is
+     * defined.
      * 
-     * @return the dimension associated with the input or null
+     * @return the raw input associated with a baseline
      */
 
-    Dimension getDimension();
+    S getDataForBaseline();
 
     /**
-     * Returns the data at a prescribed index.
+     * Returns the metadata associated with the baseline input or null if no baseline is defined.
      * 
-     * @param index the index
-     * @throws IndexOutOfBoundsException if the index is out of range
-     * @return the data
+     * @return the metadata associated with the baseline input
      */
 
-    S get(int index);
+    Metadata getMetadataForBaseline();
 
     /**
-     * Returns the number of items in the dataset.
+     * Returns true if the metric input has a baseline for skill calculations, false otherwise.
      * 
-     * @return the size of the dataset
+     * @return true if a baseline is defined, false otherwise
      */
-    int size();
+
+    boolean hasBaseline();
 
 }

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.Dimension;
+import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetricInput;
 
 /**
@@ -16,45 +16,64 @@ import wres.datamodel.metric.MetricInput;
  * encoded with a single indicator. The observed outcomes are recorded first, followed by the predicted outcomes.
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
 {
 
     /**
-     * The verification pairs. There is one list of pairs for each variable stored in the input (e.g. including a
-     * baseline).
+     * The verification pairs.
      */
 
-    private final List<List<VectorOfBooleans>> pairs;
+    private final List<VectorOfBooleans> mainInput;
 
     /**
-     * Dimension of the data (must be the same for all datasets).
+     * Metadata associated with the verification pairs.
      */
 
-    final Dimension dim;
+    private final Metadata mainMeta;
+
+    /**
+     * The verification pairs for a baseline (may be null).
+     */
+
+    private final List<VectorOfBooleans> baselineInput;
+
+    /**
+     * Metadata associated with the baseline verification pairs (may be null).
+     */
+
+    private final Metadata baselineMeta;
 
     @Override
-    public boolean hasTwo()
+    public boolean hasBaseline()
     {
-        return size() == 2;
+        return !Objects.isNull(baselineInput);
     }
 
     @Override
-    public Dimension getDimension()
+    public List<VectorOfBooleans> getData()
     {
-        return dim;
+        return Collections.unmodifiableList(mainInput);
     }
 
     @Override
-    public List<VectorOfBooleans> get(final int index)
+    public Metadata getMetadata()
     {
-        return Collections.unmodifiableList(pairs.get(index));
+        return mainMeta;
     }
 
     @Override
-    public int size()
+    public List<VectorOfBooleans> getDataForBaseline()
     {
-        return pairs.size();
+        return Collections.unmodifiableList(baselineInput);
+    }
+
+    @Override
+    public Metadata getMetadataForBaseline()
+    {
+        return baselineMeta;
     }
 
     /**
@@ -65,7 +84,7 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
 
     public int getCategoryCount()
     {
-        final int elements = pairs.get(0).get(0).getBooleans().length;
+        final int elements = mainInput.get(0).getBooleans().length;
         return elements == 2 ? 2 : elements / 2;
     }
 
@@ -79,17 +98,50 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
         /**
          * Pairs.
          */
-        protected final List<List<VectorOfBooleans>> pairs = new ArrayList<>();
+        protected List<VectorOfBooleans> mainInput;
 
         /**
-         * Dimension.
+         * Pairs for baseline.
          */
-        private Dimension dim = null;
+        private List<VectorOfBooleans> baselineInput;
+
+        /**
+         * Metadata for input.
+         */
+
+        private Metadata mainMeta;
+
+        /**
+         * Metadata for baseline.
+         */
+
+        private Metadata baselineMeta;
 
         @Override
-        public MulticategoryPairsBuilder add(final List<VectorOfBooleans> element)
+        public MulticategoryPairsBuilder setData(final List<VectorOfBooleans> mainInput)
         {
-            pairs.add(element);
+            this.mainInput = mainInput;
+            return this;
+        }
+
+        @Override
+        public MulticategoryPairsBuilder setMetadata(final Metadata mainMeta)
+        {
+            this.mainMeta = mainMeta;
+            return this;
+        }
+
+        @Override
+        public MulticategoryPairsBuilder setDataForBaseline(final List<VectorOfBooleans> baselineInput)
+        {
+            this.baselineInput = baselineInput;
+            return this;
+        }
+
+        @Override
+        public MulticategoryPairsBuilder setMetadataForBaseline(final Metadata baselineMeta)
+        {
+            this.baselineMeta = baselineMeta;
             return this;
         }
 
@@ -98,14 +150,6 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
         {
             return new MulticategoryPairs(this);
         }
-
-        @Override
-        public MulticategoryPairsBuilder setDimension(final Dimension dim)
-        {
-            this.dim = dim;
-            return this;
-        }
-
     }
 
     /**
@@ -118,17 +162,43 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
     protected MulticategoryPairs(final MulticategoryPairsBuilder b)
     {
         //Bounds checks
+        if(Objects.isNull(b.mainMeta))
+        {
+            throw new MetricInputException("Specify non-null metadata for the metric input.");
+        }
+        if(Objects.isNull(b.mainInput))
+        {
+            throw new MetricInputException("Specify a non-null dataset for the metric input.");
+        }
+        if(Objects.isNull(b.baselineInput) != Objects.isNull(b.baselineMeta))
+        {
+            throw new MetricInputException("Specify a non-null baseline input and associated metadata or leave both "
+                + "null.");
+        }
         final List<Integer> size = new ArrayList<>();
-        b.pairs.stream().forEach(s -> {
-            if(Objects.isNull(s))
+        b.mainInput.stream().forEach(t -> {
+            final int count = t.size();
+            if(size.isEmpty())
             {
-                throw new MetricInputException("One or more of the inputs is null.");
+                size.add(count);
             }
-            if(s.contains(null))
+            if(!size.contains(count))
             {
-                throw new MetricInputException("One or more of the pairs is null.");
+                throw new MetricInputException("Two or more elements in the input have an unequal number of "
+                    + "categories.");
             }
-            s.stream().forEach(t -> {
+            final int outcomes = count / 2;
+            if(outcomes > 1 && count % 2 != 0)
+            {
+                throw new MetricInputException("The input should have an equivalent number of observed and predicted "
+                    + "outcomes.");
+            }
+
+            checkPair(outcomes, t);
+        });
+        if(!Objects.isNull(b.baselineInput))
+        {
+            b.baselineInput.stream().forEach(t -> {
                 final int count = t.size();
                 if(size.isEmpty())
                 {
@@ -136,21 +206,23 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
                 }
                 if(!size.contains(count))
                 {
-                    throw new MetricInputException("The inputs have an unequal number of categories.");
+                    throw new MetricInputException("Two or more elements in the baseline input have an unequal number of "
+                        + "categories.");
                 }
                 final int outcomes = count / 2;
                 if(outcomes > 1 && count % 2 != 0)
                 {
-                    throw new MetricInputException("Each multicategory input should have an equivalent number of "
-                        + "observed and predicted outcomes.");
+                    throw new MetricInputException("The baseline input should have an equivalent number of observed and "
+                        + "predicted outcomes.");
                 }
-
                 checkPair(outcomes, t);
             });
-
-        });
-        pairs = b.pairs;
-        dim = b.dim;
+        }
+        //Set
+        mainInput = b.mainInput;
+        mainMeta = b.mainMeta;
+        baselineInput = b.baselineInput;
+        baselineMeta = b.baselineMeta;
     }
 
     /**

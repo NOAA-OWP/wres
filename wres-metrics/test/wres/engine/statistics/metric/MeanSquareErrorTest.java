@@ -5,6 +5,8 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.MeanSquareError.MeanSquareErrorBuilder;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
@@ -31,6 +33,14 @@ public final class MeanSquareErrorTest
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
+        //Metadata for the output
+        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData().size(),
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.MEAN_SQUARE_ERROR,
+                                                                    MetricConstants.MAIN,
+                                                                    null,
+                                                                    null);
+
         //Build the metric
         final MeanSquareErrorBuilder<SingleValuedPairs, VectorOutput> b =
                                                                         new MeanSquareError.MeanSquareErrorBuilder<>();
@@ -38,12 +48,13 @@ public final class MeanSquareErrorTest
 
         //Check the results
         final VectorOutput actual = mse.apply(input);
-        final VectorOutput expected = MetricOutputFactory.ofVectorOutput(new double[]{400003.929}, 10, null);
+        final VectorOutput expected = MetricOutputFactory.ofVectorOutput(new double[]{400003.929}, m1);
         assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
             + ".", actual.equals(expected));
 
         //Check the parameters
-        assertTrue("Unexpected name for the Mean Square Error.", mse.getName().equals("Mean Square Error"));
+        assertTrue("Unexpected name for the Mean Square Error.",
+                   mse.getName().equals(MetricConstants.getMetricName(MetricConstants.MEAN_SQUARE_ERROR)));
         assertTrue("The Mean Square Error is decomposable.", mse.isDecomposable());
         assertTrue("The Mean Square Error is not a skill score.", !mse.isSkillScore());
         assertTrue("Expected no decomposition for the Mean Square Error.",

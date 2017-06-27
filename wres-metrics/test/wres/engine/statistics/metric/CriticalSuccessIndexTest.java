@@ -4,6 +4,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.CriticalSuccessIndex.CriticalSuccessIndexBuilder;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
@@ -30,26 +32,37 @@ public final class CriticalSuccessIndexTest
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
+        //Metadata for the output
+        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData().size(),
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.CRITICAL_SUCCESS_INDEX,
+                                                                    MetricConstants.MAIN,
+                                                                    "Main",
+                                                                    null);
+
         //Build the metric
         final CriticalSuccessIndexBuilder<DichotomousPairs, ScalarOutput> b =
                                                                             new CriticalSuccessIndex.CriticalSuccessIndexBuilder<>();
         final CriticalSuccessIndex<DichotomousPairs, ScalarOutput> csi = b.build();
-
+        
         //Check the results
         final ScalarOutput actual = csi.apply(input);
-        final ScalarOutput expected = MetricOutputFactory.ofScalarOutput(0.5734265734265734, 365, null);
+        final ScalarOutput expected = MetricOutputFactory.ofScalarOutput(0.5734265734265734, m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));
+                
         //Check the parameters
-        assertTrue("Unexpected name for the Critical Success Index.", csi.getName().equals("Critical Success Index"));
+        assertTrue("Unexpected name for the Critical Success Index.",
+                   csi.getName().equals(MetricConstants.getMetricName(MetricConstants.CRITICAL_SUCCESS_INDEX)));
         assertTrue("The Critical Success Index is not decomposable.", !csi.isDecomposable());
         assertTrue("The Critical Success Index is not a skill score.", !csi.isSkillScore());
         assertTrue("The Critical Success Index cannot be decomposed.",
                    csi.getDecompositionID() == MetricConstants.NONE);
-        final String name = MetricFactory.ofContingencyTable().getName();
-        assertTrue("The Critical Success Index should be a collection of '" + name
-            + "', but is actually a collection of '" + csi.getCollectionOf() + "'.",
-                   csi.getCollectionOf().equals(name));
+        final String expName = MetricFactory.ofContingencyTable().getName();
+        final String actName = MetricConstants.getMetricName(csi.getCollectionOf());        
+        assertTrue("The Critical Success Index should be a collection of '" + expName
+            + "', but is actually a collection of '" + actName + "'.",
+                   csi.getCollectionOf()==MetricFactory.ofContingencyTable().getID());
     }
 
 }

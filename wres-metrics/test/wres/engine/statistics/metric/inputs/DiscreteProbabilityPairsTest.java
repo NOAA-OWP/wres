@@ -7,6 +7,8 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
 import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
 
 /**
@@ -34,8 +36,11 @@ public final class DiscreteProbabilityPairsTest
         for(int i = 0; i < 10; i++)
         {
             values.add(d.pairOf(1, 1));
-        }
-        b.add(values).build();
+        }       
+        final Metadata meta = MetadataFactory.getMetadata(values.size(),
+                                                          MetadataFactory.getDimension(),
+                                                          "Main");         
+        b.setData(values).setMetadata(meta).build();
     }
 
 }

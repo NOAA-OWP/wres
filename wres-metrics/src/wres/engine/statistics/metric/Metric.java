@@ -40,12 +40,31 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
     public abstract T apply(S s);
 
     /**
-     * Returns the unique name of the metric.
+     * Returns a unique identifier for the metric from {@link MetricConstants}.
+     * 
+     * @return a unique identifier
+     */
+    
+    public abstract int getID();
+    
+    /**
+     * Returns true if the metric generates outputs that are dimensioned in real units, false if the outputs are in
+     * statistical or probabilistic units. 
+     * 
+     * @return true if the outputs are dimensioned in real units, false otherwise
+     */
+    
+    public abstract boolean hasRealUnits();
+    
+    /**
+     * Returns the unique name of the metric. See also {@link #getID()} and {@link MetricConstants#getMetricName(int)}.
      * 
      * @return the unique metric name
      */
 
-    public abstract String getName();
+    public String getName() {
+        return MetricConstants.getMetricName(getID());
+    }
 
     /**
      * Returns {@link #getName()}

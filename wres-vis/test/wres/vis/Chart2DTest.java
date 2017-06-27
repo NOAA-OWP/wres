@@ -16,6 +16,8 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
 import wres.engine.statistics.metric.inputs.MetricInputFactory;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 
@@ -36,7 +38,10 @@ public class Chart2DTest extends TestCase
         values.add(dataFactory.pairOf(8, 7));
         values.add(dataFactory.pairOf(12, 12));
         values.add(dataFactory.pairOf(93, 94));
-        final SingleValuedPairs pairs = MetricInputFactory.ofSingleValuedPairs(values, null);
+        final Metadata meta = MetadataFactory.getMetadata(values.size(),
+                                                          MetadataFactory.getDimension("CMS"),
+                                                          "Main");
+        final SingleValuedPairs pairs = MetricInputFactory.ofSingleValuedPairs(values, meta);
 
         //Construct the source from the pairs assigning it a data source order index of 0.  
         //The order index indicates the order in which the different sources are rendered.

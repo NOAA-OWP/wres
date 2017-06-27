@@ -6,7 +6,10 @@ import java.util.stream.IntStream;
 
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.inputs.MetricInputException;
 import wres.engine.statistics.metric.inputs.MulticategoryPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
@@ -32,12 +35,6 @@ import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 
 public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutput<?>> extends Metric<S, T>
 {
-
-    /**
-     * The metric name.
-     */
-
-    private static final String METRIC_NAME = "Contingency Table";
 
     /**
      * Null string warning, used in several places.
@@ -80,15 +77,29 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
             returnMe[index[1] - outcomes][index[0]] += 1;
         };
         //Increment the count in a serial stream as the lambda is stateful
-        s.get(0).stream().forEach(f);
-        return MetricOutputFactory.ofMatrixExtendsMetricOutput(returnMe, s.get(0).size(), null);
+        s.getData().stream().forEach(f);
+        final Metadata metIn = s.getMetadata();
+        final MetricOutputMetadata metOut =
+                                  MetadataFactory.getMetadata(s.getData().size(),
+                                                              metIn.getDimension(),
+                                                              getID(),
+                                                              MetricConstants.MAIN,
+                                                              metIn.getID(),
+                                                              null);
+        return MetricOutputFactory.ofMatrixExtendsMetricOutput(returnMe, metOut);
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return METRIC_NAME;
+        return MetricConstants.CONTINGENCY_TABLE;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return false;
+    }  
 
     /**
      * Convenience method that checks whether the output is compatible with a 2x2 contingency table. Throws an exception
