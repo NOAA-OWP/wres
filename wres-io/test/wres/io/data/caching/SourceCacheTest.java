@@ -4,6 +4,7 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -34,6 +35,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Ignore
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({SystemSettings.class, Database.class})
 @PowerMockIgnore("javax.management.*") // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
