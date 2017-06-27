@@ -12,12 +12,21 @@ package wres.datamodel.metric;
  * By convention, the two datasets required for a skill calculation should be stored with the reference dataset or
  * baseline in the second index.
  * </p>
+ * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 public interface MetricInput<S>
 {
+
+    /**
+     * Returns the raw input.
+     * 
+     * @return the raw input
+     */
+
+    S getData();
 
     /**
      * Returns the metadata associated with the input.
@@ -28,29 +37,28 @@ public interface MetricInput<S>
     Metadata getMetadata();
 
     /**
-     * Returns the data at a prescribed index.
+     * Returns the raw input associated with a baseline/reference for skill calculations or null if no baseline is
+     * defined.
      * 
-     * @param index the index
-     * @throws IndexOutOfBoundsException if the index is out of range
-     * @return the data
+     * @return the raw input associated with a baseline
      */
 
-    S getData(int index);
+    S getDataForBaseline();
 
     /**
-     * Convenience method that returns true if exactly two datasets are available for a skill calculation, false
-     * otherwise.
+     * Returns the metadata associated with the baseline input or null if no baseline is defined.
      * 
-     * @return true if two datasets are available
+     * @return the metadata associated with the baseline input
      */
 
-    boolean hasBaselineForSkill();
+    Metadata getMetadataForBaseline();
 
     /**
-     * Returns the number of items in the dataset.
+     * Returns true if the metric input has a baseline for skill calculations, false otherwise.
      * 
-     * @return the size of the dataset
+     * @return true if a baseline is defined, false otherwise
      */
-    int size();
+
+    boolean hasBaseline();
 
 }

@@ -16,6 +16,10 @@ import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 //     methods!!!  No reason for those to be in here when ALL instances of AbstractXYDataset will need it.
 //TODO A question to answer: Would it be better for this to be returned by SingleValuedPairs, which is 
 //     a MetricInput.  In other words, should MetricInput include a method "XYDataset buildXYDataset()"?
+
+//TODO: JB @ 27 June 2017: update this in light of simplifications to {@link MetricInput} to contain a single dataset
+//      In future, multivariate datasets will be handled as combinations of {@link MetricInput}. This class was never
+//      intended to hold multiple series for plotting purposes. 
 public class SingleValuedPairsXYDataset extends AbstractXYDataset //implements DomainInfo, XisSymbolic, RangeInfo
 {
     private final SingleValuedPairs pairs;
@@ -26,7 +30,7 @@ public class SingleValuedPairsXYDataset extends AbstractXYDataset //implements D
         pairs = input;
 
         //Default legend names.
-        for(int series = 0; series < pairs.size(); series++)
+        for(int series = 0; series < 1; series++)
         {
             legendNames.add("Series " + series);
         }
@@ -40,25 +44,25 @@ public class SingleValuedPairsXYDataset extends AbstractXYDataset //implements D
     @Override
     public int getItemCount(final int series)
     {
-        return pairs.getData(series).size();
+        return pairs.getData().size();
     }
 
     @Override
     public Number getX(final int series, final int item)
     {
-        return pairs.getData(series).get(item).getItemOne();
+        return pairs.getData().get(item).getItemOne();
     }
 
     @Override
     public Number getY(final int series, final int item)
     {
-        return pairs.getData(series).get(item).getItemTwo();
+        return pairs.getData().get(item).getItemTwo();
     }
 
     @Override
     public int getSeriesCount()
     {
-        return pairs.size();
+        return 1;
     }
 
     @Override

@@ -77,10 +77,10 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
             returnMe[index[1] - outcomes][index[0]] += 1;
         };
         //Increment the count in a serial stream as the lambda is stateful
-        s.getData(0).stream().forEach(f);
+        s.getData().stream().forEach(f);
         final Metadata metIn = s.getMetadata();
         final MetricOutputMetadata metOut =
-                                  MetadataFactory.getMetadata(s.getData(0).size(),
+                                  MetadataFactory.getMetadata(s.getData().size(),
                                                               metIn.getDimension(),
                                                               getID(),
                                                               MetricConstants.MAIN,

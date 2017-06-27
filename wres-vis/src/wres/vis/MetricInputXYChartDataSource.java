@@ -48,23 +48,33 @@ public class MetricInputXYChartDataSource extends DefaultXYChartDataSource
         getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(0);
         getDefaultFullySpecifiedDataSourceDrawingParameters().setYAxisIndex(0);
 
+        //JB @ 27 June 2017: simplified interface for MetricInput 
         //Initialize the series parameters to be fully defined.
-        constructAllSeriesDrawingParameters(metricInput.size());
-        for(int i = 0; i < metricInput.size(); i++)
-        {
-            final SeriesDrawingParameters seriesParms = this.getDefaultFullySpecifiedDataSourceDrawingParameters()
-                                                            .getSeriesDrawingParametersForSeriesIndex(i);
+//        constructAllSeriesDrawingParameters(metricInput.size());
+//        for(int i = 0; i < metricInput.size(); i++)
+//        {
+//            final SeriesDrawingParameters seriesParms = this.getDefaultFullySpecifiedDataSourceDrawingParameters()
+//                                                            .getSeriesDrawingParametersForSeriesIndex(i);
+//
+//            //Need fully specified parameters since these are not overrides.  
+//            seriesParms.setupDefaultParameters();
+//
+//            //Override the default legend names in order to number them starting with 0.
+//            seriesParms.setNameInLegend("Series " + i);
+//            if(i == 0)
+//            {
+//                seriesParms.setNameInLegend("Series First");
+//            }
+//        }
+        //START: JB @ 27 June 2017: simplified interface for MetricInput
+        constructAllSeriesDrawingParameters(1);
+        final SeriesDrawingParameters seriesParms = this.getDefaultFullySpecifiedDataSourceDrawingParameters()
+        .getSeriesDrawingParametersForSeriesIndex(0);
 
-            //Need fully specified parameters since these are not overrides.  
-            seriesParms.setupDefaultParameters();
-
-            //Override the default legend names in order to number them starting with 0.
-            seriesParms.setNameInLegend("Series " + i);
-            if(i == 0)
-            {
-                seriesParms.setNameInLegend("Series First");
-            }
-        }
+        //Need fully specified parameters since these are not overrides.  
+        seriesParms.setupDefaultParameters();        
+        //END: JB
+        seriesParms.setNameInLegend("Series First");
     }
 
     @Override

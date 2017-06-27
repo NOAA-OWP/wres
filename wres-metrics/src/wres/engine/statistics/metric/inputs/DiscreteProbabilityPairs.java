@@ -1,7 +1,5 @@
 package wres.engine.statistics.metric.inputs;
 
-import wres.datamodel.metric.MetricInputBuilder;
-
 /**
  * Immutable store of verification pairs that comprise probabilistic observations and predictions.
  * 

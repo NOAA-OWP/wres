@@ -40,8 +40,7 @@ public class Chart2DTest extends TestCase
         values.add(dataFactory.pairOf(93, 94));
         final Metadata meta = MetadataFactory.getMetadata(values.size(),
                                                           MetadataFactory.getDimension("CMS"),
-                                                          "Main",
-                                                          "Baseline");
+                                                          "Main");
         final SingleValuedPairs pairs = MetricInputFactory.ofSingleValuedPairs(values, meta);
 
         //Construct the source from the pairs assigning it a data source order index of 0.  

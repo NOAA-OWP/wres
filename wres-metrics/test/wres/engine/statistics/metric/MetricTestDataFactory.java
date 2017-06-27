@@ -80,11 +80,10 @@ public final class MetricTestDataFactory
         baseline.add(dataFactory.pairOf(8.8, 7.1));
         baseline.add(dataFactory.pairOf(12.1, 13));
         baseline.add(dataFactory.pairOf(93.2, 94.8));
-        final Metadata meta = MetadataFactory.getMetadata(values.size(),
-                                                    MetadataFactory.getDimension("CMS"),
-                                                    "Main",
-                                                    "Baseline");
-        return MetricInputFactory.ofSingleValuedPairs(values, baseline, meta);
+        final Metadata main = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension("CMS"), "Main");
+        final Metadata base =
+                            MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension("CMS"), "Baseline");
+        return MetricInputFactory.ofSingleValuedPairs(values, baseline, main, base);
     }
 
     /**
@@ -102,10 +101,7 @@ public final class MetricTestDataFactory
         {
             values.add(dataFactory.pairOf(5, 10));
         }
-        final Metadata meta = MetadataFactory.getMetadata(values.size(),
-                                                          MetadataFactory.getDimension("CMS"),
-                                                          "Main",
-                                                          null);
+        final Metadata meta = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension("CMS"), "Main");
         return MetricInputFactory.ofSingleValuedPairs(values, meta);
     }
 
@@ -143,11 +139,8 @@ public final class MetricTestDataFactory
         {
             values.add(d.vectorOf(new boolean[]{false, false}));
         }
-        final Metadata meta = MetadataFactory.getMetadata(values.size(),
-                                                          MetadataFactory.getDimension(),
-                                                          "Main",
-                                                          null);        
-        return MetricInputFactory.ofDichotomousPairs(values,meta); //Construct the pairs
+        final Metadata meta = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension(), "Main");
+        return MetricInputFactory.ofDichotomousPairs(values, meta); //Construct the pairs
     }
 
     /**
@@ -209,11 +202,8 @@ public final class MetricTestDataFactory
         {
             values.add(d.vectorOf(new boolean[]{false, false, true, false, false, true}));
         }
-        final Metadata meta = MetadataFactory.getMetadata(values.size(),
-                                                          MetadataFactory.getDimension(),
-                                                          "Main",
-                                                          null); 
-        return MetricInputFactory.ofMulticategoryPairs(values,meta); //Construct the pairs
+        final Metadata meta = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension(), "Main");
+        return MetricInputFactory.ofMulticategoryPairs(values, meta); //Construct the pairs
     }
 
     /**
@@ -233,11 +223,8 @@ public final class MetricTestDataFactory
         values.add(dataFactory.pairOf(1, 3.0 / 5.0));
         values.add(dataFactory.pairOf(0, 0.0 / 5.0));
         values.add(dataFactory.pairOf(1, 1.0 / 5.0));
-        final Metadata meta = MetadataFactory.getMetadata(values.size(),
-                                                          MetadataFactory.getDimension(),
-                                                          "Main",
-                                                          null); 
-        return MetricInputFactory.ofDiscreteProbabilityPairs(values,meta);
+        final Metadata meta = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension(), "Main");
+        return MetricInputFactory.ofDiscreteProbabilityPairs(values, meta);
     }
 
     /**
@@ -264,10 +251,8 @@ public final class MetricTestDataFactory
         baseline.add(dataFactory.pairOf(1, 3.0 / 5.0));
         baseline.add(dataFactory.pairOf(0, 4.0 / 5.0));
         baseline.add(dataFactory.pairOf(1, 1.0 / 5.0));
-        final Metadata meta = MetadataFactory.getMetadata(values.size(),
-                                                          MetadataFactory.getDimension(),
-                                                          "Main",
-                                                          "Baseline"); 
-        return MetricInputFactory.ofDiscreteProbabilityPairs(values, baseline,meta);
+        final Metadata main = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension(), "Main");
+        final Metadata base = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension(), "Baseline");
+        return MetricInputFactory.ofDiscreteProbabilityPairs(values, baseline, main, base);
     }
 }

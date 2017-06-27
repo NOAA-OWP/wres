@@ -40,7 +40,7 @@ public final class BrierSkillScoreTest
         final BrierSkillScore<DiscreteProbabilityPairs, VectorOutput> bss = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData(0).size(),
+        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData().size(),
                                                                     MetadataFactory.getDimension(),
                                                                     MetricConstants.BRIER_SKILL_SCORE,
                                                                     MetricConstants.MAIN,

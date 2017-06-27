@@ -43,10 +43,9 @@ public final class DichotomousPairsTest
         
         final Metadata meta = MetadataFactory.getMetadata(values.size(),
                                                           MetadataFactory.getDimension(),
-                                                          "Main",
-                                                          null);  
+                                                          "Main");  
         
-        final DichotomousPairs p = (DichotomousPairs)b.add(values).setMetadata(meta).build();
+        final DichotomousPairs p = (DichotomousPairs)b.setData(values).setMetadata(meta).build();
 
         //Check category count
         assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);
@@ -57,7 +56,7 @@ public final class DichotomousPairsTest
         {
             values.clear();
             values.add(d.vectorOf(new boolean[]{true, false, false, true, false, false}));
-            b.add(values).build();
+            b.setData(values).build();
             fail("Expected a checked exception on invalid inputs.");
         }
         catch(final Exception e)
@@ -69,7 +68,7 @@ public final class DichotomousPairsTest
         {
             values.clear();
             values.add(d.vectorOf(new boolean[]{true, false, true, false}));
-            b.add(values).build();
+            b.setData(values).build();
         }
         catch(final Exception e)
         {

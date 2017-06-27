@@ -36,7 +36,7 @@ public final class PeirceSkillScoreTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData(0).size(),
+        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData().size(),
                                                                     MetadataFactory.getDimension(),
                                                                     MetricConstants.PEIRCE_SKILL_SCORE,
                                                                     MetricConstants.MAIN,
@@ -93,7 +93,7 @@ public final class PeirceSkillScoreTest
         final MulticategoryPairs input = MetricTestDataFactory.getMulticategoryPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData(0).size(),
+        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData().size(),
                                                                     MetadataFactory.getDimension(),
                                                                     MetricConstants.PEIRCE_SKILL_SCORE,
                                                                     MetricConstants.MAIN,
