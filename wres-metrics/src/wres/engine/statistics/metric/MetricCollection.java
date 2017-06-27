@@ -196,7 +196,7 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
         //Collect the instances of Collectable by their getCollectionOf string, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
         @SuppressWarnings("unchecked")
-        final Map<String, List<Collectable<S, MetricOutput<?>, T>>> collectable =
+        final Map<Integer, List<Collectable<S, MetricOutput<?>, T>>> collectable =
                                                                                 metrics.stream()
                                                                                        .filter(Collectable.class::isInstance)
                                                                                        .map(p -> (Collectable<S, MetricOutput<?>, T>)p)
@@ -248,7 +248,7 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
         //Collect the instances of Collectable by their getCollectionOf string, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
         @SuppressWarnings("unchecked")
-        final Map<String, List<Collectable<S, MetricOutput<?>, T>>> collectable =
+        final Map<Integer, List<Collectable<S, MetricOutput<?>, T>>> collectable =
                                                                                 metrics.stream()
                                                                                        .filter(Collectable.class::isInstance)
                                                                                        .map(p -> (Collectable<S, MetricOutput<?>, T>)p)

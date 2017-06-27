@@ -6,6 +6,8 @@ package wres.engine.statistics.metric.inputs;
  * pair is be encoded with a single indicator.
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 public final class DichotomousPairs extends MulticategoryPairs
 {
@@ -41,7 +43,7 @@ public final class DichotomousPairs extends MulticategoryPairs
     private DichotomousPairs(final DichotomousPairsBuilder b)
     {
         super(b);
-        final int check = b.pairs.get(0).get(0).size();
+        final int check = b.mainInput.get(0).size();
         if(check != 2 && check != 4) //Allow for shorthand and longhand construction of a dichotomous event  
         {
             throw new MetricInputException("Expected one outcome in the dichotomous input (two or four columns).");

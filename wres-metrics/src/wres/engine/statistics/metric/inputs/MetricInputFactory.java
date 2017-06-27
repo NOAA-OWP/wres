@@ -1,11 +1,10 @@
 package wres.engine.statistics.metric.inputs;
 
 import java.util.List;
-import java.util.Objects;
 
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.Dimension;
+import wres.datamodel.metric.Metadata;
 
 /**
  * A factory class for producing metric inputs.
@@ -19,107 +18,107 @@ public final class MetricInputFactory
 {
 
     /**
-     * Construct the dichotomous input without any pairs for a baseline. Throws an exception if the pairs are null or
-     * empty or if any individual pairs do not contain two values.
+     * Construct the dichotomous input without any pairs for a baseline.
      * 
      * @param pairs the verification pairs
+     * @param meta the metadata
      * @return the pairs
-     * @throws MetricInputException if the pairs are invalid
+     * @throws MetricInputException if the inputs are invalid
      */
 
-    public static DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs)
+    public static DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
     {
-        return (DichotomousPairs)new DichotomousPairs.DichotomousPairsBuilder().add(pairs).build();
+        return (DichotomousPairs)new DichotomousPairs.DichotomousPairsBuilder().setData(pairs).setMetadata(meta).build();
     }
 
     /**
-     * Construct the multicategory input without any pairs for a baseline. Throws an exception if the pairs are null or
-     * empty or if any individual pairs do not contain two values.
+     * Construct the multicategory input without any pairs for a baseline.
      * 
      * @param pairs the verification pairs
+     * @param meta the metadata
      * @return the pairs
-     * @throws MetricInputException if the pairs are invalid
+     * @throws MetricInputException if the inputs are invalid
      */
 
-    public static MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs)
+    public static MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
     {
-        return new MulticategoryPairs.MulticategoryPairsBuilder().add(pairs).build();
+        return new MulticategoryPairs.MulticategoryPairsBuilder().setData(pairs).setMetadata(meta).build();
     }
 
     /**
-     * Construct the discrete probability input without any pairs for a baseline. Throws an exception if the pairs are
-     * null, empty, incomplete, or out of bounds.
+     * Construct the discrete probability input without any pairs for a baseline.
      * 
      * @param pairs the discrete probability pairs
-     * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
+     * @param meta the metadata
+     * @throws MetricInputException if the inputs are invalid
      * @return the pairs
      */
 
-    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs)
+    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs, final Metadata meta)
     {
-        return ofDiscreteProbabilityPairs(pairs, null);
+        return ofDiscreteProbabilityPairs(pairs, null, meta, null);
     }
 
     /**
-     * Construct the discrete probability input with a baseline. Throws an exception if the pairs are null, empty,
-     * incomplete or out of bounds or if the baseline is empty, incomplete or out of bounds. The baseline may be null.
+     * Construct the discrete probability input with a baseline.
      * 
      * @param pairs the discrete probability pairs
      * @param basePairs the baseline pairs
-     * @throws MetricInputException if the pairs are null, empty, incomplete, or out of bounds
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs
+     * @throws MetricInputException if the inputs are invalid
      * @return the pairs
      */
 
     public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
-                                                                      final List<PairOfDoubles> basePairs)
+                                                                      final List<PairOfDoubles> basePairs,
+                                                                      final Metadata mainMeta,
+                                                                      final Metadata baselineMeta)
     {
         final DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
                                                                          new DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
-        b.add(pairs);
-        if(!Objects.isNull(basePairs))
-        {
-            b.add(basePairs);
-        }
+        b.setData(pairs);
+        b.setMetadata(mainMeta);
+        b.setDataForBaseline(basePairs);
+        b.setMetadataForBaseline(baselineMeta);
         return b.build();
     }
 
     /**
-     * Construct the single-valued input without any pairs for a baseline. Throws an exception if the pairs are null or
-     * empty or if any individual pairs do not contain two values.
+     * Construct the single-valued input without any pairs for a baseline.
      * 
      * @param pairs the verification pairs
-     * @param dim the dimension of the input
+     * @param meta the metadata
      * @return the pairs
-     * @throws MetricInputException if the pairs are invalid
+     * @throws MetricInputException if the inputs are invalid
      */
 
-    public static SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Dimension dim)
+    public static SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Metadata meta)
     {
-        return ofSingleValuedPairs(pairs, null, dim);
+        return ofSingleValuedPairs(pairs, null, meta, null);
     }
 
     /**
-     * Construct the single-valued input with a baseline. Throws an exception if the pairs are null or empty or if the
-     * baseline pairs are empty or if any individual pairs do not contain two values. The baseline pairs may be null.
+     * Construct the single-valued input with a baseline.
      * 
      * @param pairs the single-valued pairs
      * @param basePairs the baseline pairs
-     * @param dim the dimension of the input
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs
      * @return the pairs
-     * @throws MetricInputException if the pairs are invalid
+     * @throws MetricInputException if the inputs are invalid
      */
 
     public static SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
                                                         final List<PairOfDoubles> basePairs,
-                                                        final Dimension dim)
+                                                        final Metadata mainMeta,
+                                                        final Metadata baselineMeta)
     {
         final SingleValuedPairs.SingleValuedPairsBuilder b = new SingleValuedPairs.SingleValuedPairsBuilder();
-        b.setDimension(dim);
-        b.add(pairs);
-        if(!Objects.isNull(basePairs))
-        {
-            b.add(basePairs);
-        }
+        b.setMetadata(mainMeta);
+        b.setData(pairs);
+        b.setDataForBaseline(basePairs);
+        b.setMetadataForBaseline(baselineMeta);
         return b.build();
     }
 
@@ -127,16 +126,16 @@ public final class MetricInputFactory
      * Return a cast of the inputs pairs.
      * 
      * @param pairs the input pairs
-     * @param dim the dimension
+     * @param meta the dimension
      * @param <T> the output pairs
      * @return the casted pairs
      */
 
     @SuppressWarnings("unchecked")
     public static <T extends SingleValuedPairs> T ofExtendsSingleValuedPairs(final List<PairOfDoubles> pairs,
-                                                                             final Dimension dim)
+                                                                             final Metadata meta)
     {
-        return (T)ofSingleValuedPairs(pairs, null, dim);
+        return (T)ofSingleValuedPairs(pairs, null, meta, null);
     }
 
     /**

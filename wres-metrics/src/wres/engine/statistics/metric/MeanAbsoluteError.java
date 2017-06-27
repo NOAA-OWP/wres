@@ -15,12 +15,6 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
 {
 
     /**
-     * The metric name.
-     */
-
-    private static final String METRIC_NAME = "Mean Absolute Error";
-
-    /**
      * A {@link MetricBuilder} to build the metric.
      */
 
@@ -44,9 +38,9 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return METRIC_NAME;
+        return MetricConstants.MEAN_ABSOLUTE_ERROR;
     }
 
     @Override
@@ -54,6 +48,12 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
     {
         return false;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return true;
+    }        
 
     @Override
     public int getDecompositionID()

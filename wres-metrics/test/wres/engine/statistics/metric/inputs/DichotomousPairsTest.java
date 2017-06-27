@@ -10,6 +10,8 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
 import wres.engine.statistics.metric.inputs.DichotomousPairs.DichotomousPairsBuilder;
 
 /**
@@ -38,7 +40,12 @@ public final class DichotomousPairsTest
         {
             values.add(d.vectorOf(new boolean[]{true, true}));
         }
-        final DichotomousPairs p = (DichotomousPairs)b.add(values).build();
+        
+        final Metadata meta = MetadataFactory.getMetadata(values.size(),
+                                                          MetadataFactory.getDimension(),
+                                                          "Main");  
+        
+        final DichotomousPairs p = (DichotomousPairs)b.setData(values).setMetadata(meta).build();
 
         //Check category count
         assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);
@@ -49,7 +56,7 @@ public final class DichotomousPairsTest
         {
             values.clear();
             values.add(d.vectorOf(new boolean[]{true, false, false, true, false, false}));
-            b.add(values).build();
+            b.setData(values).build();
             fail("Expected a checked exception on invalid inputs.");
         }
         catch(final Exception e)
@@ -61,7 +68,7 @@ public final class DichotomousPairsTest
         {
             values.clear();
             values.add(d.vectorOf(new boolean[]{true, false, true, false}));
-            b.add(values).build();
+            b.setData(values).build();
         }
         catch(final Exception e)
         {

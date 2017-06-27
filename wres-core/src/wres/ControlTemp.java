@@ -135,7 +135,7 @@ public class ControlTemp
                                                                                                          results))
                                                                     .exceptionally(error -> { //Handle exceptions
                                                                         LOGGER.error("While computing results at "
-                                                                            + "lead time " + leadTime, error);
+                                                                            + "lead time " + leadTime+".", error);
                                                                         return null;
                                                                     })
                                                                     .thenAccept(a -> {
@@ -174,13 +174,18 @@ public class ControlTemp
             final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
             final ToDoubleFunction<VectorOfDoubles> mean = FunctionFactory.mean();
             final List<PairOfDoubles> returnMe = new ArrayList<>();
+            int sz = 0;
             for(final PairOfDoubleAndVectorOfDoubles nextPair: t)
             {
                 final PairOfDoubles pair =
                                          valueFactory.pairOf(nextPair.getItemOne(),
                                                              mean.applyAsDouble(valueFactory.vectorOf(nextPair.getItemTwo())));
+                sz = nextPair.getItemTwo().length;
                 returnMe.add(pair);
             }
+            
+            System.out.println(returnMe.size()+" "+sz);
+            
             return MetricInputFactory.ofSingleValuedPairs(returnMe, null);
         }
     }
@@ -261,6 +266,9 @@ public class ControlTemp
             try (Connection con = Database.getConnection();
             ResultSet resultSet = Database.getResults(con,sql))
             {
+                if(LOGGER.isInfoEnabled()) {
+                    LOGGER.info("Requesting pairs for lead time "+leadTime+".");
+                }
                 while(resultSet.next())
                 {
                     final double observationValue = resultSet.getFloat("observation");

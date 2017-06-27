@@ -1,12 +1,16 @@
 package wres.engine.statistics.metric.inputs;
 
+import wres.engine.statistics.metric.MetricException;
+
 /**
  * A runtime exception associated with incorrect metric input.
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 
-public final class MetricInputException extends RuntimeException
+public final class MetricInputException extends MetricException
 {
 
     /**

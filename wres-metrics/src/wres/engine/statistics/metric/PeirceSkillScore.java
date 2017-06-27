@@ -3,7 +3,9 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
+import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.inputs.MulticategoryPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
@@ -23,12 +25,6 @@ import wres.engine.statistics.metric.outputs.ScalarOutput;
 public final class PeirceSkillScore<S extends MulticategoryPairs, T extends ScalarOutput> extends ContingencyTable<S, T>
 implements Score, Collectable<S, MetricOutput<?>, T>
 {
-
-    /**
-     * The metric name.
-     */
-
-    private static final String METRIC_NAME = "Peirce Skill Score";
 
     /**
      * A {@link MetricBuilder} to build the dichotomous metric.
@@ -78,11 +74,21 @@ implements Score, Collectable<S, MetricOutput<?>, T>
         final MatrixOfDoubles v = ((MatrixOutput)output).getData();
         final double[][] cm = v.getDoubles();
 
+        //Metadata
+        final MetricOutputMetadata metIn = output.getMetadata();
+        final MetricOutputMetadata metOut =
+                                  MetadataFactory.getMetadata(metIn.getSampleSize(),
+                                                              metIn.getDimension(),
+                                                              getID(),
+                                                              MetricConstants.MAIN,
+                                                              metIn.getID(),
+                                                              null);  
+
         //Dichotomous predictand
         if(v.rows() == 2)
         {
             return MetricOutputFactory.ofExtendsScalarOutput((cm[0][0] / (cm[0][0] + cm[1][0]))
-                - (cm[0][1] / (cm[0][1] + cm[1][1])), ((MatrixOutput)output).getSampleSize(), output.getDimension());
+                - (cm[0][1] / (cm[0][1] + cm[1][1])), metOut);
         }
 
         //Multicategory predictand
@@ -117,15 +123,13 @@ implements Score, Collectable<S, MetricOutput<?>, T>
         //Compose the result
         final double nSquared = n * n;
         final double result = ((diag / n) - (sumProd / nSquared)) / (1.0 - (uniProd / nSquared));
-        return MetricOutputFactory.ofExtendsScalarOutput(result,
-                                                         ((MatrixOutput)output).getSampleSize(),
-                                                         output.getDimension());
+        return MetricOutputFactory.ofExtendsScalarOutput(result, metOut);
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return METRIC_NAME;
+        return MetricConstants.PEIRCE_SKILL_SCORE;
     }
 
     @Override
@@ -139,6 +143,12 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     {
         return false;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return false;
+    }        
 
     @Override
     public int getDecompositionID()
@@ -153,9 +163,9 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public String getCollectionOf()
+    public int getCollectionOf()
     {
-        return super.getName();
+        return super.getID();
     }
 
     /**

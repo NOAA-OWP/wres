@@ -40,11 +40,11 @@ public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>
     T getCollectionInput(S input);
 
     /**
-     * Returns the {@link Metric#getName()} of the metric whose output forms the input to this metric. Metrics with
+     * Returns the {@link Metric#getID()} of the metric whose output forms the input to this metric. Metrics with
      * common intermediate inputs are collected by the name of the metric that produces the intermediate input.
      * 
-     * @return the {@link Metric#getName()} of the metric whose output forms the input to this metric
+     * @return the {@link Metric#getID()} of the metric whose output forms the input to this metric
      */
 
-    String getCollectionOf();
+    int getCollectionOf();
 }
