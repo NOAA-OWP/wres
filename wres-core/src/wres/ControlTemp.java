@@ -29,6 +29,7 @@ import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.inputs.MetricInputFactory;
+import wres.engine.statistics.metric.inputs.PairException;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputCollection;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
@@ -158,8 +159,8 @@ public class ControlTemp
         } catch(final Exception e) {
             logged = e;
         } finally {
-            //Close the pool to new tasks and terminate all existing tasks
-            f.shutdownNow();
+            //Terminate
+            f.shutdownNow(); //or shutdown();
         }
         //Print info to logger
         if(LOGGER.isInfoEnabled())
@@ -286,10 +287,10 @@ public class ControlTemp
 
 //START EXCEPTION EXAMPLE            
 //            //Demonstrates exception handling
-//            if(leadTime == 1000)
-//            {
-//                throw new PairException("while generating pairs at lead time " + leadTime);
-//            }
+            if(leadTime == 1000)
+            {
+                throw new PairException("while generating pairs at lead time " + leadTime);
+            }
 //END EXCEPTION EXAMPLE            
 
 //COMMENT THIS LINE WHEN DATABASE IS WORKING            
