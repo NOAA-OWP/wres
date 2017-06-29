@@ -22,7 +22,7 @@ import ucar.ma2.InvalidRangeException;
  * The initial draft of the NetCDF reader
  * Useful for sample code
  */
-public final class NetCDFReader {
+final class NetCDFReader {
 
 	/**
 	 * Constructor
@@ -43,14 +43,11 @@ public final class NetCDFReader {
 			System.out.println(ncfile.getDetailInfo());
 			
 			List<Attribute> global_attributes = ncfile.getGlobalAttributes();
-			for (int index = 0; index < global_attributes.size(); ++index)
-			{
-				Attribute global_attribute = global_attributes.get(index);
+			for (Attribute global_attribute : global_attributes) {
 				System.out.println("An attribute is: " + global_attribute.getFullName());
 				System.out.println("\tThe values are: ");
-				
-				for (int i = 0; i < global_attribute.getLength(); ++i)
-				{
+
+				for (int i = 0; i < global_attribute.getLength(); ++i) {
 					System.out.print("\t\t");
 					System.out.println(global_attribute.getValue(i));
 				}
@@ -175,22 +172,16 @@ public final class NetCDFReader {
 				Arrays.fill(origin, 0);
 				int[] size = new int[var.getRank()];
 				Arrays.fill(size, 1);
-				
-				for (int i = 0; i < Math.min(args.length, var.getRank()); ++i)
-				{
-					origin[i] = args[i];
-				}
+
+				System.arraycopy(args, 0, origin, 0, Math.min(args.length, var.getRank()));
 				
 				System.out.print(var.read(origin, size).getObject(0));
-				if (var.getUnitsString() != "null")
+				if (var.getUnitsString().equalsIgnoreCase("null"))
 				{
 					System.out.print(" " + var.getUnitsString());
 				}
 				System.out.println("");
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InvalidRangeException e) {
+			} catch (IOException | InvalidRangeException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}

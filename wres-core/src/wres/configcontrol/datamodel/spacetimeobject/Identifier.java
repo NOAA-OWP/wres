@@ -19,7 +19,7 @@ public class Identifier implements Comparable<Identifier> {
 	
 	public Identifier(String id) {
 		this.id = id;
-		this.map = new HashMap<Integer, Integer>();
+		this.map = new HashMap<>();
 	}
 	
 	public String getID() {

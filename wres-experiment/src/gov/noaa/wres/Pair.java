@@ -27,7 +27,7 @@ public class Pair
                                                + forecast.isEmpty());
         }
         
-        List<PairEvent> pairedData = new ArrayList<PairEvent>();
+        List<PairEvent> pairedData = new ArrayList<>();
 
         // Convert the forecast to a map, so we can key on datetime.
         Map<LocalDateTime,Event> forecastMap = forecast.getEventsByDateTime();
@@ -42,11 +42,6 @@ public class Pair
                                             fc.getLeadTime(),
                                             fc.getValues(),
                                             obs.getValue(0)));
-                //System.out.println("Successfully paired");
-            }
-            else
-            {
-                //System.err.println("Failed to pair.");
             }
         }
         return pairedData;

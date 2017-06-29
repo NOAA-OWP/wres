@@ -2,9 +2,6 @@ package wres.io.concurrency;
 
 import java.sql.SQLException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.io.utilities.Database;
 
 /**
@@ -12,8 +9,8 @@ import wres.io.utilities.Database;
  * 
  * @author Christopher Tubbs
  */
-public class SQLExecutor extends WRESThread implements Runnable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SQLExecutor.class);
+public class SQLExecutor extends WRESThread implements Runnable
+{
 
 	/**
 	 * Creates the thread with the passed in SQL script
@@ -31,7 +28,7 @@ public class SQLExecutor extends WRESThread implements Runnable {
 		} catch (SQLException e) {
 		    // Error Information is handled by the database module
 		}		
-		this.exectureOnComplete();
+		this.executeOnComplete();
 	}
 
 	private String script = null;

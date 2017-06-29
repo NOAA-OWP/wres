@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 
 public final class Strings {
 	
-    private Strings(){};
+    private Strings(){}
 	
 	/**
 	 * Static list of string values that might map to the boolean value 'true'
@@ -59,6 +59,12 @@ public final class Strings {
 		}
 				
 		return matches;
+	}
+
+	public static boolean contains(String full, String pattern)
+	{
+		Pattern regex = Pattern.compile(pattern);
+		return regex.matcher(full).find();
 	}
 	
 	/**
@@ -125,7 +131,7 @@ public final class Strings {
         stats += "Maximum available memory:\t" + (maxMemory == Long.MAX_VALUE ? "no limit" : describeMemory.apply(maxMemory)) + newline;
         
         /* Total memory currently in use by the JVM */
-        stats += "Total memory in use:\t\t" + describeMemory.apply(runtime.totalMemory()) + newline;
+        stats += "Total memory in use:\t\t" + describeMemory.apply(runtime.totalMemory() - runtime.freeMemory()) + newline;
         stats += newline;
         
         return stats;

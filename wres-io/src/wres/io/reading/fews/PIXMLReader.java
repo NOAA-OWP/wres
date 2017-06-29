@@ -7,13 +7,12 @@ import wres.io.config.specification.EnsembleSpecification;
 import wres.io.config.specification.FeatureSpecification;
 import wres.io.config.specification.LocationSpecification;
 import wres.io.config.specification.VariableSpecification;
+import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementCache;
-import wres.io.data.caching.SourceCache;
-// TODO: Uncomment when work on the SourceCache continues
-//import data.SourceCache;
-import wres.io.data.caching.VariableCache;
+import wres.io.data.caching.MeasurementUnits;
+
+import wres.io.data.caching.Variables;
 import wres.io.data.details.ForecastDetails;
 import wres.io.data.details.ForecastEnsembleDetails;
 import wres.io.reading.XMLReader;
@@ -24,8 +23,11 @@ import wres.util.Time;
 import wres.util.Strings;
 import wres.util.XML;
 
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.xml.stream.XMLStreamReader;
 
@@ -35,17 +37,78 @@ import javax.xml.stream.XMLStreamReader;
  * forecast or observation data
  */
 public final class PIXMLReader extends XMLReader 
-{	
+{
+	private static final int PARTITION_HOURS = 80;
+
     /**
      * Alias for the system agnostic newline separator
      */
-	private final static String newline = System.lineSeparator();
+	private final static String NEWLINE = System.lineSeparator();
 
-    /**
-     * @return The String header for the copy statement for forecasts
-     */
-	private final static String INSERT_FORECAST_HEADER = "wres.ForecastValue(forecastensemble_id, lead, forecasted_value)";
-	private final static String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, observation_time, observed_value, measurementunit_id, source_id)";
+	private final static String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, " +
+																			  "observation_time, " +
+																			  "observed_value, " +
+																			  "measurementunit_id, " +
+																			  "source_id)";
+
+	private static String createForecastValuePartition(Integer leadTime) throws SQLException {
+
+        String partitionHeader = null;
+		if (leadTime == null)
+		{
+			return null;
+		}
+
+		int partitionNumber = leadTime / PARTITION_HOURS + 1;
+
+		int low = (leadTime / PARTITION_HOURS) * PARTITION_HOURS;
+		int high = low + PARTITION_HOURS;
+
+		partitionHeader = "partitions.ForecastValue_Lead_";
+		partitionHeader += String.valueOf(partitionNumber);
+
+		String createScript = "CREATE TABLE IF NOT EXISTS ";
+		createScript += partitionHeader;
+		createScript += " ( " + NEWLINE;
+		createScript += "	CHECK ( lead >= " + String.valueOf(low) +
+                " AND lead < " + String.valueOf(high) + " )" + NEWLINE;
+		createScript += ") INHERITS (wres.ForecastValue);";
+
+		synchronized (PARTITION_LOCK)
+		{
+			Database.execute(createScript);
+		}
+
+		String indexScript = "CREATE INDEX IF NOT EXISTS ForecastValue_Lead_";
+		indexScript += String.valueOf(partitionNumber);
+		indexScript += "_Lead_idx ON ";
+		indexScript += partitionHeader;
+		indexScript += " (lead);" + NEWLINE;
+		indexScript += "ALTER TABLE " + partitionHeader;
+		indexScript += " CLUSTER ON ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_Lead_idx;";
+
+		synchronized (PARTITION_LOCK)
+		{
+			Database.execute(indexScript);
+		}
+
+		indexScript = "CREATE INDEX IF NOT EXISTS ForecastValue_Lead_";
+		indexScript += String.valueOf(partitionNumber);
+		indexScript += "_ForecastEnsemble_idx ON ";
+		indexScript += partitionHeader;
+		indexScript += " (forecastensemble_id);";
+
+		synchronized (PARTITION_LOCK)
+        {
+            Database.execute(indexScript);
+        }
+
+		partitionHeader += " (forecastensemble_id, lead, forecasted_value)";
+		return partitionHeader;
+	}
+
+	private static final Object PARTITION_LOCK = new Object();
+
 	/**
 	 * Constructor for a reader for forecast data
 	 * @param filename The path to the file to read
@@ -128,7 +191,7 @@ public final class PIXMLReader extends XMLReader
 			}
 		}
 		
-		saveEntries();
+		saveLeftoverObservations();
 	}
 	
 	/**
@@ -139,10 +202,10 @@ public final class PIXMLReader extends XMLReader
 	 */
 	private void parseEvent(XMLStreamReader reader) throws Exception
 	{
-		leadTime = leadTime + timeStep;
+		this.incrementLead();
 		Float value = null;
 		StringBuilder time = new StringBuilder();
-		String localName = null;
+		String localName;
 		
 		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex) {
 			localName = reader.getAttributeLocalName(attributeIndex);
@@ -158,40 +221,49 @@ public final class PIXMLReader extends XMLReader
 			}
 		}
 		
-		if (!value.equals(currentMissingValue)) {
-			if (isForecast) {
-				addForecastEvent(time.toString(), value);
+		if (value != null && !value.equals(currentMissingValue)) {
+			if (isForecast && dateIsApproved(time.toString()) && valueIsApproved(value)) {
+				addForecastEvent(value, currentLeadTime, getForecastEnsembleID());
 			} else {
 				addObservedEvent(time.toString(), value);
 			}
 		}
 		
 		if (insertCount >= SystemSettings.getMaximumCopies()) {
-			saveEntries();
+            saveLeftoverObservations();
 		}
 	}
-	
+
 	/**
 	 * Adds measurement information to the current insert script in the form of forecast data
 	 * @param forecastedValue The value parsed out of the XML
 	 * @throws Exception Any possible error encountered while trying to collect the forecast ensemble ID
 	 */
-	private void addForecastEvent(String time, Float forecastedValue) throws Exception
+	private static void addForecastEvent(Float forecastedValue, Integer lead, Integer forecastEnsembleID) throws Exception
 	{
-	    if (!dateIsApproved(time) || !valueIsApproved(forecastedValue)) {
-	        return;
-	    }
-	    
-		if (insertCount > 0) {
-			currentScript += newline;
-		} else if(insertCount == 0) {
-			currentTableDefinition = INSERT_FORECAST_HEADER;
-			currentScript = "";
-		}
-		
-		currentScript += getForecastEnsembleID() + delimiter + leadTime + delimiter + forecastedValue;
-		
-		insertCount++;
+		synchronized (groupLock) {
+            PIXMLReader.getBuilder(lead)
+                    .append(forecastEnsembleID)
+                    .append(delimiter)
+                    .append(lead)
+                    .append(delimiter)
+                    .append(forecastedValue)
+                    .append(NEWLINE);
+
+            copyCount.put(lead, copyCount.get(lead) + 1);
+
+            if (copyCount.get(lead) >= SystemSettings.getMaximumCopies()) {
+                CopyExecutor copier = new CopyExecutor(getForecastInsertHeader(lead),
+                        getBuilder(lead).toString(),
+                        delimiter);
+                copier.setOnRun(ProgressMonitor.onThreadStartHandler());
+                copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                Database.execute(copier);
+
+                copyCount.put(lead, 0);
+                builderMap.put(lead, new StringBuilder());
+            }
+        }
 	}
 	
 	/**
@@ -207,42 +279,60 @@ public final class PIXMLReader extends XMLReader
         
 		if (insertCount > 0)
 		{
-			currentScript += newline;
+			currentScript.append(NEWLINE);
 		}
 		else
 		{
 			currentTableDefinition = INSERT_OBSERVATION_HEADER;
-			currentScript = "";
+			currentScript = new StringBuilder();
 		}
 		
-		currentScript += Features.getVariablePositionID(currentLID, currentStationName, getVariableID());
-		currentScript += delimiter;
-		currentScript += "'" + observedTime + "'";
-		currentScript += delimiter;
-		currentScript += observedValue;
-		currentScript += delimiter;
-		currentScript += String.valueOf(getMeasurementID());
-		currentScript += delimiter;
-		currentScript += String.valueOf(getSourceID());
+		currentScript.append(Features.getVariablePositionID(currentLID, currentStationName, getVariableID()));
+		currentScript.append(delimiter);
+		currentScript.append("'").append(observedTime).append("'");
+		currentScript.append(delimiter);
+		currentScript.append(observedValue);
+		currentScript.append(delimiter);
+		currentScript.append(String.valueOf(getMeasurementID()));
+		currentScript.append(delimiter);
+		currentScript.append(String.valueOf(getSourceID()));
 		
 		insertCount++;
 	}
-	
-	/**
-	 * Saves the currently built up save script to the database
-	 */
-	private void saveEntries()
-	{
-		if (insertCount > 0)
-		{
-			insertCount = 0;
-			CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript, delimiter);
-			copier.setOnRun(ProgressMonitor.onThreadStartHandler());
-			copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-			Database.execute(copier);
-			currentScript = null;
-		}
-	}
+
+	public static void saveLeftoverForecasts()
+    {
+        synchronized (groupLock)
+        {
+            for (Map.Entry<Integer, StringBuilder> builderPair : PIXMLReader.builderMap.entrySet()) {
+                if (PIXMLReader.copyCount.get(builderPair.getKey()) > 0) {
+                    try {
+                        String header = PIXMLReader.getForecastInsertHeader(builderPair.getKey());
+                        CopyExecutor copier = new CopyExecutor(header, builderPair.getValue().toString(), delimiter);
+                        copier.setOnRun(ProgressMonitor.onThreadStartHandler());
+                        copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                        Database.execute(copier);
+                        PIXMLReader.builderMap.put(builderPair.getKey(), new StringBuilder());
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+
+    private void saveLeftoverObservations()
+    {
+        if (insertCount > 0)
+        {
+            insertCount = 0;
+            CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript.toString(), delimiter);
+            copier.setOnRun(ProgressMonitor.onThreadStartHandler());
+            copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+            Database.execute(copier);
+            currentScript = null;
+        }
+    }
 	
 	/**
 	 * Interprets the information within PIXML "header" tags
@@ -256,8 +346,8 @@ public final class PIXMLReader extends XMLReader
 		{
 			reader.next();
 		}
-		String localName = null;
-		leadTime = 0;
+		String localName;
+		currentLeadTime = 0;
 		creationDate = null;
 		creationTime = null;
 				
@@ -275,8 +365,6 @@ public final class PIXMLReader extends XMLReader
 				localName = reader.getLocalName();
 				if (localName.equalsIgnoreCase("locationId"))
 				{
-					//currentFeatureID = null;
-					
 					//	If we are at the tag for the location id, save it to the location metadata
 					currentLID = XML.getXMLText(reader);
 
@@ -326,7 +414,7 @@ public final class PIXMLReader extends XMLReader
 				{
 					//	If we are at the tag for the units, save it to the measurement units
 					currentMeasurementUnit = XML.getXMLText(reader);
-					currentMeasurementUnitID = MeasurementCache.getMeasurementUnitID(currentMeasurementUnit);
+					currentMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(currentMeasurementUnit);
 				}
 				else if(localName.equalsIgnoreCase("missVal"))
 				{
@@ -371,7 +459,7 @@ public final class PIXMLReader extends XMLReader
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
 					currentVariableName = XML.getXMLText(reader);
-					currentVariableID = VariableCache.getVariableID(currentVariableName, currentMeasurementUnitID);
+					currentVariableID = Variables.getVariableID(currentVariableName, currentMeasurementUnitID);
 				}
 			}
 			reader.next();
@@ -387,10 +475,10 @@ public final class PIXMLReader extends XMLReader
 	 * @param reader The XML Reader positioned at a node containing date and time attributes
 	 * @return A string of the format "{date} {time}"
 	 */
-	public static String parseDateTime(XMLStreamReader reader) {
+	private static String parseDateTime (XMLStreamReader reader) {
 		String date = null;
 		String time = null;
-		String localName = null;
+		String localName;
 		
 		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
 		{
@@ -470,7 +558,7 @@ public final class PIXMLReader extends XMLReader
 	{		
 		if (currentVariableID == null)
 		{
-			this.currentVariableID = VariableCache.getVariableID(currentVariableName, currentMeasurementUnit);
+			this.currentVariableID = Variables.getVariableID(currentVariableName, currentMeasurementUnit);
 		}
 		return this.currentVariableID;
 	}
@@ -483,7 +571,7 @@ public final class PIXMLReader extends XMLReader
 	{
 		if (currentSourceID == null)
 		{
-			String output_time = null;
+			String output_time;
 			if (this.creationDate != null) {
 				output_time = this.creationDate;
 				if (this.creationTime != null) {
@@ -493,7 +581,7 @@ public final class PIXMLReader extends XMLReader
 			else {
 				output_time = startDate;
 			}
-			currentSourceID = SourceCache.getSourceID(getFilename(), output_time);
+			currentSourceID = DataSources.getSourceID(getFilename(), output_time, null);
 		}
 		return currentSourceID;
 	}
@@ -560,7 +648,7 @@ public final class PIXMLReader extends XMLReader
 	           value <= this.specifiedMaximumValue; 
 	}
     
-    protected boolean variableIsApproved(String name) {
+    private boolean variableIsApproved (String name) {
         return !this.detailsSpecified || 
                this.loadAllVariables || 
                this.specifiedVariables == null ||
@@ -570,7 +658,7 @@ public final class PIXMLReader extends XMLReader
         });
     }
     
-    protected boolean ensembleIsApproved(String name, String ensembleMemberID) {
+    private boolean ensembleIsApproved (String name, String ensembleMemberID) {
         return !isForecast ||
                !detailsSpecified || 
                this.loadAllEnsembles || 
@@ -581,7 +669,7 @@ public final class PIXMLReader extends XMLReader
         });
     }
     
-    protected boolean featureIsApproved(String lid) {
+    private boolean featureIsApproved (String lid) {
         return !detailsSpecified || 
                this.loadAllFeatures ||
                this.specifiedFeatures == null ||
@@ -591,7 +679,7 @@ public final class PIXMLReader extends XMLReader
                });
     }
     
-    protected boolean seriesIsApproved() {
+    private boolean seriesIsApproved () {
         boolean ensembleApproved = this.ensembleIsApproved(this.currentEnsembleName, this.currentEnsembleMemberID);
         boolean featureApproved = this.featureIsApproved(this.currentLID);
         boolean variableApproved = this.variableIsApproved(currentVariableName);
@@ -608,8 +696,7 @@ public final class PIXMLReader extends XMLReader
 	 * The time on the date that the source was created
 	 */
 	private String creationTime = null;
-	
-	// TODO: Uncomment when source saving work continues
+
 	/**
 	 * The date that data in the source first started being captured
 	 */
@@ -648,7 +735,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The current state of a script that will be sent to the database
 	 */
-	private String currentScript = "";
+	private StringBuilder currentScript = null;
 	
 	/**
 	 * The current definition of the table in which the data will be saved
@@ -663,12 +750,12 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The current amount of hours into the forecast
 	 */
-	private int leadTime = 0;
+	private int currentLeadTime = 0;
 	
 	/**
 	 * The delimiter between values for copy statements
 	 */
-	private final String delimiter = "|"; 
+	private static final String delimiter = "|";
 	
 	/**
 	 * The ID for the unit of measurement for the variable that is currently being parsed
@@ -694,8 +781,7 @@ public final class PIXMLReader extends XMLReader
 	 * The ID for the position for the variable that is currently being parsed
 	 */
 	private Integer currentVariablePositionID = null;
-	
-	// TODO: Uncomment when source saving work continues
+
 	/**
 	 * The ID for the current source file
 	 */
@@ -735,9 +821,37 @@ public final class PIXMLReader extends XMLReader
 	 * The name of the variable whose values are currently being parsed 
 	 */
 	private String currentVariableName = null;
-	
 
-    
+	private void incrementLead() {
+		this.currentLeadTime += this.timeStep;
+	}
+
+	private static StringBuilder getBuilder(Integer lead)
+    {
+        synchronized (groupLock)
+        {
+            if (!builderMap.containsKey(lead))
+            {
+                builderMap.putIfAbsent(lead, new StringBuilder());
+                copyCount.putIfAbsent(lead, 0);
+            }
+            return builderMap.get(lead);
+        }
+    }
+
+	private String getForecastInsertHeader() throws SQLException {
+	    return getForecastInsertHeader(this.currentLeadTime);
+	}
+
+	private static String getForecastInsertHeader(Integer lead) throws SQLException {
+	    synchronized (PIXMLReader.headerMap) {
+            if (!PIXMLReader.headerMap.containsKey(lead)) {
+                PIXMLReader.headerMap.putIfAbsent(lead, PIXMLReader.createForecastValuePartition(lead));
+            }
+        }
+	    return PIXMLReader.headerMap.get(lead);
+    }
+
     private OffsetDateTime specifiedEarliestDate = null;
     private OffsetDateTime specifiedLatestDate = null;
     private Float specifiedMinimumValue = Float.MIN_VALUE;
@@ -749,4 +863,9 @@ public final class PIXMLReader extends XMLReader
     private boolean loadAllFeatures = true;
     private List<FeatureSpecification> specifiedFeatures = null;
     private boolean detailsSpecified = false;
+
+    private static final Map<Integer, StringBuilder> builderMap = new TreeMap<>();
+    private static final Map<Integer, String> headerMap = new TreeMap<>();
+    private static final Map<Integer, Integer> copyCount = new TreeMap<>();
+    private static final Object groupLock = new Object();
 }

@@ -26,7 +26,7 @@ public class UnidataArrayIteratableTest extends TestCase
             }
         }
         final UnidataArrayIterable<Double> iterator =
-                                                    new UnidataArrayIterable<Double>(data);
+                new UnidataArrayIterable<>(data);
 
         double checkValue = 0.0;
         for(final Double d: iterator)
@@ -58,7 +58,7 @@ public class UnidataArrayIteratableTest extends TestCase
         try
         {
             final UnidataArrayIterable<String> iterator =
-                                                        new UnidataArrayIterable<String>(data);
+                    new UnidataArrayIterable<>(data);
             for(final String d: iterator)
             {
                 System.out.println("Did not expect success..." + d);
@@ -91,7 +91,7 @@ public class UnidataArrayIteratableTest extends TestCase
         try
         {
             final UnidataArrayIterable<Integer> iterator =
-                                                         new UnidataArrayIterable<Integer>(data);
+                    new UnidataArrayIterable<>(data);
             for(final Integer d: iterator)
             {
                 System.out.println("Did not expect success..." + d);

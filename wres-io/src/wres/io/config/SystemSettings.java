@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
+import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.XML;
 import wres.io.reading.XMLReader;
@@ -22,7 +23,7 @@ public final class SystemSettings extends XMLReader
 	// The global, static system configuration
     private static final SystemSettings INSTANCE = new SystemSettings();
 
-    private Database databaseConfiguration = null;
+    private DatabaseSettings databaseConfiguration = null;
     private int maximumThreadCount = 0;
     private int poolObjectLifespan = 30000;
     private int fetchSize = 100;
@@ -31,6 +32,7 @@ public final class SystemSettings extends XMLReader
     private String projectDirectory = "projects";
     private boolean shouldLog = true;
     private boolean inDevelopment = false;
+    private Long updateFrequency = null;
 
 	// The static path to the configuration path
     private static final String CONFIG_PATH = "wresconfig.xml";
@@ -66,7 +68,7 @@ public final class SystemSettings extends XMLReader
 			{
 				if (reader.getLocalName().equalsIgnoreCase("database"))
 				{
-					databaseConfiguration = new Database(reader);
+					databaseConfiguration = new DatabaseSettings(reader);
 				}				
 				else if (reader.getLocalName().equalsIgnoreCase("maximum_thread_count"))
 				{
@@ -110,6 +112,19 @@ public final class SystemSettings extends XMLReader
 				{
 				    this.shouldLog = Strings.isTrue(XML.getXMLText(reader));
 				}
+				else if (XML.tagIs(reader, "update_frequency"))
+				{
+					String frequency = XML.getXMLText(reader);
+					if (Strings.isNumeric(frequency))
+					{
+						this.updateFrequency = Long.parseLong(frequency);
+						ProgressMonitor.setUpdateFrequency(this.updateFrequency);
+					}
+				}
+				else if (XML.tagIs(reader, "fetch_size"))
+				{
+					this.fetchSize = Integer.parseInt(XML.getXMLText(reader));
+				}
 			}
 		}
 		catch (Exception error)
@@ -127,6 +142,11 @@ public final class SystemSettings extends XMLReader
 	{
 	    return INSTANCE.inDevelopment;
 	}
+
+	public static Long getUpdateFrequency()
+    {
+        return INSTANCE.updateFrequency;
+    }
 
 	/**
 	 * @return The number of allowable threads

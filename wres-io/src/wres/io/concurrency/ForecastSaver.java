@@ -1,7 +1,7 @@
 package wres.io.concurrency;
 
 import wres.io.reading.BasicSource;
-import wres.io.reading.SourceReader;
+import wres.io.reading.ReaderFactory;
 
 /**
  * Saves the forecast at the indicated path asynchronously
@@ -26,8 +26,9 @@ public class ForecastSaver extends WRESThread implements Runnable {
 	    this.executeOnRun();
 		try
 		{
-			BasicSource source = SourceReader.get_source(this.filepath);
-			source.save_forecast();
+			BasicSource source = ReaderFactory.getReader(this.filepath);
+			source.saveForecast();
+			//ReaderFactory.releaseReader();
 		}
 		catch (Exception e)
 		{
@@ -35,7 +36,7 @@ public class ForecastSaver extends WRESThread implements Runnable {
 			e.printStackTrace();
 		}
 		
-		this.exectureOnComplete();
+		this.executeOnComplete();
 	}
 
 	private String filepath = null;

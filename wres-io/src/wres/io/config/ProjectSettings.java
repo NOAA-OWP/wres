@@ -2,12 +2,10 @@ package wres.io.config;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import wres.io.config.specification.ProjectSpecification;
@@ -19,12 +17,12 @@ import wres.util.XML;
  * Provides access to projects determining the configuration of metric execution
  * @author Christopher Tubbs
  */
-public final class Projects extends XMLReader {
+public final class ProjectSettings extends XMLReader {
 
     /**
      *  The underlying storage structure for the project configurations
      */
-	private static final Projects configuration = new Projects();
+	private static final ProjectSettings configuration = new ProjectSettings();
 	
 	/**
 	 * Private Constructor
@@ -32,7 +30,7 @@ public final class Projects extends XMLReader {
 	 * There should be no other instances of the project configuration. The Projects
 	 * is merely a cache for configurations
 	 */
-	private Projects() {
+	private ProjectSettings() {
 		super(SystemSettings.getProjectDirectory());
 		loadProjects();
 	}
@@ -43,6 +41,11 @@ public final class Projects extends XMLReader {
 	private void loadProjects()
 	{
 		File directory = new File(this.getFilename());
+
+		if (directory == null)
+		{
+			return;
+		}
 		
 		FilenameFilter filter = (dir, name) -> {
             File possibleFile = new File(Paths.get(dir.getAbsolutePath(), name).toAbsolutePath().toString());
@@ -68,21 +71,7 @@ public final class Projects extends XMLReader {
     {
         if (XML.tagIs(reader, "project"))
         {
-            try
-            {
-                addProject(new ProjectSpecification(reader));
-            }
-            catch (IOException|XMLStreamException e)
-            {
-                System.err.println();
-                System.err.println();
-
-                System.err.println("A project could not be parsed correctly.");
-
-                System.err.println();
-                System.err.println();
-                e.printStackTrace();
-            }
+            addProject(new ProjectSpecification(reader));
         }
     }
 

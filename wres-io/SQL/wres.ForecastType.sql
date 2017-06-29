@@ -21,4 +21,5 @@ ALTER TABLE wres.forecasttype
  INSERT INTO wres.ForecastType (type_name, timestep, step_count)
  VALUES ('short', 1, 18),
 	('medium', 3, 80),
-	('long', 6, 120);
+	('long', 6, 120),
+	('analysis', 1, 15);

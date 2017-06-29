@@ -3,9 +3,7 @@
  */
 package wres.io.config.specification;
 
-import java.sql.SQLException;
-
-import wres.io.data.caching.VariableCache;
+import wres.io.data.caching.Variables;
 
 /**
  * A specification for a variable to perform queries against
@@ -38,7 +36,7 @@ public class VariableSpecification {
 	}
 	
 	public Integer getVariableID() throws Exception {
-	    return VariableCache.getVariableID(variableName, unitOfMeasurement);
+	    return Variables.getVariableID(variableName, unitOfMeasurement);
 	}
 	
 	private final String variableName;

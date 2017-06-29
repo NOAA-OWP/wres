@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import java.util.Objects;
 import java.util.stream.Stream;
 import java.util.function.Predicate;
 
@@ -37,12 +38,12 @@ public class DatacardReader
             DatacardLineReader reader = DatacardLineReader.of(offset);
 
             fileLines.map(reader)
-                .filter(e -> e != null)
+                .filter(Objects::nonNull)
                 // filter out based on tests
                 .flatMap(List::stream)
                 .filter(tests.stream()
                         .reduce(Predicate::and).orElse(p->true))
-                .forEach(e -> events.add(e));
+                .forEach(events::add);
         }
         catch (IOException ioe)
         {
@@ -57,7 +58,7 @@ public class DatacardReader
         TimeSeries series = TimeSeries.of(SeriesInfo.of(last.getDateTime(),
                                                         ZoneId.of("UTC",
                                                             ZoneId.SHORT_IDS),
-                                                        new HashMap<String,Object>()),
+                new HashMap<>()),
                                           events);
         result.add(series);
         return result;

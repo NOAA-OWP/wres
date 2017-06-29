@@ -23,11 +23,11 @@ public final class XML
      */
     public static String getXMLText(XMLStreamReader reader) throws XMLStreamException {
         String value = null;
-        
+
         if (reader.isStartElement() && (reader.next() == XMLStreamConstants.CHARACTERS)) {
             value = reader.getText().trim();
         }
-        
+
         return value;
     }
 
@@ -95,5 +95,4 @@ public final class XML
         }
         return currentTagHasName;
     }
-
 }

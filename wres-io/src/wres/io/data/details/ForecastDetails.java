@@ -1,8 +1,11 @@
 package wres.io.data.details;
 
-import wres.io.data.caching.SourceCache;
+import wres.io.data.caching.DataSources;
 
+import wres.io.data.caching.ForecastTypes;
 import wres.io.utilities.Database;
+
+import javax.annotation.concurrent.GuardedBy;
 
 /**
  * Important details about a forecast that predicted values for different variables over some span of time
@@ -13,9 +16,12 @@ public final class ForecastDetails {
 	
 	private String sourcePath = null;
 	private String forecastDate = null;
+
+	@GuardedBy("forecastIdLock")
 	private Integer forecast_id = null;
 	private String creationDate = null;
 	private String range = null;
+	private Integer lead = null;
 	
 	/**
 	 * The path to the file that contains data for the forecast
@@ -23,14 +29,6 @@ public final class ForecastDetails {
 	 */
 	public ForecastDetails(String path) {
 		this.sourcePath = path;
-	}
-	
-	public String getForecastDate() {
-	    return this.forecastDate;
-	}
-	
-	public String getSourcePath() {
-	    return this.sourcePath;
 	}
 	
 	/**
@@ -43,6 +41,15 @@ public final class ForecastDetails {
 		{
 			this.forecastDate = forecastDate;
 			forecast_id = null;
+		}
+	}
+
+	public void setLead(int lead)
+	{
+		if (this.lead == null || this.lead != lead)
+		{
+			this.lead = lead;
+			this.forecast_id = null;
 		}
 	}
 	
@@ -59,7 +66,7 @@ public final class ForecastDetails {
 	    if (this.range == null || !this.range.equalsIgnoreCase(range))
 	    {
 	        this.range = range;
-	        this.range = null;
+	        this.forecast_id = null;
 	    }
 	}
 	
@@ -80,12 +87,12 @@ public final class ForecastDetails {
 	 */
 	public int getForecastID() throws Exception
 	{
-		if (forecast_id == null)
+		if (this.forecast_id == null)
 		{
 			save();
 		}
 		
-		return forecast_id;
+		return this.forecast_id;
 	}
 	
 	/**
@@ -93,18 +100,38 @@ public final class ForecastDetails {
 	 * database if it does not currently exist
 	 * @throws Exception Thrown if the ID could not be retrieved from the database
 	 */
-	public void save() throws Exception
+	private void save () throws Exception
 	{
 		String script = "";
 
 		script += "WITH new_forecast AS" + newline;
 		script += "(" + newline;
-		script += "		INSERT INTO wres.Forecast(forecast_date)" + newline;
-		script += "		SELECT '" + forecastDate + "'" + newline;
+		script += "		INSERT INTO wres.Forecast(forecast_date, forecasttype_id)" + newline;
+		script += "		SELECT '" + forecastDate + "'," + newline;
+
+		if (this.range == null)
+        {
+            script += "     null" + newline;
+        }
+        else
+        {
+            script += "     '" + String.valueOf(ForecastTypes.getForecastTypeId(this.range)) + "'" + newline;
+        }
+
 		script += "		WHERE NOT EXISTS (" + newline;
 		script += "			SELECT 1" + newline;
 		script += "			FROM wres.Forecast" + newline;
 		script += "			WHERE forecast_date = '" + forecastDate + "'" + newline;
+		script += "				AND forecasttype_id ";
+
+		if (this.range == null)
+        {
+            script += "is null" + newline;
+        }
+        else {
+            script += "= '" + String.valueOf(ForecastTypes.getForecastTypeId(this.range)) + "'" + newline;
+        }
+
 		script += "		)" + newline;
 		script += "		RETURNING forecast_id" + newline;
 		script += ")" + newline;
@@ -115,17 +142,31 @@ public final class ForecastDetails {
 		script += "";
 		script += "SELECT forecast_id" + newline;
 		script += "FROM wres.Forecast" + newline;
-		script += "WHERE forecast_date = '" + forecastDate + "';";
-		
-		forecast_id = Database.getResult(script, "forecast_id");
+		script += "WHERE forecast_date = '" + forecastDate + "'" + newline;
+		script += "     AND forecasttype_id ";
+
+        if (this.range == null)
+        {
+            script += "is null";
+        }
+        else {
+            script += "= '" + String.valueOf(ForecastTypes.getForecastTypeId(this.range)) + "'";
+        }
+
+        script += ";";
+
+
+        //synchronized (forecastIdLock) {
+            forecast_id = Database.getResult(script, "forecast_id");
+        //}
 		
 		saveForecastSource();
 	}
 	
 	private String getSourceDate() {
-	    String date = null;
+	    String date;
 	    
-	    if (this.creationDate == null)
+	    if (this.creationDate != null)
 	    {
 	        date = this.creationDate;
 	    }
@@ -142,8 +183,8 @@ public final class ForecastDetails {
 	 * @throws Exception Thrown if the Forecast and its source could not be properly linked
 	 */
 	private void saveForecastSource() throws Exception {
-        
-        int sourceID = SourceCache.getSourceID(sourcePath, getSourceDate());
+
+        int sourceID = DataSources.getSourceID(sourcePath, getSourceDate(), this.lead);
 
         String script = "";
         script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + newline;
@@ -154,7 +195,9 @@ public final class ForecastDetails {
         script += "     WHERE forecast_id = " + this.forecast_id + newline;
         script += "         AND source_id = " + sourceID + newline;
         script += ");";
-        
-        Database.execute(script);
+
+        //synchronized (ForecastDetails.sourceLock) {
+			Database.execute(script);
+		//}
 	}
 }

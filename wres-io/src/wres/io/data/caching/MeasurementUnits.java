@@ -16,13 +16,13 @@ import wres.io.utilities.Debug;
  * Caches details mapping units of measurements to their IDs
  * @author Christopher Tubbs
  */
-public class MeasurementCache extends Cache<MeasurementDetails, String> {
+public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MeasurementCache.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MeasurementUnits.class);
     /**
      *  Internal, Global cache of measurement details
      */
-	private static MeasurementCache internalCache = new MeasurementCache();
+	private static final MeasurementUnits internalCache = new MeasurementUnits();
 	
 	/**
 	 * Return the ID of a unit of measurement from the global cache based on the specification of the measurement
@@ -43,7 +43,7 @@ public class MeasurementCache extends Cache<MeasurementDetails, String> {
 	 */
 	public static Integer getMeasurementUnitID(String unit) throws Exception
 	{
-		return internalCache.getID(unit);
+		return internalCache.getID(unit.toLowerCase());
 	}
 	
 	/**
@@ -84,7 +84,7 @@ public class MeasurementCache extends Cache<MeasurementDetails, String> {
             measurements = measurementQuery.executeQuery(loadScript);
 
             while (measurements.next()) {                
-                this.keyIndex.put(measurements.getString("unit_name"), measurements.getInt("measurementunit_id"));
+                this.keyIndex.put(measurements.getString("unit_name").toLowerCase(), measurements.getInt("measurementunit_id"));
             }
         }
         catch (SQLException error)

@@ -21,7 +21,7 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	{
 		if (this.unit == null || !this.unit.equalsIgnoreCase(unit))
 		{
-			this.unit = unit;
+			this.unit = unit.toLowerCase();
 			this.measurementunit_id = null;
 		}
 	}
@@ -46,7 +46,7 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 
 	@Override
 	public String getKey() {
-		return this.unit;
+		return this.unit.toLowerCase();
 	}
 
 	@Override

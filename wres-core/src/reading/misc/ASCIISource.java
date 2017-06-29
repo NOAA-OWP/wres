@@ -25,7 +25,7 @@ import data.caching.Variable;
 @SuppressWarnings("deprecation")
 public class ASCIISource extends BasicSource 
 {
-    private static int MAX_INSERTS = 100;
+    private static final int MAX_INSERTS = 100;
     private Integer observationlocation_id;
     private String variable_name;
     private Integer variable_id;
@@ -42,7 +42,7 @@ public class ASCIISource extends BasicSource
 	{
 		if (observationlocation_id == null)
 		{
-			String location_name = Paths.get(get_filename()).getFileName().toString().split("_")[0];
+			String location_name = Paths.get(getFilename()).getFileName().toString().split("_")[0];
 			String load_script = String.format(get_observationlocation_id_script, location_name);
 			observationlocation_id = Database.getResult(load_script, "observationlocation_id");
 		}
@@ -69,8 +69,8 @@ public class ASCIISource extends BasicSource
 	}
 
 	@Override
-	public void save_forecast() throws SQLException {
-		Path path = Paths.get(get_filename());
+	public void saveForecast() throws SQLException {
+		Path path = Paths.get(getFilename());
 		
 		try(BufferedReader reader = Files.newBufferedReader(path))
 		{
@@ -188,7 +188,7 @@ public class ASCIISource extends BasicSource
 		String script = save_forecast_script;
 		script = String.format(script, 
 							   formatted_date, 
-							   get_absolute_filename(), 
+							   getAbsoluteFilename(),
 							   get_variable_id());		
 		return script;
 	}

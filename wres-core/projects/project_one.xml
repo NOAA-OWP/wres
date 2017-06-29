@@ -77,7 +77,7 @@
                     <graphic output="false" path="" format=""/>
                     <numeric output="true" path="numeric_output" format="xml" />
                 </output>
-                <aggregation aggregate="false" range="1" unit="hour" mode="mean" first_lead="0" last_lead="" />
+                <aggregation aggregate="false" range="1" unit="hour" mode="mean" first_lead="1" last_lead="" />
                 <datasource sourceID="one">
                     <sources>
                         <!--<source name="examplefilename.xml" /> -->
@@ -147,7 +147,7 @@
                     <graphic output="false" path="" format=""/>
                     <numeric output="true" path="numeric_output" format="xml" />
                 </output>
-                <aggregation aggregate="false" range="1" unit="hour" mode="mean" first_lead="0" last_lead="" />
+                <aggregation aggregate="false" range="1" unit="hour" mode="mean" first_lead="1" last_lead="" />
                 <datasource sourceID="one">
                     <sources>
                         <!--<source name="examplefilename.xml" /> -->

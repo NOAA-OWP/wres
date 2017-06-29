@@ -23,7 +23,7 @@ public final class Time
     /**
      * The global format for dates is {@value}
      */
-    public final static String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSSSS";
+    public final static String DATE_FORMAT = "yyyy-MM-dd[ [HH][:mm][:ss][.SSSSSS]";
     
     public static final Map<String, Double> HOUR_CONVERSION = mapTimeToHours();
     
@@ -47,7 +47,7 @@ public final class Time
     public static boolean isTimestamp(String possibleTimestamp)
     {
         return possibleTimestamp != null && (
-                possibleTimestamp.matches("\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d-\\d\\d-\\d\\d\\.?\\d*") ||
+                possibleTimestamp.matches("\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.?\\d*") ||
                 Arrays.asList("epoch", "infinity", "-infinity", "now", "today", "tomorrow", "yesterday").contains(possibleTimestamp));
     }
     
@@ -140,8 +140,17 @@ public final class Time
             date = OffsetDateTime.now().minusDays(1L);
             date = date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
         } else if (isTimestamp(datetime)) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
-            date = OffsetDateTime.parse(datetime, formatter);
+            if (!datetime.endsWith("Z"))
+            {
+                datetime += "Z";
+            }
+
+            if (!datetime.contains("T"))
+            {
+                datetime = datetime.replace(" ", "T");
+            }
+
+            date = OffsetDateTime.parse(datetime);
         }
         
         return date;

@@ -4,6 +4,7 @@
 package wres.io.config.specification;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Arrays;
 import javax.xml.stream.XMLStreamException;
@@ -73,7 +74,7 @@ public class ProjectDataSpecification extends SpecificationElement
 			while (reader.hasNext())
 			{
 				next(reader);
-				if (XML.xmlTagClosed(reader, Arrays.asList("directories")))
+				if (XML.xmlTagClosed(reader, Collections.singletonList("directories")))
 				{
 					break;
 				}
@@ -133,7 +134,7 @@ public class ProjectDataSpecification extends SpecificationElement
 		while (reader.hasNext())
 		{
 			next(reader);
-			if (XML.xmlTagClosed(reader, Arrays.asList("features")))
+			if (XML.xmlTagClosed(reader, Collections.singletonList("features")))
 			{
 				break;
 			}
@@ -183,7 +184,7 @@ public class ProjectDataSpecification extends SpecificationElement
 		while (reader.hasNext())
 		{
 			next(reader);
-			if (XML.xmlTagClosed(reader, Arrays.asList("ensembles")))
+			if (XML.xmlTagClosed(reader, Collections.singletonList("ensembles")))
 			{
 				break;
 			}
@@ -229,7 +230,7 @@ public class ProjectDataSpecification extends SpecificationElement
 		
 		if (this.directories == null)
 		{
-			this.directories = new ArrayList<DirectorySpecification>();
+			this.directories = new ArrayList<>();
 		}
 		
 		this.directories.add(directory);
@@ -250,7 +251,7 @@ public class ProjectDataSpecification extends SpecificationElement
 		
 		if (this.ensembles == null)
 		{
-			this.ensembles = new ArrayList<EnsembleSpecification>();
+			this.ensembles = new ArrayList<>();
 		}
 		
 		this.ensembles.add(ensemble);
@@ -277,7 +278,7 @@ public class ProjectDataSpecification extends SpecificationElement
 		
 		if (this.features == null)
 		{
-			this.features = new ArrayList<FeatureSpecification>();
+			this.features = new ArrayList<>();
 		}
 		
 		this.features.add(feature);
@@ -290,7 +291,7 @@ public class ProjectDataSpecification extends SpecificationElement
 	{
 		if (this.features == null)
 		{
-			this.features = new ArrayList<FeatureSpecification>();
+			this.features = new ArrayList<>();
 		}
 		
 		return this.features.size();
@@ -303,7 +304,7 @@ public class ProjectDataSpecification extends SpecificationElement
 	{
 		if (this.directories == null)
 		{
-			this.directories = new ArrayList<DirectorySpecification>();
+			this.directories = new ArrayList<>();
 		}
 		return directories;
 	}
@@ -323,7 +324,7 @@ public class ProjectDataSpecification extends SpecificationElement
 	{
 		if (this.features == null)
 		{
-			this.features = new ArrayList<FeatureSpecification>();
+			this.features = new ArrayList<>();
 		}
 		return this.features;
 	}
@@ -339,7 +340,7 @@ public class ProjectDataSpecification extends SpecificationElement
 	    
 	    if (this.features == null)
 	    {
-	        this.features = new ArrayList<FeatureSpecification>();
+	        this.features = new ArrayList<>();
 	    }
 	    
 	    if (index < this.features.size())
@@ -400,26 +401,26 @@ public class ProjectDataSpecification extends SpecificationElement
 	
 	public String getEnsembleCondition() throws Exception
 	{
-	    String condition = "ANY('{";
+	    StringBuilder condition = new StringBuilder("ANY('{");
 
         boolean addComma = false;
         for (EnsembleSpecification ensemble : this.ensembles)
         {
             if (addComma)
             {
-                condition += ",";
+                condition.append(",");
             }
             else
             {
                 addComma = true;
             }
             
-            condition += ensemble.getID();
+            condition.append(ensemble.getID());
         }
         
-        condition += "}'::int[])";
+        condition.append("}'::int[])");
 	    
-	    return condition;
+	    return condition.toString();
 	}
 	
 	/**
@@ -429,7 +430,7 @@ public class ProjectDataSpecification extends SpecificationElement
 	{
 		if (this.ensembles == null)
 		{
-			this.ensembles = new ArrayList<EnsembleSpecification>();
+			this.ensembles = new ArrayList<>();
 		}
 		return ensembles;
 	}
@@ -441,7 +442,7 @@ public class ProjectDataSpecification extends SpecificationElement
 	{
 		if (this.variables == null)
 		{
-			this.variables = new ArrayList<VariableSpecification>();
+			this.variables = new ArrayList<>();
 		}
 		return this.variables;
 	}
@@ -544,7 +545,7 @@ public class ProjectDataSpecification extends SpecificationElement
 	    
 	    if (this.variables == null)
 	    {
-	        this.variables = new ArrayList<VariableSpecification>();
+	        this.variables = new ArrayList<>();
 	    }
 	    
 	    if (index < this.variables.size())
@@ -593,94 +594,94 @@ public class ProjectDataSpecification extends SpecificationElement
 	@Override
 	public String toString() {
 		
-		String description = "";
+		StringBuilder description = new StringBuilder();
 		if (variableCount() == 1)
 		{
 			VariableSpecification variable = this.variables.get(0);
-			description = "Variable: ";
-			description += String.valueOf(variable.name());
-			description += ", measured in ";
-			description += String.valueOf(variable.getUnit());
-			description += System.lineSeparator();
+			description = new StringBuilder("Variable: ");
+			description.append(String.valueOf(variable.name()));
+			description.append(", measured in ");
+			description.append(String.valueOf(variable.getUnit()));
+			description.append(System.lineSeparator());
 		}
 		else if (variableCount() > 1)
 		{
-			description += "Variables:";
-			description += System.lineSeparator();
-			description += System.lineSeparator();
+			description.append("Variables:");
+			description.append(System.lineSeparator());
+			description.append(System.lineSeparator());
 			for (VariableSpecification variable : this.variables)
 			{
-				description += "\tVariable: ";
-				description += String.valueOf(variable.name());
-				description += ", measured in ";
-				description += String.valueOf(variable.getUnit());
-				description += System.lineSeparator();
+				description.append("\tVariable: ");
+				description.append(String.valueOf(variable.name()));
+				description.append(", measured in ");
+				description.append(String.valueOf(variable.getUnit()));
+				description.append(System.lineSeparator());
 			}
 		}
 		
 		if (directoryCount() > 0)
 		{
-			description += "Directories: ";
-			description += System.lineSeparator();
-			description += System.lineSeparator();
+			description.append("Directories: ");
+			description.append(System.lineSeparator());
+			description.append(System.lineSeparator());
 			for (DirectorySpecification directory : directories)
 			{
-				description += directory;
+				description.append(directory);
 			}
 		}
 		
 		if (lazyLoad != null && lazyLoad)
 		{
-			description += "Data will only be loaded if it does not exist within the database.";
+			description.append("Data will only be loaded if it does not exist within the database.");
 		}
 		else if (lazyLoad != null)
 		{
-			description += "Data will be loaded in full each time.";
+			description.append("Data will be loaded in full each time.");
 		}
 		
-		description += System.lineSeparator();
-		description += System.lineSeparator();
+		description.append(System.lineSeparator());
+		description.append(System.lineSeparator());
 		
 		if (loadAllFeatures)
 		{
-			description += "All Features will be considered.";
-			description += System.lineSeparator();
+			description.append("All Features will be considered.");
+			description.append(System.lineSeparator());
 		}
 		else if (featureCount() > 0)
 		{
-			description += "The following features will be considered:";
-			description += System.lineSeparator();
+			description.append("The following features will be considered:");
+			description.append(System.lineSeparator());
 			for (FeatureSpecification feature : features)
 			{
-				description += feature.toString();
+				description.append(feature.toString());
 			}
 		}
-		description += System.lineSeparator();
+		description.append(System.lineSeparator());
 		
 		if (loadAllEnsembles)
 		{
-			description += "All found ensembles will be considered.";
-			description += System.lineSeparator();
+			description.append("All found ensembles will be considered.");
+			description.append(System.lineSeparator());
 		}
 		else if (ensembleCount() > 0)
 		{
-			description += "The following ensembles will be considered:";
-			description += System.lineSeparator();
+			description.append("The following ensembles will be considered:");
+			description.append(System.lineSeparator());
 			for (EnsembleSpecification ensemble : ensembles)
 			{
-				description += ensemble.toString();
+				description.append(ensemble.toString());
 			}
 		}
 		
 		if (conditions != null)
 		{
-			description += System.lineSeparator();
-			description += conditions.toString();
+			description.append(System.lineSeparator());
+			description.append(conditions.toString());
 		}
 		
-		description += System.lineSeparator();
+		description.append(System.lineSeparator());
 		
-		return description;
+		return description.toString();
 	}
 
 	private boolean loadAllFeatures;

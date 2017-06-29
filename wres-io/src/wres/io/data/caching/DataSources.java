@@ -17,14 +17,14 @@ import wres.io.utilities.Debug;
  * Caches information about the source of forecast and observation data
  * @author Christopher Tubbs
  */
-public class SourceCache extends Cache<SourceDetails, SourceKey> {
+public class DataSources extends Cache<SourceDetails, SourceKey> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SourceCache.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DataSources.class);
 
     /**
      * Global Cache of basic source data
      */
-	private static SourceCache internalCache = new SourceCache();
+	private static final DataSources internalCache = new DataSources();
 	
 	/**
 	 * Gets the ID of source metadata from the global cache based on a file path and the date of its output
@@ -33,8 +33,8 @@ public class SourceCache extends Cache<SourceDetails, SourceKey> {
 	 * @return The ID of the source in the database
 	 * @throws Exception Thrown when interaction with the database failed
 	 */
-	public static Integer getSourceID(String path, String outputTime) throws Exception {
-		return internalCache.getID(path, outputTime);
+	public static Integer getSourceID(String path, String outputTime, Integer lead) throws Exception {
+		return internalCache.getID(path, outputTime, lead);
 	}
 	
 	/**
@@ -54,8 +54,8 @@ public class SourceCache extends Cache<SourceDetails, SourceKey> {
 	 * @return The ID of the source in the database
 	 * @throws Exception Thrown when interaction with the database failed
 	 */
-	public Integer getID(String path, String outputTime) throws Exception {
-		return this.getID(SourceDetails.createKey(path, outputTime));
+	public Integer getID(String path, String outputTime, Integer lead) throws Exception {
+		return this.getID(SourceDetails.createKey(path, outputTime, lead));
 	}
 	
 	@Override
@@ -67,7 +67,18 @@ public class SourceCache extends Cache<SourceDetails, SourceKey> {
 
 	    return super.getID(key);
 	}
-	
+
+	public static String getPath(int sourceID)
+    {
+        String path = null;
+        SourceKey key = internalCache.getKey(sourceID);
+        if (key != null)
+        {
+            path = key.getSourcePath();
+        }
+        return path;
+    }
+
 	@Override
 	protected int getMaxDetails() {
 		return 400;
@@ -94,7 +105,7 @@ public class SourceCache extends Cache<SourceDetails, SourceKey> {
             loadScript += "LIMIT " + getMaxDetails();
             
             sources = sourceQuery.executeQuery(loadScript);
-            SourceDetails detail = null;
+            SourceDetails detail;
             
             while (sources.next()) {
                 detail = new SourceDetails();

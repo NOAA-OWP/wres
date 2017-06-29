@@ -1,9 +1,9 @@
 package wres.io.data.details;
 
-import java.sql.SQLException;
 import java.util.Objects;
 
 import wres.io.data.details.SourceDetails.SourceKey;
+
 /**
  * Details about a source of observation or forecast data
  * @author Christopher Tubbs
@@ -12,6 +12,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 
 	private String sourcePath = null;
 	private String outputTime = null;
+	private Integer lead = null;
 	private Integer sourceID = null;
 	
 	/**
@@ -25,23 +26,13 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 	
 	/**
 	 * Constructor
-	 * @param sourcePath The path on the file system to the source file
-	 * @param outputTime The time that the file was generated
-	 */
-	public SourceDetails(String sourcePath, String outputTime) {
-		this.setSourcePath(sourcePath);
-		this.setOutputTime(outputTime);
-		this.setID(null);
-	}
-	
-	/**
-	 * Constructor
 	 * @param key A TwoTuple containing, first, the path to the source file and, second, the time
 	 * that the source file was generated
 	 */
 	public SourceDetails(SourceKey key) {
 		this.setSourcePath(key.getSourcePath());
 		this.setOutputTime(key.getSourceTime());
+		this.setLead(key.getLead());
 		this.setID(null);
 	}
 	
@@ -60,16 +51,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 	public void setOutputTime(String outputTime) {
 		this.outputTime = outputTime;
 	}
-	
-	/**
-	 * @return The ID of the information about the source in the database
-	 * @throws SQLException Thrown if the data in the database could not be retrieved
-	 */
-	public Integer getSourceID() throws SQLException {
-		if (this.sourceID == null) {
-			save();
-		}		
-		return sourceID;
+
+
+	public void setLead(Integer lead)
+	{
+		this.lead = lead;
 	}
 	
 	@Override
@@ -85,7 +71,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 
 	@Override
 	public SourceKey getKey() {
-		return new SourceKey(sourcePath, outputTime);
+		return new SourceKey(this.sourcePath, this.outputTime, this.lead);
 	}
 
 	@Override
@@ -108,14 +94,16 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 		String script = "";
 		script += "WITH new_source AS" + newline;
 		script += "(" + newline;
-		script += "		INSERT INTO wres.Source (path, output_time)" + newline;
+		script += "		INSERT INTO wres.Source (path, output_time, lead)" + newline;
 		script += "		SELECT '" + this.sourcePath + "'," + newline;
-		script += "				'" + this.outputTime + "'" + newline;
+		script += "				'" + this.outputTime + "'," + newline;
+		script += "             " + String.valueOf(this.lead) + newline;
 		script += "		WHERE NOT EXISTS (" + newline;
 		script += "			SELECT 1" + newline;
 		script += "			FROM wres.Source" + newline;
 		script += "			WHERE path = '" + this.sourcePath + "'" + newline;
 		script += "				AND output_time = '" + this.outputTime + "'" + newline;
+		script += "             AND lead = " + this.lead + newline;
 		script += "		)" + newline;
 		script += "		RETURNING source_id" + newline;
 		script += ")" + newline;
@@ -127,22 +115,42 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 		script += "SELECT source_id" + newline;
 		script += "FROM wres.Source" + newline;
 		script += "WHERE path = '" + this.sourcePath + "'" + newline;
-		script += "		AND output_time = '" + this.outputTime + "';";
+		script += "		AND output_time = '" + this.outputTime + "'" + newline;
+		script += "     AND lead = " + String.valueOf(this.lead) + ";";
 
 		return script;
 	}
-	
-	public static SourceKey createKey(String sourcePath, String sourceTime)
+
+	/*@Override
+	public void save() throws SQLException {
+		super.save();
+
+		synchronized (partitionLock) {
+			String partition = "";
+			partition += "CREATE TABLE IF NOT EXISTS partitions.NETCDFVALUE_SOURCE_";
+			partition += this.getId().toString();
+			partition += " ( " + newline;
+			partition += "	CHECK (source_id = ";
+			partition += this.getId().toString();
+			partition += ")" + newline;
+			partition += ") INHERITS (wres.NetCDFValue);";
+
+			Database.execute(partition);
+		}
+	}*/
+
+	public static SourceKey createKey(String sourcePath, String sourceTime, Integer lead)
 	{
-	    return new SourceDetails().new SourceKey(sourcePath, sourceTime);
+	    return new SourceKey(sourcePath, sourceTime, lead);
 	}
 
-	public class SourceKey implements Comparable<SourceKey>
+	public static class SourceKey implements Comparable<SourceKey>
 	{
-	    public SourceKey(String sourcePath, String sourceTime)
+	    public SourceKey(String sourcePath, String sourceTime, Integer lead)
 	    {
 	        this.sourcePath = sourcePath;
 	        this.sourceTime = sourceTime;
+	        this.lead = lead;
 	    }
 	    
         @Override
@@ -188,6 +196,26 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
                 }
             }
 
+            if (equality == 0)
+            {
+                if (this.getLead() == null && other.getLead() == null)
+                {
+                    equality = 0;
+                }
+                else if (this.getLead() != null && other.getLead() == null)
+                {
+                    equality = 1;
+                }
+                else if (this.getLead() == null && other.getLead() != null)
+                {
+                    equality = -1;
+                }
+                else
+                {
+                    equality = this.getLead().compareTo(other.getLead());
+                }
+            }
+
             return equality;
         }
         
@@ -199,6 +227,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
         public String getSourceTime()
         {
             return this.sourceTime;
+        }
+
+        public Integer getLead()
+        {
+            return this.lead;
         }
 
 		@Override
@@ -215,10 +248,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 
 		@Override
 		public int hashCode() {
-			return Objects.hashCode(this.sourcePath) + Objects.hashCode(this.sourceTime);
+			return Objects.hash(this.sourcePath, this.sourceTime, this.getLead());
 		}
 
-		private String sourcePath;
-	    private String sourceTime;
+		private final String sourcePath;
+	    private final String sourceTime;
+	    private final Integer lead;
 	}
 }

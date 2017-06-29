@@ -51,11 +51,23 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	/**
 	 * Removes all items from the details and keys caches for the instance
 	 */
-	protected void clearCache() {
+    void clearCache () {
 	    synchronized(keyIndex)
 	    {
 	        keyIndex.clear();
 	    }
+	}
+
+	T get (int id)
+	{
+		T detail = null;
+
+		if (this.details != null)
+		{
+			detail = this.details.get(id);
+		}
+
+		return detail;
 	}
 	
 	/**
@@ -67,11 +79,12 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 */
 	public Integer getID(T detail) throws Exception
 	{
-		if (!hasID(detail.getKey())) {
+		U key = detail.getKey();
+		if (!hasID(key)) {
 			addElement(detail);
 		}
 		
-		return detail.getId();
+		return getID(key);
 	}
 	
 	/**
@@ -79,8 +92,8 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * @param id The ID of the key to retrieve
 	 * @return The key tied to the ID. Returns <b>null</b> if the key doesn't exist within the cache
 	 */
-	public U getKey(int id) {
-		U key = null;
+    U getKey (int id) {
+		U key;
 		
 		synchronized (keyIndex)
 		{
@@ -129,9 +142,9 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 		return id;
 	}
 	
-	public boolean hasID(U key)
+	boolean hasID (U key)
 	{
-	    boolean hasIt = false;
+	    boolean hasIt;
 	    
 	    synchronized (keyIndex)
 	    {

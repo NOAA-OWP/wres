@@ -54,7 +54,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	 * @return The serial id of the ensemble
 	 * @throws SQLException Throws SQLException if the ID generation fails
 	 */
-	public int get_ensemble_id() throws SQLException
+	public int getEnsembleId() throws SQLException
 	{
 		if (ensembleID == null)
 		{
@@ -70,7 +70,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	 */
 	private String getQualifierID()
 	{
-		String id = null;
+		String id;
 		
 		if (qualifierID == null)
 		{
@@ -101,7 +101,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	}
 
 	@Override
-	public int compareTo(EnsembleDetails other) {
+	public int compareTo (EnsembleDetails other) {
 		int comparison = this.ensemble_name.compareTo(other.ensemble_name);
 		
 		if (comparison == 0)
@@ -162,10 +162,10 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	
 	public static EnsembleKey createKey(String ensembleName, String qualifierID, String memberIndex)
 	{
-	    return new EnsembleDetails().new EnsembleKey(ensembleName, qualifierID, memberIndex);
+	    return new EnsembleKey(ensembleName, qualifierID, memberIndex);
 	}
 	
-	public class EnsembleKey implements Comparable<EnsembleKey>
+	public static class EnsembleKey implements Comparable<EnsembleKey>
 	{
 	    public EnsembleKey(String ensembleName, String qualifierID, String memberIndex)
 	    {
@@ -177,7 +177,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         @Override
         public int compareTo(EnsembleKey other)
         {
-            int equality = -1;
+            int equality;
 
             if (this.ensembleName == null && other.ensembleName == null)
             {
@@ -187,6 +187,10 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
             {
                 equality = -1;
             }
+            else if (this.ensembleName != null && other.ensembleName == null)
+			{
+				equality = 1;
+			}
             else
             {
                 equality = this.ensembleName.compareTo(other.getEnsembleName());
@@ -305,8 +309,6 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
                 return 3;
             }
 
-			Integer similarity = 0;
-
             if ((this.hasName() && other.hasName()) && this.getEnsembleName().equalsIgnoreCase(other.getEnsembleName()))
             {
                 if(!(this.hasMemberIndex() || other.hasMemberIndex()) || !this.hasMemberIndex())
@@ -341,8 +343,8 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
                     String.valueOf(this.qualifierID);
         }
 
-        private String ensembleName;
-        private String qualifierID;
-        private String memberIndex;
+        private final String ensembleName;
+        private final String qualifierID;
+        private final String memberIndex;
 	}
 }

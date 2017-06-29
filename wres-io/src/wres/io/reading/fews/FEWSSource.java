@@ -24,14 +24,14 @@ public class FEWSSource extends BasicSource {
 	}
 
 	@Override
-	public void save_forecast() {
-		XMLReader source_reader = new PIXMLReader(this.get_filename());
+	public void saveForecast() {
+		XMLReader source_reader = new PIXMLReader(this.getFilename());
 		source_reader.parse();		
 	}
 
 	@Override
-	public void save_observation() {
-		XMLReader source_reader = new PIXMLReader(this.get_absolute_filename(), false);
+	public void saveObservation() {
+		XMLReader source_reader = new PIXMLReader(this.getAbsoluteFilename(), false);
 		source_reader.parse();		
 	}
 

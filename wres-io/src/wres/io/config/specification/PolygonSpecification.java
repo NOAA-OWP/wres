@@ -4,7 +4,7 @@
 package wres.io.config.specification;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import javax.xml.stream.XMLStreamReader;
 
@@ -13,7 +13,7 @@ import javax.xml.stream.XMLStreamReader;
  *
  * @author Christopher Tubbs
  */
-public final class PolygonSpecification extends FeatureSpecification {
+final class PolygonSpecification extends FeatureSpecification {
     /**
      * Constructor
      * @param reader The XML Reader containing details about the polygon to draw
@@ -34,7 +34,7 @@ public final class PolygonSpecification extends FeatureSpecification {
 
 	@Override
 	protected List<String> tagNames() {
-		return Arrays.asList("polygon");
+		return Collections.singletonList("polygon");
 	}
 	
 	/**
@@ -50,7 +50,7 @@ public final class PolygonSpecification extends FeatureSpecification {
 		
 		if (this.points == null)
 		{
-			this.points = new ArrayList<PointSpecification>();
+			this.points = new ArrayList<>();
 		}
 		
 		this.points.add(point);
@@ -59,20 +59,20 @@ public final class PolygonSpecification extends FeatureSpecification {
 	@Override
 	public String toString() 
 	{
-		String description = "Polygon:";
-		description += System.lineSeparator();
+		StringBuilder description = new StringBuilder("Polygon:");
+		description.append(System.lineSeparator());
 		
 		for (PointSpecification point : points)
 		{
-			description += "\tVertex: (";
-			description += point.x();
-			description += ", ";
-			description += point.y();
-			description += ")";
-			description += System.lineSeparator();
+			description.append("\tVertex: (");
+			description.append(point.x());
+			description.append(", ");
+			description.append(point.y());
+			description.append(")");
+			description.append(System.lineSeparator());
 		}
 		
-		return description;
+		return description.toString();
 	}
 	
 	private ArrayList<PointSpecification> points;
