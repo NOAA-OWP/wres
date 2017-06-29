@@ -1,7 +1,12 @@
 import util.MainFunctions;
+import wres.io.concurrency.Executor;
+import wres.io.utilities.Database;
 import wres.util.FormattedStopwatch;
+import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.Collections;
+
+import java.lang.management.ManagementFactory;
 
 /**
  * @author Christopher Tubbs
@@ -21,8 +26,12 @@ public class Main {
 			
 			if (MainFunctions.hasOperation(operation))
 			{
+				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    MainFunctions.shutdown();
+                }));
 
 				args = Collections.removeIndexFromArray(args, 0);
+				System.out.println(ManagementFactory.getRuntimeMXBean().getName());
 				System.out.println("Beginning operation: '" + operation + "'...");
 
                 FormattedStopwatch watch = new FormattedStopwatch();
@@ -45,6 +54,7 @@ public class Main {
 
 				System.out.println();
 				System.out.println(Strings.getSystemStats());
+				MainFunctions.shutdown();
 			}
 			else
 			{

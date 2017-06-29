@@ -1,10 +1,8 @@
 package wres.io.config;
 
 import java.beans.PropertyVetoException;
-import java.sql.Connection;
-import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Map;
-import java.util.Properties;
 import java.util.TreeMap;
 import javax.xml.stream.XMLStreamReader;
 
@@ -14,16 +12,16 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
  * Contains access to configured settings and objects for accessing the database
  * @author Christopher Tubbs
  */
-public final class Database {
+final class DatabaseSettings {
 
 	// A mapping of database names to the name of the class for the 
-	private static final Map<String, String> driver_mapping = create_driver_mapping();
+	private static final Map<String, String> DRIVER_MAPPING = createDriverMapping();
 	
 	/**
 	 * Creates the mapping between the names of databases to the name of the classes that may connect to them
 	 * @return Map of database names to class names
 	 */
-	private static Map<String, String> create_driver_mapping()
+	private static Map<String, String> createDriverMapping()
 	{
 		TreeMap<String, String> mapping = new TreeMap<>();
 		mapping.put("mysql", "com.mysql.jdbc.Driver");
@@ -32,15 +30,10 @@ public final class Database {
 	}
 	
 	/**
-	 * Default Constructor
-	 */
-	public Database() {}
-	
-	/**
 	 * Parses the settings for the database from an XMLReader
 	 * @param reader The reader containing XML data
 	 */
-	public Database(XMLStreamReader reader)
+	public DatabaseSettings(XMLStreamReader reader)
 	{
 		try {
 			while (reader.hasNext())
@@ -55,7 +48,7 @@ public final class Database {
 				}
 				else
 				{
-					parse_element(reader);
+					parseElement(reader);
 					reader.next();
 				}
 				
@@ -70,27 +63,29 @@ public final class Database {
 		ComboPooledDataSource datasource = new ComboPooledDataSource();
 		
 		try {
-			datasource.setDriverClass(driver_mapping.get(getDatabaseType()));
-			datasource.setJdbcUrl(get_connection_string());
+			datasource.setDriverClass(DRIVER_MAPPING.get(getDatabaseType()));
+			datasource.setJdbcUrl(getConnectionString());
 			datasource.setUser(username);
 			datasource.setPassword(password);
 			datasource.setAutoCommitOnClose(true);
 			datasource.setMaxIdleTime(max_idle_time);
 			datasource.setMaxPoolSize(max_pool_size);
 			datasource.setInitialPoolSize(max_pool_size);
+			datasource.setPreferredTestQuery("SELECT 1");
+			datasource.setTestConnectionOnCheckout(false);
 		} 
 		catch (PropertyVetoException e) {
 			e.printStackTrace();
 		}
-		
-		return datasource;
+
+        return datasource;
 	}
 	
 	/**
 	 * Sets the URL of the database to connect to
 	 * @param url The address of the database to connect to
 	 */
-	public void set_url(String url)
+    private void setUrl (String url)
 	{
 		this.url = url;
 	}
@@ -99,7 +94,7 @@ public final class Database {
 	 * Sets the username used to connect to the database
 	 * @param username The username used to connect to the database
 	 */
-	public void set_username(String username)
+    private void setUsername (String username)
 	{
 		this.username = username;
 	}
@@ -108,7 +103,7 @@ public final class Database {
 	 * Sets the password used to connect to the database
 	 * @param password The password used to connect to the database
 	 */
-	public void set_password(String password)
+    private void setPassword (String password)
 	{
 		this.password = password;
 	}
@@ -117,7 +112,7 @@ public final class Database {
 	 * Sets the identifier for the port used to connect to the database
 	 * @param port
 	 */
-	public void set_port(String port)
+    private void setPort (String port)
 	{
 		this.port = port;
 	}
@@ -126,31 +121,31 @@ public final class Database {
 	 * Sets the name of the database to connect to
 	 * @param database_name The name of the database to access
 	 */
-	public void set_database_name(String database_name)
+    private void setDatabaseName (String database_name)
 	{
-		this.database_name = database_name;
+		this.databaseName = database_name;
 	}
 	
 	/**
 	 * Sets the name of the type of database in use (such as 'mysql', 'postgresql', etc)
 	 * @param database_type The name of the database to connect to
 	 */
-	public void set_database_type(String database_type)
+    private void setDatabaseType (String database_type)
 	{
-		this.database_type = database_type;
+		this.databaseType = database_type;
 	}
 	
 	/**
 	 * Creates the connection string used to access the database
 	 * @return The connection string used to connect to the database of interest
 	 */
-	public String get_connection_string()
+    private String getConnectionString ()
 	{
 		if (connection_string == null)
 		{
 			connection_string = "jdbc:";
 			
-			connection_string += database_type;
+			connection_string += databaseType;
 			connection_string += "://";
 			connection_string += url;
 			if (port != null)
@@ -159,34 +154,10 @@ public final class Database {
 				connection_string += port;
 			}
 			connection_string += "/";
-			connection_string += database_name;		
+			connection_string += databaseName;
 		}
 		
 		return connection_string;
-	}
-	
-	/**
-	 * Creates a Connection object used to access the configured database
-	 * @return An open connection to the database
-	 */
-	public Connection create_connection()
-	{		
-		Connection connection = null;
-		
-		try {
-			Class.forName(driver_mapping.get(this.database_type)).newInstance();
-			
-			Properties connection_properties = new Properties();
-			connection_properties.setProperty("user", this.username);
-			connection_properties.setProperty("password", this.password);
-			
-			connection = DriverManager.getConnection(this.get_connection_string(), connection_properties);
-			connection.setAutoCommit(false);
-			
-		} catch (Exception error) {
-			error.printStackTrace();
-		}
-		return connection;
 	}
 	
 	/**
@@ -194,7 +165,7 @@ public final class Database {
 	 * @param reader The XML reader containing XML data describing the database settings
 	 * @throws Exception Any exception occurred when reading from the XML
 	 */
-	private void parse_element(XMLStreamReader reader) throws Exception
+	private void parseElement(XMLStreamReader reader) throws Exception
 	{
 		if (reader.isStartElement())
 		{
@@ -209,22 +180,22 @@ public final class Database {
 				switch(tag_name)
 				{
 				case "database_type":
-					set_database_type(value);
+					setDatabaseType(value);
 					break;
 				case "port":
-					set_port(value);
+					setPort(value);
 					break;
 				case "name":
-					set_database_name(value);
+					setDatabaseName(value);
 					break;
 				case "password":
-					set_password(value);
+					setPassword(value);
 					break;
 				case "url":
-					set_url(value);
+					setUrl(value);
 					break;
 				case "username":
-					set_username(value);
+					setUsername(value);
 					break;
 				case "max_pool_size":
 					max_pool_size = Integer.parseInt(value);
@@ -241,7 +212,7 @@ public final class Database {
 	
 	public String getDatabaseType()
 	{
-		return this.database_type;
+		return this.databaseType;
 	}
 	
 	@Override
@@ -264,7 +235,7 @@ public final class Database {
 		string_rep += System.lineSeparator();
 		string_rep += "\t";
 		string_rep += "Database Name:\t";
-		string_rep += String.valueOf(database_name);
+		string_rep += String.valueOf(databaseName);
 		string_rep += System.lineSeparator();
 		string_rep += "\t";
 		string_rep += "Port:\t\t";
@@ -272,7 +243,7 @@ public final class Database {
 		string_rep += System.lineSeparator();
 		string_rep += "\t";
 		string_rep += "Database Type:\t";
-		string_rep += String.valueOf(database_type);
+		string_rep += String.valueOf(databaseType);
 		
 		return string_rep;
 	}
@@ -281,8 +252,8 @@ public final class Database {
 	private String username = null;
 	private String password = "";
 	private String port = null;
-	private String database_name = null;
-	private String database_type = null;
+	private String databaseName = null;
+	private String databaseType = null;
 	private String connection_string = null;
 	private int max_pool_size = 10;
 	private int max_idle_time = 30;

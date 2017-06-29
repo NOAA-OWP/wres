@@ -35,7 +35,7 @@ public class DatacardResultSaver extends WRESThread implements Runnable {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		this.exectureOnComplete();
+		this.executeOnComplete();
 	}
 	
 	private void save() throws SQLException
@@ -74,7 +74,7 @@ public class DatacardResultSaver extends WRESThread implements Runnable {
 		}
 	}
 
-	private String observation_id;
-	private HashMap<OffsetDateTime, String> dated_values;
-	private StringBuilder expression;
+	private final String observation_id;
+	private final HashMap<OffsetDateTime, String> dated_values;
+	private final StringBuilder expression;
 }

@@ -3,7 +3,7 @@
  */
 package wres.io.config.specification;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
@@ -236,7 +236,7 @@ public final class ConditionSpecification extends SpecificationElement {
 
 	@Override
 	protected List<String> tagNames() {
-		return Arrays.asList("conditions");
+		return Collections.singletonList("conditions");
 	}
 	
 	@Override

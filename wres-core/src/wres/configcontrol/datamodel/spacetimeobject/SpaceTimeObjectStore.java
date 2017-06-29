@@ -19,7 +19,7 @@ public class SpaceTimeObjectStore
      */
     public SpaceTimeObjectStore()
     {
-        this.store = new TreeMap<Identifier, SpaceTimeObject>();
+        this.store = new TreeMap<>();
     }
 
     /**

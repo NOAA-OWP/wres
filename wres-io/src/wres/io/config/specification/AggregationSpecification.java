@@ -5,6 +5,7 @@ package wres.io.config.specification;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
@@ -236,7 +237,7 @@ public class AggregationSpecification extends SpecificationElement {
     @Override
     protected List<String> tagNames()
     {
-        return Arrays.asList("aggregation");
+        return Collections.singletonList("aggregation");
     }
     
     @Override

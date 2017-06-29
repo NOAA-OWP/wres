@@ -23,16 +23,17 @@ public class Contingency
         for (PairOfDoubleAndVectorOfDoubles pair : pairs)
         {
             boolean leftPositive = pair.getItemOne() > 0;
-            boolean rightPositive = false;
+
             for (double rightValue : pair.getItemTwo())
             {
-                rightPositive = rightValue > 0;
+                boolean rightPositive = rightValue > 0;
 
                 if (leftPositive)
                 {
                     this.totalPositiveObservations++;
                 }
-                else {
+                else
+                {
                     this.totalNegativeObservations++;
                 }
                 

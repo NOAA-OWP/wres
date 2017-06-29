@@ -31,3 +31,21 @@ CREATE INDEX IF NOT EXISTS variableposition_variable_idx
   USING btree
   (variable_id);
 
+-- Index: wres.variableposition_x_idx
+
+-- DROP INDEX IF EXISTS wres.variableposition_x_idx;
+
+CREATE INDEX IF NOT EXISTS variableposition_x_idx
+  ON wres.variableposition
+  USING btree
+  (x_position);
+
+-- Index: wres.variableposition_y_idx
+
+-- DROP INDEX IF EXISTS wres.variableposition_y_idx;
+
+CREATE INDEX IF NOT EXISTS variableposition_y_idx
+  ON wres.variableposition
+  USING btree
+  (y_position);
+

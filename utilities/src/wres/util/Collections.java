@@ -1,9 +1,7 @@
 package wres.util;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Array;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -64,16 +62,10 @@ public final class Collections
         int length = left.length + right.length;
 
         U[] result = Arrays.copyOf(left, length);
-        
-        int index = 0;
-        
-        for (index = 0; index < left.length; ++index) {
-            result[index] = left[index];
-        }
-        
-        for (index = 0; index < right.length; ++index) {
-            result[index + left.length] = right[index];
-        }
+
+        System.arraycopy(left, 0, result, 0, left.length);
+
+        System.arraycopy(right, 0, result, 0 + left.length, right.length);
         
         return result;
     }
@@ -178,7 +170,7 @@ public final class Collections
      * @return Boolean indicating whether or not the indicated value exists within the
      * indicated array
      */
-    public static <U> boolean contains(U[] array, U value) {
+    public static <U> boolean contains(final U[] array, final U value) {
         boolean has_object = false;
 
         for (U arrayValue : array) {
@@ -189,6 +181,30 @@ public final class Collections
         }
         
         return has_object;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <U> U[] removeAll (final U[] array, Predicate<U> filter)
+    {
+        if (array.length == 0)
+        {
+            return array;
+        }
+        List<U> copy = Arrays.asList(array);
+
+        List<U> remove = where(copy, filter);
+        U[] objectsLeft = (U[])Array.newInstance(array[0].getClass(), array.length - remove.size());
+
+        int addedIndex = 0;
+
+        for (final U arrayMember : array) {
+            if (!remove.contains(arrayMember)) {
+                objectsLeft[addedIndex] = arrayMember;
+                addedIndex++;
+            }
+        }
+
+        return objectsLeft;
     }
     
     public static <U, V> U getKeyByValue(Map<U, V> mapping, V value)

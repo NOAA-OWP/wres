@@ -4,7 +4,7 @@
 package wres.io.config.specification;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
@@ -55,7 +55,7 @@ public final class LocationSpecification extends FeatureSpecification {
 
 	@Override
 	protected List<String> tagNames() {
-		return Arrays.asList("feature");
+		return Collections.singletonList("feature");
 	}
 	
 	/**
@@ -146,7 +146,7 @@ public final class LocationSpecification extends FeatureSpecification {
     @Override
     public List<Integer> getVariablePositionIDs(Integer variableID) throws Exception
     {
-        List<Integer> id = new ArrayList<Integer>(1);
+        List<Integer> id = new ArrayList<>(1);
         id.add(Features.getVariablePositionID(lid, name, variableID));
         return id;
     }

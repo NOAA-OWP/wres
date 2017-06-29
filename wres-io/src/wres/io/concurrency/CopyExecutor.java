@@ -43,6 +43,6 @@ public class CopyExecutor extends WRESThread implements Runnable
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
-		this.exectureOnComplete();
+		this.executeOnComplete();
 	}
 }

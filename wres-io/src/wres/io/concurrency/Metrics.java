@@ -17,7 +17,7 @@ import java.util.TreeMap;
 import wres.io.config.specification.ProjectDataSpecification;
 import wres.io.config.specification.MetricSpecification;
 import wres.io.config.specification.ScriptFactory;
-import wres.io.data.caching.MeasurementCache;
+import wres.io.data.caching.MeasurementUnits;
 import wres.util.DataModel;
 import wres.io.utilities.Database;
 import wres.io.utilities.Debug;
@@ -99,23 +99,8 @@ public abstract class Metrics {
 
         return result;
     }
-    
-    public static String[] getFunctionNames()
-    {
-        String[] functionNames = new String[FUNCTIONS.size()];
-        
-        int nameIndex = 0;
-        
-        for (String name : FUNCTIONS.keySet())
-        {
-            functionNames[nameIndex] = name;
-            nameIndex++;
-        }
-        
-        return functionNames;
-    }
-	
-	@Deprecated
+
+    @Deprecated
 	public static BiFunction<ResultSet, Function<Double, Double>, Double> calculateMeanError()
 	{
 		return (ResultSet dataset, Function<Double, Double> scale_func) -> {
@@ -141,33 +126,6 @@ public abstract class Metrics {
 			
 			return sum/value_count;
 		};
-	}
-
-	/**
-	 * Creates the "meanError" function to run on selected data
-	 * @return The function to perform mean error calculations on a set of data containing the columns
-	 * "forecast" and "observation".
-	 */
-	public static BiFunction<ResultSet, Function<Double, Double>, Double> meanError() {
-	    return (ResultSet dataset, Function<Double, Double> scaleFunc) -> {
-	        Double sum = 0.0;
-	        Double intermediateSum = 0.0;
-	        int valueCount = 0;
-	        
-	        try {
-	            while (dataset.next()) {
-	                intermediateSum = (dataset.getFloat("forecast") * 1.0) - (dataset.getFloat("observation") * 1.0);
-	                sum += scaleFunc.apply(intermediateSum);
-	                valueCount++;
-	            }
-	        } catch (SQLException error) {
-	            Debug.error(LOGGER, Strings.getStackTrace(error));
-	        }
-	        
-	        
-	        
-	        return sum / valueCount;
-	    };
 	}
 
 	public static List<PairOfDoubleAndVectorOfDoubles> getPairs(MetricSpecification metricSpecification, int progress) throws Exception {
@@ -240,8 +198,8 @@ public abstract class Metrics {
                 script += "WHERE FE.variableposition_id = " + sourceTwo.getFirstVariablePositionID() + NEWLINE;
                 script += "     AND O.variableposition_id = " + sourceOne.getFirstVariablePositionID() + NEWLINE;
                 script += "     AND FV." + leadQualifier + NEWLINE;
-                script += "     AND UC.to_unit = " + MeasurementCache.getMeasurementUnitID(sourceTwo.getMeasurementUnit()) + NEWLINE;
-                script += "     AND OUC.to_unit = " + MeasurementCache.getMeasurementUnitID(sourceOne.getMeasurementUnit()) + ";" + NEWLINE;
+                script += "     AND UC.to_unit = " + MeasurementUnits.getMeasurementUnitID(sourceTwo.getMeasurementUnit()) + NEWLINE;
+                script += "     AND OUC.to_unit = " + MeasurementUnits.getMeasurementUnitID(sourceOne.getMeasurementUnit()) + ";" + NEWLINE;
                 
                 correlationCoefficient = Database.getResult(script, "correlation");
 	        }
@@ -265,7 +223,6 @@ public abstract class Metrics {
 	        String script = "";
 	        try
             {
-	            
 	            script += "SELECT AVG(FV.forecasted_value * UC.factor - O.observed_value * OUC.factor) AS mean_error" + NEWLINE;
 	            script += "FROM wres.Forecast F" + NEWLINE;
 	            script += "INNER JOIN wres.ForecastEnsemble FE" + NEWLINE;
@@ -281,9 +238,9 @@ public abstract class Metrics {
                 script += "WHERE FE.variableposition_id = " + specification.getSecondSource().getFirstVariablePositionID() + NEWLINE;
                 script += "    AND O.variableposition_id = " + specification.getFirstSource().getFirstVariablePositionID() + NEWLINE;
                 script += "    AND FV." + specification.getAggregationSpecification().getLeadQualifier(progress) + NEWLINE;
-                script += "    AND UC.to_unit = " + MeasurementCache.getMeasurementUnitID(specification.getSecondSource().getMeasurementUnit()) + NEWLINE;
-                script += "    AND OUC.to_unit = " + MeasurementCache.getMeasurementUnitID(specification.getFirstSource().getMeasurementUnit()) + NEWLINE;
-                
+                script += "    AND UC.to_unit = " + MeasurementUnits.getMeasurementUnitID(specification.getSecondSource().getMeasurementUnit()) + NEWLINE;
+                script += "    AND OUC.to_unit = " + MeasurementUnits.getMeasurementUnitID(specification.getFirstSource().getMeasurementUnit()) + ";";
+
                 meanError = Database.getResult(script, "mean_error");
             }
             catch(Exception e)

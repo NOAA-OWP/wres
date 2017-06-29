@@ -3,7 +3,7 @@
  */
 package wres.io.config.specification;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -12,7 +12,7 @@ import javax.xml.stream.XMLStreamReader;
  * Specification for a point in gridded data that should be selected
  * @author Christopher Tubbs
  */
-public class PointSpecification extends FeatureSpecification {
+class PointSpecification extends FeatureSpecification {
 
 	/**
 	 * Constructor
@@ -49,7 +49,7 @@ public class PointSpecification extends FeatureSpecification {
 
 	@Override
 	protected List<String> tagNames() {
-		return Arrays.asList("point");
+		return Collections.singletonList("point");
 	}
 	
 	/**

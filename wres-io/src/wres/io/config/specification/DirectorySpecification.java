@@ -7,7 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
@@ -66,7 +66,7 @@ public class DirectorySpecification extends SpecificationElement
 
 	@Override
 	protected List<String> tagNames() {
-		return Arrays.asList("Directory");
+		return Collections.singletonList("Directory");
 	}
 	
 	public boolean shouldLoadAllFiles() {
@@ -87,7 +87,7 @@ public class DirectorySpecification extends SpecificationElement
 	 * Returns a list of files in interest inside of the directory
 	 * @return A list of file specifications
 	 */
-	public List<FileSpecification> get_files()
+	public List<FileSpecification> getFiles ()
 	{
 		return this.files;
 	}
@@ -100,7 +100,7 @@ public class DirectorySpecification extends SpecificationElement
 	{
 		if (this.files == null)
 		{
-			this.files = new ArrayList<FileSpecification>();
+			this.files = new ArrayList<>();
 		}
 		
 		files.add(file);
@@ -108,29 +108,29 @@ public class DirectorySpecification extends SpecificationElement
 	
 	@Override
 	public String toString() {
-		String description = "Directory:";
-		description += System.lineSeparator();
+		StringBuilder description = new StringBuilder("Directory:");
+		description.append(System.lineSeparator());
 		
-		description += "\tPath: ";
-		description += path;
-		description += System.lineSeparator();
+		description.append("\tPath: ");
+		description.append(path);
+		description.append(System.lineSeparator());
 		
-		description += "\tAll files should be loaded: ";
-		description += String.valueOf(loadAll);
-		description += System.lineSeparator();
+		description.append("\tAll files should be loaded: ");
+		description.append(String.valueOf(loadAll));
+		description.append(System.lineSeparator());
 		
 		if (files.size() > 0)
 		{
-			description += System.lineSeparator();
+			description.append(System.lineSeparator());
 			
 			for (FileSpecification file : files)
 			{
-				description += file.toString();
+				description.append(file.toString());
 			}
 		}
 
-		description += System.lineSeparator();
-		return description;
+		description.append(System.lineSeparator());
+		return description.toString();
 	}
 	
 	private List<FileSpecification> files;

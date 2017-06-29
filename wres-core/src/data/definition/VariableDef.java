@@ -22,7 +22,7 @@ public class VariableDef
 		this.variable_name = result.getString("variable_name");
 		this.variable_type = result.getString("variable_type");
 		this.description = result.getString("description");
-		this.measurementunit_id = result.getInt("measurementunit_id");
+		this.measurementunit_id = result.getInt("measurementunitId");
 	}
 	
 	/**
@@ -59,8 +59,8 @@ public class VariableDef
 	}
 	
 	/**
-	 * Sets the <b>measurementunit_id</b> of the variable
-	 * @param measurementunit_id The value to update the current <b>measurementunit_id</b> with
+	 * Sets the <b>measurementunitId</b> of the variable
+	 * @param measurementunit_id The value to update the current <b>measurementunitId</b> with
 	 */
 	public void set_measurementunit_id(int measurementunit_id)
 	{

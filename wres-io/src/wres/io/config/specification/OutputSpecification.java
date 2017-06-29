@@ -4,7 +4,7 @@
 package wres.io.config.specification;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
@@ -17,7 +17,7 @@ import wres.util.XML;
  * Specification for the type of output required for a metric
  * @author Christopher Tubbs
  */
-public final class OutputSpecification extends SpecificationElement {
+final class OutputSpecification extends SpecificationElement {
     /**
      * Constructor
      * @param reader The XML Node detailing the specifications for the output
@@ -64,48 +64,48 @@ public final class OutputSpecification extends SpecificationElement {
 
 	@Override
 	protected List<String> tagNames() {
-		return Arrays.asList("output");
+		return Collections.singletonList("output");
 	}
 	
 	@Override
 	public String toString() {
-		String description = "Output:";
-		description += System.lineSeparator();
-		description += System.lineSeparator();
+		StringBuilder description = new StringBuilder("Output:");
+		description.append(System.lineSeparator());
+		description.append(System.lineSeparator());
 		
-		description += "Graphical Output:";
-		description += System.lineSeparator();
+		description.append("Graphical Output:");
+		description.append(System.lineSeparator());
 		if (graphics.size() > 0)
 		{
 			for (OutputTypeSpecification graphic : graphics)
 			{
-				description += graphic.toString();
+				description.append(graphic.toString());
 			}
 		}
 		else
 		{
-			description += "\tNONE";
+			description.append("\tNONE");
 		}
-		description += System.lineSeparator();
-		description += System.lineSeparator();
+		description.append(System.lineSeparator());
+		description.append(System.lineSeparator());
 		
-		description += "Numerical Output:";
-		description += System.lineSeparator();
+		description.append("Numerical Output:");
+		description.append(System.lineSeparator());
 		if (numerics.size() > 0)
 		{
 			for (OutputTypeSpecification numeric : numerics)
 			{
-				description += numeric.toString();
+				description.append(numeric.toString());
 			}
 		}
 		else
 		{
-			description += "\tNONE";
+			description.append("\tNONE");
 		}
-		description += System.lineSeparator();
-		description += System.lineSeparator();
+		description.append(System.lineSeparator());
+		description.append(System.lineSeparator());
 		
-		return description;
+		return description.toString();
 	}
 	
 	/**
@@ -116,7 +116,7 @@ public final class OutputSpecification extends SpecificationElement {
 	{
 		if (graphics == null)
 		{
-			graphics = new ArrayList<OutputTypeSpecification>();
+			graphics = new ArrayList<>();
 		}
 		
 		graphics.add(graphicalType);
@@ -130,7 +130,7 @@ public final class OutputSpecification extends SpecificationElement {
 	{
 		if (numerics == null)
 		{
-			numerics = new ArrayList<OutputTypeSpecification>();
+			numerics = new ArrayList<>();
 		}
 		numerics.add(numericalType);
 	}

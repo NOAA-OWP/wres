@@ -4,11 +4,8 @@
 package wres.io.config.specification;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 import java.util.concurrent.Future;
 
 import javax.xml.stream.XMLStreamException;
@@ -23,6 +20,7 @@ import wres.io.grouping.LabeledScript;
 import wres.io.utilities.Database;
 import wres.io.utilities.Debug;
 import wres.util.NullPrintStream;
+import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.XML;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -38,11 +36,8 @@ public class MetricSpecification extends SpecificationElement {
     /**
      * Constructor
      * @param reader The XML Node containing data about the metric
-     * @throws IOException
-     * @throws XMLStreamException
      */
-    public MetricSpecification(XMLStreamReader reader) throws IOException, XMLStreamException
-    {
+    public MetricSpecification(XMLStreamReader reader) {
         super(reader);
     }
     
@@ -119,21 +114,21 @@ public class MetricSpecification extends SpecificationElement {
 	
 	public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> getPairs() throws Exception
 	{
-	    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> results = new TreeMap<Integer, List<PairOfDoubleAndVectorOfDoubles>>();
-	    Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>>();
+	    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> results = new TreeMap<>();
+	    Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<>();
 
-	    float tasksCompleted = 0;
 	    float tasksAdded = 0;
 
 	    LabeledScript lastLeadScript = ScriptFactory.generateFindLastLead(sourceTwo.getVariable().getVariableID());
-	    
 	    Integer finalLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
-        
+
 	    int step = 1;
 	    
 	    while (metricAggregate.leadIsValid(step, finalLead)) {
-            threadResults.put(step, Executor.submit(new PairFetcher(this, step)));
-            tasksAdded++;
+	    	PairFetcher fetcher = new PairFetcher(this, step);
+	    	fetcher.setOnRun(ProgressMonitor.onThreadStartHandler());
+	    	fetcher.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+            threadResults.put(step, Executor.submit(fetcher));
 	        step++;
 	    }
 
@@ -142,8 +137,6 @@ public class MetricSpecification extends SpecificationElement {
         for (Entry<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> result : threadResults.entrySet())
         {
             results.put(result.getKey(), result.getValue().get());
-            tasksCompleted++;
-            System.err.print("\r" +tasksCompleted + "/" + tasksAdded + " operations complete. ------------");
         }
         
         System.out.println();
@@ -193,7 +186,7 @@ public class MetricSpecification extends SpecificationElement {
 
 	@Override
 	protected List<String> tagNames() {
-		return Arrays.asList("metric");
+		return Collections.singletonList("metric");
 	}
 	
 	@Override
@@ -272,19 +265,11 @@ public class MetricSpecification extends SpecificationElement {
 	}
 
 	public ProjectDataSpecification getBaselineSource() {
-        if (this.baseline == null)
-        {
-            Debug.warn(LOGGER, "getBaselineSource - returning null", NullPrintStream.get());
-        }
 	    return this.baseline;
 	}
 
 	public AggregationSpecification getAggregationSpecification()
 	{
-	    if (this.metricAggregate == null)
-	    {
-	        Debug.warn(LOGGER, "getAggregationSpecification - returning null", NullPrintStream.get());
-	    }
         return this.metricAggregate;
 	}
 	
@@ -332,7 +317,6 @@ public class MetricSpecification extends SpecificationElement {
     @Override
     public String toXML()
     {
-        // TODO Auto-generated method stub
         return null;
     }
 }

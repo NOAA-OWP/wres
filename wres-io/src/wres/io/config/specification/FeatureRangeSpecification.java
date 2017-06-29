@@ -3,7 +3,7 @@
  */
 package wres.io.config.specification;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import javax.xml.stream.XMLStreamReader;
 
@@ -59,7 +59,7 @@ public class FeatureRangeSpecification extends FeatureSpecification {
 
 	@Override
 	protected List<String> tagNames() {
-		return Arrays.asList("range");
+		return Collections.singletonList("range");
 	}
 	
 	/**

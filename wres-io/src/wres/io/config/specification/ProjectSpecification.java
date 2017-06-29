@@ -5,7 +5,6 @@ package wres.io.config.specification;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
@@ -29,11 +28,8 @@ public class ProjectSpecification extends SpecificationElement
     /**
      * Constructor
      * @param reader The XML reader containing the details about the project specification
-     * @throws IOException
-     * @throws XMLStreamException An error is thrown if there is trouble reading the file
      */
-    public ProjectSpecification(XMLStreamReader reader) throws IOException, XMLStreamException
-    {
+    public ProjectSpecification(XMLStreamReader reader) {
         super(reader);
     }
 
@@ -77,7 +73,7 @@ public class ProjectSpecification extends SpecificationElement
     @Override
     protected List<String> tagNames()
     {
-        return Arrays.asList("project");
+        return java.util.Collections.singletonList("project");
     }
 
     /**
@@ -127,7 +123,7 @@ public class ProjectSpecification extends SpecificationElement
 
         if (metrics == null)
         {
-            metrics = new ArrayList<MetricSpecification>();
+            metrics = new ArrayList<>();
         }
 
         metrics.add(metric);
@@ -171,7 +167,7 @@ public class ProjectSpecification extends SpecificationElement
     {
         if (metrics == null)
         {
-            metrics = new ArrayList<MetricSpecification>();
+            metrics = new ArrayList<>();
         }
 
         return metrics.size();
@@ -189,65 +185,65 @@ public class ProjectSpecification extends SpecificationElement
     @Override
     public String toString()
     {
-        String description = "-----------------------------------";
-        description += System.lineSeparator();
-        description += System.lineSeparator();
-        description += "Project: ";
+        StringBuilder description = new StringBuilder("-----------------------------------");
+        description.append(System.lineSeparator());
+        description.append(System.lineSeparator());
+        description.append("Project: ");
 
         if (name == null)
         {
-            description += "[Unnamed Project]";
+            description.append("[Unnamed Project]");
         }
         else
         {
-            description += name;
+            description.append(name);
         }
-        description += System.lineSeparator();
-        description += System.lineSeparator();
+        description.append(System.lineSeparator());
+        description.append(System.lineSeparator());
 
-        description += "-----------------------------------";
-        description += System.lineSeparator();
-        description += System.lineSeparator();
+        description.append("-----------------------------------");
+        description.append(System.lineSeparator());
+        description.append(System.lineSeparator());
 
-        description += "Datasources:";
-        description += System.lineSeparator();
-        description += " +   +   +   +   +   +   +   +   +";
-        description += System.lineSeparator();
+        description.append("Datasources:");
+        description.append(System.lineSeparator());
+        description.append(" +   +   +   +   +   +   +   +   +");
+        description.append(System.lineSeparator());
         
         for (ProjectDataSpecification datasource : this.dataSources)
         {
-            description += System.lineSeparator();
-            description += datasource.toString();
-            description += System.lineSeparator();
+            description.append(System.lineSeparator());
+            description.append(datasource.toString());
+            description.append(System.lineSeparator());
         }
 
-        description += "-----------------------------------";
-        description += System.lineSeparator();
-        description += System.lineSeparator();
+        description.append("-----------------------------------");
+        description.append(System.lineSeparator());
+        description.append(System.lineSeparator());
 
-        description += "Metrics:";
-        description += System.lineSeparator();
-        description += System.lineSeparator();
-        description += "\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/";
-        description += System.lineSeparator();
-        description += System.lineSeparator();
+        description.append("Metrics:");
+        description.append(System.lineSeparator());
+        description.append(System.lineSeparator());
+        description.append("\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/");
+        description.append(System.lineSeparator());
+        description.append(System.lineSeparator());
         if (metricCount() > 0)
         {
             for (MetricSpecification metric : metrics)
             {
-                description += metric.toString();
-                description += System.lineSeparator();
-                description += "*  *  *  *  *  *  *  *  *  *  *  *  *";
-                description += System.lineSeparator();
+                description.append(metric.toString());
+                description.append(System.lineSeparator());
+                description.append("*  *  *  *  *  *  *  *  *  *  *  *  *");
+                description.append(System.lineSeparator());
             }
         }
         else {
-            description += "[NONE]";
-            description += System.lineSeparator();
+            description.append("[NONE]");
+            description.append(System.lineSeparator());
         }
-        description += "\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/";
+        description.append("\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/");
 
-        return description;
+        return description.toString();
     }
 
     private ArrayList<MetricSpecification> metrics;

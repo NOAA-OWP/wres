@@ -31,7 +31,7 @@ public class ASCIIResultSaver extends WRESThread implements Runnable {
 		catch (SQLException e) {
 			e.printStackTrace();
 		}
-		this.exectureOnComplete();
+		this.executeOnComplete();
 	}
 	
 	private void save_mapping() throws SQLException
@@ -69,7 +69,7 @@ public class ASCIIResultSaver extends WRESThread implements Runnable {
 
 	}
 	
-	private HashMap<Integer, HashMap<String, String[]>> forecasted_values;
-	private Integer observationlocation_id;
-	private StringBuilder expression_builder = new StringBuilder("INSERT INTO ForecastResult(forecast_id, lead_time, measurements, observationlocation_id) VALUES ");
+	private final HashMap<Integer, HashMap<String, String[]>> forecasted_values;
+	private final Integer observationlocation_id;
+	private final StringBuilder expression_builder = new StringBuilder("INSERT INTO ForecastResult(forecast_id, lead_time, measurements, observationlocation_id) VALUES ");
 }

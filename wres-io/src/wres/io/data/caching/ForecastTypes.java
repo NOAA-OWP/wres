@@ -1,0 +1,85 @@
+package wres.io.data.caching;
+
+import wres.io.data.details.ForecastTypeDetails;
+import wres.io.utilities.Database;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+/**
+ * Cache of available types of forecast
+ */
+public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
+
+    private static ForecastTypes internalCache = new ForecastTypes();
+
+    private ForecastTypes() {
+        super();
+    }
+
+    public static Integer getForecastTypeId(String description) throws Exception {
+        Integer forecastTypeID;
+
+        try {
+            forecastTypeID = internalCache.getID(description);
+        } catch (Exception e) {
+            System.err.println("An error was encountered while trying to get the id for the forecast type named: '" + description + "'.");
+            System.err.println(description + " is not a valid forecast type.");
+            e.printStackTrace();
+
+            throw e;
+        }
+
+        return forecastTypeID;
+    }
+
+    @Override
+    protected int getMaxDetails() {
+        return 10;
+    }
+
+    @Override
+    protected void init() {
+        Connection connection = null;
+        ResultSet types = null;
+
+        try
+        {
+            connection = Database.getConnection();
+            String loadScript = "SELECT forecasttype_id, type_name, timestep" + newline;
+            loadScript += "FROM wres.ForecastType;";
+
+            types = Database.getResults(connection, loadScript);
+
+            while (types.next())
+            {
+                this.keyIndex.put(types.getString("type_name"), types.getInt("forecasttype_id"));
+            }
+
+        }
+        catch (SQLException error)
+        {
+            System.err.println("An error was encountered when trying to populate the ForecastType cache.");
+        }
+        finally
+        {
+            if (types != null)
+            {
+                try
+                {
+                    types.close();
+                }
+                catch (SQLException error)
+                {
+                    System.err.println("The result set containing forecast types could not be closed.");
+                }
+            }
+
+            if (connection != null)
+            {
+                Database.returnConnection(connection);
+            }
+        }
+    }
+}

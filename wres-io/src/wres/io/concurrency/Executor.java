@@ -4,8 +4,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicLong;
 
 import wres.io.config.SystemSettings;
 
@@ -16,7 +14,7 @@ import wres.io.config.SystemSettings;
  */
 public final class Executor {
 
-    private static final AtomicLong submittedCount = new AtomicLong();
+    //private static final AtomicLong submittedCount = new AtomicLong();
 
 	// The underlying thread executor
 	private static ExecutorService service = createService();
@@ -35,11 +33,19 @@ public final class Executor {
 		{
 			service.shutdown();
 		}
-		if (submittedCount != null)
+		/*if (submittedCount != null)
 		{
 		    submittedCount.set(0);
 		}
-		return Executors.newFixedThreadPool(SystemSettings.maximumThreadCount());
+		ThreadPoolExecutor executor = new ThreadPoolExecutor(SystemSettings.maximumThreadCount(),
+				SystemSettings.maximumThreadCount(),
+				SystemSettings.poolObjectLifespan(),
+				TimeUnit.MILLISECONDS,
+				new LinkedBlockingQueue<>(SystemSettings.maximumThreadCount() * 10)
+		);
+
+		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());*/
+		return /*executor;*/ Executors.newFixedThreadPool(SystemSettings.maximumThreadCount());
 	}
 	
 	/**
@@ -54,7 +60,7 @@ public final class Executor {
 			service = createService();
 		}
 
-		submittedCount.incrementAndGet();
+		//submittedCount.incrementAndGet();
 		return service.submit(task);
 	}
 	
@@ -70,7 +76,7 @@ public final class Executor {
 			service = createService();
 		}
 
-        submittedCount.incrementAndGet();
+       // submittedCount.incrementAndGet();
 		return service.submit(task);
 	}
 	
@@ -86,14 +92,23 @@ public final class Executor {
 		}
 	}
 
+	public static void kill()
+	{
+		if (!service.isShutdown())
+		{
+			service.shutdownNow();
+			while (!service.isTerminated());
+		}
+	}
+
 	/**
 	 * Get the number of tasks submitted through this static class.
 	 * @return the number of tasks ever submitted to the current executor
 	 */
-    public static long getSubmittedCount()
+    /*public static long getSubmittedCount()
     {
         return submittedCount.get();
-    }
+    }*/
 
     /**
      * Attempt to get the number of tasks completed, if possible.
@@ -101,12 +116,12 @@ public final class Executor {
      *
      * @return the number of tasks completed by current executor, otherwise -1
      */
-    public static long getCompletedCount()
+    /*public static long getCompletedCount()
     {
         if (service instanceof ThreadPoolExecutor)
         {
             return ((ThreadPoolExecutor) service).getCompletedTaskCount();
         }
         return -1;
-    }
+    }*/
 }

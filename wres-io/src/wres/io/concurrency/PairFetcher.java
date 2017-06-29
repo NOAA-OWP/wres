@@ -25,7 +25,7 @@ public final class PairFetcher extends WRESThread implements Callable<List<PairO
     {
         this.executeOnRun();
         List<PairOfDoubleAndVectorOfDoubles> results = Metrics.getPairs(this.metricSpecification, this.progress);
-        this.exectureOnComplete();
+        this.executeOnComplete();
         return results;
     }
 

@@ -28,7 +28,7 @@ import wres.io.utilities.Database;
 @SuppressWarnings("deprecation")
 public class DatacardSource extends BasicSource {
 
-    private static int MAX_INSERTS = 100;
+    private static final int MAX_INSERTS = 100;
     
 	/**
 	 * 
@@ -187,8 +187,8 @@ public class DatacardSource extends BasicSource {
 	}
 
 	@Override
-	public void save_observation() throws Exception {
-		Path path = Paths.get(get_filename());
+	public void saveObservation() throws Exception {
+		Path path = Paths.get(getFilename());
 		
 		try (BufferedReader reader = Files.newBufferedReader(path))
 		{
@@ -223,7 +223,7 @@ public class DatacardSource extends BasicSource {
 			else
 			{
 				String message = "The NWS Datacard file ('%s') was not formatted correctly and could not be loaded correctly";
-				throw new Exception(String.format(message, get_filename()));
+				throw new Exception(String.format(message, getFilename()));
 			}
 			
 			if ((line = reader.readLine()) != null)
@@ -237,7 +237,7 @@ public class DatacardSource extends BasicSource {
 			else
 			{
 				String message = "The NWS Datacard file ('%s') was not formatted correctly and could not be loaded correctly";
-				throw new Exception(String.format(message, get_filename()));
+				throw new Exception(String.format(message, getFilename()));
 			}					
 			
 			String observation_id = createObservation();
@@ -308,7 +308,7 @@ public class DatacardSource extends BasicSource {
 	
 	private void clearStaleObservations() throws SQLException
 	{
-		String clear_script = "DELETE FROM Observation WHERE source = '" + get_absolute_filename() + "';";
+		String clear_script = "DELETE FROM Observation WHERE source = '" + getAbsoluteFilename() + "';";
 		Database.execute(clear_script);
 	}
 	
@@ -321,7 +321,7 @@ public class DatacardSource extends BasicSource {
 	{
 		//TODO: Stop hard coding the measurement unit id
 		return String.format(save_observation_script, 
-							 get_absolute_filename(),
+							 getAbsoluteFilename(),
 							 get_variable_id(),
 							 1);
 	}

@@ -1,5 +1,9 @@
 package wres.io.data.details;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.io.utilities.Database;
+
 import java.sql.SQLException;
 
 /**
@@ -7,10 +11,74 @@ import java.sql.SQLException;
  * @author Christopher Tubbs
  */
 public final class VariableDetails extends CachedDetail<VariableDetails, String>{
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(VariableDetails.class);
 	private String variable_name = null;
-	public Integer measurementunit_id = null;
+	public Integer measurementunitId = null;
 	private Integer variable_id = null;
+	public boolean recentlyAdded = false;
+	private Integer maxXIndex;
+	private Integer maxYIndex;
+
+	private final static Object partitionLock = new Object();
+
+	public Integer getMaxXIndex()
+	{
+		if (this.variable_id == null)
+		{
+			LOGGER.info("The maximum x position was requested for this variable, but there is no id for it.");
+			return null;
+		}
+
+		if (this.maxXIndex == null)
+		{
+			String script = "";
+			script += "SELECT MAX(x_position) AS max_index" + newline;
+			script += "FROM wres.VariablePosition" + newline;
+			script += "WHERE variable_id = " + String.valueOf(this.variable_id) + ";";
+
+			try {
+				this.maxXIndex = Database.getResult(script, "max_index");
+			} catch (SQLException e) {
+				String message = "The maximum x position for the variable with the name '";
+				message += String.valueOf(this.variable_name);
+				message += "' could not be retrieved.";
+				LOGGER.info(message);
+				e.printStackTrace();
+			}
+		}
+
+		return this.maxXIndex;
+	}
+
+	public Integer getMaxYIndex()
+	{
+		if (this.variable_id == null)
+        {
+			LOGGER.info("The maximum y position was requested for this variable, but there is no id for it.");
+            return null;
+        }
+
+        if (this.maxYIndex == null)
+        {
+            String script = "";
+            script += "SELECT MAX(y_position) AS max_index" + newline;
+            script += "FROM wres.VariablePosition" + newline;
+            script += "WHERE variable_id = " + String.valueOf(this.variable_id) + ";";
+
+            try {
+                this.maxYIndex = Database.getResult(script, "max_index");
+            } catch (SQLException e) {
+                String message = "The maximum x position for the variable with the name '";
+                message += String.valueOf(this.variable_name);
+                message += "' could not be retrieved.";
+                LOGGER.info(message);
+                e.printStackTrace();
+            }
+        }
+
+        return this.maxYIndex;
+	}
 	
 	/**
 	 * Sets the name of the variable. The ID of the variable is invalidated if its name changes
@@ -37,6 +105,25 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		}
 		
 		return variable_id;
+	}
+
+	@Override
+	public void save() throws SQLException {
+		super.save();
+
+		synchronized (partitionLock)
+		{
+			String partition = "";
+			partition += "CREATE TABLE IF NOT EXISTS partitions.VARIABLEPOSITION_VARIABLE_";
+			partition += this.getId().toString();
+			partition += " ( " + newline;
+			partition += "	CHECK (variable_id = ";
+			partition += this.getId().toString();
+			partition += ")" + newline;
+			partition += ") INHERITS (wres.VariablePosition);";
+
+			Database.execute(partition);
+		}
 	}
 
 	@Override
@@ -70,7 +157,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		script += "		INSERT INTO wres.Variable(variable_name, variable_type, measurementunit_id)" + newline;
 		script += "		SELECT '" + variable_name + "'," + newline;
 		script += "			'Double'," + newline;
-		script += "			" + measurementunit_id + newline;
+		script += "			" + measurementunitId + newline;
 		script += "		WHERE NOT EXISTS (" + newline;
 		script += "			SELECT 1" + newline;
 		script += "			FROM wres.Variable" + newline;

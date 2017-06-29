@@ -16,10 +16,7 @@ import wres.io.config.specification.ScriptFactory;
 import wres.io.grouping.LabeledScript;
 import wres.io.grouping.LeadResult;
 import wres.io.utilities.Database;
-import wres.io.utilities.Debug;
-import wres.util.NullPrintStream;
 import wres.util.ProgressMonitor;
-import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs
@@ -61,6 +58,7 @@ public class MetricExecutor extends WRESThread implements Callable<List<LeadResu
             
             while (specification.getAggregationSpecification().leadIsValid(step, finalLead))
             {
+                ProgressMonitor.increment();
                 MetricStepExecutor stepExecutor = new MetricStepExecutor(this.specification, step);
                 stepExecutor.setOnRun(ProgressMonitor.onThreadStartHandler());
                 stepExecutor.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
@@ -68,16 +66,19 @@ public class MetricExecutor extends WRESThread implements Callable<List<LeadResu
                 mappedPairs.put(step, task);
                 step++;
             }
+
+            System.out.println(NEWLINE + "All subtasks to calculate " + this.specification.getName() + " have been generated and are now running.");
             
             for (Entry<Integer, Future<Double>>  entry : mappedPairs.entrySet())
             {
                 results.add(new LeadResult(entry.getKey(), entry.getValue().get()));
+                ProgressMonitor.completeStep();
             }
         }
 
         LOGGER.trace("Results count: {}", results.size());
 
-        this.exectureOnComplete();
+        this.executeOnComplete();
         return results;
     }
 

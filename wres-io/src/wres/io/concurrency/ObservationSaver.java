@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.reading.BasicSource;
-import wres.io.reading.SourceReader;
+import wres.io.reading.ReaderFactory;
 import wres.io.utilities.Debug;
 import wres.util.FormattedStopwatch;
 
@@ -32,18 +32,19 @@ public class ObservationSaver extends WRESThread implements Runnable {
 		BasicSource source;
 		this.executeOnRun();
 		try {
-			source = SourceReader.get_source(this.filepath);
+			source = ReaderFactory.getReader(this.filepath);
 			FormattedStopwatch watch = new FormattedStopwatch();
 			watch.start();
 			Debug.debug(LOGGER, "Attempting to save '%s' to the database...", System.out, this.filepath);
-			source.save_observation();
+			source.saveObservation();
 			watch.stop();
 			Debug.debug(LOGGER, "'" + this.filepath + "' has been saved to the database after " + watch.getFormattedDuration(), System.out);
+			//ReaderFactory.releaseReader();
 		} catch (Exception e) {
 			System.err.println("Failed to save '" + String.valueOf(filepath) + " as an observation.");
 			e.printStackTrace();
 		}
-		this.exectureOnComplete();
+		this.executeOnComplete();
 	}
 
 	private String filepath = null;

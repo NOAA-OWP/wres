@@ -8,6 +8,8 @@ import java.util.function.Consumer;
  */
 public abstract class WRESThread
 {
+    protected final static String NEWLINE = System.lineSeparator();
+
     public void setOnComplete(Consumer<Object> onComplete) {
         this.onComplete = onComplete;
     }
@@ -16,7 +18,7 @@ public abstract class WRESThread
         this.onRun = onRun;
     }
     
-    protected void exectureOnComplete() {
+    protected void executeOnComplete() {
         if (this.onComplete != null) {
             this.onComplete.accept(null);
         }
