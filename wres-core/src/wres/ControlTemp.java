@@ -1,16 +1,16 @@
 package wres;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -24,6 +24,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metric.MetadataFactory;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.MetricFactory;
@@ -110,12 +111,16 @@ public class ControlTemp
                          .add(MetricFactory.ofMeanAbsoluteError())
                          .add(MetricFactory.ofRootMeanSquareError());
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
-        final List<CompletableFuture<Void>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
+        final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
         final int leadTimesCount = 2880;
 
+        //Build a thread pool that can be terminated upon exception
+        final ForkJoinPool f = new ForkJoinPool();
+        
         //Sink for the results
         final ConcurrentSkipListMap<Integer, MetricOutputCollection<ScalarOutput>> results =
                                                                                            new ConcurrentSkipListMap<>();
+        //Iterate
         for(int i = 0; i < leadTimesCount; i++)
         {
             final int leadTime = i + 1;
@@ -126,38 +131,77 @@ public class ControlTemp
             // 4. Do something with the verification results (store them)
             // 5. Handle exceptions
             // 6. Monitor progress per lead time
-            final CompletableFuture<Void> result = CompletableFuture
-                                                                    .supplyAsync(new PairGetterByLeadTime(config,
-                                                                                                          leadTime))
-                                                                    .thenApplyAsync(new SingleValuedPairProcessor())
-                                                                    .thenApplyAsync(builder.build())
-                                                                    .thenAcceptAsync(new ResultProcessor(leadTime,
-                                                                                                         results))
-                                                                    .exceptionally(error -> { //Handle exceptions
-                                                                        LOGGER.error("While computing results at "
-                                                                            + "lead time " + leadTime+".", error);
-                                                                        return null;
-                                                                    })
-                                                                    .thenAccept(a -> {
-                                                                        if(LOGGER.isInfoEnabled())
-                                                                        {
-                                                                            LOGGER.info("Completed lead time "
-                                                                                + leadTime);
-                                                                        }
-                                                                    });
+            final CompletableFuture<Void> c = CompletableFuture.supplyAsync(new PairGetterByLeadTime(config, leadTime),f)
+                                                               .thenApplyAsync(new SingleValuedPairProcessor(),f)
+                                                               .thenApplyAsync(builder.build(),f)
+                                                               .thenAcceptAsync(new ResultProcessor(leadTime, results),f)
+                                                               .thenAcceptAsync(a -> {
+                                                                   if(LOGGER.isInfoEnabled())
+                                                                   {
+                                                                       LOGGER.info("Completed lead time " + leadTime);
+                                                                   }
+                                                               },f);       
+//                                                               .exceptionally(error -> { //Handle exceptions
+//                                                                   LOGGER.error("While computing results at lead time "
+//                                                                       + leadTime + ".", error);
+//                                                                   return null;
+//                                                               });
             //Add the future to the list
-            listOfFutures.add(result);
+            listOfFutures.add(c);
         }
 
-        //Wait for all the futures to complete: this is blocking, representing a final sink for the results
-        CompletableFuture.allOf(listOfFutures.toArray(new CompletableFuture[listOfFutures.size()])).join();
-        //Print to logger
+        //Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
+        //Log any exception and append to the error log as the last step
+        Exception logged = null;
+        try {
+            doAllOrException(listOfFutures).join(); 
+        } catch(final Exception e) {
+            logged = e;
+        } finally {
+            //Close the pool to new tasks and terminate all existing tasks
+            f.shutdownNow();
+        }
+        //Print info to logger
         if(LOGGER.isInfoEnabled())
         {
             results.forEach((lead, result) -> LOGGER.info("For lead time " + lead + " " + result));
             final long stop = System.currentTimeMillis(); //End time
             LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
         }
+        //Print exception to logger last
+        if(!Objects.isNull(logged)) {
+            LOGGER.error(logged.getMessage(), logged);
+        }
+    }
+
+    /**
+     * Composes a list of {@link CompletableFuture} so that execution completes when all futures are completed normally
+     * or any one future completes exceptionally. None of the {@link CompletableFuture} passed to this utility method
+     * should already handle exceptions otherwise the exceptions will not be caught here (i.e. all futures will process
+     * to completion).
+     * 
+     * @param futures the futures to compose
+     * @return the composed futures
+     */
+
+    private static CompletableFuture<?> doAllOrException(final List<CompletableFuture<?>> futures)
+    {
+        //Complete when all futures are completed
+        final CompletableFuture<?> allDone =
+                                           CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+        //Complete when any of the underlying futures completes exceptionally
+        final CompletableFuture<?> oneExceptional = new CompletableFuture<>();
+        //Link the two
+        for(final CompletableFuture<?> completableFuture: futures)
+        {
+            //When one completes exceptionally, log and then propagate
+            completableFuture.exceptionally(exception -> {
+                oneExceptional.completeExceptionally(exception);
+                return null;
+            });
+        }
+        //Either all done OR one completes exceptionally
+        return CompletableFuture.anyOf(allDone, oneExceptional);
     }
 
     /**
@@ -174,19 +218,14 @@ public class ControlTemp
             final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
             final ToDoubleFunction<VectorOfDoubles> mean = FunctionFactory.mean();
             final List<PairOfDoubles> returnMe = new ArrayList<>();
-            int sz = 0;
             for(final PairOfDoubleAndVectorOfDoubles nextPair: t)
             {
                 final PairOfDoubles pair =
                                          valueFactory.pairOf(nextPair.getItemOne(),
                                                              mean.applyAsDouble(valueFactory.vectorOf(nextPair.getItemTwo())));
-                sz = nextPair.getItemTwo().length;
                 returnMe.add(pair);
             }
-            
-            System.out.println(returnMe.size()+" "+sz);
-            
-            return MetricInputFactory.ofSingleValuedPairs(returnMe, null);
+            return MetricInputFactory.ofSingleValuedPairs(returnMe, MetadataFactory.getMetadata(returnMe.size()));
         }
     }
 
@@ -242,55 +281,63 @@ public class ControlTemp
         }
 
         @Override
-        public List<PairOfDoubleAndVectorOfDoubles> get() 
+        public List<PairOfDoubleAndVectorOfDoubles> get()
         {
-//TODO: REMOVE THIS LINE WHEN DATABASE UPLOAD IS WORKING            
 
-//            return getImaginaryPairsTemp();
+//START EXCEPTION EXAMPLE            
+//            //Demonstrates exception handling
+//            if(leadTime == 1000)
+//            {
+//                throw new PairException("while generating pairs at lead time " + leadTime);
+//            }
+//END EXCEPTION EXAMPLE            
 
-//TODO: UNCOMMENT FROM HERE WHEN DATABASE UPLOAD IS WORKING                  
+//COMMENT THIS LINE WHEN DATABASE IS WORKING            
+            return getImaginaryPairsTemp();
 
-            final List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
-            String sql = "";
-            try
-            {
-                sql = getPairSqlFromConfigForLead(this.config, this.leadTime);
-            }
-            catch(final IOException ioe)
-            {
-                LOGGER.error("When trying to build sql for pairs:", ioe);
-                //throw ioe;
-            }
+//UNCOMMENT FROM HERE ONWARDS WHEN DATABASE IS WORKING                  
 
-            final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
-            try (Connection con = Database.getConnection();
-            ResultSet resultSet = Database.getResults(con,sql))
-            {
-                if(LOGGER.isInfoEnabled()) {
-                    LOGGER.info("Requesting pairs for lead time "+leadTime+".");
-                }
-                while(resultSet.next())
-                {
-                    final double observationValue = resultSet.getFloat("observation");
-                    final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
-                    final PairOfDoubleAndVectorOfDoubles pair = valueFactory.pairOf(observationValue, forecastValues);
-                    LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
-                                 pair.getItemOne(),
-                                 pair.getItemTwo());                    
-                    result.add(pair);
-                }
-            }
-            catch(final SQLException se)
-            {
-                LOGGER.error("Failed to get pair results for lead " + this.leadTime, se);
-                //throw new IOException(message, se);
-            }
-            finally
-            {
-                LOGGER.trace("Query: ");
-                LOGGER.trace(sql);
-            }
-            return result;
+//            final List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
+//            String sql = "";
+//            try
+//            {
+//                sql = getPairSqlFromConfigForLead(this.config, this.leadTime);
+//            }
+//            catch(final IOException ioe)
+//            {
+//                LOGGER.error("When trying to build sql for pairs:", ioe);
+//                //throw ioe;
+//            }
+//
+//            final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
+//            try (Connection con = Database.getConnection();
+//            ResultSet resultSet = Database.getResults(con,sql))
+//            {
+//                if(LOGGER.isInfoEnabled()) {
+//                    LOGGER.info("Requesting pairs for lead time "+leadTime+".");
+//                }
+//                while(resultSet.next())
+//                {
+//                    final double observationValue = resultSet.getFloat("observation");
+//                    final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
+//                    final PairOfDoubleAndVectorOfDoubles pair = valueFactory.pairOf(observationValue, forecastValues);
+//                    LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
+//                                 pair.getItemOne(),
+//                                 pair.getItemTwo());                    
+//                    result.add(pair);
+//                }
+//            }
+//            catch(final SQLException se)
+//            {
+//                LOGGER.error("Failed to get pair results for lead " + this.leadTime, se);
+//                //throw new IOException(message, se);
+//            }
+//            finally
+//            {
+//                LOGGER.trace("Query: ");
+//                LOGGER.trace(sql);
+//            }
+//            return result;
         }
     }
 
@@ -308,8 +355,9 @@ public class ControlTemp
         final DataFactory dataFactory = DataFactory.instance();
         final double[] ensemble = new double[50];
         //Add 50 members with the same value
-        for(int i = 0; i < ensemble.length; i++) {
-            ensemble[i]=10;
+        for(int i = 0; i < ensemble.length; i++)
+        {
+            ensemble[i] = 10;
         }
         //Add 10k pairs
         for(int i = 0; i < 10000; i++)
