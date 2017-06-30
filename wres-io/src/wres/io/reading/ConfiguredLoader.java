@@ -66,7 +66,7 @@ public class ConfiguredLoader
             }
             catch (FileNotFoundException notFound)
             {
-                LOGGER.error("The directory at: '" + directory.getPath() + "' could not be loaded.");
+                LOGGER.error("The directory at: '" + directory.getPathString() + "' could not be loaded.");
                 LOGGER.error(Strings.getStackTrace(notFound));
             }
         }
