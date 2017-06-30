@@ -1,6 +1,8 @@
-package wres.engine.statistics.metric.inputs;
+package wres.datamodel.metric;
 
 import org.junit.Test;
+
+import wres.datamodel.metric.PairException;
 
 /**
  * Tests the {@link PairException}.

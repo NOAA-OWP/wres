@@ -1,10 +1,6 @@
-package wres.engine.statistics.metric.outputs;
+package wres.datamodel.metric;
 
 import java.util.Objects;
-
-import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.engine.statistics.metric.FunctionFactory;
 
 /**
  * A scalar outputs associated with a metric.
@@ -43,7 +39,7 @@ public class ScalarOutput implements MetricOutput<Double>
         {
             final ScalarOutput v = (ScalarOutput)o;
             start = meta.equals(v.getMetadata());
-            start = start && FunctionFactory.doubleEquals().test(((ScalarOutput)o).getData(), output);
+            start = start && Math.abs(((ScalarOutput)o).getData() - output) < .00000001;
         }
         return start;        
     }

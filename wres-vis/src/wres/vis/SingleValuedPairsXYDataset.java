@@ -5,7 +5,8 @@ import java.util.List;
 
 import org.jfree.data.xy.AbstractXYDataset;
 
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
+import wres.datamodel.metric.SingleValuedPairs;
+
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link SingleValuedPairs}
