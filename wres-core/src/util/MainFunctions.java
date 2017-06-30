@@ -1,9 +1,26 @@
 package util;
 
-import concurrency.Downloader;
-import concurrency.ProjectExecutor;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import concurrency.Downloader;
+import concurrency.ProjectExecutor;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.Executor;
@@ -24,18 +41,6 @@ import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
 
 /**
  * @author ctubbs
@@ -64,7 +69,7 @@ public final class MainFunctions
 	 * @param operation The desired operation to perform
 	 * @return True if there is a method mapped to the operation name
 	 */
-	public static boolean hasOperation (String operation) {
+	public static boolean hasOperation (final String operation) {
 		return functions.containsKey(operation.toLowerCase());
 	}
 
@@ -74,7 +79,7 @@ public final class MainFunctions
 	 * @param operation The name of the desired method to call
 	 * @param args      The desired arguments to use when calling the method
 	 */
-	public static void call (String operation, String[] args) {
+	public static void call (String operation, final String[] args) {
 		operation = operation.toLowerCase();
 		functions.get(operation).accept(args);
 		shutdown();
@@ -84,7 +89,7 @@ public final class MainFunctions
 	 * Creates the mapping of operation names to their corresponding methods
 	 */
 	private static Map<String, Consumer<String[]>> createMap () {
-		Map<String, Consumer<String[]>> prototypes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+		final Map<String, Consumer<String[]>> prototypes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
 		prototypes.put("describenetcdf", describeNetCDF());
 		prototypes.put("connecttodb", connectToDB());
@@ -119,9 +124,9 @@ public final class MainFunctions
 	 */
 	private static Consumer<String[]> printCommands()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			System.out.println("Available commands are:");
-			for (String command : functions.keySet())
+			for (final String command : functions.keySet())
 			{
 				System.out.println("\t" + command);
 			}
@@ -135,14 +140,14 @@ public final class MainFunctions
 	 */
 	private static Consumer<String[]> saveForecast()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			if (args.length > 0) {
 				try {
 
-					ForecastSaver saver = new ForecastSaver(Paths.get(args[0]).toAbsolutePath().toString());
+					final ForecastSaver saver = new ForecastSaver(Paths.get(args[0]).toAbsolutePath().toString());
 					saver.setOnRun(ProgressMonitor.onThreadStartHandler());
 					saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-					Future<?> task = Executor.execute(saver);
+					final Future<?> task = Executor.execute(saver);
 
 					task.get();
 
@@ -152,7 +157,7 @@ public final class MainFunctions
 					System.out.println();
 					System.out.println("All forecast saving operations complete. Please verify data.");
 				}
-				catch (Exception e) {
+				catch (final Exception e) {
 					e.printStackTrace();
 				}
 			}
@@ -173,19 +178,19 @@ public final class MainFunctions
 	 */
 	private static Consumer<String[]> saveForecasts()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			if (args.length > 0)
 			{
 				try
 				{
-					String directory = args[0];
-					final File[] files = new File(directory).listFiles((File file) -> {
+					final String directory = args[0];
+					final File[] files = new File(directory).listFiles((final File file) -> {
 						return file.isFile() && file.getName().endsWith(".xml") || file.getName().endsWith("gz") || file.getName().endsWith("nc");
 					});
 
-					File[] filteredFiles = wres.util.Collections.removeAll(files, (File file) -> {
+					final File[] filteredFiles = wres.util.Collections.removeAll(files, (final File file) -> {
 						final String name = file.getName();
-						return name.endsWith(".gz") && wres.util.Collections.find(files, (File other) -> {
+						return name.endsWith(".gz") && wres.util.Collections.find(files, (final File other) -> {
 							return other.getName().equalsIgnoreCase(name.substring(0, name.length() - 3));
 						}) != null;
 					});
@@ -194,16 +199,16 @@ public final class MainFunctions
 					System.out.println(String.format("Attempting to save all files in '%s' as forecasts to the database... (This might take a little while)", args[0]));
 					System.out.println();
 
-					ArrayList<Future<?>> tasks = new ArrayList<>();
+					final ArrayList<Future<?>> tasks = new ArrayList<>();
 
-					for (File file : filteredFiles) {
-						ForecastSaver saver = new ForecastSaver(file.getAbsolutePath());
+					for (final File file : filteredFiles) {
+						final ForecastSaver saver = new ForecastSaver(file.getAbsolutePath());
 						saver.setOnRun(ProgressMonitor.onThreadStartHandler());
 						saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 						tasks.add(Executor.execute(saver));
 					}
 
-					for (Future<?> task : tasks) {
+					for (final Future<?> task : tasks) {
 						task.get();
 					}
 
@@ -221,7 +226,7 @@ public final class MainFunctions
 					System.out.println();
 					System.out.println("All forecast saving operations complete. Please verify data.");
 				}
-				catch (Exception e)
+				catch (final Exception e)
 				{
 					e.printStackTrace();
 				}
@@ -241,15 +246,15 @@ public final class MainFunctions
 	 */
 	private static Consumer<String[]> saveObservation()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			if (args.length > 0) {
 				try {
-					BasicSource source = ReaderFactory.getReader(args[0]);
+					final BasicSource source = ReaderFactory.getReader(args[0]);
 					System.out.println(String.format("Attempting to save '%s' to the database...", args[0]));
 					source.saveObservation();
 					System.out.println("Database save operation completed. Please verify data.");
 				}
-				catch (Exception e)
+				catch (final Exception e)
 				{
 					e.printStackTrace();
 				}
@@ -270,18 +275,18 @@ public final class MainFunctions
 	 * @return Method that will attempt to save all files in a directory to the database as observations
 	 */
 	private static Consumer<String[]> saveObservations () {
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			if (args.length > 0) {
 				try {
-					String directory = args[0];
-					File[] files = new File(directory).listFiles();
-					ArrayList<Future<?>> tasks = new ArrayList<>();
+					final String directory = args[0];
+					final File[] files = new File(directory).listFiles();
+					final ArrayList<Future<?>> tasks = new ArrayList<>();
 					System.out.println(String.format("Attempting to save all files in '%s' as observations to the database...", args[0]));
-					for (File file : files != null ? files : new File[0]) {
+					for (final File file : files != null ? files : new File[0]) {
 						tasks.add(Executor.execute(new ObservationSaver(file.getAbsolutePath())));
 					}
 
-					for (Future<?> task : tasks) {
+					for (final Future<?> task : tasks) {
 						task.get();
 					}
 
@@ -289,7 +294,7 @@ public final class MainFunctions
 					Database.shutdown();
 					System.out.println("All observation saving operations complete. Please verify data.");
 				}
-				catch (Exception e) {
+				catch (final Exception e) {
 					e.printStackTrace();
 				}
 			}
@@ -306,13 +311,13 @@ public final class MainFunctions
 	 * @return method that will attempt to connect to the database to prove that a connection is possible. The version of the connected database will be printed.
 	 */
 	private static Consumer<String[]> connectToDB () {
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			try {
-				String version = Database.getResult("Select version() AS version_detail", "version_detail");
+				final String version = Database.getResult("Select version() AS version_detail", "version_detail");
 				System.out.println(version);
 				System.out.println("Successfully connected to the database");
 			}
-			catch (SQLException e) {
+			catch (final SQLException e) {
 				System.out.println("Could not connect to database because:");
 				e.printStackTrace();
 			}
@@ -321,7 +326,7 @@ public final class MainFunctions
 	
 	private static Consumer<String[]> refreshForecasts()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			try {
 				System.out.println("");
 				System.out.println("Cleaning up the Forecast table...");
@@ -330,7 +335,7 @@ public final class MainFunctions
 				System.out.println("The Forecast table has been refreshed.");
 				System.out.println("");
 			}
-			catch (SQLException e) {
+			catch (final SQLException e) {
 				e.printStackTrace();
 			}
 
@@ -342,7 +347,7 @@ public final class MainFunctions
 				System.out.println("The ForecastEnsemble table has been refreshed.");
 				System.out.println("");
 			}
-			catch (SQLException e) {
+			catch (final SQLException e) {
 				e.printStackTrace();
 			}
 
@@ -354,7 +359,7 @@ public final class MainFunctions
 				System.out.println("The ForecastValue table has been refreshed.");
 				System.out.println("");
 			}
-			catch (SQLException e) {
+			catch (final SQLException e) {
 				e.printStackTrace();
 			}
 		};
@@ -368,7 +373,7 @@ public final class MainFunctions
 	 */
 	private static Consumer<String[]> systemMetrics()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 		    System.out.println(Strings.getSystemStats());
 
 			// Add white space
@@ -384,10 +389,10 @@ public final class MainFunctions
 	 */
 	private static Consumer<String[]> describeNetCDF()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			if (args.length > 0)
 			{
-				NetCDFReader reader = new NetCDFReader(args[0]);
+				final NetCDFReader reader = new NetCDFReader(args[0]);
 				reader.output_variables();
 			}
 			else
@@ -408,17 +413,17 @@ public final class MainFunctions
 	 */
 	private static Consumer<String[]> queryNetCDF()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			if (args.length > 1)
 			{
-				String filename = args[0];
-				String variable_name = args[1];
-				int[] variable_args = new int[args.length - 2];
+				final String filename = args[0];
+				final String variable_name = args[1];
+				final int[] variable_args = new int[args.length - 2];
 				for (int index = 2; index < args.length; ++index)
 				{
 					variable_args[index-2] = Integer.parseInt(args[index]);
 				}
-				NetCDFReader reader = new NetCDFReader(filename);
+				final NetCDFReader reader = new NetCDFReader(filename);
 				reader.print_query(variable_name, variable_args);
 			}
 			else
@@ -437,13 +442,13 @@ public final class MainFunctions
 	 */
 	private static Consumer<String[]> describeProjects()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			System.out.println();
 			System.out.println();
 			System.out.println("The configured projects are:");
 			System.out.println();
 			System.out.println();
-			for (ProjectSpecification project : ProjectSettings.getProjects()) {
+			for (final ProjectSpecification project : ProjectSettings.getProjects()) {
 				System.out.println(project.toString());
 			}
 		};
@@ -457,7 +462,7 @@ public final class MainFunctions
 	 */
 	private static Consumer<String[]> flushDatabase()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			String script = "";
 			script += "TRUNCATE wres.Observation;" + newline;
 			script += "TRUNCATE wres.ForecastValue;" + newline;
@@ -469,7 +474,7 @@ public final class MainFunctions
 			try {
 				Database.execute(script);
 			}
-			catch (SQLException e) {
+			catch (final SQLException e) {
 				System.err.println("WRES data could not be removed from the database." + newline);
 				System.err.println();
 				System.err.println(script);
@@ -486,7 +491,7 @@ public final class MainFunctions
 	 */
 	private static Consumer<String[]> flushForecasts()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			String script = "";
 			script += "TRUNCATE wres.ForecastSource;" + newline;
 			script += "DELETE FROM wres.Source S" + newline;
@@ -502,7 +507,7 @@ public final class MainFunctions
 			try {
 				Database.execute(script);
 			}
-			catch (SQLException e) {
+			catch (final SQLException e) {
 				System.err.println("WRES forecast data could not be removed from the database." + newline);
 				System.err.println();
 				System.err.println(script);
@@ -513,10 +518,10 @@ public final class MainFunctions
 	}
 
 	private static Consumer<String[]> refreshTestData () {
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			if (args.length >= 2) {
-				String date = args[0];
-				String range = args[1];
+				final String date = args[0];
+				final String range = args[1];
 
 				if (!Arrays.asList("analysis_assim", "fe_analysis_assim", "fe_medium_range", "fe_short_range", "forcing_analysis_assim", "forcing_medium_range", "forcing_short_range", "long_range_mem1", "long_range_mem2", "long_range_mem3", "long_range_mem4", "medium_range", "short_range").contains(range.toLowerCase())) {
 					System.err.println("The range of: '" + range + "' is not a valid range of data.");
@@ -531,22 +536,22 @@ public final class MainFunctions
 				boolean isLong = false;
 				final boolean isForcing = Strings.contains(range, "fe") || Strings.contains(range, "forcing");
 
-				Map<String, Future> downloadOperations = new TreeMap<>();
+				final Map<String, Future> downloadOperations = new TreeMap<>();
 
 				String downloadPath = "testinput/sharedinput/";
 				downloadPath += date;
-				File downloadDirectory = new File(downloadPath);
+				final File downloadDirectory = new File(downloadPath);
 
 				if (!downloadDirectory.exists()) {
 					System.out.println("Attempting to create a directory for the dataset...");
 
 					try {
-						boolean directoriesMade = downloadDirectory.mkdirs();
+						final boolean directoriesMade = downloadDirectory.mkdirs();
 						if (!directoriesMade) {
 							System.err.println("A directory could not be created for the downloaded files.");
 						}
 					}
-					catch (SecurityException exception) {
+					catch (final SecurityException exception) {
 						System.err.println("You lack the permissions necessary to make the directory for this data.");
 						System.err.println("You will need to get access to your data through other means.");
 						return;
@@ -645,7 +650,7 @@ public final class MainFunctions
 
 					address += filename;
 
-					Downloader downloadOperation = new Downloader(Paths.get(downloadDirectory.getAbsolutePath(), filename), address);
+					final Downloader downloadOperation = new Downloader(Paths.get(downloadDirectory.getAbsolutePath(), filename), address);
 					downloadOperation.setOnRun(ProgressMonitor.onThreadStartHandler());
 					downloadOperation.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 					downloadOperations.put(filename, Executor.execute(downloadOperation));
@@ -653,7 +658,7 @@ public final class MainFunctions
 					current += hourIncrement;
 				}
 
-				for (Entry<String, Future> operation : downloadOperations.entrySet()) {
+				for (final Entry<String, Future> operation : downloadOperations.entrySet()) {
 					try {
 						operation.getValue().get();
 					}
@@ -692,7 +697,7 @@ public final class MainFunctions
 	 */
 	private static Consumer<String[]> flushObservations()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			String script;
 			script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + newline;
 			script += "DELETE FROM wres.Source S" + newline;
@@ -705,7 +710,7 @@ public final class MainFunctions
 			try {
 				Database.execute(script);
 			}
-			catch (SQLException e) {
+			catch (final SQLException e) {
 				System.err.println("WRES Observation data could not be removed from the database." + newline);
 				System.err.println();
 				System.err.println(script);
@@ -722,21 +727,21 @@ public final class MainFunctions
 	 * observation variable, and lead time
 	 */
 	private static Consumer<String[]> getPairs () {
-		return (String[] args) -> {
+		return (final String[] args) -> {
 
 			Connection connection = null;
 			try {
-				String forecastVariable = args[0];
-				String observationVariable = args[1];
-				String lead = args[2];
-				String targetUnit = args[3];
-				int targetUnitID = MeasurementUnits.getMeasurementUnitID(targetUnit);
-				int observationVariableID = Variables.getVariableID(observationVariable, targetUnitID);
-				int forecastVariableID = Variables.getVariableID(forecastVariable, targetUnitID);
+				final String forecastVariable = args[0];
+				final String observationVariable = args[1];
+				final String lead = args[2];
+				final String targetUnit = args[3];
+				final int targetUnitID = MeasurementUnits.getMeasurementUnitID(targetUnit);
+				final int observationVariableID = Variables.getVariableID(observationVariable, targetUnitID);
+				final int forecastVariableID = Variables.getVariableID(forecastVariable, targetUnitID);
 				int forecastVariablePositionID;
 				int observationVariablePositionID;
 
-				List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+				final List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
 				String script;
 
 				script = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = " + observationVariableID + ";";
@@ -772,10 +777,9 @@ public final class MainFunctions
 				script += "ORDER BY FM.forecasted_date;";
 
 				connection = Database.getConnection();
-				ResultSet results = Database.getResults(connection, script);
-				DataFactory valueFactory = wres.datamodel.DataFactory.instance();
+				final ResultSet results = Database.getResults(connection, script);
 				while (results.next()) {
-					pairs.add(valueFactory.pairOf((double) results.getFloat("observation"), (Double[]) results.getArray("forecasts").getArray()));
+					pairs.add(DataFactory.pairOf((double) results.getFloat("observation"), (Double[]) results.getArray("forecasts").getArray()));
 				}
 
 				System.out.println();
@@ -791,7 +795,7 @@ public final class MainFunctions
 					System.out.println(representation);
 				}
 			}
-			catch (Exception e) {
+			catch (final Exception e) {
 				e.printStackTrace();
 			}
 			finally {
@@ -804,23 +808,23 @@ public final class MainFunctions
 
 	private static Consumer<String[]> refreshStatistics ()
 	{
-		return (String[] args) -> {
+		return (final String[] args) -> {
 			Database.refreshStatistics();
 		};
 	}
 
 	private static Consumer<String[]> getProjectPairs()
 	{
-	    return (String[] args) -> {
+	    return (final String[] args) -> {
 	        if (args.length > 1)
 	        {
-	            String projectName = args[0];
-	            String metricName = args[1];
-	            int printLimit = 100;
+	            final String projectName = args[0];
+	            final String metricName = args[1];
+	            final int printLimit = 100;
 	            int printCount = 0;
-	            int totalLimit = 10;
+	            final int totalLimit = 10;
 	            int totalCount = 0;
-	            ProjectSpecification foundProject = ProjectSettings.getProject(projectName);
+	            final ProjectSpecification foundProject = ProjectSettings.getProject(projectName);
 	            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping;
 	            
 	            if (foundProject == null)
@@ -830,7 +834,7 @@ public final class MainFunctions
 	                return;
 	            }
 	            
-	            MetricSpecification metric = foundProject.getMetric(metricName);
+	            final MetricSpecification metric = foundProject.getMetric(metricName);
 	            
 	            if (metric == null)
 	            {
@@ -843,13 +847,13 @@ public final class MainFunctions
                 {
                     pairMapping = metric.getPairs();
                     
-                    for (Integer leadKey : pairMapping.keySet())
+                    for (final Integer leadKey : pairMapping.keySet())
                     {
                         System.out.println("\tLead Time: " + leadKey);
-                        for (PairOfDoubleAndVectorOfDoubles pair : pairMapping.get(leadKey))
+                        for (final PairOfDoubleAndVectorOfDoubles pair : pairMapping.get(leadKey))
                         {
                             System.out.print("\t\t");
-                            String representation = pair.toString().substring(0, Math.min(120, pair.toString().length()));
+                            final String representation = pair.toString().substring(0, Math.min(120, pair.toString().length()));
                             System.out.println(representation);
                             
                             printCount++;
@@ -869,7 +873,7 @@ public final class MainFunctions
                         }
                     }
                 }
-                catch(Exception e)
+                catch(final Exception e)
                 {
                     e.printStackTrace();
                 }
@@ -883,26 +887,26 @@ public final class MainFunctions
 	}
 	
 	private static Consumer<String[]> executeProject() {
-	    return (String[] args) -> {
+	    return (final String[] args) -> {
 	        if (args.length > 0) {
-	            String projectName = args[0];
+	            final String projectName = args[0];
 	            String metricName = null;
 	            
 	            if (args.length > 1) {
 	                metricName = args[1];
 	            }
 	            
-	            ProjectSpecification project = ProjectSettings.getProject(projectName);
-	            List<Future> ingestOperations = new ArrayList<>();
-	            for (ProjectDataSpecification datasource : project.getDatasources())
+	            final ProjectSpecification project = ProjectSettings.getProject(projectName);
+	            final List<Future> ingestOperations = new ArrayList<>();
+	            for (final ProjectDataSpecification datasource : project.getDatasources())
 	            {
 	                System.err.println("Loading datasource information if it doesn't already exist...");
-	                ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
+	                final ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
 					try
 					{
 						ingestOperations.addAll(dataLoader.load());
 					}
-					catch (IOException e) {
+					catch (final IOException e) {
 						e.printStackTrace();
 					}
 					System.err.println("The data from this dataset has been loaded to the database");
@@ -914,15 +918,15 @@ public final class MainFunctions
 
 	            if (ingestOperations.size() > 0)
                 {
-                	for (Future operation : ingestOperations)
+                	for (final Future operation : ingestOperations)
 					{
 						try {
 							operation.get();
 						}
-						catch (InterruptedException e) {
+						catch (final InterruptedException e) {
 							e.printStackTrace();
 						}
-						catch (ExecutionException e) {
+						catch (final ExecutionException e) {
 							e.printStackTrace();
 						}
 					}
@@ -931,15 +935,15 @@ public final class MainFunctions
                     Database.refreshStatistics();
                 }
 	            
-	            Map<String, List<LeadResult>> results = new TreeMap<>();
-	            Map<String, Future<List<LeadResult>>> futureResults = new TreeMap<>();
+	            final Map<String, List<LeadResult>> results = new TreeMap<>();
+	            final Map<String, Future<List<LeadResult>>> futureResults = new TreeMap<>();
 	            
 	            if (metricName == null)
 	            {
     	            for (int metricIndex = 0; metricIndex < project.metricCount(); ++metricIndex)
     	            {
-    	                MetricSpecification specification = project.getMetric(metricIndex);
-    	                MetricTask metric = new MetricTask(specification, null);
+    	                final MetricSpecification specification = project.getMetric(metricIndex);
+    	                final MetricTask metric = new MetricTask(specification, null);
     	                metric.setOnRun(ProgressMonitor.onThreadStartHandler());
     	                metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
     	                System.err.println("Now executing the metric named: " + specification.getName());
@@ -948,11 +952,11 @@ public final class MainFunctions
 	            }
 	            else
 	            {
-	                MetricSpecification specification = project.getMetric(metricName);
+	                final MetricSpecification specification = project.getMetric(metricName);
 	                
 	                if (specification != null)
 	                {
-						MetricTask metric = new MetricTask(specification, null);
+						final MetricTask metric = new MetricTask(specification, null);
                         metric.setOnRun(ProgressMonitor.onThreadStartHandler());
                         metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                         System.err.println("Now executing the metric named: " + specification.getName());
@@ -960,7 +964,7 @@ public final class MainFunctions
 	                }
 	            }
 	            
-	            for (Entry<String, Future<List<LeadResult>>> entry : futureResults.entrySet())
+	            for (final Entry<String, Future<List<LeadResult>>> entry : futureResults.entrySet())
 	            {
 	                try
                     {
@@ -976,13 +980,13 @@ public final class MainFunctions
 	            System.out.println("Project: " + projectName);
 	            System.out.println();
 	            
-	            for (Entry<String, List<LeadResult>> entry : results.entrySet())
+	            for (final Entry<String, List<LeadResult>> entry : results.entrySet())
 	            {
 	                System.out.println();
 	                System.out.println(entry.getKey());
 	                System.out.println("--------------------------------------------------------------------------------------");
 	                
-	                for (LeadResult metricResult : entry.getValue())
+	                for (final LeadResult metricResult : entry.getValue())
 	                {
 	                    System.out.print(metricResult.getLead());
 	                    System.out.print("\t\t|\t");

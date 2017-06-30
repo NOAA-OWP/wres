@@ -5,14 +5,15 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.MulticategoryPairs;
+import wres.datamodel.metric.ScalarOutput;
 import wres.engine.statistics.metric.PeirceSkillScore.PeirceSkillScoreBuilder;
 import wres.engine.statistics.metric.PeirceSkillScore.PeirceSkillScoreMulticategoryBuilder;
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.inputs.MulticategoryPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
  * Tests the {@link PeirceSkillScore}.
@@ -54,12 +55,12 @@ public final class PeirceSkillScoreTest
             + ".", actual.equals(expected));
         //Check the parameters
         assertTrue("Unexpected name for the Peirce Skill Score.",
-                   ps.getName().equals(MetricConstants.getMetricName(MetricConstants.PEIRCE_SKILL_SCORE)));
+                   ps.getName().equals(MetadataFactory.getMetricName(MetricConstants.PEIRCE_SKILL_SCORE)));
         assertTrue("The Peirce Skill Score is not decomposable.", !ps.isDecomposable());
         assertTrue("The Peirce Skill Score is a skill score.", ps.isSkillScore());
         assertTrue("The Peirce Skill Score cannot be decomposed.", ps.getDecompositionID() == MetricConstants.NONE);
         final String expName = MetricFactory.ofContingencyTable().getName();
-        final String actName = MetricConstants.getMetricName(ps.getCollectionOf());           
+        final String actName = MetadataFactory.getMetricName(ps.getCollectionOf());           
         assertTrue("The Peirce Skill Score should be a collection of '" + expName
             + "', but is actually a collection of '" + actName + "'.",
                    ps.getCollectionOf()==MetricFactory.ofContingencyTable().getID());

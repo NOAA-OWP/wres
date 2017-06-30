@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.outputs;
+package wres.datamodel.metric;
 
 import java.util.Arrays;
 import java.util.Objects;

@@ -6,26 +6,10 @@ package wres.datamodel;
  * @author jesse
  * @author james.brown@hydrosolved.com
  */
-public class DataFactory
+public final class DataFactory
 {
-    private static final DataFactory INSTANCE = new DataFactory();
 
-    private DataFactory()
-    {
-        // prevent direct construction
-    }
-
-    /**
-     * Get an instance with object creation methods.
-     * 
-     * @return the DataFactory instance
-     */
-    public static wres.datamodel.DataFactory instance()
-    {
-        return INSTANCE;
-    }
-
-    public PairOfDoubles pairOf(final double first, final double second)
+    public static PairOfDoubles pairOf(final double first, final double second)
     {
         return new PairOfDoubles()
         {
@@ -43,7 +27,7 @@ public class DataFactory
         };
     }
 
-    public PairOfBooleans pairOf(final boolean first, final boolean second)
+    public static PairOfBooleans pairOf(final boolean first, final boolean second)
     {
         return new PairOfBooleans()
         {
@@ -61,17 +45,17 @@ public class DataFactory
         };
     }
 
-    public PairOfDoubleAndVectorOfDoubles pairOf(final double first, final double[] second)
+    public static PairOfDoubleAndVectorOfDoubles pairOf(final double first, final double[] second)
     {
         return SafePairOfDoubleAndVectorOfDoubles.of(first, second);
     }
 
-    public PairOfDoubleAndVectorOfDoubles pairOf(final Double first, final Double[] second)
+    public static PairOfDoubleAndVectorOfDoubles pairOf(final Double first, final Double[] second)
     {
         return SafePairOfDoubleAndVectorOfDoubles.of(first, second);
     }
 
-    public Pair<VectorOfDoubles, VectorOfDoubles> pairOf(final double[] first, final double[] second)
+    public static Pair<VectorOfDoubles, VectorOfDoubles> pairOf(final double[] first, final double[] second)
     {
         return new Pair<VectorOfDoubles, VectorOfDoubles>()
         {
@@ -89,24 +73,33 @@ public class DataFactory
         };
     }
 
-    public VectorOfDoubles vectorOf(final double[] vec)
+    public static VectorOfDoubles vectorOf(final double[] vec)
     {
         return SafeVectorOfDoubles.of(vec);
     }
 
-    public VectorOfDoubles vectorOf(final Double[] vec)
+    public static VectorOfDoubles vectorOf(final Double[] vec)
     {
         return SafeVectorOfDoubles.of(vec);
     }
 
-    public VectorOfBooleans vectorOf(final boolean[] vec)
+    public static VectorOfBooleans vectorOf(final boolean[] vec)
     {
         return SafeVectorOfBooleans.of(vec);
     }
 
-    public MatrixOfDoubles matrixOf(final double[][] vec)
+    public static MatrixOfDoubles matrixOf(final double[][] vec)
     {
         return SafeMatrixOfDoubles.of(vec);
     }
 
+    /**
+     * Prevent direct construction.
+     */
+
+    private DataFactory()
+    {
+        // prevent direct construction
+    }    
+    
 }

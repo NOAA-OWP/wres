@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.inputs;
+package wres.datamodel.metric;
 
 import java.util.List;
 

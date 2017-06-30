@@ -6,11 +6,12 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.VectorOutput;
 
 /**
  * Tests the {@link MeanSquareErrorSkillScore}.
@@ -54,7 +55,7 @@ public final class MeanSquareErrorSkillScoreTest
 
         //Check the parameters
         assertTrue("Unexpected name for the Mean Square Error Skill Score.",
-                   mse.getName().equals(MetricConstants.getMetricName(MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE)));
+                   mse.getName().equals(MetadataFactory.getMetricName(MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE)));
         assertTrue("The Mean Square Error is decomposable.", mse.isDecomposable());
         assertTrue("The Mean Square Error is a skill score.", mse.isSkillScore());
         assertTrue("Expected no decomposition for the Mean Square Error Skill Score.",
@@ -63,7 +64,7 @@ public final class MeanSquareErrorSkillScoreTest
         //Check the exceptions
         try
         {
-            b.setDecompositionID(-999).build();
+            b.setDecompositionID(MetricConstants.BRIER_SCORE).build();
             fail("Expected an invalid decomposition identifier.");
         }
         catch(final Exception e)
@@ -71,7 +72,7 @@ public final class MeanSquareErrorSkillScoreTest
         }
         try
         {
-            b.setDecompositionID(-999).build().apply(input);
+            b.setDecompositionID(MetricConstants.BRIER_SCORE).build().apply(input);
             fail("Expected an invalid decomposition identifier.");
         }
         catch(final Exception e)

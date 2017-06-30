@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.inputs;
+package wres.datamodel.metric;
 
 /**
  * Immutable store of verification pairs associated with a dichotomous input, i.e. a single event whose outcome is

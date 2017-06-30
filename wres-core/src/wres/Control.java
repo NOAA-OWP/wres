@@ -26,13 +26,13 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.Slicer;
+import wres.datamodel.metric.MetricInputFactory;
+import wres.datamodel.metric.MetricOutputCollection;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.MetricFactory;
-import wres.engine.statistics.metric.inputs.MetricInputFactory;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputCollection;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
@@ -391,8 +391,6 @@ public class Control
                 throw ioe;
             }
 
-            final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
-
             try (Connection con = Database.getConnection();
             Statement statement = con.createStatement();
             ResultSet resultSet = statement.executeQuery(sql))
@@ -401,7 +399,7 @@ public class Control
                 {
                     final double observationValue = resultSet.getFloat("observation");
                     final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
-                    final PairOfDoubleAndVectorOfDoubles pair = valueFactory.pairOf(observationValue, forecastValues);
+                    final PairOfDoubleAndVectorOfDoubles pair = DataFactory.pairOf(observationValue, forecastValues);
 
                     LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
                                  pair.getItemOne(),

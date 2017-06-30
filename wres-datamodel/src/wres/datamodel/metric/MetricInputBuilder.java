@@ -1,7 +1,7 @@
 /**
  * 
  */
-package wres.engine.statistics.metric.inputs;
+package wres.datamodel.metric;
 
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetricInput;

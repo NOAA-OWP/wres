@@ -9,8 +9,8 @@ import java.util.concurrent.FutureTask;
 
 import org.junit.Test;
 
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 
 /**
  * Tests the {@link MetricTask}.

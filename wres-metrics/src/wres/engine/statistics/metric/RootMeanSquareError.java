@@ -2,10 +2,11 @@ package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 
 /**
  * As with the MSE, the Root Mean Square Error (RMSE) or Root Mean Square Deviation (RMSD) is a measure of accuracy.
@@ -54,7 +55,7 @@ extends
     }
 
     @Override
-    public int getID()
+    public MetricConstants getID()
     {
         return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
     }
@@ -72,7 +73,7 @@ extends
     }        
 
     @Override
-    public int getDecompositionID()
+    public MetricConstants getDecompositionID()
     {
         return MetricConstants.NONE;
     }

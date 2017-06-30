@@ -57,8 +57,8 @@ public final class MetadataFactory
 
     public static MetricOutputMetadata getMetadata(final int sampleSize,
                                                    final Dimension dim,
-                                                   final int metricID,
-                                                   final int componentID,
+                                                   final MetricConstants metricID,
+                                                   final MetricConstants componentID,
                                                    final String mainID,
                                                    final String baseID)
     {
@@ -71,13 +71,13 @@ public final class MetadataFactory
             }
 
             @Override
-            public int getMetricID()
+            public MetricConstants getMetricID()
             {
                 return metricID;
             }
 
             @Override
-            public int getMetricComponentID()
+            public MetricConstants getMetricComponentID()
             {
                 return componentID;
             }
@@ -109,7 +109,7 @@ public final class MetadataFactory
             @Override
             public int hashCode()
             {
-                int returnMe = super.hashCode() + Integer.hashCode(metricID) + Integer.hashCode(componentID)
+                int returnMe = super.hashCode() + metricID.hashCode() + componentID.hashCode()
                     + Boolean.hashCode(Objects.isNull(getIDForBaseline()));
                 if(!Objects.isNull(getIDForBaseline()))
                 {
@@ -210,6 +210,82 @@ public final class MetadataFactory
         return new DimensionImpl(dimension);
     }
 
+    /**
+     * Returns a metric name for a prescribed metric identifier from this class.
+     * 
+     * @param identifier the metric identifier
+     * @return a metric name for the input identifier
+     */
+
+    public static String getMetricName(final MetricConstants identifier)
+    {
+        switch(identifier)
+        {
+            case BRIER_SCORE:
+                return "BRIER SCORE";
+            case BRIER_SKILL_SCORE:
+                return "BRIER SKILL SCORE";
+            case CONTINGENCY_TABLE:
+                return "CONTINGENCY TABLE";
+            case CRITICAL_SUCCESS_INDEX:
+                return "CRITICAL SUCCESS INDEX";
+            case EQUITABLE_THREAT_SCORE:
+                return "EQUITABLE THREAT SCORE";
+            case MEAN_ABSOLUTE_ERROR:
+                return "MEAN_ABSOLUTE_ERROR";
+            case MEAN_ERROR:
+                return "MEAN_ERROR";
+            case MEAN_SQUARE_ERROR:
+                return "MEAN SQUARE ERROR";
+            case MEAN_SQUARE_ERROR_SKILL_SCORE:
+                return "MEAN SQUARE ERROR SKILL SCORE";
+            case PEIRCE_SKILL_SCORE:
+                return "PEIRCE SKILL SCORE";
+            case PROBABILITY_OF_DETECTION:
+                return "PROBABILITY OF DETECTION";
+            case PROBABILITY_OF_FALSE_DETECTION:
+                return "PROBABILITY OF FALSE DETECTION";
+            case ROOT_MEAN_SQUARE_ERROR:
+                return "ROOT MEAN SQUARE ERROR";
+            default:
+                throw new IllegalArgumentException("Unable to determine the metric name from the prescribed "
+                    + "identifier '" + identifier + "'.");
+        }
+    }
+
+    /**
+     * Returns the name associated with a prescribed metric component from this class, such as a score component.
+     * 
+     * @param identifier the metric component identifier
+     * @return a metric component name for the input identifier
+     */
+
+    public static String getMetricComponentName(final MetricConstants identifier)
+    {
+        switch(identifier)
+        {
+            case MAIN:
+                return "MAIN OUTPUT";
+            case RELIABILITY:
+                return "RELIABILITY";
+            case RESOLUTION:
+                return "RESOLUTION";
+            case UNCERTAINTY:
+                return "UNCERTAINTY";
+            case TYPE_II_BIAS:
+                return "TYPE II CONDITIONAL BIAS";
+            case DISCRIMINATION:
+                return "DISCRIMINATION";
+            case SHARPNESS:
+                return "SHARPNESS";
+            case SAMPLE_SIZE:
+                return "SAMPLE_SIZE";
+            default:
+                throw new IllegalArgumentException("Unable to determine the metric component name from the "
+                    + "prescribed identifier '" + identifier + "'.");
+        }
+    }    
+    
     /**
      * Basic implementation of metadata.
      */

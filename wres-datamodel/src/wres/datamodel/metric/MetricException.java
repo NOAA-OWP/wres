@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric;
+package wres.datamodel.metric;
 
 /**
  * A base class for a runtime exception associated with a metric.

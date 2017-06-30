@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.metric.MetricConstants;
+
 /**
  * Identifies a scoring rule. A score may be an absolute or relative measure. An absolute score is dimensioned, whereas
  * a relative scores is dimensionless. A relative score is known as a skill score. Some scores may be factored into
@@ -31,14 +33,14 @@ public interface Score
      * @return true if the decomposition identifier is valid, false otherwise
      */
 
-    static boolean isSupportedDecompositionID(final int decompositionID)
+    static boolean isSupportedDecompositionID(final MetricConstants decompositionID)
     {
         switch(decompositionID)
         {
-            case MetricConstants.NONE:
-            case MetricConstants.CR:
-            case MetricConstants.LBR:
-            case MetricConstants.CR_AND_LBR:
+            case NONE:
+            case CR:
+            case LBR:
+            case CR_AND_LBR:
                 return true;
             default:
                 return false;
@@ -79,6 +81,6 @@ public interface Score
      * @return the type of score decomposition
      */
 
-    int getDecompositionID();
+    MetricConstants getDecompositionID();
 
 }
