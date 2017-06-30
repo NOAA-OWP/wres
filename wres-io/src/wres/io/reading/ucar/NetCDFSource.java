@@ -12,7 +12,6 @@ import ucar.nc2.Variable;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.NetCDFValueSaver;
 import wres.io.concurrency.WRESTask;
-import wres.io.concurrency.WRESThread;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.MeasurementUnits;
@@ -113,7 +112,7 @@ public class NetCDFSource extends BasicSource {
         source.close();
 	}
 	
-	private void saveVariables(NetcdfFile source) throws Exception
+	private void saveVariables(NetcdfFile source)
 	{
 		for (Variable var : source.getVariables())
 		{

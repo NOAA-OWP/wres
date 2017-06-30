@@ -21,7 +21,7 @@ import java.util.concurrent.Future;
  * Executes the database copy operation for every value in the passed in string
  * @author Christopher Tubbs
  */
-public class NetCDFValueSaver extends WRESThread implements Runnable
+public class NetCDFValueSaver extends WRESTask implements Runnable
 {
 	private final static String DELIMITER = ",";
 

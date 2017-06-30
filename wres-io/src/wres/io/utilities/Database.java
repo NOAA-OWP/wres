@@ -1,5 +1,14 @@
 package wres.io.utilities;
 
+import com.mchange.v2.c3p0.C3P0ProxyConnection;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.io.config.SystemSettings;
+import wres.util.Strings;
+
 import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.StringReader;
@@ -8,22 +17,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Future;
-import java.util.concurrent.Callable;
-
-import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-
-import org.postgresql.PGConnection;
-import org.postgresql.copy.CopyManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import wres.io.config.SystemSettings;
+import java.util.concurrent.*;
 
 public final class Database {
     
@@ -113,7 +107,7 @@ public final class Database {
 				connection = CONNECTION_POOL.getConnection();
 				break;
 			} catch (SQLException error) {
-				Debug.error(LOGGER, System.lineSeparator() + "A connection to the database could not be created" + System.lineSeparator());
+				LOGGER.error(System.lineSeparator() + "A connection to the database could not be created" + System.lineSeparator());
 				exception = new SQLException(error);
 			}
 			attemptCount++;
@@ -147,8 +141,8 @@ public final class Database {
             }
             catch(SQLException error)
             {
-                Debug.error(LOGGER, "A connection could not be returned to the connection pool properly." + System.lineSeparator());
-                Debug.error(LOGGER, error.toString());
+                LOGGER.error("A connection could not be returned to the connection pool properly." + System.lineSeparator());
+                LOGGER.error(Strings.getStackTrace(error));
             }
 	    }
 	}
@@ -166,9 +160,9 @@ public final class Database {
 		}
 		catch (SQLException error)
 		{
-		    Debug.error(LOGGER, "The following SQL call failed:");
-		    Debug.error(LOGGER, query);
-			Debug.error(LOGGER, error.toString());
+		    LOGGER.error("The following SQL call failed:");
+		    LOGGER.error(query);
+			LOGGER.error(Strings.getStackTrace(error));
 			throw error;
 		}
 		finally
@@ -348,25 +342,18 @@ public final class Database {
 
             script = new StringBuilder();
 
-            System.out.println("The following queries will be executed:");
-
             while (results.next())
             {
-                System.out.println(results.getString("alyze"));
+				script.append(results.getString("reidx")).append(NEWLINE);
                 script.append(results.getString("alyze")).append(NEWLINE);
-                System.out.println(results.getString("reidx"));
-                script.append(results.getString("reidx")).append(NEWLINE);
             }
 
-            System.out.println("ANALYZE wres.Forecast;");
-            script.append("ANALYZE wres.Forecast;").append(NEWLINE);
-            System.out.println("REINDEX TABLE wres.Forecast;");
             script.append("REINDEX TABLE wres.Forecast;").append(NEWLINE);
-            System.out.println("ANALYZE wres.Observation;");
+			script.append("ANALYZE wres.Forecast;").append(NEWLINE);
+			script.append("REINDEX TABLE wres.Observation;").append(NEWLINE);
             script.append("ANALYZE wres.Observation;").append(NEWLINE);
-            System.out.println("REINDEX TABLE wres.Observation;");
-            script.append("REINDEX TABLE wres.Observation;");
 
+            LOGGER.info("Now refreshing the statistics within the database.");
             Database.execute(script.toString());
 
         }

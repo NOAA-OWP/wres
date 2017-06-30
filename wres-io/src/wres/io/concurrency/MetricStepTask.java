@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.config.specification.MetricSpecification;
 import wres.io.utilities.Database;
-import wres.io.utilities.Debug;
 
 /**
  * @author Christopher Tubbs

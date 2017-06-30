@@ -1,16 +1,15 @@
 package wres.io.data.caching;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.io.data.details.MeasurementDetails;
+import wres.io.utilities.Database;
+import wres.util.Strings;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import wres.io.data.details.MeasurementDetails;
-import wres.io.utilities.Database;
-import wres.io.utilities.Debug;
 
 /**
  * Caches details mapping units of measurements to their IDs
@@ -83,14 +82,15 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 
             measurements = measurementQuery.executeQuery(loadScript);
 
-            while (measurements.next()) {                
+            while (measurements.next())
+            {
                 this.keyIndex.put(measurements.getString("unit_name").toLowerCase(), measurements.getInt("measurementunit_id"));
             }
         }
         catch (SQLException error)
         {
-            Debug.error(LOGGER, "An error was encountered when trying to populate the Measurement cache.");
-            Debug.error(LOGGER, error);
+            LOGGER.error("An error was encountered when trying to populate the Measurement cache.");
+            LOGGER.error(Strings.getStackTrace(error));
         }
         finally
         {
@@ -102,8 +102,8 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
                 }
                 catch(SQLException e)
                 {
-                    Debug.error(LOGGER, "An error was encountered when trying to close the resultset that loaded measurements.");
-                    Debug.error(LOGGER, e);
+                    LOGGER.error("An error was encountered when trying to close the resultset that loaded measurements.");
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
             }
 
@@ -115,8 +115,8 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
                 }
                 catch(SQLException e)
                 {
-                    Debug.error(LOGGER, "An error was encountered when trying to close the statement that retrieved measurement values.");
-                    Debug.error(LOGGER, e);
+                    LOGGER.error("An error was encountered when trying to close the statement that retrieved measurement values.");
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
             }
 

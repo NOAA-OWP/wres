@@ -1,6 +1,6 @@
 package concurrency;
 
-import wres.io.concurrency.WRESThread;
+import wres.io.concurrency.WRESTask;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -12,7 +12,7 @@ import java.nio.file.StandardCopyOption;
 /**
  * Thread used to download the object at the indicated path to the indicated target
  */
-public final class Downloader extends WRESThread implements Runnable {
+public final class Downloader extends WRESTask implements Runnable {
 
     public Downloader(Path targetPath, String address)
     {

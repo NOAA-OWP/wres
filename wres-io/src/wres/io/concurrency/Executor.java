@@ -14,8 +14,6 @@ import wres.io.config.SystemSettings;
  */
 public final class Executor {
 
-    //private static final AtomicLong submittedCount = new AtomicLong();
-
 	// The underlying thread executor
 	private static ExecutorService service = createService();
 
@@ -100,28 +98,4 @@ public final class Executor {
 			while (!service.isTerminated());
 		}
 	}
-
-	/**
-	 * Get the number of tasks submitted through this static class.
-	 * @return the number of tasks ever submitted to the current executor
-	 */
-    /*public static long getSubmittedCount()
-    {
-        return submittedCount.get();
-    }*/
-
-    /**
-     * Attempt to get the number of tasks completed, if possible.
-     * Otherwise, return -1
-     *
-     * @return the number of tasks completed by current executor, otherwise -1
-     */
-    /*public static long getCompletedCount()
-    {
-        if (service instanceof ThreadPoolExecutor)
-        {
-            return ((ThreadPoolExecutor) service).getCompletedTaskCount();
-        }
-        return -1;
-    }*/
 }

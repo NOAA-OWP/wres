@@ -69,8 +69,18 @@ public class MetricTask extends WRESTask implements Callable<List<LeadResult>>
                 MetricStepTask stepTask = new MetricStepTask(this.specification, step);
                 stepTask.setOnRun(ProgressMonitor.onThreadStartHandler());
                 stepTask.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                Future<Double> task = secondaryExecutor.submit(stepTask);
-                mappedPairs.put(step, task);
+
+                Future<Double> task = null;
+
+                if (secondaryExecutor == null)
+                {
+                    mappedPairs.put(step, Executor.submit(stepTask));
+                }
+                else
+                {
+                    mappedPairs.put(step, this.secondaryExecutor.submit(stepTask));
+                }
+
                 step++;
             }
 

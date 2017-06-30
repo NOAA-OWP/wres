@@ -33,8 +33,8 @@ import wres.engine.statistics.metric.inputs.PairException;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
 import wres.engine.statistics.metric.outputs.MetricOutputCollection;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
-import wres.io.data.caching.MeasurementCache;
-import wres.io.data.caching.VariableCache;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 
 /**
@@ -466,21 +466,21 @@ public class ControlTemp
     }
 
     /**
-     * The following method is obsolete after refactoring MeasurementCache.getMeasurementUnitID to only throw checked
-     * exceptions such as IOException or SQLException, also when MeasurementCache.getMeasurementUnitID gives a
+     * The following method is obsolete after refactoring MeasurementUnits.getMeasurementUnitID to only throw checked
+     * exceptions such as IOException or SQLException, also when MeasurementUnits.getMeasurementUnitID gives a
      * meaningful error message. Those are the only two justifications for this wrapper method.
      * 
      * @param unitName the unit we want the ID for
-     * @return the result of successful MeasurementCache.getMeasurementUnitID
+     * @return the result of successful MeasurementUnits.getMeasurementUnitID
      * @throws IOException when any checked (aka non-RuntimeException) exception occurs
      */
-    // TODO: refactor MeasurementCache.getMeasurementUnitID to declare it throws only checked exceptions, not Exception, then remove:
+    // TODO: refactor MeasurementUnits.getMeasurementUnitID to declare it throws only checked exceptions, not Exception, then remove:
     private static int getMeasurementUnitID(final String unitName) throws IOException
     {
         int result;
         try
         {
-            result = MeasurementCache.getMeasurementUnitID(unitName);
+            result = MeasurementUnits.getMeasurementUnitID(unitName);
         }
         catch(final Exception e) // see comment below re: Exception
         {
@@ -496,22 +496,22 @@ public class ControlTemp
     }
 
     /**
-     * The following method becomes obsolete after refactoring VariableCache.getVariableID to only throw checked
-     * exceptions such as IOException or SQLException, also when VariableCache.getVariableID gives a meaningful error
+     * The following method becomes obsolete after refactoring Variables.getVariableID to only throw checked
+     * exceptions such as IOException or SQLException, also when Variables.getVariableID gives a meaningful error
      * message. Those are the only two justifications for this wrapper method.
      * 
      * @param variableName the variable name to look for
      * @param measurementUnitId the targeted measurement unit id
-     * @return the result of successful VariableCache.getVariableID
+     * @return the result of successful Variables.getVariableID
      * @throws IOException when any checked (aka non-RuntimeException) exception occurs
      */
-    // TODO: refactor MeasurementCache.getMeasurementUnitID to declare it throws only checked exceptions, not Exception, then remove:
+    // TODO: refactor MeasurementUnits.getMeasurementUnitID to declare it throws only checked exceptions, not Exception, then remove:
     private static int getVariableID(final String variableName, final int measurementUnitId) throws IOException
     {
         int result;
         try
         {
-            result = VariableCache.getVariableID(variableName, measurementUnitId);
+            result = Variables.getVariableID(variableName, measurementUnitId);
         }
         catch(final Exception e) // see comment below re: Exception
         {

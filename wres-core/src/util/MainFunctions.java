@@ -1,48 +1,41 @@
 package util;
 
+import concurrency.Downloader;
+import concurrency.ProjectExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.datamodel.DataFactory;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.io.concurrency.Executor;
+import wres.io.concurrency.ForecastSaver;
+import wres.io.concurrency.MetricTask;
+import wres.io.concurrency.ObservationSaver;
+import wres.io.config.ProjectSettings;
+import wres.io.config.specification.MetricSpecification;
+import wres.io.config.specification.ProjectDataSpecification;
+import wres.io.config.specification.ProjectSpecification;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
+import wres.io.grouping.LeadResult;
+import wres.io.reading.BasicSource;
+import wres.io.reading.ConfiguredLoader;
+import wres.io.reading.ReaderFactory;
+import wres.io.reading.fews.PIXMLReader;
+import wres.io.utilities.Database;
+import wres.util.ProgressMonitor;
+import wres.util.Strings;
+
 import java.io.File;
-import java.nio.file.Paths;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
-
-import concurrency.Downloader;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import wres.io.concurrency.Executor;
-import wres.io.concurrency.ForecastSaver;
-import java.util.function.Consumer;
-
-import wres.io.config.ProjectSettings;
-import wres.io.data.caching.Variables;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import wres.io.config.Projects;
-import wres.io.config.SystemSettings;
-import wres.io.reading.BasicSource;
-import wres.io.reading.ConfiguredLoader;
-import wres.io.reading.ReaderFactory;
-import wres.io.config.specification.MetricSpecification;
-import wres.io.config.specification.ProjectDataSpecification;
-import wres.io.config.specification.ProjectSpecification;
-
 import java.util.concurrent.Future;
-
-import wres.io.concurrency.MetricTask;
-import wres.io.concurrency.ObservationSaver;
-import wres.io.data.caching.MeasurementUnits;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.DataFactory;
-import wres.io.grouping.LeadResult;
-import wres.io.reading.fews.PIXMLReader;
-import wres.io.utilities.Database;
-import wres.util.*;
+import java.util.function.Consumer;
 
 /**
  * @author ctubbs
@@ -91,7 +84,7 @@ public final class MainFunctions
 	 * Creates the mapping of operation names to their corresponding methods
 	 */
 	private static Map<String, Consumer<String[]>> createMap () {
-		Map<String, Consumer<String[]>> prototypes = new HashMap<>();
+		Map<String, Consumer<String[]>> prototypes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
 		prototypes.put("describenetcdf", describeNetCDF());
 		prototypes.put("connecttodb", connectToDB());
@@ -112,6 +105,7 @@ public final class MainFunctions
 		prototypes.put("getpairs", getPairs());
 		prototypes.put("getprojectpairs", getProjectPairs());
 		prototypes.put("executeproject", executeProject());
+		prototypes.put("executeClassProject", new ProjectExecutor());
 		prototypes.put("refreshtestdata", refreshTestData());
 		prototypes.put("refreshstatistics", refreshStatistics());
 
@@ -899,21 +893,40 @@ public final class MainFunctions
 	            }
 	            
 	            ProjectSpecification project = ProjectSettings.getProject(projectName);
-	            int ingestedFileCount = 0;
+	            List<Future> ingestOperations = new ArrayList<>();
 	            for (ProjectDataSpecification datasource : project.getDatasources())
 	            {
 	                System.err.println("Loading datasource information if it doesn't already exist...");
 	                ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
-	                ingestedFileCount += dataLoader.load();
-	                System.err.println("The data from this dataset has been loaded to the database");
+					try
+					{
+						ingestOperations.addAll(dataLoader.load());
+					}
+					catch (IOException e) {
+						e.printStackTrace();
+					}
+					System.err.println("The data from this dataset has been loaded to the database");
 	                ProgressMonitor.resetMonitor();
 	                System.err.println();
 	            }
 
 	            System.err.println("All data specified for this project should now be loaded.");
 
-	            if (ingestedFileCount > 0)
+	            if (ingestOperations.size() > 0)
                 {
+                	for (Future operation : ingestOperations)
+					{
+						try {
+							operation.get();
+						}
+						catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						catch (ExecutionException e) {
+							e.printStackTrace();
+						}
+					}
+
                     System.out.println("Refreshing the statistics in the database...");
                     Database.refreshStatistics();
                 }
@@ -926,7 +939,7 @@ public final class MainFunctions
     	            for (int metricIndex = 0; metricIndex < project.metricCount(); ++metricIndex)
     	            {
     	                MetricSpecification specification = project.getMetric(metricIndex);
-    	                MetricExecutor metric = new MetricExecutor(specification);
+    	                MetricTask metric = new MetricTask(specification, null);
     	                metric.setOnRun(ProgressMonitor.onThreadStartHandler());
     	                metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
     	                System.err.println("Now executing the metric named: " + specification.getName());
@@ -939,7 +952,7 @@ public final class MainFunctions
 	                
 	                if (specification != null)
 	                {
-	                    MetricExecutor metric = new MetricExecutor(specification);
+						MetricTask metric = new MetricTask(specification, null);
                         metric.setOnRun(ProgressMonitor.onThreadStartHandler());
                         metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                         System.err.println("Now executing the metric named: " + specification.getName());
@@ -985,170 +998,5 @@ public final class MainFunctions
 	            System.err.println("usage: executeProject <project name> [<metric name>]");
 	        }
 	    };
-	}
-
-    private static class ExecuteProject implements Consumer<String[]>
-    {
-        @Override
-        public void accept(String[] args)
-        {
-            if (args.length > 0) {
-                final String projectName = args[0];
-                String metricName = null;
-
-                if (args.length > 1) {
-                    metricName = args[1];
-                }
-
-                final ProjectSpecification project = Projects.getProject(projectName);
-
-                final List<Future> fileIngestTasks = new ArrayList<>();
-
-                try
-                {
-                    for (ProjectDataSpecification datasource : project.getDatasources())
-                    {
-                        LOGGER.info("Loading datasource information if it doesn't already exist...");
-                        final ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
-                        fileIngestTasks.addAll(dataLoader.load());
-                        if (LOGGER.isInfoEnabled())
-                        {
-                            LOGGER.info("Queued " + fileIngestTasks.size()
-                                                + " file(s) for ingest");
-                        }
-                        ProgressMonitor.resetMonitor();
-                    }
-                }
-                catch (IOException ioe)
-                {
-                    LOGGER.error("When trying to ingest files:", ioe);
-                    return;
-                }
-
-                try
-                {
-                    for (Future t : fileIngestTasks)
-                    {
-                        if (t != null)
-                        {
-                            t.get();
-                        }
-                        else
-                        {
-                            LOGGER.debug("Received a null object from ConfiguredLoader");
-                        }
-                    }
-                }
-                catch (InterruptedException ie)
-                {
-                    LOGGER.warn("Interrupted during ingest", ie);
-                    Thread.currentThread().interrupt();
-                }
-                catch (ExecutionException ee)
-                {
-                    LOGGER.error("Execution failed", ee);
-                    return;
-                }
-
-                LOGGER.info("The data from this dataset has been ingested into the database");
-
-                LOGGER.info("All data specified for this project should now be loaded.");
-
-                int maxThreadCount = SystemSettings.maximumThreadCount() / 2;
-                if (maxThreadCount == 0)
-                {
-                    maxThreadCount = 1;
-                }
-
-                // A secondary executor for second-level tasks, should help
-                // avoid the situation where task A is waiting for another
-                // task B in the queue that won't be executed until
-                // tasks in the executor (task A) complete (possible deadlock?)
-                final ExecutorService secondLevelExecutor = Executors.newFixedThreadPool(maxThreadCount);
-
-                final Map<String, List<LeadResult>> results = new TreeMap<>();
-                final Map<String, Future<List<LeadResult>>> futureResults = new TreeMap<>();
-
-                if (metricName == null)
-                {
-                    for (int metricIndex = 0; metricIndex < project.metricCount(); ++metricIndex)
-                    {
-                        final MetricSpecification specification = project.getMetric(metricIndex);
-                        final MetricTask metric = new MetricTask(specification, secondLevelExecutor);
-                        metric.setOnRun(ProgressMonitor.onThreadStartHandler());
-                        metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                        if (LOGGER.isInfoEnabled())
-                        {
-                            LOGGER.info("Now executing the metric named: " + specification.getName());
-                        }
-                        futureResults.put(specification.getName(), Executor.submit(metric));
-                    }
-                }
-                else
-                {
-                    MetricSpecification specification = project.getMetric(metricName);
-
-                    if (specification != null)
-                    {
-                        final MetricTask metric = new MetricTask(specification, secondLevelExecutor);
-                        metric.setOnRun(ProgressMonitor.onThreadStartHandler());
-                        metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                        if (LOGGER.isInfoEnabled())
-                        {
-                            LOGGER.info("Now executing the metric named: " + specification.getName());
-                        }
-                        futureResults.put(specification.getName(), Executor.submit(metric));
-                    }
-                }
-
-                for (Entry<String, Future<List<LeadResult>>> entry : futureResults.entrySet())
-                {
-                    try
-                    {
-                        results.put(entry.getKey(), entry.getValue().get());
-                    }
-                    catch(InterruptedException ie)
-                    {
-                        LOGGER.warn("Interrupted", ie);
-                        secondLevelExecutor.shutdown();
-                        Thread.currentThread().interrupt();
-                    }
-                    catch (ExecutionException e)
-                    {
-                        LOGGER.error("Execution failed", e);
-                        secondLevelExecutor.shutdown();
-                        return;
-                    }
-                }
-
-                secondLevelExecutor.shutdown();
-
-                if (LOGGER.isInfoEnabled())
-                {
-                    LOGGER.info("");
-                    LOGGER.info("Project: {}", projectName);
-                    LOGGER.info("");
-
-                    for (Entry<String, List<LeadResult>> entry : results.entrySet())
-                    {
-                        LOGGER.info("");
-                        LOGGER.info(entry.getKey());
-                        LOGGER.info("--------------------------------------------------------------------------------------");
-
-                        for (LeadResult metricResult : entry.getValue())
-                        {
-                            LOGGER.info(metricResult.getLead() + "\t\t|\t" + metricResult.getResult());
-                        }
-
-                        LOGGER.info("");
-                    }
-                }
-            }
-            else
-            {
-                LOGGER.error("There are not enough arguments to run 'executeProject'");
-                LOGGER.error("usage: executeProject <project name> [<metric name>]");
-            }
-        }
     }
 }

@@ -1,29 +1,26 @@
 package wres.io.concurrency;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.datamodel.DataFactory;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.io.config.specification.MetricSpecification;
+import wres.io.config.specification.ProjectDataSpecification;
+import wres.io.config.specification.ScriptFactory;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.utilities.Database;
+import wres.util.DataModel;
+import wres.util.Strings;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.TreeMap;
-
-import wres.io.config.specification.ProjectDataSpecification;
-import wres.io.config.specification.MetricSpecification;
-import wres.io.config.specification.ScriptFactory;
-import wres.io.data.caching.MeasurementUnits;
-import wres.util.DataModel;
-import wres.io.utilities.Database;
-import wres.io.utilities.Debug;
-import wres.util.Strings;
-import wres.datamodel.DataFactory;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * A collection of Metrics that may be performed on selected data
@@ -127,7 +124,7 @@ public abstract class Metrics {
 					}
 				}
 			} catch (SQLException e) {
-			    Debug.error(LOGGER, Strings.getStackTrace(e));
+			    LOGGER.debug(Strings.getStackTrace(e));
 			}
 			
 			return sum/value_count;
@@ -157,11 +154,11 @@ public abstract class Metrics {
         }
         catch (Exception error)
         {
-            Debug.error(LOGGER, "Pairs could not be retrieved for the following parameters:");
-            Debug.error(LOGGER, "Progress: " + progress);
-            Debug.error(LOGGER, "The metric was:");
-            Debug.error(LOGGER, String.valueOf(metricSpecification));
-            Debug.error(LOGGER, Strings.getStackTrace(error));
+            LOGGER.error("Pairs could not be retrieved for the following parameters:");
+            LOGGER.error("Progress: " + progress);
+            LOGGER.error("The metric was:");
+            LOGGER.error(String.valueOf(metricSpecification));
+            LOGGER.error(Strings.getStackTrace(error));
             throw error;
         }
         finally
@@ -211,10 +208,10 @@ public abstract class Metrics {
 	        }
 	        catch (Exception error)
 	        {
-	            Debug.error(LOGGER, "An error was encountered");
-	            Debug.error(LOGGER, "The script was:");
-	            Debug.error(LOGGER, String.valueOf(script));	            
-	            Debug.error(LOGGER, Strings.getStackTrace(error));
+	            LOGGER.error("An error was encountered");
+	            LOGGER.error("The script was:");
+	            LOGGER.error(String.valueOf(script));
+	            LOGGER.error(Strings.getStackTrace(error));
 	        }
 	        
 	        return correlationCoefficient;
@@ -251,10 +248,10 @@ public abstract class Metrics {
             }
             catch(Exception e)
             {
-                Debug.error(LOGGER, "An error was encountered");
-                Debug.error(LOGGER, "The script was:");
-                Debug.error(LOGGER, String.valueOf(script));             
-                Debug.error(LOGGER, Strings.getStackTrace(e));
+                LOGGER.error("An error was encountered");
+                LOGGER.error("The script was:");
+                LOGGER.error(String.valueOf(script));
+                LOGGER.error(Strings.getStackTrace(e));
             }
 	        
 	        return meanError;

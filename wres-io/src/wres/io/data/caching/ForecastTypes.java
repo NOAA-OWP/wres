@@ -47,7 +47,7 @@ public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
         try
         {
             connection = Database.getConnection();
-            String loadScript = "SELECT forecasttype_id, type_name, timestep" + newline;
+            String loadScript = "SELECT forecasttype_id, type_name, timestep" + NEWLINE;
             loadScript += "FROM wres.ForecastType;";
 
             types = Database.getResults(connection, loadScript);
