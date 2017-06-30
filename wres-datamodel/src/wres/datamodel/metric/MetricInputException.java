@@ -1,6 +1,4 @@
-package wres.engine.statistics.metric.inputs;
-
-import wres.engine.statistics.metric.MetricException;
+package wres.datamodel.metric;
 
 /**
  * A runtime exception associated with incorrect metric input.

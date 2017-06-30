@@ -18,8 +18,8 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
-import wres.engine.statistics.metric.inputs.MetricInputFactory;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
+import wres.datamodel.metric.MetricInputFactory;
+import wres.datamodel.metric.SingleValuedPairs;
 
 public class Chart2DTest extends TestCase
 {
@@ -27,17 +27,16 @@ public class Chart2DTest extends TestCase
     {
         //Construct some single-valued pairs
         final List<PairOfDoubles> values = new ArrayList<>();
-        final DataFactory dataFactory = DataFactory.instance();
-        values.add(dataFactory.pairOf(22.9, 22.8));
-        values.add(dataFactory.pairOf(75.2, 80));
-        values.add(dataFactory.pairOf(63.2, 65));
-        values.add(dataFactory.pairOf(29, 30));
-        values.add(dataFactory.pairOf(5, 2));
-        values.add(dataFactory.pairOf(2.1, 3.1));
-        values.add(dataFactory.pairOf(35000, 37000));
-        values.add(dataFactory.pairOf(8, 7));
-        values.add(dataFactory.pairOf(12, 12));
-        values.add(dataFactory.pairOf(93, 94));
+        values.add(DataFactory.pairOf(22.9, 22.8));
+        values.add(DataFactory.pairOf(75.2, 80));
+        values.add(DataFactory.pairOf(63.2, 65));
+        values.add(DataFactory.pairOf(29, 30));
+        values.add(DataFactory.pairOf(5, 2));
+        values.add(DataFactory.pairOf(2.1, 3.1));
+        values.add(DataFactory.pairOf(35000, 37000));
+        values.add(DataFactory.pairOf(8, 7));
+        values.add(DataFactory.pairOf(12, 12));
+        values.add(DataFactory.pairOf(93, 94));
         final Metadata meta = MetadataFactory.getMetadata(values.size(),
                                                           MetadataFactory.getDimension("CMS"),
                                                           "Main");
@@ -83,17 +82,16 @@ public class Chart2DTest extends TestCase
     {
         //Construct some single-valued pairs
         final List<PairOfDoubles> values = new ArrayList<>();
-        final DataFactory dataFactory = DataFactory.instance();
-        values.add(dataFactory.pairOf(22.9, 22.8));
-        values.add(dataFactory.pairOf(75.2, 80));
-        values.add(dataFactory.pairOf(63.2, 65));
-        values.add(dataFactory.pairOf(29, 30));
-        values.add(dataFactory.pairOf(5, 2));
-        values.add(dataFactory.pairOf(2.1, 3.1));
-        values.add(dataFactory.pairOf(35000, 37000));
-        values.add(dataFactory.pairOf(8, 7));
-        values.add(dataFactory.pairOf(12, 12));
-        values.add(dataFactory.pairOf(93, 94));
+        values.add(DataFactory.pairOf(22.9, 22.8));
+        values.add(DataFactory.pairOf(75.2, 80));
+        values.add(DataFactory.pairOf(63.2, 65));
+        values.add(DataFactory.pairOf(29, 30));
+        values.add(DataFactory.pairOf(5, 2));
+        values.add(DataFactory.pairOf(2.1, 3.1));
+        values.add(DataFactory.pairOf(35000, 37000));
+        values.add(DataFactory.pairOf(8, 7));
+        values.add(DataFactory.pairOf(12, 12));
+        values.add(DataFactory.pairOf(93, 94));
         final SingleValuedPairs pairs = MetricInputFactory.ofSingleValuedPairs(values, null);
 
         //Create the data source for charting.

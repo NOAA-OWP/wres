@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.inputs;
+package wres.datamodel.metric;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -10,9 +10,7 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
-import wres.engine.statistics.metric.inputs.DichotomousPairs.DichotomousPairsBuilder;
+import wres.datamodel.metric.DichotomousPairs.DichotomousPairsBuilder;
 
 /**
  * Tests the {@link DichotomousPairs}.
@@ -31,14 +29,13 @@ public final class DichotomousPairsTest
     @Test
     public void test1DichotomousPairs()
     {
-        final DataFactory d = DataFactory.instance();
         final List<VectorOfBooleans> values = new ArrayList<>();
 
         final DichotomousPairsBuilder b = new DichotomousPairsBuilder();
 
         for(int i = 0; i < 10; i++)
         {
-            values.add(d.vectorOf(new boolean[]{true, true}));
+            values.add(DataFactory.vectorOf(new boolean[]{true, true}));
         }
         
         final Metadata meta = MetadataFactory.getMetadata(values.size(),
@@ -55,7 +52,7 @@ public final class DichotomousPairsTest
         try
         {
             values.clear();
-            values.add(d.vectorOf(new boolean[]{true, false, false, true, false, false}));
+            values.add(DataFactory.vectorOf(new boolean[]{true, false, false, true, false, false}));
             b.setData(values).build();
             fail("Expected a checked exception on invalid inputs.");
         }
@@ -67,7 +64,7 @@ public final class DichotomousPairsTest
         try
         {
             values.clear();
-            values.add(d.vectorOf(new boolean[]{true, false, true, false}));
+            values.add(DataFactory.vectorOf(new boolean[]{true, false, true, false}));
             b.setData(values).build();
         }
         catch(final Exception e)

@@ -1,8 +1,8 @@
-package wres.engine.statistics.metric.inputs;
+package wres.datamodel.metric;
 
 import org.junit.Test;
 
-import wres.engine.statistics.metric.MetricCalculationException;
+import wres.datamodel.metric.MetricInputException;
 
 /**
  * Tests the {@link MetricInputExceptionException}.
@@ -15,7 +15,7 @@ public final class MetricInputExceptionTest
 {
 
     /**
-     * Constructs and tests a {@link MetricCalculationException}.
+     * Constructs and tests a {@link MetricInputException}.
      */
 
     @Test

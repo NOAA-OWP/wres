@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.inputs;
+package wres.datamodel.metric;
 
 /**
  * A runtime exception associated with an incorrect verification pair.

@@ -1,12 +1,8 @@
-package wres.engine.statistics.metric.outputs;
+package wres.datamodel.metric;
 
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.engine.statistics.metric.MetricConstants;
 
 /**
  * Tests the {@link ScalarOutput}.
