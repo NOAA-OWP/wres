@@ -1,5 +1,14 @@
 package wres.io.concurrency;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.io.config.specification.MetricSpecification;
+import wres.io.config.specification.ScriptFactory;
+import wres.io.grouping.LabeledScript;
+import wres.io.grouping.LeadResult;
+import wres.io.utilities.Database;
+import wres.util.ProgressMonitor;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -8,16 +17,6 @@ import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import wres.io.config.specification.MetricSpecification;
-import wres.io.config.specification.ScriptFactory;
-import wres.io.grouping.LabeledScript;
-import wres.io.grouping.LeadResult;
-import wres.io.utilities.Database;
-import wres.util.ProgressMonitor;
 
 /**
  * @author Christopher Tubbs
@@ -88,7 +87,6 @@ public class MetricTask extends WRESTask implements Callable<List<LeadResult>>
 
             for (Entry<Integer, Future<Double>>  entry : mappedPairs.entrySet())
             {
-                results.add(new LeadResult(entry.getKey(), entry.getValue().get()));
                 ProgressMonitor.completeStep();
                 Double result = entry.getValue().get();
                 if (result != null)

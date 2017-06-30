@@ -1,28 +1,27 @@
 package wres.io.reading;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Objects;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.concurrent.Future;
-import java.util.stream.Stream;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
 import wres.io.concurrency.ObservationSaver;
 import wres.io.config.specification.DirectorySpecification;
 import wres.io.config.specification.FileSpecification;
 import wres.io.config.specification.ProjectDataSpecification;
-import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
+import wres.util.Strings;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 /**
  * @author Christopher Tubbs
@@ -57,13 +56,18 @@ public class ConfiguredLoader
         List<Future> results = new ArrayList<>();
         for (DirectorySpecification directory : datasource.getDirectories())
         {
-            if (directory.shouldLoadAllFiles())
-            {
-                results.addAll(loadDirectory(directory.getPath()));
+            try {
+                if (directory.shouldLoadAllFiles()) {
+                    results.addAll(loadDirectory(directory.getPath()));
+                }
+                else {
+                    results.addAll(saveFiles(directory));
+                }
             }
-            else
+            catch (FileNotFoundException notFound)
             {
-                results.addAll(saveFiles(directory));
+                LOGGER.error("The directory at: '" + directory.getPath() + "' could not be loaded.");
+                LOGGER.error(Strings.getStackTrace(notFound));
             }
         }
         return Collections.unmodifiableList(results);
