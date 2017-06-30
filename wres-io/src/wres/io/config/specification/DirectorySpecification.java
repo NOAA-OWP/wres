@@ -3,6 +3,10 @@
  */
 package wres.io.config.specification;
 
+import wres.util.XML;
+
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,11 +15,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-
-import wres.util.XML;
 
 /**
  * Configuration information detailing files of interest inside of a directory
@@ -87,7 +86,12 @@ public class DirectorySpecification extends SpecificationElement
 			throw new FileNotFoundException(this.path + " was not found");
 		}
 	}
-	
+
+	public String getPathString()
+	{
+		return this.path;
+	}
+
 	/**
 	 * Returns a list of files in interest inside of the directory
 	 * @return A list of file specifications
