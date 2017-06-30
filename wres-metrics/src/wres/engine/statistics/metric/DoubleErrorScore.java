@@ -5,10 +5,11 @@ import java.util.Objects;
 import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 
 /**
  * A generic implementation of an error score that applies a {@link DoubleErrorFunction} to each pair within a

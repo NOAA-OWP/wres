@@ -1,7 +1,8 @@
 package wres.engine.statistics.metric;
 
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 
 /**
  * The mean absolute error applies to continuous variables and is the average unsigned difference between a
@@ -38,7 +39,7 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
     }
 
     @Override
-    public int getID()
+    public MetricConstants getID()
     {
         return MetricConstants.MEAN_ABSOLUTE_ERROR;
     }
@@ -56,7 +57,7 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
     }        
 
     @Override
-    public int getDecompositionID()
+    public MetricConstants getDecompositionID()
     {
         return MetricConstants.NONE;
     }

@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric;
 
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.VectorOutput;
+import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.VectorOutput;
 
 /**
  * A generic implementation of an error score that is decomposable.

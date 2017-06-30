@@ -2,6 +2,8 @@ package wres.engine.statistics.metric;
 
 import java.util.function.Function;
 
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
 
@@ -44,26 +46,28 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * 
      * @return a unique identifier
      */
-    
-    public abstract int getID();
-    
+
+    public abstract MetricConstants getID();
+
     /**
      * Returns true if the metric generates outputs that are dimensioned in real units, false if the outputs are in
-     * statistical or probabilistic units. 
+     * statistical or probabilistic units.
      * 
      * @return true if the outputs are dimensioned in real units, false otherwise
      */
-    
+
     public abstract boolean hasRealUnits();
-    
+
     /**
-     * Returns the unique name of the metric. See also {@link #getID()} and {@link MetricConstants#getMetricName(int)}.
+     * Returns the unique name of the metric. See also {@link #getID()} and
+     * {@link MetadataFactory#getMetricName(MetricConstants)}.
      * 
      * @return the unique metric name
      */
 
-    public String getName() {
-        return MetricConstants.getMetricName(getID());
+    public String getName()
+    {
+        return MetadataFactory.getMetricName(getID());
     }
 
     /**

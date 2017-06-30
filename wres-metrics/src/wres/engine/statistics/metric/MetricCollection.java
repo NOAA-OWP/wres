@@ -14,10 +14,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
-import wres.engine.statistics.metric.outputs.MetricOutputCollection;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
+import wres.datamodel.metric.MetricOutputCollection;
+import wres.datamodel.metric.MetricOutputFactory;
 
 /**
  * <p>
@@ -196,7 +197,7 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
         //Collect the instances of Collectable by their getCollectionOf string, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
         @SuppressWarnings("unchecked")
-        final Map<Integer, List<Collectable<S, MetricOutput<?>, T>>> collectable =
+        final Map<MetricConstants, List<Collectable<S, MetricOutput<?>, T>>> collectable =
                                                                                 metrics.stream()
                                                                                        .filter(Collectable.class::isInstance)
                                                                                        .map(p -> (Collectable<S, MetricOutput<?>, T>)p)
@@ -248,7 +249,7 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
         //Collect the instances of Collectable by their getCollectionOf string, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
         @SuppressWarnings("unchecked")
-        final Map<Integer, List<Collectable<S, MetricOutput<?>, T>>> collectable =
+        final Map<MetricConstants, List<Collectable<S, MetricOutput<?>, T>>> collectable =
                                                                                 metrics.stream()
                                                                                        .filter(Collectable.class::isInstance)
                                                                                        .map(p -> (Collectable<S, MetricOutput<?>, T>)p)

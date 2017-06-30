@@ -9,7 +9,7 @@ import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.charter.parameters.DataSourceDrawingParameters;
 import ohd.hseb.charter.parameters.SeriesDrawingParameters;
 import wres.datamodel.metric.MetricInput;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
+import wres.datamodel.metric.SingleValuedPairs;
 
 /**
  * An {@link XYChartDataSource} that makes use of a {@link MetricInput}.

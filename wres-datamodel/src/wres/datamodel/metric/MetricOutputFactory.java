@@ -1,10 +1,8 @@
-package wres.engine.statistics.metric.outputs;
+package wres.datamodel.metric;
 
 import java.util.List;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputMetadata;
 
 /**
  * A factory class for producing metric outputs.
@@ -40,8 +38,7 @@ public final class MetricOutputFactory
 
     public static VectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta)
     {
-        final DataFactory dataFactory = DataFactory.instance();
-        return new VectorOutput(dataFactory.vectorOf(output), meta);
+        return new VectorOutput(DataFactory.vectorOf(output), meta);
     }
 
     /**
@@ -54,8 +51,7 @@ public final class MetricOutputFactory
 
     public static MatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta)
     {
-        final DataFactory dataFactory = DataFactory.instance();
-        return new MatrixOutput(dataFactory.matrixOf(output), meta);
+        return new MatrixOutput(DataFactory.matrixOf(output), meta);
     }
 
     /**

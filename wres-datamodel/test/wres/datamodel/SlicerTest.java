@@ -1,11 +1,11 @@
 package wres.datamodel;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import org.junit.Test;
 
 /**
  * Created by jesse on 6/7/17.
@@ -17,18 +17,16 @@ public class SlicerTest
     @Test
     public void getAnItemOneForEachItemTwoValueTest()
     {
-        List<PairOfDoubleAndVectorOfDoubles> pairList = new ArrayList<>();
-        DataFactory df = DataFactory.instance();
+        final List<PairOfDoubleAndVectorOfDoubles> pairList = new ArrayList<>();
+        final double[] arrOne = { 2, 3, 4, 5, 6 };
+        final double[] arrTwo = { 7, 8, 9 };
 
-        double[] arrOne = { 2, 3, 4, 5, 6 };
-        double[] arrTwo = { 7, 8, 9 };
+        pairList.add(DataFactory.pairOf(1, arrOne));
+        pairList.add(DataFactory.pairOf(10, arrTwo));
 
-        pairList.add(df.pairOf(1, arrOne));
-        pairList.add(df.pairOf(10, arrTwo));
+        final double[] arrFlat = Slicer.getItemsOneForEachItemTwo(pairList);
 
-        double[] arrFlat = Slicer.getItemsOneForEachItemTwo(pairList);
-
-        int expectedSize = arrOne.length + arrTwo.length;
+        final int expectedSize = arrOne.length + arrTwo.length;
 
         assertEquals(expectedSize, arrFlat.length);
         assertEquals(5, countOfValueInDoubleArray(arrFlat, 1));
@@ -43,7 +41,7 @@ public class SlicerTest
         assertEquals(3, countOfValueInDoubleArray(arrFlat, 10));
     }
 
-    private int countOfValueInDoubleArray(double[] theArray, double valueToFind)
+    private int countOfValueInDoubleArray(final double[] theArray, final double valueToFind)
     {
         int result = 0;
         for (int i = 0; i < theArray.length; i++)
@@ -59,18 +57,16 @@ public class SlicerTest
     @Test
     public void getListOfSimplePairsFromListOfPairOfDoubleAndVectorOfDoublesTest()
     {
-        List<PairOfDoubleAndVectorOfDoubles> pairList = new ArrayList<>();
-        DataFactory df = DataFactory.instance();
+        final List<PairOfDoubleAndVectorOfDoubles> pairList = new ArrayList<>();
+        final double[] arrOne = { 2, 3 };
+        final double[] arrTwo = { 5, 6, 7 };
 
-        double[] arrOne = { 2, 3 };
-        double[] arrTwo = { 5, 6, 7 };
+        pairList.add(DataFactory.pairOf(1, arrOne));
+        pairList.add(DataFactory.pairOf(4, arrTwo));
 
-        pairList.add(df.pairOf(1, arrOne));
-        pairList.add(df.pairOf(4, arrTwo));
+        final List<PairOfDoubles> resultPairs = Slicer.getFlatDoublePairs(pairList);
 
-        List<PairOfDoubles> resultPairs = Slicer.getFlatDoublePairs(pairList);
-
-        int expectedSize = arrOne.length + arrTwo.length;
+        final int expectedSize = arrOne.length + arrTwo.length;
 
         assertEquals(expectedSize, resultPairs.size());
 

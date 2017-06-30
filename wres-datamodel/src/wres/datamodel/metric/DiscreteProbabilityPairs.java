@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric.inputs;
+package wres.datamodel.metric;
 
 /**
  * Immutable store of verification pairs that comprise probabilistic observations and predictions.

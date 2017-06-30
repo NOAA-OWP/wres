@@ -4,12 +4,13 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.ScalarOutput;
 import wres.engine.statistics.metric.ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder;
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
  * Tests the {@link ProbabilityOfFalseDetection}.
@@ -52,13 +53,13 @@ public final class ProbabilityOfFalseDetectionTest
             + ".", actual.equals(expected));
         //Check the parameters
         assertTrue("Unexpected name for the Probability of False Detection.",
-                   pofd.getName().equals(MetricConstants.getMetricName(MetricConstants.PROBABILITY_OF_FALSE_DETECTION)));
+                   pofd.getName().equals(MetadataFactory.getMetricName(MetricConstants.PROBABILITY_OF_FALSE_DETECTION)));
         assertTrue("The Probability of False Detection is not decomposable.", !pofd.isDecomposable());
         assertTrue("The Probability of False Detection is not a skill score.", !pofd.isSkillScore());
         assertTrue("The Probability of False Detection cannot be decomposed.",
                    pofd.getDecompositionID() == MetricConstants.NONE);
         final String expName = MetricFactory.ofContingencyTable().getName();
-        final String actName = MetricConstants.getMetricName(pofd.getCollectionOf());           
+        final String actName = MetadataFactory.getMetricName(pofd.getCollectionOf());           
         assertTrue("The Probability of False Detection should be a collection of '" + expName
             + "', but is actually a collection of '" + actName + "'.",
                    pofd.getCollectionOf()==MetricFactory.ofContingencyTable().getID());

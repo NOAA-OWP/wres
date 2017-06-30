@@ -2,13 +2,14 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.metric.DichotomousPairs;
+import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.outputs.MatrixOutput;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
+import wres.datamodel.metric.ScalarOutput;
 
 /**
  * The Equitable Threat Score (ETS) is a dichotomous measure of the fraction of all predicted outcomes that occurred
@@ -67,7 +68,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public int getID()
+    public MetricConstants getID()
     {
         return MetricConstants.EQUITABLE_THREAT_SCORE;
     }
@@ -85,7 +86,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public int getDecompositionID()
+    public MetricConstants getDecompositionID()
     {
         return MetricConstants.NONE;
     }
@@ -103,7 +104,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public int getCollectionOf()
+    public MetricConstants getCollectionOf()
     {
         return super.getID();
     }

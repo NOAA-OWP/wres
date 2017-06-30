@@ -4,12 +4,13 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.ScalarOutput;
 import wres.engine.statistics.metric.ProbabilityOfDetection.ProbabilityOfDetectionBuilder;
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
  * Tests the {@link ProbabilityOfDetection}.
@@ -52,13 +53,13 @@ public final class ProbabilityOfDetectionTest
             + ".", actual.equals(expected));
         //Check the parameters
         assertTrue("Unexpected name for the Probability of Detection.",
-                   pod.getName().equals(MetricConstants.getMetricName(MetricConstants.PROBABILITY_OF_DETECTION)));
+                   pod.getName().equals(MetadataFactory.getMetricName(MetricConstants.PROBABILITY_OF_DETECTION)));
         assertTrue("The Probability of Detection is not decomposable.", !pod.isDecomposable());
         assertTrue("The Probability of Detection is not a skill score.", !pod.isSkillScore());
         assertTrue("The Probability of Detection cannot be decomposed.",
                    pod.getDecompositionID() == MetricConstants.NONE);
         final String expName = MetricFactory.ofContingencyTable().getName();
-        final String actName = MetricConstants.getMetricName(pod.getCollectionOf());           
+        final String actName = MetadataFactory.getMetricName(pod.getCollectionOf());           
         assertTrue("The Probability of Detection should be a collection of '" + expName
             + "', but is actually a collection of '" + actName + "'.",
                    pod.getCollectionOf()==MetricFactory.ofContingencyTable().getID());

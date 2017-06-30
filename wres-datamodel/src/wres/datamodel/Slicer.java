@@ -22,11 +22,11 @@ public class Slicer
      * @param pairs the list of pairs to use
      * @return a double[] of the values of the left side repeated for count in right side
      */
-    public static double[] getItemsOneForEachItemTwo(List<PairOfDoubleAndVectorOfDoubles> pairs)
+    public static double[] getItemsOneForEachItemTwo(final List<PairOfDoubleAndVectorOfDoubles> pairs)
     {
-        List<Double> result = new ArrayList<>();
+        final List<Double> result = new ArrayList<>();
 
-        for (PairOfDoubleAndVectorOfDoubles pair : pairs)
+        for (final PairOfDoubleAndVectorOfDoubles pair : pairs)
         {
             for (int i = 0; i < pair.getItemTwo().length; i++)
             {
@@ -41,16 +41,15 @@ public class Slicer
     /**
      * Get a List of simple pairs from a List of PairOfDoubleAndVectorOfDoubles
      */
-    public static List<PairOfDoubles> getFlatDoublePairs(List<PairOfDoubleAndVectorOfDoubles> pairs)
+    public static List<PairOfDoubles> getFlatDoublePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs)
     {
-        List<PairOfDoubles> result = new ArrayList<>();
-        DataFactory df = DataFactory.instance();
-        for (PairOfDoubleAndVectorOfDoubles pair : pairs)
+        final List<PairOfDoubles> result = new ArrayList<>();
+        for (final PairOfDoubleAndVectorOfDoubles pair : pairs)
         {
-            double[] itemTwo = pair.getItemTwo();
+            final double[] itemTwo = pair.getItemTwo();
             for (int i = 0; i < itemTwo.length; i++)
             {
-                PairOfDoubles p = df.pairOf(pair.getItemOne(), itemTwo[i]);
+                final PairOfDoubles p = DataFactory.pairOf(pair.getItemOne(), itemTwo[i]);
                 result.add(p);
             }
         }

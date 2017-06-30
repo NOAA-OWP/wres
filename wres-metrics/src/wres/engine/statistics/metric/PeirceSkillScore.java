@@ -3,14 +3,15 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
+import wres.datamodel.metric.DichotomousPairs;
+import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.inputs.MulticategoryPairs;
-import wres.engine.statistics.metric.outputs.MatrixOutput;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
+import wres.datamodel.metric.MulticategoryPairs;
+import wres.datamodel.metric.ScalarOutput;
 
 /**
  * The Peirce Skill Score is a categorical measure of the average accuracy of a predictand for a multi-category event,
@@ -127,7 +128,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public int getID()
+    public MetricConstants getID()
     {
         return MetricConstants.PEIRCE_SKILL_SCORE;
     }
@@ -151,7 +152,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }        
 
     @Override
-    public int getDecompositionID()
+    public MetricConstants getDecompositionID()
     {
         return MetricConstants.NONE;
     }
@@ -163,7 +164,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public int getCollectionOf()
+    public MetricConstants getCollectionOf()
     {
         return super.getID();
     }

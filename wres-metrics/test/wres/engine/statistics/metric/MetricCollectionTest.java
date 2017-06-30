@@ -12,14 +12,14 @@ import java.util.function.BiPredicate;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DichotomousPairs;
+import wres.datamodel.metric.DiscreteProbabilityPairs;
+import wres.datamodel.metric.MetricOutputCollection;
+import wres.datamodel.metric.MulticategoryPairs;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
-import wres.engine.statistics.metric.inputs.MulticategoryPairs;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputCollection;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
-import wres.engine.statistics.metric.outputs.VectorOutput;
 
 /**
  * Tests the {@link MetricCollection}.

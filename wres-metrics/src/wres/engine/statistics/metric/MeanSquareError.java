@@ -2,10 +2,11 @@ package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.VectorOutput;
+import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.VectorOutput;
 
 /**
  * The mean square error (MSE) measures the accuracy of a single-valued predictand. It comprises the average square
@@ -25,7 +26,7 @@ extends
      * The decomposition identifier. See {@link MetricConstants#getDecompositionID()}.
      */
 
-    private final int decompositionID;
+    private final MetricConstants decompositionID;
 
     @Override
     public T apply(final S s)
@@ -33,11 +34,11 @@ extends
 
         switch(decompositionID)
         {
-            case MetricConstants.NONE:
+            case NONE:
                 return getMSENoDecomp(s);
-            case MetricConstants.CR:
-            case MetricConstants.LBR:
-            case MetricConstants.CR_AND_LBR:
+            case CR:
+            case LBR:
+            case CR_AND_LBR:
             default:
                 throw new MetricCalculationException("The Mean Square Error decomposition is not currently "
                     + "implemented.");
@@ -56,7 +57,7 @@ extends
          * The type of metric decomposition. See {@link MetricConstants#getDecompositionID()}.
          */
 
-        private int decompositionID = MetricConstants.DEFAULT;
+        private MetricConstants decompositionID = MetricConstants.NONE;
 
         @Override
         public MeanSquareError<S, T> build()
@@ -64,7 +65,7 @@ extends
             return new MeanSquareError<>(this);
         }
 
-        public MeanSquareErrorBuilder<S, T> setDecompositionID(final int decompositionID)
+        public MeanSquareErrorBuilder<S, T> setDecompositionID(final MetricConstants decompositionID)
         {
             this.decompositionID = decompositionID;
             return this;
@@ -79,7 +80,7 @@ extends
     }
 
     @Override
-    public int getID()
+    public MetricConstants getID()
     {
         return MetricConstants.MEAN_SQUARE_ERROR;
     }
@@ -97,7 +98,7 @@ extends
     }        
 
     @Override
-    public int getDecompositionID()
+    public MetricConstants getDecompositionID()
     {
         return decompositionID;
     }
