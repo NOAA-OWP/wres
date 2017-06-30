@@ -4,10 +4,12 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
 import wres.engine.statistics.metric.MeanError.MeanErrorBuilder;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
  * Tests the {@link Metric}.
@@ -58,7 +60,7 @@ public final class MetricTest
 
         //Check for equality of names
         assertTrue("Unexpected metric name.",
-                   MetricConstants.getMetricName(MetricConstants.MEAN_ERROR).equals(me.toString()));
+                   MetadataFactory.getMetricName(MetricConstants.MEAN_ERROR).equals(me.toString()));
     }
 
 }

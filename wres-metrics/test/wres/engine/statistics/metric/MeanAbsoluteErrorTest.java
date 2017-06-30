@@ -5,11 +5,12 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
  * Tests the {@link MeanAbsoluteError}.
@@ -52,7 +53,7 @@ public final class MeanAbsoluteErrorTest
             + ".", actual.equals(expected));
         //Check the parameters
         assertTrue("Unexpected name for the Mean Absolute Error.",
-                   mae.getName().equals(MetricConstants.getMetricName(MetricConstants.MEAN_ABSOLUTE_ERROR)));
+                   mae.getName().equals(MetadataFactory.getMetricName(MetricConstants.MEAN_ABSOLUTE_ERROR)));
         assertTrue("The Mean Absolute Error is not decomposable.", !mae.isDecomposable());
         assertTrue("The Mean Absolute Error is not a skill score.", !mae.isSkillScore());
         assertTrue("The Mean Absolute Error cannot be decomposed.", mae.getDecompositionID() == MetricConstants.NONE);

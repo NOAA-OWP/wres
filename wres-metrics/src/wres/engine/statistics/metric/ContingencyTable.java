@@ -6,14 +6,15 @@ import java.util.stream.IntStream;
 
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
-import wres.engine.statistics.metric.inputs.MetricInputException;
-import wres.engine.statistics.metric.inputs.MulticategoryPairs;
-import wres.engine.statistics.metric.outputs.MatrixOutput;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
+import wres.datamodel.metric.MulticategoryPairs;
 
 /**
  * <p>
@@ -90,7 +91,7 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
     }
 
     @Override
-    public int getID()
+    public MetricConstants getID()
     {
         return MetricConstants.CONTINGENCY_TABLE;
     }

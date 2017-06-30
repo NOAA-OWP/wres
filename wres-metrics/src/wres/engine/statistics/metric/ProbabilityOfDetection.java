@@ -1,12 +1,13 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.metric.DichotomousPairs;
+import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.outputs.MatrixOutput;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
+import wres.datamodel.metric.ScalarOutput;
 
 /**
  * The Probability of Detection (PoD) measures the fraction of observed occurrences that were hits.
@@ -62,7 +63,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public int getID()
+    public MetricConstants getID()
     {
         return MetricConstants.PROBABILITY_OF_DETECTION;
     }
@@ -86,7 +87,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }        
 
     @Override
-    public int getDecompositionID()
+    public MetricConstants getDecompositionID()
     {
         return MetricConstants.NONE;
     }
@@ -98,7 +99,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public int getCollectionOf()
+    public MetricConstants getCollectionOf()
     {
         return super.getID();
     }

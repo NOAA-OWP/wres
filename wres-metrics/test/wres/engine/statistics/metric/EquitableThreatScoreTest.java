@@ -4,12 +4,13 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.ScalarOutput;
 import wres.engine.statistics.metric.EquitableThreatScore.EquitableThreatScoreBuilder;
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
  * Tests the {@link EquitableThreatScore}.
@@ -49,13 +50,13 @@ public final class EquitableThreatScoreTest
         assertTrue(ets.apply(input).equals(MetricOutputFactory.ofScalarOutput(0.43768152544513195, m1)));
         //Check the parameters
         assertTrue("Unexpected name for the Equitable Threat Score.",
-                   ets.getName().equals(MetricConstants.getMetricName(MetricConstants.EQUITABLE_THREAT_SCORE)));
+                   ets.getName().equals(MetadataFactory.getMetricName(MetricConstants.EQUITABLE_THREAT_SCORE)));
         assertTrue("The Equitable Threat Score is not decomposable.", !ets.isDecomposable());
         assertTrue("The Equitable Threat Score is a skill score.", ets.isSkillScore());
         assertTrue("The Equitable Threat Score cannot be decomposed.",
                    ets.getDecompositionID() == MetricConstants.NONE);
         final String expName = MetricFactory.ofContingencyTable().getName();
-        final String actName = MetricConstants.getMetricName(ets.getCollectionOf());           
+        final String actName = MetadataFactory.getMetricName(ets.getCollectionOf());           
         assertTrue("The Equitable Threat Score should be a collection of '" + expName
             + "', but is actually a collection of '" + actName + "'.",
                    ets.getCollectionOf()==MetricFactory.ofContingencyTable().getID());

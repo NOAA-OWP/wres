@@ -4,12 +4,13 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.ScalarOutput;
 import wres.engine.statistics.metric.CriticalSuccessIndex.CriticalSuccessIndexBuilder;
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
  * Tests the {@link CriticalSuccessIndex}.
@@ -53,13 +54,13 @@ public final class CriticalSuccessIndexTest
                 
         //Check the parameters
         assertTrue("Unexpected name for the Critical Success Index.",
-                   csi.getName().equals(MetricConstants.getMetricName(MetricConstants.CRITICAL_SUCCESS_INDEX)));
+                   csi.getName().equals(MetadataFactory.getMetricName(MetricConstants.CRITICAL_SUCCESS_INDEX)));
         assertTrue("The Critical Success Index is not decomposable.", !csi.isDecomposable());
         assertTrue("The Critical Success Index is not a skill score.", !csi.isSkillScore());
         assertTrue("The Critical Success Index cannot be decomposed.",
                    csi.getDecompositionID() == MetricConstants.NONE);
         final String expName = MetricFactory.ofContingencyTable().getName();
-        final String actName = MetricConstants.getMetricName(csi.getCollectionOf());        
+        final String actName = MetadataFactory.getMetricName(csi.getCollectionOf());        
         assertTrue("The Critical Success Index should be a collection of '" + expName
             + "', but is actually a collection of '" + actName + "'.",
                    csi.getCollectionOf()==MetricFactory.ofContingencyTable().getID());

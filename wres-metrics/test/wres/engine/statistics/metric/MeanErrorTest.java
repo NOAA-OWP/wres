@@ -5,11 +5,12 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.MeanError.MeanErrorBuilder;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
  * Tests the {@link MeanError}.
@@ -51,7 +52,7 @@ public final class MeanErrorTest
 
         //Check the parameters
         assertTrue("Unexpected name for the Mean Error.",
-                   me.getName().equals(MetricConstants.getMetricName(MetricConstants.MEAN_ERROR)));
+                   me.getName().equals(MetadataFactory.getMetricName(MetricConstants.MEAN_ERROR)));
         assertTrue("The Mean Error is not decomposable.", !me.isDecomposable());
         assertTrue("The Mean Error is not a skill score.", !me.isSkillScore());
         assertTrue("The Mean Error cannot be decomposed.", me.getDecompositionID() == MetricConstants.NONE);

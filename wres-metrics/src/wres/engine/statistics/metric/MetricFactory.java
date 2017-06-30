@@ -1,12 +1,13 @@
 package wres.engine.statistics.metric;
 
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
-import wres.engine.statistics.metric.inputs.MulticategoryPairs;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MatrixOutput;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
-import wres.engine.statistics.metric.outputs.VectorOutput;
+import wres.datamodel.metric.DichotomousPairs;
+import wres.datamodel.metric.DiscreteProbabilityPairs;
+import wres.datamodel.metric.MatrixOutput;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MulticategoryPairs;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.VectorOutput;
 
 /**
  * A factory class for constructing metrics.
@@ -37,7 +38,7 @@ public final class MetricFactory
      * @return a {@link BrierScore} function.
      */
 
-    public static BrierScore<DiscreteProbabilityPairs, VectorOutput> ofBrierScore(final int decompositionID)
+    public static BrierScore<DiscreteProbabilityPairs, VectorOutput> ofBrierScore(final MetricConstants decompositionID)
     {
         return new BrierScore.BrierScoreBuilder<>().setDecompositionID(decompositionID).build();
     }
