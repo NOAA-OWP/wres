@@ -11,8 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.Database;
-import wres.io.utilities.Debug;
-import wres.util.Strings;
 
 /**
  * Caches details about Features
@@ -152,8 +150,7 @@ public class Features extends Cache<FeatureDetails, String>
         }
         catch (SQLException error)
         {
-            Debug.error(LOGGER, "An error was encountered when trying to populate the Feature cache.");
-            Debug.error(LOGGER, Strings.getStackTrace(error));
+            LOGGER.error("An error was encountered when trying to populate the Feature cache. ", error);
         }
         finally
         {
@@ -165,8 +162,7 @@ public class Features extends Cache<FeatureDetails, String>
                 }
                 catch (SQLException exception)
                 {
-                    Debug.error(LOGGER, "An error was encountered when trying to close the result set for the features.");
-                    Debug.error(LOGGER, exception.getMessage());
+                    LOGGER.warn("An error was encountered when trying to close the result set for the features.", exception);
                 }
             }
 
@@ -178,8 +174,7 @@ public class Features extends Cache<FeatureDetails, String>
                 }
                 catch (SQLException exception)
                 {
-                    Debug.error(LOGGER, "An error was encountered when trying to close the query for the features.");
-                    Debug.error(LOGGER, exception.getMessage());
+                    LOGGER.warn("An error was encountered when trying to close the query for the features.", exception);
                 }
             }
 

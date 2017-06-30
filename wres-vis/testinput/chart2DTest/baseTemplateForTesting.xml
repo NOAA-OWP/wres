@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!-- Throughout this XML, the parameters displayed are the defaults that are generated automatically by ChartEngine.
+     with some exceptions which are noted.  If the defaults are acceptable, then the XML element can be removed. -->
+<chartDrawingParameters>
+
+    <!-- Add one datasourceDrawingParameters instance per plotted data source.  The index of
+         the source to which this applies is given as the sourceIndex attribute. In addtion
+         to seriesDrawingParameters, which are described below, options are as follws:
+    
+         1. plotter: Corresponds to the prefix for the corresponding class under 
+            ohd.hseb.charter.plotter.instances with suffix XYChartPlotter.  The default is 
+            LineAndScatterXYChartPlotter.
+         2. subPlot: Specifies the index of the subplot in which tod raw, 0 being the top 
+            subplot.
+         3. yAxis: Must be either "left" or "right" indicating which axis to plot the data
+            against.
+     -->
+    <datasourceDrawingParameters sourceIndex="0">
+        <plotter>LineAndScatter</plotter>
+        <subPlot>0</subPlot>
+        <yAxis>left</yAxis>
+        
+        <!-- Add one seriesDrawingParameters element for each series to draw, with createdIndexOfSeriesToModify
+             set accordingly (0, 1, 2,...).  If not added, the default drawing parameters are used, which are shown here. 
+             This can be an arduous process if an ensemble is plotted, unfortunately. -->
+        <seriesDrawingParameters createdIndexOfSeriesToModify="0">
+            <lineColor alpha="255" blue="0" green="0" red="255"/>
+            <fillColor alpha="255" blue="0" green="0" red="255"/>
+            <nameInLegend>Series</nameInLegend>
+            <boxWidth>-1</boxWidth>
+            <showInLegend>true</showInLegend>
+            <includeInPlot>true</includeInPlot>
+            <shape>none</shape>
+            <shapeSize>1.0</shapeSize>
+            <lineWidth>0.5</lineWidth>
+            <shapeFilled>true</shapeFilled>
+            <barWidth>0.9</barWidth>
+        </seriesDrawingParameters>
+        
+    </datasourceDrawingParameters>
+    
+    <!-- Add one instance per subplot, with the subPlotIndex attribute set accordingly along
+         with a weight controlling the size of the subplot relative to others. The following 
+         options are set via XML elements:
+         
+         0. leftRangeAxis, rightRangeAxes: The axes XML elements are described below.  Note 
+            that the default for the visible flag is set by the ChartEngine to true for any
+            axis that is plotted against by a data source.  For other axes, to make them visible
+            the flag must be overridden.  For example, to create a translated axis, perhaps
+            for unit conversion, set the axis to be visible and then specify the translation.
+         1. backgroundColor: Color to use for for this subplot, overriding that mentioned in 
+            generalParameters.
+         2. reverseRendering: Whether to reverse the rendering order of series drawn on this 
+            subplot, set via reverseRendering.
+         3. reverseLegendItemOrder: Whether to reverse the legend entry order of series, set 
+            via reverseLegendItemOrder.
+         4. backgroundImage: The image to include in the background of the subplot plot area, 
+            which generally appears better  than when set through the general parameters, 
+            described later.
+         -->
+    <subPlot subPlotIndex="0" weight="1">
+    
+        <!-- The left-hand range axis includes a generic label XML element which controls the 
+             label text, font, and color, and another element that depends on the type of axis.  
+             In the example below, this is a numeric axis specifying a numericAxis XML element.
+             The axis type is specified by axisType and can be one of the following: "Time", 
+             "Numerical", "Logarithmic", "Probability", "Normalized Probability", "Translated"
+        -->
+        <leftRangeAxis inverted="false" visible="true">
+            <axisType>Numerical</axisType>
+            
+            <label>
+                <font family="Dialog" size="12" style="0"/>
+                <color alpha="255" blue="0" green="0" red="0"/>
+                <text>Discharge [CFSD]</text>
+            </label>
+            
+            <!-- This is an example of a fully specified numericAxis element.  If autoRange is true,
+                 then the lower and upper bound elements can be removed (are not necessary). 
+                 The tickFormat is processed through DecimalFormat.
+                 If this axis is a translated axis, then copy the axisTranslator element from the 
+                 rightRangeAxis to this leftRangeAxis BEFORE the label element above and specify 
+                 an axisType of "Translated". -->
+            <numericAxis>
+                <lowerBound>0.0</lowerBound>
+                <upperBound>1.0</upperBound>
+                <tickSpacing>auto</tickSpacing>
+                <tickFormat/>
+                <rangeIncludesZero>false</rangeIncludesZero>
+                <autoRange>false</autoRange>
+            </numericAxis>
+        </leftRangeAxis>
+
+        <!-- The right-hand range axis includes a generic label XML element which controls the 
+             label text, font, and color, and another element that depends on the type of axis.  
+             In the example below, this is a translated axis with parameters set via the
+             axisTranslator XML element.-->
+        <rightRangeAxis inverted="false" visible="false">
+            <!-- This is necessary for a translated axis. -->
+            <axisType>Translated</axisType>
+        
+            <!-- This is an example of an axisTranslator.  For it to be used, the axis must be
+                 made visible and this translator included before label (I'm not sure that it must
+                 be before).  Note that if this axis is either date or numeric, then copy the 
+                 appropriate element from the other axes (domainAxis for date, which is unlikely
+                 for a range axis, and leftRangeAxis for numeric). -->
+            <axisTranslator name="Linear">
+                <parameter id="coefficient">1.0</parameter>
+                <parameter id="constant">0.0</parameter>
+            </axisTranslator>
+            
+            <label>
+                <font family="Dialog" size="12" style="0"/>
+                <color alpha="255" blue="0" green="0" red="0"/>
+                <text>No Default Label Specified</text>
+            </label>
+        </rightRangeAxis>
+        
+        <backgroundColor alpha="0" blue="255" green="255" red="255"/>
+        <reverseRendering>false</reverseRendering>
+        <reverseLegendItemOrder>false</reverseLegendItemOrder>
+        <!-- The background image. Transparency is a number from 0.0 (opaque) to 1.0 (transparent).
+             The alignment is "LEFT", "CENTER", "RIGHT", or "FIT".  The path is will first be
+             loaded as a resource (in a jar file) and will then be loaded from the file system. -->
+        <backgroundImage alignment="CENTER" transparency="0.5" path="graphGenChartBG.png"></backgroundImage>
+    </subPlot>
+    
+    <!-- The generalParameters XML element specifies the following features of the chart:
+         1.  chartBackgroundColor: Overall chart background color. 
+         2.  plotBackgroundColor: The default background color for subplots.
+         3.  backgroundImage: A background image to employ (see details below).
+         4.  gridLineStyle: The style of the displayed grid lines, including a flag indicating
+             if it is dashed and a width specification for the lines.
+         5.  timeZone: A default time zone that is applied throughout the chart parameters
+             unless overridden by other parameters.  This can be any Java understood time zone
+             or those defines specifically for GraphGen/ChartEngine: EST, EDT, CST, CDT, MST, 
+             MDT, PST, PDT, and others (see GraphGen User's Manual).
+     -->
+    <generalParameters>
+        <chartBackgroundColor alpha="255" blue="255" green="255" red="255"/>
+        <plotBackgroundColor alpha="0" blue="255" green="255" red="255"/>
+        <!-- The background image. Transparency is a number from 0.0 (opaque) to 1.0 (transparent).
+             The alignment is "LEFT", "CENTER", "RIGHT", or "FIT".  The path is will first be
+             loaded as a resource (in a jar file) and will then be loaded from the file system. -->
+        <backgroundImage alignment="CENTER" transparency="0.5" path="graphGenChartBG.png"></backgroundImage>
+        <gridLineStyle isDashed="true" width="0.5"/>
+        <timeZone>GMT</timeZone>
+    </generalParameters>
+    
+    <!-- The plotTitle XML element specifies parameters of the  plot title, which is always 
+         displayed above the chart.  The parameters are:
+         1. font, color, text: Generic label parameters.
+         2. border: Controls appearance of the title border, if desired, including line widths
+            which can be separately specified for each side of the border, and the color (see
+            example below).
+         3. horizontalAlignment: The alignment of the box, which can be "CENTER", "LEFT", and "RIGHT".
+         4. textAlignment: The alignment of the text within the box, which can be "CENTER, "LEFT"
+            or "RIGHT".
+         5. textInsets: Insets (which space) assumed around the text within the text box.
+    -->
+    <plotTitle>
+        <font family="Dialog" size="12" style="0"/>
+        <color alpha="255" blue="0" green="0" red="0"/>
+        <text>PLOT TITLE LINE 1</text>
+        <border>
+            <lineWidths bottom="0.0" left="0.0" right="0.0" top="0.0"/>
+            <color alpha="255" blue="0" green="0" red="0"/>
+        </border>
+        <horizontalAlignment>CENTER</horizontalAlignment>
+        <textAlignment>CENTER</textAlignment>
+        <textInsets bottom="0.0" left="0.0" right="0.0" top="0.0"/>
+    </plotTitle>
+    
+    <!-- The domainAxis element specifies a generic label XML element which controls the 
+         label text, font, and color, and another element that depends on the type of axis.  
+         In the example below, this is a time/date axis with parameters set via the
+         dateAxis XML element.-->
+    <domainAxis inverted="false" visible="true">
+        <axisType>Time</axisType>
+        <label>
+            <font family="Dialog" size="12" style="0"/>
+            <color alpha="255" blue="0" green="0" red="0"/>
+            <text>Time</text>
+        </label>
+        
+        <!-- This is an example of an dateAxis.  For it to be used, the axis must be made
+             visible and the axis included at the end of the domainAxis element. Included 
+             before label.  Note that if this axis is either translated or numeric, then 
+             copy the appropriate element from the other axes (leftRangeAxis for numeric, 
+             rightRangeAxis for translated leftRangeAxis for numeric). -->
+        <dateAxis>
+            <lowerBound date="2010-01-01" time="12:00:00"/>
+            <upperBound date="2010-01-10" time="12:00:00"/>
+            <tickSpacing multiplier="" unit="uto"/>
+            <tickFormat>MM/dd
+HH z</tickFormat>  <!-- Example of a two-line tick label. -->
+            <tickStartHour>0</tickStartHour>
+            <autoRange>false</autoRange>
+        </dateAxis>
+    </domainAxis>
+    
+    <!-- The legend XML element supplies parameters of the legend, which can include
+         the following:
+         1. position: Specifies the position, either "TOP", "BOTTOM", "LEFT" or 
+            "RIGHT". Currently, the legend cannot be displayed within the plot area.
+         2. title: A generic label XML element.
+         3. entries: A generic label XML element where the text is ignored.  This 
+            specifies only the font and color for entries, while the text is supplied
+            through seriesDrawingParameters.
+         4. fillColor: The color with which to fill the legend box.
+         5. borderLineColor: The color to employ for the border line.
+         6. borderLineWidth: The width of the legend border, which is identical all
+            around.   
+    -->
+    <legend visible="true">
+        <position>BOTTOM</position>
+        <title>
+            <font family="Dialog" size="12" style="0"/>
+            <color alpha="255" blue="0" green="0" red="0"/>
+            <text/>
+        </title>
+        <entries>
+            <font family="Dialog" size="12" style="0"/>
+            <color alpha="255" blue="0" green="0" red="0"/>
+        </entries>
+        <fillColor alpha="0" blue="255" green="255" red="255"/>
+        <borderLineColor alpha="255" blue="0" green="0" red="0"/>
+        <borderLineWidth>1.0</borderLineWidth>
+    </legend>
+    
+    <!-- The thresholdList XML element specifies thresholds to include in the plot.
+         Remove if there are no thresholds.-->
+    <thresholdList>
+        
+        <!-- Add one threshold XML element for each threshold to display.  Note that a threshold specified
+             in this manner must be complete.  That means, if it is a zone, both the start and end must
+             be specified (number or date only).  If it is a mark, only the start must be specified.  
+             All other parameters MUST be specified for it to be considered acceptable. 
+             
+             The attributes specify the following:
+             
+             1. id: An identifier seen in the GUI and used for override parameters in order to identify
+                which threshold is being overridden.
+             2. includeInAxisLimitsComputation: True to include threshold in computations so that its
+                start value is always visible, or false to ignore it.
+             3. isZone: True if this is a zone, false if it is a line.  
+             4. visible: True to display the threshold, false to turn it off.
+        
+             The parameters are as follows:
+             
+             1. axis, subPlot: Specifies the axis against which to plot ("left", "right", "domain")
+                and the subplot in which to draw the threshold.
+             3. numericalStartValue: The start value for the threshold if the axis is numerical 
+                or translated.  Value can be "unbounded" if the threshold is a zone, meaning it has no
+                lower bound on the shaded region.
+             4. numericalEndValue: The corresponding end value.  This is only used if the threshold is
+                marked as a zone.  If "unbounded", then the shaded region has no upper bound.
+             5. dateStartValue: Same rules as numericalStartValue, except for a date axis.  The value is
+                specified through four attributes: 
+                a. unbounded: If true indicates it is unbounded and other attr are ignored.
+                b. date: Specifies the fixed date year, month, and day (see below for example; accepts 
+                   many standard formats).
+                c. time: Specifies the fixed date hours, minutes, and seconds (see below).
+                d. relativeDate: A standard, GraphGen relative date.  If present, it overrides the fixed
+                   date attributes, which are ignored.
+             6. dateEndValue: Same rules as numericalEndValue, and the value must be a date.
+             7. label: The text to display for the threshold line or zone.  Control font and color as well.
+             8. color: The color of the line or fill color of the zone.
+             9. lineWidth: The width of the line, if present.
+             10.labelAnchor: The position of the label within the threshold zone or about the line.  
+                Choices are "auto", "top_left", "bottom_left", "top_right", "bottom_right".
+        -->
+        <threshold id="identifier" includeInAxisLimitsComputation="true" isZone="false" visible="true">
+            <axis>LEFT</axis>
+            <subPlot>0</subPlot>
+            <numericalStartValue>0.0</numericalStartValue>
+            <numbericalEndValue>1.0</numbericalEndValue>
+            <dateStartValue unbounded="false" date="0000-00-00" time="00:00:00" relativeDate="T0 + 1 day"/>
+            <dateEndValue unbounded="false" date="0000-00-00" time="00:00:00" relativeDate="T0 + 1 day"/>
+            <label>
+                <font family="Dialog" size="12" style="0"/>
+                <color alpha="255" blue="0" green="0" red="0"/>
+                <text>LABEL</text>
+            </label>
+            <color alpha="255" blue="0" green="0" red="0"/>
+            <lineWidth>1.0</lineWidth>
+            <labelAnchor>auto</labelAnchor>
+        </threshold>
+    </thresholdList>
+    
+    <!-- The subtitleList XML element displays subtitles to display on the chart.  
+         If there are no subtitles, remove this element. -->
+    <subtitleList>
+    
+        <!-- Add one subtitle XML element for each subtitle to display.  The parameters
+             are as follows:
+             
+             1. See plotTitle XML element for all but position.
+             2. position: Specifies where to place the subtitle.  Values can be "TOP", "RIGHT",
+                "LEFT", "BOTTOM".  Subtitles are drawn between the plot title and the plot when
+                the position is "TOP".
+         -->
+        <subtitle>
+            <font family="Dialog" size="12" style="0"/>
+            <color alpha="255" blue="0" green="0" red="0"/>
+            <text>LABEL</text>
+            <border>
+                <lineWidths bottom="0.0" left="0.0" right="0.0" top="0.0"/>
+                <color alpha="255" blue="0" green="0" red="0"/>
+            </border>
+            <horizontalAlignment>CENTER</horizontalAlignment>
+            <textAlignment>CENTER</textAlignment>
+            <textInsets bottom="0.0" left="0.0" right="0.0" top="0.0"/>
+            <position>TOP</position>
+        </subtitle>
+        
+    </subtitleList>
+    
+</chartDrawingParameters>

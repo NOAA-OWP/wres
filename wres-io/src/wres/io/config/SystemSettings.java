@@ -13,15 +13,31 @@ import wres.util.Strings;
 import wres.util.XML;
 import wres.io.reading.XMLReader;
 
+import java.io.IOException;
+
 /**
  * The cache for all configured system settings
  * @author Christopher Tubbs
  */
 public final class SystemSettings extends XMLReader
 {
+	private static final Logger LOGGER = LoggerFactory.getLogger(SystemSettings.class);
 
 	// The global, static system configuration
-    private static final SystemSettings INSTANCE = new SystemSettings();
+    private static SystemSettings INSTANCE;
+
+	static
+	{
+		try
+		{
+			INSTANCE = new SystemSettings();
+		}
+		catch (IOException ioe)
+		{
+			LOGGER.error("Could not load system settings.", ioe);
+			INSTANCE = null;
+		}
+	}
 
     private DatabaseSettings databaseConfiguration = null;
     private int maximumThreadCount = 0;
@@ -37,7 +53,6 @@ public final class SystemSettings extends XMLReader
 	// The static path to the configuration path
     private static final String CONFIG_PATH = "wresconfig.xml";
 
-    private final Logger LOGGER = LoggerFactory.getLogger(SystemSettings.class);
 
 	/**
 	 * The Default constructor
@@ -48,7 +63,7 @@ public final class SystemSettings extends XMLReader
 	 * Private because only one SystemSettings should exist as it is the global cache
 	 * of configured system settings
 	 */
-    private SystemSettings()
+    private SystemSettings() throws IOException
     {
         super(CONFIG_PATH, true);
         LOGGER.trace("Created SystemSettings using default constructor");

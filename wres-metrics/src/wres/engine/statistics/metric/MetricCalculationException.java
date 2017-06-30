@@ -8,9 +8,13 @@ package wres.engine.statistics.metric;
  * @since 0.1
  */
 
-@SuppressWarnings("serial")
-public class MetricCalculationException extends RuntimeException
+public final class MetricCalculationException extends MetricException
 {
+
+    /**
+     * Serial identifier.
+     */
+    private static final long serialVersionUID = 3189229577290445611L;
 
     /**
      * Constructs an {@link MetricCalculationException} with no message.

@@ -1,3 +1,10 @@
+ext
+{
+    gitCommitId = org.ajoberstar.grgit.Grgit.open(file('.')).head().id
+    gitCommitDate = org.ajoberstar.grgit.Grgit.open(file('.')).head().getDate()
+    gitIsClean = org.ajoberstar.grgit.Grgit.open(file('.')).status().isClean()
+}
+
 subprojects
 {
     apply plugin: 'java'
@@ -6,19 +13,29 @@ subprojects
 	sourceCompatibility = '1.8'
 	targetCompatibility = '1.8'
 
+    version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6];
+    if (!gitIsClean)
+    {
+        version = version + '-dev'
+    }
+
     sourceSets
     {
         main
         {
             java
             {
-                // Standard sources in src. The outsidejar is for eclipse, it
-                // seems unintuitive but somehow works because there are no
+                // Standard sources in src. The dist being here is for eclipse
+                // purposes. Eclipse needs the conf files to be labeled as
+                // source or library or class in order to land on its runtime
+                // or debugtime classpath.
+
+                // It seems unintuitive but somehow works because there are no
                 // actual java files inside the conf directory, this just
                 // causes the files to show up on eclipse's classpath at
                 // runtime or debugtime.
                 // https://stackoverflow.com/questions/18183677/gradle-add-folder-to-eclipse-classpath#18184414
-                srcDirs = ['src', 'nonsrc/outsidejar/lib/conf']
+                srcDirs = ['src', 'dist/lib/conf']
             }
 
             // "resources" here end up included inside the jar.
@@ -26,7 +43,7 @@ subprojects
             // section inside wres-core, as well as startScripts section.
             resources
             {
-                srcDirs = ['nonsrc/insidejar']
+                srcDirs = ['nonsrc']
             }
         }
 
@@ -44,7 +61,8 @@ subprojects
         mavenCentral()
         maven 
         {
-            url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/"
+            url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/"// 
+            
         }
     }
 
@@ -53,6 +71,13 @@ subprojects
         maxHeapSize = "3072m"
         testLogging.showStandardStreams = true
 
+    }
+
+    jar
+    {
+        // toward reproducible builds:
+        preserveFileTimestamps = false;
+        reproducibleFileOrder = true;
     }
 }
 
@@ -63,19 +88,11 @@ project(':utilities')
         compile project(':wres-datamodel-api')
         compile project(':wres-datamodel')
 
-        // maybe with some adjustments we can put logback
-        // into runtime with slf4j in compile, but for now:
         compile 'org.slf4j:slf4j-api:1.7.25'
 
-        compile 'ch.qos.logback:logback-classic:1.2.3'
-        compile 'ch.qos.logback:logback-core:1.2.3'
-        //compile(group: 'edu.ucar', name: 'cdm', version: '4.6.9')
-        //{
-        //    // because we are getting a later version from diff group:
-        //    exclude group: 'c3p0', module: 'c3p0'
-        //}
-
         compile 'com.google.guava:guava:22.0'
+
+        runtime 'ch.qos.logback:logback-classic:1.2.3'
 
         testCompile 'junit:junit:4.12'
         testCompile files('../libs/external/EVS.jar')
@@ -105,6 +122,7 @@ project(':wres-core')
         compile project(':wres-datamodel-api')
         compile project(':wres-datamodel')
         compile project(':wres-io')
+        compile project(':wres-metrics')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
@@ -112,6 +130,7 @@ project(':wres-core')
         {
             // because we are getting a later version from diff group:
             exclude group: 'c3p0', module: 'c3p0'
+            // because these shouldn't be on compile classpath:
             exclude group: 'ch.qos.logback', module: 'logback-classic'
             exclude group: 'ch.qos.logback', module: 'logback-core'
         }
@@ -141,7 +160,7 @@ project(':wres-core')
     }
 
     // Default location in gradle is 'src/dist' but we want conf files that are
-    // outside the jar to be from the 'nonsrc' directory.
+    // outside the jar to be from the 'dist' directory.
     distributions
     {
         main
@@ -154,7 +173,7 @@ project(':wres-core')
                     // must put inside lib directory inside below directory.
                     // Must also add the new directory to classpath under
                     // startScripts below.
-                    'nonsrc/outsidejar'
+                    'dist'
                 }
             }
         }
@@ -178,8 +197,6 @@ project(':wres-datamodel')
         compile project(':wres-datamodel-api')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
-
-        //runtime 'ch.qos.logback:logback-classic:1.2.3'
 
         testCompile 'junit:junit:4.12'
     }
@@ -211,6 +228,7 @@ project(':wres-io')
         {
             // because we are getting a later version from diff group:
             exclude group: 'c3p0', module: 'c3p0'
+            // because these shouldn't be on compile classpath:
             exclude group: 'ch.qos.logback', module: 'logback-classic'
             exclude group: 'ch.qos.logback', module: 'logback-core'
         }
@@ -224,6 +242,18 @@ project(':wres-io')
 
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
+
+        testCompile 'junit:junit:4.12'
+
+        // Mocking help
+        testCompile 'org.mockito:mockito-core:2.8.9'
+
+        // super-duper mocking help (mocking static, private methods)
+        testCompile 'org.powermock:powermock-api-mockito2:1.7.0RC4'
+        testCompile 'org.powermock:powermock-module-junit4:1.7.0RC4'
+
+        // try out an embedded postgres
+        testCompile 'ru.yandex.qatools.embed:postgresql-embedded:2.2'
     }
 }
 
@@ -236,7 +266,28 @@ project(':wres-metrics')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
+        testCompile 'junit:junit:4.12'
+    }
+}
+
+project(':wres-vis')
+{
+    dependencies
+    {
+        compile project(':wres-datamodel-api')
+        compile project(':wres-datamodel')
+        compile project(':wres-metrics')
+        
+        compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
+        compile group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '1.2.6'
+        compile group: 'org.slf4j', name: 'log4j-over-slf4j', version: '1.7.25'
+        compile 'com.google.guava:guava:22.0'
+        compile 'org.slf4j:slf4j-api:1.7.25'
         runtime 'ch.qos.logback:logback-classic:1.2.3'
+
+        compile files('../libs/external/jcommon-1.0.12.jar')
+        compile files('../libs/external/jfreechart-1.0.9.jar')
+        compile files('../libs/external/ohdcommonchps.jar')
 
         testCompile 'junit:junit:4.12'
     }
@@ -248,7 +299,7 @@ https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setu
 apply plugin: 'jacoco'        // code coverage tool
 apply plugin: 'org.sonarqube' // static analysis tool
 
-/* used by sonarqube static analysis */
+/* used by sonarqube static analysis (and git versioning, see top of file) */
 buildscript
 {
     repositories
@@ -257,7 +308,10 @@ buildscript
     }
     dependencies
     {
+        // for static analysis tool sonarqube:
         classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.4'
+        // for ability to use git ids for labeling jar files:
+        classpath 'org.ajoberstar:grgit:1.7.2'
     }
 }
 

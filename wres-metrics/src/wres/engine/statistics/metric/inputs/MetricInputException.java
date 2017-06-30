@@ -1,14 +1,22 @@
 package wres.engine.statistics.metric.inputs;
 
+import wres.engine.statistics.metric.MetricException;
+
 /**
  * A runtime exception associated with incorrect metric input.
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 
-@SuppressWarnings("serial")
-public class MetricInputException extends RuntimeException
+public final class MetricInputException extends MetricException
 {
+
+    /**
+     * Serial identifier.
+     */
+    private static final long serialVersionUID = -382138122319205095L;
 
     /**
      * Constructs an {@link MetricInputException} with no message.

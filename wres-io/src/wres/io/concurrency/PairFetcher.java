@@ -9,7 +9,7 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
  * @author Christopher Tubbs
  *
  */
-public final class PairFetcher extends WRESThread implements Callable<List<PairOfDoubleAndVectorOfDoubles>> {
+public final class PairFetcher extends WRESTask implements Callable<List<PairOfDoubleAndVectorOfDoubles>> {
     
     /**
      * 

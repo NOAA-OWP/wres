@@ -21,7 +21,7 @@ import wres.util.XML;
 public abstract class SpecificationElement
 {
 
-    protected static final String newline = System.lineSeparator();
+    protected static final String NEWLINE = System.lineSeparator();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpecificationElement.class);
 

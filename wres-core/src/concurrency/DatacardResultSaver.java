@@ -5,13 +5,13 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import wres.io.utilities.Database;
 import wres.util.Time;
-import wres.io.concurrency.WRESThread;
+import wres.io.concurrency.WRESTask;
 
 /**
  * @author ctubbs
  *
  */
-public class DatacardResultSaver extends WRESThread implements Runnable {
+public class DatacardResultSaver extends WRESTask implements Runnable {
 
 	/**
 	 * 

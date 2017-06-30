@@ -1,8 +1,7 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.MetricOutput;
 import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
-import wres.engine.statistics.metric.parameters.MetricParameter;
+import wres.engine.statistics.metric.outputs.VectorOutput;
 
 /**
  * <p>
@@ -17,31 +16,41 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
-public final class BrierScore<S extends DiscreteProbabilityPairs, T extends MetricOutput<?>>
-extends
-    MeanSquareError<S, T>
+public final class BrierScore<S extends DiscreteProbabilityPairs, T extends VectorOutput> extends MeanSquareError<S, T>
 implements ProbabilityScore
 {
 
-    @Override
-    public T apply(final S s)
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    public static class BrierScoreBuilder<S extends DiscreteProbabilityPairs, T extends VectorOutput>
+    extends
+        MeanSquareErrorBuilder<S, T>
     {
-        //TODO: implement any required decompositions, based on the instance parameters 
-        return super.apply(s);
+
+        @Override
+        public BrierScore<S, T> build()
+        {
+            return new BrierScore<>(this);
+        }
+
+        @Override
+        public BrierScoreBuilder<S, T> setDecompositionID(final int decompositionID)
+        {
+            super.setDecompositionID(decompositionID);
+            return this;
+        }
+
     }
 
     @Override
-    public void checkParameters(final MetricParameter... par)
+    public int getID()
     {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public String getName()
-    {
-        return "Brier Score";
+        return MetricConstants.BRIER_SCORE;
     }
 
     @Override
@@ -61,14 +70,22 @@ implements ProbabilityScore
     {
         return true;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return false;
+    }    
 
     /**
-     * Protected constructor.
+     * Hidden constructor.
+     * 
+     * @param b the builder
      */
 
-    protected BrierScore()
+    private BrierScore(final BrierScoreBuilder<S, T> b)
     {
-        super();
+        super(b);
     }
 
 }

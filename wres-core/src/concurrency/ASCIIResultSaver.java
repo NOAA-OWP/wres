@@ -2,7 +2,7 @@ package concurrency;
 import java.sql.SQLException;
 import java.util.HashMap;
 
-import wres.io.concurrency.WRESThread;
+import wres.io.concurrency.WRESTask;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 
@@ -10,7 +10,7 @@ import wres.util.Collections;
  * @author ctubbs
  *
  */
-public class ASCIIResultSaver extends WRESThread implements Runnable {
+public class ASCIIResultSaver extends WRESTask implements Runnable {
 	
 	public ASCIIResultSaver(HashMap<Integer, HashMap<String, String[]>> forecasted_values, Integer observationlocation_id)
 	{

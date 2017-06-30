@@ -78,7 +78,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
             measurementQuery.setFetchSize(100);
 
             String loadScript = "SELECT measurementunit_id, unit_name" + System.lineSeparator();
-            loadScript += "FROM wres.measurementunit" + newline;
+            loadScript += "FROM wres.measurementunit" + NEWLINE;
             loadScript += "LIMIT " + getMaxDetails() + ";";
 
             measurements = measurementQuery.executeQuery(loadScript);

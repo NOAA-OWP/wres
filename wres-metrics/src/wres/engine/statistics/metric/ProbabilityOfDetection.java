@@ -1,11 +1,12 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
-import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
  * The Probability of Detection (PoD) measures the fraction of observed occurrences that were hits.
@@ -20,6 +21,22 @@ extends
 implements Score, Collectable<S, MetricOutput<?>, T>
 {
 
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    public static class ProbabilityOfDetectionBuilder<S extends DichotomousPairs, T extends ScalarOutput>
+    implements MetricBuilder<S, T>
+    {
+
+        @Override
+        public ProbabilityOfDetection<S, T> build()
+        {
+            return new ProbabilityOfDetection<>();
+        }
+
+    }
+
     @Override
     public T apply(final S s)
     {
@@ -27,16 +44,27 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public void checkParameters(final MetricParameter... par)
+    public T apply(final MetricOutput<?> output)
     {
-        // TODO Auto-generated method stub
-
+        is2x2ContingencyTable(output, this);
+        final MatrixOutput v = (MatrixOutput)output;
+        final double[][] cm = v.getData().getDoubles();
+        //Metadata
+        final MetricOutputMetadata metIn = output.getMetadata();
+        final MetricOutputMetadata metOut =
+                                  MetadataFactory.getMetadata(metIn.getSampleSize(),
+                                                              metIn.getDimension(),
+                                                              getID(),
+                                                              MetricConstants.MAIN,
+                                                              metIn.getID(),
+                                                              null); 
+        return MetricOutputFactory.ofExtendsScalarOutput(cm[0][0] / (cm[0][0] + cm[1][0]), metOut);
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return "Probability of Detection";
+        return MetricConstants.PROBABILITY_OF_DETECTION;
     }
 
     @Override
@@ -50,16 +78,17 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     {
         return false;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return false;
+    }        
 
     @Override
-    public T apply(final MetricOutput<?> output)
+    public int getDecompositionID()
     {
-        is2x2ContingencyTable(output, this);
-        final MatrixOutput v = (MatrixOutput)output;
-        final double[][] cm = v.getData().getValues();
-        return MetricOutputFactory.getExtendsScalarOutput(cm[0][0] / (cm[0][0] + cm[1][0]),
-                                                          v.getSampleSize(),
-                                                          output.getDimension());
+        return MetricConstants.NONE;
     }
 
     @Override
@@ -69,16 +98,16 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public String getCollectionOf()
+    public int getCollectionOf()
     {
-        return super.getName();
+        return super.getID();
     }
 
     /**
-     * Protected constructor.
+     * Hidden constructor.
      */
 
-    protected ProbabilityOfDetection()
+    private ProbabilityOfDetection()
     {
         super();
     }

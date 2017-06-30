@@ -12,7 +12,7 @@ import javax.annotation.concurrent.GuardedBy;
  * @author Christopher Tubbs
  */
 public final class ForecastDetails {
-	private final static String newline = System.lineSeparator();
+	private final static String NEWLINE = System.lineSeparator();
 	
 	private String sourcePath = null;
 	private String forecastDate = null;
@@ -22,7 +22,7 @@ public final class ForecastDetails {
 	private String creationDate = null;
 	private String range = null;
 	private Integer lead = null;
-	
+
 	/**
 	 * The path to the file that contains data for the forecast
 	 * @param path The path to the forecast file on the file system
@@ -30,7 +30,7 @@ public final class ForecastDetails {
 	public ForecastDetails(String path) {
 		this.sourcePath = path;
 	}
-	
+
 	/**
 	 * Sets the date of when the forecast was generated
 	 * @param forecastDate The value to update the current forecast date with
@@ -52,7 +52,7 @@ public final class ForecastDetails {
 			this.forecast_id = null;
 		}
 	}
-	
+
 	public void setCreationDate(String creationDate)
 	{
 	    if (this.creationDate == null || !this.creationDate.equalsIgnoreCase(creationDate)) {
@@ -100,7 +100,7 @@ public final class ForecastDetails {
 	 * database if it does not currently exist
 	 * @throws Exception Thrown if the ID could not be retrieved from the database
 	 */
-	private void save () throws Exception
+	private void save() throws Exception
 	{
 		String script = "";
 

@@ -1,23 +1,20 @@
 package wres.io.reading;
 
+import java.io.IOException;
+
 /**
  * @author ctubbs
  *
  */
 public class ReaderFactory {
     private ReaderFactory(){}
-
-    /*private static final int MAX_PERMIT = 10;
-    private static final Semaphore availableNonsense = new Semaphore(MAX_PERMIT);*/
-
-
-	public static BasicSource getReader(String filename) throws Exception
+    
+	public static BasicSource getReader(String filename) throws IOException
 	{
 		SourceType type_of_file = getFiletype(filename);
 		
 		BasicSource source = null;
 
-		//availableNonsense.acquire();
 		switch (type_of_file) {
 			case DATACARD:
 				// TODO: Implement new Datacard reader that adheres to new schema
@@ -35,25 +32,11 @@ public class ReaderFactory {
 				break;
 			default:
 				String message = "The file '%s' is not a valid data file.";
-				throw new Exception(String.format(message, filename));
+				throw new IOException(String.format(message, filename));
 		}
-
-		/*if (source != null) {
-			source.setCloseHandler(basicSource -> {
-				availableNonsense.release();
-				System.err.println(System.lineSeparator() + "Reader released from finalizer." + System.lineSeparator());
-			});
-		}*/
-
+		
 		return source;
 	}
-
-	/*public static void releaseReader()
-	{
-		availableNonsense.release();
-		System.err.println(System.lineSeparator() + "Reader released." + System.lineSeparator());
-	}*/
-
 	
 	private static SourceType getFiletype(String filename)
 	{

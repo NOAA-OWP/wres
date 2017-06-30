@@ -1,5 +1,7 @@
 package reading.misc;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.io.reading.BasicSource;
 import wres.io.reading.SourceType;
 import wres.io.utilities.Database;
@@ -25,6 +27,7 @@ import data.caching.Variable;
 @SuppressWarnings("deprecation")
 public class ASCIISource extends BasicSource 
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ASCIISource.class);
     private static final int MAX_INSERTS = 100;
     private Integer observationlocation_id;
     private String variable_name;
@@ -69,7 +72,7 @@ public class ASCIISource extends BasicSource
 	}
 
 	@Override
-	public void saveForecast() throws SQLException {
+	public void saveForecast() throws IOException {
 		Path path = Paths.get(getFilename());
 		
 		try(BufferedReader reader = Files.newBufferedReader(path))
@@ -81,9 +84,20 @@ public class ASCIISource extends BasicSource
 
 			String clear_statement = "DELETE FROM Forecast WHERE source = '%s';";
 			clear_statement = String.format(clear_statement, absolute_path, absolute_path);
-			Database.execute(clear_statement);
-			
-			System.out.println("All previous data for this data source has been removed. Now saving forecast... (" + stopwatch.getFormattedDuration() + ")");
+			try
+            {
+                Database.execute(clear_statement);
+            }
+            catch (SQLException se)
+            {
+                throw new IOException("Failed to save forecast", se);
+            }
+
+            if (LOGGER.isInfoEnabled())
+            {
+                LOGGER.info("All previous data for this data source has been removed. Now saving forecast... ("
+                            + stopwatch.getFormattedDuration() + ")");
+            }
 
 			float current_step = 99999999.9f;
 			String line = "";
@@ -97,45 +111,77 @@ public class ASCIISource extends BasicSource
 				String[] ascii = line.split(" ");
 				float step = Float.parseFloat(ascii[2]);
 				if (current_step > step)
-				{									
-					if (hourly_values.size() > 0)
-					{
-						forecasted_values.put(forecast_id, hourly_values);
-						insert_count++;
-						
-						if (MAX_INSERTS <= insert_count)
-						{
-							insert_count = 0;
-							Runnable worker = new ASCIIResultSaver(forecasted_values, get_observationlocation_id());
-							Executor.execute(worker);
-		                    forecasted_values = new HashMap<>();
-						}
-						
-					}
-					
-					hourly_values = new HashMap<>();
-					forecast_id = create_forecast(line);
+                {
+                    if (hourly_values.size() > 0)
+                    {
+                        forecasted_values.put(forecast_id, hourly_values);
+                        insert_count++;
+
+                        if (MAX_INSERTS <= insert_count)
+                        {
+                            insert_count = 0;
+                            Integer id = null;
+                            try
+                            {
+                                this.get_observationlocation_id();
+                            }
+                            catch (SQLException se)
+                            {
+                                throw new IOException("Failed to get obs id", se);
+                            }
+                            Runnable worker = new ASCIIResultSaver(forecasted_values, id);
+                            Executor.execute(worker);
+                            forecasted_values = new HashMap<>();
+                        }
+
+                    }
+
+                    hourly_values = new HashMap<>();
+                    try
+                    {
+                        forecast_id = create_forecast(line);
+                    }
+                    catch (SQLException se)
+                    {
+                        throw new IOException("Failed to create forecast", se);
+                    }
 				}
 				current_step = step;
 				hourly_values.put(ascii[2].replace(".0", ""), Arrays.copyOfRange(ascii, 3, ascii.length));
 			}
-			
+
 			if (hourly_values.size() > 0)
 			{
 				forecasted_values.put(forecast_id, hourly_values);
-				Runnable worker = new ASCIIResultSaver(forecasted_values, get_observationlocation_id());
+				Integer id = null;
+				try
+                {
+                    id = get_observationlocation_id();
+                }
+                catch (SQLException se)
+                {
+                    throw new IOException("Failed to get obs loc id", se);
+                }
+				Runnable worker = new ASCIIResultSaver(forecasted_values, id);
 				Executor.execute(worker);
 			}
-			
-			Executor.complete();
-			System.out.println("Lines distributed. Currently saving to the database... (" + stopwatch.getFormattedDuration() + ")");
+
+			if (LOGGER.isInfoEnabled())
+            {
+                LOGGER.info("Lines distributed. Currently saving to the database... ("
+                            + stopwatch.getFormattedDuration() + ")");
+            }
 		}
 		catch (IOException exception)
 		{
-			System.err.format("IOException: %s%n", exception);
-		}		
-	}
-	
+			LOGGER.error("While attempting to save forcast", exception);
+		}
+		finally
+        {
+            Executor.complete();
+        }
+    }
+
 	/**
 	 * Parses a line of Tabular ASCII, transforms it into a SQL statement and sends it to the database
 	 * 

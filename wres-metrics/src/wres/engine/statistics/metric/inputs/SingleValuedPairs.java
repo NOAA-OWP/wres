@@ -1,147 +1,176 @@
 package wres.engine.statistics.metric.inputs;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.Dimension;
+import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetricInput;
 
 /**
- * Class for storing verification pairs that comprise single-valued, continuous numerical, predictions and observations.
- * In this context, the designation "single-valued" should not be confused with "deterministic". Rather, it is an input
- * that comprises a single value. Each pair contains a single-valued observation and a corresponding prediction.
+ * Immutable store of verification pairs that comprise single-valued, continuous numerical, predictions and
+ * observations. In this context, the designation "single-valued" should not be confused with "deterministic". Rather,
+ * it is an input that comprises a single value. Each pair contains a single-valued observation and a corresponding
+ * prediction.
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
-public class SingleValuedPairs implements MetricInput<PairOfDoubles>
+public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
 {
 
     /**
      * The verification pairs.
      */
 
-    private final List<PairOfDoubles> pairs;
+    private final List<PairOfDoubles> mainInput;
 
     /**
-     * The baseline pairs.
+     * Metadata associated with the verification pairs.
      */
 
-    private final List<PairOfDoubles> basePairs;
+    private final Metadata mainMeta;
 
     /**
-     * Dimension of the data (must be the same for all datasets).
+     * The verification pairs for a baseline (may be null).
      */
 
-    final Dimension dim;
+    private final List<PairOfDoubles> baselineInput;
 
     /**
-     * Construct the single-valued input without any pairs for a baseline. Throws an exception if the pairs are null or
-     * empty or if any individual pairs do not contain two values.
-     * 
-     * @param pairs2 the verification pairs
-     * @param dim the dimension of the input
-     * @throws MetricInputException if the pairs are invalid
+     * Metadata associated with the baseline verification pairs (may be null).
      */
 
-    protected SingleValuedPairs(final List<PairOfDoubles> pairs2, final Dimension dim)
-    {
-        this(pairs2, null, dim);
-    }
-
-    /**
-     * Construct the single-valued input with a baseline. Throws an exception if the pairs are null or empty or if the
-     * baseline pairs are empty or if any individual pairs do not contain two values. The baseline pairs may be null.
-     * 
-     * @param pairs2 the single-valued pairs
-     * @param basePairs the baseline pairs
-     * @param dim the dimension of the input
-     * @throws MetricInputException if the pairs are invalid
-     */
-
-    protected SingleValuedPairs(final List<PairOfDoubles> pairs2,
-                                final List<PairOfDoubles> basePairs,
-                                final Dimension dim)
-    {
-        //Bounds check
-        Objects.requireNonNull(pairs2, "Specify non-null input for the single-valued pairs.");
-        if(pairs2.isEmpty())
-        {
-            throw new MetricInputException("Provide an input with one or more pairs.");
-        }
-        //Set the stores
-        this.pairs = new ArrayList<>();
-        if(basePairs != null)
-        {
-            //Bounds check
-            if(basePairs.isEmpty())
-            {
-                throw new MetricInputException("Provide a baseline with one or more pairs.");
-            }
-            this.basePairs = new ArrayList<>();
-            //Set the baseline pairs
-            for(final PairOfDoubles pair: basePairs)
-            {
-                this.basePairs.add(pair);
-            }
-        }
-        else
-        {
-            this.basePairs = null;
-        }
-        //Set the pairs
-        for(final PairOfDoubles pair: pairs2)
-        {
-            this.pairs.add(pair);
-        }
-        this.dim = dim;
-    }
+    private final Metadata baselineMeta;
 
     @Override
     public boolean hasBaseline()
     {
-        return basePairs != null;
-    }
-
-    @Override
-    public Dimension getDimension()
-    {
-        return dim;
-    }
-
-    @Override
-    public SingleValuedPairs getBaseline()
-    {
-        SingleValuedPairs returnMe = null;
-        if(hasBaseline())
-        {
-            returnMe = new SingleValuedPairs(basePairs, null, dim);
-        }
-        return returnMe;
+        return !Objects.isNull(baselineInput);
     }
 
     @Override
     public List<PairOfDoubles> getData()
     {
-        return pairs;
+        return Collections.unmodifiableList(mainInput);
     }
 
     @Override
-    public List<PairOfDoubles> getBaselineData()
+    public Metadata getMetadata()
     {
-        return basePairs;
+        return mainMeta;
     }
 
     @Override
-    public int size()
+    public List<PairOfDoubles> getDataForBaseline()
     {
-        return pairs.size();
+        return Collections.unmodifiableList(baselineInput);
     }
 
     @Override
-    public int baseSize()
+    public Metadata getMetadataForBaseline()
     {
-        return basePairs.size();
+        return baselineMeta;
+    }
+
+    /**
+     * A {@link MetricInputBuilder} to build the metric input.
+     */
+
+    public static class SingleValuedPairsBuilder implements MetricInputBuilder<List<PairOfDoubles>>
+    {
+
+        /**
+         * Pairs.
+         */
+        private List<PairOfDoubles> mainInput;
+
+        /**
+         * Pairs for baseline.
+         */
+        private List<PairOfDoubles> baselineInput;
+
+        /**
+         * Metadata for input.
+         */
+
+        private Metadata mainMeta;
+
+        /**
+         * Metadata for baseline.
+         */
+
+        private Metadata baselineMeta;
+
+        @Override
+        public SingleValuedPairsBuilder setData(final List<PairOfDoubles> mainInput)
+        {
+            this.mainInput = mainInput;
+            return this;
+        }
+
+        @Override
+        public SingleValuedPairsBuilder setMetadata(final Metadata mainMeta)
+        {
+            this.mainMeta = mainMeta;
+            return this;
+        }
+
+        @Override
+        public SingleValuedPairsBuilder setDataForBaseline(final List<PairOfDoubles> baselineInput)
+        {
+            this.baselineInput = baselineInput;
+            return this;
+        }
+
+        @Override
+        public SingleValuedPairsBuilder setMetadataForBaseline(final Metadata baselineMeta)
+        {
+            this.baselineMeta = baselineMeta;
+            return this;
+        }
+
+        @Override
+        public SingleValuedPairs build()
+        {
+            return new SingleValuedPairs(this);
+        }
+
+    }
+
+    /**
+     * Construct the single-valued pairs with a builder.
+     * 
+     * @param b the builder
+     * @throws MetricInputException if the pairs are invalid
+     */
+
+    protected SingleValuedPairs(final SingleValuedPairsBuilder b)
+    {
+        //Bounds checks
+        if(Objects.isNull(b.mainMeta))
+        {
+            throw new MetricInputException("Specify non-null metadata for the metric input.");
+        }
+        if(Objects.isNull(b.mainInput))
+        {
+            throw new MetricInputException("Specify a non-null dataset for the metric input.");
+        }
+        if(Objects.isNull(b.baselineInput) != Objects.isNull(b.baselineMeta))
+        {
+            throw new MetricInputException("Specify a non-null baseline input and associated metadata or leave both null.");
+        }
+        if(b.mainInput.contains(null)) {
+            throw new MetricInputException("One or more of the pairs is null.");
+        }
+        if(!Objects.isNull(b.baselineInput) && b.baselineInput.contains(null)) {
+            throw new MetricInputException("One or more of the baseline pairs is null.");
+        }      
+        mainInput = b.mainInput;
+        mainMeta = b.mainMeta;
+        baselineInput = b.baselineInput;
+        baselineMeta = b.baselineMeta;
     }
 }

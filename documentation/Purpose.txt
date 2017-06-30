@@ -1,0 +1,4 @@
+The purpose of this directory is to add documentation for how operations might flow
+or what we expect certain operation to perform or require.
+
+For the time being, this file is just a placeholder.

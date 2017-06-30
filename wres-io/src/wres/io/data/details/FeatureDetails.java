@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.Database;
-import wres.io.utilities.Debug;
 
 /**
  * Defines the important details of a feature as stored in the database
@@ -127,26 +126,26 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 	protected String getInsertSelectStatement() {
 		String script = "";
 		
-		script += "WITH new_feature AS" + newline;
-		script += "(" + newline;
-		script += "		INSERT INTO wres.Feature (lid, feature_name)" + newline;
-		script += "		SELECT '" + lid + "'," + newline;
-		script += "			" + stationName() + newline;
-		script += "		WHERE NOT EXISTS (" + newline;
-		script += "			SELECT 1" + newline;
-		script += "			FROM wres.Feature" + newline;
-		script += "			WHERE lid = '" + lid + "'" + newline;
-		script += "		)" + newline;
-		script += "		RETURNING feature_id" + newline;
-		script += ")" + newline;
-		script += "SELECT feature_id" + newline;
-		script += "FROM new_feature" + newline + newline;
+		script += "WITH new_feature AS" + NEWLINE;
+		script += "(" + NEWLINE;
+		script += "		INSERT INTO wres.Feature (lid, feature_name)" + NEWLINE;
+		script += "		SELECT '" + lid + "'," + NEWLINE;
+		script += "			" + stationName() + NEWLINE;
+		script += "		WHERE NOT EXISTS (" + NEWLINE;
+		script += "			SELECT 1" + NEWLINE;
+		script += "			FROM wres.Feature" + NEWLINE;
+		script += "			WHERE lid = '" + lid + "'" + NEWLINE;
+		script += "		)" + NEWLINE;
+		script += "		RETURNING feature_id" + NEWLINE;
+		script += ")" + NEWLINE;
+		script += "SELECT feature_id" + NEWLINE;
+		script += "FROM new_feature" + NEWLINE + NEWLINE;
 		script += "";
-		script += "UNION" + newline + newline;
+		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT feature_id" + newline;
-		script += "FROM wres.feature" + newline;
-		script += "WHERE lid = '" + lid + "'" + newline;
+		script += "SELECT feature_id" + NEWLINE;
+		script += "FROM wres.feature" + NEWLINE;
+		script += "WHERE lid = '" + lid + "'" + NEWLINE;
 		script += "LIMIT 1;";
 		return script;
 	}
@@ -180,8 +179,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		}
         catch (SQLException error)
 		{
-            Debug.error(LOGGER, "An error was encountered when trying to populate the FeatureDetails cache.");
-            Debug.error(LOGGER, error.getMessage());
+            LOGGER.error("An error was encountered when trying to populate the FeatureDetails cache. ", error);
             throw error;
         }
 		finally
