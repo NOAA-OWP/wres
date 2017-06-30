@@ -1,5 +1,13 @@
 package wres.io.data.caching;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.io.data.details.EnsembleDetails;
+import wres.io.data.details.EnsembleDetails.EnsembleKey;
+import wres.io.utilities.Database;
+import wres.util.Collections;
+import wres.util.Strings;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,15 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import wres.io.data.details.EnsembleDetails;
-import wres.io.data.details.EnsembleDetails.EnsembleKey;
-import wres.util.Collections;
-import wres.io.utilities.Database;
-import wres.io.utilities.Debug;
 
 /**
  * Cached details about Ensembles from the database
@@ -250,8 +249,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
         }
         catch (SQLException error)
         {
-            Debug.error(LOGGER, "An error was encountered when trying to populate the Ensemble cache.");
-            Debug.error(LOGGER, error);
+            LOGGER.error("An error was encountered when trying to populate the Ensemble cache.");
+            LOGGER.error(Strings.getStackTrace(error));
         }
         finally
         {
@@ -263,8 +262,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
                 }
                 catch(SQLException e)
                 {
-                    Debug.error(LOGGER, "An error was encountered when trying to close the result set containing ensemble information.");
-                    Debug.error(LOGGER, e);
+                    LOGGER.error("An error was encountered when trying to close the result set containing ensemble information.");
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
             }
 
@@ -276,8 +275,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
                 }
                 catch(SQLException e)
                 {
-                    Debug.error(LOGGER, "An error was encountered when trying to close the query that loaded ensemble information.");
-                    Debug.error(LOGGER, e);
+                    LOGGER.error("An error was encountered when trying to close the query that loaded ensemble information.");
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
             }
 

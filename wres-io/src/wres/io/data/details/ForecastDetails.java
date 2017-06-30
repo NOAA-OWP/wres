@@ -104,45 +104,45 @@ public final class ForecastDetails {
 	{
 		String script = "";
 
-		script += "WITH new_forecast AS" + newline;
-		script += "(" + newline;
-		script += "		INSERT INTO wres.Forecast(forecast_date, forecasttype_id)" + newline;
-		script += "		SELECT '" + forecastDate + "'," + newline;
+		script += "WITH new_forecast AS" + NEWLINE;
+		script += "(" + NEWLINE;
+		script += "		INSERT INTO wres.Forecast(forecast_date, forecasttype_id)" + NEWLINE;
+		script += "		SELECT '" + forecastDate + "'," + NEWLINE;
 
 		if (this.range == null)
         {
-            script += "     null" + newline;
+            script += "     null" + NEWLINE;
         }
         else
         {
-            script += "     '" + String.valueOf(ForecastTypes.getForecastTypeId(this.range)) + "'" + newline;
+            script += "     '" + String.valueOf(ForecastTypes.getForecastTypeId(this.range)) + "'" + NEWLINE;
         }
 
-		script += "		WHERE NOT EXISTS (" + newline;
-		script += "			SELECT 1" + newline;
-		script += "			FROM wres.Forecast" + newline;
-		script += "			WHERE forecast_date = '" + forecastDate + "'" + newline;
+		script += "		WHERE NOT EXISTS (" + NEWLINE;
+		script += "			SELECT 1" + NEWLINE;
+		script += "			FROM wres.Forecast" + NEWLINE;
+		script += "			WHERE forecast_date = '" + forecastDate + "'" + NEWLINE;
 		script += "				AND forecasttype_id ";
 
 		if (this.range == null)
         {
-            script += "is null" + newline;
+            script += "is null" + NEWLINE;
         }
         else {
-            script += "= '" + String.valueOf(ForecastTypes.getForecastTypeId(this.range)) + "'" + newline;
+            script += "= '" + String.valueOf(ForecastTypes.getForecastTypeId(this.range)) + "'" + NEWLINE;
         }
 
-		script += "		)" + newline;
-		script += "		RETURNING forecast_id" + newline;
-		script += ")" + newline;
-		script += "SELECT forecast_id" + newline;
-		script += "FROM new_forecast" + newline + newline;
+		script += "		)" + NEWLINE;
+		script += "		RETURNING forecast_id" + NEWLINE;
+		script += ")" + NEWLINE;
+		script += "SELECT forecast_id" + NEWLINE;
+		script += "FROM new_forecast" + NEWLINE + NEWLINE;
 		script += "";
-		script += "UNION" + newline + newline;
+		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT forecast_id" + newline;
-		script += "FROM wres.Forecast" + newline;
-		script += "WHERE forecast_date = '" + forecastDate + "'" + newline;
+		script += "SELECT forecast_id" + NEWLINE;
+		script += "FROM wres.Forecast" + NEWLINE;
+		script += "WHERE forecast_date = '" + forecastDate + "'" + NEWLINE;
 		script += "     AND forecasttype_id ";
 
         if (this.range == null)
@@ -187,13 +187,13 @@ public final class ForecastDetails {
         int sourceID = DataSources.getSourceID(sourcePath, getSourceDate(), this.lead);
 
         String script = "";
-        script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + newline;
-        script += "SELECT " + this.forecast_id + ", " + sourceID + newline;
-        script += "WHERE NOT EXISTS (" + newline;
-        script += "     SELECT 1" + newline;
-        script += "     FROM wres.ForecastSource" + newline;
-        script += "     WHERE forecast_id = " + this.forecast_id + newline;
-        script += "         AND source_id = " + sourceID + newline;
+        script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + NEWLINE;
+        script += "SELECT " + this.forecast_id + ", " + sourceID + NEWLINE;
+        script += "WHERE NOT EXISTS (" + NEWLINE;
+        script += "     SELECT 1" + NEWLINE;
+        script += "     FROM wres.ForecastSource" + NEWLINE;
+        script += "     WHERE forecast_id = " + this.forecast_id + NEWLINE;
+        script += "         AND source_id = " + sourceID + NEWLINE;
         script += ");";
 
         //synchronized (ForecastDetails.sourceLock) {

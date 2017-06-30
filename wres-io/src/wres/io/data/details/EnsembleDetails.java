@@ -136,26 +136,26 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	protected String getInsertSelectStatement() {
 		String script = "";
 		
-		script += "WITH new_ensemble AS" + newline;
-		script += "(" + newline;
-		script += "		INSERT INTO wres.Ensemble(ensemble_name, qualifier_id, ensemblemember_id)" + newline;
-		script += "		SELECT '" + ensemble_name + "', " + getQualifierID() + ", " + getEnsembleMemberID() + newline;
-		script += "		WHERE NOT EXISTS (" + newline;
-		script += "			SELECT 1" + newline;
-		script += "			FROM wres.Ensemble" + newline;
-		script += "			WHERE ensemble_name = '" + ensemble_name + "'" + newline;
-		script += "				AND ensemblemember_id = " + getEnsembleMemberID() + newline;
-		script += "		)" + newline;
-		script += "		RETURNING ensemble_id" + newline;
-		script += ")" + newline;
-		script += "SELECT ensemble_id" + newline;
-		script += "FROM new_ensemble" + newline + newline;
+		script += "WITH new_ensemble AS" + NEWLINE;
+		script += "(" + NEWLINE;
+		script += "		INSERT INTO wres.Ensemble(ensemble_name, qualifier_id, ensemblemember_id)" + NEWLINE;
+		script += "		SELECT '" + ensemble_name + "', " + getQualifierID() + ", " + getEnsembleMemberID() + NEWLINE;
+		script += "		WHERE NOT EXISTS (" + NEWLINE;
+		script += "			SELECT 1" + NEWLINE;
+		script += "			FROM wres.Ensemble" + NEWLINE;
+		script += "			WHERE ensemble_name = '" + ensemble_name + "'" + NEWLINE;
+		script += "				AND ensemblemember_id = " + getEnsembleMemberID() + NEWLINE;
+		script += "		)" + NEWLINE;
+		script += "		RETURNING ensemble_id" + NEWLINE;
+		script += ")" + NEWLINE;
+		script += "SELECT ensemble_id" + NEWLINE;
+		script += "FROM new_ensemble" + NEWLINE + NEWLINE;
 		script += "";
-		script += "UNION" + newline + newline;
+		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT ensemble_id" + newline;
-		script += "FROM wres.Ensemble" + newline;
-		script += "WHERE ensemble_name = '" + ensemble_name + "'" + newline;
+		script += "SELECT ensemble_id" + NEWLINE;
+		script += "FROM wres.Ensemble" + NEWLINE;
+		script += "WHERE ensemble_name = '" + ensemble_name + "'" + NEWLINE;
 		script += "		AND ensemblemember_id = " + getEnsembleMemberID() + ";";
 		return script;
 	}

@@ -1,15 +1,12 @@
 package wres.io.reading;
 
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.utilities.Debug;
-
-import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -88,7 +85,7 @@ public class XMLReader
 		        catch (XMLStreamException xse)
 		        {
 		            // not much we can do at this point
-		            Debug.warn(LOGGER,"Exception while closing file {}: {}", this.filename, xse);
+		            LOGGER.warn("Exception while closing file {}: {}", this.filename, xse);
 		        }
 		    }
 		}

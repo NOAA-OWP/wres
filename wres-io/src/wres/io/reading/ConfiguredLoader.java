@@ -41,80 +41,6 @@ public class ConfiguredLoader
         this.datasource = datasource;
         this.lazyLoad = datasource.loadLazily();
     }
-    
-    public int load(){
-        int savedFileCount = loadDataFromDirectories();
-        PIXMLReader.saveLeftoverForecasts();
-        return savedFileCount;
-    }
-    
-    private int loadDataFromDirectories() {
-        int savedFileCount = 0;
-        for (DirectorySpecification directory : datasource.getDirectories()) {
-            if (directory.shouldLoadAllFiles()) {
-                savedFileCount += loadDirectory(directory.getPath());
-            } else {
-                savedFileCount += saveFiles(directory);
-            }
-        }
-        return savedFileCount;
-    }
-    
-    private int loadDirectory(String path)
-    {
-        Path pathToDirectory = Paths.get(path);
-        int loadedCount = 0;
-
-        try (Stream<Path> files = Files.list(pathToDirectory))
-        {
-            for (Object foundPath : files.toArray())
-            {
-                loadedCount += this.saveFile((Path)foundPath);
-            }
-        }
-        catch(IOException exception)
-        {
-            System.err.println("Data with the directory '" + path + "' could not be accessed for loading.");
-            exception.printStackTrace();
-        }
-        return loadedCount;
-    }
-    
-    private int saveFiles(DirectorySpecification directory) {
-        int saveCount = 0;
-        for (FileSpecification file : directory.getFiles()) {
-            saveCount += saveFile(Paths.get(directory.getPath(), file.getPath()));
-        }
-        return saveCount;
-    }
-    
-    private int saveFile(Path filePath)
-    {
-        String absolutePath = filePath.toAbsolutePath().toString();
-        int saveCount = 0;
-        try
-        {
-            if (!this.lazyLoad || !this.dataExists(absolutePath))
-            {
-                BasicSource source = ReaderFactory.getReader(absolutePath);
-                if (datasource.isForecast())
-                {
-                    source.saveForecast();
-                }
-                else
-                    {
-                    source.saveObservation();
-                }
-                saveCount++;
-            }
-        }
-        catch(Exception exception)
-        {
-            System.err.println("The file at: '" + absolutePath + "' could not be loaded.");
-            exception.printStackTrace();
-        }
-        return saveCount;
-    }
 
     /**
      * Ingest data
@@ -174,7 +100,7 @@ public class ConfiguredLoader
         List<Future> results = new ArrayList<>();
 
 
-        for (FileSpecification file : directory.get_files())
+        for (FileSpecification file : directory.getFiles())
         {
             Future f = saveFile(directory.getPath().resolve(file.getPath()));
             if (f != null)

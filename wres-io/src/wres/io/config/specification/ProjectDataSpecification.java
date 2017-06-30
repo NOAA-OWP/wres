@@ -3,18 +3,17 @@
  */
 package wres.io.config.specification;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Arrays;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import wres.io.utilities.Debug;
+import wres.util.Strings;
 import wres.util.XML;
+
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Specifies information about where to load data for a project
@@ -466,7 +465,7 @@ public class ProjectDataSpecification extends SpecificationElement
 	    }
 	    catch(Exception error)
 	    {
-	        Debug.error(LOGGER, error);
+	        LOGGER.error(Strings.getStackTrace(error));
 	        throw error;
 	    }
 	    return ID;

@@ -3,27 +3,26 @@
  */
 package wres.io.config.specification;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.Future;
-
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.PairFetcher;
 import wres.io.grouping.LabeledScript;
 import wres.io.utilities.Database;
-import wres.io.utilities.Debug;
 import wres.util.NullPrintStream;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.XML;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.concurrent.Future;
 
 /**
  * The specification for a metric and the information necessary to retrieve details
@@ -153,7 +152,7 @@ public class MetricSpecification extends SpecificationElement {
 	    }
 	    else
 	    {
-	        Debug.warn(LOGGER, "One of these was null: sourceOne.getVariable().getVariableID()", NullPrintStream.get());
+	        LOGGER.warn("One of these was null: sourceOne.getVariable().getVariableID()", NullPrintStream.get());
 	    }
 	    return variableID;
 	}
@@ -167,7 +166,7 @@ public class MetricSpecification extends SpecificationElement {
 	    }
 	    else
 	    {
-	        Debug.warn(LOGGER, "One of these was null: sourceTwo.getVariable().getVariableID()", NullPrintStream.get());
+	        LOGGER.warn("One of these was null: sourceTwo.getVariable().getVariableID()", NullPrintStream.get());
 	    }
 	    return variableID;
 	}

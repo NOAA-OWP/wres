@@ -33,8 +33,8 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		if (this.maxXIndex == null)
 		{
 			String script = "";
-			script += "SELECT MAX(x_position) AS max_index" + newline;
-			script += "FROM wres.VariablePosition" + newline;
+			script += "SELECT MAX(x_position) AS max_index" + NEWLINE;
+			script += "FROM wres.VariablePosition" + NEWLINE;
 			script += "WHERE variable_id = " + String.valueOf(this.variable_id) + ";";
 
 			try {
@@ -62,8 +62,8 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
         if (this.maxYIndex == null)
         {
             String script = "";
-            script += "SELECT MAX(y_position) AS max_index" + newline;
-            script += "FROM wres.VariablePosition" + newline;
+            script += "SELECT MAX(y_position) AS max_index" + NEWLINE;
+            script += "FROM wres.VariablePosition" + NEWLINE;
             script += "WHERE variable_id = " + String.valueOf(this.variable_id) + ";";
 
             try {
@@ -116,10 +116,10 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 			String partition = "";
 			partition += "CREATE TABLE IF NOT EXISTS partitions.VARIABLEPOSITION_VARIABLE_";
 			partition += this.getId().toString();
-			partition += " ( " + newline;
+			partition += " ( " + NEWLINE;
 			partition += "	CHECK (variable_id = ";
 			partition += this.getId().toString();
-			partition += ")" + newline;
+			partition += ")" + NEWLINE;
 			partition += ") INHERITS (wres.VariablePosition);";
 
 			Database.execute(partition);
@@ -152,21 +152,21 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	public String getInsertSelectStatement() {
 		String script = "";
 		
-		script += "WITH new_variable_id AS" + newline;
-		script += "(" + newline;
-		script += "		INSERT INTO wres.Variable(variable_name, variable_type, measurementunit_id)" + newline;
-		script += "		SELECT '" + variable_name + "'," + newline;
-		script += "			'Double'," + newline;
-		script += "			" + measurementunitId + newline;
-		script += "		WHERE NOT EXISTS (" + newline;
-		script += "			SELECT 1" + newline;
-		script += "			FROM wres.Variable" + newline;
-		script += "			WHERE variable_name = '" + variable_name + "'" + newline;
-		script += "		)" + newline;
-		script += "		RETURNING variable_id" + newline;
-		script += ")" + newline;
-		script += "SELECT variable_id" + newline;
-		script += "FROM new_variable_id" + newline + newline;
+		script += "WITH new_variable_id AS" + NEWLINE;
+		script += "(" + NEWLINE;
+		script += "		INSERT INTO wres.Variable(variable_name, variable_type, measurementunit_id)" + NEWLINE;
+		script += "		SELECT '" + variable_name + "'," + NEWLINE;
+		script += "			'Double'," + NEWLINE;
+		script += "			" + measurementunitId + NEWLINE;
+		script += "		WHERE NOT EXISTS (" + NEWLINE;
+		script += "			SELECT 1" + NEWLINE;
+		script += "			FROM wres.Variable" + NEWLINE;
+		script += "			WHERE variable_name = '" + variable_name + "'" + NEWLINE;
+		script += "		)" + NEWLINE;
+		script += "		RETURNING variable_id" + NEWLINE;
+		script += ")" + NEWLINE;
+		script += "SELECT variable_id" + NEWLINE;
+		script += "FROM new_variable_id" + NEWLINE + NEWLINE;
 		script += "";
 		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";

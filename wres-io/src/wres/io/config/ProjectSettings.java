@@ -2,6 +2,7 @@ package wres.io.config;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,7 @@ import wres.util.XML;
  */
 public final class ProjectSettings extends XMLReader {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProjectSettings.class);
 
     /**
      *  The underlying storage structure for the project configurations

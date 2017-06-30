@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
-import wres.io.utilities.Debug;
 import wres.util.FormattedStopwatch;
 
 import java.io.IOException;

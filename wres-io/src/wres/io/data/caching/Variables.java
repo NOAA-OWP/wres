@@ -1,21 +1,21 @@
 package wres.io.data.caching;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.*;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import wres.io.config.SystemSettings;
 import wres.io.config.specification.FeatureRangeSpecification;
 import wres.io.data.details.VariableDetails;
 import wres.io.utilities.Database;
-import wres.io.utilities.Debug;
+import wres.util.Strings;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author Christopher Tubbs
@@ -129,10 +129,10 @@ public final class Variables extends Cache<VariableDetails, String>
         if (detail.recentlyAdded)
         {
 			StringBuilder builder = new StringBuilder();
-			builder.append("SELECT NOT EXISTS (").append(newline);
-			builder.append("	SELECT 1").append(newline);
-			builder.append("	FROM wres.VariablePosition").append(newline);
-			builder.append("	WHERE variable_id = ").append(variableID).append(newline);
+			builder.append("SELECT NOT EXISTS (").append(NEWLINE);
+			builder.append("	SELECT 1").append(NEWLINE);
+			builder.append("	FROM wres.VariablePosition").append(NEWLINE);
+			builder.append("	WHERE variable_id = ").append(variableID).append(NEWLINE);
 			builder.append(") AS positions_exist;");
 
         	boolean needsPositions = Database.getResult(builder.toString(), "positions_exist");
@@ -158,7 +158,7 @@ public final class Variables extends Cache<VariableDetails, String>
 						builder.append(xIndex);
 						builder.append(DELIMITER);
 						builder.append(yIndex);
-						builder.append(newline);
+						builder.append(NEWLINE);
 						saveCounter++;
 
 						if (saveCounter > SystemSettings.getMaximumCopies())
@@ -268,31 +268,31 @@ public final class Variables extends Cache<VariableDetails, String>
 	    int variableID = this.getID(variableName);
 
 	    String script = "";
-	    script += "SELECT variableposition_id" + newline;
-	    script += "FROM wres.VariablePosition VP" + newline;
+	    script += "SELECT variableposition_id" + NEWLINE;
+	    script += "FROM wres.VariablePosition VP" + NEWLINE;
 	    script += "WHERE variable_id = " + variableID;
 	    
 	    if (range.xMinimum() != null)
 	    {
-	        script += newline;
+	        script += NEWLINE;
 	        script += "    AND x_position >= " + range.xMinimum();
 	    }
 	    
 	    if (range.xMaximum() != null)
 	    {
-	        script += newline;
+	        script += NEWLINE;
 	        script += "    AND x_position <= " + range.xMaximum();
 	    }
 	    
 	    if (range.yMinimum() != null)
 	    {
-	        script += newline;
+	        script += NEWLINE;
             script += "    AND y_position >= " + range.yMinimum();
 	    }
         
         if (range.yMaximum() != null)
         {
-            script += newline;
+            script += NEWLINE;
             script += "    AND y_position <= " + range.yMaximum();
         }
 
@@ -412,8 +412,8 @@ public final class Variables extends Cache<VariableDetails, String>
             }
             catch (SQLException error)
             {
-                Debug.error(LOGGER, "An error was encountered when trying to populate the Variable cache.");
-                Debug.error(LOGGER, error);
+                LOGGER.error("An error was encountered when trying to populate the Variable cache.");
+                LOGGER.error(Strings.getStackTrace(error));
             }
             finally
             {
@@ -425,8 +425,8 @@ public final class Variables extends Cache<VariableDetails, String>
                     }
                     catch(SQLException e)
                     {
-                        Debug.error(LOGGER, "An error was encountered when trying to close the result set containing Variable information.");
-                        Debug.error(LOGGER, e);
+                        LOGGER.error("An error was encountered when trying to close the result set containing Variable information.");
+                        LOGGER.error(Strings.getStackTrace(e));
                     }
                 }
 
@@ -438,8 +438,8 @@ public final class Variables extends Cache<VariableDetails, String>
                     }
                     catch(SQLException e)
                     {
-                        Debug.error(LOGGER, "An error was encountered when trying to close the statement that loaded Variable information.");
-                        Debug.error(LOGGER, e);
+                        LOGGER.error("An error was encountered when trying to close the statement that loaded Variable information.");
+                        LOGGER.error(Strings.getStackTrace(e));
                     }
                 }
 
