@@ -1,7 +1,8 @@
 package wres.engine.statistics.metric;
 
-import wres.engine.statistics.metric.inputs.DiscreteProbabilityPairs;
-import wres.engine.statistics.metric.outputs.VectorOutput;
+import wres.datamodel.metric.DiscreteProbabilityPairs;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.VectorOutput;
 
 /**
  * <p>
@@ -36,7 +37,7 @@ implements ProbabilityScore
         }
 
         @Override
-        public BrierSkillScoreBuilder<S, T> setDecompositionID(final int decompositionID)
+        public BrierSkillScoreBuilder<S, T> setDecompositionID(final MetricConstants decompositionID)
         {
             super.setDecompositionID(decompositionID);
             return this;
@@ -45,7 +46,7 @@ implements ProbabilityScore
     }
 
     @Override
-    public int getID()
+    public MetricConstants getID()
     {
         return MetricConstants.BRIER_SKILL_SCORE;
     }

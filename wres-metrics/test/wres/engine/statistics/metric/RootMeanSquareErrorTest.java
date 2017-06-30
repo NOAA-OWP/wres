@@ -5,11 +5,12 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.RootMeanSquareError.RootMeanSquareErrorBuilder;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
 
 /**
  * Tests the {@link RootMeanSquareError}.
@@ -52,7 +53,7 @@ public final class RootMeanSquareErrorTest
 
         //Check the parameters
         assertTrue("Unexpected name for the Root Mean Square Error.",
-                   mse.getName().equals(MetricConstants.getMetricName(MetricConstants.ROOT_MEAN_SQUARE_ERROR)));
+                   mse.getName().equals(MetadataFactory.getMetricName(MetricConstants.ROOT_MEAN_SQUARE_ERROR)));
         assertTrue("The Root Mean Square Error is not decomposable.", !mse.isDecomposable());
         assertTrue("The Root Mean Square Error is not a skill score.", !mse.isSkillScore());
         assertTrue("Expected no decomposition for the Root Mean Square Error.",

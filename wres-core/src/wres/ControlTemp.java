@@ -25,14 +25,14 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricInputFactory;
+import wres.datamodel.metric.MetricOutputCollection;
+import wres.datamodel.metric.PairException;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.MetricFactory;
-import wres.engine.statistics.metric.inputs.MetricInputFactory;
-import wres.engine.statistics.metric.inputs.PairException;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputCollection;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
@@ -117,7 +117,7 @@ public class ControlTemp
 
         //Build a thread pool that can be terminated upon exception
         final ForkJoinPool f = new ForkJoinPool();
-        
+
         //Sink for the results
         final ConcurrentSkipListMap<Integer, MetricOutputCollection<ScalarOutput>> results =
                                                                                            new ConcurrentSkipListMap<>();
@@ -130,18 +130,18 @@ public class ControlTemp
             // 2. When available, compute the single-valued pairs from them ({observation, ensemble mean})
             // 3. Compute the metrics
             // 4. Do something with the verification results (store them)
-            // 5. Handle exceptions
-            // 6. Monitor progress per lead time
-            final CompletableFuture<Void> c = CompletableFuture.supplyAsync(new PairGetterByLeadTime(config, leadTime),f)
-                                                               .thenApplyAsync(new SingleValuedPairProcessor(),f)
-                                                               .thenApplyAsync(builder.build(),f)
-                                                               .thenAcceptAsync(new ResultProcessor(leadTime, results),f)
-                                                               .thenAcceptAsync(a -> {
-                                                                   if(LOGGER.isInfoEnabled())
-                                                                   {
-                                                                       LOGGER.info("Completed lead time " + leadTime);
-                                                                   }
-                                                               },f);       
+            // 5. Monitor progress per lead time
+            final CompletableFuture<Void> c =
+                                            CompletableFuture.supplyAsync(new PairGetterByLeadTime(config, leadTime), f)
+                                                             .thenApplyAsync(new SingleValuedPairProcessor(), f)
+                                                             .thenApplyAsync(builder.build(), f)
+                                                             .thenAcceptAsync(new ResultProcessor(leadTime, results), f)
+                                                             .thenAcceptAsync(a -> {
+                                                                 if(LOGGER.isInfoEnabled())
+                                                                 {
+                                                                     LOGGER.info("Completed lead time " + leadTime);
+                                                                 }
+                                                             }, f);
 //                                                               .exceptionally(error -> { //Handle exceptions
 //                                                                   LOGGER.error("While computing results at lead time "
 //                                                                       + leadTime + ".", error);
@@ -154,11 +154,16 @@ public class ControlTemp
         //Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
         //Log any exception and append to the error log as the last step
         Exception logged = null;
-        try {
-            doAllOrException(listOfFutures).join(); 
-        } catch(final Exception e) {
+        try
+        {
+            doAllOrException(listOfFutures).join();
+        }
+        catch(final Exception e)
+        {
             logged = e;
-        } finally {
+        }
+        finally
+        {
             //Terminate
             f.shutdownNow(); //or shutdown();
         }
@@ -170,7 +175,8 @@ public class ControlTemp
             LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
         }
         //Print exception to logger last
-        if(!Objects.isNull(logged)) {
+        if(!Objects.isNull(logged))
+        {
             LOGGER.error(logged.getMessage(), logged);
         }
     }
@@ -195,7 +201,7 @@ public class ControlTemp
         //Link the two
         for(final CompletableFuture<?> completableFuture: futures)
         {
-            //When one completes exceptionally, log and then propagate
+            //When one completes exceptionally, propagate
             completableFuture.exceptionally(exception -> {
                 oneExceptional.completeExceptionally(exception);
                 return null;
@@ -216,14 +222,13 @@ public class ControlTemp
         @Override
         public SingleValuedPairs apply(final List<PairOfDoubleAndVectorOfDoubles> t)
         {
-            final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
             final ToDoubleFunction<VectorOfDoubles> mean = FunctionFactory.mean();
             final List<PairOfDoubles> returnMe = new ArrayList<>();
             for(final PairOfDoubleAndVectorOfDoubles nextPair: t)
             {
                 final PairOfDoubles pair =
-                                         valueFactory.pairOf(nextPair.getItemOne(),
-                                                             mean.applyAsDouble(valueFactory.vectorOf(nextPair.getItemTwo())));
+                                         DataFactory.pairOf(nextPair.getItemOne(),
+                                                            mean.applyAsDouble(DataFactory.vectorOf(nextPair.getItemTwo())));
                 returnMe.add(pair);
             }
             return MetricInputFactory.ofSingleValuedPairs(returnMe, MetadataFactory.getMetadata(returnMe.size()));
@@ -353,7 +358,6 @@ public class ControlTemp
     {
         //Construct some single-valued pairs
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
-        final DataFactory dataFactory = DataFactory.instance();
         final double[] ensemble = new double[50];
         //Add 50 members with the same value
         for(int i = 0; i < ensemble.length; i++)
@@ -364,7 +368,7 @@ public class ControlTemp
         for(int i = 0; i < 10000; i++)
         {
             //Add an ensemble forecast
-            values.add(dataFactory.pairOf(5.0, ensemble));
+            values.add(DataFactory.pairOf(5.0, ensemble));
         }
         return values;
     }
@@ -496,9 +500,9 @@ public class ControlTemp
     }
 
     /**
-     * The following method becomes obsolete after refactoring Variables.getVariableID to only throw checked
-     * exceptions such as IOException or SQLException, also when Variables.getVariableID gives a meaningful error
-     * message. Those are the only two justifications for this wrapper method.
+     * The following method becomes obsolete after refactoring Variables.getVariableID to only throw checked exceptions
+     * such as IOException or SQLException, also when Variables.getVariableID gives a meaningful error message. Those
+     * are the only two justifications for this wrapper method.
      * 
      * @param variableName the variable name to look for
      * @param measurementUnitId the targeted measurement unit id

@@ -1,17 +1,5 @@
 package wres.io.concurrency;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.datamodel.DataFactory;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.io.config.specification.MetricSpecification;
-import wres.io.config.specification.ProjectDataSpecification;
-import wres.io.config.specification.ScriptFactory;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.utilities.Database;
-import wres.util.DataModel;
-import wres.util.Strings;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -21,6 +9,19 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.datamodel.DataFactory;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.io.config.specification.MetricSpecification;
+import wres.io.config.specification.ProjectDataSpecification;
+import wres.io.config.specification.ScriptFactory;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.utilities.Database;
+import wres.util.DataModel;
+import wres.util.Strings;
 
 /**
  * A collection of Metrics that may be performed on selected data
@@ -37,7 +38,7 @@ public abstract class Metrics {
     
     private static Map<String, BiFunction<MetricSpecification, Integer, Double>> createDirectFunctionMapping()
     {
-        Map<String, BiFunction<MetricSpecification, Integer, Double>> functions = new TreeMap<>();
+        final Map<String, BiFunction<MetricSpecification, Integer, Double>> functions = new TreeMap<>();
         
         functions.put("correlation_coefficient", createDirectCorrelationCoefficient());
         functions.put("mean_error", createDirectMeanError());
@@ -47,7 +48,7 @@ public abstract class Metrics {
     
     private static Map<String, Function<List<PairOfDoubleAndVectorOfDoubles>, Double>> createFunctionMap()
     {
-        Map<String, Function<List<PairOfDoubleAndVectorOfDoubles>, Double>> functions = new TreeMap<>();
+        final Map<String, Function<List<PairOfDoubleAndVectorOfDoubles>, Double>> functions = new TreeMap<>();
         
         functions.put("mean_error", new MeanError());
         functions.put("correlation_coefficient", new CorrelationCoefficient());
@@ -55,17 +56,17 @@ public abstract class Metrics {
         return functions;
     }
     
-    public static boolean hasFunction(String functionName)
+    public static boolean hasFunction(final String functionName)
     {
         return FUNCTIONS.containsKey(functionName);
     }
     
-    public static boolean hasDirectFunction(String functionName)
+    public static boolean hasDirectFunction(final String functionName)
     {
         return DIRECT_FUNCTIONS.containsKey(functionName);
     }
     
-    public static Double call(MetricSpecification specification, Integer step)
+    public static Double call(final MetricSpecification specification, final Integer step)
     {
         Double result = null;
         
@@ -87,7 +88,7 @@ public abstract class Metrics {
         return result;
     }
     
-    public static Double call(String functionName, List<PairOfDoubleAndVectorOfDoubles> pairs)
+    public static Double call(final String functionName, final List<PairOfDoubleAndVectorOfDoubles> pairs)
     {
         Double result = null;
 
@@ -106,7 +107,7 @@ public abstract class Metrics {
     @Deprecated
 	public static BiFunction<ResultSet, Function<Double, Double>, Double> calculateMeanError()
 	{
-		return (ResultSet dataset, Function<Double, Double> scale_func) -> {
+		return (final ResultSet dataset, final Function<Double, Double> scale_func) -> {
 			Double sum = 0.0;
 			int value_count = 0;
 			Float[] ensemble_values;
@@ -118,12 +119,12 @@ public abstract class Metrics {
 					ensemble_values = (Float[])dataset.getArray("measurements").getArray();
 					observation = dataset.getFloat("measurement")*1.0;
 
-					for (Float ensemble_value : ensemble_values) {
+					for (final Float ensemble_value : ensemble_values) {
 						value_count++;
 						sum += scale_func.apply(ensemble_value * 1.0) - scale_func.apply(observation);
 					}
 				}
-			} catch (SQLException e) {
+			} catch (final SQLException e) {
 			    LOGGER.debug(Strings.getStackTrace(e));
 			}
 			
@@ -131,28 +132,27 @@ public abstract class Metrics {
 		};
 	}
 
-	public static List<PairOfDoubleAndVectorOfDoubles> getPairs(MetricSpecification metricSpecification, int progress) throws Exception {
-        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
-        final DataFactory dataFactory = wres.datamodel.DataFactory.instance();
-
+	public static List<PairOfDoubleAndVectorOfDoubles> getPairs(final MetricSpecification metricSpecification, final int progress) throws Exception {
+        final List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        
         Connection connection = null;
         ResultSet resultingPairs = null;
 
         try
         {
             connection = Database.getConnection();
-            String script = ScriptFactory.generateGetPairData(metricSpecification, progress);            
+            final String script = ScriptFactory.generateGetPairData(metricSpecification, progress);            
 
             resultingPairs = Database.getResults(connection, script);
 
             while (resultingPairs.next())
             {
-                Double observedValue = resultingPairs.getDouble("sourceOneValue");
-                Double[] forecasts = (Double[]) resultingPairs.getArray("measurements").getArray();
-                pairs.add(dataFactory.pairOf(observedValue, forecasts));
+                final Double observedValue = resultingPairs.getDouble("sourceOneValue");
+                final Double[] forecasts = (Double[]) resultingPairs.getArray("measurements").getArray();
+                pairs.add(DataFactory.pairOf(observedValue, forecasts));
             }
         }
-        catch (Exception error)
+        catch (final Exception error)
         {
             LOGGER.error("Pairs could not be retrieved for the following parameters:");
             LOGGER.error("Progress: " + progress);
@@ -177,14 +177,14 @@ public abstract class Metrics {
 	
 	private static BiFunction<MetricSpecification, Integer, Double> createDirectCorrelationCoefficient()
 	{
-	    return (MetricSpecification specification, Integer progress) -> {
+	    return (final MetricSpecification specification, final Integer progress) -> {
 	        Double correlationCoefficient = null;
 	        String script = "";        
 	        try
 	        {
-	            String leadQualifier = specification.getAggregationSpecification().getLeadQualifier(progress);
-	            ProjectDataSpecification sourceOne = specification.getFirstSource();
-	            ProjectDataSpecification sourceTwo = specification.getSecondSource();
+	            final String leadQualifier = specification.getAggregationSpecification().getLeadQualifier(progress);
+	            final ProjectDataSpecification sourceOne = specification.getFirstSource();
+	            final ProjectDataSpecification sourceTwo = specification.getSecondSource();
                 
                 script += "SELECT CORR(O.observed_value * OUC.factor, FV.forecasted_value * UC.factor) AS correlation" + NEWLINE; 
                 script += "FROM wres.Forecast F" + NEWLINE;
@@ -206,7 +206,7 @@ public abstract class Metrics {
                 
                 correlationCoefficient = Database.getResult(script, "correlation");
 	        }
-	        catch (Exception error)
+	        catch (final Exception error)
 	        {
 	            LOGGER.error("An error was encountered");
 	            LOGGER.error("The script was:");
@@ -220,7 +220,7 @@ public abstract class Metrics {
 	
 	private static BiFunction<MetricSpecification, Integer, Double> createDirectMeanError()
 	{
-	    return (MetricSpecification specification, Integer progress) -> {
+	    return (final MetricSpecification specification, final Integer progress) -> {
 	        Double meanError = null;
 	        
 	        String script = "";
@@ -246,7 +246,7 @@ public abstract class Metrics {
 
                 meanError = Database.getResult(script, "mean_error");
             }
-            catch(Exception e)
+            catch(final Exception e)
             {
                 LOGGER.error("An error was encountered");
                 LOGGER.error("The script was:");
@@ -261,17 +261,17 @@ public abstract class Metrics {
 	private static class MeanError implements Function<List<PairOfDoubleAndVectorOfDoubles>, Double>
 	{
 	    @Override
-	    public Double apply(List<PairOfDoubleAndVectorOfDoubles> pairs)
+	    public Double apply(final List<PairOfDoubleAndVectorOfDoubles> pairs)
 	    {
 	        double total = 0.0;
 	        int ensembleCount = 0;
 	        Double mean = null;
 	        
-	        for (PairOfDoubleAndVectorOfDoubles pair : pairs)
+	        for (final PairOfDoubleAndVectorOfDoubles pair : pairs)
 	        {
 	            for (int pairedValue = 0; pairedValue < pair.getItemTwo().length; ++pairedValue)
 	            {
-	                double error = (pair.getItemTwo()[pairedValue] - pair.getItemOne());
+	                final double error = (pair.getItemTwo()[pairedValue] - pair.getItemOne());
 	                total += error;
 	                ensembleCount++;
 	            }
@@ -289,13 +289,13 @@ public abstract class Metrics {
 	private static class CorrelationCoefficient implements Function<List<PairOfDoubleAndVectorOfDoubles>, Double>
 	{
 	    @Override
-	    public Double apply(List<PairOfDoubleAndVectorOfDoubles> pairs)
+	    public Double apply(final List<PairOfDoubleAndVectorOfDoubles> pairs)
 	    {
 	        double CC = 0.0;
 	        
-	        double leftSTD = DataModel.getPairedDoubleStandardDeviation(pairs);
-	        double rightSTD = DataModel.getPairedDoubleVectorStandardDeviation(pairs);
-	        double covariance = DataModel.getCovariance(pairs);
+	        final double leftSTD = DataModel.getPairedDoubleStandardDeviation(pairs);
+	        final double rightSTD = DataModel.getPairedDoubleVectorStandardDeviation(pairs);
+	        final double covariance = DataModel.getCovariance(pairs);
 	        
 	        if (leftSTD != 0 && rightSTD != 0)
 	        {

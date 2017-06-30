@@ -1,8 +1,9 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutput;
-import wres.engine.statistics.metric.inputs.MetricInputException;
 
 /**
  * An interface that allows for a {@link Metric} to be computed from an intermediate {@link MetricOutput}, thereby
@@ -46,5 +47,5 @@ public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>
      * @return the {@link Metric#getID()} of the metric whose output forms the input to this metric
      */
 
-    int getCollectionOf();
+    MetricConstants getCollectionOf();
 }

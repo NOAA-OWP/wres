@@ -4,12 +4,13 @@ import java.util.Objects;
 
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricInputException;
+import wres.datamodel.metric.MetricInputFactory;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
-import wres.engine.statistics.metric.inputs.MetricInputException;
-import wres.engine.statistics.metric.inputs.MetricInputFactory;
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
-import wres.engine.statistics.metric.outputs.VectorOutput;
+import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.VectorOutput;
 
 /**
  * The Mean Square Error (MSE) Skill Score (SS) measures the reduction in MSE associated with one set of predictions
@@ -68,7 +69,7 @@ extends
     }
 
     @Override
-    public int getID()
+    public MetricConstants getID()
     {
         return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE;
     }

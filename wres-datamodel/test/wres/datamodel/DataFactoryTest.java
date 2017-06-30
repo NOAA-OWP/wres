@@ -1,13 +1,12 @@
 package wres.datamodel;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
 
 public class DataFactoryTest
 {
-    private static final wres.datamodel.DataFactory dataFactory =
-        wres.datamodel.DataFactory.instance();
 
     public static final double THRESHOLD = 0.00001;
 
@@ -15,7 +14,7 @@ public class DataFactoryTest
     public void pairOfTest()
     {
         //Reference the constant member for a concrete instance of the factory
-        final PairOfDoubles tuple = dataFactory.pairOf(1.0, 2.0);
+        final PairOfDoubles tuple = DataFactory.pairOf(1.0, 2.0);
         assertNotNull(tuple);
         assertEquals(tuple.getItemOne(), 1.0, THRESHOLD);
         assertEquals(tuple.getItemTwo(), 2.0, THRESHOLD);
@@ -24,8 +23,8 @@ public class DataFactoryTest
     @Test
     public void vectorOfDoublesTest()
     {
-        double[] arrOne = {1.0, 2.0};
-        final VectorOfDoubles doubleVecOne = dataFactory.vectorOf(arrOne);
+        final double[] arrOne = {1.0, 2.0};
+        final VectorOfDoubles doubleVecOne = DataFactory.vectorOf(arrOne);
         assertNotNull(doubleVecOne);
         assertEquals(doubleVecOne.getDoubles()[0], 1.0, THRESHOLD);
         assertEquals(doubleVecOne.getDoubles()[1], 2.0, THRESHOLD);
@@ -34,8 +33,8 @@ public class DataFactoryTest
     @Test
     public void vectorOfDoublesMutationTest()
     {
-        double[] arrOne = {1.0, 2.0};
-        final VectorOfDoubles doubleVecOne = dataFactory.vectorOf(arrOne);
+        final double[] arrOne = {1.0, 2.0};
+        final VectorOfDoubles doubleVecOne = DataFactory.vectorOf(arrOne);
         arrOne[0] = 3.0;
         arrOne[1] = 4.0;
         assertNotNull(doubleVecOne);
@@ -46,9 +45,9 @@ public class DataFactoryTest
     @Test
     public void pairOfVectorsTest()
     {
-        double[] arrOne = {1.0, 2.0, 3.0};
-        double[] arrTwo = {4.0, 5.0};
-        final Pair<VectorOfDoubles,VectorOfDoubles> pair = dataFactory.pairOf(arrOne, arrTwo);
+        final double[] arrOne = {1.0, 2.0, 3.0};
+        final double[] arrTwo = {4.0, 5.0};
+        final Pair<VectorOfDoubles,VectorOfDoubles> pair = DataFactory.pairOf(arrOne, arrTwo);
         assertNotNull(pair);
         assertEquals(pair.getItemOne().getDoubles()[0], 1.0, THRESHOLD);
         assertEquals(pair.getItemOne().getDoubles()[1], 2.0, THRESHOLD);
@@ -60,8 +59,8 @@ public class DataFactoryTest
     @Test
     public void pairOfDoubleAndVectorOfDoublesTest()
     {
-        double[] arrOne = {2.0, 3.0};
-        final PairOfDoubleAndVectorOfDoubles tuple = dataFactory.pairOf(1.0, arrOne);
+        final double[] arrOne = {2.0, 3.0};
+        final PairOfDoubleAndVectorOfDoubles tuple = DataFactory.pairOf(1.0, arrOne);
         assertNotNull(tuple);
         assertEquals(tuple.getItemOne(), 1.0, THRESHOLD);
         assertEquals(tuple.getItemTwo()[0], 2.0, THRESHOLD);
@@ -73,8 +72,8 @@ public class DataFactoryTest
     @Test
     public void pairOfDoubleAndVectorOfDoublesMutationTest()
     {
-        double[] arrOne = {2.0, 3.0};
-        final PairOfDoubleAndVectorOfDoubles tuple = dataFactory.pairOf(1.0, arrOne);
+        final double[] arrOne = {2.0, 3.0};
+        final PairOfDoubleAndVectorOfDoubles tuple = DataFactory.pairOf(1.0, arrOne);
         arrOne[0] = 4.0;
         arrOne[1] = 5.0;
         assertNotNull(tuple);
@@ -86,8 +85,8 @@ public class DataFactoryTest
     @Test
     public void pairOfDoubleAndVectorOfDoublesUsingBoxedMutationTest()
     {
-        Double[] arrOne = {2.0, 3.0};
-        final PairOfDoubleAndVectorOfDoubles tuple = dataFactory.pairOf(1.0, arrOne);
+        final Double[] arrOne = {2.0, 3.0};
+        final PairOfDoubleAndVectorOfDoubles tuple = DataFactory.pairOf(1.0, arrOne);
         assertNotNull(tuple);
 
         // mutate the original array
@@ -104,8 +103,8 @@ public class DataFactoryTest
     @Test
     public void vectorOfBooleanTest()
     {
-        boolean[] arrOne = {false, true};
-        final VectorOfBooleans vec = dataFactory.vectorOf(arrOne);
+        final boolean[] arrOne = {false, true};
+        final VectorOfBooleans vec = DataFactory.vectorOf(arrOne);
         assertEquals(vec.getBooleans()[0], false);
         assertEquals(vec.getBooleans()[1], true);
     }
@@ -113,8 +112,8 @@ public class DataFactoryTest
     @Test
     public void vectorOfBooleanMutationTest()
     {
-        boolean[] arrOne = {false, true};
-        final VectorOfBooleans vec = dataFactory.vectorOf(arrOne);
+        final boolean[] arrOne = {false, true};
+        final VectorOfBooleans vec = DataFactory.vectorOf(arrOne);
         // mutate the values in the original array
         arrOne[0] = true;
         arrOne[1] = false;
@@ -126,9 +125,9 @@ public class DataFactoryTest
     @Test
     public void pairOfBooleansTest()
     {
-        boolean one = true;
-        boolean two = false;
-        final PairOfBooleans bools = dataFactory.pairOf(one, two);
+        final boolean one = true;
+        final boolean two = false;
+        final PairOfBooleans bools = DataFactory.pairOf(one, two);
         assertEquals(true, bools.getItemOne());
         assertEquals(false, bools.getItemTwo());
     }
@@ -138,7 +137,7 @@ public class DataFactoryTest
     {
         boolean one = true;
         boolean two = false;
-        final PairOfBooleans bools = dataFactory.pairOf(one, two);
+        final PairOfBooleans bools = DataFactory.pairOf(one, two);
         one = false;
         two = true;
         assertEquals(true, bools.getItemOne());

@@ -16,7 +16,7 @@ public interface MetricOutputMetadata extends Metadata
      * @return the metric identifier
      */
     
-    public int getMetricID();
+    public MetricConstants getMetricID();
     
     /**
      * Returns an identifier associated with the component of the metric to which the output corresponds. 
@@ -24,7 +24,7 @@ public interface MetricOutputMetadata extends Metadata
      * @return the component identifier
      */
     
-    public int getMetricComponentID();
+    public MetricConstants getMetricComponentID();
     
     /**
      * Allows for an identifier to be associated with a baseline used for computing forecast skill. The identifier

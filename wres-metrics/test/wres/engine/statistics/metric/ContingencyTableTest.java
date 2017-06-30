@@ -5,12 +5,13 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DichotomousPairs;
+import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.ContingencyTable.ContingencyTableBuilder;
-import wres.engine.statistics.metric.inputs.DichotomousPairs;
-import wres.engine.statistics.metric.outputs.MatrixOutput;
-import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 
 /**
  * Tests the {@link ContingencyTable}.
@@ -54,7 +55,7 @@ public final class ContingencyTableTest
             + ".", actual.equals(expected));
 
         //Check the parameters
-        assertTrue(table.getName().equals(MetricConstants.getMetricName(MetricConstants.CONTINGENCY_TABLE)));
+        assertTrue(table.getName().equals(MetadataFactory.getMetricName(MetricConstants.CONTINGENCY_TABLE)));
         //Check the exceptions
         try
         {

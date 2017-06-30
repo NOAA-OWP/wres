@@ -2,6 +2,8 @@ package wres.engine.statistics.metric;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.MetricConstants;
+
 /**
  * Tests the {@link MetricFactory}.
  * 

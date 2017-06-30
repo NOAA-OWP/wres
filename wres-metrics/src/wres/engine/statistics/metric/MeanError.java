@@ -1,7 +1,8 @@
 package wres.engine.statistics.metric;
 
-import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.outputs.ScalarOutput;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 
 /**
  * The mean error applies to continuous variables and is the average signed difference between a single-valued
@@ -38,7 +39,7 @@ public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput
     }
 
     @Override
-    public int getID()
+    public MetricConstants getID()
     {
         return MetricConstants.MEAN_ERROR;
     }
@@ -50,7 +51,7 @@ public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput
     }
 
     @Override
-    public int getDecompositionID()
+    public MetricConstants getDecompositionID()
     {
         return MetricConstants.NONE;
     }
