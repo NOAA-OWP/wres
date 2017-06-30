@@ -1,8 +1,11 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.inputs.SingleValuedPairs;
-import wres.engine.statistics.metric.parameters.MetricParameter;
+import wres.engine.statistics.metric.outputs.MetricOutputFactory;
+import wres.engine.statistics.metric.outputs.VectorOutput;
 
 /**
  * The mean square error (MSE) measures the accuracy of a single-valued predictand. It comprises the average square
@@ -13,20 +16,59 @@ import wres.engine.statistics.metric.parameters.MetricParameter;
  * @version 0.1
  * @since 0.1
  */
-public class MeanSquareError<S extends SingleValuedPairs, T extends MetricOutput<?>> extends DoubleErrorScore<S, T>
+public class MeanSquareError<S extends SingleValuedPairs, T extends VectorOutput>
+extends
+    DecomposableDoubleErrorScore<S, T>
 {
+
+    /**
+     * The decomposition identifier. See {@link MetricConstants#getDecompositionID()}.
+     */
+
+    private final int decompositionID;
 
     @Override
     public T apply(final S s)
     {
-        //TODO: implement any required decompositions, based on the instance parameters  
-        return super.apply(s);
+
+        switch(decompositionID)
+        {
+            case MetricConstants.NONE:
+                return getMSENoDecomp(s);
+            case MetricConstants.CR:
+            case MetricConstants.LBR:
+            case MetricConstants.CR_AND_LBR:
+            default:
+                throw new MetricCalculationException("The Mean Square Error decomposition is not currently "
+                    + "implemented.");
+        }
+
     }
 
-    @Override
-    public void checkParameters(final MetricParameter... par)
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    public static class MeanSquareErrorBuilder<S extends SingleValuedPairs, T extends VectorOutput>
+    implements MetricBuilder<S, T>
     {
-        // TODO Auto-generated method stub
+        /**
+         * The type of metric decomposition. See {@link MetricConstants#getDecompositionID()}.
+         */
+
+        private int decompositionID = MetricConstants.DEFAULT;
+
+        @Override
+        public MeanSquareError<S, T> build()
+        {
+            return new MeanSquareError<>(this);
+        }
+
+        public MeanSquareErrorBuilder<S, T> setDecompositionID(final int decompositionID)
+        {
+            this.decompositionID = decompositionID;
+            return this;
+        }
 
     }
 
@@ -37,9 +79,9 @@ public class MeanSquareError<S extends SingleValuedPairs, T extends MetricOutput
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return "Mean Square Error";
+        return MetricConstants.MEAN_SQUARE_ERROR;
     }
 
     @Override
@@ -47,14 +89,54 @@ public class MeanSquareError<S extends SingleValuedPairs, T extends MetricOutput
     {
         return true;
     }
+    
+    @Override
+    public boolean hasRealUnits()
+    {
+        return true;
+    }        
+
+    @Override
+    public int getDecompositionID()
+    {
+        return decompositionID;
+    }
 
     /**
-     * Protected constructor.
+     * Hidden constructor.
+     * 
+     * @param b the builder
      */
 
-    protected MeanSquareError()
+    protected MeanSquareError(final MeanSquareErrorBuilder<S, T> b)
     {
-        super(FunctionFactory.squareError());
+        if(!Score.isSupportedDecompositionID(b.decompositionID))
+        {
+            throw new IllegalStateException("Unrecognized decomposition identifier: " + b.decompositionID);
+        }
+        this.decompositionID = b.decompositionID;
+    }
+
+    /**
+     * Returns the Mean Square Error without any decomposition.
+     * 
+     * @param s the pairs
+     * @return the mean square error without decomposition.
+     */
+
+    private T getMSENoDecomp(final S s)
+    {
+        final double[] result = new double[]{
+            s.getData().stream().mapToDouble(FunctionFactory.squareError()).average().getAsDouble()};
+        //Metadata
+        final Metadata metIn = s.getMetadata();
+        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
+                                                                        metIn.getDimension(),
+                                                                        getID(),
+                                                                        MetricConstants.MAIN,
+                                                                        metIn.getID(),
+                                                                        null);
+        return MetricOutputFactory.ofExtendsVectorOutput(result, metOut);
     }
 
 }

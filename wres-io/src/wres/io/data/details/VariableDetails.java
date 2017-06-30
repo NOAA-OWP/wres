@@ -79,7 +79,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 
         return this.maxYIndex;
 	}
-	
+
 	/**
 	 * Sets the name of the variable. The ID of the variable is invalidated if its name changes
 	 * @param variable_name The new name of the variable
@@ -168,10 +168,10 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		script += "SELECT variable_id" + newline;
 		script += "FROM new_variable_id" + newline + newline;
 		script += "";
-		script += "UNION" + newline + newline;
+		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT variable_id" + newline;
-		script += "FROM wres.Variable" + newline;
+		script += "SELECT variable_id" + NEWLINE;
+		script += "FROM wres.Variable" + NEWLINE;
 		script += "WHERE variable_name = '" + variable_name + "';";
 		
 		return script;

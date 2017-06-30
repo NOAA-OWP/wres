@@ -8,7 +8,7 @@ import wres.io.reading.ReaderFactory;
  * 
  * @author Christopher Tubbs
  */
-public class ForecastSaver extends WRESThread implements Runnable {
+public class ForecastSaver extends WRESTask implements Runnable {
 
 	/**
 	 * Creates the saver with the given path to a file containing observation data

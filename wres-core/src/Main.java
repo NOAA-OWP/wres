@@ -36,15 +36,9 @@ public class Main {
 
                 FormattedStopwatch watch = new FormattedStopwatch();
                 watch.start();
-				try
-				{
-					MainFunctions.call(operation, args);
-				}
-				catch (Exception e)
-				{
-					e.printStackTrace();
-				}
-				
+
+				MainFunctions.call(operation, args);
+
 				watch.stop();
 				
 				System.out.print("The function '");

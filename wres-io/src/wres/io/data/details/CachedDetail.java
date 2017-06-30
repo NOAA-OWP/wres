@@ -12,7 +12,7 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
     /**
      * System independent definition for a newline string
      */
-	static final String newline = System.lineSeparator();
+	static final String NEWLINE = System.lineSeparator();
 	
 	/**
 	 * @return The key for the value used to access the value

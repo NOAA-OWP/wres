@@ -187,9 +187,9 @@ public class DatacardSource extends BasicSource {
 	}
 
 	@Override
-	public void saveObservation() throws Exception {
+	public void saveObservation() throws IOException {
 		Path path = Paths.get(getFilename());
-		
+
 		try (BufferedReader reader = Files.newBufferedReader(path))
 		{
 			String line = null;
@@ -223,7 +223,7 @@ public class DatacardSource extends BasicSource {
 			else
 			{
 				String message = "The NWS Datacard file ('%s') was not formatted correctly and could not be loaded correctly";
-				throw new Exception(String.format(message, getFilename()));
+				throw new IOException(String.format(message, getFilename()));
 			}
 			
 			if ((line = reader.readLine()) != null)
@@ -237,11 +237,19 @@ public class DatacardSource extends BasicSource {
 			else
 			{
 				String message = "The NWS Datacard file ('%s') was not formatted correctly and could not be loaded correctly";
-				throw new Exception(String.format(message, getFilename()));
+				throw new IOException(String.format(message, getFilename()));
 			}					
-			
-			String observation_id = createObservation();
-			
+
+			String observation_id = null;
+            try
+            {
+                observation_id = createObservation();
+            }
+            catch (SQLException se)
+            {
+                throw new IOException("Could not create observation id.", se);
+            }
+
 			OffsetDateTime datetime = OffsetDateTime.of(get_first_year(), get_first_month(), 1, 0, 0, 0, 0, ZoneOffset.UTC);
 
 			int current_lead = 6;

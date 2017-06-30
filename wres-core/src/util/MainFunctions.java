@@ -2,6 +2,7 @@ package util;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,12 +11,20 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 
 import concurrency.Downloader;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
 import java.util.function.Consumer;
 
 import wres.io.config.ProjectSettings;
 import wres.io.data.caching.Variables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.io.config.Projects;
+import wres.io.config.SystemSettings;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ConfiguredLoader;
 import wres.io.reading.ReaderFactory;
@@ -24,7 +33,8 @@ import wres.io.config.specification.ProjectDataSpecification;
 import wres.io.config.specification.ProjectSpecification;
 
 import java.util.concurrent.Future;
-import wres.io.concurrency.MetricExecutor;
+
+import wres.io.concurrency.MetricTask;
 import wres.io.concurrency.ObservationSaver;
 import wres.io.data.caching.MeasurementUnits;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -38,7 +48,9 @@ import wres.util.*;
  * @author ctubbs
  *
  */
-public final class MainFunctions {
+public final class MainFunctions
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger(MainFunctions.class);
 
 	// Clean definition of the newline character for the system
 	private static final String newline = System.lineSeparator();
@@ -111,10 +123,12 @@ public final class MainFunctions {
 	 *
 	 * @return Method that prints all available commands by name
 	 */
-	private static Consumer<String[]> printCommands () {
+	private static Consumer<String[]> printCommands()
+	{
 		return (String[] args) -> {
 			System.out.println("Available commands are:");
-			for (String command : functions.keySet()) {
+			for (String command : functions.keySet())
+			{
 				System.out.println("\t" + command);
 			}
 		};
@@ -125,7 +139,8 @@ public final class MainFunctions {
 	 *
 	 * @return Method that will attempt to save the file at the given path to the database as forecasts
 	 */
-	private static Consumer<String[]> saveForecast () {
+	private static Consumer<String[]> saveForecast()
+	{
 		return (String[] args) -> {
 			if (args.length > 0) {
 				try {
@@ -147,7 +162,8 @@ public final class MainFunctions {
 					e.printStackTrace();
 				}
 			}
-			else {
+			else
+			{
 				System.out.println("A path is needed to save data. Please pass that in as the first argument.");
 				System.out.println("For now, ensure that the path points towards a tabular ASCII file.");
 				System.out.print("The current directory is:\t");
@@ -161,10 +177,13 @@ public final class MainFunctions {
 	 *
 	 * @return Method that will attempt to save all files in the given directory to the database as forecasts
 	 */
-	private static Consumer<String[]> saveForecasts () {
+	private static Consumer<String[]> saveForecasts()
+	{
 		return (String[] args) -> {
-			if (args.length > 0) {
-				try {
+			if (args.length > 0)
+			{
+				try
+				{
 					String directory = args[0];
 					final File[] files = new File(directory).listFiles((File file) -> {
 						return file.isFile() && file.getName().endsWith(".xml") || file.getName().endsWith("gz") || file.getName().endsWith("nc");
@@ -208,11 +227,13 @@ public final class MainFunctions {
 					System.out.println();
 					System.out.println("All forecast saving operations complete. Please verify data.");
 				}
-				catch (Exception e) {
+				catch (Exception e)
+				{
 					e.printStackTrace();
 				}
 			}
-			else {
+			else
+			{
 				System.out.println("A path to a directory is needed to save data. Please pass that in as the first argument.");
 				System.out.println("usage: saveForecasts <directory path>");
 			}
@@ -224,7 +245,8 @@ public final class MainFunctions {
 	 *
 	 * @return Method that will attempt to save a file to the database as an observation
 	 */
-	private static Consumer<String[]> saveObservation () {
+	private static Consumer<String[]> saveObservation()
+	{
 		return (String[] args) -> {
 			if (args.length > 0) {
 				try {
@@ -233,11 +255,13 @@ public final class MainFunctions {
 					source.saveObservation();
 					System.out.println("Database save operation completed. Please verify data.");
 				}
-				catch (Exception e) {
+				catch (Exception e)
+				{
 					e.printStackTrace();
 				}
 			}
-			else {
+			else
+			{
 				System.out.println("A path is needed to save data. Please pass that in as the first argument.");
 				System.out.println("For now, ensure that the path points towards a datacard file.");
 				System.out.print("The current directory is:\t");
@@ -300,8 +324,9 @@ public final class MainFunctions {
 			}
 		};
 	}
-
-	private static Consumer<String[]> refreshForecasts () {
+	
+	private static Consumer<String[]> refreshForecasts()
+	{
 		return (String[] args) -> {
 			try {
 				System.out.println("");
@@ -347,9 +372,10 @@ public final class MainFunctions {
 	 * @return A method that will display the available processors, the amount of free memory, the amount of maximum memory,
 	 * and the total memory of the system.
 	 */
-	private static Consumer<String[]> systemMetrics () {
+	private static Consumer<String[]> systemMetrics()
+	{
 		return (String[] args) -> {
-			System.out.println(Strings.getSystemStats());
+		    System.out.println(Strings.getSystemStats());
 
 			// Add white space
 			System.out.println();
@@ -362,13 +388,16 @@ public final class MainFunctions {
 	 * @return A method that will read a NetCDF file from the given path and output details about global attributes,
 	 * variable details, variable attributes, and sample data.
 	 */
-	private static Consumer<String[]> describeNetCDF () {
+	private static Consumer<String[]> describeNetCDF()
+	{
 		return (String[] args) -> {
-			if (args.length > 0) {
+			if (args.length > 0)
+			{
 				NetCDFReader reader = new NetCDFReader(args[0]);
 				reader.output_variables();
 			}
-			else {
+			else
+			{
 				System.out.println("A path is needed to describe the data. Please pass that in as the first argument.");
 				System.out.print("The current directory is:\t");
 				System.out.println(System.getProperty("user.dir"));
@@ -383,19 +412,23 @@ public final class MainFunctions {
 	 * the given NetCDF file will be opened and the a value from the optional position for the given variable will be printed to
 	 * the screen.
 	 */
-	private static Consumer<String[]> queryNetCDF () {
+	private static Consumer<String[]> queryNetCDF()
+	{
 		return (String[] args) -> {
-			if (args.length > 1) {
+			if (args.length > 1)
+			{
 				String filename = args[0];
 				String variable_name = args[1];
 				int[] variable_args = new int[args.length - 2];
-				for (int index = 2; index < args.length; ++index) {
-					variable_args[index - 2] = Integer.parseInt(args[index]);
+				for (int index = 2; index < args.length; ++index)
+				{
+					variable_args[index-2] = Integer.parseInt(args[index]);
 				}
 				NetCDFReader reader = new NetCDFReader(filename);
 				reader.print_query(variable_name, variable_args);
 			}
-			else {
+			else
+			{
 				System.out.println("There are not enough parameters to query the netcdf.");
 				System.out.println("usage: queryNetCDF <filename> <variable> [index0, index1,...indexN]");
 			}
@@ -408,7 +441,8 @@ public final class MainFunctions {
 	 * @return A method that will print out details about every found project in the path indicated by the system
 	 * configuration in a more human readable format.
 	 */
-	private static Consumer<String[]> describeProjects () {
+	private static Consumer<String[]> describeProjects()
+	{
 		return (String[] args) -> {
 			System.out.println();
 			System.out.println();
@@ -427,7 +461,8 @@ public final class MainFunctions {
 	 * @return A method that will remove all dynamic forecast, observation, and variable data from the database. Prepares the
 	 * database for a cold start.
 	 */
-	private static Consumer<String[]> flushDatabase () {
+	private static Consumer<String[]> flushDatabase()
+	{
 		return (String[] args) -> {
 			String script = "";
 			script += "TRUNCATE wres.Observation;" + newline;
@@ -455,7 +490,8 @@ public final class MainFunctions {
 	 *
 	 * @return A method that will remove all forecast data from the database.
 	 */
-	private static Consumer<String[]> flushForecasts () {
+	private static Consumer<String[]> flushForecasts()
+	{
 		return (String[] args) -> {
 			String script = "";
 			script += "TRUNCATE wres.ForecastSource;" + newline;
@@ -660,7 +696,8 @@ public final class MainFunctions {
 	 *
 	 * @return A method that will remove all observation data from the database.
 	 */
-	private static Consumer<String[]> flushObservations () {
+	private static Consumer<String[]> flushObservations()
+	{
 		return (String[] args) -> {
 			String script;
 			script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + newline;
@@ -777,7 +814,7 @@ public final class MainFunctions {
 			Database.refreshStatistics();
 		};
 	}
-	
+
 	private static Consumer<String[]> getProjectPairs()
 	{
 	    return (String[] args) -> {
@@ -872,7 +909,7 @@ public final class MainFunctions {
 	                ProgressMonitor.resetMonitor();
 	                System.err.println();
 	            }
-	            
+
 	            System.err.println("All data specified for this project should now be loaded.");
 
 	            if (ingestedFileCount > 0)
@@ -949,4 +986,169 @@ public final class MainFunctions {
 	        }
 	    };
 	}
+
+    private static class ExecuteProject implements Consumer<String[]>
+    {
+        @Override
+        public void accept(String[] args)
+        {
+            if (args.length > 0) {
+                final String projectName = args[0];
+                String metricName = null;
+
+                if (args.length > 1) {
+                    metricName = args[1];
+                }
+
+                final ProjectSpecification project = Projects.getProject(projectName);
+
+                final List<Future> fileIngestTasks = new ArrayList<>();
+
+                try
+                {
+                    for (ProjectDataSpecification datasource : project.getDatasources())
+                    {
+                        LOGGER.info("Loading datasource information if it doesn't already exist...");
+                        final ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
+                        fileIngestTasks.addAll(dataLoader.load());
+                        if (LOGGER.isInfoEnabled())
+                        {
+                            LOGGER.info("Queued " + fileIngestTasks.size()
+                                                + " file(s) for ingest");
+                        }
+                        ProgressMonitor.resetMonitor();
+                    }
+                }
+                catch (IOException ioe)
+                {
+                    LOGGER.error("When trying to ingest files:", ioe);
+                    return;
+                }
+
+                try
+                {
+                    for (Future t : fileIngestTasks)
+                    {
+                        if (t != null)
+                        {
+                            t.get();
+                        }
+                        else
+                        {
+                            LOGGER.debug("Received a null object from ConfiguredLoader");
+                        }
+                    }
+                }
+                catch (InterruptedException ie)
+                {
+                    LOGGER.warn("Interrupted during ingest", ie);
+                    Thread.currentThread().interrupt();
+                }
+                catch (ExecutionException ee)
+                {
+                    LOGGER.error("Execution failed", ee);
+                    return;
+                }
+
+                LOGGER.info("The data from this dataset has been ingested into the database");
+
+                LOGGER.info("All data specified for this project should now be loaded.");
+
+                int maxThreadCount = SystemSettings.maximumThreadCount() / 2;
+                if (maxThreadCount == 0)
+                {
+                    maxThreadCount = 1;
+                }
+
+                // A secondary executor for second-level tasks, should help
+                // avoid the situation where task A is waiting for another
+                // task B in the queue that won't be executed until
+                // tasks in the executor (task A) complete (possible deadlock?)
+                final ExecutorService secondLevelExecutor = Executors.newFixedThreadPool(maxThreadCount);
+
+                final Map<String, List<LeadResult>> results = new TreeMap<>();
+                final Map<String, Future<List<LeadResult>>> futureResults = new TreeMap<>();
+
+                if (metricName == null)
+                {
+                    for (int metricIndex = 0; metricIndex < project.metricCount(); ++metricIndex)
+                    {
+                        final MetricSpecification specification = project.getMetric(metricIndex);
+                        final MetricTask metric = new MetricTask(specification, secondLevelExecutor);
+                        metric.setOnRun(ProgressMonitor.onThreadStartHandler());
+                        metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                        if (LOGGER.isInfoEnabled())
+                        {
+                            LOGGER.info("Now executing the metric named: " + specification.getName());
+                        }
+                        futureResults.put(specification.getName(), Executor.submit(metric));
+                    }
+                }
+                else
+                {
+                    MetricSpecification specification = project.getMetric(metricName);
+
+                    if (specification != null)
+                    {
+                        final MetricTask metric = new MetricTask(specification, secondLevelExecutor);
+                        metric.setOnRun(ProgressMonitor.onThreadStartHandler());
+                        metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                        if (LOGGER.isInfoEnabled())
+                        {
+                            LOGGER.info("Now executing the metric named: " + specification.getName());
+                        }
+                        futureResults.put(specification.getName(), Executor.submit(metric));
+                    }
+                }
+
+                for (Entry<String, Future<List<LeadResult>>> entry : futureResults.entrySet())
+                {
+                    try
+                    {
+                        results.put(entry.getKey(), entry.getValue().get());
+                    }
+                    catch(InterruptedException ie)
+                    {
+                        LOGGER.warn("Interrupted", ie);
+                        secondLevelExecutor.shutdown();
+                        Thread.currentThread().interrupt();
+                    }
+                    catch (ExecutionException e)
+                    {
+                        LOGGER.error("Execution failed", e);
+                        secondLevelExecutor.shutdown();
+                        return;
+                    }
+                }
+
+                secondLevelExecutor.shutdown();
+
+                if (LOGGER.isInfoEnabled())
+                {
+                    LOGGER.info("");
+                    LOGGER.info("Project: {}", projectName);
+                    LOGGER.info("");
+
+                    for (Entry<String, List<LeadResult>> entry : results.entrySet())
+                    {
+                        LOGGER.info("");
+                        LOGGER.info(entry.getKey());
+                        LOGGER.info("--------------------------------------------------------------------------------------");
+
+                        for (LeadResult metricResult : entry.getValue())
+                        {
+                            LOGGER.info(metricResult.getLead() + "\t\t|\t" + metricResult.getResult());
+                        }
+
+                        LOGGER.info("");
+                    }
+                }
+            }
+            else
+            {
+                LOGGER.error("There are not enough arguments to run 'executeProject'");
+                LOGGER.error("usage: executeProject <project name> [<metric name>]");
+            }
+        }
+    }
 }

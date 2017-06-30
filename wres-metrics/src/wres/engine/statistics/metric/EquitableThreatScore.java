@@ -2,12 +2,13 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.inputs.DichotomousPairs;
 import wres.engine.statistics.metric.outputs.MatrixOutput;
 import wres.engine.statistics.metric.outputs.MetricOutputFactory;
 import wres.engine.statistics.metric.outputs.ScalarOutput;
-import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
  * The Equitable Threat Score (ETS) is a dichotomous measure of the fraction of all predicted outcomes that occurred
@@ -24,14 +25,19 @@ implements Score, Collectable<S, MetricOutput<?>, T>
 {
 
     /**
-     * Return a default {@link EquitableThreatScore} function.
-     * 
-     * @return a default {@link EquitableThreatScore} function.
+     * A {@link MetricBuilder} to build the metric.
      */
 
-    public static EquitableThreatScore<DichotomousPairs, ScalarOutput> newInstance()
+    public static class EquitableThreatScoreBuilder<S extends DichotomousPairs, T extends ScalarOutput>
+    implements MetricBuilder<S, T>
     {
-        return new EquitableThreatScore<>();
+
+        @Override
+        public EquitableThreatScore<S, T> build()
+        {
+            return new EquitableThreatScore<>();
+        }
+
     }
 
     @Override
@@ -42,16 +48,28 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public void checkParameters(final MetricParameter... par)
+    public T apply(final MetricOutput<?> output)
     {
-        // TODO Auto-generated method stub
-
+        is2x2ContingencyTable(output, this);
+        final MatrixOutput v = (MatrixOutput)output;
+        final double[][] cm = v.getData().getDoubles();
+        final double t = cm[0][0] + cm[0][1] + cm[1][0];
+        final double hitsRandom = ((cm[0][0] + cm[1][0]) * (cm[0][0] + cm[0][1])) / (t + cm[1][1]);
+        //Metadata
+        final MetricOutputMetadata metIn = output.getMetadata();
+        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
+                                                                        metIn.getDimension(),
+                                                                        getID(),
+                                                                        MetricConstants.MAIN,
+                                                                        metIn.getID(),
+                                                                        null);
+        return MetricOutputFactory.ofExtendsScalarOutput((cm[0][0] - hitsRandom) / (t - hitsRandom), metOut);
     }
 
     @Override
-    public String getName()
+    public int getID()
     {
-        return "Equitable Threat Score";
+        return MetricConstants.EQUITABLE_THREAT_SCORE;
     }
 
     @Override
@@ -67,18 +85,17 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public T apply(final MetricOutput<?> output)
+    public int getDecompositionID()
     {
-        is2x2ContingencyTable(output, this);
-        final MatrixOutput v = (MatrixOutput)output;
-        final double[][] cm = v.getData().getValues();
-        final double t = cm[0][0] + cm[0][1] + cm[1][0];
-        final double hitsRandom = ((cm[0][0] + cm[1][0]) * (cm[0][0] + cm[0][1])) / (t + cm[1][1]);
-        return MetricOutputFactory.getExtendsScalarOutput((cm[0][0] - hitsRandom) / (t - hitsRandom),
-                                                          v.getSampleSize(),
-                                                          null);
+        return MetricConstants.NONE;
     }
 
+    @Override
+    public boolean hasRealUnits()
+    {
+        return false;
+    }        
+    
     @Override
     public MetricOutput<?> getCollectionInput(final S input)
     {
@@ -86,16 +103,16 @@ implements Score, Collectable<S, MetricOutput<?>, T>
     }
 
     @Override
-    public String getCollectionOf()
+    public int getCollectionOf()
     {
-        return super.getName();
+        return super.getID();
     }
 
     /**
-     * Prevent direct construction.
+     * Hidden constructor.
      */
 
-    protected EquitableThreatScore()
+    private EquitableThreatScore()
     {
         super();
     }

@@ -32,7 +32,7 @@ public final class Database {
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
     private static final ComboPooledDataSource CONNECTION_POOL = SystemSettings.getConnectionPool();
-    
+
     private static final String NEWLINE = System.lineSeparator();
 
 	// A thread executor specifically for SQL calls
@@ -101,7 +101,7 @@ public final class Database {
             CONNECTION_POOL.close();
 		}
 	}
-	
+
 	public static Connection getConnection() throws SQLException
 	{
 		Connection connection = null;
@@ -196,7 +196,7 @@ public final class Database {
 		
 		Connection connection = null;
 		PushbackReader reader = null;
-		
+
 		try
 		{
 			connection = getConnection();
@@ -276,7 +276,7 @@ public final class Database {
 		
 		return success;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public static <T> T getResult(final String query, String label) throws SQLException
 	{
@@ -377,6 +377,7 @@ public final class Database {
     
     /**
      * Creates set of results from the given query through the given connection
+	 *
      * @param connection The connection used to connect to the database
      * @param query The text for the query to call
      * @return The results of the query
@@ -384,9 +385,18 @@ public final class Database {
      */
     public static ResultSet getResults(final Connection connection, String query) throws SQLException
     {
+        ResultSet results = null;
         Statement statement = connection.createStatement();
-        statement.setFetchSize(SystemSettings.fetchSize());
+        // statement is purposely left open so that the returned ResultSet is
+        // not closed. We count on c3p0 to magically take care of closing any
+        // open resources when it should?
+		statement.setFetchSize(SystemSettings.fetchSize());
+		results = statement.executeQuery(query);
+        return results; 
+    }
 
-        return statement.executeQuery(query);
+    public static ComboPooledDataSource getPool()
+    {
+        return Database.CONNECTION_POOL;
     }
 }

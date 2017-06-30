@@ -3,6 +3,8 @@
  */
 package wres.io.config.specification;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -72,15 +74,18 @@ public class DirectorySpecification extends SpecificationElement
 	public boolean shouldLoadAllFiles() {
 	    return this.loadAll;
 	}
-	
-	public String getPath() {
-	    String pathToDirectory = null;
+
+	public Path getPath() throws IOException
+	{
 	    Path directoryPath = Paths.get(this.path);
-	    
+
 	    if (Files.exists(directoryPath)) {
-	        pathToDirectory = directoryPath.toAbsolutePath().toString();
+	        return directoryPath;
 	    }
-	    return pathToDirectory;
+	    else
+		{
+			throw new FileNotFoundException(this.path + " was not found");
+		}
 	}
 	
 	/**

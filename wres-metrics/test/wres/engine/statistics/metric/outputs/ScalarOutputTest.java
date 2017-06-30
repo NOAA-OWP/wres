@@ -1,0 +1,135 @@
+package wres.engine.statistics.metric.outputs;
+
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
+import wres.engine.statistics.metric.MetricConstants;
+
+/**
+ * Tests the {@link ScalarOutput}.
+ * 
+ * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
+ */
+public final class ScalarOutputTest
+{
+
+    /**
+     * Constructs a {@link ScalarOutput} and tests for equality with another {@link ScalarOutput}.
+     */
+
+    @Test
+    public void test1Equals()
+    {
+        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    MetricConstants.MAIN,
+                                                                    "A",
+                                                                    null);
+        final MetricOutputMetadata m2 = MetadataFactory.getMetadata(11,
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    MetricConstants.MAIN,
+                                                                    "A",
+                                                                    null);
+        final MetricOutputMetadata m3 = MetadataFactory.getMetadata(10,
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    MetricConstants.MAIN,
+                                                                    "B",
+                                                                    null);
+        final ScalarOutput s = MetricOutputFactory.ofScalarOutput(1.0, m1);
+        final ScalarOutput t = MetricOutputFactory.ofScalarOutput(1.0, m1);
+        assertTrue("Expected equal outputs.", s.equals(t));
+        assertTrue("Expected non-equal outputs.", !s.equals(null));
+        assertTrue("Expected non-equal outputs.", !s.equals(new Double(1.0)));
+        assertTrue("Expected non-equal outputs.", !s.equals(MetricOutputFactory.ofScalarOutput(2.0, m1)));
+        assertTrue("Expected non-equal outputs.", !s.equals(MetricOutputFactory.ofScalarOutput(1.0, m2)));
+        final ScalarOutput q = MetricOutputFactory.ofScalarOutput(1.0, m2);
+        final ScalarOutput r = MetricOutputFactory.ofScalarOutput(1.0, m3);
+        assertTrue("Expected non-equal outputs.", !s.equals(q));
+        assertTrue("Expected equal outputs.", q.equals(q));
+        assertTrue("Expected non-equal outputs.", !q.equals(s));
+        assertTrue("Expected non-equal outputs.", !q.equals(r));
+    }
+
+    /**
+     * Constructs a {@link ScalarOutput} and checks the {@link ScalarOutput#toString()} representation.
+     */
+
+    @Test
+    public void test2ToString()
+    {
+        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    MetricConstants.MAIN,
+                                                                    "A",
+                                                                    null);
+        final ScalarOutput s = new ScalarOutput(1.0, m1);
+        final ScalarOutput t = new ScalarOutput(1.0, m1);
+        assertTrue("Expected equal string representations.", s.toString().equals(t.toString()));
+    }
+
+    /**
+     * Constructs a {@link ScalarOutput} and checks the {@link ScalarOutput#getMetadata()}.
+     */
+
+    @Test
+    public void test3GetMetadata()
+    {
+        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    MetricConstants.MAIN,
+                                                                    "A",
+                                                                    null);
+        final MetricOutputMetadata m2 = MetadataFactory.getMetadata(10,
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    MetricConstants.MAIN,
+                                                                    "B",
+                                                                    null);
+        final ScalarOutput q = MetricOutputFactory.ofScalarOutput(1.0, m1);
+        final ScalarOutput r = MetricOutputFactory.ofScalarOutput(1.0, m2);
+        assertTrue("Unequal metadata.", !q.getMetadata().equals(r.getMetadata()));
+    }
+
+    /**
+     * Constructs a {@link ScalarOutput} and checks the {@link ScalarOutput#hashCode()}.
+     */
+
+    @Test
+    public void test4HashCode()
+    {
+        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    MetricConstants.MAIN,
+                                                                    "A",
+                                                                    null);
+        final MetricOutputMetadata m2 = MetadataFactory.getMetadata(10,
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    MetricConstants.MAIN,
+                                                                    "A",
+                                                                    null);
+        final MetricOutputMetadata m3 = MetadataFactory.getMetadata(10,
+                                                                    MetadataFactory.getDimension(),
+                                                                    MetricConstants.CONTINGENCY_TABLE,
+                                                                    MetricConstants.MAIN,
+                                                                    "B",
+                                                                    null);
+        final ScalarOutput q = MetricOutputFactory.ofScalarOutput(1.0, m1);
+        final ScalarOutput r = MetricOutputFactory.ofScalarOutput(1.0, m2);
+        assertTrue("Expected equal hash codes.", q.hashCode() == r.hashCode());
+        assertTrue("Expected unequal hash codes.",
+                   q.hashCode() != MetricOutputFactory.ofScalarOutput(1.0, m3).hashCode());
+    }
+
+}

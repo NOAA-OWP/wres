@@ -101,7 +101,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	}
 
 	@Override
-	public int compareTo (EnsembleDetails other) {
+	public int compareTo(EnsembleDetails other) {
 		int comparison = this.ensemble_name.compareTo(other.ensemble_name);
 		
 		if (comparison == 0)
@@ -197,32 +197,11 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
             }
 
             if (equality == 0) {
-                if (this.memberIndex == null && other.memberIndex == null)
-                {
-                    equality = 0;
-                }
-                else if (this.memberIndex == null && other.memberIndex != null)
-                {
-                    equality = -1;
-                }
-                else {
-                    equality = this.memberIndex.compareTo(other.getMemberIndex());
-                }
+                equality = this.memberIndex.compareTo(other.getMemberIndex());
             }
-
             if (equality == 0)
             {
-                if (this.qualifierID == null && other.qualifierID == null)
-                {
-                    equality = 0;
-                }
-                else if (this.qualifierID == null && other.qualifierID != null)
-                {
-                    equality = -1;
-                }
-                else {
-                    equality = this.qualifierID.compareTo(other.getQualifierID());
-                }
+                equality = this.qualifierID.compareTo(other.getQualifierID());
             }
             return equality;
         }

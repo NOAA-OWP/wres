@@ -23,7 +23,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 		this.setOutputTime(null);
 		this.setID(null);
 	}
-	
+
 	/**
 	 * Constructor
 	 * @param key A TwoTuple containing, first, the path to the source file and, second, the time
@@ -110,7 +110,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 		script += "SELECT source_id" + newline;
 		script += "FROM new_source" + newline + newline;
 		script += "";
-		script += "UNION" + newline + newline;
+		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
 		script += "SELECT source_id" + newline;
 		script += "FROM wres.Source" + newline;

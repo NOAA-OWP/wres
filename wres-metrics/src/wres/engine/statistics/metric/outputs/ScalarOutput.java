@@ -2,13 +2,16 @@ package wres.engine.statistics.metric.outputs;
 
 import java.util.Objects;
 
-import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputMetadata;
+import wres.engine.statistics.metric.FunctionFactory;
 
 /**
  * A scalar outputs associated with a metric.
  * 
  * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 
 public class ScalarOutput implements MetricOutput<Double>
@@ -21,87 +24,61 @@ public class ScalarOutput implements MetricOutput<Double>
     private final double output;
 
     /**
-     * The dimension associated with the output or null for dimensionless output.
+     * The metadata associated with the output.
      */
 
-    private final Dimension dim;
-
-    /**
-     * The sample size associated with the output.
-     */
-
-    private final int sampleSize;
-
-    /**
-     * Construct a dimensionless output with a sample size.
-     * 
-     * @param output the verification output.
-     * @param sampleSize the sample size
-     */
-
-    public ScalarOutput(final double output, final int sampleSize)
-    {
-        this(output, sampleSize, null);
-    }
-
-    /**
-     * Construct the output.
-     * 
-     * @param output the verification output.
-     * @param sampleSize the sample size
-     * @param dim the dimension.
-     */
-
-    public ScalarOutput(final double output, final int sampleSize, final Dimension dim)
-    {
-        this.output = output;
-        this.sampleSize = sampleSize;
-        this.dim = dim;
-    }
+    private final MetricOutputMetadata meta;
 
     @Override
-    public Dimension getDimension()
+    public MetricOutputMetadata getMetadata()
     {
-        return dim;
-    }
-
-    @Override
-    public boolean isDimensionless()
-    {
-        return dim == null;
+        return meta;
     }
 
     @Override
     public boolean equals(final Object o)
     {
-        boolean start = o instanceof ScalarOutput && !Objects.isNull(o);
-        start = start && Math.abs(((ScalarOutput)o).getData().doubleValue() - output) < .00000001;
-        start = start && ((ScalarOutput)o).sampleSize == sampleSize;
-        start = start && (Objects.isNull(((ScalarOutput)o).dim) == Objects.isNull(dim));
-        return (dim != null) ? start && ((ScalarOutput)o).dim.equals(dim) : start;
+        boolean start = o instanceof ScalarOutput;
+        if(start)
+        {
+            final ScalarOutput v = (ScalarOutput)o;
+            start = meta.equals(v.getMetadata());
+            start = start && FunctionFactory.doubleEquals().test(((ScalarOutput)o).getData(), output);
+        }
+        return start;        
     }
 
     @Override
     public int hashCode()
     {
-        int returnMe = Double.hashCode(output) + Integer.hashCode(sampleSize);
-        if(dim != null)
-        {
-            returnMe = returnMe + dim.hashCode();
-        }
-        return returnMe;
-    }
-
-    @Override
-    public int getSampleSize()
-    {
-        return sampleSize;
+        return Double.hashCode(output) + meta.hashCode();
     }
 
     @Override
     public Double getData()
     {
         return output;
+    }
+
+    @Override
+    public String toString()
+    {
+        return Double.toString(output);
+    }
+
+    /**
+     * Construct the output.
+     * 
+     * @param output the verification output
+     * @param meta the metadata
+     */
+
+    protected ScalarOutput(final double output, final MetricOutputMetadata meta)
+    {
+        Objects.requireNonNull(output,"Specify a non-null output.");
+        Objects.requireNonNull(meta,"Specify non-null metadata.");        
+        this.output = output;
+        this.meta = meta;
     }
 
 }

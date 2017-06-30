@@ -11,6 +11,7 @@ import ucar.nc2.Variable;
 
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.NetCDFValueSaver;
+import wres.io.concurrency.WRESTask;
 import wres.io.concurrency.WRESThread;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
@@ -30,7 +31,7 @@ import wres.util.ProgressMonitor;
  */
 public class NetCDFSource extends BasicSource {
 
-	private class VariableInserter extends WRESThread implements Runnable
+	private class VariableInserter extends WRESTask implements Runnable
 	{
 
 		public VariableInserter(Variable variableToInsert)
@@ -82,13 +83,13 @@ public class NetCDFSource extends BasicSource {
 	}
 	
 	@Override
-	public void saveObservation() throws Exception
+	public void saveObservation() throws IOException
 	{
 		
 	}
 	
 	@Override
-	public void saveForecast() throws Exception
+	public void saveForecast() throws IOException
 	{
 		NetcdfFile source = getSource();
 		Attribute attr = source.findGlobalAttributeIgnoreCase("model_initialization_time");
@@ -291,7 +292,7 @@ public class NetCDFSource extends BasicSource {
     {
         return this.missingValue;
     }
-	
+
 	private String[] fileParts = null;
 	private String range = null;
 	private String data_category = null;

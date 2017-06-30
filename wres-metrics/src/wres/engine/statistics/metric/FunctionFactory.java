@@ -1,8 +1,12 @@
 package wres.engine.statistics.metric;
 
+import java.util.Arrays;
+import java.util.function.BiPredicate;
 import java.util.function.DoubleBinaryOperator;
+import java.util.function.ToDoubleFunction;
 
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.VectorOfDoubles;
 
 /**
  * A factory class for constructing elementary functions.
@@ -63,6 +67,32 @@ public final class FunctionFactory
     public static DoubleBinaryOperator skill()
     {
         return (a, b) -> 1.0 - (a / b);
+    }
+
+    /**
+     * <p>
+     * Return a function that computes the equality of two doubles to 8 d.p.
+     * </p>
+     * 
+     * @return a function that computes the skill
+     */
+
+    public static BiPredicate<Double, Double> doubleEquals()
+    {
+        return (a, b) -> Math.abs(a - b) < .00000001;
+    }
+
+    /**
+     * <p>
+     * Return a function that computes the mean average of a vector of doubles.
+     * </p>
+     * 
+     * @return a function that computes the mean
+     */
+
+    public static ToDoubleFunction<VectorOfDoubles> mean()
+    {
+        return a -> Arrays.stream(a.getDoubles()).average().getAsDouble();
     }
 
     /**
