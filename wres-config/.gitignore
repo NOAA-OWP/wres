@@ -1,0 +1,2 @@
+# All java code in this module should be generated during the build from xsd.
+*.java
