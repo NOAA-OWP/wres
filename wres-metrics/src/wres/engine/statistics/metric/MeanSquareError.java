@@ -1,7 +1,6 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -127,12 +126,12 @@ public class MeanSquareError<S extends SingleValuedPairs> extends DecomposableDo
             s.getData().stream().mapToDouble(FunctionFactory.squareError()).average().getAsDouble()};
         //Metadata
         final Metadata metIn = s.getMetadata();
-        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
-                                                                        metIn.getDimension(),
-                                                                        getID(),
-                                                                        MetricConstants.MAIN,
-                                                                        metIn.getID(),
-                                                                        null);
+        final MetricOutputMetadata metOut = getOutputFactory().getMetadataFactory().getMetadata(metIn.getSampleSize(),
+                                                                                                metIn.getDimension(),
+                                                                                                getID(),
+                                                                                                MetricConstants.MAIN,
+                                                                                                metIn.getID(),
+                                                                                                null);
         return getOutputFactory().ofVectorOutput(result, metOut);
     }
 

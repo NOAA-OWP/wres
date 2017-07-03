@@ -7,7 +7,6 @@ import java.util.stream.IntStream;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
@@ -55,12 +54,12 @@ public final class ContingencyTable<S extends MulticategoryPairs> extends Metric
         //Increment the count in a serial stream as the lambda is stateful
         s.getData().stream().forEach(f);
         final Metadata metIn = s.getMetadata();
-        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(s.getData().size(),
-                                                                        metIn.getDimension(),
-                                                                        getID(),
-                                                                        MetricConstants.MAIN,
-                                                                        metIn.getID(),
-                                                                        null);
+        final MetricOutputMetadata metOut = getOutputFactory().getMetadataFactory().getMetadata(s.getData().size(),
+                                                                                                metIn.getDimension(),
+                                                                                                getID(),
+                                                                                                MetricConstants.MAIN,
+                                                                                                metIn.getID(),
+                                                                                                null);
         return getOutputFactory().ofMatrixOutput(returnMe, metOut);
     }
 

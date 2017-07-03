@@ -26,27 +26,22 @@ public final class MetricInputFactoryTest
     @Test
     public void test1MetricFactory()
     {
-        final Metadata m1 = MetadataFactory.getMetadata(1,
-                                                        MetadataFactory.getDimension(),
-                                                        "Main");       
+        final MetadataFactory metaFac = DefaultMetadataFactory.of();
+        final Metadata m1 = metaFac.getMetadata(1, metaFac.getDimension(), "Main");
         final MetricInputFactory inFac = DefaultMetricInputFactory.of();
         final List<VectorOfBooleans> input = new ArrayList<>();
-        input.add(DataFactory.vectorOf(new boolean[]{true,false}));
-        inFac.ofDichotomousPairs(input,m1);
-        inFac.ofMulticategoryPairs(input,m1);
-        
+        input.add(DataFactory.vectorOf(new boolean[]{true, false}));
+        inFac.ofDichotomousPairs(input, m1);
+        inFac.ofMulticategoryPairs(input, m1);
+
         final List<PairOfDoubles> dInput = new ArrayList<>();
-        dInput.add(DataFactory.pairOf(0.0,1.0)); 
-        final Metadata m2 = MetadataFactory.getMetadata(dInput.size(),
-                                                        MetadataFactory.getDimension(),
-                                                        "Main");
-        final Metadata m3 = MetadataFactory.getMetadata(dInput.size(),
-                                                          MetadataFactory.getDimension(),
-                                                          "Baseline");
-        inFac.ofDiscreteProbabilityPairs(dInput,m2);        
-        inFac.ofDiscreteProbabilityPairs(dInput, dInput,m2,m3);
-        inFac.ofSingleValuedPairs(dInput,m3);
-        inFac.ofSingleValuedPairs(dInput,dInput,m2,m3);
+        dInput.add(DataFactory.pairOf(0.0, 1.0));
+        final Metadata m2 = metaFac.getMetadata(dInput.size(), metaFac.getDimension(), "Main");
+        final Metadata m3 = metaFac.getMetadata(dInput.size(), metaFac.getDimension(), "Baseline");
+        inFac.ofDiscreteProbabilityPairs(dInput, m2);
+        inFac.ofDiscreteProbabilityPairs(dInput, dInput, m2, m3);
+        inFac.ofSingleValuedPairs(dInput, m3);
+        inFac.ofSingleValuedPairs(dInput, dInput, m2, m3);
     }
 
 }

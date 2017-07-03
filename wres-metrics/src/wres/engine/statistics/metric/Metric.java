@@ -75,7 +75,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
 
     public String getName()
     {
-        return MetadataFactory.getMetricName(getID());
+        return getOutputFactory().getMetadataFactory().getMetricName(getID());
     }
 
     /**

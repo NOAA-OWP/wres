@@ -31,21 +31,24 @@ public final class ProbabilityOfFalseDetectionTest
     @Test
     public void test1ProbabilityOfDetection()
     {
+        //Obtain the factories
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData().size(),
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.PROBABILITY_OF_FALSE_DETECTION,
-                                                                    MetricConstants.MAIN,
-                                                                    "Main",
-                                                                    null);
+        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.PROBABILITY_OF_FALSE_DETECTION,
+                                                            MetricConstants.MAIN,
+                                                            "Main",
+                                                            null);
 
         //Build the metric
         final ProbabilityOfFalseDetectionBuilder b =
                                                    new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
         b.setOutputFactory(outF);
         final ProbabilityOfFalseDetection pofd = b.build();
 
@@ -57,14 +60,13 @@ public final class ProbabilityOfFalseDetectionTest
             + ".", actual.equals(expected));
         //Check the parameters
         assertTrue("Unexpected name for the Probability of False Detection.",
-                   pofd.getName()
-                       .equals(MetadataFactory.getMetricName(MetricConstants.PROBABILITY_OF_FALSE_DETECTION)));
+                   pofd.getName().equals(metaFac.getMetricName(MetricConstants.PROBABILITY_OF_FALSE_DETECTION)));
         assertTrue("The Probability of False Detection is not decomposable.", !pofd.isDecomposable());
         assertTrue("The Probability of False Detection is not a skill score.", !pofd.isSkillScore());
         assertTrue("The Probability of False Detection cannot be decomposed.",
                    pofd.getDecompositionID() == MetricConstants.NONE);
         final String expName = metF.ofContingencyTable().getName();
-        final String actName = MetadataFactory.getMetricName(pofd.getCollectionOf());
+        final String actName = metaFac.getMetricName(pofd.getCollectionOf());
         assertTrue("The Probability of False Detection should be a collection of '" + expName
             + "', but is actually a collection of '" + actName + "'.",
                    pofd.getCollectionOf() == metF.ofContingencyTable().getID());

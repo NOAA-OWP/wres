@@ -34,8 +34,9 @@ public final class DiscreteProbabilityPairsTest
         {
             values.add(DataFactory.pairOf(1, 1));
         }       
-        final Metadata meta = MetadataFactory.getMetadata(values.size(),
-                                                          MetadataFactory.getDimension(),
+        final MetadataFactory metaFac = DefaultMetadataFactory.of();
+        final Metadata meta = metaFac.getMetadata(values.size(),
+                                                          metaFac.getDimension(),
                                                           "Main");         
         b.setData(values).setMetadata(meta).build();
     }

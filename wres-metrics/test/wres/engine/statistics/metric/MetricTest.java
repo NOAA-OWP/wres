@@ -59,12 +59,12 @@ public final class MetricTest
         //Build a metric
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
         final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
         b.setOutputFactory(outF);
         final MeanError me = b.build();
 
         //Check for equality of names
-        assertTrue("Unexpected metric name.",
-                   MetadataFactory.getMetricName(MetricConstants.MEAN_ERROR).equals(me.toString()));
+        assertTrue("Unexpected metric name.", metaFac.getMetricName(MetricConstants.MEAN_ERROR).equals(me.toString()));
     }
 
 }

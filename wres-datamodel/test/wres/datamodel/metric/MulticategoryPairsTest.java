@@ -30,22 +30,20 @@ public final class MulticategoryPairsTest
     public void test1MulticategoryPairs()
     {
         final List<VectorOfBooleans> values = new ArrayList<>();
-
+        final MetadataFactory metaFac = DefaultMetadataFactory.of();
         final MulticategoryPairsBuilder b = new MulticategoryPairsBuilder();
 
         for(int i = 0; i < 10; i++)
         {
             values.add(DataFactory.vectorOf(new boolean[]{true, true}));
-        }        
-        final Metadata meta = MetadataFactory.getMetadata(values.size(),
-                                                          MetadataFactory.getDimension(),
-                                                          "Main");         
+        }
+        final Metadata meta = metaFac.getMetadata(values.size(), metaFac.getDimension(), "Main");
         MulticategoryPairs p = b.setData(values).setMetadata(meta).build();
 
         //Check category count
         assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);
         //Check pair count
-        assertTrue("Unexpected pair count at first index [10," + p.getData().size() + "].", p.getData().size() == 10); 
+        assertTrue("Unexpected pair count at first index [10," + p.getData().size() + "].", p.getData().size() == 10);
         //Check category count of two when fully expanded
         final MulticategoryPairsBuilder bn = new MulticategoryPairsBuilder();
         values.clear();
@@ -57,12 +55,12 @@ public final class MulticategoryPairsTest
         //Check dataset count of two
         p = b.setDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
         //Check the addition of a Dimension 
-        assertTrue("Expected dataset count of two [true," + p.hasBaseline() + "].", p.hasBaseline());        
-        final Metadata t = MetadataFactory.getMetadata(10);
+        assertTrue("Expected dataset count of two [true," + p.hasBaseline() + "].", p.hasBaseline());
+        final Metadata t = metaFac.getMetadata(10);
         b.setMetadata(t);
-        p= b.build();
-        assertTrue("Expected non-null metadata.", p.getMetadata().equals(t) );  
-        
+        p = b.build();
+        assertTrue("Expected non-null metadata.", p.getMetadata().equals(t));
+
         //Check the exceptions
         //Duplicate prediction
         try
@@ -87,7 +85,7 @@ public final class MulticategoryPairsTest
         }
         catch(final Exception e)
         {
-        } 
+        }
         //Null pair
         try
         {
@@ -102,7 +100,7 @@ public final class MulticategoryPairsTest
         }
         //Inputs with varying number of categories across pairs
         try
-        { 
+        {
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
             values.clear();
             values.add(DataFactory.vectorOf(new boolean[]{true, false, false, true, false, false}));
@@ -138,7 +136,7 @@ public final class MulticategoryPairsTest
         catch(final Exception e)
         {
         }
- 
+
         //No exception
         try
         {

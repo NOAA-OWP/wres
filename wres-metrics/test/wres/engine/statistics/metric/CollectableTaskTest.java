@@ -37,6 +37,7 @@ public final class CollectableTaskTest
     {
 
         final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
         final MetricFactory metF = MetricFactory.of(outF);
         final ExecutorService pairPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         try
@@ -46,12 +47,12 @@ public final class CollectableTaskTest
             final Collectable<DichotomousPairs, MatrixOutput, ScalarOutput> m = metF.ofCriticalSuccessIndex();
 
             //Metadata for the output
-            final MetricOutputMetadata m1 = MetadataFactory.getMetadata(100,
-                                                                        MetadataFactory.getDimension(),
-                                                                        MetricConstants.CONTINGENCY_TABLE,
-                                                                        MetricConstants.MAIN,
-                                                                        null,
-                                                                        null);
+            final MetricOutputMetadata m1 = metaFac.getMetadata(100,
+                                                                metaFac.getDimension(),
+                                                                MetricConstants.CONTINGENCY_TABLE,
+                                                                MetricConstants.MAIN,
+                                                                null,
+                                                                null);
 
             //Wrap an input in a future
             final FutureTask<MatrixOutput> futureInput = new FutureTask<MatrixOutput>(new Callable<MatrixOutput>()

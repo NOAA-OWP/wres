@@ -10,52 +10,44 @@ import java.util.Objects;
  * @since 0.1
  */
 
-public final class MetadataFactory
+public final class DefaultMetadataFactory implements MetadataFactory
 {
 
     /**
-     * Build a {@link Metadata} object with a sample size and a default {@link Dimension}.
-     * 
-     * @param sampleSize the sample size
-     * @return a {@link Metadata} object
+     * Instance of the factory.
      */
-
-    public static Metadata getMetadata(final int sampleSize)
+    
+    private static MetadataFactory instance = null;
+    
+    /**
+     * Returns an instance of a {@link MetricOutputFactory}.
+     * 
+     * @return a {@link MetricOutputFactory}
+     */
+    
+    public static MetadataFactory of() {
+        if(Objects.isNull(instance)) {
+            instance = new DefaultMetadataFactory();
+        }
+        return instance;
+    }     
+    
+    @Override
+    public Metadata getMetadata(final int sampleSize)
     {
         return getMetadata(sampleSize, getDimension(), null);
     }
 
-    /**
-     * Build a {@link Metadata} object with a sample size and a prescribed {@link Dimension} and identifiers for the
-     * input data and, possible, a baseline (may be null).
-     * 
-     * @param sampleSize the sample size
-     * @param dim the dimension
-     * @param id an identifier associated with the metric data (may be null)
-     * @return a {@link Metadata} object
-     */
-
-    public static Metadata getMetadata(final int sampleSize,
+    @Override
+    public Metadata getMetadata(final int sampleSize,
                                        final Dimension dim,
                                        final String id)
     {
         return new MetadataImpl(sampleSize, dim, id);
     }
 
-    /**
-     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, {@link Dimension}, and identifiers
-     * for the metric and the metric component, as well as the data and baseline data (may be null).
-     * 
-     * @param sampleSize the sample size
-     * @param dim the dimension
-     * @param metricID the metric identifier
-     * @param mainID an identifier associated with the metric data (may be null)
-     * @param baseID an identifier associated with the baseline metric data (may be null)
-     * @param componentID the metric component identifier
-     * @return a {@link MetricOutputMetadata} object
-     */
-
-    public static MetricOutputMetadata getMetadata(final int sampleSize,
+    @Override
+    public MetricOutputMetadata getMetadata(final int sampleSize,
                                                    final Dimension dim,
                                                    final MetricConstants metricID,
                                                    final MetricConstants componentID,
@@ -142,26 +134,14 @@ public final class MetadataFactory
         return new MetricOutputMetadataImpl();
     }
 
-    /**
-     * Returns a {@link Dimension} that is nominally dimensionless.
-     * 
-     * @return a {@link Dimension}
-     */
-
-    public static Dimension getDimension()
+    @Override
+    public Dimension getDimension()
     {
         return getDimension("DIMENSIONLESS");
     }
 
-    /**
-     * Returns a {@link Dimension} with a named dimension and {@link Dimension#hasDimension()} that returns false if the
-     * dimension is "DIMENSIONLESS", true otherwise.
-     * 
-     * @param dimension the dimension string
-     * @return a {@link Dimension}
-     */
-
-    public static Dimension getDimension(final String dimension)
+    @Override
+    public Dimension getDimension(final String dimension)
     {
         class DimensionImpl implements Dimension
         {
@@ -210,14 +190,8 @@ public final class MetadataFactory
         return new DimensionImpl(dimension);
     }
 
-    /**
-     * Returns a metric name for a prescribed metric identifier from this class.
-     * 
-     * @param identifier the metric identifier
-     * @return a metric name for the input identifier
-     */
-
-    public static String getMetricName(final MetricConstants identifier)
+    @Override
+    public String getMetricName(final MetricConstants identifier)
     {
         switch(identifier)
         {
@@ -253,14 +227,8 @@ public final class MetadataFactory
         }
     }
 
-    /**
-     * Returns the name associated with a prescribed metric component from this class, such as a score component.
-     * 
-     * @param identifier the metric component identifier
-     * @return a metric component name for the input identifier
-     */
-
-    public static String getMetricComponentName(final MetricConstants identifier)
+    @Override
+    public String getMetricComponentName(final MetricConstants identifier)
     {
         switch(identifier)
         {
@@ -365,7 +333,7 @@ public final class MetadataFactory
      * No argument constructor.
      */
 
-    private MetadataFactory()
+    private DefaultMetadataFactory()
     {
     };
 

@@ -21,35 +21,34 @@ public final class MatrixOutputTest
     @Test
     public void test1Equals()
     {
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
-        final MetricOutputMetadata m2 = MetadataFactory.getMetadata(11,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
-        final MetricOutputMetadata m3 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "B",
-                                                                    null);
-
         final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final MetadataFactory metaFac = d.getMetadataFactory();
+        final MetricOutputMetadata m1 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "A",
+                                                            null);
+        final MetricOutputMetadata m2 = metaFac.getMetadata(11,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "A",
+                                                            null);
+        final MetricOutputMetadata m3 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "B",
+                                                            null);
+
         final MatrixOutput s = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
         final MatrixOutput t = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
         assertTrue("Expected equal outputs.", s.equals(t));
         assertTrue("Expected non-equal outputs.", !s.equals(null));
         assertTrue("Expected non-equal outputs.", !s.equals(new Double(1.0)));
-        assertTrue("Expected non-equal outputs.",
-                   !s.equals(d.ofMatrixOutput(new double[][]{{2.0}, {1.0}}, m1)));
-        assertTrue("Expected non-equal outputs.",
-                   !s.equals(d.ofMatrixOutput(new double[][]{{2.0}, {1.0}}, m2)));
+        assertTrue("Expected non-equal outputs.", !s.equals(d.ofMatrixOutput(new double[][]{{2.0}, {1.0}}, m1)));
+        assertTrue("Expected non-equal outputs.", !s.equals(d.ofMatrixOutput(new double[][]{{2.0}, {1.0}}, m2)));
         final MatrixOutput q = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m2);
         final MatrixOutput r = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m3);
         final MatrixOutput u = d.ofMatrixOutput(new double[][]{{1.0, 1.0}}, m3);
@@ -71,15 +70,16 @@ public final class MatrixOutputTest
     @Test
     public void test2ToString()
     {
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
         final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final MetadataFactory metaFac = d.getMetadataFactory();
+        final MetricOutputMetadata m1 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "A",
+                                                            null);
         final MatrixOutput s = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
-        final MatrixOutput t = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);        
+        final MatrixOutput t = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
         assertTrue("Expected equal string representations.", s.toString().equals(t.toString()));
     }
 
@@ -90,19 +90,20 @@ public final class MatrixOutputTest
     @Test
     public void test3GetMetadata()
     {
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
-        final MetricOutputMetadata m2 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "B",
-                                                                    null);
         final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final MetadataFactory metaFac = d.getMetadataFactory();
+        final MetricOutputMetadata m1 = d.getMetadataFactory().getMetadata(10,
+                                                                           metaFac.getDimension(),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           "A",
+                                                                           null);
+        final MetricOutputMetadata m2 = d.getMetadataFactory().getMetadata(10,
+                                                                           metaFac.getDimension(),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           "B",
+                                                                           null);
         final MatrixOutput q = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
         final MatrixOutput r = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m2);
         assertTrue("Metadata unequal.", !q.getMetadata().equals(r.getMetadata()));
@@ -115,24 +116,25 @@ public final class MatrixOutputTest
     @Test
     public void test4HashCode()
     {
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
-        final MetricOutputMetadata m2 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
-        final MetricOutputMetadata m3 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "B",
-                                                                    null);
+        final MetadataFactory metaFac = DefaultMetadataFactory.of();
+        final MetricOutputMetadata m1 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "A",
+                                                            null);
+        final MetricOutputMetadata m2 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "A",
+                                                            null);
+        final MetricOutputMetadata m3 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "B",
+                                                            null);
         final MetricOutputFactory d = DefaultMetricOutputFactory.of();
         final MatrixOutput q = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
         final MatrixOutput r = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m2);

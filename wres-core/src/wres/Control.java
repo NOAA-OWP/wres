@@ -322,7 +322,9 @@ public class Control
             // Convert pairs into metric input
             final MetricInputFactory inputFactory = DefaultMetricInputFactory.of();
             final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.of();
-            final SingleValuedPairs input = inputFactory.ofSingleValuedPairs(simplePairs, null);
+            final SingleValuedPairs input = inputFactory.ofSingleValuedPairs(simplePairs,
+                                                                             inputFactory.getMetadataFactory()
+                                                                                         .getMetadata(pairs.size()));
 
             // Create an immutable collection of metrics that consume single-valued pairs
             // and produce a scalar output

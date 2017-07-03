@@ -37,18 +37,19 @@ public final class BrierSkillScoreTest
         //Build the metric
         final BrierSkillScoreBuilder b = new BrierSkillScore.BrierSkillScoreBuilder();
         final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
         b.setOutputFactory(outF);
         b.setDecompositionID(MetricConstants.NONE);
 
         final BrierSkillScore bss = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData().size(),
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.BRIER_SKILL_SCORE,
-                                                                    MetricConstants.MAIN,
-                                                                    "Main",
-                                                                    "Baseline");
+        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.BRIER_SKILL_SCORE,
+                                                            MetricConstants.MAIN,
+                                                            "Main",
+                                                            "Baseline");
 
         //Check the results 
         final VectorOutput actual = bss.apply(input);
@@ -57,7 +58,7 @@ public final class BrierSkillScoreTest
             + ".", actual.equals(expected));
         //Check the parameters
         assertTrue("Unexpected name for the Brier Skill Score.",
-                   bss.getName().equals(MetadataFactory.getMetricName(MetricConstants.BRIER_SKILL_SCORE)));
+                   bss.getName().equals(metaFac.getMetricName(MetricConstants.BRIER_SKILL_SCORE)));
         assertTrue("The Brier Skill Score is decomposable.", bss.isDecomposable());
         assertTrue("The Brier Skill Score is a skill score.", bss.isSkillScore());
         assertTrue("Expected no decomposition for the Brier Skill Score.",

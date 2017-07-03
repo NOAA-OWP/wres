@@ -31,20 +31,23 @@ public final class ProbabilityOfDetectionTest
     @Test
     public void test1ProbabilityOfDetection()
     {
+        //Obtain the factories
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData().size(),
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.PROBABILITY_OF_DETECTION,
-                                                                    MetricConstants.MAIN,
-                                                                    "Main",
-                                                                    null);
+        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.PROBABILITY_OF_DETECTION,
+                                                            MetricConstants.MAIN,
+                                                            "Main",
+                                                            null);
 
         //Build the metric
         final ProbabilityOfDetectionBuilder b = new ProbabilityOfDetection.ProbabilityOfDetectionBuilder();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
         b.setOutputFactory(outF);
         final ProbabilityOfDetection pod = b.build();
 
@@ -56,13 +59,13 @@ public final class ProbabilityOfDetectionTest
             + ".", actual.equals(expected));
         //Check the parameters
         assertTrue("Unexpected name for the Probability of Detection.",
-                   pod.getName().equals(MetadataFactory.getMetricName(MetricConstants.PROBABILITY_OF_DETECTION)));
+                   pod.getName().equals(metaFac.getMetricName(MetricConstants.PROBABILITY_OF_DETECTION)));
         assertTrue("The Probability of Detection is not decomposable.", !pod.isDecomposable());
         assertTrue("The Probability of Detection is not a skill score.", !pod.isSkillScore());
         assertTrue("The Probability of Detection cannot be decomposed.",
                    pod.getDecompositionID() == MetricConstants.NONE);
         final String expName = metF.ofContingencyTable().getName();
-        final String actName = MetadataFactory.getMetricName(pod.getCollectionOf());
+        final String actName = metaFac.getMetricName(pod.getCollectionOf());
         assertTrue("The Probability of Detection should be a collection of '" + expName
             + "', but is actually a collection of '" + actName + "'.",
                    pod.getCollectionOf() == metF.ofContingencyTable().getID());
