@@ -1,10 +1,4 @@
-/**
- * 
- */
 package wres.datamodel.metric;
-
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetricInput;
 
 /**
  * An abstract builder for building an immutable {@link MetricInput} with associated {@link Metadata}.

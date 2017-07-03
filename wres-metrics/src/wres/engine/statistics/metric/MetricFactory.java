@@ -21,7 +21,7 @@ import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
  * @since 0.1
  */
 
-public final class MetricFactory
+public class MetricFactory
 {
 
     /**
@@ -43,7 +43,7 @@ public final class MetricFactory
      * @return a {@link MetricFactory}
      */
 
-    public static MetricFactory of(final MetricOutputFactory outputFactory)
+    public static MetricFactory getInstance(final MetricOutputFactory outputFactory)
     {
         //Lazy construction
         if(Objects.isNull(instance))

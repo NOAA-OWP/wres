@@ -33,7 +33,7 @@ public final class CriticalSuccessIndexTest
     {
 
         //Obtain the factories
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
@@ -54,7 +54,7 @@ public final class CriticalSuccessIndexTest
 
         //Check the results
         final ScalarOutput actual = csi.apply(input);
-        final MetricFactory metF = MetricFactory.of(outF);
+        final MetricFactory metF = MetricFactory.getInstance(outF);
         final ScalarOutput expected = outF.ofScalarOutput(0.5734265734265734, m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));

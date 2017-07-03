@@ -10,7 +10,7 @@ import java.util.Objects;
  * @since 0.1
  */
 
-public final class DefaultMetadataFactory implements MetadataFactory
+public class DefaultMetadataFactory implements MetadataFactory
 {
 
     /**
@@ -25,7 +25,7 @@ public final class DefaultMetadataFactory implements MetadataFactory
      * @return a {@link MetricOutputFactory}
      */
     
-    public static MetadataFactory of() {
+    public static MetadataFactory getInstance() {
         if(Objects.isNull(instance)) {
             instance = new DefaultMetadataFactory();
         }

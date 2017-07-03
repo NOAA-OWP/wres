@@ -62,7 +62,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     @Override
     public SingleValuedPairs getBaselineData()
     {
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
         return metIn.ofSingleValuedPairs(baselineInput, baselineMeta);
     }    
 
