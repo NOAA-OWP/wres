@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:jaxb="http://java.sun.com/xml/ns/jaxb"
+           jaxb:version="2.1"
+           elementFormDefault="qualified">
+
+    <xs:complexType name="datasource">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="DataSourceConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="type" type="xs:string" />
+
+            <xs:element name="source" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:anyURI">
+                            <xs:attribute name="format" type="xs:string" />
+                            <xs:attribute name="unit" type="xs:string" />
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="variable">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:string">
+                            <xs:attribute name="label" type="xs:string" />
+                            <xs:attribute name="unit" type="xs:string" />
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="conditions" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="dates" minOccurs="0" maxOccurs="1">
+                            <xs:complexType>
+                                <!-- xs:dateTime ends up being yucky XMLGregorianCalendar. Use string, let app deal with it. -->
+                                <xs:attribute name="earliest" type="xs:string" />
+                                <xs:attribute name="latest" type="xs:string" />
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="values" minOccurs="0" maxOccurs="1">
+                            <xs:complexType>
+                                <xs:attribute name="minimum" type="xs:double" />
+                                <xs:attribute name="maximum" type="xs:double" />
+                            </xs:complexType>
+                        </xs:element>
+
+                        <xs:element name="feature" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:attribute name="label" type="xs:string" />
+                                <xs:attribute name="lid" type="xs:string" />
+                                <xs:attribute name="comid" type="xs:string" />
+                                <xs:attribute name="gage_id" type="xs:string" />
+                                <xs:attribute name="huc" type="xs:string" />
+                                <xs:attribute name="name" type="xs:string" />
+                                <xs:attribute name="exclude" type="xs:boolean" default="false" />
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="ensemble" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:attribute name="label" type="xs:string" />
+                                <xs:attribute name="name" type="xs:string" />
+                                <xs:attribute name="member_id" type="xs:string" />
+                                <xs:attribute name="qualifier" type="xs:string" />
+                                <xs:attribute name="exclude" type="xs:boolean" default="false" />
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="label" type="xs:string" />
+    </xs:complexType>
+    <xs:complexType name="metric">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="MetricConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="label" type="xs:string" />
+                <xs:attribute name="unit" type="xs:string" />
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="destination">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="DestinationConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:simpleContent>
+            <xs:extension base="xs:anyURI">
+                <!--
+                <xs:attribute name="type" type="xs:string">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="text" />
+                            <xs:enumeration value="graphics"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+                -->
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="aggregation">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="AggregationConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:attribute name="label" type="xs:string" />
+        <xs:attribute name="unit" type="xs:string" />
+        <xs:attribute name="type" type="xs:string" />
+        <xs:attribute name="range" type="xs:integer" />
+    </xs:complexType>
+
+    <xs:complexType name="pair">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="PairConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:sequence>
+            <!--
+            <xs:element name="baseline_variable" type="xs:string" minOccurs="0" maxOccurs="1" />
+            <xs:element name="aggregation" type="aggregation" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="grouping" type="xs:string" />-->
+        </xs:sequence>
+        <xs:attribute name="label" type="xs:string" />
+        <xs:attribute name="unit" type="xs:string" />
+    </xs:complexType>
+
+    <xs:element name="project">
+        <xs:complexType>
+
+            <!-- for class naming using xjc-->
+            <xs:annotation>
+                <xs:appinfo>
+                    <jaxb:class name="ProjectConfig" />
+                </xs:appinfo>
+            </xs:annotation>
+
+            <xs:sequence>
+
+                <xs:element name="datasources">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="left" type="datasource" />
+                            <xs:element name="right" type="datasource" />
+                            <xs:element name="baseline" type="datasource" minOccurs="0" maxOccurs="1" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+
+                <xs:element name="pair" type="pair" minOccurs="0" maxOccurs="1"/>
+
+                <xs:element name="outputs">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="metric" type="metric" minOccurs="0" maxOccurs="unbounded"/>
+                            <xs:element name="destination" type="destination" minOccurs="0" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+
+            </xs:sequence>
+
+            <xs:attribute name="label" type="xs:string" />
+
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>
