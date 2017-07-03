@@ -3,7 +3,6 @@ package wres.engine.statistics.metric;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -17,13 +16,11 @@ import wres.datamodel.metric.SingleValuedPairs;
  * @version 0.1
  * @since 0.1
  */
-public final class RootMeanSquareError<S extends SingleValuedPairs, T extends ScalarOutput>
-extends
-    DoubleErrorScore<S, T>
+public final class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
 {
 
     @Override
-    public T apply(final S t)
+    public ScalarOutput apply(final SingleValuedPairs t)
     {
         //Metadata
         final Metadata metIn = t.getMetadata();
@@ -33,25 +30,7 @@ extends
                                                                         MetricConstants.MAIN,
                                                                         metIn.getID(),
                                                                         null);
-        return MetricOutputFactory.ofExtendsScalarOutput(Math.pow(super.apply(t).getData(), 0.5),
-                                                         metOut);
-    }
-
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class RootMeanSquareErrorBuilder<S extends SingleValuedPairs, T extends ScalarOutput>
-    extends
-        DoubleErrorScoreBuilder<S, T>
-    {
-
-        @Override
-        public RootMeanSquareError<S, T> build()
-        {
-            return new RootMeanSquareError<>(this);
-        }
-
+        return getOutputFactory().ofScalarOutput(Math.pow(super.apply(t).getData(), 0.5), metOut);
     }
 
     @Override
@@ -65,12 +44,12 @@ extends
     {
         return false;
     }
-    
+
     @Override
     public boolean hasRealUnits()
     {
         return true;
-    }        
+    }
 
     @Override
     public MetricConstants getDecompositionID()
@@ -85,12 +64,27 @@ extends
     }
 
     /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    protected static class RootMeanSquareErrorBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
+    {
+
+        @Override
+        protected RootMeanSquareError build()
+        {
+            return new RootMeanSquareError(this);
+        }
+
+    }
+
+    /**
      * Hidden constructor.
      * 
      * @param b the builder
      */
 
-    private RootMeanSquareError(final RootMeanSquareErrorBuilder<S, T> b)
+    private RootMeanSquareError(final RootMeanSquareErrorBuilder b)
     {
         super(b.setErrorFunction(FunctionFactory.squareError()));
     }

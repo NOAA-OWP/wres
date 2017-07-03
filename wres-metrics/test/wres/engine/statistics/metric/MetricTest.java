@@ -4,10 +4,10 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.engine.statistics.metric.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
 import wres.engine.statistics.metric.MeanError.MeanErrorBuilder;
 
@@ -30,14 +30,16 @@ public final class MetricTest
     {
 
         //Build a metric
-        final MeanErrorBuilder<SingleValuedPairs, ScalarOutput> b = new MeanError.MeanErrorBuilder<>();
-        final MeanError<SingleValuedPairs, ScalarOutput> me = b.build();
+        final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
+        final MeanError me = b.build();
         //Build another metric
-        final MeanError<SingleValuedPairs, ScalarOutput> me2 = b.build();
+        final MeanError me2 = b.build();
         //Build a different metric
-        final MeanAbsoluteErrorBuilder<SingleValuedPairs, ScalarOutput> c =
-                                                                          new MeanAbsoluteError.MeanAbsoluteErrorBuilder<>();
-        final MeanAbsoluteError<SingleValuedPairs, ScalarOutput> mae = c.build();
+        final MeanAbsoluteErrorBuilder c = new MeanAbsoluteError.MeanAbsoluteErrorBuilder();
+        c.setOutputFactory(outF);
+        final MeanAbsoluteError mae = c.build();
 
         //Check for equality of names
         assertTrue("Unexpected difference in metric names.", me.nameEquals(me2));
@@ -55,8 +57,10 @@ public final class MetricTest
     {
 
         //Build a metric
-        final MeanErrorBuilder<SingleValuedPairs, ScalarOutput> b = new MeanError.MeanErrorBuilder<>();
-        final MeanError<SingleValuedPairs, ScalarOutput> me = b.build();
+        final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
+        final MeanError me = b.build();
 
         //Check for equality of names
         assertTrue("Unexpected metric name.",

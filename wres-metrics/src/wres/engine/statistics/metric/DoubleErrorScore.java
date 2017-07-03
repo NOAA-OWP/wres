@@ -6,7 +6,6 @@ import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -19,7 +18,7 @@ import wres.datamodel.metric.SingleValuedPairs;
  * @version 0.1
  * @since 0.1
  */
-public abstract class DoubleErrorScore<S extends SingleValuedPairs, T extends ScalarOutput> extends Metric<S, T>
+public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, ScalarOutput>
 implements Score
 {
     /**
@@ -32,8 +31,8 @@ implements Score
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static abstract class DoubleErrorScoreBuilder<S extends SingleValuedPairs, T extends ScalarOutput>
-    implements MetricBuilder<S, T>
+    public static abstract class DoubleErrorScoreBuilder<S extends SingleValuedPairs>
+    extends MetricBuilder<S, ScalarOutput>
     {
 
         /**
@@ -48,7 +47,7 @@ implements Score
          * @return the metric builder
          */
 
-        public DoubleErrorScoreBuilder<S, T> setErrorFunction(final DoubleErrorFunction f)
+        public DoubleErrorScoreBuilder<S> setErrorFunction(final DoubleErrorFunction f)
         {
             this.f = f;
             return this;
@@ -57,7 +56,7 @@ implements Score
     }
 
     @Override
-    public T apply(final S s)
+    public ScalarOutput apply(final S s)
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         //Metadata
@@ -78,7 +77,7 @@ implements Score
                                                                         mainMeta.getID(),
                                                                         baseID);
         //Compute the atomic errors in a stream
-        return MetricOutputFactory.ofScalarExtendsMetricOutput(s.getData()
+        return getOutputFactory().ofScalarOutput(s.getData()
                                                                 .stream()
                                                                 .mapToDouble(f)
                                                                 .average()
@@ -92,8 +91,9 @@ implements Score
      * @param b the builder
      */
 
-    protected DoubleErrorScore(final DoubleErrorScoreBuilder<S, T> b)
+    protected DoubleErrorScore(final DoubleErrorScoreBuilder<S> b)
     {
+        super(b.outputFactory);
         Objects.requireNonNull(b.f, "Specify a non-null function from which to construct the metric.");
         this.f = b.f;
     }

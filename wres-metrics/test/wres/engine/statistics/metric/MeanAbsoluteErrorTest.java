@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputFactory;
@@ -42,13 +43,14 @@ public final class MeanAbsoluteErrorTest
                                                                     null);
 
         //Build the metric
-        final MeanAbsoluteErrorBuilder<SingleValuedPairs, ScalarOutput> b =
-                                                                          new MeanAbsoluteError.MeanAbsoluteErrorBuilder<>();
-        final MeanAbsoluteError<SingleValuedPairs, ScalarOutput> mae = b.build();
+        final MeanAbsoluteErrorBuilder b = new MeanAbsoluteError.MeanAbsoluteErrorBuilder();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
+        final MeanAbsoluteError mae = b.build();
 
         //Check the results
         final ScalarOutput actual = mae.apply(input);
-        final ScalarOutput expected = MetricOutputFactory.ofScalarOutput(201.37, m1);
+        final ScalarOutput expected = outF.ofScalarOutput(201.37, m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));
         //Check the parameters

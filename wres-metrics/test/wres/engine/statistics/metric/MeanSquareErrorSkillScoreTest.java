@@ -5,6 +5,7 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputFactory;
@@ -43,13 +44,15 @@ public final class MeanSquareErrorSkillScoreTest
                                                                     "Baseline");
 
         //Build the metric
-        final MeanSquareErrorSkillScoreBuilder<SingleValuedPairs, VectorOutput> b =
+        final MeanSquareErrorSkillScoreBuilder<SingleValuedPairs> b =
                                                                                   new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>();
-        final MeanSquareErrorSkillScore<SingleValuedPairs, VectorOutput> mse = b.build();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
+        final MeanSquareErrorSkillScore<SingleValuedPairs> mse = b.build();
 
         //Check the results
         final VectorOutput actual = mse.apply(input);
-        final VectorOutput expected = MetricOutputFactory.ofVectorOutput(new double[]{0.8007025335093799}, m1);
+        final VectorOutput expected = outF.ofVectorOutput(new double[]{0.8007025335093799}, m1);
         assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
             + ".", actual.equals(expected));
 

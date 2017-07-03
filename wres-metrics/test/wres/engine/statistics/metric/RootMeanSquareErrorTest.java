@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputFactory;
@@ -42,13 +43,14 @@ public final class RootMeanSquareErrorTest
                                                                     null);
 
         //Build the metric
-        final RootMeanSquareErrorBuilder<SingleValuedPairs, ScalarOutput> b =
-                                                                            new RootMeanSquareError.RootMeanSquareErrorBuilder<>();
-        final RootMeanSquareError<SingleValuedPairs, ScalarOutput> mse = b.build();
+        final RootMeanSquareErrorBuilder b = new RootMeanSquareError.RootMeanSquareErrorBuilder();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
+        final RootMeanSquareError mse = b.build();
 
         //Check the results
         final ScalarOutput actual = mse.apply(input);
-        final ScalarOutput expected = MetricOutputFactory.ofScalarOutput(632.4586381732801, m1);
+        final ScalarOutput expected = outF.ofScalarOutput(632.4586381732801, m1);
         assertTrue("Actual: " + actual.getData() + ". Expected: " + expected.getData() + ".", actual.equals(expected));
 
         //Check the parameters

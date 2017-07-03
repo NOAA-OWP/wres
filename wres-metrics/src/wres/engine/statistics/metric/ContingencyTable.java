@@ -4,14 +4,11 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MulticategoryPairs;
@@ -34,35 +31,13 @@ import wres.datamodel.metric.MulticategoryPairs;
  * @since 0.1
  */
 
-public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutput<?>> extends Metric<S, T>
+public final class ContingencyTable<S extends MulticategoryPairs> extends Metric<S, MatrixOutput>
 {
 
-    /**
-     * Null string warning, used in several places.
-     */
-
-    private final String nullString = "Specify non-null input for the '" + toString() + "'.";
-
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class ContingencyTableBuilder<S extends MulticategoryPairs, T extends MatrixOutput>
-    implements MetricBuilder<S, T>
-    {
-
-        @Override
-        public ContingencyTable<S, T> build()
-        {
-            return new ContingencyTable<>();
-        }
-
-    }
-
     @Override
-    public T apply(final S s)
+    public MatrixOutput apply(final MulticategoryPairs s)
     {
-        Objects.requireNonNull(s, nullString);
+        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         final int outcomes = s.getCategoryCount();
         final double[][] returnMe = new double[outcomes][outcomes];
         //Function that returns the index within the contingency matrix to increment
@@ -80,14 +55,13 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
         //Increment the count in a serial stream as the lambda is stateful
         s.getData().stream().forEach(f);
         final Metadata metIn = s.getMetadata();
-        final MetricOutputMetadata metOut =
-                                  MetadataFactory.getMetadata(s.getData().size(),
-                                                              metIn.getDimension(),
-                                                              getID(),
-                                                              MetricConstants.MAIN,
-                                                              metIn.getID(),
-                                                              null);
-        return MetricOutputFactory.ofMatrixExtendsMetricOutput(returnMe, metOut);
+        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(s.getData().size(),
+                                                                        metIn.getDimension(),
+                                                                        getID(),
+                                                                        MetricConstants.MAIN,
+                                                                        metIn.getID(),
+                                                                        null);
+        return getOutputFactory().ofMatrixOutput(returnMe, metOut);
     }
 
     @Override
@@ -95,70 +69,36 @@ public class ContingencyTable<S extends MulticategoryPairs, T extends MetricOutp
     {
         return MetricConstants.CONTINGENCY_TABLE;
     }
-    
+
     @Override
     public boolean hasRealUnits()
     {
         return false;
-    }  
-
-    /**
-     * Convenience method that checks whether the output is compatible with a 2x2 contingency table. Throws an exception
-     * if the output is incompatible.
-     * 
-     * @param output the output to check
-     * @param metric the metric to use when throwing an informative exception
-     * @throws MetricInputException if the output is not a valid input for an intermediate calculation
-     */
-
-    protected void is2x2ContingencyTable(final MetricOutput<?> output, final Metric<?, ?> metric)
-    {
-        Objects.requireNonNull(output, nullString);
-        if(!(output instanceof MatrixOutput))
-        {
-            throw new MetricInputException("Expected an intermediate result in a matrix when computing the '" + metric
-                + "'.");
-        }
-        final MatrixOfDoubles v = ((MatrixOutput)output).getData();
-        if(v.rows() != 2 || v.columns() != 2)
-        {
-            throw new MetricInputException("Expected an intermediate result with a 2x2 square matrix when computing the '"
-                + metric + "': [" + v.rows() + ", " + v.columns() + "].");
-        }
     }
 
     /**
-     * Convenience method that checks whether the output is compatible with a contingency table. Throws an exception if
-     * the output is incompatible.
-     * 
-     * @param output the output to check
-     * @param metric the metric to use when throwing an informative exception
-     * @throws MetricInputException if the output is not a valid input for an intermediate calculation
+     * A {@link MetricBuilder} to build the metric.
      */
 
-    protected void isContingencyTable(final MetricOutput<?> output, final Metric<?, ?> metric)
+    protected static class ContingencyTableBuilder<S extends MulticategoryPairs> extends MetricBuilder<S, MatrixOutput>
     {
-        Objects.requireNonNull(output, nullString);
-        if(!(output instanceof MatrixOutput))
+
+        @Override
+        protected ContingencyTable<S> build()
         {
-            throw new MetricInputException("Expected an intermediate result in a matrix when " + "computing the '"
-                + metric + "'.");
+            return new ContingencyTable<>(this.outputFactory);
         }
-        final MatrixOfDoubles v = ((MatrixOutput)output).getData();
-        if(!v.isSquare())
-        {
-            throw new MetricInputException("Expected an intermediate result with a square matrix when "
-                + "computing the '" + metric + "': [" + v.rows() + ", " + v.columns() + "].");
-        }
+
     }
 
     /**
      * Hidden constructor.
+     * 
+     * @param outputFactory the {@link MetricOutputFactory}.
      */
 
-    protected ContingencyTable()
+    protected ContingencyTable(final MetricOutputFactory outputFactory)
     {
-        super();
+        super(outputFactory);
     }
-
 }

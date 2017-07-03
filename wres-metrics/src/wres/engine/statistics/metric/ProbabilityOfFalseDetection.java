@@ -2,11 +2,8 @@ package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MatrixOutput;
-import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputFactory;
-import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 
 /**
@@ -16,49 +13,22 @@ import wres.datamodel.metric.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-public final class ProbabilityOfFalseDetection<S extends DichotomousPairs, T extends ScalarOutput>
-extends
-    ContingencyTable<S, T>
-implements Score, Collectable<S, MetricOutput<?>, T>
+public final class ProbabilityOfFalseDetection extends ContingencyTableScore<DichotomousPairs>
 {
 
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class ProbabilityOfFalseDetectionBuilder<S extends DichotomousPairs, T extends ScalarOutput>
-    implements MetricBuilder<S, T>
-    {
-
-        @Override
-        public ProbabilityOfFalseDetection<S, T> build()
-        {
-            return new ProbabilityOfFalseDetection<>();
-        }
-
-    }
-
     @Override
-    public T apply(final S s)
+    public ScalarOutput apply(final DichotomousPairs s)
     {
         return apply(getCollectionInput(s));
     }
 
     @Override
-    public T apply(final MetricOutput<?> output)
+    public ScalarOutput apply(final MatrixOutput output)
     {
         is2x2ContingencyTable(output, this);
-        final MatrixOutput v = (MatrixOutput)output;
+        final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
-        //Metadata
-        final MetricOutputMetadata metIn = output.getMetadata();
-        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
-                                                                        metIn.getDimension(),
-                                                                        getID(),
-                                                                        MetricConstants.MAIN,
-                                                                        metIn.getID(),
-                                                                        null);
-        return MetricOutputFactory.ofExtendsScalarOutput(cm[0][1] / (cm[0][1] + cm[1][1]), metOut);
+        return getOutputFactory().ofScalarOutput(cm[0][1] / (cm[0][1] + cm[1][1]), getMetadata(output));
     }
 
     @Override
@@ -73,43 +43,29 @@ implements Score, Collectable<S, MetricOutput<?>, T>
         return false;
     }
 
-    @Override
-    public boolean isDecomposable()
-    {
-        return false;
-    }
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
 
-    @Override
-    public boolean hasRealUnits()
+    protected static class ProbabilityOfFalseDetectionBuilder extends MetricBuilder<DichotomousPairs, ScalarOutput>
     {
-        return false;
-    }        
-    
-    @Override
-    public MetricConstants getDecompositionID()
-    {
-        return MetricConstants.NONE;
-    }
 
-    @Override
-    public MetricOutput<?> getCollectionInput(final S input)
-    {
-        return super.apply(input); //2x2 contingency table
-    }
+        @Override
+        protected ProbabilityOfFalseDetection build()
+        {
+            return new ProbabilityOfFalseDetection(outputFactory);
+        }
 
-    @Override
-    public MetricConstants getCollectionOf()
-    {
-        return super.getID();
     }
 
     /**
      * Hidden constructor.
+     * 
+     * @param outputFactory the {@link MetricOutputFactory}.
      */
 
-    private ProbabilityOfFalseDetection()
+    private ProbabilityOfFalseDetection(final MetricOutputFactory outputFactory)
     {
-        super();
+        super(outputFactory);
     }
-
 }

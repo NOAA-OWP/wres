@@ -5,6 +5,7 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
@@ -13,7 +14,6 @@ import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
 import wres.engine.statistics.metric.PeirceSkillScore.PeirceSkillScoreBuilder;
-import wres.engine.statistics.metric.PeirceSkillScore.PeirceSkillScoreMulticategoryBuilder;
 
 /**
  * Tests the {@link PeirceSkillScore}.
@@ -44,13 +44,15 @@ public final class PeirceSkillScoreTest
                                                                     "Main",
                                                                     null);
         //Build the metric
-        final PeirceSkillScoreBuilder<DichotomousPairs, ScalarOutput> b =
-                                                                        new PeirceSkillScore.PeirceSkillScoreBuilder<>();
-        final PeirceSkillScore<DichotomousPairs, ScalarOutput> ps = b.build();
+        final PeirceSkillScoreBuilder<DichotomousPairs> b = new PeirceSkillScore.PeirceSkillScoreBuilder<>();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
+        final PeirceSkillScore<DichotomousPairs> ps = b.build();
 
         //Check the results
         final ScalarOutput actual = ps.apply(input);
-        final ScalarOutput expected = MetricOutputFactory.ofScalarOutput(0.6347985347985348, m1);
+        final MetricFactory metF = MetricFactory.of(outF);
+        final ScalarOutput expected = outF.ofScalarOutput(0.6347985347985348, m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));
         //Check the parameters
@@ -59,24 +61,16 @@ public final class PeirceSkillScoreTest
         assertTrue("The Peirce Skill Score is not decomposable.", !ps.isDecomposable());
         assertTrue("The Peirce Skill Score is a skill score.", ps.isSkillScore());
         assertTrue("The Peirce Skill Score cannot be decomposed.", ps.getDecompositionID() == MetricConstants.NONE);
-        final String expName = MetricFactory.ofContingencyTable().getName();
-        final String actName = MetadataFactory.getMetricName(ps.getCollectionOf());           
+        final String expName = metF.ofContingencyTable().getName();
+        final String actName = MetadataFactory.getMetricName(ps.getCollectionOf());
         assertTrue("The Peirce Skill Score should be a collection of '" + expName
             + "', but is actually a collection of '" + actName + "'.",
-                   ps.getCollectionOf()==MetricFactory.ofContingencyTable().getID());
+                   ps.getCollectionOf() == metF.ofContingencyTable().getID());
         //Test exceptions
         try
         {
-            ps.apply(MetricOutputFactory.ofMatrixOutput(new double[][]{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}}, m1));
+            ps.apply(outF.ofMatrixOutput(new double[][]{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}}, m1));
             fail("Expected an exception on construction with a a non-square matrix.");
-        }
-        catch(final Exception e)
-        {
-        }
-        try
-        {
-            ps.apply(MetricOutputFactory.ofVectorOutput(new double[]{0.0, 0.0, 0.0}, m1));
-            fail("Expected an exception on construction with a non-matrix input.");
         }
         catch(final Exception e)
         {
@@ -102,20 +96,21 @@ public final class PeirceSkillScoreTest
                                                                     null);
 
         //Build the metric
-        final PeirceSkillScoreMulticategoryBuilder<MulticategoryPairs, ScalarOutput> b =
-                                                                                       new PeirceSkillScore.PeirceSkillScoreMulticategoryBuilder<>();
-        final PeirceSkillScore<MulticategoryPairs, ScalarOutput> ps = b.build();
+        final PeirceSkillScoreBuilder<MulticategoryPairs> b =
+                                                            new PeirceSkillScore.PeirceSkillScoreBuilder<>();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
+        final PeirceSkillScore<MulticategoryPairs> ps = b.build();
 
         //Check the results
         final ScalarOutput actual = ps.apply(input);
-        final ScalarOutput expected = MetricOutputFactory.ofScalarOutput(0.05057466520850963, m1);
+        final ScalarOutput expected = outF.ofScalarOutput(0.05057466520850963, m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));
         //Test exceptions
         try
         {
-            ps.apply(MetricOutputFactory.ofMatrixOutput(new double[][]{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0},
-                {0.0, 0.0, 0.0}}, m1));
+            ps.apply(outF.ofMatrixOutput(new double[][]{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}}, m1));
             fail("Expected a zero sum product.");
         }
         catch(final Exception e)

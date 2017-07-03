@@ -4,8 +4,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
-
 /**
  * Tests the {@link MatrixOutput}.
  * 
@@ -42,20 +40,21 @@ public final class MatrixOutputTest
                                                                     "B",
                                                                     null);
 
-        final MatrixOutput s = MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
-        final MatrixOutput t = MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
+        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final MatrixOutput s = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
+        final MatrixOutput t = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
         assertTrue("Expected equal outputs.", s.equals(t));
         assertTrue("Expected non-equal outputs.", !s.equals(null));
         assertTrue("Expected non-equal outputs.", !s.equals(new Double(1.0)));
         assertTrue("Expected non-equal outputs.",
-                   !s.equals(MetricOutputFactory.ofMatrixOutput(new double[][]{{2.0}, {1.0}}, m1)));
+                   !s.equals(d.ofMatrixOutput(new double[][]{{2.0}, {1.0}}, m1)));
         assertTrue("Expected non-equal outputs.",
-                   !s.equals(MetricOutputFactory.ofMatrixOutput(new double[][]{{2.0}, {1.0}}, m2)));
-        final MatrixOutput q = MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m2);
-        final MatrixOutput r = MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m3);
-        final MatrixOutput u = MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0, 1.0}}, m3);
-        final MatrixOutput v = MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}, {1.0}, {1.0}}, m3);
-        final MatrixOutput w = MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0, 1.0}, {1.0, 1.0}}, m3);
+                   !s.equals(d.ofMatrixOutput(new double[][]{{2.0}, {1.0}}, m2)));
+        final MatrixOutput q = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m2);
+        final MatrixOutput r = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m3);
+        final MatrixOutput u = d.ofMatrixOutput(new double[][]{{1.0, 1.0}}, m3);
+        final MatrixOutput v = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}, {1.0}}, m3);
+        final MatrixOutput w = d.ofMatrixOutput(new double[][]{{1.0, 1.0}, {1.0, 1.0}}, m3);
         assertTrue("Expected equal outputs.", q.equals(q));
         assertTrue("Expected non-equal outputs.", !s.equals(q));
         assertTrue("Expected non-equal outputs.", !q.equals(s));
@@ -78,8 +77,9 @@ public final class MatrixOutputTest
                                                                     MetricConstants.MAIN,
                                                                     "A",
                                                                     null);
-        final MatrixOutput s = new MatrixOutput(DataFactory.matrixOf(new double[][]{{1.0}, {1.0}}), m1);
-        final MatrixOutput t = new MatrixOutput(DataFactory.matrixOf(new double[][]{{1.0}, {1.0}}), m1);
+        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final MatrixOutput s = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
+        final MatrixOutput t = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);        
         assertTrue("Expected equal string representations.", s.toString().equals(t.toString()));
     }
 
@@ -102,8 +102,9 @@ public final class MatrixOutputTest
                                                                     MetricConstants.MAIN,
                                                                     "B",
                                                                     null);
-        final MatrixOutput q = MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
-        final MatrixOutput r = MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m2);
+        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final MatrixOutput q = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
+        final MatrixOutput r = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m2);
         assertTrue("Metadata unequal.", !q.getMetadata().equals(r.getMetadata()));
     }
 
@@ -132,11 +133,12 @@ public final class MatrixOutputTest
                                                                     MetricConstants.MAIN,
                                                                     "B",
                                                                     null);
-        final MatrixOutput q = MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
-        final MatrixOutput r = MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m2);
+        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final MatrixOutput q = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
+        final MatrixOutput r = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m2);
         assertTrue("Expected equal hash codes.", q.hashCode() == r.hashCode());
         assertTrue("Expected unequal hash codes.",
-                   q.hashCode() != MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m3).hashCode());
+                   q.hashCode() != d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m3).hashCode());
     }
 
 }

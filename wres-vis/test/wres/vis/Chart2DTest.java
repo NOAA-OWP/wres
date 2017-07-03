@@ -16,6 +16,7 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricInputFactory;
@@ -40,7 +41,8 @@ public class Chart2DTest extends TestCase
         final Metadata meta = MetadataFactory.getMetadata(values.size(),
                                                           MetadataFactory.getDimension("CMS"),
                                                           "Main");
-        final SingleValuedPairs pairs = MetricInputFactory.ofSingleValuedPairs(values, meta);
+        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
         //Construct the source from the pairs assigning it a data source order index of 0.  
         //The order index indicates the order in which the different sources are rendered.
@@ -92,7 +94,11 @@ public class Chart2DTest extends TestCase
         values.add(DataFactory.pairOf(8, 7));
         values.add(DataFactory.pairOf(12, 12));
         values.add(DataFactory.pairOf(93, 94));
-        final SingleValuedPairs pairs = MetricInputFactory.ofSingleValuedPairs(values, null);
+        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final Metadata meta = MetadataFactory.getMetadata(values.size(),
+                                                          MetadataFactory.getDimension("CMS"),
+                                                          "Main");
+        final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
         //Create the data source for charting.
         final MetricInputXYChartDataSource source = new MetricInputXYChartDataSource(0, pairs);

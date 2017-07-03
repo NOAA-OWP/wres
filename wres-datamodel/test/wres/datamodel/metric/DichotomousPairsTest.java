@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.DichotomousPairs.DichotomousPairsBuilder;
+import wres.datamodel.metric.SafeDichotomousPairs.DichotomousPairsBuilder;
 
 /**
  * Tests the {@link DichotomousPairs}.

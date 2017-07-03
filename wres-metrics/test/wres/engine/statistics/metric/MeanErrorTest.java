@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputFactory;
@@ -41,12 +42,14 @@ public final class MeanErrorTest
                                                                     null,
                                                                     null);
         //Build the metric
-        final MeanErrorBuilder<SingleValuedPairs, ScalarOutput> b = new MeanError.MeanErrorBuilder<>();
-        final MeanError<SingleValuedPairs, ScalarOutput> me = b.build();
+        final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
+        final MeanError me = b.build();
 
         //Check the results
         final ScalarOutput actual = me.apply(input);
-        final ScalarOutput expected = MetricOutputFactory.ofScalarOutput(-200.55, m1);
+        final ScalarOutput expected = outF.ofScalarOutput(-200.55, m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));
 

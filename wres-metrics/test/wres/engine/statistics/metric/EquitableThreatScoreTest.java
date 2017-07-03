@@ -4,12 +4,12 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.ScalarOutput;
 import wres.engine.statistics.metric.EquitableThreatScore.EquitableThreatScoreBuilder;
 
 /**
@@ -42,12 +42,14 @@ public final class EquitableThreatScoreTest
                                                                     null);
 
         //Build the metric
-        final EquitableThreatScoreBuilder<DichotomousPairs, ScalarOutput> b =
-                                                                            new EquitableThreatScore.EquitableThreatScoreBuilder<>();
-        final EquitableThreatScore<DichotomousPairs, ScalarOutput> ets = b.build();
+        final EquitableThreatScoreBuilder b = new EquitableThreatScore.EquitableThreatScoreBuilder();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
+        final EquitableThreatScore ets = b.build();
 
         //Check the results
-        assertTrue(ets.apply(input).equals(MetricOutputFactory.ofScalarOutput(0.43768152544513195, m1)));
+        final MetricFactory metF = MetricFactory.of(outF);
+        assertTrue(ets.apply(input).equals(outF.ofScalarOutput(0.43768152544513195, m1)));
         //Check the parameters
         assertTrue("Unexpected name for the Equitable Threat Score.",
                    ets.getName().equals(MetadataFactory.getMetricName(MetricConstants.EQUITABLE_THREAT_SCORE)));
@@ -55,11 +57,11 @@ public final class EquitableThreatScoreTest
         assertTrue("The Equitable Threat Score is a skill score.", ets.isSkillScore());
         assertTrue("The Equitable Threat Score cannot be decomposed.",
                    ets.getDecompositionID() == MetricConstants.NONE);
-        final String expName = MetricFactory.ofContingencyTable().getName();
-        final String actName = MetadataFactory.getMetricName(ets.getCollectionOf());           
+        final String expName = metF.ofContingencyTable().getName();
+        final String actName = MetadataFactory.getMetricName(ets.getCollectionOf());
         assertTrue("The Equitable Threat Score should be a collection of '" + expName
             + "', but is actually a collection of '" + actName + "'.",
-                   ets.getCollectionOf()==MetricFactory.ofContingencyTable().getID());
+                   ets.getCollectionOf() == metF.ofContingencyTable().getID());
 
     }
 

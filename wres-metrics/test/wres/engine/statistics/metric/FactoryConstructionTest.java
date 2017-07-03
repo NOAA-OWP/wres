@@ -35,7 +35,6 @@ public final class FactoryConstructionTest
                                IllegalAccessException,
                                InvocationTargetException
     {
-        coverageSingleton(MetricFactory.class);
         coverageSingleton(FunctionFactory.class);
     }
 

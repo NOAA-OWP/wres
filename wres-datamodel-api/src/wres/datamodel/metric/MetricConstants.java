@@ -10,12 +10,12 @@ package wres.datamodel.metric;
 
 public enum MetricConstants
 {
-    
+
     /**
      * Identifier for a Brier Score.
      */
 
-   BRIER_SCORE,
+    BRIER_SCORE,
 
     /**
      * Identifier for a Brier Skill Score.

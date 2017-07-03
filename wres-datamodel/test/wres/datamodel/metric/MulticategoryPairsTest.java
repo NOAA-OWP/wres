@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.MulticategoryPairs.MulticategoryPairsBuilder;
+import wres.datamodel.metric.SafeMulticategoryPairs.MulticategoryPairsBuilder;
 
 /**
  * Tests the {@link MulticategoryPairs}.

@@ -37,6 +37,14 @@ public interface MetricInput<S>
     Metadata getMetadata();
 
     /**
+     * Returns the baseline data as a {@link MetricInput}. 
+     * 
+     * @return the baseline
+     */
+    
+    MetricInput<S> getBaselineData();
+    
+    /**
      * Returns the raw input associated with a baseline/reference for skill calculations or null if no baseline is
      * defined.
      * 

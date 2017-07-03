@@ -9,6 +9,8 @@ import java.util.concurrent.FutureTask;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 
@@ -38,7 +40,9 @@ public final class MetricTaskTest
             final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
             //Add some appropriate metrics to the collection
-            final Metric<SingleValuedPairs, ScalarOutput> m = MetricFactory.ofMeanError();
+            final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+            final MetricFactory metF = MetricFactory.of(outF);               
+            final Metric<SingleValuedPairs, ScalarOutput> m = metF.ofMeanError();
 
             //Wrap an input in a future
             final FutureTask<SingleValuedPairs> futureInput =

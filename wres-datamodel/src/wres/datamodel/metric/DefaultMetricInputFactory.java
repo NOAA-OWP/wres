@@ -1,22 +1,41 @@
 package wres.datamodel.metric;
 
 import java.util.List;
+import java.util.Objects;
 
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.Metadata;
 
 /**
- * A factory class for producing metric inputs.
+ * A default factory class for producing metric inputs.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-public final class MetricInputFactory
+public final class DefaultMetricInputFactory implements MetricInputFactory
 {
 
+    /**
+     * Instance of the factory.
+     */
+    
+    private static MetricInputFactory instance = null;
+    
+    /**
+     * Returns an instance of a {@link MetricOutputFactory}.
+     * 
+     * @return a {@link MetricOutputFactory}
+     */
+    
+    public static MetricInputFactory of() {
+        if(Objects.isNull(instance)) {
+            instance = new DefaultMetricInputFactory();
+        }
+        return instance;
+    }    
+    
     /**
      * Construct the dichotomous input without any pairs for a baseline.
      * 
@@ -25,10 +44,12 @@ public final class MetricInputFactory
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
-
-    public static DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
+    @Override
+    public DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
     {
-        return (DichotomousPairs)new DichotomousPairs.DichotomousPairsBuilder().setData(pairs).setMetadata(meta).build();
+        return (DichotomousPairs)new SafeDichotomousPairs.DichotomousPairsBuilder().setData(pairs)
+                                                                                   .setMetadata(meta)
+                                                                                   .build();
     }
 
     /**
@@ -39,10 +60,10 @@ public final class MetricInputFactory
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
-
-    public static MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
+    @Override
+    public MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
     {
-        return new MulticategoryPairs.MulticategoryPairsBuilder().setData(pairs).setMetadata(meta).build();
+        return new SafeMulticategoryPairs.MulticategoryPairsBuilder().setData(pairs).setMetadata(meta).build();
     }
 
     /**
@@ -53,8 +74,9 @@ public final class MetricInputFactory
      * @throws MetricInputException if the inputs are invalid
      * @return the pairs
      */
-
-    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs, final Metadata meta)
+    @Override
+    public DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
+                                                                      final Metadata meta)
     {
         return ofDiscreteProbabilityPairs(pairs, null, meta, null);
     }
@@ -69,14 +91,14 @@ public final class MetricInputFactory
      * @throws MetricInputException if the inputs are invalid
      * @return the pairs
      */
-
-    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
+    @Override
+    public DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
                                                                       final List<PairOfDoubles> basePairs,
                                                                       final Metadata mainMeta,
                                                                       final Metadata baselineMeta)
     {
-        final DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
-                                                                         new DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
+        final SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
+                                                                             new SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
         b.setData(pairs);
         b.setMetadata(mainMeta);
         b.setDataForBaseline(basePairs);
@@ -92,8 +114,8 @@ public final class MetricInputFactory
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
-
-    public static SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Metadata meta)
+    @Override
+    public SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Metadata meta)
     {
         return ofSingleValuedPairs(pairs, null, meta, null);
     }
@@ -108,13 +130,13 @@ public final class MetricInputFactory
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
-
-    public static SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
+    @Override
+    public SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
                                                         final List<PairOfDoubles> basePairs,
                                                         final Metadata mainMeta,
                                                         final Metadata baselineMeta)
     {
-        final SingleValuedPairs.SingleValuedPairsBuilder b = new SingleValuedPairs.SingleValuedPairsBuilder();
+        final SafeSingleValuedPairs.SingleValuedPairsBuilder b = new SafeSingleValuedPairs.SingleValuedPairsBuilder();
         b.setMetadata(mainMeta);
         b.setData(pairs);
         b.setDataForBaseline(basePairs);
@@ -123,28 +145,11 @@ public final class MetricInputFactory
     }
 
     /**
-     * Return a cast of the inputs pairs.
-     * 
-     * @param pairs the input pairs
-     * @param meta the dimension
-     * @param <T> the output pairs
-     * @return the casted pairs
-     */
-
-    @SuppressWarnings("unchecked")
-    public static <T extends SingleValuedPairs> T ofExtendsSingleValuedPairs(final List<PairOfDoubles> pairs,
-                                                                             final Metadata meta)
-    {
-        return (T)ofSingleValuedPairs(pairs, null, meta, null);
-    }
-
-    /**
      * Prevent construction.
      */
 
-    private MetricInputFactory()
+    private DefaultMetricInputFactory()
     {
-
     }
 
 }
