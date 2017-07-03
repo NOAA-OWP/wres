@@ -38,7 +38,7 @@ public class Chart2DTest extends TestCase
         values.add(DataFactory.pairOf(8, 7));
         values.add(DataFactory.pairOf(12, 12));
         values.add(DataFactory.pairOf(93, 94));
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "Main");
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
@@ -93,7 +93,7 @@ public class Chart2DTest extends TestCase
         values.add(DataFactory.pairOf(8, 7));
         values.add(DataFactory.pairOf(12, 12));
         values.add(DataFactory.pairOf(93, 94));
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "Main");
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);

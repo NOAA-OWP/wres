@@ -32,7 +32,7 @@ public final class ProbabilityOfDetectionTest
     public void test1ProbabilityOfDetection()
     {
         //Obtain the factories
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
@@ -53,7 +53,7 @@ public final class ProbabilityOfDetectionTest
 
         //Check the results
         final ScalarOutput actual = pod.apply(input);
-        final MetricFactory metF = MetricFactory.of(outF);
+        final MetricFactory metF = MetricFactory.getInstance(outF);
         final ScalarOutput expected = outF.ofScalarOutput(0.780952380952381, m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));

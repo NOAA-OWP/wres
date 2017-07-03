@@ -36,7 +36,7 @@ public final class BrierScoreTest
 
         //Build the metric
         final BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         b.setOutputFactory(outF);
         b.setDecompositionID(MetricConstants.NONE);

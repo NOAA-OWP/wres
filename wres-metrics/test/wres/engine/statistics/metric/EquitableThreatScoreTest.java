@@ -31,7 +31,7 @@ public final class EquitableThreatScoreTest
     public void test1EquitableThreatScore()
     {
         //Obtain the factories
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
@@ -51,7 +51,7 @@ public final class EquitableThreatScoreTest
         final EquitableThreatScore ets = b.build();
 
         //Check the results
-        final MetricFactory metF = MetricFactory.of(outF);
+        final MetricFactory metF = MetricFactory.getInstance(outF);
         assertTrue(ets.apply(input).equals(outF.ofScalarOutput(0.43768152544513195, m1)));
         //Check the parameters
         assertTrue("Unexpected name for the Equitable Threat Score.",

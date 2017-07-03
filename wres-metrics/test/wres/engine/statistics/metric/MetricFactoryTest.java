@@ -23,8 +23,8 @@ public final class MetricFactoryTest
     @Test
     public void test1MetricFactory()
     {
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
-        final MetricFactory metF = MetricFactory.of(outF);        
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final MetricFactory metF = MetricFactory.getInstance(outF);        
         metF.ofBrierScore();
         metF.ofBrierScore(MetricConstants.NONE);
         metF.ofBrierSkillScore();

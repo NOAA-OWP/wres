@@ -110,9 +110,9 @@ public class ControlTemp
                                                 "CFS");
 
         //Build an immutable collection of metrics, to be computed at each of several forecast lead times
-        final MetricInputFactory inputFactory = DefaultMetricInputFactory.of();
-        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.of();
-        final MetricFactory metricFactory = MetricFactory.of(outputFactory);
+        final MetricInputFactory inputFactory = DefaultMetricInputFactory.getInstance();
+        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
+        final MetricFactory metricFactory = MetricFactory.getInstance(outputFactory);
         final List<Metric<SingleValuedPairs, ScalarOutput>> metrics = new ArrayList<>();
         metrics.add(metricFactory.ofMeanError());
         metrics.add(metricFactory.ofMeanAbsoluteError());
