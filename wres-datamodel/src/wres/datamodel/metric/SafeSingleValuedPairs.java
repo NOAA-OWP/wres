@@ -5,20 +5,16 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetricInput;
 
 /**
- * Immutable store of verification pairs that comprise single-valued, continuous numerical, predictions and
- * observations. In this context, the designation "single-valued" should not be confused with "deterministic". Rather,
- * it is an input that comprises a single value. Each pair contains a single-valued observation and a corresponding
- * prediction.
+ * Immutable implementation of a store of verification pairs that comprise two single-valued, continuous numerical,
+ * variables.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
+class SafeSingleValuedPairs implements SingleValuedPairs
 {
 
     /**
@@ -62,6 +58,13 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
     {
         return mainMeta;
     }
+    
+    @Override
+    public SingleValuedPairs getBaselineData()
+    {
+        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        return metIn.ofSingleValuedPairs(baselineInput, baselineMeta);
+    }    
 
     @Override
     public List<PairOfDoubles> getDataForBaseline()
@@ -135,7 +138,7 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
         @Override
         public SingleValuedPairs build()
         {
-            return new SingleValuedPairs(this);
+            return new SafeSingleValuedPairs(this);
         }
 
     }
@@ -147,7 +150,7 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
      * @throws MetricInputException if the pairs are invalid
      */
 
-    protected SingleValuedPairs(final SingleValuedPairsBuilder b)
+    protected SafeSingleValuedPairs(final SingleValuedPairsBuilder b)
     {
         //Bounds checks
         if(Objects.isNull(b.mainMeta))
@@ -162,15 +165,18 @@ public class SingleValuedPairs implements MetricInput<List<PairOfDoubles>>
         {
             throw new MetricInputException("Specify a non-null baseline input and associated metadata or leave both null.");
         }
-        if(b.mainInput.contains(null)) {
+        if(b.mainInput.contains(null))
+        {
             throw new MetricInputException("One or more of the pairs is null.");
         }
-        if(!Objects.isNull(b.baselineInput) && b.baselineInput.contains(null)) {
+        if(!Objects.isNull(b.baselineInput) && b.baselineInput.contains(null))
+        {
             throw new MetricInputException("One or more of the baseline pairs is null.");
-        }      
+        }
         mainInput = b.mainInput;
         mainMeta = b.mainMeta;
         baselineInput = b.baselineInput;
         baselineMeta = b.baselineMeta;
     }
+
 }

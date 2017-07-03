@@ -1,10 +1,10 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetadataFactory;
@@ -44,52 +44,19 @@ public final class ContingencyTableTest
                                                                   null);
 
         //Build the metric
-        final ContingencyTableBuilder<DichotomousPairs, MatrixOutput> b =
+        final ContingencyTableBuilder<DichotomousPairs> b =
                                                                         new ContingencyTable.ContingencyTableBuilder<>();
-
-        final ContingencyTable<DichotomousPairs, MatrixOutput> table = b.build();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
+        final ContingencyTable<DichotomousPairs> table = b.build();
         final double[][] benchmark = new double[][]{{82.0, 38.0}, {23.0, 222.0}};
         final MatrixOutput actual = table.apply(input);
-        final MatrixOutput expected = MetricOutputFactory.ofMatrixOutput(benchmark,m1);       
+        final MatrixOutput expected = outF.ofMatrixOutput(benchmark,m1);       
         assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
             + ".", actual.equals(expected));
 
         //Check the parameters
         assertTrue(table.getName().equals(MetadataFactory.getMetricName(MetricConstants.CONTINGENCY_TABLE)));
-        //Check the exceptions
-        try
-        {
-            table.is2x2ContingencyTable(actual, table);
-        }
-        catch(final Exception e)
-        {
-            fail("Expected a 2x2 contingency table: "+e.getMessage());
-        }
-        try
-        {
-            table.is2x2ContingencyTable(MetricOutputFactory.ofScalarOutput(1,m1), table);
-            fail("Expected an exception on construction with a scalar output.");
-        }
-        catch(final Exception e)
-        {
-        }
-        try
-        {
-            table.is2x2ContingencyTable(MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0}},m1), table);
-            fail("Expected an exception on construction with an incorrectly sized matrix.");
-        }
-        catch(final Exception e)
-        {
-        }
-        try
-        {
-            table.is2x2ContingencyTable(MetricOutputFactory.ofMatrixOutput(new double[][]{{1.0, 1.0, 1.0},
-                {1.0, 1.0, 1.0}},m1), table);
-            fail("Expected an exception on construction with a non-square matrix.");
-        }
-        catch(final Exception e)
-        {
-        }
     }
 
 }

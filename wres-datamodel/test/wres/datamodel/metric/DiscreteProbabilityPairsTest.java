@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
+import wres.datamodel.metric.SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
 
 /**
  * Tests the {@link DiscreteProbabilityPairs}.

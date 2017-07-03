@@ -9,29 +9,36 @@ package wres.datamodel.metric;
  * @version 0.1
  * @since 0.1
  */
-public final class DichotomousPairs extends MulticategoryPairs
+final class SafeDichotomousPairs extends SafeMulticategoryPairs implements DichotomousPairs
 {
 
-    /**
-     * A {@link MetricInputBuilder} to build the metric input.
-     */
-
-    public static class DichotomousPairsBuilder extends MulticategoryPairsBuilder
+    @Override
+    public DichotomousPairs getBaselineData()
     {
-
-        @Override
-        public DichotomousPairs build()
-        {
-            return new DichotomousPairs(this);
-        }
-
-    }
+        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        return metIn.ofDichotomousPairs(getDataForBaseline(),getMetadataForBaseline());
+    }        
 
     @Override
     public int getCategoryCount()
     {
         return 2;
     }
+    
+    /**
+     * A {@link MetricInputBuilder} to build the metric input.
+     */
+
+    protected static class DichotomousPairsBuilder extends MulticategoryPairsBuilder
+    {
+
+        @Override
+        public DichotomousPairs build()
+        {
+            return new SafeDichotomousPairs(this);
+        }
+
+    }    
 
     /**
      * Construct the single-valued pairs with a builder.
@@ -40,11 +47,10 @@ public final class DichotomousPairs extends MulticategoryPairs
      * @throws MetricInputException if the pairs are invalid
      */
 
-    private DichotomousPairs(final DichotomousPairsBuilder b)
+    private SafeDichotomousPairs(final DichotomousPairsBuilder b)
     {
         super(b);
-        final int check = b.mainInput.get(0).size();
-        if(check != 2 && check != 4) //Allow for shorthand and longhand construction of a dichotomous event  
+        if(super.getCategoryCount() != 2)
         {
             throw new MetricInputException("Expected one outcome in the dichotomous input (two or four columns).");
         }

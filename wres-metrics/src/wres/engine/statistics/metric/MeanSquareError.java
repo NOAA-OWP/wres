@@ -3,7 +3,6 @@ package wres.engine.statistics.metric;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
@@ -17,9 +16,7 @@ import wres.datamodel.metric.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public class MeanSquareError<S extends SingleValuedPairs, T extends VectorOutput>
-extends
-    DecomposableDoubleErrorScore<S, T>
+public class MeanSquareError<S extends SingleValuedPairs> extends DecomposableDoubleErrorScore<S>
 {
 
     /**
@@ -29,7 +26,7 @@ extends
     private final MetricConstants decompositionID;
 
     @Override
-    public T apply(final S s)
+    public VectorOutput apply(final SingleValuedPairs s)
     {
 
         switch(decompositionID)
@@ -42,33 +39,6 @@ extends
             default:
                 throw new MetricCalculationException("The Mean Square Error decomposition is not currently "
                     + "implemented.");
-        }
-
-    }
-
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class MeanSquareErrorBuilder<S extends SingleValuedPairs, T extends VectorOutput>
-    implements MetricBuilder<S, T>
-    {
-        /**
-         * The type of metric decomposition. See {@link MetricConstants#getDecompositionID()}.
-         */
-
-        private MetricConstants decompositionID = MetricConstants.NONE;
-
-        @Override
-        public MeanSquareError<S, T> build()
-        {
-            return new MeanSquareError<>(this);
-        }
-
-        public MeanSquareErrorBuilder<S, T> setDecompositionID(final MetricConstants decompositionID)
-        {
-            this.decompositionID = decompositionID;
-            return this;
         }
 
     }
@@ -90,12 +60,12 @@ extends
     {
         return true;
     }
-    
+
     @Override
     public boolean hasRealUnits()
     {
         return true;
-    }        
+    }
 
     @Override
     public MetricConstants getDecompositionID()
@@ -109,13 +79,39 @@ extends
      * @param b the builder
      */
 
-    protected MeanSquareError(final MeanSquareErrorBuilder<S, T> b)
+    protected MeanSquareError(final MeanSquareErrorBuilder<S> b)
     {
+        super(b.outputFactory);
         if(!Score.isSupportedDecompositionID(b.decompositionID))
         {
             throw new IllegalStateException("Unrecognized decomposition identifier: " + b.decompositionID);
         }
         this.decompositionID = b.decompositionID;
+    }
+
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    protected static class MeanSquareErrorBuilder<S extends SingleValuedPairs> extends MetricBuilder<S, VectorOutput>
+    {
+        /**
+         * The type of metric decomposition. See {@link MetricConstants#getDecompositionID()}.
+         */
+
+        private MetricConstants decompositionID = MetricConstants.NONE;
+
+        @Override
+        protected MeanSquareError<S> build()
+        {
+            return new MeanSquareError<>(this);
+        }
+
+        protected MeanSquareErrorBuilder<S> setDecompositionID(final MetricConstants decompositionID)
+        {
+            this.decompositionID = decompositionID;
+            return this;
+        }
     }
 
     /**
@@ -125,7 +121,7 @@ extends
      * @return the mean square error without decomposition.
      */
 
-    private T getMSENoDecomp(final S s)
+    private VectorOutput getMSENoDecomp(final SingleValuedPairs s)
     {
         final double[] result = new double[]{
             s.getData().stream().mapToDouble(FunctionFactory.squareError()).average().getAsDouble()};
@@ -137,7 +133,7 @@ extends
                                                                         MetricConstants.MAIN,
                                                                         metIn.getID(),
                                                                         null);
-        return MetricOutputFactory.ofExtendsVectorOutput(result, metOut);
+        return getOutputFactory().ofVectorOutput(result, metOut);
     }
 
 }

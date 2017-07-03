@@ -26,12 +26,15 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.Slicer;
+import wres.datamodel.metric.DefaultMetricInputFactory;
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MetricInputFactory;
 import wres.datamodel.metric.MetricOutputCollection;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
+import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCollection;
-import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
@@ -317,17 +320,20 @@ public class Control
             // What follows for the rest of call() is from MetricCollectionTest.
 
             // Convert pairs into metric input
-            final SingleValuedPairs input = MetricInputFactory.ofSingleValuedPairs(simplePairs, null);
+            final MetricInputFactory inputFactory = DefaultMetricInputFactory.of();
+            final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.of();
+            final SingleValuedPairs input = inputFactory.ofSingleValuedPairs(simplePairs, null);
 
             // Create an immutable collection of metrics that consume single-valued pairs
             // and produce a scalar output
-            final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
-            //Add some metrics and build
+            //Build an immutable collection of metrics, to be computed at each of several forecast lead times
+            final MetricFactory metricFactory = MetricFactory.of(outputFactory);
+            final List<Metric<SingleValuedPairs, ScalarOutput>> metrics = new ArrayList<>();
+            metrics.add(metricFactory.ofMeanError());
+            metrics.add(metricFactory.ofMeanAbsoluteError());
+            metrics.add(metricFactory.ofRootMeanSquareError());
             final MetricCollection<SingleValuedPairs, ScalarOutput> collection =
-                                                                               builder.add(MetricFactory.ofMeanError())
-                                                                                      .add(MetricFactory.ofMeanAbsoluteError())
-                                                                                      .add(MetricFactory.ofRootMeanSquareError())
-                                                                                      .build();
+                                                                               metricFactory.ofSingleValuedScalarCollection(metrics);
             //Compute sequentially (i.e. not in parallel)
             return collection.apply(input);
         }
@@ -521,8 +527,8 @@ public class Control
 
     /**
      * The following method is obsolete after refactoring Measurements.getMeasurementUnitID to only throw checked
-     * exceptions such as IOException or SQLException, also when Measurements.getMeasurementUnitID gives a
-     * meaningful error message. Those are the only two justifications for this wrapper method.
+     * exceptions such as IOException or SQLException, also when Measurements.getMeasurementUnitID gives a meaningful
+     * error message. Those are the only two justifications for this wrapper method.
      * 
      * @param unitName the unit we want the ID for
      * @return the result of successful Measurements.getMeasurementUnitID
@@ -550,9 +556,9 @@ public class Control
     }
 
     /**
-     * The following method becomes obsolete after refactoring Variables.getVariableID to only throw checked
-     * exceptions such as IOException or SQLException, also when Variables.getVariableID gives a meaningful error
-     * message. Those are the only two justifications for this wrapper method.
+     * The following method becomes obsolete after refactoring Variables.getVariableID to only throw checked exceptions
+     * such as IOException or SQLException, also when Variables.getVariableID gives a meaningful error message. Those
+     * are the only two justifications for this wrapper method.
      * 
      * @param variableName the variable name to look for
      * @param measurementUnitId the targeted measurement unit id

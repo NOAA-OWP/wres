@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
@@ -34,10 +35,12 @@ public final class BrierScoreTest
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         //Build the metric
-        final BrierScoreBuilder<DiscreteProbabilityPairs, VectorOutput> b = new BrierScore.BrierScoreBuilder<>();
+        final BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
         b.setDecompositionID(MetricConstants.NONE);
-
-        final BrierScore<DiscreteProbabilityPairs, VectorOutput> bs = b.build();
+        
+        final BrierScore bs = b.build();
 
         //Metadata for the output
         final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getMetadata().getSampleSize(),
@@ -49,7 +52,7 @@ public final class BrierScoreTest
 
         //Check the results       
         final VectorOutput actual = bs.apply(input);
-        final VectorOutput expected = MetricOutputFactory.ofVectorOutput(new double[]{0.26}, m1);
+        final VectorOutput expected = outF.ofVectorOutput(new double[]{0.26}, m1);
         assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
             + ".", actual.equals(expected));
         //Check the parameters

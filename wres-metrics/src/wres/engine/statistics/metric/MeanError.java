@@ -1,7 +1,6 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 
 /**
@@ -12,25 +11,8 @@ import wres.datamodel.metric.SingleValuedPairs;
  * @version 0.1
  * @since 0.1
  */
-public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput> extends DoubleErrorScore<S, T>
+public final class MeanError extends DoubleErrorScore<SingleValuedPairs>
 {
-
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class MeanErrorBuilder<S extends SingleValuedPairs, T extends ScalarOutput>
-    extends
-        DoubleErrorScoreBuilder<S, T>
-    {
-
-        @Override
-        public MeanError<S, T> build()
-        {
-            return new MeanError<>(this);
-        }
-
-    }
 
     @Override
     public boolean isSkillScore()
@@ -55,12 +37,27 @@ public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput
     {
         return MetricConstants.NONE;
     }
-    
+
     @Override
     public boolean hasRealUnits()
     {
         return true;
-    }        
+    }
+
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    protected static class MeanErrorBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
+    {
+
+        @Override
+        protected MeanError build()
+        {
+            return new MeanError(this);
+        }
+
+    }
 
     /**
      * Hidden constructor.
@@ -68,7 +65,7 @@ public final class MeanError<S extends SingleValuedPairs, T extends ScalarOutput
      * @param b the builder
      */
 
-    private MeanError(final MeanErrorBuilder<S, T> b)
+    private MeanError(final MeanErrorBuilder b)
     {
         super(b.setErrorFunction(FunctionFactory.error()));
     }

@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
@@ -42,27 +43,31 @@ public final class ProbabilityOfFalseDetectionTest
                                                                     null);
 
         //Build the metric
-        final ProbabilityOfFalseDetectionBuilder<DichotomousPairs, ScalarOutput> b =
-                                                                                   new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder<>();
-        final ProbabilityOfFalseDetection<DichotomousPairs, ScalarOutput> pofd = b.build();
+        final ProbabilityOfFalseDetectionBuilder b =
+                                                   new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        b.setOutputFactory(outF);
+        final ProbabilityOfFalseDetection pofd = b.build();
 
         //Check the results
         final ScalarOutput actual = pofd.apply(input);
-        final ScalarOutput expected = MetricOutputFactory.ofScalarOutput(0.14615384615384616, m1);
+        final MetricFactory metF = MetricFactory.of(outF);
+        final ScalarOutput expected = outF.ofScalarOutput(0.14615384615384616, m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));
         //Check the parameters
         assertTrue("Unexpected name for the Probability of False Detection.",
-                   pofd.getName().equals(MetadataFactory.getMetricName(MetricConstants.PROBABILITY_OF_FALSE_DETECTION)));
+                   pofd.getName()
+                       .equals(MetadataFactory.getMetricName(MetricConstants.PROBABILITY_OF_FALSE_DETECTION)));
         assertTrue("The Probability of False Detection is not decomposable.", !pofd.isDecomposable());
         assertTrue("The Probability of False Detection is not a skill score.", !pofd.isSkillScore());
         assertTrue("The Probability of False Detection cannot be decomposed.",
                    pofd.getDecompositionID() == MetricConstants.NONE);
-        final String expName = MetricFactory.ofContingencyTable().getName();
-        final String actName = MetadataFactory.getMetricName(pofd.getCollectionOf());           
+        final String expName = metF.ofContingencyTable().getName();
+        final String actName = MetadataFactory.getMetricName(pofd.getCollectionOf());
         assertTrue("The Probability of False Detection should be a collection of '" + expName
             + "', but is actually a collection of '" + actName + "'.",
-                   pofd.getCollectionOf()==MetricFactory.ofContingencyTable().getID());
+                   pofd.getCollectionOf() == metF.ofContingencyTable().getID());
     }
 
 }

@@ -1,7 +1,6 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 
 /**
@@ -12,25 +11,8 @@ import wres.datamodel.metric.SingleValuedPairs;
  * @version 0.1
  * @since 0.1
  */
-public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends ScalarOutput> extends DoubleErrorScore<S, T>
+public final class MeanAbsoluteError extends DoubleErrorScore<SingleValuedPairs>
 {
-
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class MeanAbsoluteErrorBuilder<S extends SingleValuedPairs, T extends ScalarOutput>
-    extends
-        DoubleErrorScoreBuilder<S, T>
-    {
-
-        @Override
-        public MeanAbsoluteError<S, T> build()
-        {
-            return new MeanAbsoluteError<>(this);
-        }
-
-    }
 
     @Override
     public boolean isSkillScore()
@@ -49,12 +31,12 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
     {
         return false;
     }
-    
+
     @Override
     public boolean hasRealUnits()
     {
         return true;
-    }        
+    }
 
     @Override
     public MetricConstants getDecompositionID()
@@ -63,12 +45,27 @@ public final class MeanAbsoluteError<S extends SingleValuedPairs, T extends Scal
     }
 
     /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    protected static class MeanAbsoluteErrorBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
+    {
+
+        @Override
+        protected MeanAbsoluteError build()
+        {
+            return new MeanAbsoluteError(this);
+        }
+
+    }
+
+    /**
      * Hidden constructor.
      * 
      * @param b the builder
      */
 
-    private MeanAbsoluteError(final MeanAbsoluteErrorBuilder<S, T> b)
+    private MeanAbsoluteError(final MeanAbsoluteErrorBuilder b)
     {
         super(b.setErrorFunction(FunctionFactory.absError()));
     }

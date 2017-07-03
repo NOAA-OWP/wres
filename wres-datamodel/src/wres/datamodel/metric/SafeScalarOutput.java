@@ -3,14 +3,14 @@ package wres.datamodel.metric;
 import java.util.Objects;
 
 /**
- * A scalar outputs associated with a metric.
+ * An immutable scalar outputs associated with a metric.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-public class ScalarOutput implements MetricOutput<Double>
+final class SafeScalarOutput implements ScalarOutput
 {
 
     /**
@@ -34,12 +34,12 @@ public class ScalarOutput implements MetricOutput<Double>
     @Override
     public boolean equals(final Object o)
     {
-        boolean start = o instanceof ScalarOutput;
+        boolean start = o instanceof SafeScalarOutput;
         if(start)
         {
-            final ScalarOutput v = (ScalarOutput)o;
+            final SafeScalarOutput v = (SafeScalarOutput)o;
             start = meta.equals(v.getMetadata());
-            start = start && Math.abs(((ScalarOutput)o).getData() - output) < .00000001;
+            start = start && Math.abs(((SafeScalarOutput)o).getData() - output) < .00000001;
         }
         return start;        
     }
@@ -69,7 +69,7 @@ public class ScalarOutput implements MetricOutput<Double>
      * @param meta the metadata
      */
 
-    protected ScalarOutput(final double output, final MetricOutputMetadata meta)
+    SafeScalarOutput(final double output, final MetricOutputMetadata meta)
     {
         Objects.requireNonNull(output,"Specify a non-null output.");
         Objects.requireNonNull(meta,"Specify non-null metadata.");        

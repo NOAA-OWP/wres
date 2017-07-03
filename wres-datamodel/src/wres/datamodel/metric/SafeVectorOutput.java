@@ -4,20 +4,16 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputMetadata;
 
 /**
- * <p>
- * A vector of outputs associated with a metric. The number of outputs, as well as the individual outputs and the order
- * in which they are stored, is prescribed by the metric from which the outputs originate.
- * </p>
+ * An immutable vector of outputs associated with a metric. The number of outputs, as well as the individual outputs and
+ * the order in which they are stored, is prescribed by the metric from which the outputs originate.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public final class VectorOutput implements MetricOutput<VectorOfDoubles>
+final class SafeVectorOutput implements VectorOutput
 {
 
     /**
@@ -47,10 +43,10 @@ public final class VectorOutput implements MetricOutput<VectorOfDoubles>
     @Override
     public boolean equals(final Object o)
     {
-        boolean start = o instanceof VectorOutput;
+        boolean start = o instanceof SafeVectorOutput;
         if(start)
         {
-            final VectorOutput v = (VectorOutput)o;
+            final SafeVectorOutput v = (SafeVectorOutput)o;
             start = meta.equals(v.getMetadata());
             start = start && Arrays.equals(output.getDoubles(), v.getData().getDoubles());
         }
@@ -70,10 +66,10 @@ public final class VectorOutput implements MetricOutput<VectorOfDoubles>
      * @param meta the metadata
      */
 
-    protected VectorOutput(final VectorOfDoubles output, final MetricOutputMetadata meta)
+    SafeVectorOutput(final VectorOfDoubles output, final MetricOutputMetadata meta)
     {
-        Objects.requireNonNull(output,"Specify a non-null output.");
-        Objects.requireNonNull(meta,"Specify non-null metadata.");     
+        Objects.requireNonNull(output, "Specify a non-null output.");
+        Objects.requireNonNull(meta, "Specify non-null metadata.");
         this.output = output;
         this.meta = meta;
     }

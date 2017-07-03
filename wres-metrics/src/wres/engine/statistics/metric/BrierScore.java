@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.VectorOutput;
 
 /**
  * <p>
@@ -20,33 +19,8 @@ import wres.datamodel.metric.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public final class BrierScore<S extends DiscreteProbabilityPairs, T extends VectorOutput> extends MeanSquareError<S, T>
-implements ProbabilityScore
+public final class BrierScore extends MeanSquareError<DiscreteProbabilityPairs> implements ProbabilityScore
 {
-
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class BrierScoreBuilder<S extends DiscreteProbabilityPairs, T extends VectorOutput>
-    extends
-        MeanSquareErrorBuilder<S, T>
-    {
-
-        @Override
-        public BrierScore<S, T> build()
-        {
-            return new BrierScore<>(this);
-        }
-
-        @Override
-        public BrierScoreBuilder<S, T> setDecompositionID(final MetricConstants decompositionID)
-        {
-            super.setDecompositionID(decompositionID);
-            return this;
-        }
-
-    }
 
     @Override
     public MetricConstants getID()
@@ -71,12 +45,34 @@ implements ProbabilityScore
     {
         return true;
     }
-    
+
     @Override
     public boolean hasRealUnits()
     {
         return false;
-    }    
+    }
+
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    protected static class BrierScoreBuilder extends MeanSquareErrorBuilder<DiscreteProbabilityPairs>
+    {
+
+        @Override
+        protected BrierScore build()
+        {
+            return new BrierScore(this);
+        }
+
+        @Override
+        protected BrierScoreBuilder setDecompositionID(final MetricConstants decompositionID)
+        {
+            super.setDecompositionID(decompositionID);
+            return this;
+        }
+
+    }
 
     /**
      * Hidden constructor.
@@ -84,7 +80,7 @@ implements ProbabilityScore
      * @param b the builder
      */
 
-    private BrierScore(final BrierScoreBuilder<S, T> b)
+    private BrierScore(final BrierScoreBuilder b)
     {
         super(b);
     }

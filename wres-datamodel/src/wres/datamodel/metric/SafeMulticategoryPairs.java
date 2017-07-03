@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetricInput;
 
 /**
  * Immutable store of verification pairs associated with the outcome (true or false) of a multi-category event. The
@@ -19,7 +17,7 @@ import wres.datamodel.metric.MetricInput;
  * @version 0.1
  * @since 0.1
  */
-public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
+class SafeMulticategoryPairs implements MulticategoryPairs
 {
 
     /**
@@ -65,6 +63,13 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
     }
 
     @Override
+    public MulticategoryPairs getBaselineData()
+    {
+        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        return metIn.ofMulticategoryPairs(baselineInput, baselineMeta);
+    }          
+    
+    @Override
     public List<VectorOfBooleans> getDataForBaseline()
     {
         return Collections.unmodifiableList(baselineInput);
@@ -81,7 +86,7 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
      * 
      * @return the number of categories
      */
-
+    @Override
     public int getCategoryCount()
     {
         final int elements = mainInput.get(0).getBooleans().length;
@@ -92,13 +97,13 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
      * A {@link MetricInputBuilder} to build the metric input.
      */
 
-    public static class MulticategoryPairsBuilder implements MetricInputBuilder<List<VectorOfBooleans>>
+    protected static class MulticategoryPairsBuilder implements MetricInputBuilder<List<VectorOfBooleans>>
     {
 
         /**
          * Pairs.
          */
-        protected List<VectorOfBooleans> mainInput;
+        private List<VectorOfBooleans> mainInput;
 
         /**
          * Pairs for baseline.
@@ -148,7 +153,7 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
         @Override
         public MulticategoryPairs build()
         {
-            return new MulticategoryPairs(this);
+            return new SafeMulticategoryPairs(this);
         }
     }
 
@@ -159,7 +164,7 @@ public class MulticategoryPairs implements MetricInput<List<VectorOfBooleans>>
      * @throws MetricInputException if the pairs are invalid
      */
 
-    protected MulticategoryPairs(final MulticategoryPairsBuilder b)
+    protected SafeMulticategoryPairs(final MulticategoryPairsBuilder b)
     {
         //Bounds checks
         if(Objects.isNull(b.mainMeta))

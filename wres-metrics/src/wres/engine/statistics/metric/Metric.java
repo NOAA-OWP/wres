@@ -1,11 +1,13 @@
 package wres.engine.statistics.metric;
 
+import java.util.Objects;
 import java.util.function.Function;
 
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputFactory;
 
 /**
  * <p>
@@ -29,6 +31,12 @@ import wres.datamodel.metric.MetricOutput;
  */
 public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>> implements Function<S, T>
 {
+
+    /**
+     * Instance of a {@link MetricOutputFactory} for constructing a {@link MetricOutput}.
+     */
+
+    private final MetricOutputFactory outputFactory;
 
     /**
      * Applies the function to the input and throws a {@link MetricCalculationException} if the calculation fails.
@@ -101,8 +109,10 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * parameters in the {@link MetricBuilder} before construction.
      */
 
-    public interface MetricBuilder<S extends MetricInput<?>, T extends MetricOutput<?>>
+    protected static abstract class MetricBuilder<P extends MetricInput<?>, Q extends MetricOutput<?>>
     {
+
+        protected MetricOutputFactory outputFactory;
 
         /**
          * Build the {@link Metric}.
@@ -110,8 +120,47 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
          * @return a {@link Metric}
          */
 
-        public Metric<S, T> build();
+        protected abstract Metric<P, Q> build();
 
+        /**
+         * Sets the {@link MetricOutputFactory} for constructing a {@link MetricOutput}.
+         * 
+         * @param outputFactory the {@link MetricOutputFactory}
+         * @return the builder
+         */
+
+        protected MetricBuilder<P, Q> setOutputFactory(final MetricOutputFactory outputFactory)
+        {
+            this.outputFactory = outputFactory;
+            return this;
+        }
+
+    }
+
+    /**
+     * Returns a {@link MetricOutputFactory} for constructing a {@link MetricOutput}.
+     * 
+     * @return a {@link MetricOutputFactory}
+     */
+
+    protected MetricOutputFactory getOutputFactory()
+    {
+        return outputFactory;
+    }
+
+    /**
+     * Construct a {@link Metric} with a {@link MetricOutputFactory}.
+     * 
+     * @param outputFactory the {@link MetricOutputFactory}.
+     */
+
+    protected Metric(final MetricOutputFactory outputFactory)
+    {
+        if(Objects.isNull(outputFactory))
+        {
+            throw new UnsupportedOperationException("Cannot construct the metric without a metric output factory.");
+        }
+        this.outputFactory = outputFactory;
     }
 
 }

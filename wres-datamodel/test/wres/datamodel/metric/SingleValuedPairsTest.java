@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.SingleValuedPairs.SingleValuedPairsBuilder;
+import wres.datamodel.metric.SafeSingleValuedPairs.SingleValuedPairsBuilder;
 
 /**
  * Tests the {@link SingleValuedPairs}.

@@ -24,14 +24,18 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metric.DefaultMetricInputFactory;
+import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricInputFactory;
 import wres.datamodel.metric.MetricOutputCollection;
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.PairException;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
+import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
@@ -107,10 +111,15 @@ public class ControlTemp
                                                 "CFS");
 
         //Build an immutable collection of metrics, to be computed at each of several forecast lead times
-        MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
-        builder = builder.add(MetricFactory.ofMeanError())
-                         .add(MetricFactory.ofMeanAbsoluteError())
-                         .add(MetricFactory.ofRootMeanSquareError());
+        final MetricInputFactory inputFactory = DefaultMetricInputFactory.of();
+        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.of();
+        final MetricFactory metricFactory = MetricFactory.of(outputFactory);
+        final List<Metric<SingleValuedPairs, ScalarOutput>> metrics = new ArrayList<>();
+        metrics.add(metricFactory.ofMeanError());
+        metrics.add(metricFactory.ofMeanAbsoluteError());
+        metrics.add(metricFactory.ofRootMeanSquareError());
+        final MetricCollection<SingleValuedPairs,ScalarOutput> useMe = metricFactory.ofSingleValuedScalarCollection(metrics);
+
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
         final int leadTimesCount = 2880;
@@ -133,8 +142,8 @@ public class ControlTemp
             // 5. Monitor progress per lead time
             final CompletableFuture<Void> c =
                                             CompletableFuture.supplyAsync(new PairGetterByLeadTime(config, leadTime), f)
-                                                             .thenApplyAsync(new SingleValuedPairProcessor(), f)
-                                                             .thenApplyAsync(builder.build(), f)
+                                                             .thenApplyAsync(new SingleValuedPairProcessor(inputFactory), f)
+                                                             .thenApplyAsync(useMe, f)
                                                              .thenAcceptAsync(new ResultProcessor(leadTime, results), f)
                                                              .thenAcceptAsync(a -> {
                                                                  if(LOGGER.isInfoEnabled())
@@ -219,6 +228,12 @@ public class ControlTemp
     implements Function<List<PairOfDoubleAndVectorOfDoubles>, SingleValuedPairs>
     {
 
+        private final MetricInputFactory metIn;
+        
+        public SingleValuedPairProcessor(final MetricInputFactory metIn) {
+            this.metIn = metIn;
+        }
+        
         @Override
         public SingleValuedPairs apply(final List<PairOfDoubleAndVectorOfDoubles> t)
         {
@@ -231,7 +246,7 @@ public class ControlTemp
                                                             mean.applyAsDouble(DataFactory.vectorOf(nextPair.getItemTwo())));
                 returnMe.add(pair);
             }
-            return MetricInputFactory.ofSingleValuedPairs(returnMe, MetadataFactory.getMetadata(returnMe.size()));
+            return metIn.ofSingleValuedPairs(returnMe, MetadataFactory.getMetadata(returnMe.size()));
         }
     }
 

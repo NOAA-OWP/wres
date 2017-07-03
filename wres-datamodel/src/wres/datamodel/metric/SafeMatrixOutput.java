@@ -4,20 +4,16 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
-import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputMetadata;
 
 /**
- * <p>
- * A matrix of outputs associated with a metric. The number of elements and the order in which they are stored, is
- * prescribed by the metric from which the outputs originate.
- * </p>
+ * An immutable matrix of outputs associated with a metric. The number of elements and the order in which they are 
+ * stored, is prescribed by the metric from which the outputs originate.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public class MatrixOutput implements MetricOutput<MatrixOfDoubles>
+final class SafeMatrixOutput implements MatrixOutput
 {
 
     /**
@@ -47,12 +43,12 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>
     @Override
     public boolean equals(final Object o)
     {
-        boolean start = o instanceof MatrixOutput;
+        boolean start = o instanceof SafeMatrixOutput;
         if(start)
         {
-            final MatrixOutput m = (MatrixOutput)o;
+            final SafeMatrixOutput m = (SafeMatrixOutput)o;
             start = meta.equals(m.getMetadata());
-            start = start && m.output.rows() == output.rows() && m.output.columns() == output.columns();
+            start = start && m.getData().rows() == output.rows() && m.getData().columns() == output.columns();
             start = start && Arrays.deepEquals(output.getDoubles(), m.getData().getDoubles());
         }
         return start;
@@ -71,7 +67,7 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>
      * @param meta the metadata.
      */
 
-    protected MatrixOutput(final MatrixOfDoubles output, final MetricOutputMetadata meta)
+    SafeMatrixOutput(final MatrixOfDoubles output, final MetricOutputMetadata meta)
     {
         Objects.requireNonNull(output,"Specify a non-null output.");
         Objects.requireNonNull(meta,"Specify non-null metadata.");             

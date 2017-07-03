@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.VectorOutput;
 
 /**
  * <p>
@@ -15,35 +14,9 @@ import wres.datamodel.metric.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public final class BrierSkillScore<S extends DiscreteProbabilityPairs, T extends VectorOutput>
-extends
-    MeanSquareErrorSkillScore<S, T>
+public final class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs>
 implements ProbabilityScore
 {
-
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class BrierSkillScoreBuilder<S extends DiscreteProbabilityPairs, T extends VectorOutput>
-    extends
-        MeanSquareErrorSkillScoreBuilder<S, T>
-    {
-
-        @Override
-        public BrierSkillScore<S, T> build()
-        {
-            return new BrierSkillScore<>(this);
-        }
-
-        @Override
-        public BrierSkillScoreBuilder<S, T> setDecompositionID(final MetricConstants decompositionID)
-        {
-            super.setDecompositionID(decompositionID);
-            return this;
-        }
-
-    }
 
     @Override
     public MetricConstants getID()
@@ -68,12 +41,34 @@ implements ProbabilityScore
     {
         return false;
     }
-    
+
     @Override
     public boolean hasRealUnits()
     {
         return false;
-    }     
+    }
+
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    protected static class BrierSkillScoreBuilder extends MeanSquareErrorSkillScoreBuilder<DiscreteProbabilityPairs>
+    {
+
+        @Override
+        protected BrierSkillScore build()
+        {
+            return new BrierSkillScore(this);
+        }
+
+        @Override
+        protected BrierSkillScoreBuilder setDecompositionID(final MetricConstants decompositionID)
+        {
+            super.setDecompositionID(decompositionID);
+            return this;
+        }
+
+    }
 
     /**
      * Hidden constructor.
@@ -81,7 +76,7 @@ implements ProbabilityScore
      * @param b the builder
      */
 
-    private BrierSkillScore(final BrierSkillScoreBuilder<S, T> b)
+    private BrierSkillScore(final BrierSkillScoreBuilder b)
     {
         super(b);
     }

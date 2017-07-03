@@ -3,13 +3,9 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
-import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MatrixOutput;
-import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputFactory;
-import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
 
@@ -23,73 +19,30 @@ import wres.datamodel.metric.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-public final class PeirceSkillScore<S extends MulticategoryPairs, T extends ScalarOutput> extends ContingencyTable<S, T>
-implements Score, Collectable<S, MetricOutput<?>, T>
+public final class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyTableScore<S>
 {
 
-    /**
-     * A {@link MetricBuilder} to build the dichotomous metric.
-     */
-
-    public static class PeirceSkillScoreBuilder<S extends DichotomousPairs, T extends ScalarOutput>
-    implements MetricBuilder<S, T>
-    {
-
-        @Override
-        public PeirceSkillScore<S, T> build()
-        {
-            return new PeirceSkillScore<>();
-        }
-
-    }
-
-    /**
-     * A {@link MetricBuilder} to build the multi-category metric.
-     */
-
-    public static class PeirceSkillScoreMulticategoryBuilder<S extends MulticategoryPairs, T extends ScalarOutput>
-    implements MetricBuilder<S, T>
-    {
-
-        @Override
-        public PeirceSkillScore<S, T> build()
-        {
-            return new PeirceSkillScore<>();
-        }
-
-    }
-
     @Override
-    public T apply(final S s)
+    public ScalarOutput apply(final S s)
     {
         return apply(getCollectionInput(s));
     }
 
     @Override
-    public T apply(final MetricOutput<?> output)
+    public ScalarOutput apply(final MatrixOutput output)
     {
         Objects.requireNonNull(output, "Specify non-null input for the '" + toString() + "'.");
         //Check the input
         isContingencyTable(output, this);
 
-        final MatrixOfDoubles v = ((MatrixOutput)output).getData();
+        final MatrixOfDoubles v = output.getData();
         final double[][] cm = v.getDoubles();
-
-        //Metadata
-        final MetricOutputMetadata metIn = output.getMetadata();
-        final MetricOutputMetadata metOut =
-                                  MetadataFactory.getMetadata(metIn.getSampleSize(),
-                                                              metIn.getDimension(),
-                                                              getID(),
-                                                              MetricConstants.MAIN,
-                                                              metIn.getID(),
-                                                              null);  
 
         //Dichotomous predictand
         if(v.rows() == 2)
         {
-            return MetricOutputFactory.ofExtendsScalarOutput((cm[0][0] / (cm[0][0] + cm[1][0]))
-                - (cm[0][1] / (cm[0][1] + cm[1][1])), metOut);
+            return getOutputFactory().ofScalarOutput((cm[0][0] / (cm[0][0] + cm[1][0]))
+                - (cm[0][1] / (cm[0][1] + cm[1][1])), getMetadata(output));
         }
 
         //Multicategory predictand
@@ -124,7 +77,7 @@ implements Score, Collectable<S, MetricOutput<?>, T>
         //Compose the result
         final double nSquared = n * n;
         final double result = ((diag / n) - (sumProd / nSquared)) / (1.0 - (uniProd / nSquared));
-        return MetricOutputFactory.ofExtendsScalarOutput(result, metOut);
+        return getOutputFactory().ofScalarOutput(result, getMetadata(output));
     }
 
     @Override
@@ -139,43 +92,30 @@ implements Score, Collectable<S, MetricOutput<?>, T>
         return true;
     }
 
-    @Override
-    public boolean isDecomposable()
-    {
-        return false;
-    }
-    
-    @Override
-    public boolean hasRealUnits()
-    {
-        return false;
-    }        
+    /**
+     * A {@link MetricBuilder} to build the dichotomous metric.
+     */
 
-    @Override
-    public MetricConstants getDecompositionID()
+    protected static class PeirceSkillScoreBuilder<S extends MulticategoryPairs> extends MetricBuilder<S, ScalarOutput>
     {
-        return MetricConstants.NONE;
-    }
 
-    @Override
-    public MetricOutput<?> getCollectionInput(final S input)
-    {
-        return super.apply(input); //Contingency table
-    }
+        @Override
+        public PeirceSkillScore<S> build()
+        {
+            return new PeirceSkillScore<>(this.outputFactory);
+        }
 
-    @Override
-    public MetricConstants getCollectionOf()
-    {
-        return super.getID();
     }
 
     /**
      * Hidden constructor.
+     * 
+     * @param outputFactory the {@link MetricOutputFactory}.
      */
 
-    private PeirceSkillScore()
+    private PeirceSkillScore(final MetricOutputFactory outputFactory)
     {
-        super();
+        super(outputFactory);
     }
 
 }

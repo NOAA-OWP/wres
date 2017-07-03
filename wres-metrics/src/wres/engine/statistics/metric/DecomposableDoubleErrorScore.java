@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
 
@@ -11,10 +12,21 @@ import wres.datamodel.metric.VectorOutput;
  * @since 0.1
  */
 
-public abstract class DecomposableDoubleErrorScore<S extends SingleValuedPairs, T extends VectorOutput>
+public abstract class DecomposableDoubleErrorScore<S extends SingleValuedPairs>
 extends
-    Metric<S, T>
+    Metric<S,VectorOutput>
 implements Score
 {
+
+    /**
+     * Construct a {@link DecomposableDoubleErrorScore} with a {@link MetricOutputFactory}.
+     * 
+     * @param outputFactory the {@link MetricOutputFactory}.
+     */
+
+    protected DecomposableDoubleErrorScore(final MetricOutputFactory outputFactory)
+    {
+        super(outputFactory);
+    }
 
 }

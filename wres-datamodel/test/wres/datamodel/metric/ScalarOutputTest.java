@@ -39,15 +39,16 @@ public final class ScalarOutputTest
                                                                     MetricConstants.MAIN,
                                                                     "B",
                                                                     null);
-        final ScalarOutput s = MetricOutputFactory.ofScalarOutput(1.0, m1);
-        final ScalarOutput t = MetricOutputFactory.ofScalarOutput(1.0, m1);
+        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final ScalarOutput s = d.ofScalarOutput(1.0, m1);
+        final ScalarOutput t = d.ofScalarOutput(1.0, m1);
         assertTrue("Expected equal outputs.", s.equals(t));
         assertTrue("Expected non-equal outputs.", !s.equals(null));
         assertTrue("Expected non-equal outputs.", !s.equals(new Double(1.0)));
-        assertTrue("Expected non-equal outputs.", !s.equals(MetricOutputFactory.ofScalarOutput(2.0, m1)));
-        assertTrue("Expected non-equal outputs.", !s.equals(MetricOutputFactory.ofScalarOutput(1.0, m2)));
-        final ScalarOutput q = MetricOutputFactory.ofScalarOutput(1.0, m2);
-        final ScalarOutput r = MetricOutputFactory.ofScalarOutput(1.0, m3);
+        assertTrue("Expected non-equal outputs.", !s.equals(d.ofScalarOutput(2.0, m1)));
+        assertTrue("Expected non-equal outputs.", !s.equals(d.ofScalarOutput(1.0, m2)));
+        final ScalarOutput q = d.ofScalarOutput(1.0, m2);
+        final ScalarOutput r = d.ofScalarOutput(1.0, m3);
         assertTrue("Expected non-equal outputs.", !s.equals(q));
         assertTrue("Expected equal outputs.", q.equals(q));
         assertTrue("Expected non-equal outputs.", !q.equals(s));
@@ -67,8 +68,9 @@ public final class ScalarOutputTest
                                                                     MetricConstants.MAIN,
                                                                     "A",
                                                                     null);
-        final ScalarOutput s = new ScalarOutput(1.0, m1);
-        final ScalarOutput t = new ScalarOutput(1.0, m1);
+        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final ScalarOutput s = d.ofScalarOutput(1.0, m1);
+        final ScalarOutput t = d.ofScalarOutput(1.0, m1);
         assertTrue("Expected equal string representations.", s.toString().equals(t.toString()));
     }
 
@@ -91,8 +93,9 @@ public final class ScalarOutputTest
                                                                     MetricConstants.MAIN,
                                                                     "B",
                                                                     null);
-        final ScalarOutput q = MetricOutputFactory.ofScalarOutput(1.0, m1);
-        final ScalarOutput r = MetricOutputFactory.ofScalarOutput(1.0, m2);
+        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final ScalarOutput q = d.ofScalarOutput(1.0, m1);
+        final ScalarOutput r = d.ofScalarOutput(1.0, m2);
         assertTrue("Unequal metadata.", !q.getMetadata().equals(r.getMetadata()));
     }
 
@@ -121,11 +124,12 @@ public final class ScalarOutputTest
                                                                     MetricConstants.MAIN,
                                                                     "B",
                                                                     null);
-        final ScalarOutput q = MetricOutputFactory.ofScalarOutput(1.0, m1);
-        final ScalarOutput r = MetricOutputFactory.ofScalarOutput(1.0, m2);
+        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final ScalarOutput q = d.ofScalarOutput(1.0, m1);
+        final ScalarOutput r = d.ofScalarOutput(1.0, m2);
         assertTrue("Expected equal hash codes.", q.hashCode() == r.hashCode());
         assertTrue("Expected unequal hash codes.",
-                   q.hashCode() != MetricOutputFactory.ofScalarOutput(1.0, m3).hashCode());
+                   q.hashCode() != d.ofScalarOutput(1.0, m3).hashCode());
     }
 
 }
