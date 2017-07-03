@@ -13,7 +13,7 @@ import wres.datamodel.DataFactory;
  * @since 0.1
  */
 
-public final class DefaultMetricOutputFactory extends DefaultMetricDataFactory implements MetricOutputFactory
+public class DefaultMetricOutputFactory extends DefaultMetricDataFactory implements MetricOutputFactory
 {
 
     /**
@@ -28,7 +28,7 @@ public final class DefaultMetricOutputFactory extends DefaultMetricDataFactory i
      * @return a {@link MetricOutputFactory}
      */
 
-    public static MetricOutputFactory of()
+    public static MetricOutputFactory getInstance()
     {
         if(Objects.isNull(instance))
         {

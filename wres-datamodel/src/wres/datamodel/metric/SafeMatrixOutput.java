@@ -13,7 +13,7 @@ import wres.datamodel.MatrixOfDoubles;
  * @version 0.1
  * @since 0.1
  */
-final class SafeMatrixOutput implements MatrixOutput
+class SafeMatrixOutput implements MatrixOutput
 {
 
     /**

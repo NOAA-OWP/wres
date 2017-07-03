@@ -28,9 +28,9 @@ public final class ContingencyTableScoreTest
     @Test
     public void test1ContingencyTableScore()
     {
-        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = outputFactory.getMetadataFactory();
-        final MetricFactory metricFactory = MetricFactory.of(outputFactory);
+        final MetricFactory metricFactory = MetricFactory.getInstance(outputFactory);
         final CriticalSuccessIndex cs = metricFactory.ofCriticalSuccessIndex();
 
         //Metadata for the output

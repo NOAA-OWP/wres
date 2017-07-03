@@ -7,13 +7,13 @@ package wres.datamodel.metric;
  * @version 0.1
  * @since 0.1
  */
-final class SafeDiscreteProbabilityPairs extends SafeSingleValuedPairs implements DiscreteProbabilityPairs
+class SafeDiscreteProbabilityPairs extends SafeSingleValuedPairs implements DiscreteProbabilityPairs
 {
 
     @Override
     public DiscreteProbabilityPairs getBaselineData()
     {
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
         return metIn.ofDiscreteProbabilityPairs(getDataForBaseline(),getMetadataForBaseline());
     }     
 

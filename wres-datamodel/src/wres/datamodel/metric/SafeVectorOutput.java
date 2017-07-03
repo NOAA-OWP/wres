@@ -13,7 +13,7 @@ import wres.datamodel.VectorOfDoubles;
  * @version 0.1
  * @since 0.1
  */
-final class SafeVectorOutput implements VectorOutput
+class SafeVectorOutput implements VectorOutput
 {
 
     /**
