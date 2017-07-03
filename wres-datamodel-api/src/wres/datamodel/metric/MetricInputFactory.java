@@ -13,7 +13,7 @@ import wres.datamodel.VectorOfBooleans;
  * @since 0.1
  */
 
-public interface MetricInputFactory
+public interface MetricInputFactory extends MetricDataFactory
 {
 
     /**

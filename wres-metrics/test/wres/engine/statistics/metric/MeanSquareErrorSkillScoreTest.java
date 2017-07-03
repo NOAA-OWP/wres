@@ -32,21 +32,24 @@ public final class MeanSquareErrorSkillScoreTest
     @Test
     public void test1MeanSquareErrorSkillScore()
     {
+        //Obtain the factories
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData().size(),
-                                                                    MetadataFactory.getDimension("CMS"),
-                                                                    MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                                    MetricConstants.MAIN,
-                                                                    "Main",
-                                                                    "Baseline");
+        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
+                                                            metaFac.getDimension("CMS"),
+                                                            MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                            MetricConstants.MAIN,
+                                                            "Main",
+                                                            "Baseline");
 
         //Build the metric
         final MeanSquareErrorSkillScoreBuilder<SingleValuedPairs> b =
-                                                                                  new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+                                                                    new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>();
         b.setOutputFactory(outF);
         final MeanSquareErrorSkillScore<SingleValuedPairs> mse = b.build();
 
@@ -58,7 +61,7 @@ public final class MeanSquareErrorSkillScoreTest
 
         //Check the parameters
         assertTrue("Unexpected name for the Mean Square Error Skill Score.",
-                   mse.getName().equals(MetadataFactory.getMetricName(MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE)));
+                   mse.getName().equals(metaFac.getMetricName(MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE)));
         assertTrue("The Mean Square Error is decomposable.", mse.isDecomposable());
         assertTrue("The Mean Square Error is a skill score.", mse.isSkillScore());
         assertTrue("Expected no decomposition for the Mean Square Error Skill Score.",

@@ -10,7 +10,7 @@ import java.util.List;
  * @since 0.1
  */
 
-public interface MetricOutputFactory
+public interface MetricOutputFactory extends MetricDataFactory
 {
 
     /**

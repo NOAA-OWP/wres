@@ -31,32 +31,33 @@ public final class ContingencyTableTest
     @Test
     public void test1ContingencyTable()
     {
+        //Obtain the factories
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
-        
+
         //Metadata for the output
-        final MetricOutputMetadata m1 =
-                                      MetadataFactory.getMetadata(input.getData().size(),
-                                                                  MetadataFactory.getDimension(),
-                                                                  MetricConstants.CONTINGENCY_TABLE,
-                                                                  MetricConstants.MAIN,
-                                                                  "Main",
-                                                                  null);
+        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "Main",
+                                                            null);
 
         //Build the metric
-        final ContingencyTableBuilder<DichotomousPairs> b =
-                                                                        new ContingencyTable.ContingencyTableBuilder<>();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final ContingencyTableBuilder<DichotomousPairs> b = new ContingencyTable.ContingencyTableBuilder<>();
         b.setOutputFactory(outF);
         final ContingencyTable<DichotomousPairs> table = b.build();
         final double[][] benchmark = new double[][]{{82.0, 38.0}, {23.0, 222.0}};
         final MatrixOutput actual = table.apply(input);
-        final MatrixOutput expected = outF.ofMatrixOutput(benchmark,m1);       
+        final MatrixOutput expected = outF.ofMatrixOutput(benchmark, m1);
         assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
             + ".", actual.equals(expected));
 
         //Check the parameters
-        assertTrue(table.getName().equals(MetadataFactory.getMetricName(MetricConstants.CONTINGENCY_TABLE)));
+        assertTrue(table.getName().equals(metaFac.getMetricName(MetricConstants.CONTINGENCY_TABLE)));
     }
 
 }

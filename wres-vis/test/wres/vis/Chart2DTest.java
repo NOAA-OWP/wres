@@ -38,10 +38,9 @@ public class Chart2DTest extends TestCase
         values.add(DataFactory.pairOf(8, 7));
         values.add(DataFactory.pairOf(12, 12));
         values.add(DataFactory.pairOf(93, 94));
-        final Metadata meta = MetadataFactory.getMetadata(values.size(),
-                                                          MetadataFactory.getDimension("CMS"),
-                                                          "Main");
         final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "Main");
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
         //Construct the source from the pairs assigning it a data source order index of 0.  
@@ -95,9 +94,8 @@ public class Chart2DTest extends TestCase
         values.add(DataFactory.pairOf(12, 12));
         values.add(DataFactory.pairOf(93, 94));
         final MetricInputFactory metIn = DefaultMetricInputFactory.of();
-        final Metadata meta = MetadataFactory.getMetadata(values.size(),
-                                                          MetadataFactory.getDimension("CMS"),
-                                                          "Main");
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "Main");
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
         //Create the data source for charting.

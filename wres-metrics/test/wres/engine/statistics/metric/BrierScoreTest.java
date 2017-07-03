@@ -37,18 +37,19 @@ public final class BrierScoreTest
         //Build the metric
         final BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
         final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
         b.setOutputFactory(outF);
         b.setDecompositionID(MetricConstants.NONE);
-        
+
         final BrierScore bs = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getMetadata().getSampleSize(),
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.BRIER_SCORE,
-                                                                    MetricConstants.MAIN,
-                                                                    "Main",
-                                                                    null);
+        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getMetadata().getSampleSize(),
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.BRIER_SCORE,
+                                                            MetricConstants.MAIN,
+                                                            "Main",
+                                                            null);
 
         //Check the results       
         final VectorOutput actual = bs.apply(input);
@@ -57,7 +58,7 @@ public final class BrierScoreTest
             + ".", actual.equals(expected));
         //Check the parameters
         assertTrue("Unexpected name for the Brier Score.",
-                   bs.getName().equals(MetadataFactory.getMetricName(MetricConstants.BRIER_SCORE)));
+                   bs.getName().equals(metaFac.getMetricName(MetricConstants.BRIER_SCORE)));
         assertTrue("The Brier Score is decomposable.", bs.isDecomposable());
         assertTrue("The Brier Score is not a skill score.", !bs.isSkillScore());
         assertTrue("Expected no decomposition for the Brier Score.", bs.getDecompositionID() == MetricConstants.NONE);

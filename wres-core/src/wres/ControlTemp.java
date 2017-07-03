@@ -26,7 +26,6 @@ import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.DefaultMetricOutputFactory;
-import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricInputFactory;
 import wres.datamodel.metric.MetricOutputCollection;
 import wres.datamodel.metric.MetricOutputFactory;
@@ -246,7 +245,7 @@ public class ControlTemp
                                                             mean.applyAsDouble(DataFactory.vectorOf(nextPair.getItemTwo())));
                 returnMe.add(pair);
             }
-            return metIn.ofSingleValuedPairs(returnMe, MetadataFactory.getMetadata(returnMe.size()));
+            return metIn.ofSingleValuedPairs(returnMe, metIn.getMetadataFactory().getMetadata(returnMe.size()));
         }
     }
 

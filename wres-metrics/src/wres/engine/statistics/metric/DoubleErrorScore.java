@@ -4,7 +4,6 @@ import java.util.Objects;
 
 import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
@@ -18,8 +17,7 @@ import wres.datamodel.metric.SingleValuedPairs;
  * @version 0.1
  * @since 0.1
  */
-public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, ScalarOutput>
-implements Score
+public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, ScalarOutput> implements Score
 {
     /**
      * The error function.
@@ -32,7 +30,8 @@ implements Score
      */
 
     public static abstract class DoubleErrorScoreBuilder<S extends SingleValuedPairs>
-    extends MetricBuilder<S, ScalarOutput>
+    extends
+        MetricBuilder<S, ScalarOutput>
     {
 
         /**
@@ -67,22 +66,19 @@ implements Score
         {
             d = mainMeta.getDimension();
         }
-        if(s.hasBaseline() && isSkillScore()) {
+        if(s.hasBaseline() && isSkillScore())
+        {
             baseID = s.getMetadataForBaseline().getID();
         }
-        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(mainMeta.getSampleSize(),
-                                                                        d,
-                                                                        getID(),
-                                                                        MetricConstants.MAIN,
-                                                                        mainMeta.getID(),
-                                                                        baseID);
+        final MetricOutputMetadata metOut =
+                                          getOutputFactory().getMetadataFactory().getMetadata(mainMeta.getSampleSize(),
+                                                                                              d,
+                                                                                              getID(),
+                                                                                              MetricConstants.MAIN,
+                                                                                              mainMeta.getID(),
+                                                                                              baseID);
         //Compute the atomic errors in a stream
-        return getOutputFactory().ofScalarOutput(s.getData()
-                                                                .stream()
-                                                                .mapToDouble(f)
-                                                                .average()
-                                                                .getAsDouble(),
-                                                               metOut);
+        return getOutputFactory().ofScalarOutput(s.getData().stream().mapToDouble(f).average().getAsDouble(), metOut);
     }
 
     /**
