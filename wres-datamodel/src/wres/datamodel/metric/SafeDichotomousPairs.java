@@ -9,13 +9,13 @@ package wres.datamodel.metric;
  * @version 0.1
  * @since 0.1
  */
-final class SafeDichotomousPairs extends SafeMulticategoryPairs implements DichotomousPairs
+class SafeDichotomousPairs extends SafeMulticategoryPairs implements DichotomousPairs
 {
 
     @Override
     public DichotomousPairs getBaselineData()
     {
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
         return metIn.ofDichotomousPairs(getDataForBaseline(),getMetadataForBaseline());
     }        
 

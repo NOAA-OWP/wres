@@ -14,7 +14,7 @@ import wres.datamodel.VectorOfBooleans;
  * @since 0.1
  */
 
-public final class DefaultMetricInputFactory extends DefaultMetricDataFactory implements MetricInputFactory
+public class DefaultMetricInputFactory extends DefaultMetricDataFactory implements MetricInputFactory
 {
 
     /**
@@ -29,7 +29,7 @@ public final class DefaultMetricInputFactory extends DefaultMetricDataFactory im
      * @return a {@link MetricOutputFactory}
      */
 
-    public static MetricInputFactory of()
+    public static MetricInputFactory getInstance()
     {
         if(Objects.isNull(instance))
         {

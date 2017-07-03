@@ -27,7 +27,7 @@ public abstract class DefaultMetricDataFactory
 
     public MetadataFactory getMetadataFactory() {
         if(Objects.isNull(instance)) {
-            instance = DefaultMetadataFactory.of();
+            instance = DefaultMetadataFactory.getInstance();
         }
         return instance;        
     }

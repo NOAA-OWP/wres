@@ -26,9 +26,9 @@ public final class MetricInputFactoryTest
     @Test
     public void test1MetricFactory()
     {
-        final MetadataFactory metaFac = DefaultMetadataFactory.of();
+        final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
         final Metadata m1 = metaFac.getMetadata(1, metaFac.getDimension(), "Main");
-        final MetricInputFactory inFac = DefaultMetricInputFactory.of();
+        final MetricInputFactory inFac = DefaultMetricInputFactory.getInstance();
         final List<VectorOfBooleans> input = new ArrayList<>();
         input.add(DataFactory.vectorOf(new boolean[]{true, false}));
         inFac.ofDichotomousPairs(input, m1);

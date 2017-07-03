@@ -32,7 +32,7 @@ public final class ProbabilityOfFalseDetectionTest
     public void test1ProbabilityOfDetection()
     {
         //Obtain the factories
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
@@ -54,7 +54,7 @@ public final class ProbabilityOfFalseDetectionTest
 
         //Check the results
         final ScalarOutput actual = pofd.apply(input);
-        final MetricFactory metF = MetricFactory.of(outF);
+        final MetricFactory metF = MetricFactory.getInstance(outF);
         final ScalarOutput expected = outF.ofScalarOutput(0.14615384615384616, m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));

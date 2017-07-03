@@ -32,7 +32,7 @@ public final class MeanAbsoluteErrorTest
     public void test1MeanAbsoluteError()
     {
         //Obtain the factories
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data

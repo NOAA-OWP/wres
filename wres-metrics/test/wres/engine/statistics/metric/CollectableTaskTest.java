@@ -36,9 +36,9 @@ public final class CollectableTaskTest
     public void test1CollectableTask()
     {
 
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
-        final MetricFactory metF = MetricFactory.of(outF);
+        final MetricFactory metF = MetricFactory.getInstance(outF);
         final ExecutorService pairPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         try
         {
