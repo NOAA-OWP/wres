@@ -21,25 +21,26 @@ public final class ScalarOutputTest
     @Test
     public void test1Equals()
     {
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
-        final MetricOutputMetadata m2 = MetadataFactory.getMetadata(11,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
-        final MetricOutputMetadata m3 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "B",
-                                                                    null);
-        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final MetadataFactory metaFac = d.getMetadataFactory();
+        final MetricOutputMetadata m1 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "A",
+                                                            null);
+        final MetricOutputMetadata m2 = metaFac.getMetadata(11,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "A",
+                                                            null);
+        final MetricOutputMetadata m3 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "B",
+                                                            null);
         final ScalarOutput s = d.ofScalarOutput(1.0, m1);
         final ScalarOutput t = d.ofScalarOutput(1.0, m1);
         assertTrue("Expected equal outputs.", s.equals(t));
@@ -62,13 +63,14 @@ public final class ScalarOutputTest
     @Test
     public void test2ToString()
     {
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
-        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final MetadataFactory metaFac = d.getMetadataFactory();
+        final MetricOutputMetadata m1 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "A",
+                                                            null);
         final ScalarOutput s = d.ofScalarOutput(1.0, m1);
         final ScalarOutput t = d.ofScalarOutput(1.0, m1);
         assertTrue("Expected equal string representations.", s.toString().equals(t.toString()));
@@ -81,19 +83,20 @@ public final class ScalarOutputTest
     @Test
     public void test3GetMetadata()
     {
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
-        final MetricOutputMetadata m2 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "B",
-                                                                    null);
-        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final MetadataFactory metaFac = d.getMetadataFactory();
+        final MetricOutputMetadata m1 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "A",
+                                                            null);
+        final MetricOutputMetadata m2 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "B",
+                                                            null);
         final ScalarOutput q = d.ofScalarOutput(1.0, m1);
         final ScalarOutput r = d.ofScalarOutput(1.0, m2);
         assertTrue("Unequal metadata.", !q.getMetadata().equals(r.getMetadata()));
@@ -106,30 +109,30 @@ public final class ScalarOutputTest
     @Test
     public void test4HashCode()
     {
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
-        final MetricOutputMetadata m2 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "A",
-                                                                    null);
-        final MetricOutputMetadata m3 = MetadataFactory.getMetadata(10,
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    MetricConstants.MAIN,
-                                                                    "B",
-                                                                    null);
-        final MetricOutputFactory d = DefaultMetricOutputFactory.of();
+        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final MetadataFactory metaFac = d.getMetadataFactory();
+        final MetricOutputMetadata m1 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "A",
+                                                            null);
+        final MetricOutputMetadata m2 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "A",
+                                                            null);
+        final MetricOutputMetadata m3 = metaFac.getMetadata(10,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "B",
+                                                            null);
         final ScalarOutput q = d.ofScalarOutput(1.0, m1);
         final ScalarOutput r = d.ofScalarOutput(1.0, m2);
         assertTrue("Expected equal hash codes.", q.hashCode() == r.hashCode());
-        assertTrue("Expected unequal hash codes.",
-                   q.hashCode() != d.ofScalarOutput(1.0, m3).hashCode());
+        assertTrue("Expected unequal hash codes.", q.hashCode() != d.ofScalarOutput(1.0, m3).hashCode());
     }
 
 }

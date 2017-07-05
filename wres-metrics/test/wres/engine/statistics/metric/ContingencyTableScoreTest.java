@@ -28,22 +28,22 @@ public final class ContingencyTableScoreTest
     @Test
     public void test1ContingencyTableScore()
     {
-        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.of();
-        final MetricFactory metricFactory = MetricFactory.of(outputFactory);
+        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
+        final MetadataFactory metaFac = outputFactory.getMetadataFactory();
+        final MetricFactory metricFactory = MetricFactory.getInstance(outputFactory);
         final CriticalSuccessIndex cs = metricFactory.ofCriticalSuccessIndex();
-        
+
         //Metadata for the output
-        final MetricOutputMetadata m1 =
-                                      MetadataFactory.getMetadata(365,
-                                                                  MetadataFactory.getDimension(),
-                                                                  MetricConstants.CONTINGENCY_TABLE,
-                                                                  MetricConstants.MAIN,
-                                                                  "Main",
-                                                                  null);
-        
+        final MetricOutputMetadata m1 = metaFac.getMetadata(365,
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                            MetricConstants.MAIN,
+                                                            "Main",
+                                                            null);
+
         final double[][] benchmark = new double[][]{{82.0, 38.0}, {23.0, 222.0}};
-        final MatrixOutput expected = outputFactory.ofMatrixOutput(benchmark,m1); 
-        
+        final MatrixOutput expected = outputFactory.ofMatrixOutput(benchmark, m1);
+
         //Check the exceptions
         try
         {
@@ -51,11 +51,11 @@ public final class ContingencyTableScoreTest
         }
         catch(final Exception e)
         {
-            fail("Expected a 2x2 contingency table: "+e.getMessage());
+            fail("Expected a 2x2 contingency table: " + e.getMessage());
         }
         try
         {
-            cs.is2x2ContingencyTable(outputFactory.ofMatrixOutput(new double[][]{{1.0}},m1), cs);
+            cs.is2x2ContingencyTable(outputFactory.ofMatrixOutput(new double[][]{{1.0}}, m1), cs);
             fail("Expected an exception on construction with an incorrectly sized matrix.");
         }
         catch(final Exception e)
@@ -63,8 +63,8 @@ public final class ContingencyTableScoreTest
         }
         try
         {
-            cs.is2x2ContingencyTable(outputFactory.ofMatrixOutput(new double[][]{{1.0, 1.0, 1.0},
-                {1.0, 1.0, 1.0}},m1), cs);
+            cs.is2x2ContingencyTable(outputFactory.ofMatrixOutput(new double[][]{{1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}}, m1),
+                                     cs);
             fail("Expected an exception on construction with a non-square matrix.");
         }
         catch(final Exception e)

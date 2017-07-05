@@ -320,14 +320,16 @@ public class Control
             // What follows for the rest of call() is from MetricCollectionTest.
 
             // Convert pairs into metric input
-            final MetricInputFactory inputFactory = DefaultMetricInputFactory.of();
-            final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.of();
-            final SingleValuedPairs input = inputFactory.ofSingleValuedPairs(simplePairs, null);
+            final MetricInputFactory inputFactory = DefaultMetricInputFactory.getInstance();
+            final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
+            final SingleValuedPairs input = inputFactory.ofSingleValuedPairs(simplePairs,
+                                                                             inputFactory.getMetadataFactory()
+                                                                                         .getMetadata(pairs.size()));
 
             // Create an immutable collection of metrics that consume single-valued pairs
             // and produce a scalar output
             //Build an immutable collection of metrics, to be computed at each of several forecast lead times
-            final MetricFactory metricFactory = MetricFactory.of(outputFactory);
+            final MetricFactory metricFactory = MetricFactory.getInstance(outputFactory);
             final List<Metric<SingleValuedPairs, ScalarOutput>> metrics = new ArrayList<>();
             metrics.add(metricFactory.ofMeanError());
             metrics.add(metricFactory.ofMeanAbsoluteError());

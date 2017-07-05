@@ -32,21 +32,23 @@ public final class MeanSquareErrorTest
     @Test
     public void test1MeanSquareError()
     {
+        //Obtain the factories
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData().size(),
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.MEAN_SQUARE_ERROR,
-                                                                    MetricConstants.MAIN,
-                                                                    null,
-                                                                    null);
+        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.MEAN_SQUARE_ERROR,
+                                                            MetricConstants.MAIN,
+                                                            null,
+                                                            null);
 
         //Build the metric
-        final MeanSquareErrorBuilder<SingleValuedPairs> b =
-                                                                        new MeanSquareError.MeanSquareErrorBuilder<>();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
+        final MeanSquareErrorBuilder<SingleValuedPairs> b = new MeanSquareError.MeanSquareErrorBuilder<>();
         b.setOutputFactory(outF);
         final MeanSquareError<SingleValuedPairs> mse = b.build();
 
@@ -58,7 +60,7 @@ public final class MeanSquareErrorTest
 
         //Check the parameters
         assertTrue("Unexpected name for the Mean Square Error.",
-                   mse.getName().equals(MetadataFactory.getMetricName(MetricConstants.MEAN_SQUARE_ERROR)));
+                   mse.getName().equals(metaFac.getMetricName(MetricConstants.MEAN_SQUARE_ERROR)));
         assertTrue("The Mean Square Error is decomposable.", mse.isDecomposable());
         assertTrue("The Mean Square Error is not a skill score.", !mse.isSkillScore());
         assertTrue("Expected no decomposition for the Mean Square Error.",

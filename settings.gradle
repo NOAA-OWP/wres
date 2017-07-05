@@ -1,2 +1,2 @@
-include 'utilities', 'wres-core', 'wres-experiment', 'wres-datamodel-api', 'wres-datamodel', 'wres-io', 'wres-metrics', 'wres-vis'
+include 'utilities', 'wres-core', 'wres-experiment', 'wres-datamodel-api', 'wres-datamodel', 'wres-io', 'wres-metrics', 'wres-vis', 'wres-config'
 

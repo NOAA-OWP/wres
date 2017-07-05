@@ -30,14 +30,14 @@ public final class SingleValuedPairsTest
     public void test1SingleValuedPairs()
     {
         final List<PairOfDoubles> values = new ArrayList<>();
-
         final SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();
+        final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
 
         for(int i = 0; i < 10; i++)
         {
             values.add(DataFactory.pairOf(1, 1));
         }
-        final Metadata meta = MetadataFactory.getMetadata(values.size());
+        final Metadata meta = metaFac.getMetadata(values.size());
         SingleValuedPairs p = b.setData(values).setMetadata(meta).build();
 
         //Check dataset count

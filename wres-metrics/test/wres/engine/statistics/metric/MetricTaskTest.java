@@ -40,8 +40,8 @@ public final class MetricTaskTest
             final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
             //Add some appropriate metrics to the collection
-            final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
-            final MetricFactory metF = MetricFactory.of(outF);               
+            final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+            final MetricFactory metF = MetricFactory.getInstance(outF);               
             final Metric<SingleValuedPairs, ScalarOutput> m = metF.ofMeanError();
 
             //Wrap an input in a future
