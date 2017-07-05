@@ -10,7 +10,10 @@ CREATE TABLE IF NOT EXISTS wres.Observation
   observation_time timestamp,
   observed_value FLOAT,
   measurementunit_id INT,
-  source_id INT,
+  source_id INT/*,
+
+	FKs are disabled until dynamic removal and reinstatement has been implemented
+  
   CONSTRAINT observation_featurevariable_fk FOREIGN KEY (variableposition_id)
 	REFERENCES wres.variableposition (variableposition_id) MATCH SIMPLE
 	ON DELETE CASCADE
@@ -18,7 +21,7 @@ CREATE TABLE IF NOT EXISTS wres.Observation
   CONSTRAINT observation_measurementunit_fk FOREIGN KEY (measurementunit_id)
 	REFERENCES wres.MeasurementUnit (measurementunit_id) MATCH SIMPLE
 	ON DELETE CASCADE
-	DEFERRABLE INITIALLY DEFERRED
+	DEFERRABLE INITIALLY DEFERRED*/
 )
 WITH (
   OIDS=FALSE
