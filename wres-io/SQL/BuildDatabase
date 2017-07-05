@@ -147,4 +147,8 @@ else
     echo ''
     echo 'Transferring Locations from the public schema to the WRES schema...'
     psql -U $1 -d $3 -h $2 -f TransferLocationsToWRES.sql >/dev/null
+
+    echo ''
+    echo 'Creating the schema for dynamically generated partitions...'
+    psql -U $1 -d $3 -h $2 -c "CREATE SCHEMA IF NOT EXISTS partitions AUTHORIZATION wres;" >/dev/null
 fi
