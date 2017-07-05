@@ -336,7 +336,6 @@ project(':wres-config')
         jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics-annotate:1.0.2'
         jaxb 'com.sun.xml.bind:jaxb-core:2.2.11'
         jaxb 'com.sun.xml.bind:jaxb-xjc:2.2.11'
-        jaxb 'com.sun.xml.bind:jaxb-impl:2.2.11'
     }
 
     def generatedIntermediateDir = "${project.projectDir}/build/generated"
@@ -351,7 +350,10 @@ project(':wres-config')
             taskClassname = 'org.jvnet.jaxb2_commons.xjc.XJC2Task'
             generatePackage = 'wres.config.generated'
             destinationDir = "${generatedIntermediateDir}"
-            args = ['-Xinheritance', '-Xannotate', '-immutable']
+            // For location information to be in classes, -Xlocator is needed
+            // here. For location information to be in instances at runtime, the
+            // eclipselink moxy library is required at runtime (see runtime dep)
+            args = ['-Xinheritance', '-Xannotate', '-immutable', '-Xlocator']
             producesDir = "${xsdDir}"
         }
     }
@@ -378,6 +380,12 @@ project(':wres-config')
         into destinationDir
     }
 
+    dependencies
+    {
+        // To know about @Location
+        compile 'com.sun.xml.bind:jaxb-core:2.2.11'
+        runtime 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.6.4'
+    }
     // Wiring the generation of jaxb classes into standard compilation task:
     compileJava.dependsOn copyGenerated
 }

@@ -1,27 +1,34 @@
 package wres;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.format.DateTimeParseException;
+
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.ObjectFactory;
+import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
@@ -40,6 +47,10 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 
+import javax.xml.bind.*;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
+
 /**
  * Another Main. The reason for creating this class separately from Main is to defer conflict with the existing
  * Main.java code to a later date, at the request of a teammate. It is expected that eventually one of the two will
@@ -52,6 +63,9 @@ public class Control
     private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
     public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
     private static final AtomicLong lastMessageTime = new AtomicLong();
+    private static final AtomicBoolean messagedForEarliestDate = new AtomicBoolean(false);
+    private static final AtomicBoolean messagedForLatestDate = new AtomicBoolean(false);
+    private static final AtomicBoolean messagedSqlStatement = new AtomicBoolean(false);
 
     /** System property used to retrieve max thread count, passed as -D */
     public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
@@ -100,13 +114,92 @@ public class Control
      *
      * @param args
      */
-    public static void main(final String[] args)
+    public static void main(final String[] args) throws JAXBException, IOException
     {
-        final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 0, 0),
-                                                LocalDateTime.of(1999, 12, 31, 23, 59),
-                                                "SQIN",
-                                                "QINE",
-                                                "CFS");
+        String fileName = "wres-core/nonsrc/config_possibility.xml";
+        ProjectConfig projectConfig;
+        try
+        {
+            File xmlFile = new File(fileName);
+            Source xmlSource = new StreamSource(xmlFile);
+            JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
+            Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+            jaxbUnmarshaller.setEventHandler(new ValidationEventHandler());
+            JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
+            projectConfig = wrappedConfig.getValue();
+            LOGGER.debug("ProjectConfig: {}", projectConfig);
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("JAXBContext: {}", jaxbContext);
+                LOGGER.debug("Unmarshaller: {}", jaxbUnmarshaller);
+                LOGGER.debug("ProjectConfig.getName(): {}", projectConfig.getLabel());
+                LOGGER.debug("ProjectConfig left label: {}", projectConfig.getDatasources().getLeft().getLabel());
+                //LOGGER.debug("ProjectConfig destination 0: {}", projectConfig.getOutputs().getDestination().get(0).getValue());
+                LOGGER.debug("ProjectConfig metric 0: {}", projectConfig.getOutputs().getMetric().get(0).getValue());
+                LOGGER.debug("ProjectConfig forecast variable: {}", projectConfig.getDatasources());
+                //LOGGER.debug("ProjectConfig \"config\" element: {}", projectConfig.getOutputs().getDestination().get(1).getConfig().getAny().get(0).getTextContent());
+                for (DestinationConfig d : projectConfig.getOutputs().getDestination())
+                {
+                    LOGGER.debug("Location of destination {} is line {} col {}",
+                            d,
+                            d.sourceLocation().getLineNumber(),
+                            d.sourceLocation().getColumnNumber());
+
+                    if (d.getConfig() != null)
+                    {
+                        DestinationConfig.Config conf = d.getConfig();
+                        LOGGER.debug("Location of config for {} is line {} col {}",
+                                d,
+                                conf.sourceLocation().getLineNumber(),
+                                conf.sourceLocation().getColumnNumber());
+                    }
+                }
+            }
+        }
+        catch (JAXBException je)
+        {
+            LOGGER.error("Could not parse file {}:", fileName, je);
+            throw je;
+        }
+        catch (NumberFormatException nfe)
+        {
+            LOGGER.error("A value in the file {} was unable to be converted to a number.", fileName, nfe);
+            throw nfe;
+        }
+
+        Map<DestinationConfig,String> visConfigs = new HashMap<>();
+
+        // reading the file again so we can get the exact parts we want.
+
+        List<String> xmlLines = Files.readAllLines(Paths.get(fileName));
+        // To read the xml configuration for vis into a string, we go find the
+        // start of each, then find the first occurance of </config> ?
+
+        for (DestinationConfig d : projectConfig.getOutputs().getDestination())
+        {
+            if (d.getConfig() != null)
+            {
+                DestinationConfig.Config conf = d.getConfig();
+                int lineNum = conf.sourceLocation().getLineNumber();
+                int colNum = conf.sourceLocation().getColumnNumber();
+                LOGGER.debug("Location of config for {} is line {} col {}", d,
+                        lineNum, colNum);
+                // lines seem to be 1-based in sourceLocation.
+                StringBuilder config = new StringBuilder();
+                String endTag = "</config>";
+                String result = xmlLines.get(lineNum - 1).substring(colNum - 1);
+                for (int i = lineNum; !result.contains(endTag); i++)
+                {
+                    config.append(result + NEWLINE);
+                    result = xmlLines.get(i);
+                }
+                result = result.substring(0, result.indexOf(endTag));
+                config.append(result);
+                String configToAdd = config.toString();
+                visConfigs.put(d, configToAdd);
+                LOGGER.debug("Added following to visConfigs: {}", configToAdd);
+            }
+        }
 
         final List<Future<List<PairOfDoubleAndVectorOfDoubles>>> pairs = new ArrayList<>();
 
@@ -120,7 +213,7 @@ public class Control
         for(int i = 0; i < leadTimesCount; i++)
         {
             final int leadTime = i + 1;
-            final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair = getFuturePairByLeadTime(config,
+            final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair = getFuturePairByLeadTime(projectConfig,
                                                                                                     leadTime,
                                                                                                     fetchPairExecutor);
             pairs.add(futurePair);
@@ -142,7 +235,7 @@ public class Control
             // wres.io.config.specification.MetricSpecification
             // which uses a Map.
             final int leadTime = i + 1;
-            final PairsByLeadProcessor processTask = new PairsByLeadProcessor(pairs.get(i), leadTime);
+            final PairsByLeadProcessor processTask = new PairsByLeadProcessor(pairs.get(i), projectConfig, leadTime);
             final Future<MetricOutputCollection<ScalarOutput>> futureMetric = processPairExecutor.submit(processTask);
             futureMetrics.add(futureMetric);
         }
@@ -217,7 +310,7 @@ public class Control
 
     /**
      * Kill off the executors passed in even if there are remaining tasks.
-     * 
+     *
      * @param fetchPairExecutor
      * @param processPairExecutor
      */
@@ -270,17 +363,37 @@ public class Control
         }
     }
 
+    private static class ValidationEventHandler implements javax.xml.bind.ValidationEventHandler
+    {
+
+        @Override
+        public boolean handleEvent(ValidationEvent validationEvent)
+        {
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Severity: {}", validationEvent.getSeverity());
+                LOGGER.debug("Location: {}", validationEvent.getLocator());
+                LOGGER.debug("Message: {}", validationEvent.getMessage());
+            }
+            return true;
+        }
+    }
+
     /**
      * Task whose job is to wait for pairs to arrive, then run metrics on them.
      */
     private static class PairsByLeadProcessor implements Callable<MetricOutputCollection<ScalarOutput>>
     {
         private final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair;
+        private final ProjectConfig projectConfig;
         private final int leadTime;
 
-        private PairsByLeadProcessor(final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePairs, final int leadTime)
+        private PairsByLeadProcessor(final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePairs,
+                                     final ProjectConfig projectConfig,
+                                     final int leadTime)
         {
             this.futurePair = futurePairs;
+            this.projectConfig = projectConfig;
             this.leadTime = leadTime;
         }
 
@@ -355,13 +468,13 @@ public class Control
 
     /**
      * Calls executorService.submit on a list of pairs for leadTime with config.
-     * 
+     *
      * @param config
      * @param leadTime
      * @param executorService
      * @return the Future from the executorService
      */
-    private static Future<List<PairOfDoubleAndVectorOfDoubles>> getFuturePairByLeadTime(final PairConfig config,
+    private static Future<List<PairOfDoubleAndVectorOfDoubles>> getFuturePairByLeadTime(final ProjectConfig config,
                                                                                         final int leadTime,
                                                                                         final ExecutorService executorService)
     {
@@ -374,10 +487,10 @@ public class Control
      */
     private static class PairGetterByLeadTime implements Callable<List<PairOfDoubleAndVectorOfDoubles>>
     {
-        private final PairConfig config;
+        private final ProjectConfig config;
         private final int leadTime;
 
-        private PairGetterByLeadTime(final PairConfig config, final int leadTime)
+        private PairGetterByLeadTime(final ProjectConfig config, final int leadTime)
         {
             this.config = config;
             this.leadTime = leadTime;
@@ -392,6 +505,10 @@ public class Control
             try
             {
                 sql = getPairSqlFromConfigForLead(this.config, this.leadTime);
+                if (LOGGER.isDebugEnabled() && !messagedSqlStatement.getAndSet(true))
+                {
+                    LOGGER.debug("SQL query: {}", sql);
+                }
             }
             catch(final IOException ioe)
             {
@@ -418,13 +535,8 @@ public class Control
             }
             catch(final SQLException se)
             {
-                final String message = "Failed to get pair results for lead " + this.leadTime;
+                final String message = "Failed to get pair results for lead " + this.leadTime + " using this query: " + sql;
                 throw new IOException(message, se);
-            }
-            finally
-            {
-                LOGGER.trace("Query: ");
-                LOGGER.trace(sql);
             }
 
             return result;
@@ -440,28 +552,45 @@ public class Control
      * @return a SQL string that will retrieve pairs for the given lead time
      * @throws IOException when any checked (aka non-RuntimeException) exception occurs
      */
-    private static String getPairSqlFromConfigForLead(final PairConfig config, final int lead) throws IOException
+    private static String getPairSqlFromConfigForLead(final ProjectConfig config, final int lead) throws IOException
     {
-        if(config.getForecastVariable() == null || config.getObservationVariable() == null
-            || config.getTargetUnit() == null)
+        if(config.getDatasources() == null
+                || config.getDatasources().getLeft() == null
+                || config.getDatasources().getLeft().getVariable() == null
+                || config.getDatasources().getLeft().getVariable().getValue() == null
+                || config.getDatasources().getRight() == null
+                || config.getDatasources().getRight().getVariable() == null
+                || config.getDatasources().getRight().getVariable().getValue() == null
+                || config.getPair() == null
+                || config.getPair().getUnit() == null)
         {
             throw new IllegalArgumentException("Forecast and obs variables as well as target unit must be specified");
         }
 
+        final String observationVariableName = config.getDatasources()
+                                                     .getLeft()
+                                                     .getVariable()
+                                                     .getValue();
+
+        final String forecastVariableName = config.getDatasources()
+                                                  .getRight()
+                                                  .getVariable()
+                                                  .getValue();
+
         long startTime = Long.MAX_VALUE; // used during debug
-        if(LOGGER.isDebugEnabled())
+        if(LOGGER.isTraceEnabled())
         {
             startTime = System.currentTimeMillis();
         }
 
-        final int targetUnitID = Control.getMeasurementUnitID(config.getTargetUnit());
-        final int observationVariableID = Control.getVariableID(config.getObservationVariable(), targetUnitID);
-        final int forecastVariableID = Control.getVariableID(config.getForecastVariable(), targetUnitID);
+        final int targetUnitID = Control.getMeasurementUnitID(config.getPair().getUnit());
+        final int observationVariableID = Control.getVariableID(observationVariableName, targetUnitID);
+        final int forecastVariableID = Control.getVariableID(forecastVariableName, targetUnitID);
 
-        if(LOGGER.isDebugEnabled())
+        if(LOGGER.isTraceEnabled())
         {
             final long duration = System.currentTimeMillis() - startTime;
-            LOGGER.debug("Retrieving meas unit, fc var, obs var IDs took {}ms", duration);
+            LOGGER.trace("Retrieving meas unit, fc var, obs var IDs took {}ms", duration);
             startTime = System.currentTimeMillis();
         }
 
@@ -477,14 +606,14 @@ public class Control
         catch(final SQLException se)
         {
             final String message = "Couldn't retrieve variableposition_id for observation variable "
-                + config.getObservationVariable() + " with obs id " + observationVariableID;
+                + observationVariableName + " with obs id " + observationVariableID;
             throw new IOException(message, se);
         }
 
-        if(LOGGER.isDebugEnabled())
+        if(LOGGER.isTraceEnabled())
         {
             final long duration = System.currentTimeMillis() - startTime;
-            LOGGER.debug("Retrieving variableposition_id for obs id {} took {}ms", observationVariableID, duration);
+            LOGGER.trace("Retrieving variableposition_id for obs id {} took {}ms", observationVariableID, duration);
             startTime = System.currentTimeMillis();
         }
 
@@ -497,41 +626,56 @@ public class Control
         catch(final SQLException se)
         {
             final String message = "Couldn't retrieve variableposition_id for forecast variable "
-                + config.getForecastVariable() + " with fc id " + forecastVariableID;
+                + forecastVariableName + " with fc id " + forecastVariableID;
             throw new IOException(message, se);
         }
 
-        if(LOGGER.isDebugEnabled())
+        if(LOGGER.isTraceEnabled())
         {
             final long duration = System.currentTimeMillis() - startTime;
-            LOGGER.debug("Retrieving variableposition_id for fc id {} took {}ms", forecastVariableID, duration);
+            LOGGER.trace("Retrieving variableposition_id for fc id {} took {}ms", forecastVariableID, duration);
         }
 
         final String innerWhere = getPairInnerWhereClauseFromConfig(config);
 
-        return "WITH forecast_measurements AS (" + NEWLINE
-            + "    SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + NEWLINE
-            + "        array_agg(FV.forecasted_value * UC.factor) AS forecasts" + NEWLINE + "    FROM wres.Forecast F"
-            + NEWLINE + "    INNER JOIN wres.ForecastEnsemble FE" + NEWLINE
-            + "        ON F.forecast_id = FE.forecast_id" + NEWLINE + "    INNER JOIN wres.ForecastValue FV" + NEWLINE
-            + "        ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE
-            + "    INNER JOIN wres.UnitConversion UC" + NEWLINE + "        ON UC.from_unit = FE.measurementunit_id"
-            + NEWLINE + "    WHERE lead = " + lead + NEWLINE + "        AND FE.variableposition_id = "
-            + forecastVariablePositionID + NEWLINE + "        AND UC.to_unit = " + targetUnitID + NEWLINE
-            + "        AND " + innerWhere + NEWLINE + "    GROUP BY forecasted_date" + NEWLINE + ")" + NEWLINE
-            + "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + NEWLINE
-            + "FROM forecast_measurements FM" + NEWLINE + "INNER JOIN wres.Observation O" + NEWLINE
-            + "    ON O.observation_time = FM.forecasted_date" + NEWLINE + "INNER JOIN wres.UnitConversion UC" + NEWLINE
-            + "    ON UC.from_unit = O.measurementunit_id" + NEWLINE + "WHERE O.variableposition_id = "
-            + observationVariablePositionID + NEWLINE + "    AND UC.to_unit = " + targetUnitID + NEWLINE
-            + "ORDER BY FM.forecasted_date;";
+        final String partA = "WITH forecast_measurements AS (" + NEWLINE
+                + "    SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + NEWLINE
+                + "        array_agg(FV.forecasted_value * UC.factor) AS forecasts" + NEWLINE
+                + "    FROM wres.Forecast F" + NEWLINE
+                + "    INNER JOIN wres.ForecastEnsemble FE" + NEWLINE
+                + "        ON F.forecast_id = FE.forecast_id" + NEWLINE
+                + "    INNER JOIN wres.ForecastValue FV" + NEWLINE
+                + "        ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE
+                + "    INNER JOIN wres.UnitConversion UC" + NEWLINE
+                + "        ON UC.from_unit = FE.measurementunit_id" + NEWLINE
+                + "    WHERE lead = " + lead + NEWLINE
+                + "        AND FE.variableposition_id = " + forecastVariablePositionID + NEWLINE
+                + "        AND UC.to_unit = " + targetUnitID + NEWLINE;
+        String partB = "";
+        if (innerWhere.length() > 0)
+        {
+            partB += "        AND " + innerWhere + NEWLINE;
+        }
+        partB += "    GROUP BY forecasted_date" + NEWLINE
+                + ")" + NEWLINE
+                + "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + NEWLINE
+                + "FROM forecast_measurements FM" + NEWLINE
+                + "INNER JOIN wres.Observation O" + NEWLINE
+                + "    ON O.observation_time = FM.forecasted_date" + NEWLINE
+                + "INNER JOIN wres.UnitConversion UC" + NEWLINE
+                + "    ON UC.from_unit = O.measurementunit_id" + NEWLINE
+                + "WHERE O.variableposition_id = " + observationVariablePositionID + NEWLINE
+                + "    AND UC.to_unit = " + targetUnitID + NEWLINE
+                + "ORDER BY FM.forecasted_date;";
+
+        return partA + partB;
     }
 
     /**
      * The following method is obsolete after refactoring Measurements.getMeasurementUnitID to only throw checked
      * exceptions such as IOException or SQLException, also when Measurements.getMeasurementUnitID gives a meaningful
      * error message. Those are the only two justifications for this wrapper method.
-     * 
+     *
      * @param unitName the unit we want the ID for
      * @return the result of successful Measurements.getMeasurementUnitID
      * @throws IOException when any checked (aka non-RuntimeException) exception occurs
@@ -561,7 +705,7 @@ public class Control
      * The following method becomes obsolete after refactoring Variables.getVariableID to only throw checked exceptions
      * such as IOException or SQLException, also when Variables.getVariableID gives a meaningful error message. Those
      * are the only two justifications for this wrapper method.
-     * 
+     *
      * @param variableName the variable name to look for
      * @param measurementUnitId the targeted measurement unit id
      * @return the result of successful Variables.getVariableID
@@ -588,85 +732,184 @@ public class Control
         return result;
     }
 
-    private static String getPairInnerWhereClauseFromConfig(final PairConfig config)
+    private static String getPairInnerWhereClauseFromConfig(final ProjectConfig config)
     {
-        if(config.getFromTime() == null && config.getToTime() == null)
+        Objects.requireNonNull(config);
+
+        LocalDateTime earliest = getEarliestDateTimeFromDataSources(config);
+        LocalDateTime latest = getLatestDateTimeFromDataSources(config);
+
+        if (earliest == null && latest == null)
         {
             return "";
         }
-        else if(config.getFromTime() == null)
+
+        if (earliest == null)
         {
-            return "(F.forecast_date + INTERVAL '1 hour' * lead) <= '" + config.getToTime().format(SQL_FORMATTER) + "'";
+            return "(F.forecast_date + INTERVAL '1 hour' * lead) <= '" + latest.format(SQL_FORMATTER) + "'";
         }
-        else if(config.getToTime() == null)
+        else if (latest == null)
         {
-            return "(F.forecast_date + INTERVAL '1 hour' * lead) >= '" + config.getFromTime().format(SQL_FORMATTER)
+            return "(F.forecast_date + INTERVAL '1 hour' * lead) >= '" + earliest.format(SQL_FORMATTER)
                 + "'";
         }
         else
         {
-            return "((F.forecast_date + INTERVAL '1 hour' * lead) >= '" + config.getFromTime().format(SQL_FORMATTER)
+            return "((F.forecast_date + INTERVAL '1 hour' * lead) >= '" + earliest.format(SQL_FORMATTER)
                 + "'" + NEWLINE + "             AND (F.forecast_date + INTERVAL '1 hour' * lead) <= '"
-                + config.getToTime().format(SQL_FORMATTER) + "')";
+                + latest.format(SQL_FORMATTER) + "')";
         }
     }
 
     /**
-     * All properties optional, any/each can be null.
+     * Returns the later of any "earliest" date specified in left or right datasource.
+     * If only one date is specified, that one is returned.
+     * If no dates for "earliest" are specified, null is returned.
+     * @param config
+     * @return the most narrow "earliest" date, null otherwise
      */
-    private static class PairConfig
+    private static LocalDateTime getEarliestDateTimeFromDataSources(ProjectConfig config)
     {
-        private final LocalDateTime fromTime;
-        private final LocalDateTime toTime;
-        private final String forecastVariable;
-        private final String observationVariable;
-        private final String targetUnit;
-
-        private PairConfig(final LocalDateTime fromTime,
-                           final LocalDateTime toTime,
-                           final String forecastVariable,
-                           final String observationVariable,
-                           final String targetUnit)
+        if (config.getDatasources() == null)
         {
-            this.fromTime = fromTime;
-            this.toTime = toTime;
-            this.forecastVariable = forecastVariable;
-            this.observationVariable = observationVariable;
-            this.targetUnit = targetUnit;
+            return null;
         }
 
-        public static PairConfig of(final LocalDateTime fromTime,
-                                    final LocalDateTime toTime,
-                                    final String forecastVariable,
-                                    final String observationVariable,
-                                    final String targetUnit)
+        String earliest = "";
+
+        if (config.getDatasources().getLeft() == null
+                || config.getDatasources().getLeft().getConditions() == null
+                || config.getDatasources().getLeft().getConditions().getDates() == null)
         {
-            return new PairConfig(fromTime, toTime, forecastVariable, observationVariable, targetUnit);
+            try
+            {
+                earliest = config.getDatasources().getRight().getConditions().getDates().getEarliest();
+                return LocalDateTime.parse(earliest);
+            }
+            catch (NullPointerException npe)
+            {
+                if (!messagedForEarliestDate.getAndSet(true))
+                {
+                    LOGGER.info("No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" ... under <conditions> under <left> or <right> to specify an earliest date.");
+                }
+                return null;
+            }
+            catch (DateTimeParseException dtpe)
+            {
+                if (!messagedForEarliestDate.getAndSet(true))
+                {
+                    LOGGER.warn(
+                            "Correct the date \"{}\" in <right> datasource to ISO8601 format such as \"2017-06-27T16:16\"",
+                            earliest);
+                }
+                return null;
+            }
+        }
+        else if (config.getDatasources().getRight() == null
+                || config.getDatasources().getRight().getConditions() == null
+                || config.getDatasources().getRight().getConditions().getDates() == null)
+        {
+            try
+            {
+                earliest = config.getDatasources().getLeft().getConditions().getDates().getEarliest();
+                return LocalDateTime.parse(earliest);
+            }
+            catch (NullPointerException npe)
+            {
+                if (!messagedForEarliestDate.getAndSet(true))
+                {
+                    LOGGER.info("No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" ... under <conditions> under <left> or <right> to specify an earliest date.");
+                }
+                return null;
+            }
+            catch (DateTimeParseException dtpe)
+            {
+                if (!messagedForEarliestDate.getAndSet(true))
+                {
+                    LOGGER.warn(
+                            "Correct the date \"{}\" in <left> datasource to ISO8601 format such as \"2017-06-27T16:16\"",
+                            earliest);
+                }
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns the earlier of any "latest" date specified in left or right datasource.
+     * If only one date is specified, that one is returned.
+     * If no dates for "latest" are specified, null is returned.
+     * @param config
+     * @return the most narrow "latest" date, null otherwise.
+     */
+    private static LocalDateTime getLatestDateTimeFromDataSources(ProjectConfig config)
+    {
+        if (config.getDatasources() == null)
+        {
+            return null;
         }
 
-        LocalDateTime getFromTime()
-        {
-            return this.fromTime;
-        }
+        String latest = "";
 
-        LocalDateTime getToTime()
+        if (config.getDatasources().getLeft() == null
+                || config.getDatasources().getLeft().getConditions() == null
+                || config.getDatasources().getLeft().getConditions().getDates() == null)
         {
-            return this.toTime;
+            try
+            {
+                latest = config.getDatasources().getRight().getConditions().getDates().getLatest();
+                return LocalDateTime.parse(latest);
+            }
+            catch (NullPointerException npe)
+            {
+                if (!messagedForLatestDate.getAndSet(true))
+                {
+                    LOGGER.info(
+                            "No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-06-27T16:16\"> ... under <conditions> under <left> or <right> to specify a latest date.");
+                }
+                return null;
+            }
+            catch (DateTimeParseException dtpe)
+            {
+                if (!messagedForLatestDate.getAndSet(true))
+                {
+                    LOGGER.warn(
+                            "Correct the date \"{}\" in <right> datasource to ISO8601 format such as \"2017-06-27T16:16\"",
+                            latest);
+                }
+                return null;
+            }
         }
-
-        String getForecastVariable()
+        else if (config.getDatasources().getRight() == null
+                || config.getDatasources().getRight().getConditions() == null
+                || config.getDatasources().getRight().getConditions().getDates() == null)
         {
-            return this.forecastVariable;
+            try
+            {
+                latest = config.getDatasources().getLeft().getConditions().getDates().getLatest();
+                return LocalDateTime.parse(latest);
+            }
+            catch (NullPointerException npe)
+            {
+                if (!messagedForLatestDate.getAndSet(true))
+                {
+                    LOGGER.info(
+                            "No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-06-27T16:16\">... under <conditions> under <left> or <right> to specify a latest date.");
+                }
+                return null;
+            }
+            catch (DateTimeParseException dtpe)
+            {
+                if (!messagedForLatestDate.getAndSet(true))
+                {
+                    LOGGER.warn(
+                            "Correct the date \"{}\" in <left> datasource to ISO8601 format such as \"2017-06-27T16:16\"",
+                            latest);
+                }
+                return null;
+            }
         }
-
-        String getObservationVariable()
-        {
-            return this.observationVariable;
-        }
-
-        String getTargetUnit()
-        {
-            return this.targetUnit;
-        }
+        return null;
     }
 }
