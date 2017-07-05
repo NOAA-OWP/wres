@@ -96,6 +96,13 @@
         </xs:simpleContent>
     </xs:complexType>
 
+    <xs:simpleType name="destinationType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="text" />
+            <xs:enumeration value="graphics"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:complexType name="destination">
 
         <!-- for class naming using xjc-->
@@ -105,20 +112,25 @@
             </xs:appinfo>
         </xs:annotation>
 
+        <!--
+        TODO: figure this out. we want a uri between the destination tags
         <xs:simpleContent>
-            <xs:extension base="xs:anyURI">
-                <!--
-                <xs:attribute name="type" type="xs:string">
-                    <xs:simpleType>
-                        <xs:restriction base="xs:string">
-                            <xs:enumeration value="text" />
-                            <xs:enumeration value="graphics"/>
-                        </xs:restriction>
-                    </xs:simpleType>
-                </xs:attribute>
-                -->
-            </xs:extension>
+            <xs:extension base="xs:anyURI" />
+
         </xs:simpleContent>
+        -->
+
+        <xs:sequence>
+            <xs:element name="config" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:any processContents="skip" namespace="##any" minOccurs="0" maxOccurs="unbounded" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+
+        <xs:attribute name="type" type="destinationType" />
     </xs:complexType>
 
     <xs:complexType name="aggregation">

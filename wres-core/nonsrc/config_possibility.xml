@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project label="My print friendly name for this project">
+  <datasources>
+    <left label="My Desired Name For This Data" type="observation">
+      <type>observations</type>
+      <source format="PIXML">file:///media/sf_userprofile/code/hefs_data/testinput/sharedinput/</source>
+      <source recursive="false" type="netCDF">https://my.observations.com/bar/some.nc</source>
+      <variable>QINE</variable>
+      <conditions> <!-- aka filters -->
+        <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/> --> <!-- optional, default all -->
+        <!--<values minimum="-1.0" maximum="500.00"/> --><!-- optional, default all -->
+        <!--<features all="true"> --> <!-- optional, default all -->
+        <!--<feature>
+           <lid>DRRC2</lid>
+           <comid></comid>
+           <gage_id></gage_id>
+           <huc></huc>
+           <name>DOLORES - RICO, BLO</name>
+        </feature>
+        <polygon>
+          <point x="92" y="89"/>
+          <point x="3032" y="2901"/>
+          <point x="1000" y="1548"/>
+        </polygon>
+        <range x_minimum="42" x_maximum="20000"/>-->
+        <!--</features>-->
+      </conditions>
+    </left>
+    <right label="My Favorite Ensembles">
+      <type>ensemble_forecast</type>
+      <source recursive="false" format="PIXML">file:///media/sf_userprofile/code/hefs_data/testinput/sharedinput/forecasts/1985010112_DRRC2_SQIN_case_gefs_climatology_export.xml</source>
+      <source recursive="false">https://my.data.com/foo</source>
+      <variable>SQIN</variable>
+      <conditions> <!-- default operator is AND, all these are optional unless unit is missing from one -->
+        <!--<dates earliest="NA" latest="NA"/>-->
+        <!--<values minimum="-infinity" maximum="infinity" />-->
+        <!--<ensemble  ... >-->
+        <!--<features all="true"> -->
+        <!--<feature>
+           <lid>DRRC2</lid>
+           <comid></comid>
+           <gage_id></gage_id>
+           <huc></huc>
+           <name>DOLORES - RICO, BLO</name>
+        </feature>
+        <polygon>
+          <point x="92" y="89"/>
+          <point x="3032" y="2901"/>
+          <point x="1000" y="1548"/>
+        </polygon>
+        <range x_minimum="42" x_maximum="20000"/>-->
+        <!--</features> -->
+      </conditions>
+    </right>
+    <!-- could <baseline> be one of these? -->
+  </datasources>
+  <pair label="Pairs by location and lead time" unit="CMS">  <!-- optional, needed when times don't line up -->
+    <aggregation aggregate="false" range="1" unit="hour" mode="mean" first_lead="0" last_lead="" />
+    <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
+  </pair>
+  <outputs>
+    <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
+    <metric label="ME" unit="CMS">mean_error</metric>
+    <metric>correlation_coefficient</metric>
+    <metric>brier_skill_score</metric> <!-- has its own units -->
+    <destination type="text">file:///home/jesse/text_output"</destination>
+    <destination type="graphics">file:///home/jesse/graphics_output
+      <config><needs><tags>Stuff</tags></needs></config>
+    </destination>
+    <destination type="graphics">file:///home/jesse/graphics_output
+      <config>
+        <needs>
+          <tags>MORE Stuff</tags>
+        </needs>
+      </config>
+    </destination>
+  </outputs>
+</project>
