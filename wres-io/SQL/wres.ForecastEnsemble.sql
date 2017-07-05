@@ -11,7 +11,10 @@ CREATE TABLE IF NOT EXISTS wres.ForecastEnsemble
   variableposition_id INT,
   ensemble_id INT,
   measurementunit_id INT,
-  CONSTRAINT forecastensemble_pk PRIMARY KEY (forecastensemble_id),
+  CONSTRAINT forecastensemble_pk PRIMARY KEY (forecastensemble_id)/*,
+
+	FKs have been removed until dynamic removal and reinstatement has been implemented
+  
   CONSTRAINT forecastensemble_forecast_fk FOREIGN KEY (forecast_id)
 	REFERENCES wres.Forecast (forecast_id)
 	ON DELETE CASCADE
@@ -27,7 +30,7 @@ CREATE TABLE IF NOT EXISTS wres.ForecastEnsemble
   CONSTRAINT forecastensemble_measurementunit_fk FOREIGN KEY (measurementunit_id)
 	REFERENCES wres.measurementunit (measurementunit_id)
 	ON DELETE CASCADE
-	DEFERRABLE INITIALLY DEFERRED
+	DEFERRABLE INITIALLY DEFERRED*/
 )
 WITH (
   OIDS=FALSE
