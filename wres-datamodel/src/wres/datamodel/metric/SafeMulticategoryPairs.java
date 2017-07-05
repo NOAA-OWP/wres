@@ -65,7 +65,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     @Override
     public MulticategoryPairs getBaselineData()
     {
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
         return metIn.ofMulticategoryPairs(baselineInput, baselineMeta);
     }          
     

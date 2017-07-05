@@ -26,7 +26,6 @@ import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.DefaultMetricOutputFactory;
-import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricInputFactory;
 import wres.datamodel.metric.MetricOutputCollection;
 import wres.datamodel.metric.MetricOutputFactory;
@@ -111,9 +110,9 @@ public class ControlTemp
                                                 "CFS");
 
         //Build an immutable collection of metrics, to be computed at each of several forecast lead times
-        final MetricInputFactory inputFactory = DefaultMetricInputFactory.of();
-        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.of();
-        final MetricFactory metricFactory = MetricFactory.of(outputFactory);
+        final MetricInputFactory inputFactory = DefaultMetricInputFactory.getInstance();
+        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
+        final MetricFactory metricFactory = MetricFactory.getInstance(outputFactory);
         final List<Metric<SingleValuedPairs, ScalarOutput>> metrics = new ArrayList<>();
         metrics.add(metricFactory.ofMeanError());
         metrics.add(metricFactory.ofMeanAbsoluteError());
@@ -246,7 +245,7 @@ public class ControlTemp
                                                             mean.applyAsDouble(DataFactory.vectorOf(nextPair.getItemTwo())));
                 returnMe.add(pair);
             }
-            return metIn.ofSingleValuedPairs(returnMe, MetadataFactory.getMetadata(returnMe.size()));
+            return metIn.ofSingleValuedPairs(returnMe, metIn.getMetadataFactory().getMetadata(returnMe.size()));
         }
     }
 

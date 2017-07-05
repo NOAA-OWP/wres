@@ -1,3 +1,32 @@
+/* used by sonarqube static analysis and git versioning */
+buildscript
+{
+    repositories
+    {
+        mavenCentral()
+    }
+    dependencies
+    {
+        // for static analysis tool sonarqube:
+        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.4'
+        // for ability to use git ids for labeling jar files:
+        classpath 'org.ajoberstar:grgit:1.7.2'
+    }
+}
+
+plugins
+{
+    //id 'com.github.jacobono.jaxb' version '1.3.5'
+    // above is unmaintained, less gradle-y, below fork has several improvements
+    id 'org.openrepose.gradle.plugins.jaxb' version '2.2.3'
+}
+
+/* used by jacocoRootReport task */
+repositories
+{
+    mavenCentral()
+}
+
 ext
 {
     gitCommitId = org.ajoberstar.grgit.Grgit.open(file('.')).head().id
@@ -123,6 +152,7 @@ project(':wres-core')
         compile project(':wres-datamodel')
         compile project(':wres-io')
         compile project(':wres-metrics')
+        compile project(':wres-config')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
@@ -262,10 +292,10 @@ project(':wres-metrics')
     dependencies
     {
         compile project(':wres-datamodel-api')
-        compile project(':wres-datamodel')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
+        testCompile project (':wres-datamodel')
         testCompile 'junit:junit:4.12'
     }
 }
@@ -293,33 +323,70 @@ project(':wres-vis')
     }
 }
 
+project(':wres-config')
+{
+    // apply plugin: 'com.github.jacobono.jaxb'
+    apply plugin: 'org.openrepose.gradle.plugins.jaxb'
+
+    dependencies
+    {
+        xjc 'com.github.sabomichal:immutable-xjc-plugin:1.3.3'
+        jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics-ant:1.11.1'
+        jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics:1.11.1'
+        jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics-annotate:1.0.2'
+        jaxb 'com.sun.xml.bind:jaxb-core:2.2.11'
+        jaxb 'com.sun.xml.bind:jaxb-xjc:2.2.11'
+        jaxb 'com.sun.xml.bind:jaxb-impl:2.2.11'
+    }
+
+    def generatedIntermediateDir = "${project.projectDir}/build/generated"
+
+    jaxb
+    {
+        xsdDir = "${project.projectDir}/nonsrc"
+        bindingsDir = xsdDir
+
+        xjc
+        {
+            taskClassname = 'org.jvnet.jaxb2_commons.xjc.XJC2Task'
+            generatePackage = 'wres.config.generated'
+            destinationDir = "${generatedIntermediateDir}"
+            args = ['-Xinheritance', '-Xannotate', '-immutable']
+            producesDir = "${xsdDir}"
+        }
+    }
+
+    // Struggled to find a way to get great incremental builds, ended up using
+    // an additional copy task. The idea is that xjc task will drop files into
+    // the build directory as an intermediate directory. The whole build dir
+    // gets cleaned up on "clean". Now, in copyGenerated we copy from "build"
+    // into "src" but cleaning up the src before doing so, to avoid extra files
+    // lying around whenever the xsd file changes. This task will happen every
+    // time, unfortunately, however, the xsd generation and java compilation
+    // still will have the desired incremental properties (and dependents such
+    // as jar).
+    // Incremental builds without this extra task could probably be fixed at
+    // https://github.com/rackerlabs/gradle-jaxb-plugin
+    //
+    // Also, when the plugin fixes
+    // https://github.com/rackerlabs/gradle-jaxb-plugin/issues/6 we should get
+    // the latest version (this seems to happen on each build)
+    task copyGenerated(type:Copy, dependsOn: xjc) {
+        destinationDir = file("${project.projectDir}/src")
+        delete destinationDir
+        from fileTree("${generatedIntermediateDir}")
+        into destinationDir
+    }
+
+    // Wiring the generation of jaxb classes into standard compilation task:
+    compileJava.dependsOn copyGenerated
+}
+
 /* Single report for test coverage, thanks to
 https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setups/12100/5
  */
 apply plugin: 'jacoco'        // code coverage tool
 apply plugin: 'org.sonarqube' // static analysis tool
-
-/* used by sonarqube static analysis (and git versioning, see top of file) */
-buildscript
-{
-    repositories
-    {
-        mavenCentral()
-    }
-    dependencies
-    {
-        // for static analysis tool sonarqube:
-        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.4'
-        // for ability to use git ids for labeling jar files:
-        classpath 'org.ajoberstar:grgit:1.7.2'
-    }
-}
-
-/* used by jacocoRootReport task */
-repositories
-{
-    mavenCentral()
-}
 
 task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [subprojects.test])
 {

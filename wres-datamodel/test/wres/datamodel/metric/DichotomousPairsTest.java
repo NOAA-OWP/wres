@@ -38,8 +38,9 @@ public final class DichotomousPairsTest
             values.add(DataFactory.vectorOf(new boolean[]{true, true}));
         }
         
-        final Metadata meta = MetadataFactory.getMetadata(values.size(),
-                                                          MetadataFactory.getDimension(),
+        final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+        final Metadata meta = metaFac.getMetadata(values.size(),
+                                                          metaFac.getDimension(),
                                                           "Main");  
         
         final DichotomousPairs p = (DichotomousPairs)b.setData(values).setMetadata(meta).build();

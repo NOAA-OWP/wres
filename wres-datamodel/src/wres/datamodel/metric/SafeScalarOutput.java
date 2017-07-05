@@ -10,7 +10,7 @@ import java.util.Objects;
  * @since 0.1
  */
 
-final class SafeScalarOutput implements ScalarOutput
+class SafeScalarOutput implements ScalarOutput
 {
 
     /**

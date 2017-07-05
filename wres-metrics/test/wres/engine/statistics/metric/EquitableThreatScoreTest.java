@@ -30,35 +30,38 @@ public final class EquitableThreatScoreTest
     @Test
     public void test1EquitableThreatScore()
     {
+        //Obtain the factories
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getMetadata(input.getData().size(),
-                                                                    MetadataFactory.getDimension(),
-                                                                    MetricConstants.EQUITABLE_THREAT_SCORE,
-                                                                    MetricConstants.MAIN,
-                                                                    "Main",
-                                                                    null);
+        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
+                                                            metaFac.getDimension(),
+                                                            MetricConstants.EQUITABLE_THREAT_SCORE,
+                                                            MetricConstants.MAIN,
+                                                            "Main",
+                                                            null);
 
         //Build the metric
         final EquitableThreatScoreBuilder b = new EquitableThreatScore.EquitableThreatScoreBuilder();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.of();
         b.setOutputFactory(outF);
         final EquitableThreatScore ets = b.build();
 
         //Check the results
-        final MetricFactory metF = MetricFactory.of(outF);
+        final MetricFactory metF = MetricFactory.getInstance(outF);
         assertTrue(ets.apply(input).equals(outF.ofScalarOutput(0.43768152544513195, m1)));
         //Check the parameters
         assertTrue("Unexpected name for the Equitable Threat Score.",
-                   ets.getName().equals(MetadataFactory.getMetricName(MetricConstants.EQUITABLE_THREAT_SCORE)));
+                   ets.getName().equals(metaFac.getMetricName(MetricConstants.EQUITABLE_THREAT_SCORE)));
         assertTrue("The Equitable Threat Score is not decomposable.", !ets.isDecomposable());
         assertTrue("The Equitable Threat Score is a skill score.", ets.isSkillScore());
         assertTrue("The Equitable Threat Score cannot be decomposed.",
                    ets.getDecompositionID() == MetricConstants.NONE);
         final String expName = metF.ofContingencyTable().getName();
-        final String actName = MetadataFactory.getMetricName(ets.getCollectionOf());
+        final String actName = metaFac.getMetricName(ets.getCollectionOf());
         assertTrue("The Equitable Threat Score should be a collection of '" + expName
             + "', but is actually a collection of '" + actName + "'.",
                    ets.getCollectionOf() == metF.ofContingencyTable().getID());

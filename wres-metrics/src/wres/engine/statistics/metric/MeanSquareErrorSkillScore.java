@@ -3,7 +3,6 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutputMetadata;
@@ -32,12 +31,13 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
         //TODO: implement any required decompositions, based on the instance parameters  
         //Metadata
         final Metadata metIn = s.getMetadata();
-        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
-                                                                        metIn.getDimension(),
-                                                                        getID(),
-                                                                        MetricConstants.MAIN,
-                                                                        metIn.getID(),
-                                                                        s.getMetadataForBaseline().getID());
+        final MetricOutputMetadata metOut = getOutputFactory().getMetadataFactory().getMetadata(metIn.getSampleSize(),
+                                                                                                metIn.getDimension(),
+                                                                                                getID(),
+                                                                                                MetricConstants.MAIN,
+                                                                                                metIn.getID(),
+                                                                                                s.getMetadataForBaseline()
+                                                                                                 .getID());
         final VectorOutput numerator = super.apply(s);
         final VectorOutput denominator = super.apply(s.getBaselineData());
         final double[] result = new double[]{

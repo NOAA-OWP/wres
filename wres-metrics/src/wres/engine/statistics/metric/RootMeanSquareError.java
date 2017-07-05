@@ -1,7 +1,6 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
@@ -24,12 +23,12 @@ public final class RootMeanSquareError extends DoubleErrorScore<SingleValuedPair
     {
         //Metadata
         final Metadata metIn = t.getMetadata();
-        final MetricOutputMetadata metOut = MetadataFactory.getMetadata(metIn.getSampleSize(),
-                                                                        metIn.getDimension(),
-                                                                        getID(),
-                                                                        MetricConstants.MAIN,
-                                                                        metIn.getID(),
-                                                                        null);
+        final MetricOutputMetadata metOut = getOutputFactory().getMetadataFactory().getMetadata(metIn.getSampleSize(),
+                                                                                                metIn.getDimension(),
+                                                                                                getID(),
+                                                                                                MetricConstants.MAIN,
+                                                                                                metIn.getID(),
+                                                                                                null);
         return getOutputFactory().ofScalarOutput(Math.pow(super.apply(t).getData(), 0.5), metOut);
     }
 

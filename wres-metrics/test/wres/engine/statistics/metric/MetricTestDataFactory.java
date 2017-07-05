@@ -45,8 +45,9 @@ public final class MetricTestDataFactory
         values.add(DataFactory.pairOf(8, 7));
         values.add(DataFactory.pairOf(12, 12));
         values.add(DataFactory.pairOf(93, 94));
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
-        return metIn.ofSingleValuedPairs(values, MetadataFactory.getMetadata(values.size()));
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        return metIn.ofSingleValuedPairs(values, metFac.getMetadata(values.size()));
     }
 
     /**
@@ -80,10 +81,11 @@ public final class MetricTestDataFactory
         baseline.add(DataFactory.pairOf(8.8, 7.1));
         baseline.add(DataFactory.pairOf(12.1, 13));
         baseline.add(DataFactory.pairOf(93.2, 94.8));
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
-        final Metadata main = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension("CMS"), "Main");
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata main = metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "Main");
         final Metadata base =
-                            MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension("CMS"), "Baseline");
+        metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "Baseline");
         return metIn.ofSingleValuedPairs(values, baseline, main, base);
     }
 
@@ -101,8 +103,9 @@ public final class MetricTestDataFactory
         {
             values.add(DataFactory.pairOf(5, 10));
         }
-        final Metadata meta = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension("CMS"), "Main");
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "Main");
         return metIn.ofSingleValuedPairs(values, meta);
     }
 
@@ -137,8 +140,9 @@ public final class MetricTestDataFactory
         {
             values.add(DataFactory.vectorOf(new boolean[]{false, false}));
         }
-        final Metadata meta = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension(), "Main");
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension(), "Main");
         return metIn.ofDichotomousPairs(values, meta); //Construct the pairs
     }
 
@@ -198,8 +202,9 @@ public final class MetricTestDataFactory
         {
             values.add(DataFactory.vectorOf(new boolean[]{false, false, true, false, false, true}));
         }
-        final Metadata meta = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension(), "Main");
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension(), "Main");
         return metIn.ofMulticategoryPairs(values, meta); //Construct the pairs
     }
 
@@ -219,8 +224,9 @@ public final class MetricTestDataFactory
         values.add(DataFactory.pairOf(1, 3.0 / 5.0));
         values.add(DataFactory.pairOf(0, 0.0 / 5.0));
         values.add(DataFactory.pairOf(1, 1.0 / 5.0));
-        final Metadata meta = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension(), "Main");
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension(), "Main");
         return metIn.ofDiscreteProbabilityPairs(values, meta);
     }
 
@@ -247,9 +253,10 @@ public final class MetricTestDataFactory
         baseline.add(DataFactory.pairOf(1, 3.0 / 5.0));
         baseline.add(DataFactory.pairOf(0, 4.0 / 5.0));
         baseline.add(DataFactory.pairOf(1, 1.0 / 5.0));
-        final Metadata main = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension(), "Main");
-        final Metadata base = MetadataFactory.getMetadata(values.size(), MetadataFactory.getDimension(), "Baseline");
-        final MetricInputFactory metIn = DefaultMetricInputFactory.of();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata main = metFac.getMetadata(values.size(), metFac.getDimension(), "Main");
+        final Metadata base = metFac.getMetadata(values.size(), metFac.getDimension(), "Baseline");
         return metIn.ofDiscreteProbabilityPairs(values, baseline, main, base);
     }
 }
