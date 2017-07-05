@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS wres.Source
   path text NOT NULL,
   output_time timestamp NOT NULL,
   is_point_data boolean default true,
+  lead smallint,
   CONSTRAINT source_pk PRIMARY KEY (source_id)
 )
 -- only needed for postgres <= 8.0, after that, OIDS are not created, by default.
