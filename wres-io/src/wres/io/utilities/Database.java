@@ -12,16 +12,23 @@ import wres.util.Strings;
 import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.StringReader;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.*;
 
 public final class Database {
     
     private Database(){}
+
+    private static ConcurrentHashMap<String, Map<String, String>> SAVED_INDEXES = new ConcurrentHashMap<>();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
@@ -36,6 +43,173 @@ public final class Database {
 	{
 		shutdown();
 		CONNECTION_POOL.close();
+	}
+
+	public synchronized static void suspendAllIndices()
+	{
+		StringBuilder builder = new StringBuilder();
+
+		builder.append("SELECT n.nspname ||'.'||t.relname AS table_name,").append(NEWLINE);
+		builder.append("	i.relname AS index_name,").append(NEWLINE);
+		builder.append("	array_to_string(array_agg(a.attname), ', ') AS column_names").append(NEWLINE);
+		builder.append("FROM pg_class t").append(NEWLINE);
+		builder.append("INNER JOIN pg_namespace n").append(NEWLINE);
+		builder.append("	ON n.oid = t.relnamespace").append(NEWLINE);
+		builder.append("INNER JOIN pg_index ix").append(NEWLINE);
+		builder.append("	ON ix.indrelid = t.oid").append(NEWLINE);
+		builder.append("INNER JOIN pg_class i").append(NEWLINE);
+		builder.append("	ON i.oid = ix.indexrelid").append(NEWLINE);
+		builder.append("INNER JOIN pg_attribute a").append(NEWLINE);
+		builder.append("	ON a.attrelid = t.oid").append(NEWLINE);
+		builder.append("		AND a.attnum = ANY(ix.indkey)").append(NEWLINE);
+		builder.append("WHERE t.relkind = 'r'").append(NEWLINE);
+		builder.append("	AND n.nspname IN ('wres', 'partitions')").append(NEWLINE);
+		builder.append("    AND ix.indisunique = false").append(NEWLINE);
+		builder.append("GROUP BY n.nspname,").append(NEWLINE);
+		builder.append("	t.relname,").append(NEWLINE);
+		builder.append("	i.relname").append(NEWLINE);
+		builder.append("ORDER BY n.nspname,").append(NEWLINE);
+		builder.append("	t.relname,").append(NEWLINE);
+		builder.append("	i.relname;");
+
+		Connection connection = null;
+		ResultSet results = null;
+		Map<String, Map<String, String>> foundIndexes = new TreeMap<>();
+
+		try
+		{
+			connection = getConnection();
+			results = getResults(connection, builder.toString());
+
+			while (results.next())
+			{
+				foundIndexes.putIfAbsent(results.getString("table_name"), new TreeMap<String, String>());
+				foundIndexes.get(results.getString(("table_name")))
+							.put(results.getString("index_name"), results.getString("column_names"));
+			}
+		}
+		catch (SQLException error)
+		{
+		    LOGGER.error("The list of indices to suspend could not be properly loaded.");
+            LOGGER.error(NEWLINE + builder.toString() + NEWLINE);
+			LOGGER.error(Strings.getStackTrace(error));
+		}
+		finally
+		{
+			if (results != null)
+			{
+				try {
+					results.close();
+				}
+				catch (SQLException e) {
+					LOGGER.error(Strings.getStackTrace(e));
+				}
+			}
+
+			if (connection != null)
+			{
+				returnConnection(connection);
+			}
+		}
+
+		for (String tableName : foundIndexes.keySet())
+		{
+			builder = new StringBuilder();
+			builder.append("DROP INDEX IF EXISTS ");
+			int indexCount = 0;
+
+			for (String indexName : foundIndexes.get(tableName).keySet())
+			{
+				if (indexCount > 0)
+				{
+					builder.append(", ");
+				}
+
+				builder.append(indexName);
+			}
+
+			builder.append(";");
+
+			try {
+				execute(builder.toString());
+				SAVED_INDEXES.putIfAbsent(tableName, new TreeMap<>());
+
+				for (Map.Entry<String, String> indexDefinition : foundIndexes.get(tableName).entrySet())
+				{
+					SAVED_INDEXES.get(tableName)
+								 .put(indexDefinition.getKey(), indexDefinition.getValue());
+				}
+			}
+			catch (SQLException e) {
+			    LOGGER.error("The indexes for %s could not be dropped.", tableName);
+                LOGGER.error(NEWLINE + builder.toString() + NEWLINE);
+				LOGGER.error(Strings.getStackTrace(e));
+			}
+		}
+	}
+
+	public synchronized static void restoreAllIndices()
+	{
+		StringBuilder builder = null;
+
+		Set<String> updatedTables = new HashSet<>();
+
+		for (String tableName : SAVED_INDEXES.keySet())
+		{
+			Object[] indexNames = SAVED_INDEXES.get(tableName).keySet().toArray();
+
+			for (int nameIndex = 0; nameIndex < indexNames.length; ++nameIndex)
+			{
+				String indexName = (String)indexNames[nameIndex];
+				builder = new StringBuilder();
+				builder.append("CREATE INDEX IF NOT EXISTS ").append(indexName).append(NEWLINE);
+				builder.append("	ON ").append(tableName).append(NEWLINE);
+				builder.append("	USING btree").append(NEWLINE);
+				builder.append("	(").append(SAVED_INDEXES.get(tableName).get(indexName)).append(");");
+
+				try {
+					LOGGER.trace("Restoring the {} index on {}...", indexName, tableName);
+					execute(builder.toString());
+					SAVED_INDEXES.get(tableName).remove(indexName);
+					updatedTables.add(tableName);
+					LOGGER.trace("The {} index on {} has been restored.", indexName, tableName);
+				}
+				catch (SQLException e) {
+				    LOGGER.error("The {} index on {} could not be restored.", indexName, tableName);
+                    LOGGER.error(NEWLINE + builder.toString() + NEWLINE);
+					LOGGER.error(Strings.getStackTrace(e));
+				}
+			}
+		}
+
+		if (updatedTables.size() > 0)
+		{
+			builder = new StringBuilder();
+
+			for (String tableName : updatedTables)
+			{
+				builder.append("ANALYZE " + tableName + ";").append(NEWLINE);
+				builder.append("REINDEX TABLE " + tableName + ";").append(NEWLINE);
+			}
+
+			try {
+				LOGGER.trace("Statistics for indexed tables are being refreshed...");
+				execute(builder.toString());
+				LOGGER.trace("The statistics have been refreshed.");
+			}
+			catch (SQLException e) {
+			    LOGGER.error("Statistics for restored indices could not be refreshed.");
+                LOGGER.error(NEWLINE + builder.toString() + NEWLINE);
+				LOGGER.error(Strings.getStackTrace(e));
+			}
+		}
+	}
+
+	public static void saveIndex(String tableName, String indexName, String indexDefinition)
+	{
+		SAVED_INDEXES.putIfAbsent(tableName, new TreeMap<>());
+		SAVED_INDEXES.get(tableName)
+					 .put(indexName, indexDefinition);
 	}
 
 	/**
@@ -180,22 +354,29 @@ public final class Database {
 
 	}
 	
-	public static void copy(final String table_definition, final String values, String delimiter) throws Exception
+	public static void copy(final String table_definition, final String values, String delimiter) throws CopyException
 	{
 		if (!SystemSettings.getDatabaseType().equalsIgnoreCase("postgresql"))
 		{
-			translateCopyToInsert(table_definition, values, delimiter);
-			return;
+            try {
+                translateCopyToInsert(table_definition, values, delimiter);
+            }
+            catch (SQLException e) {
+                LOGGER.error("Translating the copy operation to an insert operation failed.");
+                throw new CopyException("Translating the copy operation to an insert operation failed.", e);
+            }
+            return;
 		}
 		
 		Connection connection = null;
 		PushbackReader reader = null;
+		final String copyAPIMethodName = "getCopyAPI";
 
 		try
 		{
 			connection = getConnection();
 			C3P0ProxyConnection proxy = (C3P0ProxyConnection)connection;
-			Method get_copy_api = PGConnection.class.getMethod("getCopyAPI");//, new Class[]{});
+			Method get_copy_api = PGConnection.class.getMethod(copyAPIMethodName);
 			Object[] arg = new Object[]{};
 			CopyManager manager = (CopyManager)proxy.rawConnectionOperation(get_copy_api, 
 																			C3P0ProxyConnection.RAW_CONNECTION, arg);
@@ -219,26 +400,40 @@ public final class Database {
 			manager.copyIn(copy_definition, reader);
 
 		}
+		catch (NoSuchMethodException noMethod)
+		{
+		    String message = "The method used to create the copy manager ('" +
+                    copyAPIMethodName +
+                    "') could not be retrieved from the PostgreSQL connection class.";
+			LOGGER.error(message);
+			throw new CopyException(message, noMethod);
+		}
 		catch (SQLException | IOException error)
 		{
-			System.err.println("Data could not be copied to the database:" + System.lineSeparator());
-			if (values.length() > 1000)
-			{
-				System.err.println(values.substring(0, 1000) + "...");
-			}
-			else
-			{
-				System.err.println(values);
-			}
-			System.err.println();
-			
-			throw error;
+			LOGGER.error("Data could not be copied to the database:");
+			LOGGER.error(Strings.truncate(values));
+			LOGGER.error("");
+
+			throw new CopyException("Data could not be copied: " + error.getMessage(), error);
 		}
-		finally
+        catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        catch (InvocationTargetException e) {
+		    String message = "The dynamically retrieved method '" + copyAPIMethodName + "' threw an exception upon execution.";
+            LOGGER.error(message);
+            throw new CopyException(message, e);
+        }
+        finally
 		{
 			if (reader != null)
 			{
-				reader.close();
+				try {
+					reader.close();
+				}
+				catch (IOException e) {
+					LOGGER.warn("The reader for copy values could not be properly closed.");
+				}
 			}
 
 			if (connection != null)

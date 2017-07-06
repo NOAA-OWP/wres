@@ -58,7 +58,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	}
 	
 	@Override
-    public Integer getID(SourceKey key) throws Exception {
+    public Integer getID(SourceKey key) throws SQLException {
 	    if (!this.hasID(key))
 	    {
 	        addElement(new SourceDetails(key));

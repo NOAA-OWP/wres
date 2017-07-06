@@ -1,35 +1,24 @@
 package wres.io.reading.fews;
 
 import wres.io.concurrency.CopyExecutor;
-
 import wres.io.config.SystemSettings;
 import wres.io.config.specification.EnsembleSpecification;
 import wres.io.config.specification.FeatureSpecification;
 import wres.io.config.specification.LocationSpecification;
 import wres.io.config.specification.VariableSpecification;
-import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-
-import wres.io.data.caching.Variables;
+import wres.io.data.caching.*;
 import wres.io.data.details.ForecastDetails;
 import wres.io.data.details.ForecastEnsembleDetails;
 import wres.io.reading.XMLReader;
-import wres.util.Collections;
 import wres.io.utilities.Database;
-import wres.util.ProgressMonitor;
-import wres.util.Time;
-import wres.util.Strings;
-import wres.util.XML;
+import wres.util.*;
 
+import javax.xml.stream.XMLStreamReader;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.xml.stream.XMLStreamReader;
 
 /**
  * @author Christopher Tubbs
@@ -79,12 +68,16 @@ public final class PIXMLReader extends XMLReader
 			Database.execute(createScript);
 		}
 
-		String indexScript = "CREATE INDEX IF NOT EXISTS ForecastValue_Lead_";
+		/*String indexScript = "CREATE INDEX IF NOT EXISTS ForecastValue_Lead_";
 		indexScript += String.valueOf(partitionNumber);
 		indexScript += "_Lead_idx ON ";
 		indexScript += partitionHeader;
-		indexScript += " (lead);" + NEWLINE;
-		indexScript += "ALTER TABLE " + partitionHeader;
+		indexScript += " (lead);" + NEWLINE;*/
+
+		Database.saveIndex(partitionHeader,
+						   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_Lead_idx",
+						   "lead" );
+		/*indexScript += "ALTER TABLE " + partitionHeader;
 		indexScript += " CLUSTER ON ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_Lead_idx;";
 
 		synchronized (PARTITION_LOCK)
@@ -101,7 +94,11 @@ public final class PIXMLReader extends XMLReader
 		synchronized (PARTITION_LOCK)
         {
             Database.execute(indexScript);
-        }
+        }*/
+
+		Database.saveIndex(partitionHeader,
+						   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_ForecastEnsemble_idx",
+						   "forecastensemble_id");
 
 		partitionHeader += " (forecastensemble_id, lead, forecasted_value)";
 		return partitionHeader;

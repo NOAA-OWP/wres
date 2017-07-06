@@ -289,16 +289,24 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 	private String getTableDefinition() throws ExecutionException, InterruptedException {
 		if (this.tableDefinition == null)
 		{
+		    String tableName = "NetCDFValue_Source_";
+		    tableName += String.valueOf(this.getSourceID());
+		    tableName += "_Variable_";
+		    tableName += String.valueOf(variableID);
+
 			String definitionScript;
-			definitionScript = "CREATE TABLE IF NOT EXISTS partitions.NETCDFVALUE_SOURCE_";
-			definitionScript += String.valueOf(this.getSourceID());
-			definitionScript += "_VARIABLE_";
-			definitionScript += String.valueOf(this.variableID);
+			definitionScript = "CREATE TABLE IF NOT EXISTS partitions.";
+			definitionScript += tableName;
 			definitionScript += " (" + NEWLINE;
 			definitionScript += "	CHECK ( source_id = " + this.getSourceID() + " AND variable_id = " + this.variableID + " )" + NEWLINE;
 			definitionScript += ") INHERITS (wres.NetCDFValue);";
 
 			Database.execute(new SQLExecutor(definitionScript)).get();
+
+			Database.saveIndex(tableName,
+                               tableName + "_idx",
+                               "source_id, variable_id");
+
 			this.tableDefinition = "wres.NETCDFVALUE_SOURCE_";
 			this.tableDefinition += String.valueOf(this.getSourceID());
 			this.tableDefinition += "_VARIABLE_";

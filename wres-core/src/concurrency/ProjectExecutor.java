@@ -3,7 +3,7 @@ package concurrency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.MainFunctions;
-import wres.io.concurrency.*;
+import wres.io.concurrency.MetricTask;
 import wres.io.config.ProjectSettings;
 import wres.io.config.SystemSettings;
 import wres.io.config.specification.MetricSpecification;
@@ -19,13 +19,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.*;
-import java.util.function.Consumer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Function;
 
 /**
  * Created by ctubbs on 6/30/17.
  */
-public final class ProjectExecutor implements Consumer<String[]>
+public final class ProjectExecutor implements Function<String[], Integer>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectExecutor.class);
 
@@ -47,35 +50,6 @@ public final class ProjectExecutor implements Consumer<String[]>
             maxThreadCount = 1;
         }
         return maxThreadCount;
-    }
-
-    @Override
-    public void accept (final String[] args) {
-        try {
-            if (args.length > 0) {
-                this.project = ProjectSettings.getProject(args[0]);
-
-                if (args.length > 1) {
-                    this.metricName = args[1];
-                }
-
-                this.ingestData();
-
-                final Map<String, Future<List<LeadResult>>> futureResults = calculateMetrics();
-
-                final Map<String, List<LeadResult>> results = collectResults(futureResults);
-
-                this.outputResults(results);
-            }
-            else {
-                LOGGER.error("There are not enough arguments to run 'executeProject'");
-                LOGGER.error("usage: executeProject <project name> [<metric name>]");
-            }
-        }
-        finally
-        {
-            this.complete();
-        }
     }
 
     private void complete()
@@ -242,5 +216,40 @@ public final class ProjectExecutor implements Consumer<String[]>
         }
 
         return futureResults;
+    }
+
+    @Override
+    public Integer apply (final String[] args) {
+        Integer result = MainFunctions.FAILURE;
+
+        try {
+            if (args.length > 0) {
+                this.project = ProjectSettings.getProject(args[0]);
+
+                if (args.length > 1) {
+                    this.metricName = args[1];
+                }
+
+                this.ingestData();
+
+                final Map<String, Future<List<LeadResult>>> futureResults = calculateMetrics();
+
+                final Map<String, List<LeadResult>> results = collectResults(futureResults);
+
+                this.outputResults(results);
+
+                result = MainFunctions.SUCCESS;
+            }
+            else {
+                LOGGER.error("There are not enough arguments to run 'executeProject'");
+                LOGGER.error("usage: executeProject <project name> [<metric name>]");
+            }
+        }
+        finally
+        {
+            this.complete();
+        }
+
+        return result;
     }
 }

@@ -1,5 +1,7 @@
 package concurrency;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.io.concurrency.WRESTask;
 
 import java.io.InputStream;
@@ -13,6 +15,8 @@ import java.nio.file.StandardCopyOption;
  * Thread used to download the object at the indicated path to the indicated target
  */
 public final class Downloader extends WRESTask implements Runnable {
+
+    private final Logger LOGGER = LoggerFactory.getLogger(Downloader.class);
 
     public Downloader(Path targetPath, String address)
     {
@@ -46,7 +50,7 @@ public final class Downloader extends WRESTask implements Runnable {
             }
             catch (java.io.IOException saveError)
             {
-                System.err.println("The file at '" + this.address + "' could not be saved to: '" + this.targetPath.toString() + "'.");
+                LOGGER.error("The file at '" + this.address + "' could not be saved to: '" + this.targetPath.toString() + "'.");
                 message += "Not Downloaded";
             }
 
@@ -55,7 +59,7 @@ public final class Downloader extends WRESTask implements Runnable {
             e.printStackTrace();
         }
 
-        System.out.println(message);
+        LOGGER.info(message);
         this.executeOnComplete();
     }
 

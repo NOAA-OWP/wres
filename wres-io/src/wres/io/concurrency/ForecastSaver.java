@@ -1,5 +1,7 @@
 package wres.io.concurrency;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
 
@@ -9,6 +11,7 @@ import wres.io.reading.ReaderFactory;
  * @author Christopher Tubbs
  */
 public class ForecastSaver extends WRESTask implements Runnable {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ForecastSaver.class);
 
 	/**
 	 * Creates the saver with the given path to a file containing observation data
@@ -28,7 +31,6 @@ public class ForecastSaver extends WRESTask implements Runnable {
 		{
 			BasicSource source = ReaderFactory.getReader(this.filepath);
 			source.saveForecast();
-			//ReaderFactory.releaseReader();
 		}
 		catch (Exception e)
 		{

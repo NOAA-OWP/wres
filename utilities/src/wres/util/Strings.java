@@ -9,7 +9,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class Strings {
-	
+
+	private final static int TRUNCATE_SIZE = 1000;
+
     private Strings(){}
 	
 	/**
@@ -37,6 +39,21 @@ public final class Strings {
 			matched_string = match.group();
 		}
 		return matched_string;
+	}
+
+	public static String truncate(String message)
+	{
+		return truncate(message, TRUNCATE_SIZE);
+	}
+
+	public static String truncate(String message, int length)
+	{
+		String truncatedMessage = message;
+		if (message.length() > length - 3 && length > 3)
+		{
+			truncatedMessage = message.substring(0, length - 3) + "...";
+		}
+		return truncatedMessage;
 	}
 	
 	/**

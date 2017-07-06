@@ -133,10 +133,10 @@ public class XMLReader
 		switch (reader.getEventType())
 		{
 		case XMLStreamConstants.START_DOCUMENT:
-			System.out.println("Start of the document");
+			LOGGER.trace("Start of the document");
 			break;
 		case XMLStreamConstants.START_ELEMENT:
-			System.out.println("Start element = '" + reader.getLocalName() + "'");
+			LOGGER.trace("Start element = '" + reader.getLocalName() + "'");
 			break;
 		case XMLStreamConstants.CHARACTERS:
 			int begin_index = reader.getTextStart();
@@ -145,17 +145,17 @@ public class XMLReader
 			
 			if (!value.equalsIgnoreCase(""))
 			{
-				System.out.println("Value = '" + value + "'");
+				LOGGER.trace("Value = '" + value + "'");
 			}
 			
 			break;
 		case XMLStreamConstants.END_ELEMENT:
-			System.out.println("End element = '" + reader.getLocalName() + "'");
+			LOGGER.trace("End element = '" + reader.getLocalName() + "'");
 			break;
 		case XMLStreamConstants.COMMENT:
 			if (reader.hasText())
 			{
-				System.out.println(reader.getText());
+				LOGGER.trace(reader.getText());
 			}
 			break;
 		}
