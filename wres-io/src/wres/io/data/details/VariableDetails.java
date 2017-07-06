@@ -19,8 +19,9 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	public boolean recentlyAdded = false;
 	private Integer maxXIndex;
 	private Integer maxYIndex;
+	private static Object saveLock = new Object();
 
-	private final static Object partitionLock = new Object();
+	//private final static Object partitionLock = new Object();
 
 	public Integer getMaxXIndex()
 	{
@@ -109,10 +110,10 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 
 	@Override
 	public void save() throws SQLException {
-		super.save();
 
-		synchronized (partitionLock)
+		synchronized (saveLock)
 		{
+			super.save();
 			String partition = "";
 			partition += "CREATE TABLE IF NOT EXISTS partitions.VARIABLEPOSITION_VARIABLE_";
 			partition += this.getId().toString();

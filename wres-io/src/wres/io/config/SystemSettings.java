@@ -1,18 +1,15 @@
 package wres.io.config;
 
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamReader;
-
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-
+import wres.io.reading.XMLReader;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.XML;
-import wres.io.reading.XMLReader;
 
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 
 /**
@@ -49,10 +46,11 @@ public final class SystemSettings extends XMLReader
     private boolean shouldLog = true;
     private boolean inDevelopment = false;
     private Long updateFrequency = null;
+    private boolean updateProgressMonitor = true;
+
 
 	// The static path to the configuration path
     private static final String CONFIG_PATH = "wresconfig.xml";
-
 
 	/**
 	 * The Default constructor
@@ -140,6 +138,11 @@ public final class SystemSettings extends XMLReader
 				{
 					this.fetchSize = Integer.parseInt(XML.getXMLText(reader));
 				}
+				else if (XML.tagIs(reader, "update_progress_monitor"))
+				{
+					this.updateProgressMonitor = Strings.isTrue(XML.getXMLText(reader));
+					ProgressMonitor.setShouldUpdate(this.updateProgressMonitor);
+				}
 			}
 		}
 		catch (Exception error)
@@ -162,6 +165,11 @@ public final class SystemSettings extends XMLReader
     {
         return INSTANCE.updateFrequency;
     }
+
+    public static boolean shouldUpdateProgressMonitor()
+	{
+		return INSTANCE.updateProgressMonitor;
+	}
 
 	/**
 	 * @return The number of allowable threads

@@ -1,10 +1,11 @@
 package wres.io.data.caching;
 
+import wres.io.data.details.CachedDetail;
+import wres.util.Collections;
+
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import wres.io.data.details.CachedDetail;
-import wres.util.Collections;
 
 /**
  * An collection of details about concepts stored within the database
@@ -126,10 +127,9 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * Returns the ID of the cached details based on its key
 	 * @param key A key used to index details
 	 * @return The ID of a specific set of details
-	 * @throws Exception Thrown if the ID could not be retrieved
+	 * @throws SQLException Thrown if the ID could not be retrieved
 	 */
-	public Integer getID(U key) throws Exception
-	{
+	public Integer getID(U key) throws SQLException {
 		Integer id = null;
 		
 		synchronized (keyIndex)

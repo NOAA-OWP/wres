@@ -1,16 +1,11 @@
 package wres.io.reading;
 
+import wres.io.config.specification.*;
+import wres.util.Collections;
+
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.function.Consumer;
-
-import wres.io.config.specification.VariableSpecification;
-import wres.util.Collections;
-import wres.io.config.specification.EnsembleSpecification;
-import wres.io.config.specification.FeatureSpecification;
-import wres.io.config.specification.LocationSpecification;
-import wres.io.config.specification.ProjectDataSpecification;
 
 /**
  * @author ctubbs
@@ -147,19 +142,4 @@ public abstract class BasicSource {
 	
 	private boolean isForecast = false;
 	private boolean detailsSpecified = false;
-	private Consumer<BasicSource> closeHandler = null;
-
-	public final void setCloseHandler(Consumer<BasicSource> handler)
-	{
-		this.closeHandler = handler;
-	}
-
-/*
-	@Override
-	protected void finalize() throws Throwable {
-		if (closeHandler != null)
-		{
-			closeHandler.accept(this);
-		}
-	}*/
 }
