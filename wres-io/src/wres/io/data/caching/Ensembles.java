@@ -131,7 +131,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	}
 
 	@Override
-	public synchronized Integer getID(final EnsembleKey grouping) throws Exception
+	public synchronized Integer getID(final EnsembleKey grouping) throws SQLException
 	{
 		// Maps keys to the number of similarities between them and the passed in grouping
 		Map<Integer, List<EnsembleKey>> possibleKeys = new TreeMap<>();

@@ -1,14 +1,10 @@
 package wres.io.reading.ucar;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.OffsetDateTime;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
-
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.NetCDFValueSaver;
 import wres.io.concurrency.WRESTask;
@@ -18,17 +14,27 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ForecastDetails;
 import wres.io.data.details.VariableDetails;
-
 import wres.io.reading.BasicSource;
-
 import wres.util.Collections;
 import wres.util.ProgressMonitor;
+import wres.util.Strings;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.SQLException;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * @author ctubbs
  *
  */
 public class NetCDFSource extends BasicSource {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NetCDFSource.class);
 
 	private class VariableInserter extends WRESTask implements Runnable
 	{
@@ -45,27 +51,30 @@ public class NetCDFSource extends BasicSource {
 		public void run() {
 		    this.executeOnRun();
 
-			try {
+			//try {
                 ProgressMonitor.increment();
+
+            try {
 
                 VariableDetails details = new VariableDetails();
                 details.setVariableName(this.variableName);
                 details.measurementunitId = MeasurementUnits.getMeasurementUnitID(this.unitName);
 
-                Variables.addVariable(details, xLength, yLength);
+                Integer variableId = Variables.addVariable(details, this.xLength, this.yLength);
 
                 NetCDFValueSaver saver = new NetCDFValueSaver(getFilename(),
-                        this.variableName,
-                        Variables.getVariableID(this.variableName, ""),
-                        getMissingValue());
+                                                              this.variableName,
+                                                              variableId,
+                                                              getMissingValue());
                 saver.setOnRun(ProgressMonitor.onThreadStartHandler());
                 saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                 Executor.execute(saver);
 
                 ProgressMonitor.completeStep();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+            }
+            catch (SQLException e) {
+                LOGGER.error(Strings.getStackTrace(e));
+            }
 			this.executeOnComplete();
 		}
 
@@ -114,6 +123,8 @@ public class NetCDFSource extends BasicSource {
 	
 	private void saveVariables(NetcdfFile source)
 	{
+		List<Future<?>> tasks = new ArrayList<>();
+
 		for (Variable var : source.getVariables())
 		{
 			if (var.getDimensions().size() > 1 || var.getDimension(0).getLength() > 1)
@@ -121,11 +132,26 @@ public class NetCDFSource extends BasicSource {
 				VariableInserter inserter = new VariableInserter(var);
 				inserter.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 				inserter.setOnRun(ProgressMonitor.onThreadStartHandler());
+				tasks.add(Executor.execute(inserter));
 
 				// TODO: This causes the code to only ingest a single variable. Fine for testing, but it needs to get removed
                 break;
 			}
 		}
+
+		for (Future<?> task : tasks)
+        {
+            try {
+                task.get();
+            }
+            catch (InterruptedException e) {
+                LOGGER.error("Could not complete a task because it was interuptted.");
+                LOGGER.error(Strings.getStackTrace(e));
+            }
+            catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
 	}
 	
 	private static int getXLength(Variable var)

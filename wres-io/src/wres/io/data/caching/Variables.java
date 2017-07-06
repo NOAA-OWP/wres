@@ -48,9 +48,9 @@ public final class Variables extends Cache<VariableDetails, String>
 	 * @param variableName The short name of the variable
 	 * @param measurementUnit The name of the unit of measurement for the variable
 	 * @return The ID of the variable
-	 * @throws Exception 
+	 * @throws SQLException
 	 */
-	public static Integer getVariableID(String variableName, String measurementUnit) throws Exception {
+	public static Integer getVariableID(String variableName, String measurementUnit) throws SQLException {
 		return internalCache.getID(variableName, measurementUnit);
 	}
 	
@@ -95,7 +95,7 @@ public final class Variables extends Cache<VariableDetails, String>
         return detail;
     }
 
-	public static Integer addVariable(VariableDetails detail, Integer xSize, Integer ySize) throws Exception {
+	public static Integer addVariable(VariableDetails detail, Integer xSize, Integer ySize) throws SQLException {
 
 	    Integer variableID = null;
 	    VariableDetails preexistingDetails = null;
@@ -340,15 +340,22 @@ public final class Variables extends Cache<VariableDetails, String>
 	 * @param variableName The short name of the variable
 	 * @param measurementUnit The name of the unit of measurement for the variable
 	 * @return The ID of the variable
-	 * @throws Exception 
+	 * @throws SQLException
 	 */
-	public Integer getID(String variableName, String measurementUnit) throws Exception {
+	public Integer getID(String variableName, String measurementUnit) throws SQLException {
 		if (!keyIndex.containsKey(variableName)) {
 			VariableDetails detail = new VariableDetails();
 			detail.setVariableName(variableName);
 			detail.measurementunitId = MeasurementUnits.getMeasurementUnitID(measurementUnit);
-			addElement(detail);
-		}
+            try {
+                addElement(detail);
+            }
+            catch (SQLException e) {
+                String message = "The variable '" + variableName + "' could not be added to the cache.";
+                LOGGER.error(message);
+                throw new SQLException(message, e);
+            }
+        }
 
 		return this.keyIndex.get(variableName);
 	}

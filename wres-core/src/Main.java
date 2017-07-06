@@ -1,10 +1,7 @@
 import util.MainFunctions;
-import wres.io.concurrency.Executor;
-import wres.io.utilities.Database;
-import wres.util.FormattedStopwatch;
-import wres.util.ProgressMonitor;
-import wres.util.Strings;
 import wres.util.Collections;
+import wres.util.FormattedStopwatch;
+import wres.util.Strings;
 
 import java.lang.management.ManagementFactory;
 
@@ -19,6 +16,8 @@ public class Main {
 	 * @param args Arguments from the command line of the format {@code action <parameter 1, parameter 2, etc>}"
 	 */
 	public static void main(String[] args) {
+
+		Integer exitCode = -1;
 
 		if (args.length > 0)
 		{
@@ -37,7 +36,14 @@ public class Main {
                 FormattedStopwatch watch = new FormattedStopwatch();
                 watch.start();
 
-				MainFunctions.call(operation, args);
+				Integer result = MainFunctions.call(operation, args);
+
+				if (result == null)
+				{
+					result = MainFunctions.FAILURE;
+				}
+
+				exitCode = result;
 
 				watch.stop();
 				
@@ -61,8 +67,8 @@ public class Main {
 		{
 			System.out.println("No prototype function has been specified");
 		}
-		
 
+		System.exit(exitCode);
 	}
 
 }
