@@ -4,6 +4,70 @@
            jaxb:version="2.1"
            elementFormDefault="qualified">
 
+    <xs:simpleType name="datasourceType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ensemble forecasts" />
+            <xs:enumeration value="simple forecasts" />
+            <xs:enumeration value="observations" />
+            <xs:enumeration value="assimilations" />
+            <xs:enumeration value="model outputs" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="format">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="PI-XML" />
+            <xs:enumeration value="netCDF" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="ensembleCondition">
+        <xs:attribute name="label" type="xs:string" />
+        <xs:attribute name="name" type="xs:string" />
+        <xs:attribute name="member_id" type="xs:string" />
+        <xs:attribute name="qualifier" type="xs:string" />
+        <xs:attribute name="exclude" type="xs:boolean" default="false" />
+    </xs:complexType>
+
+    <xs:complexType name="conditions">
+        <xs:sequence>
+            <xs:element name="dates" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <!-- xs:dateTime ends up being yucky XMLGregorianCalendar. Use string, let app deal with it. -->
+                    <xs:attribute name="earliest" type="xs:string" />
+                    <xs:attribute name="latest" type="xs:string" />
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="values" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="minimum" type="xs:double" />
+                    <xs:attribute name="maximum" type="xs:double" />
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="feature" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:attribute name="label" type="xs:string" />
+                    <xs:attribute name="lid" type="xs:string" />
+                    <xs:attribute name="comid" type="xs:string" />
+                    <xs:attribute name="gage_id" type="xs:string" />
+                    <xs:attribute name="huc" type="xs:string" />
+                    <xs:attribute name="name" type="xs:string" />
+                    <xs:attribute name="exclude" type="xs:boolean" default="false" />
+                </xs:complexType>
+            </xs:element>
+
+            <!-- This set of conditions applies to the RIGHT ensemble data,
+                 because we imagine only one ensemble data in the most common
+                 situation. -->
+            <xs:element name="ensemble" type="ensembleCondition" minOccurs="0" maxOccurs="unbounded" />
+            <!-- In the (hopefully rare) case where the left data is an ensemble
+                 forecast, and the right data is an ensemble forecast, the left
+                 ensemble can be filtered with this optional tag. -->
+            <xs:element name="leftensemble" type="ensembleCondition" minOccurs="0" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:complexType>
+
     <xs:complexType name="datasource">
 
         <!-- for class naming using xjc-->
@@ -14,13 +78,13 @@
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="type" type="xs:string" />
+            <xs:element name="type" type="datasourceType" />
 
             <xs:element name="source" minOccurs="1" maxOccurs="unbounded">
                 <xs:complexType>
                     <xs:simpleContent>
                         <xs:extension base="xs:anyURI">
-                            <xs:attribute name="format" type="xs:string" />
+                            <xs:attribute name="format" type="format" />
                             <xs:attribute name="unit" type="xs:string" />
                         </xs:extension>
                     </xs:simpleContent>
@@ -36,49 +100,10 @@
                     </xs:simpleContent>
                 </xs:complexType>
             </xs:element>
-            <xs:element name="conditions" minOccurs="0" maxOccurs="1">
-                <xs:complexType>
-                    <xs:sequence>
-                        <xs:element name="dates" minOccurs="0" maxOccurs="1">
-                            <xs:complexType>
-                                <!-- xs:dateTime ends up being yucky XMLGregorianCalendar. Use string, let app deal with it. -->
-                                <xs:attribute name="earliest" type="xs:string" />
-                                <xs:attribute name="latest" type="xs:string" />
-                            </xs:complexType>
-                        </xs:element>
-                        <xs:element name="values" minOccurs="0" maxOccurs="1">
-                            <xs:complexType>
-                                <xs:attribute name="minimum" type="xs:double" />
-                                <xs:attribute name="maximum" type="xs:double" />
-                            </xs:complexType>
-                        </xs:element>
-
-                        <xs:element name="feature" minOccurs="0" maxOccurs="unbounded">
-                            <xs:complexType>
-                                <xs:attribute name="label" type="xs:string" />
-                                <xs:attribute name="lid" type="xs:string" />
-                                <xs:attribute name="comid" type="xs:string" />
-                                <xs:attribute name="gage_id" type="xs:string" />
-                                <xs:attribute name="huc" type="xs:string" />
-                                <xs:attribute name="name" type="xs:string" />
-                                <xs:attribute name="exclude" type="xs:boolean" default="false" />
-                            </xs:complexType>
-                        </xs:element>
-                        <xs:element name="ensemble" minOccurs="0" maxOccurs="unbounded">
-                            <xs:complexType>
-                                <xs:attribute name="label" type="xs:string" />
-                                <xs:attribute name="name" type="xs:string" />
-                                <xs:attribute name="member_id" type="xs:string" />
-                                <xs:attribute name="qualifier" type="xs:string" />
-                                <xs:attribute name="exclude" type="xs:boolean" default="false" />
-                            </xs:complexType>
-                        </xs:element>
-                    </xs:sequence>
-                </xs:complexType>
-            </xs:element>
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
+
     <xs:complexType name="metric">
 
         <!-- for class naming using xjc-->
@@ -179,7 +204,7 @@
 
             <xs:sequence>
 
-                <xs:element name="datasources">
+                <xs:element name="inputs">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="left" type="datasource" />
@@ -188,6 +213,8 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
+
+                <xs:element name="conditions" type="conditions" minOccurs="0" maxOccurs="1" />
 
                 <xs:element name="pair" type="pair" minOccurs="0" maxOccurs="1"/>
 
