@@ -4,7 +4,6 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -54,15 +53,27 @@ public class ProgressMonitor
     }
 
     public static Consumer<Object> onThreadStartHandler() {
-        return (Object t) -> {
-            ProgressMonitor.increment();
-        };
+        Consumer<Object> handler = (Object obj) -> {};
+
+        if (MONITOR.updateMonitor) {
+            handler = (Object t) -> {
+                ProgressMonitor.increment();
+            };
+        }
+        return handler;
     }
     
     public static Consumer<Object> onThreadCompleteHandler() {
-        return (Object t) -> {
-            ProgressMonitor.completeStep();
-        };
+
+        Consumer<Object> handler = (Object obj) -> {};
+
+        if (MONITOR.updateMonitor) {
+            handler = (Object t) -> {
+                ProgressMonitor.completeStep();
+            };
+        }
+
+        return handler;
     }
 
     public static void setOutput(Consumer<ProgressMonitor> outputFunction)
@@ -129,7 +140,12 @@ public class ProgressMonitor
     }
     
     public void UpdateMonitor() {
-        
+
+        if (this.ASYNC_UPDATER.isShutdown() || this.ASYNC_UPDATER.isTerminated())
+        {
+            return;
+        }
+
         if (completedSteps < totalSteps) {
             completedSteps++;
             executeOutput();
@@ -141,6 +157,11 @@ public class ProgressMonitor
     }
     
     public void addStep() {
+
+        if (this.ASYNC_UPDATER.isShutdown() || this.ASYNC_UPDATER.isTerminated())
+        {
+            return;
+        }
         this.totalSteps++;
         executeOutput();
     }
@@ -202,6 +223,11 @@ public class ProgressMonitor
 
     private boolean shouldUpdate()
     {
+        if (this.ASYNC_UPDATER.isTerminated() || this.ASYNC_UPDATER.isShutdown())
+        {
+            return false;
+        }
+
         boolean update = true;
 
         if (this.updateFrequency != null &&
@@ -231,6 +257,11 @@ public class ProgressMonitor
         this.shutdown();
     }
 
+    public static void setShouldUpdate(boolean shouldUpdate)
+    {
+        MONITOR.updateMonitor = shouldUpdate;
+    }
+
     private void shutdown()
     {
         this.ASYNC_UPDATER.shutdownNow();
@@ -252,4 +283,5 @@ public class ProgressMonitor
     private final DecimalFormat mainFormat;
     private PrintStream printer;
     private Consumer<ProgressMonitor> outputFunction;
+    private boolean updateMonitor = true;
 }

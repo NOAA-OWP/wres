@@ -3,19 +3,21 @@
  */
 package util;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
-import ucar.nc2.Variable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ucar.ma2.Array;
+import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFile;
-import ucar.ma2.Array;
-import ucar.ma2.InvalidRangeException;
+import ucar.nc2.Variable;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Christopher Tubbs
@@ -23,6 +25,8 @@ import ucar.ma2.InvalidRangeException;
  * Useful for sample code
  */
 final class NetCDFReader {
+
+	private final Logger LOGGER = LoggerFactory.getLogger(NetCDFReader.class);
 
 	/**
 	 * Constructor
@@ -39,56 +43,49 @@ final class NetCDFReader {
 		try (NetcdfFile ncfile = NetcdfFile.open(path)) 
 		{
 			List<Variable> observed_variables = ncfile.getVariables();
-			System.out.print("Information about this NetCDF: \n\t");
-			System.out.println(ncfile.getDetailInfo());
+			LOGGER.info("Information about this NetCDF: \n\t");
+			LOGGER.info(ncfile.getDetailInfo());
 			
 			List<Attribute> global_attributes = ncfile.getGlobalAttributes();
 			for (Attribute global_attribute : global_attributes) {
-				System.out.println("An attribute is: " + global_attribute.getFullName());
-				System.out.println("\tThe values are: ");
+				LOGGER.info("An attribute is: " + global_attribute.getFullName());
+				LOGGER.info("\tThe values are: ");
 
 				for (int i = 0; i < global_attribute.getLength(); ++i) {
-					System.out.print("\t\t");
-					System.out.println(global_attribute.getValue(i));
+					LOGGER.info("\t\t{}", global_attribute.getValue(i).toString());
 				}
 			}
-			System.out.println("");
+			LOGGER.info("");
 
 			for (Variable var : observed_variables)
 			{
-				System.out.println("\nThis variable is: " + var.getDescription());
-				System.out.println("\tThe short name is: " + var.getShortName());
+				LOGGER.info("\nThis variable is: " + var.getDescription());
+				LOGGER.info("\tThe short name is: " + var.getShortName());
 				List<Dimension> dimensions = var.getDimensions();
 				for (Dimension dimension : dimensions)
 				{
-					System.out.println("\tA dimension is: " + dimension.getShortName());
-					System.out.print("\t\tThe length is: ");
-					System.out.println(dimension.getLength());
+					LOGGER.info("\tA dimension is: " + dimension.getShortName());
+					LOGGER.info("\t\tThe length is: {}", String.valueOf(dimension.getLength()));
 				}
-				System.out.println("\t" + var.getShortName() + " has a rank of: " + String.valueOf(var.getRank()));
+				LOGGER.info("\t" + var.getShortName() + " has a rank of: " + String.valueOf(var.getRank()));
 				String unit = var.getUnitsString();
-				System.out.println("\tIt is measured in: " + unit);
-				System.out.println("\tThe name and dimensions of this variable are: " + var.getNameAndDimensions());
-				System.out.println("\tThe dimensions are: " + var.getDimensionsString());
-				System.out.print("\tThe datatype is: ");
-				System.out.println(var.getDataType());
-				System.out.println("\tThe description is: " + var.getDescription());
-				System.out.print("\tIs coordinate Variable: ");
-				System.out.println(var.isCoordinateVariable());
-				System.out.print("\tThere are ");
-				System.out.print(var.getDimensions().size());
-				System.out.println(" dimensions in this variable.\n");
-				System.out.println("\nAttributes:\n");
+				LOGGER.info("\tIt is measured in: " + unit);
+				LOGGER.info("\tThe name and dimensions of this variable are: " + var.getNameAndDimensions());
+				LOGGER.info("\tThe dimensions are: " + var.getDimensionsString());
+				LOGGER.info("\tThe datatype is: {}", var.getDataType().toString());
+				LOGGER.info("\tThe description is: " + var.getDescription());
+				LOGGER.info("\tIs coordinate Variable: {}", String.valueOf(var.isCoordinateVariable()));
+				LOGGER.info("\tThere are {} dimensions in this variable\n", String.valueOf(var.getDimensions().size()));
+				LOGGER.info("\nAttributes:\n");
 				List<Attribute> attributes = var.getAttributes();
 				for (Attribute attribute : attributes)
 				{
-					System.out.println("\tThis attribute is: " + attribute.getFullName());
-					System.out.println("\t\tThe values are: ");
+					LOGGER.info("\tThis attribute is: " + attribute.getFullName());
+					LOGGER.info("\t\tThe values are: ");
 					
 					for (int i = 0; i < attribute.getLength(); ++i)
 					{
-						System.out.print("\t\t\t");
-						System.out.println(attribute.getValue(i));
+						LOGGER.info("\t\t\t{}", attribute.getValue(i).toString());
 					}
 				}
 				

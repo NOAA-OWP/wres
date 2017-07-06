@@ -38,9 +38,9 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 	 * Returns the ID of a unit of measurement from the global cache based on the name of the measurement
 	 * @param unit The name of the unit of measurement
 	 * @return The ID of the unit of measurement
-	 * @throws Exception 
+	 * @throws SQLException
 	 */
-	public static Integer getMeasurementUnitID(String unit) throws Exception
+	public static Integer getMeasurementUnitID(String unit) throws SQLException
 	{
 		return internalCache.getID(unit.toLowerCase());
 	}

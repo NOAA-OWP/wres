@@ -1,26 +1,9 @@
 package util;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import concurrency.Downloader;
 import concurrency.ProjectExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.Executor;
@@ -42,22 +25,37 @@ import wres.io.utilities.Database;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.function.Function;
+
 /**
  * @author ctubbs
  *
  */
 public final class MainFunctions
 {
+	public static final Integer FAILURE = -1;
+	public static final Integer SUCCESS = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFunctions.class);
 
 	// Clean definition of the newline character for the system
 	private static final String newline = System.lineSeparator();
 
 	// Mapping of String names to corresponding methods
-	private static final Map<String, Consumer<String[]>> functions = createMap();
+	private static final Map<String, Function<String[], Integer>> functions = createMap();
 
 	public static void shutdown()
 	{
+		Database.restoreAllIndices();
 		Executor.complete();
 		Database.shutdown();
 		ProgressMonitor.deactivate();
@@ -79,17 +77,18 @@ public final class MainFunctions
 	 * @param operation The name of the desired method to call
 	 * @param args      The desired arguments to use when calling the method
 	 */
-	public static void call (String operation, final String[] args) {
+	public static Integer call (String operation, final String[] args) {
 		operation = operation.toLowerCase();
-		functions.get(operation).accept(args);
+		Integer result = functions.get(operation).apply(args);
 		shutdown();
+		return result;
 	}
 
 	/**
 	 * Creates the mapping of operation names to their corresponding methods
 	 */
-	private static Map<String, Consumer<String[]>> createMap () {
-		final Map<String, Consumer<String[]>> prototypes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+	private static Map<String, Function<String[], Integer>> createMap () {
+		final Map<String, Function<String[], Integer>> prototypes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
 		prototypes.put("describenetcdf", describeNetCDF());
 		prototypes.put("connecttodb", connectToDB());
@@ -122,7 +121,7 @@ public final class MainFunctions
 	 *
 	 * @return Method that prints all available commands by name
 	 */
-	private static Consumer<String[]> printCommands()
+	private static Function<String[], Integer> printCommands()
 	{
 		return (final String[] args) -> {
 			System.out.println("Available commands are:");
@@ -130,6 +129,7 @@ public final class MainFunctions
 			{
 				System.out.println("\t" + command);
 			}
+			return SUCCESS;
 		};
 	}
 
@@ -138,9 +138,10 @@ public final class MainFunctions
 	 *
 	 * @return Method that will attempt to save the file at the given path to the database as forecasts
 	 */
-	private static Consumer<String[]> saveForecast()
+	private static Function<String[], Integer> saveForecast()
 	{
 		return (final String[] args) -> {
+			Integer result = FAILURE;
 			if (args.length > 0) {
 				try {
 
@@ -151,11 +152,15 @@ public final class MainFunctions
 
 					task.get();
 
+					LOGGER.trace("Refreshing the statistics in the database...");
+					Database.refreshStatistics();
+
 					Executor.complete();
 					Database.shutdown();
 
-					System.out.println();
-					System.out.println("All forecast saving operations complete. Please verify data.");
+					LOGGER.info("");
+					LOGGER.info("All forecast saving operations complete. Please verify data.");
+					result = SUCCESS;
 				}
 				catch (final Exception e) {
 					e.printStackTrace();
@@ -168,6 +173,7 @@ public final class MainFunctions
 				System.out.print("The current directory is:\t");
 				System.out.println(System.getProperty("user.dir"));
 			}
+			return result;
 		};
 	}
 
@@ -176,9 +182,10 @@ public final class MainFunctions
 	 *
 	 * @return Method that will attempt to save all files in the given directory to the database as forecasts
 	 */
-	private static Consumer<String[]> saveForecasts()
+	private static Function<String[], Integer> saveForecasts()
 	{
 		return (final String[] args) -> {
+			Integer result = FAILURE;
 			if (args.length > 0)
 			{
 				try
@@ -225,6 +232,7 @@ public final class MainFunctions
 
 					System.out.println();
 					System.out.println("All forecast saving operations complete. Please verify data.");
+					result = SUCCESS;
 				}
 				catch (final Exception e)
 				{
@@ -236,6 +244,7 @@ public final class MainFunctions
 				System.out.println("A path to a directory is needed to save data. Please pass that in as the first argument.");
 				System.out.println("usage: saveForecasts <directory path>");
 			}
+			return result;
 		};
 	}
 
@@ -244,15 +253,17 @@ public final class MainFunctions
 	 *
 	 * @return Method that will attempt to save a file to the database as an observation
 	 */
-	private static Consumer<String[]> saveObservation()
+	private static Function<String[], Integer> saveObservation()
 	{
 		return (final String[] args) -> {
+			Integer result = FAILURE;
 			if (args.length > 0) {
 				try {
 					final BasicSource source = ReaderFactory.getReader(args[0]);
 					System.out.println(String.format("Attempting to save '%s' to the database...", args[0]));
 					source.saveObservation();
 					System.out.println("Database save operation completed. Please verify data.");
+					result = SUCCESS;
 				}
 				catch (final Exception e)
 				{
@@ -266,6 +277,7 @@ public final class MainFunctions
 				System.out.print("The current directory is:\t");
 				System.out.println(System.getProperty("user.dir"));
 			}
+			return result;
 		};
 	}
 
@@ -274,8 +286,9 @@ public final class MainFunctions
 	 *
 	 * @return Method that will attempt to save all files in a directory to the database as observations
 	 */
-	private static Consumer<String[]> saveObservations () {
+	private static Function<String[], Integer> saveObservations () {
 		return (final String[] args) -> {
+			Integer result = FAILURE;
 			if (args.length > 0) {
 				try {
 					final String directory = args[0];
@@ -293,6 +306,7 @@ public final class MainFunctions
 					Executor.complete();
 					Database.shutdown();
 					System.out.println("All observation saving operations complete. Please verify data.");
+					return result;
 				}
 				catch (final Exception e) {
 					e.printStackTrace();
@@ -302,6 +316,7 @@ public final class MainFunctions
 				System.out.println("A path to a directory is needed to save data. Please pass that in as the first argument.");
 				System.out.println("usage: saveObservations <directory path>");
 			}
+			return result;
 		};
 	}
 
@@ -310,58 +325,71 @@ public final class MainFunctions
 	 *
 	 * @return method that will attempt to connect to the database to prove that a connection is possible. The version of the connected database will be printed.
 	 */
-	private static Consumer<String[]> connectToDB () {
+	private static Function<String[], Integer> connectToDB () {
 		return (final String[] args) -> {
+			Integer result = FAILURE;
 			try {
 				final String version = Database.getResult("Select version() AS version_detail", "version_detail");
-				System.out.println(version);
-				System.out.println("Successfully connected to the database");
+				LOGGER.info(version);
+				LOGGER.info("Successfully connected to the database");
+				result = SUCCESS;
 			}
 			catch (final SQLException e) {
-				System.out.println("Could not connect to database because:");
-				e.printStackTrace();
+				LOGGER.error("Could not connect to database because:");
+				LOGGER.error(Strings.getStackTrace(e));
 			}
+			catch (final RuntimeException exception)
+            {
+                LOGGER.error(Strings.getStackTrace(exception));
+            }
+            return result;
 		};
 	}
 	
-	private static Consumer<String[]> refreshForecasts()
+	private static Function<String[], Integer> refreshForecasts()
 	{
 		return (final String[] args) -> {
+			Integer result = SUCCESS;
 			try {
-				System.out.println("");
-				System.out.println("Cleaning up the Forecast table...");
-				Database.execute("VACUUM FULL ANALYZE wres.Forecast;");
+                LOGGER.info("");
+                LOGGER.info("Cleaning up the Forecast table...");
+				Database.execute("VACUUM ANALYZE wres.Forecast;");
 				Database.execute("REINDEX TABLE wres.Forecast;");
-				System.out.println("The Forecast table has been refreshed.");
-				System.out.println("");
+				LOGGER.info("The Forecast table has been refreshed.");
+                LOGGER.info("");
 			}
 			catch (final SQLException e) {
-				e.printStackTrace();
+				LOGGER.error(Strings.getStackTrace(e));
+                result = FAILURE;
 			}
 
 			try {
-				System.out.println("");
-				System.out.println("Cleaning up the ForecastEnsemble table...");
-				Database.execute("VACUUM FULL ANALYZE wres.ForecastEnsemble;");
+                LOGGER.info("");
+                LOGGER.info("Cleaning up the ForecastEnsemble table...");
+				Database.execute("VACUUM ANALYZE wres.ForecastEnsemble;");
 				Database.execute("REINDEX TABLE wres.ForecastEnsemble;");
-				System.out.println("The ForecastEnsemble table has been refreshed.");
-				System.out.println("");
+                LOGGER.info("The ForecastEnsemble table has been refreshed.");
+                LOGGER.info("");
 			}
 			catch (final SQLException e) {
-				e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace(e));
+                result = FAILURE;
 			}
 
 			try {
-				System.out.println("");
-				System.out.println("Cleaning up the ForecastValue table...");
-				Database.execute("VACUUM FULL ANALYZE wres.ForecastValue;");
+                LOGGER.info("");
+                LOGGER.info("Cleaning up the ForecastValue table...");
+				Database.execute("VACUUM ANALYZE wres.ForecastValue;");
 				Database.execute("REINDEX TABLE wres.ForecastValue;");
-				System.out.println("The ForecastValue table has been refreshed.");
-				System.out.println("");
+                LOGGER.info("The ForecastValue table has been refreshed.");
+                LOGGER.info("");
 			}
 			catch (final SQLException e) {
-				e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace(e));
+				result = FAILURE;
 			}
+
+			return result;
 		};
 	}
 
@@ -371,13 +399,24 @@ public final class MainFunctions
 	 * @return A method that will display the available processors, the amount of free memory, the amount of maximum memory,
 	 * and the total memory of the system.
 	 */
-	private static Consumer<String[]> systemMetrics()
+	private static Function<String[], Integer> systemMetrics()
 	{
 		return (final String[] args) -> {
-		    System.out.println(Strings.getSystemStats());
+			Integer result = FAILURE;
 
-			// Add white space
-			System.out.println();
+			try {
+                LOGGER.info(Strings.getSystemStats());
+
+                // Add white space
+                LOGGER.info("");
+
+                result = SUCCESS;
+            }
+            catch (RuntimeException e)
+            {
+                LOGGER.error(Strings.getStackTrace(e));
+            }
+            return result;
 		};
 	}
 
@@ -387,13 +426,21 @@ public final class MainFunctions
 	 * @return A method that will read a NetCDF file from the given path and output details about global attributes,
 	 * variable details, variable attributes, and sample data.
 	 */
-	private static Consumer<String[]> describeNetCDF()
+	private static Function<String[], Integer> describeNetCDF()
 	{
 		return (final String[] args) -> {
+			Integer result = FAILURE;
 			if (args.length > 0)
 			{
-				final NetCDFReader reader = new NetCDFReader(args[0]);
-				reader.output_variables();
+			    try {
+                    final NetCDFReader reader = new NetCDFReader(args[0]);
+                    reader.output_variables();
+                    result = SUCCESS;
+                }
+                catch (RuntimeException e)
+                {
+                    LOGGER.error(Strings.getStackTrace(e));
+                }
 			}
 			else
 			{
@@ -401,6 +448,7 @@ public final class MainFunctions
 				System.out.print("The current directory is:\t");
 				System.out.println(System.getProperty("user.dir"));
 			}
+			return result;
 		};
 	}
 
@@ -411,26 +459,34 @@ public final class MainFunctions
 	 * the given NetCDF file will be opened and the a value from the optional position for the given variable will be printed to
 	 * the screen.
 	 */
-	private static Consumer<String[]> queryNetCDF()
+	private static Function<String[], Integer> queryNetCDF()
 	{
 		return (final String[] args) -> {
+			Integer result = FAILURE;
 			if (args.length > 1)
 			{
-				final String filename = args[0];
-				final String variable_name = args[1];
-				final int[] variable_args = new int[args.length - 2];
-				for (int index = 2; index < args.length; ++index)
-				{
-					variable_args[index-2] = Integer.parseInt(args[index]);
-				}
-				final NetCDFReader reader = new NetCDFReader(filename);
-				reader.print_query(variable_name, variable_args);
+			    try {
+                    final String filename = args[0];
+                    final String variable_name = args[1];
+                    final int[] variable_args = new int[args.length - 2];
+                    for (int index = 2; index < args.length; ++index) {
+                        variable_args[index - 2] = Integer.parseInt(args[index]);
+                    }
+                    final NetCDFReader reader = new NetCDFReader(filename);
+                    reader.print_query(variable_name, variable_args);
+                    result = SUCCESS;
+                }
+                catch (RuntimeException e)
+                {
+                    LOGGER.error(Strings.getStackTrace(e));
+                }
 			}
 			else
 			{
 				System.out.println("There are not enough parameters to query the netcdf.");
 				System.out.println("usage: queryNetCDF <filename> <variable> [index0, index1,...indexN]");
 			}
+			return result;
 		};
 	}
 
@@ -440,17 +496,27 @@ public final class MainFunctions
 	 * @return A method that will print out details about every found project in the path indicated by the system
 	 * configuration in a more human readable format.
 	 */
-	private static Consumer<String[]> describeProjects()
+	private static Function<String[], Integer> describeProjects()
 	{
 		return (final String[] args) -> {
+			Integer result = SUCCESS;
+
 			System.out.println();
 			System.out.println();
 			System.out.println("The configured projects are:");
 			System.out.println();
 			System.out.println();
-			for (final ProjectSpecification project : ProjectSettings.getProjects()) {
-				System.out.println(project.toString());
+
+			try {
+				for (final ProjectSpecification project : ProjectSettings.getProjects()) {
+					System.out.println(project.toString());
+				}
 			}
+			catch (RuntimeException exception)
+			{
+				result = FAILURE;
+			}
+			return result;
 		};
 	}
 
@@ -460,27 +526,71 @@ public final class MainFunctions
 	 * @return A method that will remove all dynamic forecast, observation, and variable data from the database. Prepares the
 	 * database for a cold start.
 	 */
-	private static Consumer<String[]> flushDatabase()
+	private static Function<String[], Integer> flushDatabase()
 	{
 		return (final String[] args) -> {
-			String script = "";
-			script += "TRUNCATE wres.Observation;" + newline;
-			script += "TRUNCATE wres.ForecastValue;" + newline;
-			script += "TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;" + newline;
-			script += "TRUNCATE wres.ForecastSource;" + newline;
-			script += "TRUNCATE wres.Source RESTART IDENTITY CASCADE;" + newline;
-			script += "TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;" + newline;
+			Integer result = SUCCESS;
 
 			try {
-				Database.execute(script);
-			}
-			catch (final SQLException e) {
-				System.err.println("WRES data could not be removed from the database." + newline);
-				System.err.println();
-				System.err.println(script);
-				System.err.println();
-				e.printStackTrace();
-			}
+                StringBuilder builder = new StringBuilder();
+
+                Connection connection = null;
+                ResultSet results = null;
+                boolean partitionsLoaded;
+
+                builder.append("SELECT 'DROP TABLE IF EXISTS '||n.nspname||'.'||c.relname||' CASCADE;'").append(newline);
+                builder.append("FROM pg_catalog.pg_class c").append(newline);
+                builder.append("INNER JOIN pg_catalog.pg_namespace n").append(newline);
+                builder.append("    ON N.oid = C.relnamespace").append(newline);
+                builder.append("WHERE relchecks > 0").append(newline);
+                builder.append("    AND nspname = 'wres' OR nspname = 'partitions'").append(newline);
+                builder.append("    AND relkind = 'r';");
+
+                try {
+                    connection = Database.getConnection();
+                    results = Database.getResults(connection, builder.toString());
+
+                    builder = new StringBuilder();
+                    partitionsLoaded = true;
+
+                    while (results.next()) {
+                        builder.append(results.getString(1)).append(newline);
+                    }
+                }
+                catch (SQLException e) {
+                    LOGGER.error(Strings.getStackTrace(e));
+                    throw e;
+                }
+
+                if (!partitionsLoaded) {
+                    builder = new StringBuilder();
+                }
+
+                builder.append("TRUNCATE wres.ForecastSource;").append(newline);
+                builder.append("TRUNCATE wres.ForecastValue;").append(newline);
+                builder.append("TRUNCATE wres.Observation;").append(newline);
+                builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(newline);
+                builder.append("TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;").append(newline);
+                builder.append("TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;").append(newline);
+
+                try {
+                    Database.execute(builder.toString());
+                }
+                catch (final SQLException e) {
+                    LOGGER.error("WRES data could not be removed from the database." + newline);
+                    LOGGER.error("");
+                    LOGGER.error(builder.toString());
+                    LOGGER.error("");
+                    LOGGER.error(Strings.getStackTrace(e));
+                    throw e;
+                }
+            }
+            catch (Exception e)
+            {
+                LOGGER.error(Strings.getStackTrace(e));
+                result = FAILURE;
+            }
+			return result;
 		};
 	}
 
@@ -489,9 +599,10 @@ public final class MainFunctions
 	 *
 	 * @return A method that will remove all forecast data from the database.
 	 */
-	private static Consumer<String[]> flushForecasts()
+	private static Function<String[], Integer> flushForecasts()
 	{
 		return (final String[] args) -> {
+			Integer result = FAILURE;
 			String script = "";
 			script += "TRUNCATE wres.ForecastSource;" + newline;
 			script += "DELETE FROM wres.Source S" + newline;
@@ -506,187 +617,213 @@ public final class MainFunctions
 
 			try {
 				Database.execute(script);
+				result = SUCCESS;
 			}
-			catch (final SQLException e) {
-				System.err.println("WRES forecast data could not be removed from the database." + newline);
-				System.err.println();
-				System.err.println(script);
-				System.err.println();
-				e.printStackTrace();
+			catch (final Exception e) {
+				LOGGER.error("WRES forecast data could not be removed from the database." + newline);
+                LOGGER.error("");
+                LOGGER.error(script);
+				LOGGER.error("");
+                LOGGER.error(Strings.getStackTrace(e));
 			}
+
+			return result;
 		};
 	}
 
-	private static Consumer<String[]> refreshTestData () {
+	private static Function<String[], Integer> refreshTestData () {
 		return (final String[] args) -> {
+			Integer result = FAILURE;
 			if (args.length >= 2) {
 				final String date = args[0];
 				final String range = args[1];
 
-				if (!Arrays.asList("analysis_assim", "fe_analysis_assim", "fe_medium_range", "fe_short_range", "forcing_analysis_assim", "forcing_medium_range", "forcing_short_range", "long_range_mem1", "long_range_mem2", "long_range_mem3", "long_range_mem4", "medium_range", "short_range").contains(range.toLowerCase())) {
-					System.err.println("The range of: '" + range + "' is not a valid range of data.");
-					return;
+				if (!Arrays.asList("analysis_assim",
+								   "fe_analysis_assim",
+								   "fe_medium_range",
+								   "fe_short_range",
+								   "forcing_analysis_assim",
+								   "forcing_medium_range",
+								   "forcing_short_range",
+								   "long_range_mem1",
+								   "long_range_mem2",
+								   "long_range_mem3",
+								   "long_range_mem4",
+								   "medium_range",
+								   "short_range").contains(range.toLowerCase())) {
+                    LOGGER.error("The range of: '" + range + "' is not a valid range of data.");
+					return FAILURE;
 				}
 
-				int offset = 0;
-				int hourIncrement;
-				int cutoff;
-				int current;
-				boolean isAssim = false;
-				boolean isLong = false;
-				final boolean isForcing = Strings.contains(range, "fe") || Strings.contains(range, "forcing");
+				try {
+                    int offset = 0;
+                    int hourIncrement;
+                    int cutoff;
+                    int current;
+                    boolean isAssim = false;
+                    boolean isLong = false;
+                    final boolean isForcing = Strings.contains(range, "fe") || Strings.contains(range, "forcing");
 
-				final Map<String, Future> downloadOperations = new TreeMap<>();
+                    final Map<String, Future> downloadOperations = new TreeMap<>();
 
-				String downloadPath = "testinput/sharedinput/";
-				downloadPath += date;
-				final File downloadDirectory = new File(downloadPath);
+                    String downloadPath = "testinput/sharedinput/";
+                    downloadPath += date;
+                    final File downloadDirectory = new File(downloadPath);
 
-				if (!downloadDirectory.exists()) {
-					System.out.println("Attempting to create a directory for the dataset...");
+                    if (!downloadDirectory.exists()) {
+                        LOGGER.trace("Attempting to create a directory for the dataset...");
 
-					try {
-						final boolean directoriesMade = downloadDirectory.mkdirs();
-						if (!directoriesMade) {
-							System.err.println("A directory could not be created for the downloaded files.");
-						}
-					}
-					catch (final SecurityException exception) {
-						System.err.println("You lack the permissions necessary to make the directory for this data.");
-						System.err.println("You will need to get access to your data through other means.");
-						return;
-					}
-				}
+                        try {
+                            final boolean directoriesMade = downloadDirectory.mkdirs();
+                            if (!directoriesMade) {
+                                LOGGER.warn("A directory could not be created for the downloaded files.");
+                            }
+                        }
+                        catch (final SecurityException exception) {
+                            LOGGER.error("You lack the permissions necessary to make the directory for this data.");
+                            LOGGER.error("You will need to get access to your data through other means.");
+                            throw exception;
+                        }
+                    }
 
-				if (Strings.contains(range, "long_range")) {
-					hourIncrement = 6;
-					current = 6;
-					cutoff = 720;
-					isLong = true;
-				}
-				else if (Strings.contains(range, "short_range")) {
-					current = 1;
-					hourIncrement = 1;
-					cutoff = 15;
-				}
-				else if (Strings.contains(range, "medium_range")) {
-					offset = 6;
-					current = 1;
-					hourIncrement = 3;
-					cutoff = 240;
-				}
-				else {
-					hourIncrement = 1;
-					current = 0;
-					cutoff = 11;
-					isAssim = true;
-				}
+                    if (Strings.contains(range, "long_range")) {
+                        hourIncrement = 6;
+                        current = 6;
+                        cutoff = 720;
+                        isLong = true;
+                    }
+                    else if (Strings.contains(range, "short_range")) {
+                        current = 1;
+                        hourIncrement = 1;
+                        cutoff = 15;
+                    }
+                    else if (Strings.contains(range, "medium_range")) {
+                        offset = 6;
+                        current = 1;
+                        hourIncrement = 3;
+                        cutoff = 240;
+                    }
+                    else {
+                        hourIncrement = 1;
+                        current = 0;
+                        cutoff = 11;
+                        isAssim = true;
+                    }
 
-				while (current <= cutoff) {
-					String address = "http://***REMOVED***dstore.***REMOVED***.***REMOVED***/nwm/nwm.";
-					address += date;
-					address += "/";
-					address += range;
-					address += "/";
+                    while (current <= cutoff) {
+                        String address = "http://***REMOVED***dstore.***REMOVED***.***REMOVED***/nwm/nwm.";
+                        address += date;
+                        address += "/";
+                        address += range;
+                        address += "/";
 
-					String filename = "nwm.t";
+                        String filename = "nwm.t";
 
-					if (isAssim) {
-						if (current < 10) {
-							filename += "0";
-						}
+                        if (isAssim) {
+                            if (current < 10) {
+                                filename += "0";
+                            }
 
-						filename += String.valueOf(current);
-					}
-					else {
-						if (offset < 10) {
-							filename += "0";
-						}
+                            filename += String.valueOf(current);
+                        }
+                        else {
+                            if (offset < 10) {
+                                filename += "0";
+                            }
 
-						filename += String.valueOf(offset);
-					}
+                            filename += String.valueOf(offset);
+                        }
 
-					filename += "z.";
+                        filename += "z.";
 
-					if (isLong) {
-						filename += "long_range";
-					}
-					else {
-						filename += range;
-					}
+                        if (isLong) {
+                            filename += "long_range";
+                        }
+                        else {
+                            filename += range;
+                        }
 
-					if (!isForcing) {
-						filename += ".land";
-					}
+                        if (!isForcing) {
+                            filename += ".land";
+                        }
 
-					if (isLong) {
-						filename += "_";
-						filename += Strings.extractWord(range, "\\d$");
-					}
+                        if (isLong) {
+                            filename += "_";
+                            filename += Strings.extractWord(range, "\\d$");
+                        }
 
-					filename += ".";
+                        filename += ".";
 
-					if (!isAssim) {
-						filename += "f";
-						if (current < 100) {
-							filename += "0";
-							if (current < 10) {
-								filename += "0";
-							}
-						}
+                        if (!isAssim) {
+                            filename += "f";
+                            if (current < 100) {
+                                filename += "0";
+                                if (current < 10) {
+                                    filename += "0";
+                                }
+                            }
 
-						filename += String.valueOf(current);
-					}
-					else {
-						filename += "tm00";
+                            filename += String.valueOf(current);
+                        }
+                        else {
+                            filename += "tm00";
 
-					}
+                        }
 
-					filename += ".conus.nc";
+                        filename += ".conus.nc";
 
-					if (date.compareTo("20170509") < 0) {
-						filename += ".gz";
-					}
+                        if (date.compareTo("20170509") < 0) {
+                            filename += ".gz";
+                        }
 
-					address += filename;
+                        address += filename;
 
-					final Downloader downloadOperation = new Downloader(Paths.get(downloadDirectory.getAbsolutePath(), filename), address);
-					downloadOperation.setOnRun(ProgressMonitor.onThreadStartHandler());
-					downloadOperation.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-					downloadOperations.put(filename, Executor.execute(downloadOperation));
+                        final Downloader downloadOperation = new Downloader(Paths.get(downloadDirectory.getAbsolutePath(), filename), address);
+                        downloadOperation.setOnRun(ProgressMonitor.onThreadStartHandler());
+                        downloadOperation.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                        downloadOperations.put(filename, Executor.execute(downloadOperation));
 
-					current += hourIncrement;
-				}
+                        current += hourIncrement;
+                    }
 
-				for (final Entry<String, Future> operation : downloadOperations.entrySet()) {
-					try {
-						operation.getValue().get();
-					}
-					catch (InterruptedException | ExecutionException e) {
-						System.err.println("An error was encountered while attempting to complete the download for '" + operation.getKey() + "'.");
-						e.printStackTrace();
-					}
-				}
+                    for (final Entry<String, Future> operation : downloadOperations.entrySet()) {
+                        try {
+                            operation.getValue().get();
+                        }
+                        catch (InterruptedException | ExecutionException e) {
+                            LOGGER.error("An error was encountered while attempting to complete the download for '" + operation.getKey() + "'.");
+                            throw e;
+                        }
+                    }
+                    result = SUCCESS;
+                }
+                catch (Exception e)
+                {
+                    LOGGER.error(Strings.getStackTrace(e));
+                    result = FAILURE;
+                }
 			}
 			else {
-				System.out.println("There are not enough parameters to download updated netcdf data.");
-				System.out.println("usage: refreshTestData <date> <range name>");
-				System.out.println("Example: refreshTestData 20170508 long_range_mem4");
-				System.out.println("Acceptable ranges are:");
-				System.out.println("	analysis_assim");
-				System.out.println("	fe_analysis_assim");
-				System.out.println("	fe_medium_range");
-				System.out.println("	fe_short_range");
-				System.out.println("	forcing_analysis_assim");
-				System.out.println("	forcing_medium_range");
-				System.out.println("	forcing_short_range");
-				System.out.println("	long_range_mem1");
-				System.out.println("	long_range_mem2");
-				System.out.println("	long_range_mem3");
-				System.out.println("	long_range_mem4");
-				System.out.println("	medium_range");
-				System.out.println("	short_range");
+				LOGGER.warn("There are not enough parameters to download updated netcdf data.");
+                LOGGER.warn("usage: refreshTestData <date> <range name>");
+                LOGGER.warn("Example: refreshTestData 20170508 long_range_mem4");
+                LOGGER.warn("Acceptable ranges are:");
+                LOGGER.warn("	analysis_assim");
+                LOGGER.warn("	fe_analysis_assim");
+                LOGGER.warn("	fe_medium_range");
+                LOGGER.warn("	fe_short_range");
+                LOGGER.warn("	forcing_analysis_assim");
+                LOGGER.warn("	forcing_medium_range");
+                LOGGER.warn("	forcing_short_range");
+                LOGGER.warn("	long_range_mem1");
+                LOGGER.warn("	long_range_mem2");
+                LOGGER.warn("	long_range_mem3");
+                LOGGER.warn("	long_range_mem4");
+                LOGGER.warn("	medium_range");
+                LOGGER.warn("	short_range");
 			}
+
+			return result;
 		};
 	}
 
@@ -695,9 +832,10 @@ public final class MainFunctions
 	 *
 	 * @return A method that will remove all observation data from the database.
 	 */
-	private static Consumer<String[]> flushObservations()
+	private static Function<String[], Integer> flushObservations()
 	{
 		return (final String[] args) -> {
+			Integer result = FAILURE;
 			String script;
 			script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + newline;
 			script += "DELETE FROM wres.Source S" + newline;
@@ -709,14 +847,16 @@ public final class MainFunctions
 
 			try {
 				Database.execute(script);
+				result = SUCCESS;
 			}
-			catch (final SQLException e) {
-				System.err.println("WRES Observation data could not be removed from the database." + newline);
-				System.err.println();
-				System.err.println(script);
-				System.err.println();
-				e.printStackTrace();
+			catch (final Exception e) {
+				LOGGER.error("WRES Observation data could not be removed from the database." + newline);
+                LOGGER.error("");
+				LOGGER.error(script);
+				LOGGER.error("");
+				LOGGER.error(Strings.getStackTrace(e));
 			}
+			return result;
 		};
 	}
 
@@ -726,8 +866,9 @@ public final class MainFunctions
 	 * @return Prints the count and the first 10 pairs for all observations and forecasts for the passed in forecast variable,
 	 * observation variable, and lead time
 	 */
-	private static Consumer<String[]> getPairs () {
+	private static Function<String[], Integer> getPairs () {
 		return (final String[] args) -> {
+			Integer result = FAILURE;
 
 			Connection connection = null;
 			try {
@@ -794,6 +935,7 @@ public final class MainFunctions
 					}
 					System.out.println(representation);
 				}
+				result = SUCCESS;
 			}
 			catch (final Exception e) {
 				e.printStackTrace();
@@ -803,48 +945,59 @@ public final class MainFunctions
 					Database.returnConnection(connection);
 				}
 			}
+			return result;
 		};
 	}
 
-	private static Consumer<String[]> refreshStatistics ()
+	private static Function<String[], Integer> refreshStatistics ()
 	{
 		return (final String[] args) -> {
-			Database.refreshStatistics();
+			Integer result = FAILURE;
+			try {
+                Database.refreshStatistics();
+                result = SUCCESS;
+            }
+            catch (Exception e)
+            {
+                LOGGER.error(Strings.getStackTrace(e));
+            }
+            return result;
 		};
 	}
 
-	private static Consumer<String[]> getProjectPairs()
+	private static Function<String[], Integer> getProjectPairs()
 	{
 	    return (final String[] args) -> {
+			Integer result = FAILURE;
 	        if (args.length > 1)
 	        {
-	            final String projectName = args[0];
-	            final String metricName = args[1];
-	            final int printLimit = 100;
-	            int printCount = 0;
-	            final int totalLimit = 10;
-	            int totalCount = 0;
-	            final ProjectSpecification foundProject = ProjectSettings.getProject(projectName);
-	            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping;
-	            
-	            if (foundProject == null)
-	            {
-	                System.err.println("There is not a project named '" + projectName + "'");
-	                System.err.println("Pairs could not be created because there wasn't a specification.");
-	                return;
-	            }
-	            
-	            final MetricSpecification metric = foundProject.getMetric(metricName);
-	            
-	            if (metric == null)
-	            {
-                    System.err.println("There is not a metric named '" + metricName + "' in the project '" + projectName + '"');
-                    System.err.println("Pairs could not be created because there wasn't a specification.");
-                    return;
-	            }
-	            
-	            try
+                try
                 {
+                    final String projectName = args[0];
+                    final String metricName = args[1];
+                    final int printLimit = 100;
+                    int printCount = 0;
+                    final int totalLimit = 10;
+                    int totalCount = 0;
+                    final ProjectSpecification foundProject = ProjectSettings.getProject(projectName);
+                    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping;
+
+                    if (foundProject == null)
+                    {
+                        System.err.println("There is not a project named '" + projectName + "'");
+                        System.err.println("Pairs could not be created because there wasn't a specification.");
+                        return result;
+                    }
+
+                    final MetricSpecification metric = foundProject.getMetric(metricName);
+
+                    if (metric == null)
+                    {
+                        System.err.println("There is not a metric named '" + metricName + "' in the project '" + projectName + '"');
+                        System.err.println("Pairs could not be created because there wasn't a specification.");
+                        return result;
+                    }
+
                     pairMapping = metric.getPairs();
                     
                     for (final Integer leadKey : pairMapping.keySet())
@@ -872,6 +1025,7 @@ public final class MainFunctions
                             break;
                         }
                     }
+					result = SUCCESS;
                 }
                 catch(final Exception e)
                 {
@@ -883,124 +1037,124 @@ public final class MainFunctions
 	            System.err.println("There are not enough arguments to run 'getProjectPairs'");
 	            System.err.println("usage: getProjectPairs <project name> <metric name>");
 	        }
+	        return result;
 	    };
 	}
 	
-	private static Consumer<String[]> executeProject() {
+	private static Function<String[], Integer> executeProject() {
 	    return (final String[] args) -> {
+			Integer result = FAILURE;
 	        if (args.length > 0) {
-	            final String projectName = args[0];
-	            String metricName = null;
-	            
-	            if (args.length > 1) {
-	                metricName = args[1];
-	            }
-	            
-	            final ProjectSpecification project = ProjectSettings.getProject(projectName);
-	            final List<Future> ingestOperations = new ArrayList<>();
-	            for (final ProjectDataSpecification datasource : project.getDatasources())
-	            {
-	                System.err.println("Loading datasource information if it doesn't already exist...");
-	                final ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
-					try
-					{
-						ingestOperations.addAll(dataLoader.load());
-					}
-					catch (final IOException e) {
-						e.printStackTrace();
-					}
-					System.err.println("The data from this dataset has been loaded to the database");
-	                ProgressMonitor.resetMonitor();
-	                System.err.println();
-	            }
+	            try {
+                    final String projectName = args[0];
+                    String metricName = null;
 
-	            System.err.println("All data specified for this project should now be loaded.");
+                    if (args.length > 1) {
+                        metricName = args[1];
+                    }
 
-	            if (ingestOperations.size() > 0)
-                {
-                	for (final Future operation : ingestOperations)
-					{
-						try {
-							operation.get();
-						}
-						catch (final InterruptedException e) {
-							e.printStackTrace();
-						}
-						catch (final ExecutionException e) {
-							e.printStackTrace();
-						}
-					}
+                    final ProjectSpecification project = ProjectSettings.getProject(projectName);
+                    final List<Future> ingestOperations = new ArrayList<>();
 
-                    System.out.println("Refreshing the statistics in the database...");
-                    Database.refreshStatistics();
+                    Database.suspendAllIndices();
+
+                    for (final ProjectDataSpecification datasource : project.getDatasources()) {
+                        LOGGER.info("Loading datasource information if it doesn't already exist...");
+                        final ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
+                        try {
+                            ingestOperations.addAll(dataLoader.load());
+                        }
+                        catch (final IOException e) {
+                            LOGGER.error(Strings.getStackTrace(e));
+                        }
+                        LOGGER.info("The data from this dataset has been loaded to the database");
+                        ProgressMonitor.resetMonitor();
+                        LOGGER.info("");
+                    }
+
+                    LOGGER.trace("All data specified for this project should now be loaded.");
+
+                    if (ingestOperations.size() > 0) {
+                        for (final Future operation : ingestOperations) {
+                            try {
+                                operation.get();
+                            }
+                            catch (final InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            catch (final ExecutionException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+                    Database.restoreAllIndices();
+
+                    final Map<String, List<LeadResult>> results = new TreeMap<>();
+                    final Map<String, Future<List<LeadResult>>> futureResults = new TreeMap<>();
+
+                    if (metricName == null) {
+                        for (int metricIndex = 0; metricIndex < project.metricCount(); ++metricIndex) {
+                            final MetricSpecification specification = project.getMetric(metricIndex);
+                            final MetricTask metric = new MetricTask(specification, null);
+                            metric.setOnRun(ProgressMonitor.onThreadStartHandler());
+                            metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                            System.err.println("Now executing the metric named: " + specification.getName());
+                            futureResults.put(specification.getName(), Executor.submit(metric));
+                        }
+                    }
+                    else {
+                        final MetricSpecification specification = project.getMetric(metricName);
+
+                        if (specification != null) {
+                            final MetricTask metric = new MetricTask(specification, null);
+                            metric.setOnRun(ProgressMonitor.onThreadStartHandler());
+                            metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                            System.err.println("Now executing the metric named: " + specification.getName());
+                            futureResults.put(specification.getName(), Executor.submit(metric));
+                        }
+                    }
+
+                    for (final Entry<String, Future<List<LeadResult>>> entry : futureResults.entrySet()) {
+                        try {
+                            results.put(entry.getKey(), entry.getValue().get());
+                        }
+                        catch (InterruptedException | ExecutionException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    System.out.println();
+                    System.out.println("Project: " + projectName);
+                    System.out.println();
+
+                    for (final Entry<String, List<LeadResult>> entry : results.entrySet()) {
+                        System.out.println();
+                        System.out.println(entry.getKey());
+                        System.out.println("--------------------------------------------------------------------------------------");
+
+                        for (final LeadResult metricResult : entry.getValue()) {
+                            System.out.print(metricResult.getLead());
+                            System.out.print("\t\t|\t");
+                            System.out.println(metricResult.getResult());
+                        }
+
+                        System.out.println();
+                    }
+                    result = SUCCESS;
                 }
-	            
-	            final Map<String, List<LeadResult>> results = new TreeMap<>();
-	            final Map<String, Future<List<LeadResult>>> futureResults = new TreeMap<>();
-	            
-	            if (metricName == null)
-	            {
-    	            for (int metricIndex = 0; metricIndex < project.metricCount(); ++metricIndex)
-    	            {
-    	                final MetricSpecification specification = project.getMetric(metricIndex);
-    	                final MetricTask metric = new MetricTask(specification, null);
-    	                metric.setOnRun(ProgressMonitor.onThreadStartHandler());
-    	                metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-    	                System.err.println("Now executing the metric named: " + specification.getName());
-    	                futureResults.put(specification.getName(), Executor.submit(metric));
-    	            }
-	            }
-	            else
-	            {
-	                final MetricSpecification specification = project.getMetric(metricName);
-	                
-	                if (specification != null)
-	                {
-						final MetricTask metric = new MetricTask(specification, null);
-                        metric.setOnRun(ProgressMonitor.onThreadStartHandler());
-                        metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                        System.err.println("Now executing the metric named: " + specification.getName());
-                        futureResults.put(specification.getName(), Executor.submit(metric));
-	                }
-	            }
-	            
-	            for (final Entry<String, Future<List<LeadResult>>> entry : futureResults.entrySet())
-	            {
-	                try
-                    {
-                        results.put(entry.getKey(), entry.getValue().get());
-                    }
-                    catch(InterruptedException | ExecutionException e)
-                    {
-                        e.printStackTrace();
-                    }
-	            }
-	            
-	            System.out.println();
-	            System.out.println("Project: " + projectName);
-	            System.out.println();
-	            
-	            for (final Entry<String, List<LeadResult>> entry : results.entrySet())
-	            {
-	                System.out.println();
-	                System.out.println(entry.getKey());
-	                System.out.println("--------------------------------------------------------------------------------------");
-	                
-	                for (final LeadResult metricResult : entry.getValue())
-	                {
-	                    System.out.print(metricResult.getLead());
-	                    System.out.print("\t\t|\t");
-	                    System.out.println(metricResult.getResult());
-	                }
-	                
-	                System.out.println();
-	            }
+                catch (Exception e)
+                {
+                    LOGGER.error(Strings.getStackTrace(e));
+                    result = FAILURE;
+                }
 	        }
 	        else
 	        {
 	            System.err.println("There are not enough arguments to run 'executeProject'");
 	            System.err.println("usage: executeProject <project name> [<metric name>]");
 	        }
+	        return result;
 	    };
     }
 }
