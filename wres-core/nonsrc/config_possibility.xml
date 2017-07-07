@@ -40,7 +40,8 @@
     <range x_minimum="42" x_maximum="20000"/>-->
     <!--</features>-->
   </conditions>
-  <pair label="Pairs by location and lead time" unit="CMS">  <!-- optional, needed when times don't line up -->
+  <pair label="Pairs by location and lead time"> <!-- required for unit -->
+    <unit>CMS</unit>
     <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
   </pair>
   <outputs>
