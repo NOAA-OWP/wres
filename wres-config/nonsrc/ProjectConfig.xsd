@@ -18,6 +18,7 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="PI-XML" />
             <xs:enumeration value="netCDF" />
+            <xs:enumeration value="datacard" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -56,7 +57,7 @@
                 <xs:complexType>
                     <xs:attribute name="label" type="xs:string" />
                     <xs:attribute name="lid" type="xs:string" />
-                    <xs:attribute name="comid" type="xs:string" />
+                    <xs:attribute name="comid" type="xs:long" />
                     <xs:attribute name="gage_id" type="xs:string" />
                     <xs:attribute name="huc" type="xs:string" />
                     <xs:attribute name="name" type="xs:string" />
@@ -64,14 +65,20 @@
                 </xs:complexType>
             </xs:element>
 
-            <!-- This set of conditions applies to the RIGHT ensemble data,
-                 because we imagine only one ensemble data in the most common
-                 situation. -->
-            <xs:element name="ensemble" type="ensembleCondition" minOccurs="0" maxOccurs="unbounded" />
-            <!-- In the (hopefully rare) case where the left data is an ensemble
-                 forecast, and the right data is an ensemble forecast, the left
-                 ensemble can be filtered with this optional tag. -->
-            <xs:element name="leftensemble" type="ensembleCondition" minOccurs="0" maxOccurs="unbounded" />
+            <!-- idea here is mask is a WKT, or optionally a filename,
+                 so you could do either:
+                 <mask file="file:///my/file.shp" />
+                 OR
+                 <mask>poly( whatever well-known-text )</mask> -->
+            <xs:element name="mask" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:string">
+                            <xs:attribute name="file" type="xs:anyURI" />
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
         </xs:sequence>
     </xs:complexType>
 
@@ -93,6 +100,9 @@
                         <xs:extension base="xs:anyURI">
                             <xs:attribute name="format" type="format" />
                             <xs:attribute name="unit" type="xs:string" />
+                            <xs:attribute name="location" type="xs:string" />
+                            <xs:attribute name="zoneOffset" type="xs:string" />
+                            <xs:attribute name="missingValue" type="xs:string" />
                             <xs:attribute name="all" type="xs:boolean" />
                             <xs:attribute name="recursive" type="xs:boolean" />
                         </xs:extension>
@@ -109,9 +119,30 @@
                     </xs:simpleContent>
                 </xs:complexType>
             </xs:element>
+
+            <xs:element name="ensemble" type="ensembleCondition" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="rollingTimeAggregation" type="rollingTimeAggregation" minOccurs="0" maxOccurs="1" />
+            <xs:element name="arbitraryFunctionToApplyToValues" type="xs:string" minOccurs="0" maxOccurs="1" />
+            <xs:element name="timeShift" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="period" type="timePeriod" />
+                        <xs:element name="direction" type="direction" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
         </xs:sequence>
+
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
+
+    <xs:simpleType name="direction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="backward" />
+            <xs:enumeration value="forward" />
+        </xs:restriction>
+    </xs:simpleType>
 
     <xs:complexType name="metric">
 
@@ -158,7 +189,6 @@
         <xs:attribute name="type" type="destinationType" />
     </xs:complexType>
 
-
     <xs:simpleType name="timeAggregationFunction">
         <xs:restriction base="xs:string">
             <xs:enumeration value="sum" />
@@ -181,18 +211,20 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:complexType name="timeAggregation">
+    <xs:complexType name="rollingTimeAggregation">
 
         <!-- for class naming using xjc-->
         <xs:annotation>
             <xs:appinfo>
-                <jaxb:class name="TimeAggregationConfig" />
+                <jaxb:class name="RollingTimeAggregationConfig" />
             </xs:appinfo>
         </xs:annotation>
 
         <xs:sequence>
             <xs:element name="function" type="timeAggregationFunction" />
-            <xs:element name="period" type="timePeriod" />
+            <!-- frequncy is the pair period -->
+            <!--<xs:element name="frequency" type="timePeriod" /> -->
+            <xs:element name="duration" type="timePeriod" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
@@ -231,11 +263,25 @@
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="aggregation" type="timeAggregation" minOccurs="0" maxOccurs="unbounded" />
-            <xs:element name="grouping" type="xs:string" />
+            <xs:element name="unit" type="xs:string" />
+            <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
+            <xs:element name="period" type="timePeriod" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
-        <xs:attribute name="unit" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="dragons">
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="DragonsConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="fullIngest" type="xs:boolean" />
+            <xs:element name="overwriteOldData" type="xs:boolean" />
+        </xs:sequence>
+        <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
     <xs:element name="project">
@@ -262,13 +308,13 @@
 
                 <xs:element name="conditions" type="conditions" minOccurs="0" maxOccurs="1" />
 
-                <xs:element name="pair" type="pair" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="pair" type="pair"/>
 
                 <xs:element name="outputs">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="metric" type="metric" minOccurs="0" maxOccurs="unbounded"/>
-                            <xs:element name="destination" type="destination" minOccurs="0" maxOccurs="unbounded"/>
+                            <xs:element name="destination" type="destination" maxOccurs="unbounded"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
