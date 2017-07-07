@@ -38,6 +38,12 @@
                     <xs:attribute name="latest" type="xs:string" />
                 </xs:complexType>
             </xs:element>
+            <xs:element name="issuedDates" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="earliest" type="xs:string" />
+                    <xs:attribute name="latest" type="xs:string" />
+                </xs:complexType>
+            </xs:element>
             <!-- values min and max will take from the pair target unit? -->
             <xs:element name="values" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
