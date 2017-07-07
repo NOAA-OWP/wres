@@ -12,6 +12,10 @@
       <source recursive="false" format="PI-XML">file:///media/sf_userprofile/code/hefs_data/testinput/sharedinput/forecasts/1985010112_DRRC2_SQIN_case_gefs_climatology_export.xml</source>
       <source recursive="false">https://my.data.com/foo</source>
       <variable>SQIN</variable>
+      <rollingTimeAggregation>
+        <function>sum</function>
+        <duration>day</duration>
+      </rollingTimeAggregation>
     </right>
     <baseline>
       <type>simple forecasts</type>
@@ -37,7 +41,6 @@
     <!--</features>-->
   </conditions>
   <pair label="Pairs by location and lead time" unit="CMS">  <!-- optional, needed when times don't line up -->
-    <aggregation aggregate="false" range="1" unit="hour" mode="mean" first_lead="0" last_lead="" />
     <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
   </pair>
   <outputs>
