@@ -7,7 +7,7 @@ package wres.datamodel;
  * 
  * @author jesse
  */
-class SafeVectorOfBooleans implements VectorOfBooleans
+public class SafeVectorOfBooleans implements VectorOfBooleans
 {
     private final boolean[] booleans;
 
@@ -16,7 +16,7 @@ class SafeVectorOfBooleans implements VectorOfBooleans
         this.booleans = booleans.clone();
     }
 
-    static VectorOfBooleans of(final boolean[] booleans)
+    public static VectorOfBooleans of(final boolean[] booleans)
     {
         return new SafeVectorOfBooleans(booleans);
     }

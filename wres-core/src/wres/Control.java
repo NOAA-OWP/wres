@@ -11,8 +11,11 @@ import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -22,12 +25,20 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.ValidationEvent;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.Slicer;
@@ -44,10 +55,6 @@ import wres.engine.statistics.metric.MetricFactory;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
-
-import javax.xml.bind.*;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
 
 /**
  * Another Main. The reason for creating this class separately from Main is to defer conflict with the existing
@@ -114,16 +121,16 @@ public class Control
      */
     public static void main(final String[] args) throws JAXBException, IOException
     {
-        String fileName = "wres-core/nonsrc/config_possibility.xml";
+        final String fileName = "wres-core/nonsrc/config_possibility.xml";
         ProjectConfig projectConfig;
         try
         {
-            File xmlFile = new File(fileName);
-            Source xmlSource = new StreamSource(xmlFile);
-            JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
-            Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+            final File xmlFile = new File(fileName);
+            final Source xmlSource = new StreamSource(xmlFile);
+            final JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
+            final Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
             jaxbUnmarshaller.setEventHandler(new ValidationEventHandler());
-            JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
+            final JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
             projectConfig = wrappedConfig.getValue();
             LOGGER.debug("ProjectConfig: {}", projectConfig);
             if (LOGGER.isDebugEnabled())
@@ -134,7 +141,7 @@ public class Control
                 LOGGER.debug("ProjectConfig metric 0: {}", projectConfig.getOutputs().getMetric().get(0).getValue());
                 LOGGER.debug("ProjectConfig forecast variable: {}", projectConfig.getInputs());
 
-                for (DestinationConfig d : projectConfig.getOutputs().getDestination())
+                for (final DestinationConfig d : projectConfig.getOutputs().getDestination())
                 {
                     LOGGER.debug("Location of destination {} is line {} col {}",
                             d,
@@ -143,7 +150,7 @@ public class Control
 
                     if (d.getConfig() != null)
                     {
-                        DestinationConfig.Config conf = d.getConfig();
+                        final DestinationConfig.Config conf = d.getConfig();
                         LOGGER.debug("Location of config for {} is line {} col {}",
                                 d,
                                 conf.sourceLocation().getLineNumber(),
@@ -152,37 +159,37 @@ public class Control
                 }
             }
         }
-        catch (JAXBException je)
+        catch (final JAXBException je)
         {
             LOGGER.error("Could not parse file {}:", fileName, je);
             throw je;
         }
-        catch (NumberFormatException nfe)
+        catch (final NumberFormatException nfe)
         {
             LOGGER.error("A value in the file {} was unable to be converted to a number.", fileName, nfe);
             throw nfe;
         }
 
-        Map<DestinationConfig,String> visConfigs = new HashMap<>();
+        final Map<DestinationConfig,String> visConfigs = new HashMap<>();
 
         // Read the file again so we can get the exact parts we want for vis.
 
-        List<String> xmlLines = Files.readAllLines(Paths.get(fileName));
+        final List<String> xmlLines = Files.readAllLines(Paths.get(fileName));
         // To read the xml configuration for vis into a string, we go find the
         // start of each, then find the first occurance of </config> ?
 
-        for (DestinationConfig d : projectConfig.getOutputs().getDestination())
+        for (final DestinationConfig d : projectConfig.getOutputs().getDestination())
         {
             if (d.getConfig() != null)
             {
-                DestinationConfig.Config conf = d.getConfig();
-                int lineNum = conf.sourceLocation().getLineNumber();
-                int colNum = conf.sourceLocation().getColumnNumber();
+                final DestinationConfig.Config conf = d.getConfig();
+                final int lineNum = conf.sourceLocation().getLineNumber();
+                final int colNum = conf.sourceLocation().getColumnNumber();
                 LOGGER.debug("Location of config for {} is line {} col {}", d,
                         lineNum, colNum);
                 // lines seem to be 1-based in sourceLocation.
-                StringBuilder config = new StringBuilder();
-                String endTag = "</config>";
+                final StringBuilder config = new StringBuilder();
+                final String endTag = "</config>";
                 String result = xmlLines.get(lineNum - 1).substring(colNum - 1);
                 for (int i = lineNum; !result.contains(endTag); i++)
                 {
@@ -191,7 +198,7 @@ public class Control
                 }
                 result = result.substring(0, result.indexOf(endTag));
                 config.append(result);
-                String configToAdd = config.toString();
+                final String configToAdd = config.toString();
                 visConfigs.put(d, configToAdd);
                 LOGGER.debug("Added following to visConfigs: {}", configToAdd);
             }
@@ -363,7 +370,7 @@ public class Control
     {
 
         @Override
-        public boolean handleEvent(ValidationEvent validationEvent)
+        public boolean handleEvent(final ValidationEvent validationEvent)
         {
             if (LOGGER.isDebugEnabled())
             {
@@ -485,6 +492,7 @@ public class Control
     {
         private final ProjectConfig config;
         private final int leadTime;
+        private final MetricInputFactory dataFactory = DefaultMetricInputFactory.getInstance();
 
         private PairGetterByLeadTime(final ProjectConfig config, final int leadTime)
         {
@@ -520,7 +528,7 @@ public class Control
                 {
                     final double observationValue = resultSet.getFloat("observation");
                     final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
-                    final PairOfDoubleAndVectorOfDoubles pair = DataFactory.pairOf(observationValue, forecastValues);
+                    final PairOfDoubleAndVectorOfDoubles pair = dataFactory.pairOf(observationValue, forecastValues);
 
                     LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
                                  pair.getItemOne(),
@@ -732,8 +740,8 @@ public class Control
     {
         Objects.requireNonNull(config);
 
-        LocalDateTime earliest = getEarliestDateTimeFromDataSources(config);
-        LocalDateTime latest = getLatestDateTimeFromDataSources(config);
+        final LocalDateTime earliest = getEarliestDateTimeFromDataSources(config);
+        final LocalDateTime latest = getLatestDateTimeFromDataSources(config);
 
         if (earliest == null && latest == null)
         {
@@ -764,7 +772,7 @@ public class Control
      * @param config
      * @return the most narrow "earliest" date, null otherwise
      */
-    private static LocalDateTime getEarliestDateTimeFromDataSources(ProjectConfig config)
+    private static LocalDateTime getEarliestDateTimeFromDataSources(final ProjectConfig config)
     {
         if (config.getConditions() == null)
         {
@@ -778,7 +786,7 @@ public class Control
             earliest = config.getConditions().getDates().getEarliest();
             return LocalDateTime.parse(earliest);
         }
-        catch (NullPointerException npe)
+        catch (final NullPointerException npe)
         {
             if (!messagedForEarliestDate.getAndSet(true))
             {
@@ -788,7 +796,7 @@ public class Control
             }
             return null;
         }
-        catch (DateTimeParseException dtpe)
+        catch (final DateTimeParseException dtpe)
         {
             if (!messagedForEarliestDate.getAndSet(true))
             {
@@ -809,7 +817,7 @@ public class Control
      * @param config
      * @return the most narrow "latest" date, null otherwise.
      */
-    private static LocalDateTime getLatestDateTimeFromDataSources(ProjectConfig config)
+    private static LocalDateTime getLatestDateTimeFromDataSources(final ProjectConfig config)
     {
         if (config.getConditions() == null)
         {
@@ -823,7 +831,7 @@ public class Control
             latest = config.getConditions().getDates().getLatest();
             return LocalDateTime.parse(latest);
         }
-        catch (NullPointerException npe)
+        catch (final NullPointerException npe)
         {
             if (!messagedForLatestDate.getAndSet(true))
             {
@@ -833,7 +841,7 @@ public class Control
             }
             return null;
         }
-        catch (DateTimeParseException dtpe)
+        catch (final DateTimeParseException dtpe)
         {
             if (!messagedForLatestDate.getAndSet(true))
             {

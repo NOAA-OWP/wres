@@ -38,15 +38,18 @@ public final class PeirceSkillScoreTest
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
-        final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
+        final DichotomousPairs input = MetricTestDataFactory2.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.PEIRCE_SKILL_SCORE,
-                                                            MetricConstants.MAIN,
-                                                            "Main",
-                                                            null);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension(),
+                                                                  MetricConstants.PEIRCE_SKILL_SCORE,
+                                                                  MetricConstants.MAIN,
+                                                                  "DRRC2",
+                                                                  "SQIN",
+                                                                  "HEFS",
+                                                                  null);
         //Build the metric
         final PeirceSkillScoreBuilder<DichotomousPairs> b = new PeirceSkillScore.PeirceSkillScoreBuilder<>();
         b.setOutputFactory(outF);
@@ -92,15 +95,18 @@ public final class PeirceSkillScoreTest
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
-        final MulticategoryPairs input = MetricTestDataFactory.getMulticategoryPairsOne();
+        final MulticategoryPairs input = MetricTestDataFactory2.getMulticategoryPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.PEIRCE_SKILL_SCORE,
-                                                            MetricConstants.MAIN,
-                                                            "Main",
-                                                            null);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension(),
+                                                                  MetricConstants.PEIRCE_SKILL_SCORE,
+                                                                  MetricConstants.MAIN,
+                                                                  "DRRC2",
+                                                                  "SQIN",
+                                                                  "HEFS",
+                                                                  null);
 
         //Build the metric
         final PeirceSkillScoreBuilder<MulticategoryPairs> b = new PeirceSkillScore.PeirceSkillScoreBuilder<>();

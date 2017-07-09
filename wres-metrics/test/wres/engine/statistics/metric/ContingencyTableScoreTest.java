@@ -34,12 +34,11 @@ public final class ContingencyTableScoreTest
         final CriticalSuccessIndex cs = metricFactory.ofCriticalSuccessIndex();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getMetadata(365,
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(365,
+                                                            metaFac.getDimension(),
                                                             metaFac.getDimension(),
                                                             MetricConstants.CONTINGENCY_TABLE,
-                                                            MetricConstants.MAIN,
-                                                            "Main",
-                                                            null);
+                                                            MetricConstants.MAIN);
 
         final double[][] benchmark = new double[][]{{82.0, 38.0}, {23.0, 222.0}};
         final MatrixOutput expected = outputFactory.ofMatrixOutput(benchmark, m1);

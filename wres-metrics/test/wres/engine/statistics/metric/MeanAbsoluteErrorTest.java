@@ -36,15 +36,14 @@ public final class MeanAbsoluteErrorTest
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        final SingleValuedPairs input = MetricTestDataFactory2.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                            metaFac.getDimension(),
                                                             metaFac.getDimension(),
                                                             MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                            MetricConstants.MAIN,
-                                                            null,
-                                                            null);
+                                                            MetricConstants.MAIN);
 
         //Build the metric
         final MeanAbsoluteErrorBuilder b = new MeanAbsoluteError.MeanAbsoluteErrorBuilder();
