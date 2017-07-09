@@ -1,6 +1,8 @@
 package wres;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -20,7 +22,6 @@ import java.util.function.ToDoubleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
@@ -29,7 +30,6 @@ import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MetricInputFactory;
 import wres.datamodel.metric.MetricOutputCollection;
 import wres.datamodel.metric.MetricOutputFactory;
-import wres.datamodel.metric.PairException;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -110,14 +110,14 @@ public class ControlTemp
                                                 "CFS");
 
         //Build an immutable collection of metrics, to be computed at each of several forecast lead times
-        final MetricInputFactory inputFactory = DefaultMetricInputFactory.getInstance();
-        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
-        final MetricFactory metricFactory = MetricFactory.getInstance(outputFactory);
+        final MetricInputFactory inFac = DefaultMetricInputFactory.getInstance();
+        final MetricOutputFactory outFac = DefaultMetricOutputFactory.getInstance();
+        final MetricFactory metFac = MetricFactory.getInstance(outFac);
         final List<Metric<SingleValuedPairs, ScalarOutput>> metrics = new ArrayList<>();
-        metrics.add(metricFactory.ofMeanError());
-        metrics.add(metricFactory.ofMeanAbsoluteError());
-        metrics.add(metricFactory.ofRootMeanSquareError());
-        final MetricCollection<SingleValuedPairs,ScalarOutput> useMe = metricFactory.ofSingleValuedScalarCollection(metrics);
+        metrics.add(metFac.ofMeanError());
+        metrics.add(metFac.ofMeanAbsoluteError());
+        metrics.add(metFac.ofRootMeanSquareError());
+        final MetricCollection<SingleValuedPairs, ScalarOutput> useMe = metFac.ofSingleValuedScalarCollection(metrics);
 
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
@@ -132,29 +132,27 @@ public class ControlTemp
         //Iterate
         for(int i = 0; i < leadTimesCount; i++)
         {
-            final int leadTime = i + 1;
+            final int lead = i + 1;
             // Complete all tasks asynchronously:
             // 1. Get some pairs from the database 
             // 2. When available, compute the single-valued pairs from them ({observation, ensemble mean})
             // 3. Compute the metrics
             // 4. Do something with the verification results (store them)
             // 5. Monitor progress per lead time
-            final CompletableFuture<Void> c =
-                                            CompletableFuture.supplyAsync(new PairGetterByLeadTime(config, leadTime), f)
-                                                             .thenApplyAsync(new SingleValuedPairProcessor(inputFactory), f)
-                                                             .thenApplyAsync(useMe, f)
-                                                             .thenAcceptAsync(new ResultProcessor(leadTime, results), f)
-                                                             .thenAcceptAsync(a -> {
-                                                                 if(LOGGER.isInfoEnabled())
-                                                                 {
-                                                                     LOGGER.info("Completed lead time " + leadTime);
-                                                                 }
-                                                             }, f);
-//                                                               .exceptionally(error -> { //Handle exceptions
-//                                                                   LOGGER.error("While computing results at lead time "
-//                                                                       + leadTime + ".", error);
-//                                                                   return null;
-//                                                               });
+            final CompletableFuture<Void> c = CompletableFuture
+                                                               .supplyAsync(new PairGetterByLeadTime(config,
+                                                                                                     lead,
+                                                                                                     inFac),
+                                                                            f)
+                                                               .thenApplyAsync(new SingleValuedPairProcessor(inFac), f)
+                                                               .thenApplyAsync(useMe, f)
+                                                               .thenAcceptAsync(new ResultProcessor(lead, results), f)
+                                                               .thenAcceptAsync(a -> {
+                                                                   if(LOGGER.isInfoEnabled())
+                                                                   {
+                                                                       LOGGER.info("Completed lead time " + lead);
+                                                                   }
+                                                               }, f);
             //Add the future to the list
             listOfFutures.add(c);
         }
@@ -228,11 +226,12 @@ public class ControlTemp
     {
 
         private final MetricInputFactory metIn;
-        
-        public SingleValuedPairProcessor(final MetricInputFactory metIn) {
+
+        public SingleValuedPairProcessor(final MetricInputFactory metIn)
+        {
             this.metIn = metIn;
         }
-        
+
         @Override
         public SingleValuedPairs apply(final List<PairOfDoubleAndVectorOfDoubles> t)
         {
@@ -240,9 +239,8 @@ public class ControlTemp
             final List<PairOfDoubles> returnMe = new ArrayList<>();
             for(final PairOfDoubleAndVectorOfDoubles nextPair: t)
             {
-                final PairOfDoubles pair =
-                                         DataFactory.pairOf(nextPair.getItemOne(),
-                                                            mean.applyAsDouble(DataFactory.vectorOf(nextPair.getItemTwo())));
+                final PairOfDoubles pair = metIn.pairOf(nextPair.getItemOne(),
+                                                        mean.applyAsDouble(metIn.vectorOf(nextPair.getItemTwo())));
                 returnMe.add(pair);
             }
             return metIn.ofSingleValuedPairs(returnMe, metIn.getMetadataFactory().getMetadata(returnMe.size()));
@@ -293,11 +291,13 @@ public class ControlTemp
     {
         private final PairConfig config;
         private final int leadTime;
+        private final MetricInputFactory metIn;
 
-        private PairGetterByLeadTime(final PairConfig config, final int leadTime)
+        private PairGetterByLeadTime(final PairConfig config, final int leadTime, final MetricInputFactory metIn)
         {
             this.config = config;
             this.leadTime = leadTime;
+            this.metIn = metIn;
         }
 
         @Override
@@ -306,58 +306,58 @@ public class ControlTemp
 
 //START EXCEPTION EXAMPLE            
 //            //Demonstrates exception handling
-            if(leadTime == 1000)
-            {
-                throw new PairException("while generating pairs at lead time " + leadTime);
-            }
+//            if(leadTime == 1000)
+//            {
+//                throw new PairException("while generating pairs at lead time " + leadTime);
+//            }
 //END EXCEPTION EXAMPLE            
 
 //COMMENT THIS LINE WHEN DATABASE IS WORKING            
-            return getImaginaryPairsTemp();
+//            return getImaginaryPairsTemp();
 
 //UNCOMMENT FROM HERE ONWARDS WHEN DATABASE IS WORKING                  
 
-//            final List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
-//            String sql = "";
-//            try
-//            {
-//                sql = getPairSqlFromConfigForLead(this.config, this.leadTime);
-//            }
-//            catch(final IOException ioe)
-//            {
-//                LOGGER.error("When trying to build sql for pairs:", ioe);
-//                //throw ioe;
-//            }
-//
-//            final DataFactory valueFactory = wres.datamodel.DataFactory.instance();
-//            try (Connection con = Database.getConnection();
-//            ResultSet resultSet = Database.getResults(con,sql))
-//            {
-//                if(LOGGER.isInfoEnabled()) {
-//                    LOGGER.info("Requesting pairs for lead time "+leadTime+".");
-//                }
-//                while(resultSet.next())
-//                {
-//                    final double observationValue = resultSet.getFloat("observation");
-//                    final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
-//                    final PairOfDoubleAndVectorOfDoubles pair = valueFactory.pairOf(observationValue, forecastValues);
-//                    LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
-//                                 pair.getItemOne(),
-//                                 pair.getItemTwo());                    
-//                    result.add(pair);
-//                }
-//            }
-//            catch(final SQLException se)
-//            {
-//                LOGGER.error("Failed to get pair results for lead " + this.leadTime, se);
-//                //throw new IOException(message, se);
-//            }
-//            finally
-//            {
-//                LOGGER.trace("Query: ");
-//                LOGGER.trace(sql);
-//            }
-//            return result;
+            final List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
+            String sql = "";
+            try
+            {
+                sql = getPairSqlFromConfigForLead(this.config, this.leadTime);
+            }
+            catch(final IOException ioe)
+            {
+                LOGGER.error("When trying to build sql for pairs:", ioe);
+                //throw ioe;
+            }
+
+            //final  valueFactory = wres.datamodel.DataFactory.instance();
+            try (Connection con = Database.getConnection(); ResultSet resultSet = Database.getResults(con, sql))
+            {
+                if(LOGGER.isInfoEnabled())
+                {
+                    LOGGER.info("Requesting pairs for lead time " + leadTime + ".");
+                }
+                while(resultSet.next())
+                {
+                    final double observationValue = resultSet.getFloat("observation");
+                    final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
+                    final PairOfDoubleAndVectorOfDoubles pair = metIn.pairOf(observationValue, forecastValues);
+                    LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
+                                 pair.getItemOne(),
+                                 pair.getItemTwo());
+                    result.add(pair);
+                }
+            }
+            catch(final SQLException se)
+            {
+                LOGGER.error("Failed to get pair results for lead " + this.leadTime, se);
+                //throw new IOException(message, se);
+            }
+            finally
+            {
+                LOGGER.trace("Query: ");
+                LOGGER.trace(sql);
+            }
+            return result;
         }
     }
 
@@ -371,6 +371,7 @@ public class ControlTemp
     private static List<PairOfDoubleAndVectorOfDoubles> getImaginaryPairsTemp()
     {
         //Construct some single-valued pairs
+        final MetricInputFactory dataFactory = DefaultMetricInputFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         final double[] ensemble = new double[50];
         //Add 50 members with the same value
@@ -382,7 +383,7 @@ public class ControlTemp
         for(int i = 0; i < 10000; i++)
         {
             //Add an ensemble forecast
-            values.add(DataFactory.pairOf(5.0, ensemble));
+            values.add(dataFactory.pairOf(5.0, ensemble));
         }
         return values;
     }

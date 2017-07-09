@@ -13,8 +13,9 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metric.DefaultMetricInputFactory;
+import wres.datamodel.metric.MetricInputFactory;
 import wres.io.config.specification.MetricSpecification;
 import wres.io.config.specification.ProjectDataSpecification;
 import wres.io.config.specification.ScriptFactory;
@@ -137,7 +138,8 @@ public abstract class Metrics {
         
         Connection connection = null;
         ResultSet resultingPairs = null;
-
+        //JBr: will need to inject this factory to eliminate dependence on wres-datamodel
+        final MetricInputFactory dataFactory = DefaultMetricInputFactory.getInstance();
         try
         {
             connection = Database.getConnection();
@@ -149,7 +151,7 @@ public abstract class Metrics {
             {
                 final Double observedValue = resultingPairs.getDouble("sourceOneValue");
                 final Double[] forecasts = (Double[]) resultingPairs.getArray("measurements").getArray();
-                pairs.add(DataFactory.pairOf(observedValue, forecasts));
+                pairs.add(dataFactory.pairOf(observedValue, forecasts));
             }
         }
         catch (final Exception error)

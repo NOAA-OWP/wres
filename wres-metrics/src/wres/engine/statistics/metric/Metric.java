@@ -3,11 +3,14 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 import java.util.function.Function;
 
+import wres.datamodel.metric.Dimension;
+import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
 
 /**
  * <p>
@@ -146,6 +149,45 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
     protected MetricOutputFactory getOutputFactory()
     {
         return outputFactory;
+    }
+
+    /**
+     * Returns the {@link MetricOutputMetadata} using a prescribed {@link MetricInput} and the current {@link Metric} to
+     * compose, along with an explicit component identifier or decomposition template and an identifier for the
+     * baseline, where applicable
+     * 
+     * @param input the metric input
+     * @param sampleSize the sample size
+     * @param componentID the component identifier or metric decomposition template
+     * @param baselineID the baseline identifier or null
+     * @return the metadata
+     */
+
+    protected MetricOutputMetadata getMetadata(final MetricInput<?> input,
+                                               final int sampleSize,
+                                               final MetricConstants componentID,
+                                               final String baselineID)
+    {
+        final Metadata metIn = input.getMetadata();
+        Dimension outputDim = null;
+        //Dimensioned?
+        if(hasRealUnits())
+        {
+            outputDim = metIn.getDimension();
+        }
+        else
+        {
+            outputDim = outputFactory.getMetadataFactory().getDimension();
+        }
+        return outputFactory.getMetadataFactory().getOutputMetadata(sampleSize,
+                                                                    outputDim,
+                                                                    metIn.getDimension(),
+                                                                    getID(),
+                                                                    componentID,
+                                                                    metIn.getGeospatialID(),
+                                                                    metIn.getVariableID(),
+                                                                    metIn.getScenarioID(),
+                                                                    baselineID);
     }
 
     /**

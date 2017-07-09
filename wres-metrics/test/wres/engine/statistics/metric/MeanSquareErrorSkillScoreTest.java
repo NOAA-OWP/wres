@@ -37,15 +37,18 @@ public final class MeanSquareErrorSkillScoreTest
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
+        final SingleValuedPairs input = MetricTestDataFactory2.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
-                                                            metaFac.getDimension("CMS"),
-                                                            MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                            MetricConstants.MAIN,
-                                                            "Main",
-                                                            "Baseline");
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("CMS"),
+                                                                  MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                                  MetricConstants.MAIN,
+                                                                  "DRRC2",
+                                                                  "SQIN",
+                                                                  "HEFS",
+                                                                  "ESP");
 
         //Build the metric
         final MeanSquareErrorSkillScoreBuilder<SingleValuedPairs> b =
@@ -87,7 +90,7 @@ public final class MeanSquareErrorSkillScoreTest
         try
         {
             //No baseline
-            b.setDecompositionID(MetricConstants.NONE).build().apply(MetricTestDataFactory.getSingleValuedPairsOne());
+            b.setDecompositionID(MetricConstants.NONE).build().apply(MetricTestDataFactory2.getSingleValuedPairsOne());
             fail("Expected a missing baseline.");
         }
         catch(final Exception e)

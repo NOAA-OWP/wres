@@ -46,7 +46,7 @@ public class MetricCollectionTest
     public void test1OfSingleValuedScalar() throws MetricCalculationException, InterruptedException, ExecutionException
     {
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        final SingleValuedPairs input = MetricTestDataFactory2.getSingleValuedPairsOne();
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
         final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> n = MetricCollectionBuilder.of();
@@ -95,7 +95,7 @@ public class MetricCollectionTest
     public void test2OfDichotomousScalar()
     {
         //Generate some data
-        final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
+        final DichotomousPairs input = MetricTestDataFactory2.getDichotomousPairsOne();
 
         //Create a collection of dichotomous metrics that produce a scalar output. Since all scores implement 
         //Collectable, they make efficient use of common intermediate data. In this case, all scores require the 2x2
@@ -155,7 +155,7 @@ public class MetricCollectionTest
     public void test3OfDiscreteProbabilityVector()
     {
         //Generate some data
-        final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
+        final DiscreteProbabilityPairs input = MetricTestDataFactory2.getDiscreteProbabilityPairsTwo();
 
         //Create a collection metrics that consume probabilistic pairs and generate vector outputs
         final MetricCollectionBuilder<DiscreteProbabilityPairs, VectorOutput> n = MetricCollectionBuilder.of();
@@ -199,7 +199,7 @@ public class MetricCollectionTest
     public void test4OfSingleValuedVector()
     {
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
+        final SingleValuedPairs input = MetricTestDataFactory2.getSingleValuedPairsTwo();
 
         //Create a collection metrics that consume single-valued pairs and produce vector outputs
         final MetricCollectionBuilder<SingleValuedPairs, VectorOutput> n = MetricCollectionBuilder.of();
@@ -243,7 +243,7 @@ public class MetricCollectionTest
     public void test5OfMulticategoryScalar()
     {
         //Generate some data
-        final MulticategoryPairs input = MetricTestDataFactory.getMulticategoryPairsOne();
+        final MulticategoryPairs input = MetricTestDataFactory2.getMulticategoryPairsOne();
 
         //Create a collection of multicategory metrics that produce a scalar output. 
         final MetricCollectionBuilder<MulticategoryPairs, ScalarOutput> n = MetricCollectionBuilder.of();
@@ -291,7 +291,7 @@ public class MetricCollectionTest
         {
 
             //Generate some data
-            final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+            final SingleValuedPairs input = MetricTestDataFactory2.getSingleValuedPairsOne();
 
             //Create a collection of metrics that consume single-valued pairs and produce a scalar output
             final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> n = MetricCollectionBuilder.of();
@@ -386,7 +386,7 @@ public class MetricCollectionTest
                                                            {
                                                                public DichotomousPairs call()
                                                                {
-                                                                   return MetricTestDataFactory.getDichotomousPairsOne();
+                                                                   return MetricTestDataFactory2.getDichotomousPairsOne();
                                                                }
                                                            });
 
@@ -460,7 +460,7 @@ public class MetricCollectionTest
         {
 
             //Generate some data
-            final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+            final SingleValuedPairs input = MetricTestDataFactory2.getSingleValuedPairsOne();
 
             //Create a collection of metrics that consume single-valued pairs and produce a scalar output
             final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> n = MetricCollectionBuilder.of();

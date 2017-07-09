@@ -16,23 +16,39 @@ public interface Metadata
      * @return the sample size
      */
 
-    public int getSampleSize();
+    int getSampleSize();
 
     /**
-     * Returns the dimension associated with the metric data.
+     * Returns the dimension associated with the metric.
      * 
      * @return the dimension
      */
 
-    public Dimension getDimension();
+    Dimension getDimension();
 
     /**
-     * Allows for an identifier to be associated with the metric data that is meaningful to a user, such as the modeling
-     * scenario for which evaluation is being conducted. May be null.
+     * Optional geospatial identifier (e.g. location identifier) for the metric data.
      * 
-     * @return the identifier associated with the metric data or null
+     * @return the geospatial identifier associated with the metric data or null
      */
 
-    public String getID();
+    String getGeospatialID();
+    
+    /**
+     * Optional variable identifier for the metric data.
+     * 
+     * @return the variable identifier associated with the metric data or null
+     */
+
+    String getVariableID();    
+    
+    /**
+     * Optional scenario identifier for the metric data, such as the modeling scenario for which evaluation is being 
+     * conducted.
+     * 
+     * @return the scenario identifier associated with the metric data or null
+     */
+
+    String getScenarioID();
 
 }

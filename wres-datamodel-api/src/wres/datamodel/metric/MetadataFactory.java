@@ -21,36 +21,92 @@ public interface MetadataFactory
     Metadata getMetadata(final int sampleSize);
 
     /**
-     * Build a {@link Metadata} object with a sample size and a prescribed {@link Dimension} and identifiers for the
-     * input data and, possible, a baseline (may be null).
+     * Build a {@link Metadata} object with a sample size and a prescribed {@link Dimension}.
      * 
      * @param sampleSize the sample size
      * @param dim the dimension
-     * @param id an identifier associated with the metric data (may be null)
      * @return a {@link Metadata} object
      */
 
-    Metadata getMetadata(final int sampleSize, final Dimension dim, final String id);
+    Metadata getMetadata(final int sampleSize, final Dimension dim);
 
     /**
-     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, {@link Dimension}, and identifiers
-     * for the metric and the metric component, as well as the data and baseline data (may be null).
+     * Build a {@link Metadata} object with a sample size and a prescribed {@link Dimension} and several optional
+     * identifiers.
      * 
      * @param sampleSize the sample size
      * @param dim the dimension
+     * @param geospatialID an optional geospatial (e.g. location) identifier (may be null)
+     * @param variableID an optional variable identifier (may be null)
+     * @param scenarioID an optional scenario identifier associated with the metric data (may be null)
+     * @return a {@link Metadata} object
+     */
+
+    Metadata getMetadata(final int sampleSize,
+                         final Dimension dim,
+                         final String geospatialID,
+                         String variableID,
+                         String scenarioID);
+
+    /**
+     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
+     * and the input, and an identifier for the metric.
+     * 
+     * @param sampleSize the sample size
+     * @param dim the dimension
+     * @param inputDim the input dimension
      * @param metricID the metric identifier
-     * @param mainID an identifier associated with the metric data (may be null)
-     * @param baseID an identifier associated with the baseline metric data (may be null)
-     * @param componentID the metric component identifier
      * @return a {@link MetricOutputMetadata} object
      */
 
-    MetricOutputMetadata getMetadata(final int sampleSize,
-                                     final Dimension dim,
-                                     final MetricConstants metricID,
-                                     final MetricConstants componentID,
-                                     final String mainID,
-                                     final String baseID);
+    MetricOutputMetadata getOutputMetadata(final int sampleSize,
+                                           final Dimension dim,
+                                           final Dimension inputDim,
+                                           final MetricConstants metricID);
+
+    /**
+     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
+     * and the input, and identifiers for the metric and the metric component.
+     * 
+     * @param sampleSize the sample size
+     * @param dim the output dimension
+     * @param inputDim the input dimension
+     * @param metricID the metric identifier
+     * @param componentID the metric component identifier or decomposition template
+     * @return a {@link MetricOutputMetadata} object
+     */
+
+    MetricOutputMetadata getOutputMetadata(final int sampleSize,
+                                           final Dimension dim,
+                                           final Dimension inputDim,
+                                           final MetricConstants metricID,
+                                           final MetricConstants componentID);
+
+    /**
+     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
+     * and the input, identifiers for the metric and the metric component, and several optional identifiers.
+     * 
+     * @param sampleSize the sample size
+     * @param dim the output dimension
+     * @param inputDim the input dimension
+     * @param metricID the metric identifier
+     * @param componentID the metric component identifier or decomposition template
+     * @param geospatialID an optional geospatial (e.g. location) identifier (may be null)
+     * @param variableID an optional variable identifier (may be null)
+     * @param scenarioID an optional scenario identifier associated with the metric data (may be null)
+     * @param baseScenarioID an optional scenario identifier associated with the baseline metric data (may be null)
+     * @return a {@link MetricOutputMetadata} object
+     */
+
+    MetricOutputMetadata getOutputMetadata(final int sampleSize,
+                                           final Dimension dim,
+                                           final Dimension inputDim,
+                                           final MetricConstants metricID,
+                                           final MetricConstants componentID,
+                                           final String geospatialID,
+                                           final String variableID,
+                                           final String scenarioID,
+                                           final String baseScenarioID);
 
     /**
      * Returns a {@link Dimension} that is nominally dimensionless.
@@ -71,13 +127,24 @@ public interface MetadataFactory
     Dimension getDimension(final String dimension);
 
     /**
-     * Returns a metric name for a prescribed metric identifier from this class.
+     * Returns the fully qualified metric name for a prescribed metric identifier from this class. See
+     * {@link #getMetricShortName(MetricConstants)}.
      * 
      * @param identifier the metric identifier
-     * @return a metric name for the input identifier
+     * @return a long metric name for the input identifier
      */
 
     String getMetricName(final MetricConstants identifier);
+
+    /**
+     * Returns an abbreviated metric name for a prescribed metric identifier from this class. See
+     * {@link #getMetricName(MetricConstants)}.
+     * 
+     * @param identifier the metric identifier
+     * @return an abbreviated metric name for the input identifier
+     */
+
+    String getMetricShortName(final MetricConstants identifier);
 
     /**
      * Returns the name associated with a prescribed metric component from this class, such as a score component.

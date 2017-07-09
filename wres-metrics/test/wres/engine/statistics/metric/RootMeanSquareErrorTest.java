@@ -36,15 +36,14 @@ public final class RootMeanSquareErrorTest
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        final SingleValuedPairs input = MetricTestDataFactory2.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                            metaFac.getDimension(),
                                                             metaFac.getDimension(),
                                                             MetricConstants.ROOT_MEAN_SQUARE_ERROR,
-                                                            MetricConstants.MAIN,
-                                                            null,
-                                                            null);
+                                                            MetricConstants.MAIN);
 
         //Build the metric
         final RootMeanSquareErrorBuilder b = new RootMeanSquareError.RootMeanSquareErrorBuilder();

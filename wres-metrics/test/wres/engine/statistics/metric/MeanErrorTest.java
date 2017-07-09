@@ -36,16 +36,15 @@ public final class MeanErrorTest
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        final SingleValuedPairs input = MetricTestDataFactory2.getSingleValuedPairsOne();
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                                      metaFac.getMetadata(input.getData().size(),
+                                      metaFac.getOutputMetadata(input.getData().size(),
+                                                          metaFac.getDimension(),
                                                           metaFac.getDimension(),
                                                           MetricConstants.MEAN_ERROR,
-                                                          MetricConstants.MAIN,
-                                                          null,
-                                                          null);
+                                                          MetricConstants.MAIN);
         //Build the metric
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
         b.setOutputFactory(outF);
