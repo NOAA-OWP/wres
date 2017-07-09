@@ -158,13 +158,13 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     @Override
     public Threshold getThreshold(final Double threshold, final Condition condition)
     {
-        return new ThresholdKey(threshold, null, condition);
+        return new SafeThresholdKey(threshold, null, condition);
     }
 
     @Override
     public Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
     {
-        return new ThresholdKey(threshold, thresholdUpper, condition);
+        return new SafeThresholdKey(threshold, thresholdUpper, condition);
     }
 
     @Override
@@ -180,7 +180,7 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
                                 final Double probabilityUpper,
                                 final Condition condition)
     {
-        return new QuantileKey(threshold, thresholdUpper, probability, probabilityUpper, condition);
+        return new SafeQuantileKey(threshold, thresholdUpper, probability, probabilityUpper, condition);
     }
 
     /**

@@ -32,7 +32,7 @@ public final class BrierSkillScoreTest
     public void test1BrierSkillScore()
     {
         //Generate some data
-        final DiscreteProbabilityPairs input = MetricTestDataFactory2.getDiscreteProbabilityPairsTwo();
+        final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         //Build the metric
         final BrierSkillScoreBuilder b = new BrierSkillScore.BrierSkillScoreBuilder();

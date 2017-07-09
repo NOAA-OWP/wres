@@ -35,7 +35,7 @@ public final class EquitableThreatScoreTest
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
-        final DichotomousPairs input = MetricTestDataFactory2.getDichotomousPairsOne();
+        final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),

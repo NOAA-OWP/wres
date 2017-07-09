@@ -36,7 +36,7 @@ public final class RootMeanSquareErrorTest
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory2.getSingleValuedPairsOne();
+        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),

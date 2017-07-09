@@ -37,7 +37,7 @@ public final class MetricTaskTest
         {
 
             //Generate some data
-            final SingleValuedPairs input = MetricTestDataFactory2.getSingleValuedPairsOne();
+            final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
             //Add some appropriate metrics to the collection
             final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();

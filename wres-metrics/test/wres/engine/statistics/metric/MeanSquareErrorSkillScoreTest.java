@@ -37,7 +37,7 @@ public final class MeanSquareErrorSkillScoreTest
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory2.getSingleValuedPairsTwo();
+        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
@@ -90,7 +90,7 @@ public final class MeanSquareErrorSkillScoreTest
         try
         {
             //No baseline
-            b.setDecompositionID(MetricConstants.NONE).build().apply(MetricTestDataFactory2.getSingleValuedPairsOne());
+            b.setDecompositionID(MetricConstants.NONE).build().apply(MetricTestDataFactory.getSingleValuedPairsOne());
             fail("Expected a missing baseline.");
         }
         catch(final Exception e)
