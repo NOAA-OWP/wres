@@ -10,7 +10,7 @@ import java.util.Objects;
  * @since 0.1
  */
 
-final class QuantileKey extends ThresholdKey implements Quantile
+final class SafeQuantileKey extends SafeThresholdKey implements Quantile
 {
 
     /**
@@ -36,7 +36,7 @@ final class QuantileKey extends ThresholdKey implements Quantile
      * @param condition the condition
      */
 
-    protected QuantileKey(final Double threshold,
+    protected SafeQuantileKey(final Double threshold,
                           final Double thresholdUpper,
                           final Double probability,
                           final Double probabilityUpper,
@@ -91,10 +91,10 @@ final class QuantileKey extends ThresholdKey implements Quantile
     @Override
     public boolean equals(final Object o)
     {
-        boolean returnMe = super.equals(o) && o instanceof QuantileKey;
+        boolean returnMe = super.equals(o) && o instanceof SafeQuantileKey;
         if(returnMe)
         {
-            final QuantileKey in = (QuantileKey)o;
+            final SafeQuantileKey in = (SafeQuantileKey)o;
             returnMe = returnMe && in.getThresholdProbability().equals(probability);
             if(in.hasBetweenCondition())
             {

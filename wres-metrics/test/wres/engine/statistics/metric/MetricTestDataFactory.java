@@ -21,7 +21,7 @@ import wres.datamodel.metric.SingleValuedPairs;
  * @version 0.1
  * @since 0.1
  */
-public final class MetricTestDataFactory2
+public final class MetricTestDataFactory
 {
 
     /**

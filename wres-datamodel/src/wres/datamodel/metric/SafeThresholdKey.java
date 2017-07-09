@@ -9,7 +9,7 @@ import java.util.Objects;
  * @version 0.1
  * @since 0.1
  */
-class ThresholdKey implements Threshold
+class SafeThresholdKey implements Threshold
 {
 
     /**
@@ -38,7 +38,7 @@ class ThresholdKey implements Threshold
      * @param condition the condition
      */
 
-    protected ThresholdKey(final Double threshold, final Double thresholdUpper, final Condition condition)
+    protected SafeThresholdKey(final Double threshold, final Double thresholdUpper, final Condition condition)
     {
         //Bounds checks
         Objects.requireNonNull(threshold, "Specify a non-null threshold for the map key.");
@@ -92,10 +92,10 @@ class ThresholdKey implements Threshold
     @Override
     public boolean equals(final Object o)
     {
-        boolean returnMe = o instanceof ThresholdKey;
+        boolean returnMe = o instanceof SafeThresholdKey;
         if(returnMe)
         {
-            final ThresholdKey in = (ThresholdKey)o;
+            final SafeThresholdKey in = (SafeThresholdKey)o;
             returnMe = returnMe && in.getThreshold().equals(threshold) && in.getCondition().equals(condition);
             if(in.hasBetweenCondition())
             {
