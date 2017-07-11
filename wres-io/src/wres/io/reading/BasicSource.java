@@ -100,7 +100,7 @@ public abstract class BasicSource {
 	}
 	
 	protected boolean variableIsApproved(String name) {
-	    return !this.detailsSpecified || 
+	    return !this.detailsAreSpecified() ||
 	           this.loadAllVariables || 
 	           Collections.exists(this.variables, (VariableSpecification specification) -> {
 	               return specification.name().equalsIgnoreCase(name);
@@ -108,7 +108,7 @@ public abstract class BasicSource {
 	}
 	
 	protected boolean ensembleIsApproved(String name, String ensembleMemberID) {
-	    return !detailsSpecified || 
+	    return !this.detailsAreSpecified() ||
 	           this.loadAllEnsembles || 
 	           Collections.exists(this.ensemblesToLoad, (EnsembleSpecification specification) -> {
 	               return specification.getName().equalsIgnoreCase(name) && specification.getMemberID().equalsIgnoreCase(ensembleMemberID);
@@ -116,12 +116,17 @@ public abstract class BasicSource {
 	}
 	
 	protected boolean featureIsApproved(String lid, String comid) {
-	    return !detailsSpecified || 
+	    return !this.detailsAreSpecified() ||
 	           this.loadAllFeatures ||
 	           Collections.exists(this.features, (FeatureSpecification specification) -> {
 	               return specification.isLocation() && (((LocationSpecification)specification).lid().equalsIgnoreCase(lid) || 
 	                                                     ((LocationSpecification)specification).comid().equalsIgnoreCase(comid));
 	           });
+	}
+
+	protected boolean detailsAreSpecified()
+	{
+		return this.detailsSpecified;
 	}
 	
 	private String filename = "";

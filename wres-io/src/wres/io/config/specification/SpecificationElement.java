@@ -3,16 +3,14 @@
  */
 package wres.io.config.specification;
 
-import java.io.IOException;
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.util.XML;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import wres.util.XML;
+import java.io.IOException;
+import java.util.List;
 
 /**
  * An element within a configuration file
@@ -53,6 +51,12 @@ public abstract class SpecificationElement
 				{
 					interpret(reader);
 				}
+
+				if (hasEnded(reader))
+				{
+					break;
+				}
+
 				next(reader);
 			}
 		}

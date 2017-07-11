@@ -106,4 +106,9 @@ public class MetricTask extends WRESTask implements Callable<List<LeadResult>>
         this.executeOnComplete();
         return results;
     }
+
+    @Override
+    protected String getTaskName () {
+        return "Metric: " + this.specification.getName();
+    }
 }

@@ -2,8 +2,10 @@ package wres.io.concurrency;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import wres.io.config.specification.ProjectDataSpecification;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
+import wres.util.Strings;
 
 /**
  * Saves the forecast at the indicated path asynchronously
@@ -19,7 +21,14 @@ public class ForecastSaver extends WRESTask implements Runnable {
 	 */
     public ForecastSaver(String filepath) {
         this.filepath = filepath;
+        this.datasource = null;
     }
+
+    public ForecastSaver(String filepath, ProjectDataSpecification datasource)
+	{
+		this.filepath = filepath;
+		this.datasource = datasource;
+	}
 
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
@@ -30,16 +39,28 @@ public class ForecastSaver extends WRESTask implements Runnable {
 		try
 		{
 			BasicSource source = ReaderFactory.getReader(this.filepath);
+
+			if (this.datasource != null)
+			{
+				source.applySpecification(datasource);
+			}
+
 			source.saveForecast();
 		}
 		catch (Exception e)
 		{
-			System.err.println("A forecast for the data at '" + this.filepath + "' could not be saved to the database.");
-			e.printStackTrace();
+			LOGGER.error("A forecast for the data at '" + this.filepath + "' could not be saved to the database.");
+			LOGGER.error(Strings.getStackTrace(e));
 		}
 		
 		this.executeOnComplete();
 	}
 
 	private String filepath = null;
+	private final ProjectDataSpecification datasource;
+
+	@Override
+	protected String getTaskName () {
+		return "ForecastSaver: " + this.filepath;
+	}
 }

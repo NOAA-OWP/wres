@@ -1,11 +1,10 @@
 package wres.io.concurrency;
-import java.util.concurrent.Callable;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import wres.io.config.specification.MetricSpecification;
 import wres.io.utilities.Database;
+
+import java.util.concurrent.Callable;
 
 /**
  * @author Christopher Tubbs
@@ -58,4 +57,9 @@ public class MetricStepTask extends WRESTask implements Callable<Double>
 
     private final MetricSpecification specification;
     private final int step;
+
+    @Override
+    protected String getTaskName () {
+        return "MetricStepTask: Step " + String.valueOf(this.step) + " for " + this.specification.getName();
+    }
 }

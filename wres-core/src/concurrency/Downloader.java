@@ -50,7 +50,7 @@ public final class Downloader extends WRESTask implements Runnable {
             }
             catch (java.io.IOException saveError)
             {
-                LOGGER.error("The file at '" + this.address + "' could not be saved to: '" + this.targetPath.toString() + "'.");
+                LOGGER.trace("The file at '" + this.address + "' could not be saved to: '" + this.targetPath.toString() + "'.");
                 message += "Not Downloaded";
             }
 
@@ -65,4 +65,9 @@ public final class Downloader extends WRESTask implements Runnable {
 
     private final Path targetPath;
     private final String address;
+
+    @Override
+    protected String getTaskName () {
+        return "Downloader: " + this.address;
+    }
 }

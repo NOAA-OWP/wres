@@ -130,7 +130,7 @@ public class ConfiguredLoader
             if (!this.lazyLoad || !this.dataExists(absolutePath))
             {
                 if (datasource.isForecast()) {
-                    return Executor.execute(new ForecastSaver(absolutePath));
+                    return Executor.execute(new ForecastSaver(absolutePath, this.datasource));
                 }
                 else {
                     return Executor.execute(new ObservationSaver(absolutePath));
