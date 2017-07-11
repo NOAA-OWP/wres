@@ -1,7 +1,21 @@
 package util;
 
-import concurrency.Downloader;
-import concurrency.ProjectExecutor;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.function.Function;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
@@ -10,6 +24,16 @@ import ucar.nc2.Variable;
 import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.*;
+
+import concurrency.Downloader;
+import concurrency.ProjectExecutor;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metric.DefaultMetricInputFactory;
+import wres.datamodel.metric.MetricInputFactory;
+import wres.io.concurrency.Executor;
+import wres.io.concurrency.ForecastSaver;
+import wres.io.concurrency.MetricTask;
+import wres.io.concurrency.ObservationSaver;
 import wres.io.config.ProjectSettings;
 import wres.io.config.SystemSettings;
 import wres.io.config.specification.MetricSpecification;
@@ -26,19 +50,9 @@ import wres.io.utilities.Database;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.function.Function;
 
 /**
  * @author ctubbs
@@ -83,7 +97,8 @@ public final class MainFunctions
 	 */
 	public static Integer call (String operation, final String[] args) {
 		operation = operation.toLowerCase();
-		Integer result = functions.get(operation).apply(args);
+		final Integer result = functions.get(operation).apply(args);
+		shutdown();
 		return result;
 	}
 
@@ -292,7 +307,7 @@ public final class MainFunctions
 	 */
 	private static Function<String[], Integer> saveObservations () {
 		return (final String[] args) -> {
-			Integer result = FAILURE;
+			final Integer result = FAILURE;
 			if (args.length > 0) {
 				try {
 					final String directory = args[0];
@@ -416,7 +431,7 @@ public final class MainFunctions
 
                 result = SUCCESS;
             }
-            catch (RuntimeException e)
+            catch (final RuntimeException e)
             {
                 LOGGER.error(Strings.getStackTrace(e));
             }
@@ -441,7 +456,7 @@ public final class MainFunctions
                     reader.output_variables();
                     result = SUCCESS;
                 }
-                catch (RuntimeException e)
+                catch (final RuntimeException e)
                 {
                     LOGGER.error(Strings.getStackTrace(e));
                 }
@@ -480,7 +495,7 @@ public final class MainFunctions
                     reader.print_query(variable_name, variable_args);
                     result = SUCCESS;
                 }
-                catch (RuntimeException e)
+                catch (final RuntimeException e)
                 {
                     LOGGER.error(Strings.getStackTrace(e));
                 }
@@ -516,7 +531,7 @@ public final class MainFunctions
 					System.out.println(project.toString());
 				}
 			}
-			catch (RuntimeException exception)
+			catch (final RuntimeException exception)
 			{
 				result = FAILURE;
 			}
@@ -561,7 +576,7 @@ public final class MainFunctions
                         builder.append(results.getString(1)).append(NEWLINE);
                     }
                 }
-                catch (SQLException e) {
+                catch (final SQLException e) {
                     LOGGER.error(Strings.getStackTrace(e));
                     throw e;
                 }
@@ -590,7 +605,7 @@ public final class MainFunctions
                     throw e;
                 }
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 LOGGER.error(Strings.getStackTrace(e));
                 result = FAILURE;
@@ -826,7 +841,7 @@ public final class MainFunctions
                     }
                     result = SUCCESS;
                 }
-                catch (Exception e)
+                catch (final Exception e)
                 {
                     LOGGER.error(Strings.getStackTrace(e));
                     result = FAILURE;
@@ -897,8 +912,10 @@ public final class MainFunctions
 	 */
 	private static Function<String[], Integer> getPairs () {
 		return (final String[] args) -> {
+		    
+		    final MetricInputFactory dataFactory = DefaultMetricInputFactory.getInstance();
 			Integer result = FAILURE;
-
+			
 			Connection connection = null;
 			try {
 				final String forecastVariable = args[0];
@@ -949,7 +966,7 @@ public final class MainFunctions
 				connection = Database.getConnection();
 				final ResultSet results = Database.getResults(connection, script);
 				while (results.next()) {
-					pairs.add(DataFactory.pairOf((double) results.getFloat("observation"), (Double[]) results.getArray("forecasts").getArray()));
+					pairs.add(dataFactory.pairOf((double) results.getFloat("observation"), (Double[]) results.getArray("forecasts").getArray()));
 				}
 
 				System.out.println();
@@ -986,7 +1003,7 @@ public final class MainFunctions
                 Database.refreshStatistics();
                 result = SUCCESS;
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 LOGGER.error(Strings.getStackTrace(e));
             }
@@ -1169,7 +1186,7 @@ public final class MainFunctions
                     }
                     result = SUCCESS;
                 }
-                catch (Exception e)
+                catch (final Exception e)
                 {
                     LOGGER.error(Strings.getStackTrace(e));
                     result = FAILURE;
