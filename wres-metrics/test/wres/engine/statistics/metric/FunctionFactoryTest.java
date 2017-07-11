@@ -6,7 +6,8 @@ import java.util.function.BiPredicate;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
+import wres.datamodel.metric.DefaultMetricInputFactory;
+import wres.datamodel.metric.MetricInputFactory;
 
 /**
  * Tests the {@link FunctionFactory}.
@@ -25,17 +26,18 @@ public final class FunctionFactoryTest
     @Test
     public void test1FunctionFactory()
     {
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
         assertTrue("Failure on inequality test.", !testMe.test(-1.0, 0.0));
         assertTrue("Failure on absolute error function.",
-                   testMe.test(FunctionFactory.absError().applyAsDouble(DataFactory.pairOf(-1, 1)), 2.0));
+                   testMe.test(FunctionFactory.absError().applyAsDouble(metIn.pairOf(-1, 1)), 2.0));
         assertTrue("Failure on error function.",
-                   testMe.test(FunctionFactory.error().applyAsDouble(DataFactory.pairOf(-1, 1)), -2.0));
+                   testMe.test(FunctionFactory.error().applyAsDouble(metIn.pairOf(-1, 1)), -2.0));
         assertTrue("Failure on square error function.",
-                   testMe.test(FunctionFactory.squareError().applyAsDouble(DataFactory.pairOf(-5, 5)), 100.0));
+                   testMe.test(FunctionFactory.squareError().applyAsDouble(metIn.pairOf(-5, 5)), 100.0));
         assertTrue("Failure on skill function.", testMe.test(FunctionFactory.skill().applyAsDouble(1.0, 2.0), 0.5));
         assertTrue("Failure on mean function.",
-                   testMe.test(FunctionFactory.mean().applyAsDouble(DataFactory.vectorOf(new double[]{1.0, 2.0, 3.0})), 2.0));
+                   testMe.test(FunctionFactory.mean().applyAsDouble(metIn.vectorOf(new double[]{1.0, 2.0, 3.0})), 2.0));
     }
 
 }

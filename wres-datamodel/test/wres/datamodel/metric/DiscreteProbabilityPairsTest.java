@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.metric.SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
 
@@ -27,17 +26,15 @@ public final class DiscreteProbabilityPairsTest
     public void test1DiscreteProbabilityPairs()
     {
         final List<PairOfDoubles> values = new ArrayList<>();
-
+        final MetricInputFactory d = DefaultMetricInputFactory.getInstance();
         final DiscreteProbabilityPairsBuilder b = new DiscreteProbabilityPairsBuilder();
 
         for(int i = 0; i < 10; i++)
         {
-            values.add(DataFactory.pairOf(1, 1));
-        }       
+            values.add(d.pairOf(1, 1));
+        }
         final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-        final Metadata meta = metaFac.getMetadata(values.size(),
-                                                          metaFac.getDimension(),
-                                                          "Main");         
+        final Metadata meta = metaFac.getMetadata(values.size(), metaFac.getDimension(), "DRRC2", "SQIN", "HEFS");
         b.setData(values).setMetadata(meta).build();
     }
 

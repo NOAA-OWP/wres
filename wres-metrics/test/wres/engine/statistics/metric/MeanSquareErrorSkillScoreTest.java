@@ -40,12 +40,15 @@ public final class MeanSquareErrorSkillScoreTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
-                                                            metaFac.getDimension("CMS"),
-                                                            MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                            MetricConstants.MAIN,
-                                                            "Main",
-                                                            "Baseline");
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("CMS"),
+                                                                  MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                                  MetricConstants.MAIN,
+                                                                  "DRRC2",
+                                                                  "SQIN",
+                                                                  "HEFS",
+                                                                  "ESP");
 
         //Build the metric
         final MeanSquareErrorSkillScoreBuilder<SingleValuedPairs> b =

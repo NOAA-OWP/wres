@@ -1,8 +1,6 @@
 package wres.datamodel;
 
-import wres.datamodel.MatrixOfDoubles;
-
-class SafeMatrixOfDoubles implements MatrixOfDoubles
+public class SafeMatrixOfDoubles implements MatrixOfDoubles
 {
     private final double[][] doubles;
 
@@ -11,7 +9,7 @@ class SafeMatrixOfDoubles implements MatrixOfDoubles
         this.doubles = doubles.clone();
     }
 
-    static MatrixOfDoubles of(final double[][] doubles)
+    public static MatrixOfDoubles of(final double[][] doubles)
     {
         return new SafeMatrixOfDoubles(doubles);
     }

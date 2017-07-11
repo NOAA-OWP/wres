@@ -8,7 +8,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.metric.SafeMulticategoryPairs.MulticategoryPairsBuilder;
 
@@ -30,14 +29,15 @@ public final class MulticategoryPairsTest
     public void test1MulticategoryPairs()
     {
         final List<VectorOfBooleans> values = new ArrayList<>();
-        final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final MetadataFactory metaFac = metIn.getMetadataFactory();
         final MulticategoryPairsBuilder b = new MulticategoryPairsBuilder();
 
         for(int i = 0; i < 10; i++)
         {
-            values.add(DataFactory.vectorOf(new boolean[]{true, true}));
+            values.add(metIn.vectorOf(new boolean[]{true, true}));
         }
-        final Metadata meta = metaFac.getMetadata(values.size(), metaFac.getDimension(), "Main");
+        final Metadata meta = metaFac.getMetadata(values.size(), metaFac.getDimension(), "DRRC2", "SQIN", "HEFS");
         MulticategoryPairs p = b.setData(values).setMetadata(meta).build();
 
         //Check category count
@@ -47,7 +47,7 @@ public final class MulticategoryPairsTest
         //Check category count of two when fully expanded
         final MulticategoryPairsBuilder bn = new MulticategoryPairsBuilder();
         values.clear();
-        values.add(DataFactory.vectorOf(new boolean[]{true, false, true, false}));
+        values.add(metIn.vectorOf(new boolean[]{true, false, true, false}));
         final MulticategoryPairs q = bn.setData(values).setMetadata(meta).build();
         assertTrue("Unexpected category count on inputs [2," + q.getCategoryCount() + "].", q.getCategoryCount() == 2);
         //Check dataset count
@@ -66,7 +66,7 @@ public final class MulticategoryPairsTest
         try
         {
             values.clear();
-            values.add(DataFactory.vectorOf(new boolean[]{true, false, false, true, false, true}));
+            values.add(metIn.vectorOf(new boolean[]{true, false, false, true, false, true}));
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
             c.setData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: duplicate predicted outcome.");
@@ -78,7 +78,7 @@ public final class MulticategoryPairsTest
         try
         {
             values.clear();
-            values.add(DataFactory.vectorOf(new boolean[]{true, true, false, true, false, false}));
+            values.add(metIn.vectorOf(new boolean[]{true, true, false, true, false, false}));
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
             c.setData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: duplicate observed outcome.");
@@ -103,8 +103,8 @@ public final class MulticategoryPairsTest
         {
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
             values.clear();
-            values.add(DataFactory.vectorOf(new boolean[]{true, false, false, true, false, false}));
-            values.add(DataFactory.vectorOf(new boolean[]{true, false, false, false, true, false, false, false}));
+            values.add(metIn.vectorOf(new boolean[]{true, false, false, true, false, false}));
+            values.add(metIn.vectorOf(new boolean[]{true, false, false, false, true, false, false, false}));
             c.setData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: one or more pairs with a varying number of "
                 + "categories.");
@@ -117,7 +117,7 @@ public final class MulticategoryPairsTest
         {
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
             values.clear();
-            values.add(DataFactory.vectorOf(new boolean[]{true, false, false, false, true, false, false}));
+            values.add(metIn.vectorOf(new boolean[]{true, false, false, false, true, false, false}));
             c.setData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: observations and predictions have "
                 + "different numbers of categories.");
@@ -142,7 +142,7 @@ public final class MulticategoryPairsTest
         {
             values.clear();
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            values.add(DataFactory.vectorOf(new boolean[]{true, false, true, false}));
+            values.add(metIn.vectorOf(new boolean[]{true, false, true, false}));
             c.setData(values).setMetadata(meta).build();
         }
         catch(final Exception e)

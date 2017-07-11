@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.metric.MatrixOutput;
+import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutputFactory;
@@ -76,12 +77,16 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
     protected MetricOutputMetadata getMetadata(final MatrixOutput output)
     {
         final MetricOutputMetadata metIn = output.getMetadata();
-        return getOutputFactory().getMetadataFactory().getMetadata(metIn.getSampleSize(),
-                                                                   metIn.getDimension(),
-                                                                   getID(),
-                                                                   MetricConstants.MAIN,
-                                                                   metIn.getID(),
-                                                                   null);
+        final MetadataFactory f = getOutputFactory().getMetadataFactory();
+        return f.getOutputMetadata(metIn.getSampleSize(),
+                                   f.getDimension(),
+                                   metIn.getDimension(),
+                                   getID(),
+                                   MetricConstants.MAIN,
+                                   metIn.getGeospatialID(),
+                                   metIn.getVariableID(),
+                                   metIn.getScenarioID(),
+                                   null);
     }
 
     /**

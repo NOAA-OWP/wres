@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputCollection;
 import wres.datamodel.metric.MetricOutputFactory;
+import wres.datamodel.metric.MetricOutputMapByMetric;
 
 /**
  * <p>
@@ -48,7 +48,7 @@ import wres.datamodel.metric.MetricOutputFactory;
  */
 
 public final class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
-implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollection<T>>
+implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMetric<T>>
 {
 
     /**
@@ -76,13 +76,13 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
     private final ExecutorService metricPool;
 
     @Override
-    public MetricOutputCollection<T> call() throws MetricCalculationException, InterruptedException, ExecutionException
+    public MetricOutputMapByMetric<T> call() throws MetricCalculationException, InterruptedException, ExecutionException
     {
         return callInternal();
     }
 
     @Override
-    public MetricOutputCollection<T> apply(final S input)
+    public MetricOutputMapByMetric<T> apply(final S input)
     {
         return applyParallel(input);
     }
@@ -209,7 +209,7 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
      * @return the output for each metric, contained in a collection
      */
 
-    private MetricOutputCollection<T> applyParallel(final S s) throws MetricCalculationException
+    private MetricOutputMapByMetric<T> applyParallel(final S s) throws MetricCalculationException
     {
         if(!Objects.isNull(this.input))
         {
@@ -248,7 +248,7 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
                .forEach(y -> metricFutures.add(metrics.indexOf(y),
                                                CompletableFuture.supplyAsync(() -> y.apply(s), metricPool)));
         final CompletableFuture<List<T>> results = sequence(metricFutures);
-        return outputFactory.ofCollection(results.join()); //This is blocking
+        return outputFactory.ofMap(results.join()); //This is blocking
     }
 
     /**
@@ -260,7 +260,7 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
      * @throws InterruptedException
      */
 
-    private MetricOutputCollection<T> callInternal() throws MetricCalculationException,
+    private MetricOutputMapByMetric<T> callInternal() throws MetricCalculationException,
                                                      InterruptedException,
                                                      ExecutionException
     {
@@ -297,7 +297,7 @@ implements Function<S, MetricOutputCollection<T>>, Callable<MetricOutputCollecti
         {
             m.add(next.get());
         }
-        return outputFactory.ofCollection(m);
+        return outputFactory.ofMap(m);
     }
 
     /**

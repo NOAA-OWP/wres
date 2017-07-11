@@ -11,8 +11,11 @@ import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -21,23 +24,29 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.function.ToDoubleFunction;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.ValidationEvent;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MetricInputFactory;
-import wres.datamodel.metric.MetricOutputCollection;
 import wres.datamodel.metric.MetricOutputFactory;
+import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.Metric;
@@ -46,10 +55,6 @@ import wres.engine.statistics.metric.MetricFactory;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
-
-import javax.xml.bind.*;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
 
 /**
  * Another Main. The reason for creating this class separately from Main is to defer conflict with the existing
@@ -66,6 +71,8 @@ public class Control
     private static final AtomicBoolean messagedForEarliestDate = new AtomicBoolean(false);
     private static final AtomicBoolean messagedForLatestDate = new AtomicBoolean(false);
     private static final AtomicBoolean messagedSqlStatement = new AtomicBoolean(false);
+    private static MetricInputFactory inputFactory = DefaultMetricInputFactory.getInstance();
+    private static final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
 
     /** System property used to retrieve max thread count, passed as -D */
     public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
@@ -224,7 +231,7 @@ public class Control
         final int maxProcessThreads = Control.MAX_THREADS / 10;
         final ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
 
-        final List<Future<MetricOutputCollection<ScalarOutput>>> futureMetrics = new ArrayList<>();
+        final List<Future<MetricOutputMapByMetric<ScalarOutput>>> futureMetrics = new ArrayList<>();
 
         // Queue up processing of fetched pairs.
         for(int i = 0; i < pairs.size(); i++)
@@ -236,11 +243,11 @@ public class Control
             // which uses a Map.
             final int leadTime = i + 1;
             final PairsByLeadProcessor processTask = new PairsByLeadProcessor(pairs.get(i), projectConfig, leadTime);
-            final Future<MetricOutputCollection<ScalarOutput>> futureMetric = processPairExecutor.submit(processTask);
+            final Future<MetricOutputMapByMetric<ScalarOutput>> futureMetric = processPairExecutor.submit(processTask);
             futureMetrics.add(futureMetric);
         }
 
-        final Map<Integer, MetricOutputCollection<ScalarOutput>> finalResults = new HashMap<>();
+        final Map<Integer, MetricOutputMapByMetric<ScalarOutput>> finalResults = new HashMap<>();
         // Retrieve metric results from processing queue.
         try
         {
@@ -248,7 +255,7 @@ public class Control
             for(int i = 0; i < futureMetrics.size(); i++)
             {
                 // get each result
-                final MetricOutputCollection<ScalarOutput> metrics = futureMetrics.get(i).get();
+                final MetricOutputMapByMetric<ScalarOutput> metrics = futureMetrics.get(i).get();
 
                 final int leadTime = i + 1;
                 finalResults.put(leadTime, metrics);
@@ -299,7 +306,7 @@ public class Control
 
         if(LOGGER.isInfoEnabled())
         {
-            for(final Map.Entry<Integer, MetricOutputCollection<ScalarOutput>> e: finalResults.entrySet())
+            for(final Map.Entry<Integer, MetricOutputMapByMetric<ScalarOutput>> e: finalResults.entrySet())
             {
                 LOGGER.info("For lead time " + e.getKey() + " " + e.getValue().toString());
             }
@@ -382,7 +389,7 @@ public class Control
     /**
      * Task whose job is to wait for pairs to arrive, then run metrics on them.
      */
-    private static class PairsByLeadProcessor implements Callable<MetricOutputCollection<ScalarOutput>>
+    private static class PairsByLeadProcessor implements Callable<MetricOutputMapByMetric<ScalarOutput>>
     {
         private final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair;
         private final ProjectConfig projectConfig;
@@ -398,7 +405,7 @@ public class Control
         }
 
         @Override
-        public MetricOutputCollection<ScalarOutput> call() throws ProcessingException
+        public MetricOutputMapByMetric<ScalarOutput> call() throws ProcessingException
         {
             // initialized to empty list in case of failure
             List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
@@ -433,8 +440,6 @@ public class Control
             // What follows for the rest of call() is from MetricCollectionTest.
 
             // Convert pairs into metric input
-            final MetricInputFactory inputFactory = DefaultMetricInputFactory.getInstance();
-            final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
             final SingleValuedPairs input = inputFactory.ofSingleValuedPairs(simplePairs,
                                                                              inputFactory.getMetadataFactory()
                                                                                          .getMetadata(pairs.size()));
@@ -524,7 +529,7 @@ public class Control
                 {
                     final double observationValue = resultSet.getFloat("observation");
                     final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
-                    final PairOfDoubleAndVectorOfDoubles pair = DataFactory.pairOf(observationValue, forecastValues);
+                    final PairOfDoubleAndVectorOfDoubles pair = inputFactory.pairOf(observationValue, forecastValues);
 
                     LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
                                  pair.getItemOne(),
