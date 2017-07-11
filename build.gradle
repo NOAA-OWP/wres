@@ -121,6 +121,15 @@ project(':utilities')
 
         compile 'com.google.guava:guava:22.0'
 
+        compile('edu.ucar:cdm:4.6.8')
+        {
+            // because we are getting a later version from diff group:
+            exclude group: 'c3p0', module: 'c3p0'
+            // because these shouldn't be on compile classpath:
+            exclude group: 'ch.qos.logback', module: 'logback-classic'
+            exclude group: 'ch.qos.logback', module: 'logback-core'
+        }
+
         runtime 'ch.qos.logback:logback-classic:1.2.3'
 
         testCompile 'junit:junit:4.12'
@@ -229,6 +238,8 @@ project(':wres-datamodel')
         compile 'org.slf4j:slf4j-api:1.7.25'
 
         testCompile 'junit:junit:4.12'
+
+        testCompile files('../libs/external/EVS.jar')
     }
 }
 
@@ -305,8 +316,6 @@ project(':wres-vis')
     dependencies
     {
         compile project(':wres-datamodel-api')
-        compile project(':wres-datamodel')
-        compile project(':wres-metrics')
         
         compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
         compile group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '1.2.6'
@@ -319,7 +328,12 @@ project(':wres-vis')
         compile files('../libs/external/jfreechart-1.0.9.jar')
         compile files('../libs/external/ohdcommonchps.jar')
 
+	testCompile files('../libs/external/ohdcommonchps.jar')
         testCompile 'junit:junit:4.12'
+        testCompile project (':wres-datamodel')
+	//Must load jfreechart explicitly before EVS.jar to avoid conflicting versions
+	testCompile files('../libs/external/jfreechart-1.0.9.jar')
+	testCompile files('../libs/external/EVS.jar')
     }
 }
 
