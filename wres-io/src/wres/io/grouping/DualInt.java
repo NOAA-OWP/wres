@@ -3,7 +3,7 @@ package wres.io.grouping;
 /**
  * Represents a grouping of two ints
  */
-public class DualInt implements Comparable<DualInt> {
+public class DualInt implements Comparable<DualInt>, Cloneable {
 
     public DualInt(int one, int two)
     {
@@ -65,5 +65,10 @@ public class DualInt implements Comparable<DualInt> {
     @Override
     public int hashCode() {
         return this.getFirst() ^ this.getSecond();
+    }
+
+    @Override
+    protected Object clone () throws CloneNotSupportedException {
+        return new DualInt(this.getFirst(), this.getSecond());
     }
 }

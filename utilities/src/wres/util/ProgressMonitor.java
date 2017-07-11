@@ -33,15 +33,19 @@ public class ProgressMonitor
 
     public static void increment()
     {
-        synchronized (MONITOR) {
-            MONITOR.addStep();
+        if (ProgressMonitor.UPDATE_MONITOR) {
+            synchronized (MONITOR) {
+                MONITOR.addStep();
+            }
         }
     }
 
     public static void completeStep()
     {
-        synchronized (MONITOR) {
-            MONITOR.UpdateMonitor();
+        if (ProgressMonitor.UPDATE_MONITOR) {
+            synchronized (MONITOR) {
+                MONITOR.UpdateMonitor();
+            }
         }
     }
 
@@ -55,7 +59,7 @@ public class ProgressMonitor
     public static Consumer<Object> onThreadStartHandler() {
         Consumer<Object> handler = (Object obj) -> {};
 
-        if (MONITOR.updateMonitor) {
+        if (ProgressMonitor.UPDATE_MONITOR) {
             handler = (Object t) -> {
                 ProgressMonitor.increment();
             };
@@ -67,7 +71,7 @@ public class ProgressMonitor
 
         Consumer<Object> handler = (Object obj) -> {};
 
-        if (MONITOR.updateMonitor) {
+        if (ProgressMonitor.UPDATE_MONITOR) {
             handler = (Object t) -> {
                 ProgressMonitor.completeStep();
             };
@@ -89,15 +93,16 @@ public class ProgressMonitor
         this.percentFormat = new DecimalFormat();
         this.percentFormat.setMaximumFractionDigits(2);
         this.mainFormat = new DecimalFormat("###,###");
+
         if (printer == null)
         {
             printer = System.out;
         }
-        
+
         this.printer = printer;
         this.outputFunction = (ProgressMonitor monitor) -> {
             ASYNC_UPDATER.execute(()-> {
-                this.printer.print(getProgressMessage());
+                this.printMessage(getProgressMessage());
             });
         };
         this.startTime = System.currentTimeMillis();
@@ -105,18 +110,19 @@ public class ProgressMonitor
     
     public ProgressMonitor()
     {
-        this.totalSteps = 0L;
-        this.completedSteps = 0L;
-        this.percentFormat = new DecimalFormat();
-
-        this.percentFormat.setMaximumFractionDigits(2);
         this.startTime = System.currentTimeMillis();
         this.printer = System.out;
         this.outputFunction = (ProgressMonitor monitor) -> {
             ASYNC_UPDATER.execute(()-> {
-                this.printer.print(getProgressMessage());
+                this.printMessage(getProgressMessage());
             });
         };
+
+        this.totalSteps = 0L;
+        this.completedSteps = 0L;
+
+        this.percentFormat = new DecimalFormat();
+        this.percentFormat.setMaximumFractionDigits(2);
         this.mainFormat = new DecimalFormat("###,###");
     }
     
@@ -162,6 +168,12 @@ public class ProgressMonitor
         {
             return;
         }
+
+        if (this.totalSteps == 0)
+        {
+            this.startTime = System.currentTimeMillis();
+        }
+
         this.totalSteps++;
         executeOutput();
     }
@@ -192,7 +204,12 @@ public class ProgressMonitor
     public void reset() {
         this.totalSteps = 0L;
         this.completedSteps = 0L;
-        this.printer.println();
+        this.startTime = System.currentTimeMillis();
+        if (this.printer != null) {
+            this.printMessage("");
+            this.printMessage("Progress Monitor has been reset.");
+            this.printMessage("");
+        }
     }
     
     private String getProgressMessage() {
@@ -246,6 +263,14 @@ public class ProgressMonitor
         Double seconds = elapsed / 1000.0;
         return String.format("%.2f TPS", this.completedSteps/seconds);
     }
+
+    public void printMessage(String message)
+    {
+        if (this.printer != null)
+        {
+            this.printer.print(message);
+        }
+    }
     
     public void changePrinter(PrintStream printer)
     {
@@ -259,7 +284,7 @@ public class ProgressMonitor
 
     public static void setShouldUpdate(boolean shouldUpdate)
     {
-        MONITOR.updateMonitor = shouldUpdate;
+        ProgressMonitor.UPDATE_MONITOR = shouldUpdate;
     }
 
     private void shutdown()
@@ -278,10 +303,10 @@ public class ProgressMonitor
     private boolean showStepDescription = true;
     private Long lastUpdate;
     private Long updateFrequency;
-    private final Long startTime;
+    private Long startTime;
     private final DecimalFormat percentFormat;
     private final DecimalFormat mainFormat;
     private PrintStream printer;
     private Consumer<ProgressMonitor> outputFunction;
-    private boolean updateMonitor = true;
+    private static boolean UPDATE_MONITOR = true;
 }

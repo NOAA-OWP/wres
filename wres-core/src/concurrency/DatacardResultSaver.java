@@ -1,11 +1,12 @@
 package concurrency;
 
+import wres.io.concurrency.WRESTask;
+import wres.io.utilities.Database;
+import wres.util.Time;
+
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
-import wres.io.utilities.Database;
-import wres.util.Time;
-import wres.io.concurrency.WRESTask;
 
 /**
  * @author ctubbs
@@ -77,4 +78,9 @@ public class DatacardResultSaver extends WRESTask implements Runnable {
 	private final String observation_id;
 	private final HashMap<OffsetDateTime, String> dated_values;
 	private final StringBuilder expression;
+
+	@Override
+	protected String getTaskName () {
+		return "DatacardResultSaver-" + String.valueOf(Thread.currentThread().getId());
+	}
 }

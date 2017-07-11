@@ -3,16 +3,15 @@
  */
 package wres.io.config.specification;
 
+import wres.util.Strings;
+import wres.util.Time;
+
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-
-import wres.util.Time;
-import wres.util.Strings;
 
 /**
  * Specification for how to aggregate values in a metric
@@ -118,7 +117,7 @@ public class AggregationSpecification extends SpecificationElement {
 	        else
 	        {
 	            Double range = Time.unitsToHours(this.aggregationUnit, aggregationRange());
-	            lead = String.valueOf((int)(step * range)) + " > lead && lead >= " + String.valueOf((int)(step * (range - 1)));
+	            lead = String.valueOf((int)(step * range)) + " > lead && lead >= " + String.valueOf((int)((step - 1) * range));
 	        }
 	    }
 	    

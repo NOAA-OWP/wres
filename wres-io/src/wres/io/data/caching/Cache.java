@@ -76,9 +76,9 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * present in the instance cache, it is added.
 	 * @param detail The definition of the object in the database to get information for
 	 * @return The ID for the details in the database
-	 * @throws Exception Thrown if the ID could not be retrieved from the database
+	 * @throws SQLException Thrown if the ID could not be retrieved from the database
 	 */
-	public Integer getID(T detail) throws Exception
+	public Integer getID(T detail) throws SQLException
 	{
 		U key = detail.getKey();
 		if (!hasID(key)) {

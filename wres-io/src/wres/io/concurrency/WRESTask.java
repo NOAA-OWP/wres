@@ -17,8 +17,11 @@ public abstract class WRESTask
     public void setOnRun(Consumer<Object> onRun) {
         this.onRun = onRun;
     }
-    
+
+    protected abstract String getTaskName();
+
     protected void executeOnComplete() {
+        Thread.currentThread().setName(this.getTaskName());
         if (this.onComplete != null) {
             this.onComplete.accept(null);
         }

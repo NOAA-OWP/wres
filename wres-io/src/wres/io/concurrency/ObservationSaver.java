@@ -58,4 +58,9 @@ public class ObservationSaver extends WRESTask implements Runnable {
 	}
 
 	private String filepath = null;
+
+	@Override
+	protected String getTaskName () {
+		return "ObservationSaver: " + this.filepath;
+	}
 }
