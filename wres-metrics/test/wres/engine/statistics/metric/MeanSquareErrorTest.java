@@ -40,12 +40,11 @@ public final class MeanSquareErrorTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                            metaFac.getDimension(),
                                                             metaFac.getDimension(),
                                                             MetricConstants.MEAN_SQUARE_ERROR,
-                                                            MetricConstants.MAIN,
-                                                            null,
-                                                            null);
+                                                            MetricConstants.MAIN);
 
         //Build the metric
         final MeanSquareErrorBuilder<SingleValuedPairs> b = new MeanSquareError.MeanSquareErrorBuilder<>();

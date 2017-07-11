@@ -1,0 +1,101 @@
+package wres.datamodel.metric;
+
+/**
+ * Stores a threshold value and associated logical condition. A threshold may comprise one or two threshold values. If
+ * the threshold comprises two values, {@link #getCondition()} must return {@link Condition#BETWEEN} and
+ * {@link #getThresholdUpper()} must return a non-null value. The reverse is also true, i.e. if the condition is
+ * {@link Condition#BETWEEN}, {@link #getThresholdUpper()} must return null.
+ * 
+ * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
+ */
+
+public interface Threshold extends Comparable<Threshold>
+{
+
+    /**
+     * Enumeration for slicing data in a {@link MapKey}
+     */
+
+    public enum Condition
+    {
+
+        /**
+         * Identifier for less than.
+         */
+
+        LESS,
+
+        /**
+         * Identifier for greater than.
+         */
+
+        GREATER,
+
+        /**
+         * Identifier for less than or equal to.
+         */
+
+        LESS_EQUAL,
+
+        /**
+         * Identifier for greater than or equal to
+         */
+
+        GREATER_EQUAL,
+
+        /**
+         * Identifier for equality.
+         */
+
+        EQUAL,
+
+        /**
+         * Identifier for between.
+         */
+
+        BETWEEN
+    }
+
+    /**
+     * Returns the threshold value, which may comprise the lower bound of a {@link Condition#BETWEEN}
+     * 
+     * @return the threshold value
+     */
+
+    Double getThreshold();
+
+    /**
+     * Returns the logical condition associated with the threshold.
+     * 
+     * @return the logical condition associated with the threshold
+     */
+
+    Condition getCondition();
+
+    /**
+     * Returns the upper bound of a {@link Condition#BETWEEN} condition or null.
+     * 
+     * @return the upper threshold value or null
+     */
+
+    Double getThresholdUpper();
+
+    /**
+     * Returns true if the threshold condition corresponds to a {@link Condition#BETWEEN} condition and, hence, that
+     * {@link #getThresholdUpper()} returns a non-null threshold value.
+     * 
+     * @return true if the condition is a {@link Condition#BETWEEN} condition, false otherwise.
+     */
+
+    boolean hasBetweenCondition();
+
+    /**
+     * Returns a string representation of the threshold.
+     * 
+     * @return a string representation
+     */
+    @Override
+    String toString();
+}

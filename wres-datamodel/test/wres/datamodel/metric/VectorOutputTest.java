@@ -23,24 +23,33 @@ public final class VectorOutputTest
     {
         final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
-        final MetricOutputMetadata m1 = metaFac.getMetadata(10,
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                            MetricConstants.MAIN,
-                                                            "A",
-                                                            null);
-        final MetricOutputMetadata m2 = metaFac.getMetadata(11,
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                            MetricConstants.MAIN,
-                                                            "A",
-                                                            null);
-        final MetricOutputMetadata m3 = metaFac.getMetadata(10,
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                            MetricConstants.MAIN,
-                                                            "B",
-                                                            null);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("CMS"),
+                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                  MetricConstants.MAIN,
+                                                                  "A",
+                                                                  "B",
+                                                                  "C",
+                                                                  null);
+        final MetricOutputMetadata m2 = metaFac.getOutputMetadata(11,
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("CMS"),
+                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                  MetricConstants.MAIN,
+                                                                  "A",
+                                                                  "B",
+                                                                  "C",
+                                                                  null);
+        final MetricOutputMetadata m3 = metaFac.getOutputMetadata(10,
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("CMS"),
+                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                  MetricConstants.MAIN,
+                                                                  "B",
+                                                                  "B",
+                                                                  "C",
+                                                                  null);
         final VectorOutput s = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
         final VectorOutput t = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
         assertTrue("Expected equal outputs.", s.equals(t));
@@ -65,12 +74,15 @@ public final class VectorOutputTest
     {
         final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
-        final MetricOutputMetadata m1 = metaFac.getMetadata(10,
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                            MetricConstants.MAIN,
-                                                            "A",
-                                                            null);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("CMS"),
+                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                  MetricConstants.MAIN,
+                                                                  "A",
+                                                                  "B",
+                                                                  "C",
+                                                                  null);
         final VectorOutput s = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
         final VectorOutput t = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
         assertTrue("Expected equal string representations.", s.toString().equals(t.toString()));
@@ -85,18 +97,24 @@ public final class VectorOutputTest
     {
         final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
-        final MetricOutputMetadata m1 = metaFac.getMetadata(10,
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                            MetricConstants.MAIN,
-                                                            "A",
-                                                            null);
-        final MetricOutputMetadata m2 = metaFac.getMetadata(10,
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                            MetricConstants.MAIN,
-                                                            "B",
-                                                            null);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("CMS"),
+                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                  MetricConstants.MAIN,
+                                                                  "A",
+                                                                  "B",
+                                                                  "C",
+                                                                  null);
+        final MetricOutputMetadata m2 = metaFac.getOutputMetadata(10,
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("CMS"),
+                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                  MetricConstants.MAIN,
+                                                                  "B",
+                                                                  "B",
+                                                                  "C",
+                                                                  null);
         final VectorOutput q = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
         final VectorOutput r = d.ofVectorOutput(new double[]{1.0, 1.0}, m2);
         assertTrue("Expected unequal dimensions.", !q.getMetadata().equals(r.getMetadata()));
@@ -111,24 +129,33 @@ public final class VectorOutputTest
     {
         final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
-        final MetricOutputMetadata m1 = metaFac.getMetadata(10,
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                            MetricConstants.MAIN,
-                                                            "A",
-                                                            null);
-        final MetricOutputMetadata m2 = metaFac.getMetadata(10,
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                            MetricConstants.MAIN,
-                                                            "A",
-                                                            null);
-        final MetricOutputMetadata m3 = metaFac.getMetadata(10,
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                            MetricConstants.MAIN,
-                                                            "B",
-                                                            null);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("CMS"),
+                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                  MetricConstants.MAIN,
+                                                                  "A",
+                                                                  "B",
+                                                                  "C",
+                                                                  null);
+        final MetricOutputMetadata m2 = metaFac.getOutputMetadata(10,
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("CMS"),
+                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                  MetricConstants.MAIN,
+                                                                  "A",
+                                                                  "B",
+                                                                  "C",
+                                                                  null);
+        final MetricOutputMetadata m3 = metaFac.getOutputMetadata(10,
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("CMS"),
+                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                  MetricConstants.MAIN,
+                                                                  "B",
+                                                                  "B",
+                                                                  "C",
+                                                                  null);
         final VectorOutput q = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
         final VectorOutput r = d.ofVectorOutput(new double[]{1.0, 1.0}, m2);
         assertTrue("Expected equal hash codes.", q.hashCode() == r.hashCode());

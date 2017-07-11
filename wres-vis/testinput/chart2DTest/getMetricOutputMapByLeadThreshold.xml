@@ -1,0 +1,3993 @@
+<?xml version="1.0" standalone="yes"?><results>
+<!--
+	Result file containing the results for a single metric by lead period.
+	Some metrics, such as reliability diagrams, have results for specific thresholds 
+	(e.g. probability thresholds).  In that case, the results are stored by lead period 
+	and then by threshold value.  The actual data associated with a result always appears 
+	within a 'values' tag.  A metric result that comprises a single value will appear as a 
+	single value in this tag.  A metric result that comprises a 1D matrix will appear as a 
+	row of values separated by commas in the input order.  A metric result that comprises a 
+	2D matrix will appear as a sequence of rows, each with a 'values' tag, which are written 
+	in the input order.  For example, a diagram metric with an x and y axis will comprise 
+	two rows of data (i.e. two rows within two separate 'values' tags).  The default input 
+	order would be data for the x axis followed by data for the y axis.  Data that refer to 
+	cumulative probabilities are, by default, always defined in increasing size of probability.
+-->
+	<meta_data>
+		<thresholds_type>true</thresholds_type>
+		<original_file_id>NPTP1.Streamflow.HEFS.Mean_continuous_ranked_probability_skill_score.xml</original_file_id>
+	</meta_data>
+	<result>
+		<lead_hour>42.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.026464834142211124</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.026543876961751534</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.026646122045342557</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.02732092511805151</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.028066761709500843</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.03003607900913441</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.0327585887813735</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.03488809633874668</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.03896287840511603</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.0449964971825626</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.052863016019907616</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.07080095405842257</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.09337262814463076</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.09543781455421019</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.10200154748032975</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.10332440545088017</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.11003893976322354</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.11199872318472825</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.12372653375938591</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.12516167721778138</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.12127221720684833</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>0.12965001288054223</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>66.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.09984119086829912</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.10009779463632607</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.10041675944342121</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.10256935461054262</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.10485612136321198</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.11049860016621438</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.11844795860269419</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.12303285281854803</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.13189190601986245</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.14403778004689638</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.15708565450109802</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.18468390348430563</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.22891797973690609</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.23489549205897842</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.23777965042931315</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.23962819223365517</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.24592762308027505</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.249720220932378</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.2527591660509583</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.25398607593664313</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.2550426520554575</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>0.2931030735018265</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>90.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.1447970600721573</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.14512096473354696</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.14554612708485148</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.1482513830123109</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.1509593781571542</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.15793076629813307</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.16720589730117286</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.17106589822182283</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.17925181435827775</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.19043174983362166</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.20269375972384052</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.224753810608334</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.2595848868904078</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.2657832581923282</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.2675082840552703</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.2716289120912275</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.2742276067647531</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.27388836665315275</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.27690300961169967</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.27681320899217277</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.27511623172044264</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>0.2931175558522984</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>114.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.16049879541107903</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.1608131979248506</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.1612874725000487</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.16391928490265262</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.16681205194312998</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.1738832499870634</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.182591079896528</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.1843944895929145</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.1894496102900155</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.19838272077675967</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.2087781522403913</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.223225044548367</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.24906792773535658</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.25205352171492423</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.2532877573947543</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.2555761027951494</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.25477707633854463</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.2563007978662831</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.257617796945369</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.2613022991784816</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.25755875539277173</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>0.24571036530823076</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>138.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.16437062882425812</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.16472823893951816</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.16516741821756253</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.16763933784662144</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.17031096753598107</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.17750791804515897</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.18445760073524498</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.1854142667392219</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.18704278327106605</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.1918402130387844</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.19814304410019346</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.2084404936912999</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.22472575744660583</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.22581597599685554</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.22667033055865005</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.22407286982979202</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.22367164763782854</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.22349793629539427</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.2243919741820426</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.22793664993477847</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.22986731458779341</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>0.21561348463271635</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>162.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.15729002842132267</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.157692190874674</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.15807022958428552</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.16028097732432534</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.1623502494901643</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.16951642923181387</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.17493443999852953</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.17383240565322688</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.17179432339196066</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.17441729504696735</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.17872330781176615</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.18448126629158323</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.19547734534632644</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.19510618172070204</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.1945510859834545</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.19344991795493638</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.19379457270417966</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.19478545833342542</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.19311420758141729</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.1979875553697399</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.20448825878089794</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>0.19491417023739688</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>186.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.14360129044742087</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.1439863173903857</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.14431868508039647</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.14616655585877547</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.14796584226338794</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.15430705183250726</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.15846360959441386</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.15453146675113538</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.15041822985559927</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.14930169581948338</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.15160404345613054</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.1560148456861672</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.16073050432023406</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.16101449658379863</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.16085491522370898</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.15797277722253134</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.15972499976844678</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.15941501812116332</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.1585878265547549</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.16279432244174052</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.16537062678523817</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>0.15233164207586336</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>210.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.12720716660302311</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.12759322001237072</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.12786867066409147</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.12947364181096688</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.13096029780665774</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.1361988776171401</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.13982592407272776</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.13365856439108104</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.127649934619671</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.12254245632634342</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.12186819017628403</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.12228413982467956</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.12606712561327638</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.12754484895671925</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.12593489923199608</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.12429328343894441</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.12446363820560424</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.12135659502440077</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.11806365496801474</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.12184066157806739</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.11511028763699438</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>0.10656922035673122</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>234.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.11023286785358943</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.11054552211508983</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.11075977805658299</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.1122096175592191</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.1132423229639613</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.11779751736098265</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.12022014408018344</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.11198036038932624</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.1052258032761294</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.09635962531322462</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.09330360843708407</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.09280884222216323</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.09648320385442288</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.09578155507017727</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.09442838889516203</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.0927649452901167</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.0908752039329519</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.08812755141665962</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.08667342585828486</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.08640176772125119</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.0798378437946049</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>0.07331533684251368</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>258.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.09559015360171852</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.09594886223282761</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.09620841366176758</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.09725768845417049</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.09839202656920099</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.101691321098764</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.10292886821781655</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.0937054032321415</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.08583353920519099</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.07534762598995992</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.07138048001807074</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.06984337942545449</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.07300752166208502</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.07220594706874828</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.07052117145925119</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.06879791349863729</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.0657085297122234</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.06345799858162249</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.06134585420926908</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.06229715140838321</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.05627277082116389</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>0.042520107843812105</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>282.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.08083684084191411</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.08105889844257053</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.0813084547163655</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.08222988986568303</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.08282924331331287</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.08555524437054318</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.08620021556793322</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.07553733466453083</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.06638742688579746</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.05404972129199426</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.04976165527580534</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.048650332761005055</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.05015588096178669</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.048611027633243875</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.046905035878133994</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.04508170565237035</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.042048448030910346</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.04089022604809345</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.039460526109567184</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.03663174124213697</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.024006572882982136</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>0.011874985523402493</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>306.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.07028270738119591</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.07043233308075292</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.07065211515174774</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.07143209959834262</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.07205214902185375</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.07412573420891455</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.07435093388370473</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.06294205607818726</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.05335322876333504</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.040811498945445446</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.0365965066873537</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.03608513130605806</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.03312764023856718</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.032278548918977745</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.031652155826900175</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.029143246965283476</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.02481841364653492</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.02090478713697297</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>0.01705993794195182</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>0.015861331916275367</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>0.005798939069027509</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.00871372367784451</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>330.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.05922242488964735</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.05938912581973299</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.059548184891425326</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.060145945212616514</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.06089880716227014</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.06274984306106901</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.06236930969939736</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.050897539795833224</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.04057837797426378</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.028793097329236628</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.024542114931461745</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.02354655313083953</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.016829439964977655</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.015441140739464787</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>0.012158511626953805</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>0.01038490456291652</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>0.005227081003403744</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>0.002694868120844407</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-5.784295927235839E-4</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.0029430500847935637</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.013251620376940387</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.01966279900869239</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>354.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.04882590443404422</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.04890800575902232</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.049057929486081564</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.04952317004930429</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.04999679215636654</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.05165760277261733</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.05082449035160763</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.039188721110690716</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.02860287912466497</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.01721597922790563</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.01382765329689517</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.011445278772880818</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>0.0034680281816368286</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>0.0014689987142328942</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.0014789778323707203</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.003258631299030368</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.007811006933402309</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.010342441574053618</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.012419481936903232</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.014660550306035747</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.01844260254755703</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.023236608750801135</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>378.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.04228012676685877</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.04234968376070802</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.04253336180415346</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.042831938531660674</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.0432741165028544</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.04442612081099484</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.04404178103300016</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.03170221540305407</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.0215651222698654</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.009934002997966762</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.0074344819306308985</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>0.0036861039742580592</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.004538858899949982</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.006503828713769755</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.007527335508409783</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.008500853608935266</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.011162170901156898</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.013300063976916299</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.01348625093214495</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.01561139687624813</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.019500783797782084</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.02305603513481258</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>402.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.036344688507392475</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.03639524911177083</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.036446864646266564</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.036850480128723495</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.037331831141527605</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.03801071444879922</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.037464803067091434</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.02624034618985749</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.01596088217435554</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.004660903874936229</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.0032516991665734185</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-4.171838983528797E-4</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.0071295624942773195</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.007753668872047648</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.007635306009124321</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.008338350147451878</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.011372636525309288</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.014075324473799666</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.012956971922941207</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.011925975474494921</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.012725632605561366</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.014124978345718242</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>426.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.03025130542087351</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.03029150329161867</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.030353595261146893</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.03066475953848591</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.031022993058352433</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.031660576755696335</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.03112032677895049</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.020945030547912857</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.012376157658397613</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>0.002941537722371601</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>0.0014532807853497864</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.003347242935038297</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.009298303717708123</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.009357782559055394</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.009803965224016498</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.010365187421528255</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.010979525841974258</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.011828881091751287</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.01072185771189571</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.011251493297731452</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.012427118807516901</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.010708700556188777</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>450.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.024209210014218607</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.024209454969640776</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.02427012242655191</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.02445960229777866</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.024703784368827253</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.025202897352044062</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.024104156425763135</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.015073293660497034</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.007406939118793643</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.0010373927175240105</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.0028867670796406397</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.007258034720833084</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.012667507556223034</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.012159936819120531</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.0118362308176434</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.010930711565796392</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.011519857788572452</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.01263259251238602</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.010333199633231649</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.01078635062475164</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.010309305403086055</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.008866610333939207</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>474.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.019527837111742996</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.019531148743506366</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.01957428683868534</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.01979117342421821</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.019889577018071813</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.020653316751312545</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.019064975855665245</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.010519561406891254</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>0.0034133831758332844</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.0050179684993698626</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.006619616015770546</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.010573714079530339</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.016351426091912202</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.015323184091673658</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.014996408995656463</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.014445064478838532</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.01476214022051514</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.014160150677655192</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.012805747821772462</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.013339526726038331</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.01257404007327767</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.00962217181983771</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>498.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.01702393151429349</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.017006489916666534</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.017009288123603583</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.017173009691478724</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.01704756661675</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.017983385673851604</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.016042730773443203</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.008106186669011639</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>8.36360574522188E-4</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.007133145466221347</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.009035014934858143</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.012313130544812534</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.017667403770567525</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.016099348277613945</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.01602733721757854</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.01698680198022462</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.01653683729740596</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.01663490607878404</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.01567226626483187</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.014907740615800691</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.013995491824182915</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.0132506109609003</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>522.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.015128578462334508</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.015116443223709641</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.015108412000754745</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.015273377087858697</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.015121879123652926</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.015858808573988914</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.013991187669099237</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.0064529163221844765</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>-4.520228255409098E-4</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.007440156041934598</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.009890709381566776</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.01324902880947687</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.017884309759119477</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.01590811575683948</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.01581762550531396</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.016453714232065098</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.016317275633959127</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.015541127721712344</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.016229424101609435</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.01726832192326988</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.014939833075426234</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.01676452971615694</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>546.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.014330806353796577</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.0142864018382729</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.01426945783295841</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.014359750544747252</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.014285649034545767</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.014836414161882527</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.013279400486404191</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.006558434708935357</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>-7.403528066696197E-4</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.0060277662455838765</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.00772281893058735</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.010844666569600703</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.01347247935293816</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.011848221902441614</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.012293479739806656</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.012909680699744852</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.01304068119091606</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.012578707122479216</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.013387213656008479</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.01455416954278288</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.01288678487637318</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.012959892634925696</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>570.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.01297666442709311</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.012888054101608759</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.012878747124080436</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.012916069529163132</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.012650114865144335</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.013250178060314699</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.011379219645032745</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.00505175897825183</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>-0.0020338850074350656</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.00710662139356133</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.007845321593960453</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.010510664589254093</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.0133667125019159</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.012093579502364227</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.012191386649816893</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.01282251186794392</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.013483527038727683</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.014274387376986386</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.014135127842447304</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.01707768197354298</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.01411867606972228</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.01707868626435438</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>594.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.01143263392437921</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.011362420009664809</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.011333573752959292</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.011347190289497822</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.01094902366390238</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.011575705487259724</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.009538364118300224</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.00358886336363462</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>-0.0037161566473982166</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.00840608735968007</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.008945414856364797</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.01208719780175116</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.014344711568042845</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.013268523268869403</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.013724831980601593</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.014326771331021781</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.014332577732619534</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.015643643876770197</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.014217244203853951</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.01760832877838725</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.015428031412318743</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.018749528766819568</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>618.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.011185844159517178</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.01111174367072465</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.01105248145060922</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.011011852050875959</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.01052610260691278</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.01140750855725503</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.009494690723611643</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.003648272855860668</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>-0.0028422799409433264</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.007634655235159382</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.008782907770020998</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.012240695811214897</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.015545740967252586</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.014481476168211715</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.01456706584304035</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.015648586506273654</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.015277674035665711</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.016132010064145996</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.014953023710725377</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.016931835726230693</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.015492503245537081</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.017555219065246153</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>642.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.010446734648319689</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.01041571157729404</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.010340175280328823</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.010241166715575512</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.009673439491293179</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.010458172219236284</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.008588588297509303</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.0037106474246428878</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>-0.0028267721133961032</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.0066499966103044095</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.00808557410290689</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.012221258696081039</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.014627935105263834</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.013763843397871955</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.013570796441258803</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.014494397449055452</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.013501707912155103</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.013792684961073887</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.013028055723126153</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.01473427269047023</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.013945088410348694</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.015524993571190526</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>666.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.008863035843775458</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.008787821601059731</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.008717648220289642</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.0086021575849069</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.007941918927240721</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.008787064193385041</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.006936762762307258</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.00283903304702815</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>-0.0035516838393325756</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.00693674937519817</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.008773424985846878</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.012650891540494813</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.01437055314145308</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.012979647959592944</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.012283068349019155</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.013258062277135663</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.012695670300619799</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.012795853574649518</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.013270228675495543</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.015826582771101938</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.014777763586533155</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.015505364194102311</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>690.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.007303459630737086</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.007209825809809778</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.007188670663016428</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.0070475687307044454</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.006315313179865778</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.007007669209340928</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.00515009075313877</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>0.001401010847376205</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>-0.004837558719075208</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.008086263132464078</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.010343727356072918</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.014065031363137859</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.01519803312834589</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.014097917072674937</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.014046484931792502</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.014743838007068133</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.01400381490380087</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.014700036014016815</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.014549619436546868</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.015813359899208956</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.017008873926912305</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.02272773815725615</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>714.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>0.005999378857020621</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>0.005925457635430398</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>0.005844997240222249</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>0.005662943393062503</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>0.00502609337277915</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>0.005449533639186321</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>0.003779340442359169</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>-1.5803594161312162E-4</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>-0.006221852377667592</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>-0.010176566286596689</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>-0.012962151972498281</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>-0.017657823775555803</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>-0.018153833059430635</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>-0.01748083683324486</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>-0.017618163467967296</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>-0.0179605142943442</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>-0.01706004738731126</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>-0.017524270755013838</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>-0.017376697495873783</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>-0.018958391621608506</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>-0.01931994553915306</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>-0.025727849148174053</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+</results>

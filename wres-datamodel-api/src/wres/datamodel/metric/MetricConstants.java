@@ -48,6 +48,12 @@ public enum MetricConstants
     MEAN_ABSOLUTE_ERROR,
 
     /**
+     * Identified for a Mean Continuous Ranked Probability Skill Score 
+     */
+    
+    MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+    
+    /**
      * Identifier for a Mean Error.
      */
 

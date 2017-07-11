@@ -14,7 +14,6 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartPanelTools;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
-import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.Metadata;
@@ -22,31 +21,31 @@ import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricInputFactory;
 import wres.datamodel.metric.SingleValuedPairs;
 
-public class Chart2DTest extends TestCase
+public class Chart2DTestInput extends TestCase
 {
     public void test1SingleValuedPairsScatter()
     {
         //Construct some single-valued pairs
-        final List<PairOfDoubles> values = new ArrayList<>();
-        values.add(DataFactory.pairOf(22.9, 22.8));
-        values.add(DataFactory.pairOf(75.2, 80));
-        values.add(DataFactory.pairOf(63.2, 65));
-        values.add(DataFactory.pairOf(29, 30));
-        values.add(DataFactory.pairOf(5, 2));
-        values.add(DataFactory.pairOf(2.1, 3.1));
-        values.add(DataFactory.pairOf(35000, 37000));
-        values.add(DataFactory.pairOf(8, 7));
-        values.add(DataFactory.pairOf(12, 12));
-        values.add(DataFactory.pairOf(93, 94));
         final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final List<PairOfDoubles> values = new ArrayList<>();
+        values.add(metIn.pairOf(22.9, 22.8));
+        values.add(metIn.pairOf(75.2, 80));
+        values.add(metIn.pairOf(63.2, 65));
+        values.add(metIn.pairOf(29, 30));
+        values.add(metIn.pairOf(5, 2));
+        values.add(metIn.pairOf(2.1, 3.1));
+        values.add(metIn.pairOf(35000, 37000));
+        values.add(metIn.pairOf(8, 7));
+        values.add(metIn.pairOf(12, 12));
+        values.add(metIn.pairOf(93, 94));
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "Main");
+        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension("CMS"),"DRRC2","SQIN","HEFS");
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
         //Construct the source from the pairs assigning it a data source order index of 0.  
         //The order index indicates the order in which the different sources are rendered.
         final MetricInputXYChartDataSource source = new MetricInputXYChartDataSource(0, pairs);
-        
+
         final String scenarioName = "test1";
         try
         {
@@ -68,9 +67,13 @@ public class Chart2DTest extends TestCase
                                                500);
 
             //Compare against OS specific image benchmark.
-            FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/"
-                + scenarioName
-                + "_output.png"), new File("testinput/chart2DTest/benchmark." + scenarioName + "_output.png"), 8, true, false);
+            FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + scenarioName
+                + "_output.png"),
+                                                                      new File("testinput/chart2DTest/benchmark."
+                                                                          + scenarioName + "_output.png"),
+                                                                      8,
+                                                                      true,
+                                                                      false);
         }
         catch(final Throwable t)
         {
@@ -82,20 +85,20 @@ public class Chart2DTest extends TestCase
     public static void main(final String[] args)
     {
         //Construct some single-valued pairs
-        final List<PairOfDoubles> values = new ArrayList<>();
-        values.add(DataFactory.pairOf(22.9, 22.8));
-        values.add(DataFactory.pairOf(75.2, 80));
-        values.add(DataFactory.pairOf(63.2, 65));
-        values.add(DataFactory.pairOf(29, 30));
-        values.add(DataFactory.pairOf(5, 2));
-        values.add(DataFactory.pairOf(2.1, 3.1));
-        values.add(DataFactory.pairOf(35000, 37000));
-        values.add(DataFactory.pairOf(8, 7));
-        values.add(DataFactory.pairOf(12, 12));
-        values.add(DataFactory.pairOf(93, 94));
         final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final List<PairOfDoubles> values = new ArrayList<>();
+        values.add(metIn.pairOf(22.9, 22.8));
+        values.add(metIn.pairOf(75.2, 80));
+        values.add(metIn.pairOf(63.2, 65));
+        values.add(metIn.pairOf(29, 30));
+        values.add(metIn.pairOf(5, 2));
+        values.add(metIn.pairOf(2.1, 3.1));
+        values.add(metIn.pairOf(35000, 37000));
+        values.add(metIn.pairOf(8, 7));
+        values.add(metIn.pairOf(12, 12));
+        values.add(metIn.pairOf(93, 94));
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "Main");
+        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension("CMS"),"DRRC2","SQIN","HEFS");
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
         //Create the data source for charting.

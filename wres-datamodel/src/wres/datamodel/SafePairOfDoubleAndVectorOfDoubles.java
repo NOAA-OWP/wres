@@ -2,26 +2,26 @@ package wres.datamodel;
 
 import java.util.stream.Stream;
 
-class SafePairOfDoubleAndVectorOfDoubles
+public class SafePairOfDoubleAndVectorOfDoubles
 implements PairOfDoubleAndVectorOfDoubles
 {
     private final double itemOne;
     private final double[] itemTwo;
 
-    private SafePairOfDoubleAndVectorOfDoubles(double key, double[] doubles)
+    private SafePairOfDoubleAndVectorOfDoubles(final double key, final double[] doubles)
     {
         this.itemOne = key;
         this.itemTwo = doubles.clone();
     }
 
-    static PairOfDoubleAndVectorOfDoubles of(double key, double[] doubles)
+    public static PairOfDoubleAndVectorOfDoubles of(final double key, final double[] doubles)
     {
         return new SafePairOfDoubleAndVectorOfDoubles(key, doubles);
     }
 
-    static PairOfDoubleAndVectorOfDoubles of(Double key, Double[] doubles)
+    public static PairOfDoubleAndVectorOfDoubles of(final Double key, final Double[] doubles)
     {
-        double[] unboxedDoubles = Stream.of(doubles)
+        final double[] unboxedDoubles = Stream.of(doubles)
                                         .mapToDouble(Double::doubleValue)
                                         .toArray();
         return new SafePairOfDoubleAndVectorOfDoubles(key.doubleValue(), unboxedDoubles);
@@ -42,12 +42,12 @@ implements PairOfDoubleAndVectorOfDoubles
     @Override
     public String toString()
     {
-        StringBuilder s = new StringBuilder();
+        final StringBuilder s = new StringBuilder();
         s.append("key: ");
         s.append(getItemOne());
         s.append(" ");
         s.append("value: [ ");
-        for (double d : getItemTwo())
+        for (final double d : getItemTwo())
         {
             s.append(d);
             s.append(" ");
