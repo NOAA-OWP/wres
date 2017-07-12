@@ -15,25 +15,52 @@ public interface MetricOutputMetadata extends Metadata
      * 
      * @return the metric identifier
      */
-    
-    public MetricConstants getMetricID();
-    
+
+    MetricConstants getMetricID();
+
     /**
-     * Returns an identifier associated with the component of the metric to which the output corresponds. 
+     * Returns an identifier associated with the component of the metric to which the output corresponds or a template
+     * for a score decomposition where the output contains multiple components. In that case, the template dictates the
+     * order in which components are returned.
      * 
      * @return the component identifier
      */
-    
-    public MetricConstants getMetricComponentID();
+
+    MetricConstants getMetricComponentID();
     
     /**
-     * Allows for an identifier to be associated with a baseline used for computing forecast skill. The identifier
-     * should be meaningful to a user, such as the modeling scenario to which the baseline refers. May be null.
+     * Returns the dimension associated with the metric input, which may differ from the output. The output dimension
+     * is returned by {@link #getDimension()}.
+     * 
+     * @return the dimension
+     */
+
+    Dimension getInputDimension();
+    
+    /**
+     * Optional scenario identifier for the baseline metric data, such as the modeling scenario against which the 
+     * metric output is benchmarked.
      * 
      * @return the identifier associated with the baseline metric data or null
      */
 
-    public String getIDForBaseline();    
+    String getScenarioIDForBaseline();
 
+    /**
+     * <p>
+     * Returns true if the input is minimally equal to the current metadata. The two metadata objects are minimally
+     * equal if all of the following are equal.
+     * </p>
+     * <ol>
+     * <li>{@link #getDimension()}</li>
+     * <li>{@link #getMetricID()}</li>
+     * <li>{@link #getMetricComponentID()}</li>
+     * </ol>
+     * 
+     * @param meta the metadata to check
+     * @return true if the mandatory elements match, false otherwise
+     */
+
+    boolean minimumEquals(MetricOutputMetadata meta);
 
 }

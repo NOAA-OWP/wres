@@ -1,16 +1,40 @@
 package util;
 
-import concurrency.Downloader;
-import concurrency.ProjectExecutor;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.function.Function;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import wres.datamodel.DataFactory;
+
+import concurrency.Downloader;
+import concurrency.ProjectExecutor;
+import ucar.ma2.Array;
+import ucar.nc2.NetcdfFile;
+import ucar.nc2.Variable;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metric.DefaultMetricInputFactory;
+import wres.datamodel.metric.MetricInputFactory;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
 import wres.io.concurrency.MetricTask;
 import wres.io.concurrency.ObservationSaver;
+import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ProjectSettings;
+import wres.io.config.SystemSettings;
 import wres.io.config.specification.MetricSpecification;
 import wres.io.config.specification.ProjectDataSpecification;
 import wres.io.config.specification.ProjectSpecification;
@@ -22,20 +46,9 @@ import wres.io.reading.ConfiguredLoader;
 import wres.io.reading.ReaderFactory;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
+import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.function.Function;
 
 /**
  * @author ctubbs
@@ -48,13 +61,14 @@ public final class MainFunctions
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFunctions.class);
 
 	// Clean definition of the newline character for the system
-	private static final String newline = System.lineSeparator();
+	private static final String NEWLINE = System.lineSeparator();
 
 	// Mapping of String names to corresponding methods
 	private static final Map<String, Function<String[], Integer>> functions = createMap();
 
 	public static void shutdown()
 	{
+		LOGGER.info("Shutting down the application...");
 		Database.restoreAllIndices();
 		Executor.complete();
 		Database.shutdown();
@@ -79,7 +93,7 @@ public final class MainFunctions
 	 */
 	public static Integer call (String operation, final String[] args) {
 		operation = operation.toLowerCase();
-		Integer result = functions.get(operation).apply(args);
+		final Integer result = functions.get(operation).apply(args);
 		shutdown();
 		return result;
 	}
@@ -112,6 +126,8 @@ public final class MainFunctions
 		prototypes.put("executeClassProject", new ProjectExecutor());
 		prototypes.put("refreshtestdata", refreshTestData());
 		prototypes.put("refreshstatistics", refreshStatistics());
+		prototypes.put("ingestproject", ingestProject());
+		prototypes.put("loadCoordinates", loadCoordinates());
 
 		return prototypes;
 	}
@@ -151,9 +167,6 @@ public final class MainFunctions
 					final Future<?> task = Executor.execute(saver);
 
 					task.get();
-
-					LOGGER.trace("Refreshing the statistics in the database...");
-					Database.refreshStatistics();
 
 					Executor.complete();
 					Database.shutdown();
@@ -202,11 +215,12 @@ public final class MainFunctions
 						}) != null;
 					});
 
-					System.out.println();
-					System.out.println(String.format("Attempting to save all files in '%s' as forecasts to the database... (This might take a little while)", args[0]));
-					System.out.println();
+					LOGGER.info("");
+					LOGGER.info(String.format("Attempting to save all files in '%s' as forecasts to the database... (This might take a little while)", args[0]));
+					LOGGER.info("");
 
 					final ArrayList<Future<?>> tasks = new ArrayList<>();
+
 
 					for (final File file : filteredFiles) {
 						final ForecastSaver saver = new ForecastSaver(file.getAbsolutePath());
@@ -221,17 +235,17 @@ public final class MainFunctions
 
 					PIXMLReader.saveLeftoverForecasts();
 
+					LOGGER.info("Making sure all ingest tasks are complete...");
+
+					Database.completeAllIngestTasks();
+
 					if (tasks.size() > 0)
                     {
-                        System.out.println("Refreshing the statistics in the database...");
                         Database.refreshStatistics();
                     }
 
-					Executor.complete();
-					Database.shutdown();
-
-					System.out.println();
-					System.out.println("All forecast saving operations complete. Please verify data.");
+					LOGGER.info("");
+					LOGGER.info("All forecast saving operations complete. Please verify data.");
 					result = SUCCESS;
 				}
 				catch (final Exception e)
@@ -263,6 +277,7 @@ public final class MainFunctions
 					System.out.println(String.format("Attempting to save '%s' to the database...", args[0]));
 					source.saveObservation();
 					System.out.println("Database save operation completed. Please verify data.");
+					Database.completeAllIngestTasks();
 					result = SUCCESS;
 				}
 				catch (final Exception e)
@@ -288,7 +303,7 @@ public final class MainFunctions
 	 */
 	private static Function<String[], Integer> saveObservations () {
 		return (final String[] args) -> {
-			Integer result = FAILURE;
+			final Integer result = FAILURE;
 			if (args.length > 0) {
 				try {
 					final String directory = args[0];
@@ -412,7 +427,7 @@ public final class MainFunctions
 
                 result = SUCCESS;
             }
-            catch (RuntimeException e)
+            catch (final RuntimeException e)
             {
                 LOGGER.error(Strings.getStackTrace(e));
             }
@@ -437,7 +452,7 @@ public final class MainFunctions
                     reader.output_variables();
                     result = SUCCESS;
                 }
-                catch (RuntimeException e)
+                catch (final RuntimeException e)
                 {
                     LOGGER.error(Strings.getStackTrace(e));
                 }
@@ -476,7 +491,7 @@ public final class MainFunctions
                     reader.print_query(variable_name, variable_args);
                     result = SUCCESS;
                 }
-                catch (RuntimeException e)
+                catch (final RuntimeException e)
                 {
                     LOGGER.error(Strings.getStackTrace(e));
                 }
@@ -512,7 +527,7 @@ public final class MainFunctions
 					System.out.println(project.toString());
 				}
 			}
-			catch (RuntimeException exception)
+			catch (final RuntimeException exception)
 			{
 				result = FAILURE;
 			}
@@ -538,12 +553,12 @@ public final class MainFunctions
                 ResultSet results = null;
                 boolean partitionsLoaded;
 
-                builder.append("SELECT 'DROP TABLE IF EXISTS '||n.nspname||'.'||c.relname||' CASCADE;'").append(newline);
-                builder.append("FROM pg_catalog.pg_class c").append(newline);
-                builder.append("INNER JOIN pg_catalog.pg_namespace n").append(newline);
-                builder.append("    ON N.oid = C.relnamespace").append(newline);
-                builder.append("WHERE relchecks > 0").append(newline);
-                builder.append("    AND nspname = 'wres' OR nspname = 'partitions'").append(newline);
+                builder.append("SELECT 'DROP TABLE IF EXISTS '||n.nspname||'.'||c.relname||' CASCADE;'").append(NEWLINE);
+                builder.append("FROM pg_catalog.pg_class c").append(NEWLINE);
+                builder.append("INNER JOIN pg_catalog.pg_namespace n").append(NEWLINE);
+                builder.append("    ON N.oid = C.relnamespace").append(NEWLINE);
+                builder.append("WHERE relchecks > 0").append(NEWLINE);
+                builder.append("    AND nspname = 'wres' OR nspname = 'partitions'").append(NEWLINE);
                 builder.append("    AND relkind = 'r';");
 
                 try {
@@ -554,10 +569,10 @@ public final class MainFunctions
                     partitionsLoaded = true;
 
                     while (results.next()) {
-                        builder.append(results.getString(1)).append(newline);
+                        builder.append(results.getString(1)).append(NEWLINE);
                     }
                 }
-                catch (SQLException e) {
+                catch (final SQLException e) {
                     LOGGER.error(Strings.getStackTrace(e));
                     throw e;
                 }
@@ -566,18 +581,19 @@ public final class MainFunctions
                     builder = new StringBuilder();
                 }
 
-                builder.append("TRUNCATE wres.ForecastSource;").append(newline);
-                builder.append("TRUNCATE wres.ForecastValue;").append(newline);
-                builder.append("TRUNCATE wres.Observation;").append(newline);
-                builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(newline);
-                builder.append("TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;").append(newline);
-                builder.append("TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;").append(newline);
+                builder.append("TRUNCATE wres.ForecastSource;").append(NEWLINE);
+                builder.append("TRUNCATE wres.ForecastValue;").append(NEWLINE);
+                builder.append("TRUNCATE wres.Observation;").append(NEWLINE);
+                builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(NEWLINE);
+                builder.append("TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;").append(NEWLINE);
+                builder.append("TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;").append(NEWLINE);
+                builder.append("TRUNCATE wres.Variable RESTART IDENTITY CASCADE;").append(NEWLINE);
 
                 try {
                     Database.execute(builder.toString());
                 }
                 catch (final SQLException e) {
-                    LOGGER.error("WRES data could not be removed from the database." + newline);
+                    LOGGER.error("WRES data could not be removed from the database." + NEWLINE);
                     LOGGER.error("");
                     LOGGER.error(builder.toString());
                     LOGGER.error("");
@@ -585,7 +601,7 @@ public final class MainFunctions
                     throw e;
                 }
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 LOGGER.error(Strings.getStackTrace(e));
                 result = FAILURE;
@@ -604,23 +620,23 @@ public final class MainFunctions
 		return (final String[] args) -> {
 			Integer result = FAILURE;
 			String script = "";
-			script += "TRUNCATE wres.ForecastSource;" + newline;
-			script += "DELETE FROM wres.Source S" + newline;
-			script += "WHERE NOT EXISTS (" + newline;
-			script += "      SELECT 1" + newline;
-			script += "      FROM wres.Observation O" + newline;
-			script += "      WHERE O.source_id = S.source_id" + newline;
-			script += ");" + newline;
-			script += "TRUNCATE wres.ForecastValue;" + newline;
-			script += "TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;" + newline;
-			script += "TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;" + newline;
+			script += "TRUNCATE wres.ForecastSource;" + NEWLINE;
+			script += "DELETE FROM wres.Source S" + NEWLINE;
+			script += "WHERE NOT EXISTS (" + NEWLINE;
+			script += "      SELECT 1" + NEWLINE;
+			script += "      FROM wres.Observation O" + NEWLINE;
+			script += "      WHERE O.source_id = S.source_id" + NEWLINE;
+			script += ");" + NEWLINE;
+			script += "TRUNCATE wres.ForecastValue;" + NEWLINE;
+			script += "TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;" + NEWLINE;
+			script += "TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;" + NEWLINE;
 
 			try {
 				Database.execute(script);
 				result = SUCCESS;
 			}
 			catch (final Exception e) {
-				LOGGER.error("WRES forecast data could not be removed from the database." + newline);
+				LOGGER.error("WRES forecast data could not be removed from the database." + NEWLINE);
                 LOGGER.error("");
                 LOGGER.error(script);
 				LOGGER.error("");
@@ -637,6 +653,14 @@ public final class MainFunctions
 			if (args.length >= 2) {
 				final String date = args[0];
 				final String range = args[1];
+
+                int cutoff = -1;
+
+                if (args.length >= 3 && Strings.isNumeric(args[2]))
+                {
+                    cutoff = Integer.parseInt(args[2]);
+                }
+
 
 				if (!Arrays.asList("analysis_assim",
 								   "fe_analysis_assim",
@@ -655,10 +679,11 @@ public final class MainFunctions
 					return FAILURE;
 				}
 
+				ProgressMonitor.deactivate();
+
 				try {
                     int offset = 0;
                     int hourIncrement;
-                    int cutoff;
                     int current;
                     boolean isAssim = false;
                     boolean isLong = false;
@@ -689,24 +714,39 @@ public final class MainFunctions
                     if (Strings.contains(range, "long_range")) {
                         hourIncrement = 6;
                         current = 6;
-                        cutoff = 720;
+
+                        if (cutoff == -1) {
+                            cutoff = 720;
+                        }
+
                         isLong = true;
                     }
                     else if (Strings.contains(range, "short_range")) {
                         current = 1;
                         hourIncrement = 1;
-                        cutoff = 15;
+
+                        if (cutoff == -1)
+                        {
+                            cutoff = 15;
+                        }
                     }
                     else if (Strings.contains(range, "medium_range")) {
-                        offset = 6;
-                        current = 1;
+                        offset = 0;
+                        current = 3;
                         hourIncrement = 3;
-                        cutoff = 240;
+
+                        if (cutoff == -1) {
+                            cutoff = 240;
+                        }
                     }
                     else {
                         hourIncrement = 1;
                         current = 0;
-                        cutoff = 11;
+
+                        if (cutoff == -1) {
+                            cutoff = 11;
+                        }
+
                         isAssim = true;
                     }
 
@@ -797,7 +837,7 @@ public final class MainFunctions
                     }
                     result = SUCCESS;
                 }
-                catch (Exception e)
+                catch (final Exception e)
                 {
                     LOGGER.error(Strings.getStackTrace(e));
                     result = FAILURE;
@@ -837,20 +877,20 @@ public final class MainFunctions
 		return (final String[] args) -> {
 			Integer result = FAILURE;
 			String script;
-			script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + newline;
-			script += "DELETE FROM wres.Source S" + newline;
-			script += "WHERE NOT EXISTS (" + newline;
-			script += "      SELECT 1" + newline;
-			script += "      FROM wres.ForecastSource FS" + newline;
-			script += "      WHERE FS.source_id = S.source_id" + newline;
-			script += ");" + newline;
+			script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + NEWLINE;
+			script += "DELETE FROM wres.Source S" + NEWLINE;
+			script += "WHERE NOT EXISTS (" + NEWLINE;
+			script += "      SELECT 1" + NEWLINE;
+			script += "      FROM wres.ForecastSource FS" + NEWLINE;
+			script += "      WHERE FS.source_id = S.source_id" + NEWLINE;
+			script += ");" + NEWLINE;
 
 			try {
 				Database.execute(script);
 				result = SUCCESS;
 			}
 			catch (final Exception e) {
-				LOGGER.error("WRES Observation data could not be removed from the database." + newline);
+				LOGGER.error("WRES Observation data could not be removed from the database." + NEWLINE);
                 LOGGER.error("");
 				LOGGER.error(script);
 				LOGGER.error("");
@@ -868,8 +908,9 @@ public final class MainFunctions
 	 */
 	private static Function<String[], Integer> getPairs () {
 		return (final String[] args) -> {
-			Integer result = FAILURE;
 
+			Integer result = FAILURE;
+			
 			Connection connection = null;
 			try {
 				final String forecastVariable = args[0];
@@ -892,35 +933,37 @@ public final class MainFunctions
 				forecastVariablePositionID = Database.getResult(script, "variableposition_id");
 
 				script = "";
-				script += "WITH forecast_measurements AS (" + newline;
-				script += "   SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + newline;
-				script += "       array_agg(FV.forecasted_value * UC.factor) AS forecasts" + newline;
-				script += "   FROM wres.Forecast F" + newline;
-				script += "   INNER JOIN wres.ForecastEnsemble FE" + newline;
-				script += "       ON F.forecast_id = FE.forecast_id" + newline;
-				script += "   INNER JOIN wres.ForecastValue FV" + newline;
-				script += "       ON FV.forecastensemble_id = FE.forecastensemble_id" + newline;
-				script += "   INNER JOIN wres.UnitConversion UC" + newline;
-				script += "       ON UC.from_unit = FE.measurementunit_id" + newline;
-				script += "   WHERE lead = " + lead + newline;
-				script += "       AND FE.variableposition_id = " + forecastVariablePositionID + newline;
-				script += "       AND UC.to_unit = " + targetUnitID + newline;
-				script += "   GROUP BY forecasted_date" + newline;
-				script += ")" + newline;
-				script += "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + newline;
-				script += "FROM forecast_measurements FM" + newline;
-				script += "INNER JOIN wres.Observation O" + newline;
-				script += "   ON O.observation_time = FM.forecasted_date" + newline;
-				script += "INNER JOIN wres.UnitConversion UC" + newline;
-				script += "   ON UC.from_unit = O.measurementunit_id" + newline;
-				script += "WHERE O.variableposition_id = " + observationVariablePositionID + newline;
-				script += "   AND UC.to_unit = " + targetUnitID + newline;
+				script += "WITH forecast_measurements AS (" + NEWLINE;
+				script += "   SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + NEWLINE;
+				script += "       array_agg(FV.forecasted_value * UC.factor) AS forecasts" + NEWLINE;
+				script += "   FROM wres.Forecast F" + NEWLINE;
+				script += "   INNER JOIN wres.ForecastEnsemble FE" + NEWLINE;
+				script += "       ON F.forecast_id = FE.forecast_id" + NEWLINE;
+				script += "   INNER JOIN wres.ForecastValue FV" + NEWLINE;
+				script += "       ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE;
+				script += "   INNER JOIN wres.UnitConversion UC" + NEWLINE;
+				script += "       ON UC.from_unit = FE.measurementunit_id" + NEWLINE;
+				script += "   WHERE lead = " + lead + NEWLINE;
+				script += "       AND FE.variableposition_id = " + forecastVariablePositionID + NEWLINE;
+				script += "       AND UC.to_unit = " + targetUnitID + NEWLINE;
+				script += "   GROUP BY forecasted_date" + NEWLINE;
+				script += ")" + NEWLINE;
+				script += "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + NEWLINE;
+				script += "FROM forecast_measurements FM" + NEWLINE;
+				script += "INNER JOIN wres.Observation O" + NEWLINE;
+				script += "   ON O.observation_time = FM.forecasted_date" + NEWLINE;
+				script += "INNER JOIN wres.UnitConversion UC" + NEWLINE;
+				script += "   ON UC.from_unit = O.measurementunit_id" + NEWLINE;
+				script += "WHERE O.variableposition_id = " + observationVariablePositionID + NEWLINE;
+				script += "   AND UC.to_unit = " + targetUnitID + NEWLINE;
 				script += "ORDER BY FM.forecasted_date;";
 
 				connection = Database.getConnection();
 				final ResultSet results = Database.getResults(connection, script);
+				//JBr: replace DataFactory with with MetricInputFactory
+				MetricInputFactory inFactory = DefaultMetricInputFactory.getInstance();
 				while (results.next()) {
-					pairs.add(DataFactory.pairOf((double) results.getFloat("observation"), (Double[]) results.getArray("forecasts").getArray()));
+					pairs.add(inFactory.pairOf((double) results.getFloat("observation"), (Double[]) results.getArray("forecasts").getArray()));
 				}
 
 				System.out.println();
@@ -957,7 +1000,7 @@ public final class MainFunctions
                 Database.refreshStatistics();
                 result = SUCCESS;
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 LOGGER.error(Strings.getStackTrace(e));
             }
@@ -1067,12 +1110,7 @@ public final class MainFunctions
                         catch (final IOException e) {
                             LOGGER.error(Strings.getStackTrace(e));
                         }
-                        LOGGER.info("The data from this dataset has been loaded to the database");
-                        ProgressMonitor.resetMonitor();
-                        LOGGER.info("");
                     }
-
-                    LOGGER.trace("All data specified for this project should now be loaded.");
 
                     if (ingestOperations.size() > 0) {
                         for (final Future operation : ingestOperations) {
@@ -1087,7 +1125,9 @@ public final class MainFunctions
                             }
                         }
                     }
+                    ProgressMonitor.resetMonitor();
 
+                    LOGGER.info("Restoring all suspended indices in the database...");
                     Database.restoreAllIndices();
 
                     final Map<String, List<LeadResult>> results = new TreeMap<>();
@@ -1143,7 +1183,7 @@ public final class MainFunctions
                     }
                     result = SUCCESS;
                 }
-                catch (Exception e)
+                catch (final Exception e)
                 {
                     LOGGER.error(Strings.getStackTrace(e));
                     result = FAILURE;
@@ -1157,4 +1197,175 @@ public final class MainFunctions
 	        return result;
 	    };
     }
+
+    private static Function<String[], Integer> ingestProject() {
+        return (final String[] args) -> {
+            Integer result = FAILURE;
+            if (args.length > 0) {
+                try {
+                    final String projectName = args[0];
+
+                    final ProjectSpecification project = ProjectSettings.getProject(projectName);
+                    final List<Future> ingestOperations = new ArrayList<>();
+
+                    Database.suspendAllIndices();
+
+                    for (final ProjectDataSpecification datasource : project.getDatasources()) {
+                        LOGGER.info("Loading datasource information if it doesn't already exist...");
+                        final ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
+                        try {
+                            ingestOperations.addAll(dataLoader.load());
+                        }
+                        catch (final IOException e) {
+                            LOGGER.error(Strings.getStackTrace(e));
+                        }
+                    }
+
+                    if (ingestOperations.size() > 0) {
+                        for (final Future operation : ingestOperations) {
+                            try {
+                                operation.get();
+                            }
+                            catch (final InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            catch (final ExecutionException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+                    /*LOGGER.info("Restoring all suspended indices in the database...");
+                    Database.restoreAllIndices();*/
+
+                    result = SUCCESS;
+                }
+                catch (Exception e)
+                {
+                    LOGGER.error(Strings.getStackTrace(e));
+                    result = FAILURE;
+                }
+            }
+            else
+            {
+                System.err.println("There are not enough arguments to run 'executeProject'");
+                System.err.println("usage: executeProject <project name> [<metric name>]");
+            }
+            return result;
+        };
+    }
+
+    private static Function<String[], Integer> loadCoordinates() {
+		return (final String[] args) -> {
+			Integer result = FAILURE;
+
+			if (args.length > 0) {
+				try
+				{
+                    // Assign path to NetCDF file
+                    String filePath = args[0];
+
+                    if (Files.notExists(Paths.get(filePath)))
+                    {
+                        throw new IOException("There is not a NetCDF file at the indicated path.");
+                    }
+
+					NetcdfFile file = NetcdfFile.open(args[0]);
+
+                    // Make sure that NetCDF file has the required coordinate variables (can't rely on the isCoordinate attribute)
+					if (!NetCDF.hasVariable(file, "x") || !NetCDF.hasVariable(file, "y"))
+					{
+						throw new IOException("The NetCDF file at: '" + args[0] + "' lacks the proper X and Y coodinates.");
+					}
+
+                    // Check to see if datum exists; if not, add it
+                    // TODO: Add the datum checks
+                    final int customSRID = 900914;
+
+					final String copyHeader = "wres.NetCDFCoordinate (x_position, y_position, geographic_coordinate, resolution)";
+					final String insertHeader = "INSERT INTO wres.NetCDFCoordinate (x_position, y_position, geographic_coordinate, resolution) VALUES ";
+					final String delimiter = "|";
+					final short tempResolution = 1000;
+					StringBuilder builder = new StringBuilder(insertHeader);
+					int copyCount = 0;
+
+					List<Future> copyOperations = new ArrayList<>();
+
+                    // Loop through a full join across all contained x and y values
+                    Variable xCoordinates = NetCDF.getVariable(file, "x");
+					Variable yCoordinates = NetCDF.getVariable(file, "y");
+
+					int xLength = xCoordinates.getDimension(0).getLength();
+					int yLength = yCoordinates.getDimension(0).getLength();
+
+					Array xValues = xCoordinates.read();
+					Array yValues = yCoordinates.read();
+
+					int currentXIndex = 0;
+					int currentYIndex = 0;
+					for (; currentXIndex < xLength; ++currentXIndex) {
+						currentYIndex = 0;
+
+						for (; currentYIndex < yLength; ++currentYIndex) {
+
+							if (copyCount > 0)
+							{
+								builder.append(", ");
+							}
+
+							builder.append("(");
+							builder.append(currentXIndex).append(", ");
+							builder.append(currentYIndex).append(", ");
+							builder.append("ST_Transform(ST_SetSRID(ST_MakePoint(").
+									append(xValues.getDouble(currentXIndex)).
+										   append(",").
+										   append(yValues.getDouble(currentYIndex)).
+										   append("), ").
+										   append(customSRID).append("), 4326)::point")
+								   .append(", ");
+							builder.append(tempResolution).append(")");
+
+							copyCount++;
+
+							if (copyCount >= SystemSettings.getMaximumCopies()) {
+								LOGGER.trace("The copy count now exceeds the maximum allowable copies, so the values are being sent to save.");
+								SQLExecutor sqlExecutor = new SQLExecutor(builder.toString());
+								sqlExecutor.setOnRun(ProgressMonitor.onThreadStartHandler());
+								sqlExecutor.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+								LOGGER.trace("Sending coordinate values to the database executor to copy...");
+								copyOperations.add(Database.execute(sqlExecutor));
+								builder = new StringBuilder(insertHeader);
+								copyCount = 0;
+							}
+						}
+					}
+
+					for (Future copy : copyOperations) {
+						copy.get();
+					}
+
+                    // Execute a query inserting all coordinates by using PostGIS to convert coordinates from the indicated
+                    //      projection to the one WGS84 (ESPG:4326)
+                    // If the correct datum of the source doesn't exist, create it
+                    // Insert rows into the database dictating array positions from both x and y array positions and
+                    //      a coordinate object
+                    // i.e.     | x_position    | y_position    |   coordinate              |
+                    //          |   2000        | 1098          |   POINT(-118.0, 20.07)    |
+
+                    result = SUCCESS;
+                }
+                catch (Exception e) {
+                    LOGGER.error(Strings.getStackTrace(e));
+                    result = FAILURE;
+                }
+            }
+            else
+            {
+                LOGGER.error("There are not enough arguments to run 'loadCoordinates'");
+                LOGGER.error("usage: loadCoordinates <Path to NetCDF File containing coordinate information>");
+            }
+
+			return result;
+		};
+	}
 }

@@ -45,4 +45,9 @@ public class CopyExecutor extends WRESTask implements Runnable
 		}		
 		this.executeOnComplete();
 	}
+
+	@Override
+	protected String getTaskName () {
+		return "COPY: " + this.table_definition;
+	}
 }

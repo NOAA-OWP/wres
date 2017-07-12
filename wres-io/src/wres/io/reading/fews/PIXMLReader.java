@@ -68,33 +68,9 @@ public final class PIXMLReader extends XMLReader
 			Database.execute(createScript);
 		}
 
-		/*String indexScript = "CREATE INDEX IF NOT EXISTS ForecastValue_Lead_";
-		indexScript += String.valueOf(partitionNumber);
-		indexScript += "_Lead_idx ON ";
-		indexScript += partitionHeader;
-		indexScript += " (lead);" + NEWLINE;*/
-
 		Database.saveIndex(partitionHeader,
 						   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_Lead_idx",
 						   "lead" );
-		/*indexScript += "ALTER TABLE " + partitionHeader;
-		indexScript += " CLUSTER ON ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_Lead_idx;";
-
-		synchronized (PARTITION_LOCK)
-		{
-			Database.execute(indexScript);
-		}
-
-		indexScript = "CREATE INDEX IF NOT EXISTS ForecastValue_Lead_";
-		indexScript += String.valueOf(partitionNumber);
-		indexScript += "_ForecastEnsemble_idx ON ";
-		indexScript += partitionHeader;
-		indexScript += " (forecastensemble_id);";
-
-		synchronized (PARTITION_LOCK)
-        {
-            Database.execute(indexScript);
-        }*/
 
 		Database.saveIndex(partitionHeader,
 						   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_ForecastEnsemble_idx",
@@ -255,7 +231,7 @@ public final class PIXMLReader extends XMLReader
                         delimiter);
                 copier.setOnRun(ProgressMonitor.onThreadStartHandler());
                 copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                Database.execute(copier);
+                Database.storeIngestTask(Database.execute(copier));
 
                 copyCount.put(lead, 0);
                 builderMap.put(lead, new StringBuilder());
@@ -308,7 +284,7 @@ public final class PIXMLReader extends XMLReader
                         CopyExecutor copier = new CopyExecutor(header, builderPair.getValue().toString(), delimiter);
                         copier.setOnRun(ProgressMonitor.onThreadStartHandler());
                         copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                        Database.execute(copier);
+                        Database.storeIngestTask(Database.execute(copier));
                         PIXMLReader.builderMap.put(builderPair.getKey(), new StringBuilder());
                     } catch (SQLException e) {
                         e.printStackTrace();
@@ -326,7 +302,7 @@ public final class PIXMLReader extends XMLReader
             CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript.toString(), delimiter);
             copier.setOnRun(ProgressMonitor.onThreadStartHandler());
             copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-            Database.execute(copier);
+            Database.storeIngestTask(Database.execute(copier));
             currentScript = null;
         }
     }

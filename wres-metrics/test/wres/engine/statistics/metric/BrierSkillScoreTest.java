@@ -44,12 +44,15 @@ public final class BrierSkillScoreTest
         final BrierSkillScore bss = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.BRIER_SKILL_SCORE,
-                                                            MetricConstants.MAIN,
-                                                            "Main",
-                                                            "Baseline");
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension(),
+                                                                  MetricConstants.BRIER_SKILL_SCORE,
+                                                                  MetricConstants.MAIN,
+                                                                  "DRRC2",
+                                                                  "SQIN",
+                                                                  "HEFS",
+                                                                  "ESP");
 
         //Check the results 
         final VectorOutput actual = bss.apply(input);

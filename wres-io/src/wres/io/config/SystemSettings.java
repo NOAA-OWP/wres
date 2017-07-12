@@ -71,8 +71,6 @@ public final class SystemSettings extends XMLReader
 	@Override
 	protected void parseElement(XMLStreamReader reader)
 	{
-	    LOGGER.trace("parsing element");
-
 		try
 		{
 			String value = null;

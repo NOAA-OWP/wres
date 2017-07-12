@@ -47,12 +47,11 @@ public final class CollectableTaskTest
             final Collectable<DichotomousPairs, MatrixOutput, ScalarOutput> m = metF.ofCriticalSuccessIndex();
 
             //Metadata for the output
-            final MetricOutputMetadata m1 = metaFac.getMetadata(100,
+            final MetricOutputMetadata m1 = metaFac.getOutputMetadata(100,
+                                                                metaFac.getDimension(),
                                                                 metaFac.getDimension(),
                                                                 MetricConstants.CONTINGENCY_TABLE,
-                                                                MetricConstants.MAIN,
-                                                                null,
-                                                                null);
+                                                                MetricConstants.MAIN);
 
             //Wrap an input in a future
             final FutureTask<MatrixOutput> futureInput = new FutureTask<MatrixOutput>(new Callable<MatrixOutput>()

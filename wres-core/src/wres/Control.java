@@ -31,13 +31,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.DefaultMetricOutputFactory;
-import wres.datamodel.metric.MetricInputFactory;
-import wres.datamodel.metric.MetricOutputCollection;
-import wres.datamodel.metric.MetricOutputFactory;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.*;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
@@ -220,7 +214,7 @@ public class Control
         final int maxProcessThreads = Control.MAX_THREADS / 10;
         final ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
 
-        final List<Future<MetricOutputCollection<ScalarOutput>>> futureMetrics = new ArrayList<>();
+        final List<Future<MetricOutputMapByMetric<ScalarOutput>>> futureMetrics = new ArrayList<>();
 
         // Queue up processing of fetched pairs.
         for(int i = 0; i < pairs.size(); i++)
@@ -232,11 +226,11 @@ public class Control
             // which uses a Map.
             final int leadTime = i + 1;
             final PairsByLeadProcessor processTask = new PairsByLeadProcessor(pairs.get(i), projectConfig, leadTime);
-            final Future<MetricOutputCollection<ScalarOutput>> futureMetric = processPairExecutor.submit(processTask);
+            final Future<MetricOutputMapByMetric<ScalarOutput>> futureMetric = processPairExecutor.submit(processTask);
             futureMetrics.add(futureMetric);
         }
 
-        final Map<Integer, MetricOutputCollection<ScalarOutput>> finalResults = new HashMap<>();
+        final Map<Integer, MetricOutputMapByMetric<ScalarOutput>> finalResults = new HashMap<>();
         // Retrieve metric results from processing queue.
         try
         {
@@ -244,7 +238,7 @@ public class Control
             for(int i = 0; i < futureMetrics.size(); i++)
             {
                 // get each result
-                final MetricOutputCollection<ScalarOutput> metrics = futureMetrics.get(i).get();
+                final MetricOutputMapByMetric<ScalarOutput> metrics = futureMetrics.get(i).get();
 
                 final int leadTime = i + 1;
                 finalResults.put(leadTime, metrics);
@@ -295,7 +289,7 @@ public class Control
 
         if(LOGGER.isInfoEnabled())
         {
-            for(final Map.Entry<Integer, MetricOutputCollection<ScalarOutput>> e: finalResults.entrySet())
+            for(final Map.Entry<Integer, MetricOutputMapByMetric<ScalarOutput>> e: finalResults.entrySet())
             {
                 LOGGER.info("For lead time " + e.getKey() + " " + e.getValue().toString());
             }
@@ -378,7 +372,7 @@ public class Control
     /**
      * Task whose job is to wait for pairs to arrive, then run metrics on them.
      */
-    private static class PairsByLeadProcessor implements Callable<MetricOutputCollection<ScalarOutput>>
+    private static class PairsByLeadProcessor implements Callable<MetricOutputMapByMetric<ScalarOutput>>
     {
         private final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair;
         private final ProjectConfig projectConfig;
@@ -394,7 +388,7 @@ public class Control
         }
 
         @Override
-        public MetricOutputCollection<ScalarOutput> call() throws ProcessingException
+        public MetricOutputMapByMetric<ScalarOutput> call() throws ProcessingException
         {
             // initialized to empty list in case of failure
             List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();

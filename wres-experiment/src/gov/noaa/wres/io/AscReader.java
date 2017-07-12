@@ -1,27 +1,20 @@
 package gov.noaa.wres.io;
 
-import java.io.IOException;
+import static java.util.stream.Collectors.toList;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.charset.StandardCharsets;
-
 import java.time.ZoneOffset;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import java.util.stream.Stream;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
+import gov.noaa.wres.datamodel.EnsembleForecastEvent;
 import gov.noaa.wres.datamodel.Event;
 import gov.noaa.wres.datamodel.TimeSeries;
-import gov.noaa.wres.datamodel.EnsembleForecastEvent;
-import gov.noaa.wres.datamodel.SeriesInfo;
-
-import gov.noaa.wres.io.AscLineReader;
-
-import static java.util.stream.Collectors.*;
 
 public class AscReader
 {
@@ -167,19 +160,22 @@ public class AscReader
 
         // Finally create the TimeSeries List.
 
-        return events.stream()
-            .collect(groupingBy(EnsembleForecastEvent::getIssuedDateTime)) // map by forecast
-            .entrySet()
-            .stream()
-//            .peek(System.out::println)
-            .map(byForecast -> TimeSeries.of(SeriesInfo.of(byForecast.getKey()),
-                                             byForecast.getValue()
-                                             .stream() // filter while creating.
-                                             .filter(tests.stream()
-                                                     .reduce(Predicate::and).orElse(p->true))
-                                             .collect(toList())))
-            .collect(toList());
-
+        //JBr @ 11 July 2017: compile fails, comment out until fixed and return empty list
+        return new ArrayList<>();
+//JBr START        
+//        return events.stream()
+//            .collect(groupingBy(EnsembleForecastEvent::getIssuedDateTime)) // map by forecast
+//            .entrySet()
+//            .stream()
+////            .peek(System.out::println)
+//            .map(byForecast -> TimeSeries.of(SeriesInfo.of(byForecast.getKey()),
+//                                             byForecast.getValue()
+//                                             .stream() // filter while creating.
+//                                             .filter(tests.stream()
+//                                                     .reduce(Predicate::and).orElse(p->true))
+//                                             .collect(toList())))
+//            .collect(toList());
+//JBr END 
         // </10 MARCH 2017 WAY>
     }
 }

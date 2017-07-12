@@ -8,7 +8,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.metric.SafeSingleValuedPairs.SingleValuedPairsBuilder;
 
@@ -31,11 +30,12 @@ public final class SingleValuedPairsTest
     {
         final List<PairOfDoubles> values = new ArrayList<>();
         final SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();
-        final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final MetadataFactory metaFac = metIn.getMetadataFactory();
 
         for(int i = 0; i < 10; i++)
         {
-            values.add(DataFactory.pairOf(1, 1));
+            values.add(metIn.pairOf(1, 1));
         }
         final Metadata meta = metaFac.getMetadata(values.size());
         SingleValuedPairs p = b.setData(values).setMetadata(meta).build();

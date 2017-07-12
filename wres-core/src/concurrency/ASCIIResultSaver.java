@@ -1,10 +1,10 @@
 package concurrency;
-import java.sql.SQLException;
-import java.util.HashMap;
-
 import wres.io.concurrency.WRESTask;
 import wres.io.utilities.Database;
 import wres.util.Collections;
+
+import java.sql.SQLException;
+import java.util.HashMap;
 
 /**
  * @author ctubbs
@@ -72,4 +72,9 @@ public class ASCIIResultSaver extends WRESTask implements Runnable {
 	private final HashMap<Integer, HashMap<String, String[]>> forecasted_values;
 	private final Integer observationlocation_id;
 	private final StringBuilder expression_builder = new StringBuilder("INSERT INTO ForecastResult(forecast_id, lead_time, measurements, observationlocation_id) VALUES ");
+
+	@Override
+	protected String getTaskName () {
+		return "ASCIIResultSaver-" + String.valueOf(Thread.currentThread().getId());
+	}
 }

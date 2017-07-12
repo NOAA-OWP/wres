@@ -7,12 +7,17 @@ import java.util.List;
 
 import org.junit.Test;
 
+import wres.datamodel.metric.DefaultMetricInputFactory;
+import wres.datamodel.metric.MetricInputFactory;
+
 /**
  * Created by jesse on 6/7/17.
  */
 public class SlicerTest
 {
     private final double THRESHOLD = 0.00001;
+    
+    private final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance(); //JBr
 
     @Test
     public void getAnItemOneForEachItemTwoValueTest()
@@ -21,8 +26,8 @@ public class SlicerTest
         final double[] arrOne = { 2, 3, 4, 5, 6 };
         final double[] arrTwo = { 7, 8, 9 };
 
-        pairList.add(DataFactory.pairOf(1, arrOne));
-        pairList.add(DataFactory.pairOf(10, arrTwo));
+        pairList.add(metIn.pairOf(1, arrOne));
+        pairList.add(metIn.pairOf(10, arrTwo));
 
         final double[] arrFlat = Slicer.getItemsOneForEachItemTwo(pairList);
 
@@ -61,8 +66,8 @@ public class SlicerTest
         final double[] arrOne = { 2, 3 };
         final double[] arrTwo = { 5, 6, 7 };
 
-        pairList.add(DataFactory.pairOf(1, arrOne));
-        pairList.add(DataFactory.pairOf(4, arrTwo));
+        pairList.add(metIn.pairOf(1, arrOne));
+        pairList.add(metIn.pairOf(4, arrTwo));
 
         final List<PairOfDoubles> resultPairs = Slicer.getFlatDoublePairs(pairList);
 

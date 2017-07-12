@@ -15,8 +15,9 @@ import org.junit.Test;
 import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
-import wres.datamodel.metric.MetricOutputCollection;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputFactory;
+import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -63,7 +64,7 @@ public class MetricCollectionTest
         final MetricCollection<SingleValuedPairs, ScalarOutput> collection = n.build();
 
         //Compute them
-        final MetricOutputCollection<ScalarOutput> d = collection.apply(input);
+        final MetricOutputMapByMetric<ScalarOutput> d = collection.apply(input);
 
         //Print them
         //d.stream().forEach(g -> System.out.println(g.getData()));
@@ -72,9 +73,9 @@ public class MetricCollectionTest
         final Double expectedFirst = -200.55;
         final Double expectedSecond = 201.37;
         final Double expectedThird = 632.4586381732801;
-        final Double actualFirst = d.get(0).getData();
-        final Double actualSecond = d.get(1).getData();
-        final Double actualThird = d.get(2).getData();
+        final Double actualFirst = d.get(MetricConstants.MEAN_ERROR).getData();
+        final Double actualSecond = d.get(MetricConstants.MEAN_ABSOLUTE_ERROR).getData();
+        final Double actualThird = d.get(MetricConstants.ROOT_MEAN_SQUARE_ERROR).getData();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -115,7 +116,7 @@ public class MetricCollectionTest
         final MetricCollection<DichotomousPairs, ScalarOutput> collection = m.build();
 
         //Compute them
-        final MetricOutputCollection<ScalarOutput> c = collection.apply(input);
+        final MetricOutputMapByMetric<ScalarOutput> c = collection.apply(input);
 
         //Print them
         //c.stream().forEach(g -> System.out.println(g.getData().doubleValue()));
@@ -126,11 +127,11 @@ public class MetricCollectionTest
         final Double expectedThird = 0.14615384615384616;
         final Double expectedFourth = 0.6347985347985348;
         final Double expectedFifth = 0.43768152544513195;
-        final Double actualFirst = c.get(0).getData();
-        final Double actualSecond = c.get(1).getData();
-        final Double actualThird = c.get(2).getData();
-        final Double actualFourth = c.get(3).getData();
-        final Double actualFifth = c.get(4).getData();
+        final Double actualFirst = c.get(MetricConstants.CRITICAL_SUCCESS_INDEX).getData();
+        final Double actualSecond = c.get(MetricConstants.PROBABILITY_OF_DETECTION).getData();
+        final Double actualThird = c.get(MetricConstants.PROBABILITY_OF_FALSE_DETECTION).getData();
+        final Double actualFourth = c.get(MetricConstants.PEIRCE_SKILL_SCORE).getData();
+        final Double actualFifth = c.get(MetricConstants.EQUITABLE_THREAT_SCORE).getData();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -171,7 +172,7 @@ public class MetricCollectionTest
         final MetricCollection<DiscreteProbabilityPairs, VectorOutput> collection = n.build();
 
         //Compute them
-        final MetricOutputCollection<VectorOutput> d = collection.apply(input);
+        final MetricOutputMapByMetric<VectorOutput> d = collection.apply(input);
 
         //Print them
         //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
@@ -179,8 +180,8 @@ public class MetricCollectionTest
         //Check them
         final Double expectedFirst = 0.26;
         final Double expectedSecond = 0.11363636363636376;
-        final Double actualFirst = d.get(0).getData().getDoubles()[0];
-        final Double actualSecond = d.get(1).getData().getDoubles()[0];
+        final Double actualFirst = d.get(MetricConstants.BRIER_SCORE).getData().getDoubles()[0];
+        final Double actualSecond = d.get(MetricConstants.BRIER_SKILL_SCORE).getData().getDoubles()[0];
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -215,7 +216,7 @@ public class MetricCollectionTest
         final MetricCollection<SingleValuedPairs, VectorOutput> collection = n.build();
 
         //Compute them
-        final MetricOutputCollection<VectorOutput> d = collection.apply(input);
+        final MetricOutputMapByMetric<VectorOutput> d = collection.apply(input);
 
         //Print them
         //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
@@ -223,8 +224,8 @@ public class MetricCollectionTest
         //Check them
         final Double expectedFirst = 400003.929;
         final Double expectedSecond = 0.8007025335093799;
-        final Double actualFirst = d.get(0).getData().getDoubles()[0];
-        final Double actualSecond = d.get(1).getData().getDoubles()[0];
+        final Double actualFirst = d.get(MetricConstants.MEAN_SQUARE_ERROR).getData().getDoubles()[0];
+        final Double actualSecond = d.get(MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE).getData().getDoubles()[0];
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -258,14 +259,14 @@ public class MetricCollectionTest
         final MetricCollection<MulticategoryPairs, ScalarOutput> collection = n.build();
 
         //Compute them
-        final MetricOutputCollection<ScalarOutput> c = collection.apply(input);
+        final MetricOutputMapByMetric<ScalarOutput> c = collection.apply(input);
 
         //Print them
         //c.stream().forEach(g -> System.out.println(g.getData().doubleValue()));
 
         //Check them
         final Double expectedFirst = 0.05057466520850963;
-        final Double actualFirst = c.get(0).getData();
+        final Double actualFirst = c.get(MetricConstants.PEIRCE_SKILL_SCORE).getData();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -407,7 +408,7 @@ public class MetricCollectionTest
             pairPool.submit(futureInput);
 
             //Compute the metric
-            final MetricOutputCollection<ScalarOutput> d = collection.call();
+            final MetricOutputMapByMetric<ScalarOutput> d = collection.call();
 
             //Check them
             final Double expectedFirst = 0.5734265734265734;
@@ -415,11 +416,11 @@ public class MetricCollectionTest
             final Double expectedThird = 0.14615384615384616;
             final Double expectedFourth = 0.6347985347985348;
             final Double expectedFifth = 0.43768152544513195;
-            final Double actualFirst = d.get(0).getData();
-            final Double actualSecond = d.get(1).getData();
-            final Double actualThird = d.get(2).getData();
-            final Double actualFourth = d.get(3).getData();
-            final Double actualFifth = d.get(4).getData();
+            final Double actualFirst = d.get(MetricConstants.CRITICAL_SUCCESS_INDEX).getData();
+            final Double actualSecond = d.get(MetricConstants.PROBABILITY_OF_DETECTION).getData();
+            final Double actualThird = d.get(MetricConstants.PROBABILITY_OF_FALSE_DETECTION).getData();
+            final Double actualFourth = d.get(MetricConstants.PEIRCE_SKILL_SCORE).getData();
+            final Double actualFifth = d.get(MetricConstants.EQUITABLE_THREAT_SCORE).getData();
 
             final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -493,11 +494,11 @@ public class MetricCollectionTest
             //Finalize
             final MetricCollection<SingleValuedPairs, ScalarOutput> collection = n.build();
             //Compute
-            final MetricOutputCollection<ScalarOutput> d = collection.call();
+            final MetricOutputMapByMetric<ScalarOutput> d = collection.call();
             //Check the results
             //Check them   
             final Double expectedFirst = -200.55;
-            final Double actualFirst = d.get(0).getData();
+            final Double actualFirst = d.get(MetricConstants.MEAN_ERROR).getData();
             final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
             assertTrue("Expected value: " + expectedFirst + ". Actual value: " + actualFirst + ".",
                        testMe.test(actualFirst, expectedFirst));
