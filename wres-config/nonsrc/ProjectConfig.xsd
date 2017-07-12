@@ -121,12 +121,11 @@
             </xs:element>
 
             <xs:element name="ensemble" type="ensembleCondition" minOccurs="0" maxOccurs="unbounded" />
-            <xs:element name="rollingTimeAggregation" type="rollingTimeAggregation" minOccurs="0" maxOccurs="1" />
             <xs:element name="arbitraryFunctionToApplyToValues" type="xs:string" minOccurs="0" maxOccurs="1" />
             <xs:element name="timeShift" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
                     <xs:sequence>
-                        <xs:element name="period" type="timePeriod" />
+                        <xs:element name="width" type="duration" />
                         <xs:element name="direction" type="direction" />
                     </xs:sequence>
                 </xs:complexType>
@@ -193,40 +192,53 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="sum" />
             <xs:enumeration value="mean" />
-            <xs:enumeration value="ending" />
             <xs:enumeration value="max" />
             <xs:enumeration value="min" />
             <xs:enumeration value="median" />
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="timePeriod">
+    <xs:simpleType name="anchor">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="hour" />
-            <xs:enumeration value="threeHour" />
-            <xs:enumeration value="sixHour" />
-            <xs:enumeration value="twelveHour" />
-            <xs:enumeration value="day" />
-            <xs:enumeration value="week" />
+            <xs:enumeration value="ending" />
+            <xs:enumeration value="centered" />
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:complexType name="rollingTimeAggregation">
+    <xs:complexType name="duration">
+        <xs:sequence>
+            <xs:element name="count" type="xs:long" />
+            <xs:element name="timeUnit" type="timeUnit" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:simpleType name="timeUnit">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="minutes" />
+            <xs:enumeration value="hours" />
+            <xs:enumeration value="days" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="timeAggregation">
 
         <!-- for class naming using xjc-->
         <xs:annotation>
             <xs:appinfo>
-                <jaxb:class name="RollingTimeAggregationConfig" />
+                <jaxb:class name="TimeAggregationConfig" />
             </xs:appinfo>
         </xs:annotation>
 
         <xs:sequence>
             <xs:element name="function" type="timeAggregationFunction" />
             <!-- frequncy is the pair period -->
-            <!--<xs:element name="frequency" type="timePeriod" /> -->
-            <xs:element name="duration" type="timePeriod" />
+            <!--<xs:element name="frequency" type="timeUnit" /> -->
+            <xs:element name="width" type="duration" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="pairPeriod" type="duration" />
+            <xs:element name="anchor" type="anchor" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
+        <xs:attribute name="mode" type="xs:string" />
     </xs:complexType>
 
     <xs:simpleType name="spaceAggregationFunction">
@@ -265,7 +277,7 @@
         <xs:sequence>
             <xs:element name="unit" type="xs:string" />
             <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
-            <xs:element name="period" type="timePeriod" minOccurs="0" maxOccurs="1" />
+            <xs:element name="timeAggregation" type="timeAggregation" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
