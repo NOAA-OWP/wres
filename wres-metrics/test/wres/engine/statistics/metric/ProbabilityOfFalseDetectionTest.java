@@ -39,12 +39,15 @@ public final class ProbabilityOfFalseDetectionTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getData().size(),
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.PROBABILITY_OF_FALSE_DETECTION,
-                                                            MetricConstants.MAIN,
-                                                            "Main",
-                                                            null);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension(),
+                                                                  MetricConstants.PROBABILITY_OF_FALSE_DETECTION,
+                                                                  MetricConstants.MAIN,
+                                                                  "DRRC2",
+                                                                  "SQIN",
+                                                                  "HEFS",
+                                                                  null);
 
         //Build the metric
         final ProbabilityOfFalseDetectionBuilder b =

@@ -1,9 +1,10 @@
 package wres.io.concurrency;
 
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.io.config.specification.MetricSpecification;
+
 import java.util.List;
 import java.util.concurrent.Callable;
-import wres.io.config.specification.MetricSpecification;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
 /**
  * @author Christopher Tubbs
@@ -31,4 +32,9 @@ public final class PairFetcher extends WRESTask implements Callable<List<PairOfD
 
     private final MetricSpecification metricSpecification;
     private final int progress;
+
+    @Override
+    protected String getTaskName () {
+        return "PairFetcher: Step " + String.valueOf(this.progress) + " for " + this.metricSpecification.getName();
+    }
 }

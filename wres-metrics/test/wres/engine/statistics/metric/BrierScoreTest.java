@@ -44,12 +44,15 @@ public final class BrierScoreTest
         final BrierScore bs = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getMetadata(input.getMetadata().getSampleSize(),
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.BRIER_SCORE,
-                                                            MetricConstants.MAIN,
-                                                            "Main",
-                                                            null);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getMetadata().getSampleSize(),
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension(),
+                                                                  MetricConstants.BRIER_SCORE,
+                                                                  MetricConstants.MAIN,
+                                                                  "DRRC2",
+                                                                  "SQIN",
+                                                                  "HEFS",
+                                                                  null);
 
         //Check the results       
         final VectorOutput actual = bs.apply(input);

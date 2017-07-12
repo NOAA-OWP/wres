@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutputMetadata;
@@ -28,16 +27,11 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
         {
             throw new MetricInputException("Specify a non-null baseline for the '" + toString() + "'.");
         }
-        //TODO: implement any required decompositions, based on the instance parameters  
+        //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
+        //template as the componentID in the metadata
         //Metadata
-        final Metadata metIn = s.getMetadata();
-        final MetricOutputMetadata metOut = getOutputFactory().getMetadataFactory().getMetadata(metIn.getSampleSize(),
-                                                                                                metIn.getDimension(),
-                                                                                                getID(),
-                                                                                                MetricConstants.MAIN,
-                                                                                                metIn.getID(),
-                                                                                                s.getMetadataForBaseline()
-                                                                                                 .getID());
+        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, s.getMetadataForBaseline()
+                                                        .getScenarioID());
         final VectorOutput numerator = super.apply(s);
         final VectorOutput denominator = super.apply(s.getBaselineData());
         final double[] result = new double[]{

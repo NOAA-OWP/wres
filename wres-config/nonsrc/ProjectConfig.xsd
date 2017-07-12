@@ -277,7 +277,7 @@
         <xs:sequence>
             <xs:element name="unit" type="xs:string" />
             <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
-            <xs:element name="timeAggregation" type="timeAggregation" minOccurs="0" maxOccurs="1" />
+            <xs:element name="rollingTimeAggregation" type="timeAggregation" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>

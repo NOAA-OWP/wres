@@ -1,11 +1,10 @@
 package wres.io.concurrency;
 
-import java.sql.SQLException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import wres.io.utilities.Database;
+
+import java.sql.SQLException;
 
 /**
  * A thread that will execute a passed in SQL script
@@ -35,4 +34,9 @@ public class SQLExecutor extends WRESTask implements Runnable {
 	}
 
 	private String script = null;
+
+	@Override
+	protected String getTaskName () {
+		return "SQLExecutor: " + String.valueOf(Thread.currentThread().getId());
+	}
 }

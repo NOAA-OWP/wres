@@ -58,10 +58,10 @@ public final class Variables extends Cache<VariableDetails, String>
 	 * Returns the ID of a variable from the global cache
 	 * @param detail Detailed specification for a variable
 	 * @return The ID of the variable
-	 * @throws Exception Thrown if an error was encountered while interacting with the database or storing
+	 * @throws SQLException Thrown if an error was encountered while interacting with the database or storing
 	 * the result in the cache
 	 */
-	public static Integer getVariableID(VariableDetails detail) throws Exception {
+	public static Integer getVariableID(VariableDetails detail) throws SQLException {
 		return internalCache.getID(detail);
 	}
 	
@@ -70,10 +70,10 @@ public final class Variables extends Cache<VariableDetails, String>
 	 * @param variableName The short name of the variable
 	 * @param measurementUnitID The ID of the unit of measurement belonging to the variable
 	 * @return The ID of the variable
-	 * @throws Exception Thrown if an error was encountered while interacting with the database or storing
+	 * @throws SQLException Thrown if an error was encountered while interacting with the database or storing
 	 * the result in the cache
 	 */
-	public static Integer getVariableID(String variableName, Integer measurementUnitID) throws Exception {
+	public static Integer getVariableID(String variableName, Integer measurementUnitID) throws SQLException {
 		return internalCache.getID(variableName, measurementUnitID);
 	}
 
@@ -365,10 +365,10 @@ public final class Variables extends Cache<VariableDetails, String>
 	 * @param variableName The short name of the variable
 	 * @param measurementUnitID The ID of the unit of measurement for the variable
 	 * @return The ID of the variable
-	 * @throws Exception Thrown if an error was encountered while interacting with the database or storing
+	 * @throws SQLException Thrown if an error was encountered while interacting with the database or storing
 	 * the result in the cache
 	 */
-	public Integer getID(String variableName, Integer measurementUnitID) throws Exception {
+	public Integer getID(String variableName, Integer measurementUnitID) throws SQLException {
 		if (!keyIndex.containsKey(variableName)) {
 			VariableDetails detail = new VariableDetails();
 			detail.setVariableName(variableName);

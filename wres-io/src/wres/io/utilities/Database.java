@@ -7,6 +7,8 @@ import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.config.SystemSettings;
+import wres.io.grouping.DualString;
+import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 import java.io.IOException;
@@ -28,13 +30,34 @@ public final class Database {
     
     private Database(){}
 
-    private static ConcurrentHashMap<String, Map<String, String>> SAVED_INDEXES = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, Map<String, DualString>> SAVED_INDEXES = new ConcurrentHashMap<>();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
     private static final ComboPooledDataSource CONNECTION_POOL = SystemSettings.getConnectionPool();
 
     private static final String NEWLINE = System.lineSeparator();
+
+    private static Method copyAPI = null;
+
+    private static Method getCopyAPI() throws NoSuchMethodException {
+		if (copyAPI == null)
+		{
+			copyAPI = PGConnection.class.getMethod("getCopyAPI");
+		}
+		return copyAPI;
+	}
+
+	private static LinkedBlockingQueue<Future> storedIngestTasks = new LinkedBlockingQueue<>();
+
+	public static Future getStoredIngestTask() throws InterruptedException {
+		return storedIngestTasks.take();
+	}
+
+	public static void storeIngestTask(Future task)
+	{
+		storedIngestTasks.add(task);
+	}
 
 	// A thread executor specifically for SQL calls
 	private static ExecutorService sqlTasks = createService();
@@ -49,7 +72,7 @@ public final class Database {
 	{
 		StringBuilder builder = new StringBuilder();
 
-		builder.append("SELECT n.nspname ||'.'||t.relname AS table_name,").append(NEWLINE);
+		/*builder.append("SELECT n.nspname ||'.'||t.relname AS table_name,").append(NEWLINE);
 		builder.append("	i.relname AS index_name,").append(NEWLINE);
 		builder.append("	array_to_string(array_agg(a.attname), ', ') AS column_names").append(NEWLINE);
 		builder.append("FROM pg_class t").append(NEWLINE);
@@ -70,11 +93,33 @@ public final class Database {
 		builder.append("	i.relname").append(NEWLINE);
 		builder.append("ORDER BY n.nspname,").append(NEWLINE);
 		builder.append("	t.relname,").append(NEWLINE);
-		builder.append("	i.relname;");
+		builder.append("	i.relname;");*/
+
+		builder.append("SELECT 	(idx.indrelid::REGCLASS)::text AS table_name,").append(NEWLINE);
+		builder.append("		T.relname AS index_name,").append(NEWLINE);
+		builder.append("		AM.amname AS index_type,").append(NEWLINE);
+		builder.append("		'(' ||").append(NEWLINE);
+		builder.append("			ARRAY_TO_STRING(").append(NEWLINE);
+		builder.append("				ARRAY(").append(NEWLINE);
+		builder.append("					SELECT pg_get_indexdef(idx.indexrelid, k+1, TRUE)").append(NEWLINE);
+		builder.append("					FROM generate_subscripts(idx.indkey, 1) AS k").append(NEWLINE);
+		builder.append("					ORDER BY k").append(NEWLINE);
+		builder.append("				),").append(NEWLINE);
+		builder.append("			', ')").append(NEWLINE);
+		builder.append("		|| ')' AS column_names").append(NEWLINE);
+		builder.append("FROM pg_index AS IDX").append(NEWLINE);
+		builder.append("INNER JOIN pg_class AS T").append(NEWLINE);
+		builder.append("	ON T.oid = IDX.indexrelid").append(NEWLINE);
+		builder.append("INNER JOIN pg_am AS AM").append(NEWLINE);
+		builder.append("	ON T.relam = AM.oid").append(NEWLINE);
+		builder.append("INNER JOIN pg_namespace AS NS").append(NEWLINE);
+		builder.append("	ON T.relnamespace = NS.OID").append(NEWLINE);
+		builder.append("WHERE T.relname LIKE '%_idx'").append(NEWLINE);
+		builder.append("	AND ns.nspname = ANY('{partitions, wres}');");
 
 		Connection connection = null;
 		ResultSet results = null;
-		Map<String, Map<String, String>> foundIndexes = new TreeMap<>();
+		Map<String, Map<String, DualString>> foundIndexes = new TreeMap<>();
 
 		try
 		{
@@ -83,9 +128,10 @@ public final class Database {
 
 			while (results.next())
 			{
-				foundIndexes.putIfAbsent(results.getString("table_name"), new TreeMap<String, String>());
+				foundIndexes.putIfAbsent(results.getString("table_name"), new TreeMap<String, DualString>());
+				DualString value = new DualString(results.getString("column_names"), results.getString("index_type"));
 				foundIndexes.get(results.getString(("table_name")))
-							.put(results.getString("index_name"), results.getString("column_names"));
+							.put(results.getString("index_name"), value);
 			}
 		}
 		catch (SQLException error)
@@ -134,7 +180,7 @@ public final class Database {
 				execute(builder.toString());
 				SAVED_INDEXES.putIfAbsent(tableName, new TreeMap<>());
 
-				for (Map.Entry<String, String> indexDefinition : foundIndexes.get(tableName).entrySet())
+				for (Map.Entry<String, DualString> indexDefinition : foundIndexes.get(tableName).entrySet())
 				{
 					SAVED_INDEXES.get(tableName)
 								 .put(indexDefinition.getKey(), indexDefinition.getValue());
@@ -150,7 +196,7 @@ public final class Database {
 
 	public synchronized static void restoreAllIndices()
 	{
-		StringBuilder builder = null;
+		StringBuilder builder;
 
 		Set<String> updatedTables = new HashSet<>();
 
@@ -161,11 +207,12 @@ public final class Database {
 			for (int nameIndex = 0; nameIndex < indexNames.length; ++nameIndex)
 			{
 				String indexName = (String)indexNames[nameIndex];
+                DualString definition = SAVED_INDEXES.get(tableName).get(indexName);
 				builder = new StringBuilder();
 				builder.append("CREATE INDEX IF NOT EXISTS ").append(indexName).append(NEWLINE);
 				builder.append("	ON ").append(tableName).append(NEWLINE);
-				builder.append("	USING btree").append(NEWLINE);
-				builder.append("	(").append(SAVED_INDEXES.get(tableName).get(indexName)).append(");");
+				builder.append("	USING ").append(definition.getSecond()).append(NEWLINE);
+				builder.append("	").append(definition.getFirst()).append(";");
 
 				try {
 					LOGGER.trace("Restoring the {} index on {}...", indexName, tableName);
@@ -182,6 +229,8 @@ public final class Database {
 			}
 		}
 
+		SAVED_INDEXES.clear();
+
 		if (updatedTables.size() > 0)
 		{
 			builder = new StringBuilder();
@@ -189,7 +238,6 @@ public final class Database {
 			for (String tableName : updatedTables)
 			{
 				builder.append("ANALYZE " + tableName + ";").append(NEWLINE);
-				builder.append("REINDEX TABLE " + tableName + ";").append(NEWLINE);
 			}
 
 			try {
@@ -207,10 +255,27 @@ public final class Database {
 
 	public static void saveIndex(String tableName, String indexName, String indexDefinition)
 	{
+		if (!indexDefinition.startsWith("("))
+		{
+			indexDefinition = "(" + indexDefinition;
+		}
+
+		if (!indexDefinition.endsWith(")"))
+		{
+			indexDefinition += ")";
+		}
+
 		SAVED_INDEXES.putIfAbsent(tableName, new TreeMap<>());
 		SAVED_INDEXES.get(tableName)
-					 .put(indexName, indexDefinition);
+					 .put(indexName, new DualString(indexDefinition, "btree"));
 	}
+
+	public static void saveIndex(String tableName, String indexName, String indexDefinition, String indexType)
+    {
+        SAVED_INDEXES.putIfAbsent(tableName, new TreeMap<>());
+        SAVED_INDEXES.get(tableName)
+                     .put(indexName, new DualString(indexDefinition, indexType));
+    }
 
 	/**
 	 * Creates a new thread executor
@@ -227,11 +292,36 @@ public final class Database {
                                                              CONNECTION_POOL.getMaxPoolSize(),
                                                              SystemSettings.poolObjectLifespan(),
                                                              TimeUnit.MILLISECONDS,
-                                                             new LinkedBlockingQueue<>(1200)
+                                                             //new LinkedBlockingQueue<>(1200)
+															 new ArrayBlockingQueue<>(1200)
 		);
 
 		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 		return executor;// Executors.newFixedThreadPool(CONNECTION_POOL.getMaxPoolSize());
+	}
+
+	public static void completeAllIngestTasks()
+	{
+		Future task;
+		try {
+			while (storedIngestTasks.peek() != null)
+            {
+				ProgressMonitor.increment();
+				task = getStoredIngestTask();
+				if (!task.isDone()) {
+					try {
+						task.get();
+					}
+					catch (ExecutionException e) {
+						e.printStackTrace();
+					}
+				}
+				ProgressMonitor.completeStep();
+			}
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -376,9 +466,11 @@ public final class Database {
 		{
 			connection = getConnection();
 			C3P0ProxyConnection proxy = (C3P0ProxyConnection)connection;
-			Method get_copy_api = PGConnection.class.getMethod(copyAPIMethodName);
+			//Method get_copy_api = PGConnection.class.getMethod(copyAPIMethodName);
 			Object[] arg = new Object[]{};
-			CopyManager manager = (CopyManager)proxy.rawConnectionOperation(get_copy_api, 
+			/*CopyManager manager = (CopyManager)proxy.rawConnectionOperation(get_copy_api,
+																			C3P0ProxyConnection.RAW_CONNECTION, arg);*/
+			CopyManager manager = (CopyManager)proxy.rawConnectionOperation(getCopyAPI(),
 																			C3P0ProxyConnection.RAW_CONNECTION, arg);
 			
 			String copy_definition = "COPY " + table_definition + " FROM STDIN WITH DELIMITER ";

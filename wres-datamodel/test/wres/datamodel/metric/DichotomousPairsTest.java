@@ -8,7 +8,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.metric.SafeDichotomousPairs.DichotomousPairsBuilder;
 
@@ -32,17 +31,15 @@ public final class DichotomousPairsTest
         final List<VectorOfBooleans> values = new ArrayList<>();
 
         final DichotomousPairsBuilder b = new DichotomousPairsBuilder();
-
+        final MetricInputFactory d = DefaultMetricInputFactory.getInstance();
         for(int i = 0; i < 10; i++)
         {
-            values.add(DataFactory.vectorOf(new boolean[]{true, true}));
+            values.add(d.vectorOf(new boolean[]{true, true}));
         }
-        
+
         final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-        final Metadata meta = metaFac.getMetadata(values.size(),
-                                                          metaFac.getDimension(),
-                                                          "Main");  
-        
+        final Metadata meta = metaFac.getMetadata(values.size(), metaFac.getDimension(), "DRRC2", "SQIN", "HEFS");
+
         final DichotomousPairs p = (DichotomousPairs)b.setData(values).setMetadata(meta).build();
 
         //Check category count
@@ -53,7 +50,7 @@ public final class DichotomousPairsTest
         try
         {
             values.clear();
-            values.add(DataFactory.vectorOf(new boolean[]{true, false, false, true, false, false}));
+            values.add(d.vectorOf(new boolean[]{true, false, false, true, false, false}));
             b.setData(values).build();
             fail("Expected a checked exception on invalid inputs.");
         }
@@ -65,7 +62,7 @@ public final class DichotomousPairsTest
         try
         {
             values.clear();
-            values.add(DataFactory.vectorOf(new boolean[]{true, false, true, false}));
+            values.add(d.vectorOf(new boolean[]{true, false, true, false}));
             b.setData(values).build();
         }
         catch(final Exception e)

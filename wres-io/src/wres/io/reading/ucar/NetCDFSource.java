@@ -59,8 +59,9 @@ public class NetCDFSource extends BasicSource {
                 VariableDetails details = new VariableDetails();
                 details.setVariableName(this.variableName);
                 details.measurementunitId = MeasurementUnits.getMeasurementUnitID(this.unitName);
-
-                Integer variableId = Variables.addVariable(details, this.xLength, this.yLength);
+				LOGGER.trace("Getting the id for the variable '{}'", this.variableName);
+                //Integer variableId = Variables.addVariable(details, this.xLength, this.yLength);
+                Integer variableId = Variables.getVariableID(details);
 
                 NetCDFValueSaver saver = new NetCDFValueSaver(getFilename(),
                                                               this.variableName,
@@ -68,7 +69,10 @@ public class NetCDFSource extends BasicSource {
                                                               getMissingValue());
                 saver.setOnRun(ProgressMonitor.onThreadStartHandler());
                 saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                Executor.execute(saver);
+
+                LOGGER.trace("Telling the general executor to save '{}' from '{}'", this.variableName, getFilename());
+                //Executor.execute(saver);
+                saver.run();
 
                 ProgressMonitor.completeStep();
             }
@@ -82,6 +86,11 @@ public class NetCDFSource extends BasicSource {
 		private final int yLength;
 		private final String variableName;
 		private final String unitName;
+
+		@Override
+		protected String getTaskName () {
+			return "NetCDFSource.VariableSaver: " + this.variableName;
+		}
 	}
 	/**
 	 * 
@@ -127,6 +136,11 @@ public class NetCDFSource extends BasicSource {
 
 		for (Variable var : source.getVariables())
 		{
+			if (!this.variableIsApproved(var.getShortName()))
+			{
+				continue;
+			}
+
 			if (var.getDimensions().size() > 1 || var.getDimension(0).getLength() > 1)
 			{
 				VariableInserter inserter = new VariableInserter(var);
@@ -135,7 +149,9 @@ public class NetCDFSource extends BasicSource {
 				tasks.add(Executor.execute(inserter));
 
 				// TODO: This causes the code to only ingest a single variable. Fine for testing, but it needs to get removed
-                break;
+				if (!this.detailsAreSpecified()) {
+					break;
+				}
 			}
 		}
 

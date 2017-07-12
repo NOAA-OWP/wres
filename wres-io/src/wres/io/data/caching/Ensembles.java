@@ -126,7 +126,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	}
 	
 	@Override
-	public Integer getID(EnsembleDetails detail) throws Exception {
+	public Integer getID(EnsembleDetails detail) throws SQLException {
 		return getID(detail.getKey());
 	}
 

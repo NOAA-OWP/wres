@@ -1,5 +1,7 @@
 package wres.io.concurrency;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
@@ -24,6 +26,7 @@ import java.util.concurrent.Future;
 public class NetCDFValueSaver extends WRESTask implements Runnable
 {
 	private final static String DELIMITER = ",";
+    private static final Logger LOGGER = LoggerFactory.getLogger(NetCDFValueSaver.class);
 
     private int sourceID = Integer.MIN_VALUE;
     private final String variableName;
@@ -34,7 +37,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
     private int copyCount;
     private Variable variable;
     private NetcdfFile source;
-    private double invalidValue = Double.MIN_VALUE;
+    private Double invalidValue;
     private int xLength = Integer.MIN_VALUE;
     private int yLength = Integer.MIN_VALUE;
     private int rank = Integer.MIN_VALUE;
@@ -45,7 +48,6 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 		this.fileName = fileName;
 		this.variableName = variableName;
 		this.variableID = variableID;
-		this.invalidValue = invalidValue;
 	}
 
 	@Override
@@ -75,34 +77,26 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 
                     if (currentYIndex == half)
                     {
-                        System.err.println(NEWLINE +
-                                "Currently halfway done with setting up jobs to save " +
-                                this.variableName +
-                                " data from '" +
-                                this.source.getLocation() +
-                                "'");
+                        LOGGER.trace("Currently halfway done with setting up jobs to save {} data from '{}'",
+                                this.variableName,
+                                this.source.getLocation());
                     }
                     else if (currentYIndex == quarter)
                     {
-                        System.err.println(NEWLINE +
-                                "Currently a quarter of the way done setting up jobs to save " +
-                                this.variableName +
-                                " data from '" +
-                                this.source.getLocation() +
-                                "'");
+                        LOGGER.trace("Currently a quarter of the way done setting up jobs to save {} data from '{}'",
+                                this.variableName,
+                                this.source.getLocation());
                     }
                     else if (currentYIndex == threeQuarter)
                     {
-                        System.err.println(NEWLINE +
-                                "Currently three quarters of the way done setting up jobs to save " +
-                                this.variableName +
-                                " data from '" +
-                                this.source.getLocation() +
-                                "'");
+                        LOGGER.trace("Currently three quarters of the way done setting up jobs to save {} data from '{}'",
+                                this.variableName,
+                                this.source.getLocation());
                     }
 
                     currentXIndex = 0;
 
+                    LOGGER.trace("Now looping through a set of x values.");
                     for (; currentXIndex < getXLength(); ++currentXIndex)
                     {
                         ProgressMonitor.increment();
@@ -149,22 +143,25 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
                         }*/
                         ProgressMonitor.completeStep();
                     }
-
+                    LOGGER.trace("Moving on to the next set of Y values");
                     currentYIndex++;
                     ProgressMonitor.completeStep();
                 }
 
                 copyValues();
 
-                System.out.println(NEWLINE + "Now waiting for all tasks used to save " + this.variableName + " from " + this.fileName + " to finish...");
+                LOGGER.trace("Now waiting for all tasks used to save {} from '{}' to finish...", this.variableName, this.fileName);
+
                 while (!this.operations.empty())
                 {
                     try {
+                        ProgressMonitor.increment();
                         this.operations.pop().get();
+                        ProgressMonitor.completeStep();
                     }
                     catch (Exception e)
                     {
-                        System.err.println(NEWLINE + "Could not complete a task to save " + this.variableName + " from " + this.fileName);
+                        LOGGER.error("Could not complete a task to save {} from '{}'", this.variableName, this.fileName);
                     }
                 }
             }
@@ -185,7 +182,9 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 	private NetcdfFile getFile() throws IOException
     {
         if (this.source == null) {
+            LOGGER.trace("Now opening '{}'...", this.fileName);
             this.source = NetcdfFile.open(this.fileName);
+            LOGGER.trace("'{}' has been opened for parsing.", this.fileName);
         }
         return this.source;
     }
@@ -204,6 +203,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
         {
             NetcdfFile source = getFile();
 
+            LOGGER.trace("Now looking for {} inside '{}'", this.variableName, this.fileName);
             for (Variable var : source.getVariables())
             {
                 if (var.getShortName().equalsIgnoreCase(this.variableName))
@@ -212,6 +212,14 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
                     break;
                 }
             }
+        }
+
+        if (this.variable == null)
+        {
+            throw new IOException("The variable " +
+                                          this.variableName +
+                                          " could not be found within '" +
+                                          this.fileName + "'");
         }
         
         return this.variable;
@@ -241,6 +249,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 
 			if (this.copyCount >= SystemSettings.getMaximumCopies())
             {
+                LOGGER.trace("The copy count now exceeds the maximum allowable copies, so the values are being sent to save.");
                 this.copyValues();
             }
 		}
@@ -254,6 +263,8 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
                 CopyExecutor copier = new CopyExecutor(getTableDefinition(), builder.toString(), DELIMITER);
                 copier.setOnRun(ProgressMonitor.onThreadStartHandler());
                 copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+
+                LOGGER.trace("Sending NetCDF values to the database executor to copy...");
                 this.operations.push(Database.execute(copier));
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
@@ -263,7 +274,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
         }
         else
         {
-            System.err.println("Data is not being copied because the builder has no data.");
+            LOGGER.warn("Data is not being copied because the builder has no data.");
         }
     }
 
@@ -274,7 +285,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 
 	private Double getInvalidValue()
     {
-        if (this.invalidValue == Double.MIN_VALUE)
+        if (this.invalidValue == null)
         {
             try {
                 Attribute attr = this.getVariable().findAttribute("_FillValue");
@@ -303,11 +314,11 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 
 			Database.execute(new SQLExecutor(definitionScript)).get();
 
-			Database.saveIndex(tableName,
+			Database.saveIndex("partitions." + tableName,
                                tableName + "_idx",
-                               "source_id, variable_id");
+                               "(source_id, variable_id)");
 
-			this.tableDefinition = "wres.NETCDFVALUE_SOURCE_";
+			this.tableDefinition = "partitions.NETCDFVALUE_SOURCE_";
 			this.tableDefinition += String.valueOf(this.getSourceID());
 			this.tableDefinition += "_VARIABLE_";
 			this.tableDefinition += String.valueOf(this.variableID);
@@ -422,7 +433,17 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 
     @Override
     protected void finalize() throws Throwable {
-        super.finalize();
         this.closeFile();
+        super.finalize();
+    }
+
+    @Override
+    protected String getTaskName () {
+	    StringBuilder name = new StringBuilder("NetCDFValueSaver: ");
+	    name.append(this.variableName);
+	    name.append(" inside ");
+	    name.append(this.fileName);
+
+        return name.toString();
     }
 }
