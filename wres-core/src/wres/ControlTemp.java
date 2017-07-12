@@ -54,6 +54,8 @@ public class ControlTemp
     private static final Logger LOGGER = LoggerFactory.getLogger(ControlTemp.class);
     public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
     private static final AtomicLong lastMessageTime = new AtomicLong();
+    private static final MetricInputFactory inFac = DefaultMetricInputFactory.getInstance();
+    private static final MetricOutputFactory outFac = DefaultMetricOutputFactory.getInstance();
 
     /** System property used to retrieve max thread count, passed as -D */
     public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
@@ -112,8 +114,6 @@ public class ControlTemp
                                                 "CFS");
 
         //Build an immutable collection of metrics, to be computed at each of several forecast lead times
-        final MetricInputFactory inFac = DefaultMetricInputFactory.getInstance();
-        final MetricOutputFactory outFac = DefaultMetricOutputFactory.getInstance();
         final MetricFactory metFac = MetricFactory.getInstance(outFac);
         final List<Metric<SingleValuedPairs, ScalarOutput>> metrics = new ArrayList<>();
         metrics.add(metFac.ofMeanError());
@@ -123,14 +123,13 @@ public class ControlTemp
 
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
-        final int leadTimesCount = 1;
+        final int leadTimesCount = 100;
 
         //Build a thread pool that can be terminated upon exception
         final ForkJoinPool f = new ForkJoinPool();
 
-        //Sink for the results: the results are added incrementally and then built to an immutable store
-        final MetricOutputMultiMap.Builder<ScalarOutput> builder = outFac.ofMultiMap();
-        MetricOutputMultiMap<ScalarOutput> results = null;
+        //Sink for the results: the results are added incrementally to an immutable store via a builder
+        final MetricOutputMultiMap.Builder<ScalarOutput> resultsBuilder = outFac.ofMultiMap();
         //Iterate
         for(int i = 0; i < leadTimesCount; i++)
         {
@@ -141,9 +140,9 @@ public class ControlTemp
             // 3. Compute the metrics
             // 4. Do something with the verification results (store them)
             // 5. Monitor progress per lead time
-            
+
             //Threshold = all data for now
-            final Threshold allData = outFac.getThreshold(Double.NEGATIVE_INFINITY,Condition.GREATER);
+            final Threshold allData = outFac.getThreshold(Double.NEGATIVE_INFINITY, Condition.GREATER);
             final CompletableFuture<Void> c = CompletableFuture
                                                                .supplyAsync(new PairGetterByLeadTime(config,
                                                                                                      lead,
@@ -151,7 +150,10 @@ public class ControlTemp
                                                                             f)
                                                                .thenApplyAsync(new SingleValuedPairProcessor(inFac), f)
                                                                .thenApplyAsync(useMe, f)
-                                                               .thenAcceptAsync(new ResultProcessor<>(lead,allData,builder), f)
+                                                               .thenAcceptAsync(new ResultProcessor<>(lead,
+                                                                                                      allData,
+                                                                                                      resultsBuilder),
+                                                                                f)
                                                                .thenAcceptAsync(a -> {
                                                                    if(LOGGER.isInfoEnabled())
                                                                    {
@@ -168,7 +170,6 @@ public class ControlTemp
         try
         {
             doAllOrException(listOfFutures).join();
-            results = builder.build();
         }
         catch(final Exception e)
         {
@@ -179,11 +180,18 @@ public class ControlTemp
             //Terminate
             f.shutdownNow(); //or shutdown();
         }
+
+        //Build final results: 
+        MetricOutputMultiMap<ScalarOutput> results = resultsBuilder.build();
+
         //Print info to logger
         if(LOGGER.isInfoEnabled())
         {
-//            results.forEach((lead, result) -> LOGGER.info("For lead time " + lead + " with "
-//                + result.get(MetricConstants.MEAN_ERROR).getMetadata().getSampleSize() + " samples: "+ result));
+            results.forEach((key, value) -> {
+                LOGGER.info(NEWLINE + "Results for metric "
+                    + inFac.getMetadataFactory().getMetricName(key.getFirstKey()) + " (lead time, threshold, score) "
+                    + NEWLINE + value);
+            });
             final long stop = System.currentTimeMillis(); //End time
             LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
         }
@@ -265,13 +273,13 @@ public class ControlTemp
          * Forecast lead time.
          */
         private final int leadTime;
-        
+
         /**
          * Threshold.
          */
 
-        private final Threshold threshold;    
-        
+        private final Threshold threshold;
+
         /**
          * A store of the results.
          */
@@ -283,7 +291,8 @@ public class ControlTemp
          * 
          * @param leadTime the forecast lead time
          */
-        public ResultProcessor(final int leadTime, final Threshold threshold,
+        public ResultProcessor(final int leadTime,
+                               final Threshold threshold,
                                final MetricOutputMultiMap.Builder<S> builder)
         {
             this.threshold = threshold;
@@ -294,7 +303,7 @@ public class ControlTemp
         @Override
         public void accept(final MetricOutputMapByMetric<S> t)
         {
-            builder.add(leadTime,threshold,t);
+            builder.add(leadTime, threshold, t);
         }
     }
 

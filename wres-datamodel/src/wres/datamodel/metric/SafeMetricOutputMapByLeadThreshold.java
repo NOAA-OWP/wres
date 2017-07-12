@@ -20,7 +20,13 @@ import java.util.function.BiConsumer;
  */
 public class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements MetricOutputMapByLeadThreshold<T>
 {
+    
+    /**
+     * Line separator for printing.
+     */
 
+    private static final String NEWLINE = System.lineSeparator();
+    
     /**
      * Metadata.
      */
@@ -134,6 +140,25 @@ public class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> imple
         return metadata;
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuilder b = new StringBuilder();
+        forEach((key, value) -> {
+            b.append("[")
+             .append(key.getFirstKey())
+             .append(", ")
+             .append(key.getSecondKey())
+             .append(", ")
+             .append(value)
+             .append("]")
+             .append(NEWLINE);
+        });
+        int lines = b.length();
+        b.delete(lines-NEWLINE.length(),lines);
+        return b.toString();
+    }
+
     /**
      * Builds the immutable mapping.
      *
@@ -157,7 +182,8 @@ public class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> imple
 
         protected Builder<T> put(final MapBiKey<Integer, Threshold> key, final T value)
         {
-            if(Objects.isNull(referenceMetadata)) {
+            if(Objects.isNull(referenceMetadata))
+            {
                 referenceMetadata = value.getMetadata();
             }
             store.put(key, value);

@@ -3,9 +3,6 @@ package wres.datamodel.metric;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 
 import wres.datamodel.metric.Threshold.Condition;
 
@@ -169,107 +166,7 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     @Override
     public <S extends MetricOutput<?>> MetricOutputMultiMap.Builder<S> ofMultiMap()
     {
-
-        /**
-         * Default implementation of a safe multi-map by lead time and threshold.
-         */
-
-        class SafeMetricOutputMultiMap implements MetricOutputMultiMap<S>
-        {
-            /**
-             * The store of results.
-             */
-
-            private final TreeMap<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<S>> store;
-
-            @Override
-            public wres.datamodel.metric.MetricOutputMultiMap.Builder<S> builder()
-            {
-                return new Builder();
-            }
-
-            @Override
-            public MetricOutputMapByLeadThreshold<S> get(final MetricConstants metricID,
-                                                         final MetricConstants componentID)
-            {
-                return store.get(getMapKey(metricID, componentID));
-            }
-
-            class Builder implements MetricOutputMultiMap.Builder<S>
-            {
-
-                /**
-                 * Thread safe map.
-                 */
-
-                final ConcurrentMap<MapBiKey<MetricConstants, MetricConstants>, SafeMetricOutputMapByLeadThreshold.Builder<S>> internal =
-                                                                                                                                        new ConcurrentSkipListMap<>();
-
-                @Override
-                public SafeMetricOutputMultiMap build()
-                {
-                    return new SafeMetricOutputMultiMap(this);
-                }
-
-                @Override
-                public wres.datamodel.metric.MetricOutputMultiMap.Builder<S> add(final int leadTime,
-                                                                                 final Threshold threshold,
-                                                                                 final MetricOutputMapByMetric<S> result)
-                {
-                    Objects.requireNonNull(result, "Specify a non-null metric result.");
-                    result.forEach((key, value) -> {
-                        final MetricOutputMetadata d = value.getMetadata();
-                        final MapBiKey<MetricConstants, MetricConstants> check = getMapKey(d.getMetricID(),
-                                                                                     d.getMetricComponentID());
-                        if(internal.containsKey(check))
-                        {
-                            internal.get(check).put(getMapKey(leadTime, threshold), value);
-                        }
-                        else
-                        {
-                            final SafeMetricOutputMapByLeadThreshold.Builder<S> addMe =
-                                                                                new SafeMetricOutputMapByLeadThreshold.Builder<>();
-                            addMe.put(getMapKey(leadTime, threshold), value);
-                        }
-                    });
-                    return this;
-                }
-            }
-
-            /**
-             * Default constructor.
-             */
-            private SafeMetricOutputMultiMap()
-            {
-                store = new TreeMap<>();
-            }
-
-            /**
-             * Main constructor.
-             * 
-             * @param builder the builder
-             */
-            private SafeMetricOutputMultiMap(final Builder builder)
-            {
-                this();
-                //Bounds checks
-                builder.internal.forEach((key, value) -> {
-                    if(Objects.isNull(key))
-                    {
-                        throw new UnsupportedOperationException("Cannot prescribe a null key for the input map.");
-                    }
-                    if(Objects.isNull(value))
-                    {
-                        throw new UnsupportedOperationException("Cannot prescribe a null value for the input map.");
-                    }
-                });
-                //Build
-                builder.internal.forEach((key, value) -> {
-                    store.put(key,value.build());
-                });
-            }
-        }
-        return new SafeMetricOutputMultiMap().builder();
+        return new SafeMetricOutputMultiMap.MultiMapBuilder<>();
     }
 
     /**
