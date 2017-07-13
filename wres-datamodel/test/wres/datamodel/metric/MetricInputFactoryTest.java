@@ -29,7 +29,7 @@ public final class MetricInputFactoryTest
     public static final double THRESHOLD = 0.00001;
 
     private final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
-    
+
     /**
      * Tests the methods in {@link MetricInputFactory}.
      */
@@ -38,7 +38,9 @@ public final class MetricInputFactoryTest
     public void test1MetricFactory()
     {
         final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-        final Metadata m1 = metaFac.getMetadata(1, metaFac.getDimension(), "DRRC2", "SQIN", "HEFS");
+        final Metadata m1 = metaFac.getMetadata(1,
+                                                metaFac.getDimension(),
+                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         final MetricInputFactory inFac = DefaultMetricInputFactory.getInstance();
         final List<VectorOfBooleans> input = new ArrayList<>();
         input.add(inFac.vectorOf(new boolean[]{true, false}));
@@ -47,8 +49,12 @@ public final class MetricInputFactoryTest
 
         final List<PairOfDoubles> dInput = new ArrayList<>();
         dInput.add(inFac.pairOf(0.0, 1.0));
-        final Metadata m2 = metaFac.getMetadata(dInput.size(), metaFac.getDimension(), "DRRC2", "SQIN", "HEFS");
-        final Metadata m3 = metaFac.getMetadata(dInput.size(), metaFac.getDimension(), "DRRC2", "SQIN", "ESP");
+        final Metadata m2 = metaFac.getMetadata(dInput.size(),
+                                                metaFac.getDimension(),
+                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+        final Metadata m3 = metaFac.getMetadata(dInput.size(),
+                                                metaFac.getDimension(),
+                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "ESP"));
         inFac.ofDiscreteProbabilityPairs(dInput, m2);
         inFac.ofDiscreteProbabilityPairs(dInput, dInput, m2, m3);
         inFac.ofSingleValuedPairs(dInput, m3);
@@ -92,7 +98,7 @@ public final class MetricInputFactoryTest
     {
         final double[] arrOne = {1.0, 2.0, 3.0};
         final double[] arrTwo = {4.0, 5.0};
-        final Pair<VectorOfDoubles,VectorOfDoubles> pair = metIn.pairOf(arrOne, arrTwo);
+        final Pair<VectorOfDoubles, VectorOfDoubles> pair = metIn.pairOf(arrOne, arrTwo);
         assertNotNull(pair);
         assertEquals(pair.getItemOne().getDoubles()[0], 1.0, THRESHOLD);
         assertEquals(pair.getItemOne().getDoubles()[1], 2.0, THRESHOLD);
@@ -187,6 +193,6 @@ public final class MetricInputFactoryTest
         two = true;
         assertEquals(true, bools.getItemOne());
         assertEquals(false, bools.getItemTwo());
-    }    
+    }
 
 }

@@ -64,7 +64,7 @@ extends MetricOutputMapWithBiKey<Integer, Threshold, T>
     /**
      * Returns the {@link MetricOutputMetadata} associated with all {@link MetricOutput} in the store. This may contain
      * more (optional) information than the (required) metadata associated with the individual outputs. However, all
-     * required elements must match.
+     * required elements must match, in keeping with {@link MetricOutputMetadata#minimumEquals(MetricOutputMetadata)}.
      * 
      * @return the metadata
      */

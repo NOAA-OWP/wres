@@ -126,8 +126,6 @@ class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutpu
         //Initialize
         store = new TreeMap<>();     
         //Build
-        builder.internal.forEach((key, value) -> {
-            store.put(key, value.build());
-        });
+        builder.internal.forEach((key, value) -> store.put(key, value.build()));
     }
 }

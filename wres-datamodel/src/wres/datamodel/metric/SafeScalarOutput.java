@@ -34,14 +34,14 @@ class SafeScalarOutput implements ScalarOutput
     @Override
     public boolean equals(final Object o)
     {
-        boolean start = o instanceof SafeScalarOutput;
-        if(start)
+        if(!(o instanceof SafeScalarOutput))
         {
-            final SafeScalarOutput v = (SafeScalarOutput)o;
-            start = meta.equals(v.getMetadata());
-            start = start && Math.abs(((SafeScalarOutput)o).getData() - output) < .00000001;
+            return false;
         }
-        return start;        
+        final SafeScalarOutput v = (SafeScalarOutput)o;
+        boolean start = meta.equals(v.getMetadata());
+        start = start && Math.abs(((SafeScalarOutput)o).getData() - output) < .00000001;
+        return start;
     }
 
     @Override
@@ -71,8 +71,8 @@ class SafeScalarOutput implements ScalarOutput
 
     SafeScalarOutput(final double output, final MetricOutputMetadata meta)
     {
-        Objects.requireNonNull(output,"Specify a non-null output.");
-        Objects.requireNonNull(meta,"Specify non-null metadata.");        
+        Objects.requireNonNull(output, "Specify a non-null output.");
+        Objects.requireNonNull(meta, "Specify non-null metadata.");
         this.output = output;
         this.meta = meta;
     }
