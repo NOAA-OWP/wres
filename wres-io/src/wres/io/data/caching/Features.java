@@ -1,16 +1,12 @@
 package wres.io.data.caching;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.concurrent.ConcurrentSkipListMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import wres.io.data.details.FeatureDetails;
-import wres.io.utilities.Database;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Caches details about Features
@@ -117,22 +113,21 @@ public class Features extends Cache<FeatureDetails, String>
     public synchronized void init()
 	{
         Connection connection = null;
-        Statement featureQuery = null;
+        //Statement featureQuery = null;
         ResultSet features = null;
         this.details = new ConcurrentSkipListMap<>();
 
-        try
+        /*try
         {
             connection = Database.getConnection();
-            featureQuery = connection.createStatement();
-            featureQuery.setFetchSize(100);
+            //featureQuery = connection.createStatement();
 
             String loadScript = "SELECT F.lid, F.feature_id, F.feature_name" + System.lineSeparator();
             loadScript += "FROM wres.Feature F" + System.lineSeparator();
             loadScript += "INNER JOIN wres.FeaturePosition FP" + System.lineSeparator();
             loadScript += " ON F.feature_id = FP.feature_id;";
 
-            features = featureQuery.executeQuery(loadScript);
+            features = Database.getResults(connection, loadScript);
 
             FeatureDetails detail;
 
@@ -166,7 +161,7 @@ public class Features extends Cache<FeatureDetails, String>
                 }
             }
 
-            if (featureQuery != null)
+            /*if (featureQuery != null)
             {
                 try
                 {
@@ -182,6 +177,6 @@ public class Features extends Cache<FeatureDetails, String>
             {
                 Database.returnConnection(connection);
             }
-        }
+        }*/
 	}
 }

@@ -448,7 +448,7 @@ public class ProjectDataSpecification extends SpecificationElement
 	
 	public Integer getFirstVariablePositionID() throws Exception {
 	    Integer ID = null;
-	    FeatureSpecification feature = getFeature();
+		FeatureSpecification feature = getFeature();
 	    
 	    try
 	    {
@@ -456,10 +456,7 @@ public class ProjectDataSpecification extends SpecificationElement
     	        VariableSpecification firstVariable = this.getVariable();
     	        if (firstVariable != null && firstVariable.getVariableID() != null)
     	        {
-    	            List<Integer> variablePositionIDs = feature.getVariablePositionIDs(firstVariable.getVariableID());
-    	            if (variablePositionIDs.size() > 0) {
-    	                ID = variablePositionIDs.get(0);
-    	            }
+    	        	ID = feature.getFirstVariablePositionID(firstVariable.getVariableID());
     	        }
     	    }
 	    }

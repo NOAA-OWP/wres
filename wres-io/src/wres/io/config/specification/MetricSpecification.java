@@ -6,7 +6,6 @@ package wres.io.config.specification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.io.concurrency.Executor;
 import wres.io.concurrency.PairFetcher;
 import wres.io.grouping.LabeledScript;
 import wres.io.utilities.Database;
@@ -127,7 +126,7 @@ public class MetricSpecification extends SpecificationElement {
 	    	PairFetcher fetcher = new PairFetcher(this, step);
 	    	fetcher.setOnRun(ProgressMonitor.onThreadStartHandler());
 	    	fetcher.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-            threadResults.put(step, Executor.submit(fetcher));
+            threadResults.put(step, Database.submit(fetcher));
 	        step++;
 	    }
 

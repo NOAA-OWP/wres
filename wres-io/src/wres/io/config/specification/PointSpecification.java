@@ -3,10 +3,10 @@
  */
 package wres.io.config.specification;
 
-import java.util.Collections;
-import java.util.List;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Specification for a point in gridded data that should be selected
@@ -94,7 +94,20 @@ class PointSpecification extends FeatureSpecification {
         return null;
     }
 
-    @Override
+	@Override
+	public Integer getFirstVariablePositionID (final Integer variableID) throws Exception {
+    	Integer id = null;
+    	List<Integer> ids = getVariablePositionIDs(variableID);
+
+    	if (ids.size() > 0)
+		{
+			id = ids.get(0);
+		}
+
+		return id;
+	}
+
+	@Override
     public String toXML()
     {
         // TODO Auto-generated method stub

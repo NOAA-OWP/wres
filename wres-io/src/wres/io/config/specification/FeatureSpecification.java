@@ -3,8 +3,8 @@
  */
 package wres.io.config.specification;
 
-import java.util.List;
 import javax.xml.stream.XMLStreamReader;
+import java.util.List;
 
 /**
  * @author Christopher Tubbs
@@ -26,6 +26,8 @@ public abstract class FeatureSpecification extends SpecificationElement
     }
 
     public abstract List<Integer> getVariablePositionIDs(Integer variableID) throws Exception;
+
+    public abstract Integer getFirstVariablePositionID(Integer variableID) throws Exception;
 
     public abstract int getFeatureType();
     
