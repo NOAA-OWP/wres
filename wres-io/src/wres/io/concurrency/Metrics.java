@@ -1,18 +1,7 @@
 package wres.io.concurrency;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.MetricInputFactory;
@@ -23,6 +12,17 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.utilities.Database;
 import wres.util.DataModel;
 import wres.util.Strings;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * A collection of Metrics that may be performed on selected data
@@ -138,24 +138,28 @@ public abstract class Metrics {
         
         Connection connection = null;
         ResultSet resultingPairs = null;
-        //JBr: will need to inject this factory to eliminate dependence on wres-datamodel
-        // CT: Switched reference back to wres-datamodel because it didn't compile
-        //JBr: Switched back again. Code in the repo always builds and all tests must pass
-        //Culprit seems to have been a failed merge dab95f337980d719dbd52667545495c0f339a7c7
+
         final MetricInputFactory dataFactory = DefaultMetricInputFactory.getInstance();
+
         try
         {
+            final String script = ScriptFactory.generateGetPairData(metricSpecification, progress);
             connection = Database.getConnection();
-            final String script = ScriptFactory.generateGetPairData(metricSpecification, progress);            
-
+            //FormattedStopwatch watch = new FormattedStopwatch();
+            //watch.start();
             resultingPairs = Database.getResults(connection, script);
 
             while (resultingPairs.next())
             {
-                final Double observedValue = resultingPairs.getDouble("sourceOneValue");
-                final Double[] forecasts = (Double[]) resultingPairs.getArray("measurements").getArray();
-                pairs.add(dataFactory.pairOf(observedValue, forecasts));
+                pairs.add(dataFactory.pairOf(resultingPairs.getDouble("sourceOneValue"),
+                                             Stream.of((Double[]) resultingPairs.getArray("measurements")
+                                                                                .getArray())
+                                                   .mapToDouble(Double::doubleValue).toArray()));
             }
+
+            //watch.stop();
+            //LOGGER.info("");
+            //LOGGER.info("It took {} to get the set of pairs for {}", watch.getFormattedDuration(), progress);
         }
         catch (final Exception error)
         {
@@ -177,6 +181,7 @@ public abstract class Metrics {
                 Database.returnConnection(connection);
             }
         }
+
         return pairs;
 	}
 	

@@ -3,15 +3,14 @@
  */
 package wres.io.config.specification;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import wres.io.data.caching.Features;
+import wres.util.XML;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-
-import wres.io.data.caching.Features;
-import wres.util.XML;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Details a location to query based on information in the configuration
@@ -146,10 +145,13 @@ public final class LocationSpecification extends FeatureSpecification {
     @Override
     public List<Integer> getVariablePositionIDs(Integer variableID) throws Exception
     {
-        List<Integer> id = new ArrayList<>(1);
-        id.add(Features.getVariablePositionID(lid, name, variableID));
-        return id;
+        return Arrays.asList(Features.getVariablePositionID(lid, name, variableID));
     }
+
+	@Override
+	public Integer getFirstVariablePositionID (final Integer variableID) throws Exception {
+		return Features.getVariablePositionID(lid, name, variableID);
+	}
 
     @Override
     public String toXML()

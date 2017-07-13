@@ -1,11 +1,8 @@
 package wres.io.concurrency;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import wres.io.config.SystemSettings;
+
+import java.util.concurrent.*;
 
 /**
  * The static thread executor 
@@ -21,6 +18,11 @@ public final class Executor {
     {
         // prevent direct construction
     }
+
+    public static float getLoad()
+	{
+		return ((ThreadPoolExecutor)service).getActiveCount() / SystemSettings.maximumThreadCount();
+	}
 
 	/**
 	 * Creates a new thread executor

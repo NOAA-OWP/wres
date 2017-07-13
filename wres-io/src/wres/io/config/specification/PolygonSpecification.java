@@ -3,10 +3,10 @@
  */
 package wres.io.config.specification;
 
+import javax.xml.stream.XMLStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.xml.stream.XMLStreamReader;
 
 /**
  * Specifications for selecting features based on a polygon drawn around gridded indices
@@ -83,6 +83,19 @@ final class PolygonSpecification extends FeatureSpecification {
         // TODO Auto-generated method stub
         return null;
     }
+
+	@Override
+	public Integer getFirstVariablePositionID (final Integer variableID) throws Exception {
+		Integer id = null;
+		List<Integer> ids = getVariablePositionIDs(variableID);
+
+		if (ids != null && ids.size() > 0)
+		{
+			id = ids.get(0);
+		}
+
+		return id;
+	}
 
     @Override
     public String toXML()

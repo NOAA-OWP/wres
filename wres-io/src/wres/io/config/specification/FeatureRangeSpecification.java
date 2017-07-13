@@ -3,9 +3,9 @@
  */
 package wres.io.config.specification;
 
+import javax.xml.stream.XMLStreamReader;
 import java.util.Collections;
 import java.util.List;
-import javax.xml.stream.XMLStreamReader;
 
 /**
  * Specification for a range of indices for a vector or gridded variable to load from the
@@ -158,6 +158,19 @@ public class FeatureRangeSpecification extends FeatureSpecification {
         // TODO Auto-generated method stub
         return null;
     }
+
+	@Override
+	public Integer getFirstVariablePositionID (final Integer variableID) throws Exception {
+		Integer id = null;
+		List<Integer> ids = getVariablePositionIDs(variableID);
+
+		if (ids != null && ids.size() > 0)
+		{
+			id = ids.get(0);
+		}
+
+		return id;
+	}
 
     @Override
     public String toXML()

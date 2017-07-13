@@ -1,16 +1,15 @@
 package wres.io.data.details;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.io.utilities.Database;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import wres.io.utilities.Database;
 
 /**
  * Defines the important details of a feature as stored in the database
@@ -25,7 +24,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 	private Integer feature_id = null;
 	
 	// A concurrent mapping of the feature to its index for a variable
-	private ConcurrentMap<Integer, Integer> variablePositions = new ConcurrentSkipListMap<>();
+	private ConcurrentMap<Integer, Integer> variablePositions = new ConcurrentHashMap<>();
+	private static final Object POSITION_LOCK = new Object();
 	
 	/**
 	 * Finds the variable position id of the feature for a given variable. A position is
@@ -36,25 +36,29 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 	 */
 	public Integer getVariablePositionID(Integer variableID) throws SQLException
 	{
-		if (!variablePositions.containsKey(variableID))
-		{			
-			String script = "SELECT wres.get_variableposition_id(" + getId() + ", " + variableID + ") AS variableposition_id;";
+		Integer id;
 
-			LOGGER.trace("getVariablePositionID - script: {}", script);
+		synchronized (POSITION_LOCK) {
+			if (!variablePositions.containsKey(variableID)) {
+				String script = "SELECT wres.get_variableposition_id(" + getId() + ", " + variableID + ") AS variableposition_id;";
 
-			Integer dbResult = Database.getResult(script, "variableposition_id");
+				LOGGER.trace("getVariablePositionID - script: {}", script);
 
-            LOGGER.trace("getVariablePositionID - dbResult: {}", dbResult);
+				Integer dbResult = Database.getResult(script, "variableposition_id");
 
-            if (dbResult == null)
-            {
-                // TODO: throw an appropriate checked exception instead of RuntimeException
-                throw new RuntimeException("Possibly missing data in the wres.variableposition table?");
-            }
-			variablePositions.put(variableID, dbResult);
+				LOGGER.trace("getVariablePositionID - dbResult: {}", dbResult);
+
+				if (dbResult == null) {
+					// TODO: throw an appropriate checked exception instead of RuntimeException
+					throw new RuntimeException("Possibly missing data in the wres.variableposition table?");
+				}
+				variablePositions.putIfAbsent(variableID, dbResult);
+			}
+
+			id = variablePositions.get(variableID);
 		}
 		
-		return variablePositions.get(variableID);
+		return id;
 	}
 	
 	/**

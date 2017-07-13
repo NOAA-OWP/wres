@@ -1,38 +1,16 @@
 package util;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.function.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import concurrency.Downloader;
 import concurrency.ProjectExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.MetricInputFactory;
-import wres.io.concurrency.Executor;
-import wres.io.concurrency.ForecastSaver;
-import wres.io.concurrency.MetricTask;
-import wres.io.concurrency.ObservationSaver;
-import wres.io.concurrency.SQLExecutor;
+import wres.io.concurrency.*;
 import wres.io.config.ProjectSettings;
 import wres.io.config.SystemSettings;
 import wres.io.config.specification.MetricSpecification;
@@ -49,6 +27,19 @@ import wres.io.utilities.Database;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.function.Function;
 
 /**
  * @author ctubbs
@@ -1043,7 +1034,7 @@ public final class MainFunctions
 
                     pairMapping = metric.getPairs();
                     
-                    for (final Integer leadKey : pairMapping.keySet())
+                    /*for (final Integer leadKey : pairMapping.keySet())
                     {
                         System.out.println("\tLead Time: " + leadKey);
                         for (final PairOfDoubleAndVectorOfDoubles pair : pairMapping.get(leadKey))
@@ -1067,7 +1058,7 @@ public final class MainFunctions
                         {
                             break;
                         }
-                    }
+                    }*/
 					result = SUCCESS;
                 }
                 catch(final Exception e)
@@ -1126,8 +1117,9 @@ public final class MainFunctions
                         }
                     }
                     ProgressMonitor.resetMonitor();
-
+					LOGGER.info("");
                     LOGGER.info("Restoring all suspended indices in the database...");
+                    LOGGER.info("");
                     Database.restoreAllIndices();
 
                     final Map<String, List<LeadResult>> results = new TreeMap<>();
