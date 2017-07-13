@@ -15,19 +15,19 @@ class SafeThresholdKey implements Threshold
     /**
      * The threshold value
      */
-    
+
     protected final Double threshold;
-    
+
     /**
      * The upper threshold value or null.
      */
-    
+
     protected final Double thresholdUpper;
-    
+
     /**
      * The threshold condition.
      */
-    
+
     protected final Condition condition;
 
     /**
@@ -92,15 +92,15 @@ class SafeThresholdKey implements Threshold
     @Override
     public boolean equals(final Object o)
     {
-        boolean returnMe = o instanceof SafeThresholdKey;
-        if(returnMe)
+        if(!(o instanceof SafeThresholdKey))
         {
-            final SafeThresholdKey in = (SafeThresholdKey)o;
-            returnMe = returnMe && in.getThreshold().equals(threshold) && in.getCondition().equals(condition);
-            if(in.hasBetweenCondition())
-            {
-                returnMe = returnMe && thresholdUpper.equals(in.getThresholdUpper());
-            }
+            return false;
+        }
+        final SafeThresholdKey in = (SafeThresholdKey)o;
+        boolean returnMe = in.getThreshold().equals(threshold) && in.getCondition().equals(condition);
+        if(in.hasBetweenCondition())
+        {
+            returnMe = returnMe && thresholdUpper.equals(in.getThresholdUpper());
         }
         return returnMe;
     }
@@ -119,7 +119,8 @@ class SafeThresholdKey implements Threshold
     @Override
     public String toString()
     {
-        if(threshold.equals(Double.NEGATIVE_INFINITY)) {
+        if(threshold.equals(Double.NEGATIVE_INFINITY))
+        {
             return "All data";
         }
         final String c = getConditionID();
@@ -163,14 +164,16 @@ class SafeThresholdKey implements Threshold
         {
             return -1;
         }
-        int returnMe = Double.compare(threshold,o.getThreshold());
-        if(returnMe != 0) {
+        int returnMe = Double.compare(threshold, o.getThreshold());
+        if(returnMe != 0)
+        {
             return returnMe;
         }
         if(hasBetweenCondition())
         {
-            returnMe = Double.compare(thresholdUpper,o.getThresholdUpper());
-            if(returnMe != 0) {
+            returnMe = Double.compare(thresholdUpper, o.getThresholdUpper());
+            if(returnMe != 0)
+            {
                 return returnMe;
             }
         }

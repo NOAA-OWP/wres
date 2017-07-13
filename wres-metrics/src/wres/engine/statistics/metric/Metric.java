@@ -3,6 +3,7 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 import java.util.function.Function;
 
+import wres.datamodel.metric.DatasetIdentifier;
 import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
@@ -11,6 +12,7 @@ import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
+import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
  * <p>
@@ -106,10 +108,16 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
     }
 
     /**
+     * <p>
      * An abstract builder to build a {@link Metric}. Implement this interface when building a {@link Metric}, and hide
      * the constructor. Add setters to set the parameters of the metric, as required, prior to building. For thread
      * safety, validate the parameters using the hidden constructor of the {@link Metric}, i.e. do not validate the
      * parameters in the {@link MetricBuilder} before construction.
+     * </p>
+     * <p>
+     * TODO: support construction with parameters by defining an abstract method, setParameters(EnumMap mapping). The
+     * EnumMap should map an Enum of parameter identifiers to {@link MetricParameter}.
+     * </p>
      */
 
     protected static abstract class MetricBuilder<P extends MetricInput<?>, Q extends MetricOutput<?>>
@@ -166,7 +174,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
     protected MetricOutputMetadata getMetadata(final MetricInput<?> input,
                                                final int sampleSize,
                                                final MetricConstants componentID,
-                                               final String baselineID)
+                                               final DatasetIdentifier baselineID)
     {
         final Metadata metIn = input.getMetadata();
         Dimension outputDim = null;
@@ -179,15 +187,18 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
         {
             outputDim = outputFactory.getMetadataFactory().getDimension();
         }
+        DatasetIdentifier identifier = metIn.getIdentifier();
+        //Add the scenario ID associated with the baseline input
+        //This is *not* the baseline ID of the baseline input
+        if(Objects.nonNull(baselineID)) {
+            identifier = outputFactory.getMetadataFactory().getDatasetIdentifier(identifier,baselineID.getScenarioID());
+        }
         return outputFactory.getMetadataFactory().getOutputMetadata(sampleSize,
                                                                     outputDim,
                                                                     metIn.getDimension(),
                                                                     getID(),
                                                                     componentID,
-                                                                    metIn.getGeospatialID(),
-                                                                    metIn.getVariableID(),
-                                                                    metIn.getScenarioID(),
-                                                                    baselineID);
+                                                                    identifier);
     }
 
     /**

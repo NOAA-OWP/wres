@@ -30,8 +30,11 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
         //template as the componentID in the metadata
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, s.getMetadataForBaseline()
-                                                        .getScenarioID());
+        final MetricOutputMetadata metOut =
+                                          getMetadata(s,
+                                                      s.getData().size(),
+                                                      MetricConstants.MAIN,
+                                                      s.getMetadataForBaseline().getIdentifier());
         final VectorOutput numerator = super.apply(s);
         final VectorOutput denominator = super.apply(s.getBaselineData());
         final double[] result = new double[]{

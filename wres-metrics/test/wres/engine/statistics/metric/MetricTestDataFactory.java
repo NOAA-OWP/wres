@@ -82,8 +82,12 @@ public final class MetricTestDataFactory
         baseline.add(metIn.pairOf(12.1, 13));
         baseline.add(metIn.pairOf(93.2, 94.8));
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata main = metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "DRRC2", "SQIN", "HEFS");
-        final Metadata base = metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "DRRC2", "SQIN", "ESP");
+        final Metadata main = metFac.getMetadata(values.size(),
+                                                 metFac.getDimension("CMS"),
+                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+        final Metadata base = metFac.getMetadata(values.size(),
+                                                 metFac.getDimension("CMS"),
+                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "ESP"));
         return metIn.ofSingleValuedPairs(values, baseline, main, base);
     }
 
@@ -103,7 +107,9 @@ public final class MetricTestDataFactory
             values.add(metIn.pairOf(5, 10));
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension("CMS"), "DRRC2", "SQIN", "HEFS");
+        final Metadata meta = metFac.getMetadata(values.size(),
+                                                 metFac.getDimension("CMS"),
+                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         return metIn.ofSingleValuedPairs(values, meta);
     }
 
@@ -140,7 +146,9 @@ public final class MetricTestDataFactory
             values.add(metIn.vectorOf(new boolean[]{false, false}));
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension(), "DRRC2", "SQIN", "HEFS");
+        final Metadata meta = metFac.getMetadata(values.size(),
+                                                 metFac.getDimension(),
+                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         return metIn.ofDichotomousPairs(values, meta); //Construct the pairs
     }
 
@@ -202,7 +210,9 @@ public final class MetricTestDataFactory
             values.add(metIn.vectorOf(new boolean[]{false, false, true, false, false, true}));
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension(), "DRRC2", "SQIN", "HEFS");
+        final Metadata meta = metFac.getMetadata(values.size(),
+                                                 metFac.getDimension(),
+                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         return metIn.ofMulticategoryPairs(values, meta); //Construct the pairs
     }
 
@@ -224,7 +234,9 @@ public final class MetricTestDataFactory
         values.add(metIn.pairOf(0, 0.0 / 5.0));
         values.add(metIn.pairOf(1, 1.0 / 5.0));
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata meta = metFac.getMetadata(values.size(), metFac.getDimension(), "DRRC2", "SQIN", "HEFS");
+        final Metadata meta = metFac.getMetadata(values.size(),
+                                                 metFac.getDimension(),
+                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         return metIn.ofDiscreteProbabilityPairs(values, meta);
     }
 
@@ -253,8 +265,12 @@ public final class MetricTestDataFactory
         baseline.add(metIn.pairOf(0, 4.0 / 5.0));
         baseline.add(metIn.pairOf(1, 1.0 / 5.0));
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata main = metFac.getMetadata(values.size(), metFac.getDimension(), "DRRC2", "SQIN", "HEFS");
-        final Metadata base = metFac.getMetadata(values.size(), metFac.getDimension(), "DRRC2", "SQIN", "ESP");
+        final Metadata main = metFac.getMetadata(values.size(),
+                                                 metFac.getDimension(),
+                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+        final Metadata base = metFac.getMetadata(values.size(),
+                                                 metFac.getDimension(),
+                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "ESP"));
         return metIn.ofDiscreteProbabilityPairs(values, baseline, main, base);
     }
 

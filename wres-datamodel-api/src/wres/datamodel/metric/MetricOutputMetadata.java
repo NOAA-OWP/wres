@@ -36,15 +36,6 @@ public interface MetricOutputMetadata extends Metadata
      */
 
     Dimension getInputDimension();
-    
-    /**
-     * Optional scenario identifier for the baseline metric data, such as the modeling scenario against which the 
-     * metric output is benchmarked.
-     * 
-     * @return the identifier associated with the baseline metric data or null
-     */
-
-    String getScenarioIDForBaseline();
 
     /**
      * <p>

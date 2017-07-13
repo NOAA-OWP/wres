@@ -11,8 +11,11 @@ import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -22,8 +25,17 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.ValidationEvent;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
@@ -31,17 +43,19 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.metric.*;
-import wres.engine.statistics.metric.Metric;
+import wres.datamodel.metric.DefaultMetricInputFactory;
+import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricInputFactory;
+import wres.datamodel.metric.MetricOutputFactory;
+import wres.datamodel.metric.MetricOutputMapByMetric;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
-
-import javax.xml.bind.*;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
 
 /**
  * Another Main. The reason for creating this class separately from Main is to defer conflict with the existing
@@ -433,12 +447,10 @@ public class Control
             // and produce a scalar output
             //Build an immutable collection of metrics, to be computed at each of several forecast lead times
             final MetricFactory metricFactory = MetricFactory.getInstance(outputFactory);
-            final List<Metric<SingleValuedPairs, ScalarOutput>> metrics = new ArrayList<>();
-            metrics.add(metricFactory.ofMeanError());
-            metrics.add(metricFactory.ofMeanAbsoluteError());
-            metrics.add(metricFactory.ofRootMeanSquareError());
             final MetricCollection<SingleValuedPairs, ScalarOutput> collection =
-                                                                               metricFactory.ofSingleValuedScalarCollection(metrics);
+                                                                               metricFactory.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
+                                                                                                                            MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                                                                            MetricConstants.ROOT_MEAN_SQUARE_ERROR);
             //Compute sequentially (i.e. not in parallel)
             return collection.apply(input);
         }

@@ -180,8 +180,23 @@ class SafeMulticategoryPairs implements MulticategoryPairs
             throw new MetricInputException("Specify a non-null baseline input and associated metadata or leave both "
                 + "null.");
         }
+        checkNullOrEmptyInputs(b.mainInput,b.baselineInput);
+        mainInput = b.mainInput;
+        mainMeta = b.mainMeta;
+        baselineInput = b.baselineInput;
+        baselineMeta = b.baselineMeta;
+    }
+
+    /**
+     * Checks for empty or null inputs.
+     * 
+     * @param mainInput the main input
+     * @param baselineInput the baseline input
+     */
+    
+    private void checkNullOrEmptyInputs(List<VectorOfBooleans> mainInput, List<VectorOfBooleans> baselineInput) {
         final List<Integer> size = new ArrayList<>();
-        b.mainInput.stream().forEach(t -> {
+        mainInput.stream().forEach(t -> {
             final int count = t.size();
             if(size.isEmpty())
             {
@@ -191,19 +206,12 @@ class SafeMulticategoryPairs implements MulticategoryPairs
             {
                 throw new MetricInputException("Two or more elements in the input have an unequal number of "
                     + "categories.");
-            }
-            final int outcomes = count / 2;
-            if(outcomes > 1 && count % 2 != 0)
-            {
-                throw new MetricInputException("The input should have an equivalent number of observed and predicted "
-                    + "outcomes.");
-            }
-
-            checkPair(outcomes, t);
+            }          
+            checkPair(t);
         });
-        if(!Objects.isNull(b.baselineInput))
+        if(!Objects.isNull(baselineInput))
         {
-            b.baselineInput.stream().forEach(t -> {
+            baselineInput.stream().forEach(t -> {
                 final int count = t.size();
                 if(size.isEmpty())
                 {
@@ -212,24 +220,13 @@ class SafeMulticategoryPairs implements MulticategoryPairs
                 if(!size.contains(count))
                 {
                     throw new MetricInputException("Two or more elements in the baseline input have an unequal number of "
-                        + "categories.");
+                        + "categories or categories that are unequal with the main input.");
                 }
-                final int outcomes = count / 2;
-                if(outcomes > 1 && count % 2 != 0)
-                {
-                    throw new MetricInputException("The baseline input should have an equivalent number of observed and "
-                        + "predicted outcomes.");
-                }
-                checkPair(outcomes, t);
+                checkPair(t);
             });
-        }
-        //Set
-        mainInput = b.mainInput;
-        mainMeta = b.mainMeta;
-        baselineInput = b.baselineInput;
-        baselineMeta = b.baselineMeta;
+        }      
     }
-
+    
     /**
      * Checks for exactly one observed occurrence and one predicted occurrence. Throws an exception if the condition is
      * not met.
@@ -239,9 +236,15 @@ class SafeMulticategoryPairs implements MulticategoryPairs
      * @throws MetricInputException if the input does not contain one observed occurrence and one predicted occurrence
      */
 
-    private void checkPair(final int outcomes, final VectorOfBooleans pair)
+    private void checkPair(final VectorOfBooleans pair)
     {
-
+        final int size = pair.size();
+        final int outcomes = size / 2;
+        if(outcomes > 1 && size % 2 != 0)
+        {
+            throw new MetricInputException("The input should have an equivalent number of observed and predicted "
+                + "outcomes.");
+        }
         final boolean[] check = pair.getBooleans();
         if(outcomes > 1)
         {

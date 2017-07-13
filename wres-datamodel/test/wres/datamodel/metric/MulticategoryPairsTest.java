@@ -37,7 +37,9 @@ public final class MulticategoryPairsTest
         {
             values.add(metIn.vectorOf(new boolean[]{true, true}));
         }
-        final Metadata meta = metaFac.getMetadata(values.size(), metaFac.getDimension(), "DRRC2", "SQIN", "HEFS");
+        final Metadata meta = metaFac.getMetadata(values.size(),
+                                                  metaFac.getDimension(),
+                                                  metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         MulticategoryPairs p = b.setData(values).setMetadata(meta).build();
 
         //Check category count

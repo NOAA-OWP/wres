@@ -39,15 +39,13 @@ public final class ContingencyTableTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.CONTINGENCY_TABLE,
-                                                                  MetricConstants.MAIN,
-                                                                  "DRRC2",
-                                                                  "SQIN",
-                                                                  "HEFS",
-                                                                  null);
+        final MetricOutputMetadata m1 =
+                                      metaFac.getOutputMetadata(input.getData().size(),
+                                                                metaFac.getDimension(),
+                                                                metaFac.getDimension(),
+                                                                MetricConstants.CONTINGENCY_TABLE,
+                                                                MetricConstants.MAIN,
+                                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
 
         //Build the metric
         final ContingencyTableBuilder<DichotomousPairs> b = new ContingencyTable.ContingencyTableBuilder<>();
