@@ -40,15 +40,13 @@ public final class CriticalSuccessIndexTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.CRITICAL_SUCCESS_INDEX,
-                                                                  MetricConstants.MAIN,
-                                                                  "DRRC2",
-                                                                  "SQIN",
-                                                                  "HEFS",
-                                                                  null);
+        final MetricOutputMetadata m1 =
+                                      metaFac.getOutputMetadata(input.getData().size(),
+                                                                metaFac.getDimension(),
+                                                                metaFac.getDimension(),
+                                                                MetricConstants.CRITICAL_SUCCESS_INDEX,
+                                                                MetricConstants.MAIN,
+                                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
 
         //Build the metric
         final CriticalSuccessIndexBuilder b = new CriticalSuccessIndex.CriticalSuccessIndexBuilder();

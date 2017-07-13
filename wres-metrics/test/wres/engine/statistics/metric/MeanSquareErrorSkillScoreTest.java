@@ -45,10 +45,10 @@ public final class MeanSquareErrorSkillScoreTest
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
                                                                   MetricConstants.MAIN,
-                                                                  "DRRC2",
-                                                                  "SQIN",
-                                                                  "HEFS",
-                                                                  "ESP");
+                                                                  metaFac.getDatasetIdentifier("DRRC2",
+                                                                                               "SQIN",
+                                                                                               "HEFS",
+                                                                                               "ESP"));
 
         //Build the metric
         final MeanSquareErrorSkillScoreBuilder<SingleValuedPairs> b =

@@ -6,7 +6,7 @@ import java.util.Objects;
 import wres.datamodel.MatrixOfDoubles;
 
 /**
- * An immutable matrix of outputs associated with a metric. The number of elements and the order in which they are 
+ * An immutable matrix of outputs associated with a metric. The number of elements and the order in which they are
  * stored, is prescribed by the metric from which the outputs originate.
  * 
  * @author james.brown@hydrosolved.com
@@ -43,14 +43,14 @@ class SafeMatrixOutput implements MatrixOutput
     @Override
     public boolean equals(final Object o)
     {
-        boolean start = o instanceof SafeMatrixOutput;
-        if(start)
+        if(!(o instanceof SafeMatrixOutput))
         {
-            final SafeMatrixOutput m = (SafeMatrixOutput)o;
-            start = meta.equals(m.getMetadata());
-            start = start && m.getData().rows() == output.rows() && m.getData().columns() == output.columns();
-            start = start && Arrays.deepEquals(output.getDoubles(), m.getData().getDoubles());
+            return false;
         }
+        final SafeMatrixOutput m = (SafeMatrixOutput)o;
+        boolean start = meta.equals(m.getMetadata());
+        start = start && m.getData().rows() == output.rows() && m.getData().columns() == output.columns();
+        start = start && Arrays.deepEquals(output.getDoubles(), m.getData().getDoubles());
         return start;
     }
 
@@ -59,7 +59,7 @@ class SafeMatrixOutput implements MatrixOutput
     {
         return getMetadata().hashCode() + Arrays.deepHashCode(output.getDoubles());
     }
-    
+
     /**
      * Construct the output.
      * 
@@ -69,10 +69,10 @@ class SafeMatrixOutput implements MatrixOutput
 
     SafeMatrixOutput(final MatrixOfDoubles output, final MetricOutputMetadata meta)
     {
-        Objects.requireNonNull(output,"Specify a non-null output.");
-        Objects.requireNonNull(meta,"Specify non-null metadata.");             
+        Objects.requireNonNull(output, "Specify a non-null output.");
+        Objects.requireNonNull(meta, "Specify non-null metadata.");
         this.output = output;
         this.meta = meta;
-    }    
+    }
 
 }

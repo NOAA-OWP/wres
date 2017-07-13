@@ -23,6 +23,7 @@ import junit.framework.TestCase;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
+import wres.datamodel.metric.DatasetIdentifier;
 import wres.datamodel.metric.DefaultMetadataFactory;
 import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.Dimension;
@@ -70,12 +71,13 @@ public class Chart2DTestOutput extends TestCase
             //(i.e. dependency injected from) wres-core as a MetadataFactory, which is part of the API
             final MetadataFactory factory = DefaultMetadataFactory.getInstance();
 
-            final String locationName = meta.getGeospatialID();
-            final String variableName = meta.getVariableID();
+            final DatasetIdentifier identifier = meta.getIdentifier();
+            final String locationName = identifier.getGeospatialID();
+            final String variableName = identifier.getVariableID();
             final String metricName = factory.getMetricName(meta.getMetricID());
             final String metricShortName = factory.getMetricShortName(meta.getMetricID());
-            final String primaryScenario = meta.getScenarioID();
-            final String baselineScenario = meta.getScenarioIDForBaseline(); //Not null if skill
+            final String primaryScenario = identifier.getScenarioID();
+            final String baselineScenario = identifier.getScenarioIDForBaseline(); //Not null if skill
             final Dimension units = meta.getDimension();
 
             //Compose a plot title
@@ -149,12 +151,13 @@ public class Chart2DTestOutput extends TestCase
             //(i.e. dependency injected from) wres-core as a MetadataFactory, which is part of the API
             final MetadataFactory factory = DefaultMetadataFactory.getInstance();
 
-            final String locationName = meta.getGeospatialID();
-            final String variableName = meta.getVariableID();
+            final DatasetIdentifier identifier = meta.getIdentifier();
+            final String locationName = identifier.getGeospatialID();
+            final String variableName = identifier.getVariableID();
             final String metricName = factory.getMetricName(meta.getMetricID());
             final String metricShortName = factory.getMetricShortName(meta.getMetricID());
-            final String primaryScenario = meta.getScenarioID();
-            final String baselineScenario = meta.getScenarioIDForBaseline(); //Not null if skill
+            final String primaryScenario = identifier.getScenarioID();
+            final String baselineScenario = identifier.getScenarioIDForBaseline(); //Not null if skill
             final Dimension outputUnits = meta.getDimension();
             final Dimension inputUnits = meta.getInputDimension();
 
@@ -230,10 +233,10 @@ public class Chart2DTestOutput extends TestCase
                                                                             metaFactory.getDimension("CMS"),
                                                                             MetricConstants.MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                             MetricConstants.MAIN,
-                                                                            "NPTP1",
-                                                                            "STREAMFLOW",
-                                                                            "HEFS",
-                                                                            "ESP");
+                                                                            metaFactory.getDatasetIdentifier("NPTP1",
+                                                                                                             "STREAMFLOW",
+                                                                                                             "HEFS",
+                                                                                                             "ESP"));
 
             //Iterate through the lead times
             while(d.hasNext())

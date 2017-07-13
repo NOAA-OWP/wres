@@ -49,10 +49,10 @@ public final class BrierSkillScoreTest
                                                                   metaFac.getDimension(),
                                                                   MetricConstants.BRIER_SKILL_SCORE,
                                                                   MetricConstants.MAIN,
-                                                                  "DRRC2",
-                                                                  "SQIN",
-                                                                  "HEFS",
-                                                                  "ESP");
+                                                                  metaFac.getDatasetIdentifier("DRRC2",
+                                                                                               "SQIN",
+                                                                                               "HEFS",
+                                                                                               "ESP"));
 
         //Check the results 
         final VectorOutput actual = bss.apply(input);
