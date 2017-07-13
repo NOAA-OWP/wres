@@ -39,17 +39,18 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.DataFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInputFactory;
 import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
-import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.io.data.caching.MeasurementUnits;
@@ -71,8 +72,6 @@ public class Control
     private static final AtomicBoolean messagedForEarliestDate = new AtomicBoolean(false);
     private static final AtomicBoolean messagedForLatestDate = new AtomicBoolean(false);
     private static final AtomicBoolean messagedSqlStatement = new AtomicBoolean(false);
-    private static MetricInputFactory inputFactory = DefaultMetricInputFactory.getInstance();
-    private static final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
 
     /** System property used to retrieve max thread count, passed as -D */
     public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
@@ -140,11 +139,9 @@ public class Control
                 LOGGER.debug("JAXBContext: {}", jaxbContext);
                 LOGGER.debug("Unmarshaller: {}", jaxbUnmarshaller);
                 LOGGER.debug("ProjectConfig.getName(): {}", projectConfig.getLabel());
-                LOGGER.debug("ProjectConfig left label: {}", projectConfig.getDatasources().getLeft().getLabel());
-                //LOGGER.debug("ProjectConfig destination 0: {}", projectConfig.getOutputs().getDestination().get(0).getValue());
                 LOGGER.debug("ProjectConfig metric 0: {}", projectConfig.getOutputs().getMetric().get(0).getValue());
-                LOGGER.debug("ProjectConfig forecast variable: {}", projectConfig.getDatasources());
-                //LOGGER.debug("ProjectConfig \"config\" element: {}", projectConfig.getOutputs().getDestination().get(1).getConfig().getAny().get(0).getTextContent());
+                LOGGER.debug("ProjectConfig forecast variable: {}", projectConfig.getInputs());
+
                 for (DestinationConfig d : projectConfig.getOutputs().getDestination())
                 {
                     LOGGER.debug("Location of destination {} is line {} col {}",
@@ -176,7 +173,7 @@ public class Control
 
         Map<DestinationConfig,String> visConfigs = new HashMap<>();
 
-        // reading the file again so we can get the exact parts we want.
+        // Read the file again so we can get the exact parts we want for vis.
 
         List<String> xmlLines = Files.readAllLines(Paths.get(fileName));
         // To read the xml configuration for vis into a string, we go find the
@@ -440,6 +437,8 @@ public class Control
             // What follows for the rest of call() is from MetricCollectionTest.
 
             // Convert pairs into metric input
+            final MetricInputFactory inputFactory = DefaultMetricInputFactory.getInstance();
+            final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
             final SingleValuedPairs input = inputFactory.ofSingleValuedPairs(simplePairs,
                                                                              inputFactory.getMetadataFactory()
                                                                                          .getMetadata(pairs.size()));
@@ -448,12 +447,10 @@ public class Control
             // and produce a scalar output
             //Build an immutable collection of metrics, to be computed at each of several forecast lead times
             final MetricFactory metricFactory = MetricFactory.getInstance(outputFactory);
-            final List<Metric<SingleValuedPairs, ScalarOutput>> metrics = new ArrayList<>();
-            metrics.add(metricFactory.ofMeanError());
-            metrics.add(metricFactory.ofMeanAbsoluteError());
-            metrics.add(metricFactory.ofRootMeanSquareError());
             final MetricCollection<SingleValuedPairs, ScalarOutput> collection =
-                                                                               metricFactory.ofSingleValuedScalarCollection(metrics);
+                                                                               metricFactory.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
+                                                                                                                            MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                                                                            MetricConstants.ROOT_MEAN_SQUARE_ERROR);
             //Compute sequentially (i.e. not in parallel)
             return collection.apply(input);
         }
@@ -529,7 +526,7 @@ public class Control
                 {
                     final double observationValue = resultSet.getFloat("observation");
                     final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
-                    final PairOfDoubleAndVectorOfDoubles pair = inputFactory.pairOf(observationValue, forecastValues);
+                    final PairOfDoubleAndVectorOfDoubles pair = DataFactory.pairOf(observationValue, forecastValues);
 
                     LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
                                  pair.getItemOne(),
@@ -559,25 +556,25 @@ public class Control
      */
     private static String getPairSqlFromConfigForLead(final ProjectConfig config, final int lead) throws IOException
     {
-        if(config.getDatasources() == null
-                || config.getDatasources().getLeft() == null
-                || config.getDatasources().getLeft().getVariable() == null
-                || config.getDatasources().getLeft().getVariable().getValue() == null
-                || config.getDatasources().getRight() == null
-                || config.getDatasources().getRight().getVariable() == null
-                || config.getDatasources().getRight().getVariable().getValue() == null
+        if(config.getInputs() == null
+                || config.getInputs().getLeft() == null
+                || config.getInputs().getLeft().getVariable() == null
+                || config.getInputs().getLeft().getVariable().getValue() == null
+                || config.getInputs().getRight() == null
+                || config.getInputs().getRight().getVariable() == null
+                || config.getInputs().getRight().getVariable().getValue() == null
                 || config.getPair() == null
                 || config.getPair().getUnit() == null)
         {
-            throw new IllegalArgumentException("Forecast and obs variables as well as target unit must be specified");
+            throw new IllegalArgumentException("Forecast and obs variables as well as target unit must be specified.");
         }
 
-        final String observationVariableName = config.getDatasources()
+        final String observationVariableName = config.getInputs()
                                                      .getLeft()
                                                      .getVariable()
                                                      .getValue();
 
-        final String forecastVariableName = config.getDatasources()
+        final String forecastVariableName = config.getInputs()
                                                   .getRight()
                                                   .getVariable()
                                                   .getValue();
@@ -775,70 +772,40 @@ public class Control
      */
     private static LocalDateTime getEarliestDateTimeFromDataSources(ProjectConfig config)
     {
-        if (config.getDatasources() == null)
+        if (config.getConditions() == null)
         {
             return null;
         }
 
         String earliest = "";
 
-        if (config.getDatasources().getLeft() == null
-                || config.getDatasources().getLeft().getConditions() == null
-                || config.getDatasources().getLeft().getConditions().getDates() == null)
+        try
         {
-            try
-            {
-                earliest = config.getDatasources().getRight().getConditions().getDates().getEarliest();
-                return LocalDateTime.parse(earliest);
-            }
-            catch (NullPointerException npe)
-            {
-                if (!messagedForEarliestDate.getAndSet(true))
-                {
-                    LOGGER.info("No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" ... under <conditions> under <left> or <right> to specify an earliest date.");
-                }
-                return null;
-            }
-            catch (DateTimeParseException dtpe)
-            {
-                if (!messagedForEarliestDate.getAndSet(true))
-                {
-                    LOGGER.warn(
-                            "Correct the date \"{}\" in <right> datasource to ISO8601 format such as \"2017-06-27T16:16\"",
-                            earliest);
-                }
-                return null;
-            }
+            earliest = config.getConditions().getDates().getEarliest();
+            return LocalDateTime.parse(earliest);
         }
-        else if (config.getDatasources().getRight() == null
-                || config.getDatasources().getRight().getConditions() == null
-                || config.getDatasources().getRight().getConditions().getDates() == null)
+        catch (NullPointerException npe)
         {
-            try
+            if (!messagedForEarliestDate.getAndSet(true))
             {
-                earliest = config.getDatasources().getLeft().getConditions().getDates().getEarliest();
-                return LocalDateTime.parse(earliest);
+                LOGGER.info("No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-07-06T11:35\" /> under <conditions> (near line {} column {} of project file) to specify an earliest date.",
+                        config.getConditions().sourceLocation().getLineNumber(),
+                        config.getConditions().sourceLocation().getColumnNumber());
             }
-            catch (NullPointerException npe)
-            {
-                if (!messagedForEarliestDate.getAndSet(true))
-                {
-                    LOGGER.info("No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" ... under <conditions> under <left> or <right> to specify an earliest date.");
-                }
-                return null;
-            }
-            catch (DateTimeParseException dtpe)
-            {
-                if (!messagedForEarliestDate.getAndSet(true))
-                {
-                    LOGGER.warn(
-                            "Correct the date \"{}\" in <left> datasource to ISO8601 format such as \"2017-06-27T16:16\"",
-                            earliest);
-                }
-                return null;
-            }
+            return null;
         }
-        return null;
+        catch (DateTimeParseException dtpe)
+        {
+            if (!messagedForEarliestDate.getAndSet(true))
+            {
+                LOGGER.warn(
+                        "Correct the date \"{}\" near line {} column {} to ISO8601 format such as \"2017-06-27T16:16\"",
+                        earliest,
+                        config.getConditions().getDates().sourceLocation().getLineNumber(),
+                        config.getConditions().getDates().sourceLocation().getColumnNumber());
+            }
+            return null;
+        }
     }
 
     /**
@@ -850,71 +817,40 @@ public class Control
      */
     private static LocalDateTime getLatestDateTimeFromDataSources(ProjectConfig config)
     {
-        if (config.getDatasources() == null)
+        if (config.getConditions() == null)
         {
             return null;
         }
 
         String latest = "";
 
-        if (config.getDatasources().getLeft() == null
-                || config.getDatasources().getLeft().getConditions() == null
-                || config.getDatasources().getLeft().getConditions().getDates() == null)
+        try
         {
-            try
-            {
-                latest = config.getDatasources().getRight().getConditions().getDates().getLatest();
-                return LocalDateTime.parse(latest);
-            }
-            catch (NullPointerException npe)
-            {
-                if (!messagedForLatestDate.getAndSet(true))
-                {
-                    LOGGER.info(
-                            "No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-06-27T16:16\"> ... under <conditions> under <left> or <right> to specify a latest date.");
-                }
-                return null;
-            }
-            catch (DateTimeParseException dtpe)
-            {
-                if (!messagedForLatestDate.getAndSet(true))
-                {
-                    LOGGER.warn(
-                            "Correct the date \"{}\" in <right> datasource to ISO8601 format such as \"2017-06-27T16:16\"",
-                            latest);
-                }
-                return null;
-            }
+            latest = config.getConditions().getDates().getLatest();
+            return LocalDateTime.parse(latest);
         }
-        else if (config.getDatasources().getRight() == null
-                || config.getDatasources().getRight().getConditions() == null
-                || config.getDatasources().getRight().getConditions().getDates() == null)
+        catch (NullPointerException npe)
         {
-            try
+            if (!messagedForLatestDate.getAndSet(true))
             {
-                latest = config.getDatasources().getLeft().getConditions().getDates().getLatest();
-                return LocalDateTime.parse(latest);
+                LOGGER.info("No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-07-06T11:35\" />  under <conditions> (near line {} col {} of project file) to specify a latest date.",
+                        config.getConditions().sourceLocation().getLineNumber(),
+                        config.getConditions().sourceLocation().getColumnNumber());
             }
-            catch (NullPointerException npe)
-            {
-                if (!messagedForLatestDate.getAndSet(true))
-                {
-                    LOGGER.info(
-                            "No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-06-27T16:16\">... under <conditions> under <left> or <right> to specify a latest date.");
-                }
-                return null;
-            }
-            catch (DateTimeParseException dtpe)
-            {
-                if (!messagedForLatestDate.getAndSet(true))
-                {
-                    LOGGER.warn(
-                            "Correct the date \"{}\" in <left> datasource to ISO8601 format such as \"2017-06-27T16:16\"",
-                            latest);
-                }
-                return null;
-            }
+            return null;
         }
-        return null;
+        catch (DateTimeParseException dtpe)
+        {
+            if (!messagedForLatestDate.getAndSet(true))
+            {
+                LOGGER.warn(
+                        "Correct the date \"{}\" after line {} col {} to ISO8601 format such as \"2017-06-27T16:16\"",
+                        latest,
+                        config.getConditions().getDates().sourceLocation().getLineNumber(),
+                        config.getConditions().getDates().sourceLocation().getColumnNumber());
+            }
+            return null;
+        }
     }
 }
+

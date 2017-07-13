@@ -28,28 +28,19 @@ public final class ScalarOutputTest
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  "A",
-                                                                  "B",
-                                                                  "C",
-                                                                  null);
+                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata(11,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  "A",
-                                                                  "B",
-                                                                  "C",
-                                                                  null);
+                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
         final MetricOutputMetadata m3 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  "B",
-                                                                  "B",
-                                                                  "C",
-                                                                  null);
+                                                                  metaFac.getDatasetIdentifier("B", "B", "C"));
         final ScalarOutput s = d.ofScalarOutput(1.0, m1);
         final ScalarOutput t = d.ofScalarOutput(1.0, m1);
         assertTrue("Expected equal outputs.", s.equals(t));
@@ -79,10 +70,7 @@ public final class ScalarOutputTest
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  "A",
-                                                                  "B",
-                                                                  "C",
-                                                                  null);
+                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
         final ScalarOutput s = d.ofScalarOutput(1.0, m1);
         final ScalarOutput t = d.ofScalarOutput(1.0, m1);
         assertTrue("Expected equal string representations.", s.toString().equals(t.toString()));
@@ -102,19 +90,13 @@ public final class ScalarOutputTest
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  "A",
-                                                                  "B",
-                                                                  "C",
-                                                                  null);
+                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  "B",
-                                                                  "B",
-                                                                  "C",
-                                                                  null);
+                                                                  metaFac.getDatasetIdentifier("B", "B", "C"));
         final ScalarOutput q = d.ofScalarOutput(1.0, m1);
         final ScalarOutput r = d.ofScalarOutput(1.0, m2);
         assertTrue("Unequal metadata.", !q.getMetadata().equals(r.getMetadata()));
@@ -134,28 +116,19 @@ public final class ScalarOutputTest
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  "A",
-                                                                  "B",
-                                                                  "C",
-                                                                  null);
+                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  "A",
-                                                                  "B",
-                                                                  "C",
-                                                                  null);
+                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
         final MetricOutputMetadata m3 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  "B",
-                                                                  "B",
-                                                                  "C",
-                                                                  null);
+                                                                  metaFac.getDatasetIdentifier("B", "B", "C"));
         final ScalarOutput q = d.ofScalarOutput(1.0, m1);
         final ScalarOutput r = d.ofScalarOutput(1.0, m2);
         assertTrue("Expected equal hash codes.", q.hashCode() == r.hashCode());

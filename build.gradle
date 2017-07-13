@@ -152,7 +152,7 @@ project(':wres-core')
 
     mainClassName = 'Main'
 
-    applicationDefaultJvmArgs = ['-Xmx3600m', '-Xms3200m']
+    applicationDefaultJvmArgs = ['-Xms1024m']
 
     dependencies
     {

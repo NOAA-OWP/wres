@@ -43,14 +43,12 @@ class SafeVectorOutput implements VectorOutput
     @Override
     public boolean equals(final Object o)
     {
-        boolean start = o instanceof SafeVectorOutput;
-        if(start)
+        if(!(o instanceof SafeVectorOutput))
         {
-            final SafeVectorOutput v = (SafeVectorOutput)o;
-            start = meta.equals(v.getMetadata());
-            start = start && Arrays.equals(output.getDoubles(), v.getData().getDoubles());
+            return false;
         }
-        return start;
+        final SafeVectorOutput v = (SafeVectorOutput)o;
+        return meta.equals(v.getMetadata()) && Arrays.equals(output.getDoubles(), v.getData().getDoubles());
     }
 
     @Override

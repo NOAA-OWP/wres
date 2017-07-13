@@ -151,12 +151,13 @@ final class SafeQuantileKey extends SafeThresholdKey implements Quantile
             return super.toString();
         }
         final String c = getConditionID();
+        String common = " [Pr = ";
         if(hasBetweenCondition())
         {
-            return ">= " + threshold + " [Pr = " + probability + "] && < " + thresholdUpper + " [Pr = "
+            return ">= " + threshold + common + probability + "] && < " + thresholdUpper + common
                 + probabilityUpper + "]";
         }
-        return c + threshold + " [Pr = " + probability + "]";
+        return c + threshold + common + probability + "]";
     }
 
 }

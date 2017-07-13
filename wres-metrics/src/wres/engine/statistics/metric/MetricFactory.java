@@ -1,6 +1,5 @@
 package wres.engine.statistics.metric;
 
-import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.metric.DichotomousPairs;
@@ -11,10 +10,19 @@ import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
+import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
+import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
+ * <p>
  * A factory class for constructing metrics.
+ * </p>
+ * <p>
+ * TODO: support construction with parameters by first defining a setParameters(EnumMap mapping) in the
+ * {@link MetricBuilder} and then adding parametric methods here. The EnumMap should map an Enum of parameter
+ * identifiers to {@link MetricParameter}.
+ * </p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -35,7 +43,13 @@ public class MetricFactory
      */
 
     private static MetricFactory instance = null;
+    
+    /**
+     * String used in several error messages.
+     */
 
+    private static final String error = "Unrecognized metric for identifier"; 
+    
     /**
      * Returns an instance of a {@link MetricFactory}.
      * 
@@ -57,16 +71,29 @@ public class MetricFactory
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
      * {@link ScalarOutput}.
      * 
-     * @param metrics the metric identifiers
+     * @param metric the metric identifiers
      * @return a collection of metrics
      */
 
-    public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(final List<Metric<SingleValuedPairs, ScalarOutput>> metrics)
+    public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(MetricConstants... metric)
     {
         final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
-        for(final Metric<SingleValuedPairs, ScalarOutput> next: metrics)
+        for(MetricConstants next: metric)
         {
-            builder.add(next);
+            switch(next)
+            {
+                case MEAN_ABSOLUTE_ERROR:
+                    builder.add(ofMeanAbsoluteError());
+                    break;
+                case MEAN_ERROR:
+                    builder.add(ofMeanError());
+                    break;
+                case ROOT_MEAN_SQUARE_ERROR:
+                    builder.add(ofRootMeanSquareError());
+                    break;
+                default:
+                    throw new IllegalArgumentException(error +" '"+ next + "'.");
+            }
         }
         builder.setOutputFactory(outputFactory);
         return builder.build();
@@ -76,16 +103,26 @@ public class MetricFactory
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
      * {@link VectorOutput}.
      * 
-     * @param metrics the metric identifiers
+     * @param metric the metric identifiers
      * @return a collection of metrics
      */
 
-    public MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection(final List<Metric<SingleValuedPairs, VectorOutput>> metrics)
+    public MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection(MetricConstants... metric)
     {
         final MetricCollectionBuilder<SingleValuedPairs, VectorOutput> builder = MetricCollectionBuilder.of();
-        for(final Metric<SingleValuedPairs, VectorOutput> next: metrics)
+        for(MetricConstants next: metric)
         {
-            builder.add(next);
+            switch(next)
+            {
+                case MEAN_SQUARE_ERROR:
+                    builder.add(ofMeanSquareError());
+                    break;
+                case MEAN_SQUARE_ERROR_SKILL_SCORE:
+                    builder.add(ofMeanSquareErrorSkillScore());
+                    break;
+                default:
+                    throw new IllegalArgumentException(error +" '"+ next + "'.");
+            }
         }
         builder.setOutputFactory(outputFactory);
         return builder.build();
@@ -95,35 +132,64 @@ public class MetricFactory
      * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
      * {@link VectorOutput}.
      * 
-     * @param metrics the metric identifiers
+     * @param metric the metric identifiers
      * @return a collection of metrics
      */
 
-    public MetricCollection<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVectorCollection(final List<Metric<DiscreteProbabilityPairs, VectorOutput>> metrics)
+    public MetricCollection<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVectorCollection(MetricConstants... metric)
     {
         final MetricCollectionBuilder<DiscreteProbabilityPairs, VectorOutput> builder = MetricCollectionBuilder.of();
-        for(final Metric<DiscreteProbabilityPairs, VectorOutput> next: metrics)
+        for(MetricConstants next: metric)
         {
-            builder.add(next);
+            switch(next)
+            {
+                case BRIER_SCORE:
+                    builder.add(ofBrierScore());
+                    break;
+                case BRIER_SKILL_SCORE:
+                    builder.add(ofBrierSkillScore());
+                    break;
+                default:
+                    throw new IllegalArgumentException(error +" '"+ next + "'.");
+            }
         }
         builder.setOutputFactory(outputFactory);
         return builder.build();
     }
-
+    
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
      * {@link ScalarOutput}.
      * 
-     * @param metrics the metric identifiers
+     * @param metric the metric identifiers
      * @return a collection of metrics
      */
 
-    public MetricCollection<DichotomousPairs, ScalarOutput> ofDichotomousScalarCollection(final List<Metric<DichotomousPairs, ScalarOutput>> metrics)
+    public MetricCollection<DichotomousPairs, ScalarOutput> ofDichotomousScalarCollection(MetricConstants... metric)
     {
         final MetricCollectionBuilder<DichotomousPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
-        for(final Metric<DichotomousPairs, ScalarOutput> next: metrics)
+        for(MetricConstants next: metric)
         {
-            builder.add(next);
+            switch(next)
+            {
+                case CRITICAL_SUCCESS_INDEX:
+                    builder.add(ofCriticalSuccessIndex());
+                    break;
+                case EQUITABLE_THREAT_SCORE:
+                    builder.add(ofEquitableThreatScore());
+                    break;
+                case PEIRCE_SKILL_SCORE:
+                    builder.add(ofPeirceSkillScore());
+                    break;    
+                case PROBABILITY_OF_DETECTION:
+                    builder.add(ofProbabilityOfDetection());
+                    break;    
+                case PROBABILITY_OF_FALSE_DETECTION:
+                    builder.add(ofProbabilityOfFalseDetection());
+                    break;     
+                default:
+                    throw new IllegalArgumentException(error +" '"+ next + "'.");
+            }
         }
         builder.setOutputFactory(outputFactory);
         return builder.build();

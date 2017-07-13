@@ -49,10 +49,9 @@ public final class BrierScoreTest
                                                                   metaFac.getDimension(),
                                                                   MetricConstants.BRIER_SCORE,
                                                                   MetricConstants.MAIN,
-                                                                  "DRRC2",
-                                                                  "SQIN",
-                                                                  "HEFS",
-                                                                  null);
+                                                                  metaFac.getDatasetIdentifier("DRRC2",
+                                                                                               "SQIN",
+                                                                                               "HEFS"));
 
         //Check the results       
         final VectorOutput actual = bs.apply(input);

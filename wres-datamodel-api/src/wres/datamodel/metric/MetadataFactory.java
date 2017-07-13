@@ -36,17 +36,11 @@ public interface MetadataFactory
      * 
      * @param sampleSize the sample size
      * @param dim the dimension
-     * @param geospatialID an optional geospatial (e.g. location) identifier (may be null)
-     * @param variableID an optional variable identifier (may be null)
-     * @param scenarioID an optional scenario identifier associated with the metric data (may be null)
+     * @param identifier an optional dataset identifier (may be null)
      * @return a {@link Metadata} object
      */
 
-    Metadata getMetadata(final int sampleSize,
-                         final Dimension dim,
-                         final String geospatialID,
-                         String variableID,
-                         String scenarioID);
+    Metadata getMetadata(final int sampleSize, final Dimension dim, final DatasetIdentifier identifier);
 
     /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
@@ -91,10 +85,7 @@ public interface MetadataFactory
      * @param inputDim the input dimension
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
-     * @param geospatialID an optional geospatial (e.g. location) identifier (may be null)
-     * @param variableID an optional variable identifier (may be null)
-     * @param scenarioID an optional scenario identifier associated with the metric data (may be null)
-     * @param baseScenarioID an optional scenario identifier associated with the baseline metric data (may be null)
+     * @param identifier an optional dataset identifier (may be null)
      * @return a {@link MetricOutputMetadata} object
      */
 
@@ -103,10 +94,22 @@ public interface MetadataFactory
                                            final Dimension inputDim,
                                            final MetricConstants metricID,
                                            final MetricConstants componentID,
-                                           final String geospatialID,
+                                           final DatasetIdentifier identifier);
+
+    /**
+     * Returns a dataset identifier.
+     * 
+     * @param geospatialID an optional geospatial identifier (may be null)
+     * @param variableID an optional variable identifier (may be null)
+     * @param scenarioID an optional scenario identifier (may be null)
+     * @param baselineScenarioID an optional scenario identifier for a baseline dataset (may be null)
+     * @return a dataset identifier
+     */
+
+    DatasetIdentifier getDatasetIdentifier(final String geospatialID,
                                            final String variableID,
                                            final String scenarioID,
-                                           final String baseScenarioID);
+                                           final String baselineScenarioID);
 
     /**
      * Returns a {@link Dimension} that is nominally dimensionless.
@@ -154,5 +157,37 @@ public interface MetadataFactory
      */
 
     String getMetricComponentName(final MetricConstants identifier);
+    
+
+    /**
+     * Returns a dataset identifier.
+     * 
+     * @param geospatialID an optional geospatial identifier (may be null)
+     * @param variableID an optional variable identifier (may be null)
+     * @param scenarioID an optional scenario identifier (may be null)
+     * @return a dataset identifier
+     */
+
+    default DatasetIdentifier getDatasetIdentifier(final String geospatialID,
+                                                   final String variableID,
+                                                   final String scenarioID)
+    {
+        return getDatasetIdentifier(geospatialID, variableID, scenarioID, null);
+    }
+
+    /**
+     * Returns a new dataset identifier with an override for the {@link DatasetIdentifier#getScenarioIDForBaseline()}.
+     * 
+     * @param identifier the dataset identifier
+     * @param baselineScenarioID a scenario identifier for a baseline dataset
+     * @return a dataset identifier
+     */
+    default DatasetIdentifier getDatasetIdentifier(DatasetIdentifier identifier, String baselineScenarioID)
+    {
+        return getDatasetIdentifier(identifier.getGeospatialID(),
+                                    identifier.getVariableID(),
+                                    identifier.getScenarioID(),
+                                    baselineScenarioID);
+    }    
 
 }

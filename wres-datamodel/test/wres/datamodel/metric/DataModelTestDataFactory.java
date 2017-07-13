@@ -53,10 +53,10 @@ public final class DataModelTestDataFactory
                                                                             metaFactory.getDimension("CMS"),
                                                                             MetricConstants.MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                             MetricConstants.MAIN,
-                                                                            "DRRC2",
-                                                                            "SQIN",
-                                                                            "HEFS",
-                                                                            "ESP");
+                                                                            metaFactory.getDatasetIdentifier("DRRC2",
+                                                                                                             "SQIN",
+                                                                                                             "HEFS",
+                                                                                                             "ESP"));
 
             //Iterate through the lead times
             while(d.hasNext())

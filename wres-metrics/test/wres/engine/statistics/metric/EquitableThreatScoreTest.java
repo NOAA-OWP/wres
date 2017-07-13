@@ -38,15 +38,13 @@ public final class EquitableThreatScoreTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.EQUITABLE_THREAT_SCORE,
-                                                                  MetricConstants.MAIN,
-                                                                  "DRRC2",
-                                                                  "SQIN",
-                                                                  "HEFS",
-                                                                  null);
+        final MetricOutputMetadata m1 =
+                                      metaFac.getOutputMetadata(input.getData().size(),
+                                                                metaFac.getDimension(),
+                                                                metaFac.getDimension(),
+                                                                MetricConstants.EQUITABLE_THREAT_SCORE,
+                                                                MetricConstants.MAIN,
+                                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
 
         //Build the metric
         final EquitableThreatScoreBuilder b = new EquitableThreatScore.EquitableThreatScoreBuilder();

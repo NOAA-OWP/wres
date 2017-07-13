@@ -66,8 +66,7 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap(final List<T> input)
     {
         Objects.requireNonNull(input, "Specify a non-null list of inputs.");
-        final wres.datamodel.metric.SafeMetricOutputMapByMetric.Builder<T> builder =
-                                                                                   new SafeMetricOutputMapByMetric.Builder<>();
+        final SafeMetricOutputMapByMetric.Builder<T> builder = new SafeMetricOutputMapByMetric.Builder<>();
         input.forEach(a -> {
             final MapBiKey<MetricConstants, MetricConstants> key = getMapKey(a.getMetadata().getMetricID(),
                                                                              a.getMetadata().getMetricComponentID());
@@ -80,9 +79,9 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> ofMap(final Map<MapBiKey<Integer, Threshold>, T> input)
     {
         Objects.requireNonNull(input, "Specify a non-null input map.");
-        final wres.datamodel.metric.SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
-                                                                                          new SafeMetricOutputMapByLeadThreshold.Builder<>();
-        input.forEach((key, value) -> builder.put(key, value));
+        final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
+                                                                    new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        input.forEach(builder::put);
         return builder.build();
     }
 
@@ -90,9 +89,9 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> combine(final List<MetricOutputMapByLeadThreshold<T>> input)
     {
         Objects.requireNonNull(input, "Specify a non-null input map.");
-        final wres.datamodel.metric.SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
-                                                                                          new SafeMetricOutputMapByLeadThreshold.Builder<>();
-        input.forEach(a -> a.forEach((key, value) -> builder.put(key, value)));
+        final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
+                                                                    new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        input.forEach(a -> a.forEach(builder::put));
         builder.setOverrideMetadata(input.get(0).getMetadata());
         return builder.build();
     }

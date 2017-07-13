@@ -4,6 +4,84 @@
            jaxb:version="2.1"
            elementFormDefault="qualified">
 
+    <xs:simpleType name="datasourceType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ensemble forecasts" />
+            <xs:enumeration value="simple forecasts" />
+            <xs:enumeration value="observations" />
+            <xs:enumeration value="assimilations" />
+            <xs:enumeration value="model outputs" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="format">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="PI-XML" />
+            <xs:enumeration value="netCDF" />
+            <xs:enumeration value="datacard" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="ensembleCondition">
+        <xs:attribute name="label" type="xs:string" />
+        <xs:attribute name="name" type="xs:string" />
+        <xs:attribute name="member_id" type="xs:string" />
+        <xs:attribute name="qualifier" type="xs:string" />
+        <xs:attribute name="exclude" type="xs:boolean" default="false" />
+    </xs:complexType>
+
+    <xs:complexType name="conditions">
+        <xs:sequence>
+            <xs:element name="dates" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <!-- xs:dateTime ends up being yucky XMLGregorianCalendar. Use string, let app deal with it. -->
+                    <xs:attribute name="earliest" type="xs:string" />
+                    <xs:attribute name="latest" type="xs:string" />
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="issuedDates" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="earliest" type="xs:string" />
+                    <xs:attribute name="latest" type="xs:string" />
+                </xs:complexType>
+            </xs:element>
+            <!-- values min and max will take from the pair target unit? -->
+            <xs:element name="values" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="minimum" type="xs:double" />
+                    <xs:attribute name="maximum" type="xs:double" />
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="feature" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:attribute name="label" type="xs:string" />
+                    <xs:attribute name="lid" type="xs:string" />
+                    <xs:attribute name="comid" type="xs:long" />
+                    <xs:attribute name="gage_id" type="xs:string" />
+                    <xs:attribute name="huc" type="xs:string" />
+                    <xs:attribute name="name" type="xs:string" />
+                    <xs:attribute name="exclude" type="xs:boolean" default="false" />
+                </xs:complexType>
+            </xs:element>
+
+            <!-- idea here is mask is a WKT, or optionally a filename,
+                 so you could do either:
+                 <mask file="file:///my/file.shp" />
+                 OR
+                 <mask>poly( whatever well-known-text )</mask> -->
+            <xs:element name="mask" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:string">
+                            <xs:attribute name="file" type="xs:anyURI" />
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
     <xs:complexType name="datasource">
 
         <!-- for class naming using xjc-->
@@ -14,14 +92,19 @@
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="type" type="xs:string" />
+            <xs:element name="type" type="datasourceType" />
 
             <xs:element name="source" minOccurs="1" maxOccurs="unbounded">
                 <xs:complexType>
                     <xs:simpleContent>
                         <xs:extension base="xs:anyURI">
-                            <xs:attribute name="format" type="xs:string" />
+                            <xs:attribute name="format" type="format" />
                             <xs:attribute name="unit" type="xs:string" />
+                            <xs:attribute name="location" type="xs:string" />
+                            <xs:attribute name="zoneOffset" type="xs:string" />
+                            <xs:attribute name="missingValue" type="xs:string" />
+                            <xs:attribute name="all" type="xs:boolean" />
+                            <xs:attribute name="recursive" type="xs:boolean" />
                         </xs:extension>
                     </xs:simpleContent>
                 </xs:complexType>
@@ -36,49 +119,30 @@
                     </xs:simpleContent>
                 </xs:complexType>
             </xs:element>
-            <xs:element name="conditions" minOccurs="0" maxOccurs="1">
+
+            <xs:element name="ensemble" type="ensembleCondition" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="arbitraryFunctionToApplyToValues" type="xs:string" minOccurs="0" maxOccurs="1" />
+            <xs:element name="timeShift" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
                     <xs:sequence>
-                        <xs:element name="dates" minOccurs="0" maxOccurs="1">
-                            <xs:complexType>
-                                <!-- xs:dateTime ends up being yucky XMLGregorianCalendar. Use string, let app deal with it. -->
-                                <xs:attribute name="earliest" type="xs:string" />
-                                <xs:attribute name="latest" type="xs:string" />
-                            </xs:complexType>
-                        </xs:element>
-                        <xs:element name="values" minOccurs="0" maxOccurs="1">
-                            <xs:complexType>
-                                <xs:attribute name="minimum" type="xs:double" />
-                                <xs:attribute name="maximum" type="xs:double" />
-                            </xs:complexType>
-                        </xs:element>
-
-                        <xs:element name="feature" minOccurs="0" maxOccurs="unbounded">
-                            <xs:complexType>
-                                <xs:attribute name="label" type="xs:string" />
-                                <xs:attribute name="lid" type="xs:string" />
-                                <xs:attribute name="comid" type="xs:string" />
-                                <xs:attribute name="gage_id" type="xs:string" />
-                                <xs:attribute name="huc" type="xs:string" />
-                                <xs:attribute name="name" type="xs:string" />
-                                <xs:attribute name="exclude" type="xs:boolean" default="false" />
-                            </xs:complexType>
-                        </xs:element>
-                        <xs:element name="ensemble" minOccurs="0" maxOccurs="unbounded">
-                            <xs:complexType>
-                                <xs:attribute name="label" type="xs:string" />
-                                <xs:attribute name="name" type="xs:string" />
-                                <xs:attribute name="member_id" type="xs:string" />
-                                <xs:attribute name="qualifier" type="xs:string" />
-                                <xs:attribute name="exclude" type="xs:boolean" default="false" />
-                            </xs:complexType>
-                        </xs:element>
+                        <xs:element name="width" type="duration" />
+                        <xs:element name="direction" type="direction" />
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
+
         </xs:sequence>
+
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
+
+    <xs:simpleType name="direction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="backward" />
+            <xs:enumeration value="forward" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:complexType name="metric">
 
         <!-- for class naming using xjc-->
@@ -91,15 +155,14 @@
         <xs:simpleContent>
             <xs:extension base="xs:string">
                 <xs:attribute name="label" type="xs:string" />
-                <xs:attribute name="unit" type="xs:string" />
             </xs:extension>
         </xs:simpleContent>
     </xs:complexType>
 
     <xs:simpleType name="destinationType">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="text" />
-            <xs:enumeration value="graphics"/>
+            <xs:enumeration value="numeric" />
+            <xs:enumeration value="graphic" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -111,14 +174,6 @@
                 <jaxb:class name="DestinationConfig" />
             </xs:appinfo>
         </xs:annotation>
-
-        <!--
-        TODO: figure this out. we want a uri between the destination tags
-        <xs:simpleContent>
-            <xs:extension base="xs:anyURI" />
-
-        </xs:simpleContent>
-        -->
 
         <xs:sequence>
             <xs:element name="config" minOccurs="0" maxOccurs="1">
@@ -133,19 +188,67 @@
         <xs:attribute name="type" type="destinationType" />
     </xs:complexType>
 
-    <xs:complexType name="aggregation">
+    <xs:simpleType name="timeAggregationFunction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="sum" />
+            <xs:enumeration value="mean" />
+            <xs:enumeration value="max" />
+            <xs:enumeration value="min" />
+            <xs:enumeration value="median" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="duration">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="timeAggregationMode">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="back-to-back" />
+            <xs:enumeration value="rolling" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="timeAggregation">
 
         <!-- for class naming using xjc-->
         <xs:annotation>
             <xs:appinfo>
-                <jaxb:class name="AggregationConfig" />
+                <jaxb:class name="TimeAggregationConfig" />
             </xs:appinfo>
         </xs:annotation>
 
+        <xs:sequence>
+            <xs:element name="function" type="timeAggregationFunction" />
+            <xs:element name="period" type="duration" minOccurs="1" maxOccurs="unbounded"/>
+            <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
-        <xs:attribute name="unit" type="xs:string" />
-        <xs:attribute name="type" type="xs:string" />
-        <xs:attribute name="range" type="xs:integer" />
+        <xs:attribute name="mode" type="timeAggregationMode" />
+    </xs:complexType>
+
+    <xs:simpleType name="spaceAggregationFunction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="scale" />
+        </xs:restriction>
+    </xs:simpleType>
+
+
+    <xs:complexType name="spaceAggregation">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="SpaceAggregationConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="function" type="spaceAggregationFunction" />
+            <xs:element name="parameters" type="xs:string" />
+        </xs:sequence>
+
+        <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="pair">
@@ -158,13 +261,25 @@
         </xs:annotation>
 
         <xs:sequence>
-            <!--
-            <xs:element name="baseline_variable" type="xs:string" minOccurs="0" maxOccurs="1" />
-            <xs:element name="aggregation" type="aggregation" minOccurs="0" maxOccurs="unbounded" />
-            <xs:element name="grouping" type="xs:string" />-->
+            <xs:element name="unit" type="xs:string" />
+            <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
+            <xs:element name="timeAggregation" type="timeAggregation" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
-        <xs:attribute name="unit" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="dragons">
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="DragonsConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="fullIngest" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+            <xs:element name="overwriteOldData" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+        </xs:sequence>
+        <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
     <xs:element name="project">
@@ -179,7 +294,7 @@
 
             <xs:sequence>
 
-                <xs:element name="datasources">
+                <xs:element name="inputs">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="left" type="datasource" />
@@ -189,17 +304,20 @@
                     </xs:complexType>
                 </xs:element>
 
-                <xs:element name="pair" type="pair" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="conditions" type="conditions" minOccurs="0" maxOccurs="1" />
+
+                <xs:element name="pair" type="pair"/>
 
                 <xs:element name="outputs">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="metric" type="metric" minOccurs="0" maxOccurs="unbounded"/>
-                            <xs:element name="destination" type="destination" minOccurs="0" maxOccurs="unbounded"/>
+                            <xs:element name="destination" type="destination" maxOccurs="unbounded"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
 
+                <xs:element name="hereBeDragons" type="dragons" minOccurs="0" maxOccurs="1" />
             </xs:sequence>
 
             <xs:attribute name="label" type="xs:string" />

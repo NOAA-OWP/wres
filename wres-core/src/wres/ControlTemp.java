@@ -25,6 +25,7 @@ import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInputFactory;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputFactory;
@@ -35,7 +36,6 @@ import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.Threshold;
 import wres.datamodel.metric.Threshold.Condition;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.io.data.caching.MeasurementUnits;
@@ -115,11 +115,10 @@ public class ControlTemp
 
         //Build an immutable collection of metrics, to be computed at each of several forecast lead times
         final MetricFactory metFac = MetricFactory.getInstance(outFac);
-        final List<Metric<SingleValuedPairs, ScalarOutput>> metrics = new ArrayList<>();
-        metrics.add(metFac.ofMeanError());
-        metrics.add(metFac.ofMeanAbsoluteError());
-        metrics.add(metFac.ofRootMeanSquareError());
-        final MetricCollection<SingleValuedPairs, ScalarOutput> useMe = metFac.ofSingleValuedScalarCollection(metrics);
+        final MetricCollection<SingleValuedPairs, ScalarOutput> useMe =
+                                                                      metFac.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
+                                                                                                            MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                                                            MetricConstants.ROOT_MEAN_SQUARE_ERROR);
 
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion

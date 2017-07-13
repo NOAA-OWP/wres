@@ -71,7 +71,7 @@ public class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements M
     @Override
     public Set<MetricConstants> keySetByFirstKey()
     {
-        final Set<MetricConstants> returnMe = new TreeSet<MetricConstants>();
+        final Set<MetricConstants> returnMe = new TreeSet<>();
         store.keySet().forEach(a -> returnMe.add(a.getFirstKey()));
         return Collections.unmodifiableSet(returnMe);
     }
@@ -79,7 +79,7 @@ public class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements M
     @Override
     public Set<MetricConstants> keySetBySecondKey()
     {
-        final Set<MetricConstants> returnMe = new TreeSet<MetricConstants>();
+        final Set<MetricConstants> returnMe = new TreeSet<>();
         store.keySet().forEach(a -> returnMe.add(a.getSecondKey()));
         return Collections.unmodifiableSet(returnMe);
     }
@@ -202,9 +202,7 @@ public class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements M
     {
         final StringBuilder b = new StringBuilder();
         b.append("[");
-        this.forEach((key, value) -> {
-            b.append(value).append(",");
-        });
+        this.forEach((key, value) -> b.append(value).append(","));
         b.delete(b.length() - 1, b.length());
         b.append("]");
         return b.toString();

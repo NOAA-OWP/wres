@@ -83,10 +83,7 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
                                    metIn.getDimension(),
                                    getID(),
                                    MetricConstants.MAIN,
-                                   metIn.getGeospatialID(),
-                                   metIn.getVariableID(),
-                                   metIn.getScenarioID(),
-                                   null);
+                                   metIn.getIdentifier());
     }
 
     /**

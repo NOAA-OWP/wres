@@ -20,13 +20,13 @@ import java.util.function.BiConsumer;
  */
 public class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements MetricOutputMapByLeadThreshold<T>
 {
-    
+
     /**
      * Line separator for printing.
      */
 
     private static final String NEWLINE = System.lineSeparator();
-    
+
     /**
      * Metadata.
      */
@@ -79,7 +79,7 @@ public class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> imple
     @Override
     public Set<Integer> keySetByFirstKey()
     {
-        final Set<Integer> returnMe = new TreeSet<Integer>();
+        final Set<Integer> returnMe = new TreeSet<>();
         store.keySet().forEach(a -> returnMe.add(a.getFirstKey()));
         return Collections.unmodifiableSet(returnMe);
     }
@@ -87,7 +87,7 @@ public class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> imple
     @Override
     public Set<Threshold> keySetBySecondKey()
     {
-        final Set<Threshold> returnMe = new TreeSet<Threshold>();
+        final Set<Threshold> returnMe = new TreeSet<>();
         store.keySet().forEach(a -> returnMe.add(a.getSecondKey()));
         return Collections.unmodifiableSet(returnMe);
     }
@@ -144,18 +144,16 @@ public class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> imple
     public String toString()
     {
         StringBuilder b = new StringBuilder();
-        forEach((key, value) -> {
-            b.append("[")
-             .append(key.getFirstKey())
-             .append(", ")
-             .append(key.getSecondKey())
-             .append(", ")
-             .append(value)
-             .append("]")
-             .append(NEWLINE);
-        });
+        forEach((key, value) -> b.append("[")
+                                 .append(key.getFirstKey())
+                                 .append(", ")
+                                 .append(key.getSecondKey())
+                                 .append(", ")
+                                 .append(value)
+                                 .append("]")
+                                 .append(NEWLINE));
         int lines = b.length();
-        b.delete(lines-NEWLINE.length(),lines);
+        b.delete(lines - NEWLINE.length(), lines);
         return b.toString();
     }
 

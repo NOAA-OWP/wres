@@ -21,18 +21,18 @@ public class DefaultMetadataFactory implements MetadataFactory
     private static MetadataFactory instance = null;
 
     /**
+     * For safety, set a limit on the number of objects allowed in the cache.
+     */
+
+    private static final int outputMetaCacheLimit = 1000000;
+
+    /**
      * Cache of instances of {@link MetricOutputMetadata} by hash code. Typically, there will be relatively few unique
      * instances of {@link MetricOutputMetadata} that are common to a large number of {@link MetricOutput}. Caching
      * these instances will provide a substantial memory saving for a small CPU cost in retrieving them.
      */
 
     private final HashMap<Integer, MetricOutputMetadata> outputMetaCache;
-
-    /**
-     * For safety, set a limit on the number of objects allowed in the cache.
-     */
-
-    private final int outputMetaCacheLimit = 1000000;
 
     /**
      * Returns an instance of a {@link MetricOutputFactory}.
@@ -58,17 +58,13 @@ public class DefaultMetadataFactory implements MetadataFactory
     @Override
     public Metadata getMetadata(final int sampleSize, final Dimension dim)
     {
-        return new MetadataImpl(sampleSize, dim, null, null, null);
+        return new MetadataImpl(sampleSize, dim, null);
     }
 
     @Override
-    public Metadata getMetadata(final int sampleSize,
-                                final Dimension dim,
-                                final String geospatialID,
-                                final String variableID,
-                                final String scenarioID)
+    public Metadata getMetadata(final int sampleSize, final Dimension dim, final DatasetIdentifier identifier)
     {
-        return new MetadataImpl(sampleSize, dim, geospatialID, variableID, scenarioID);
+        return new MetadataImpl(sampleSize, dim, identifier);
     }
 
     @Override
@@ -77,7 +73,7 @@ public class DefaultMetadataFactory implements MetadataFactory
                                                   final Dimension inputDim,
                                                   final MetricConstants metricID)
     {
-        return getOutputMetadata(sampleSize, dim, inputDim, metricID, MetricConstants.MAIN, null, null, null, null);
+        return getOutputMetadata(sampleSize, dim, inputDim, metricID, MetricConstants.MAIN, null);
     }
 
     @Override
@@ -87,7 +83,7 @@ public class DefaultMetadataFactory implements MetadataFactory
                                                   final MetricConstants metricID,
                                                   final MetricConstants componentID)
     {
-        return getOutputMetadata(sampleSize, dim, inputDim, metricID, componentID, null, null, null, null);
+        return getOutputMetadata(sampleSize, dim, inputDim, metricID, componentID, null);
     }
 
     @Override
@@ -96,17 +92,14 @@ public class DefaultMetadataFactory implements MetadataFactory
                                                   final Dimension inputDim,
                                                   final MetricConstants metricID,
                                                   final MetricConstants componentID,
-                                                  final String geospatialID,
-                                                  final String variableID,
-                                                  final String scenarioID,
-                                                  final String baseScenarioID)
+                                                  final DatasetIdentifier identifier)
     {
         class MetricOutputMetadataImpl extends MetadataImpl implements MetricOutputMetadata
         {
 
             private MetricOutputMetadataImpl()
             {
-                super(sampleSize, dim, geospatialID, variableID, scenarioID);
+                super(sampleSize, dim, identifier);
             }
 
             @Override
@@ -119,12 +112,6 @@ public class DefaultMetadataFactory implements MetadataFactory
             public MetricConstants getMetricComponentID()
             {
                 return componentID;
-            }
-
-            @Override
-            public String getScenarioIDForBaseline()
-            {
-                return baseScenarioID;
             }
 
             @Override
@@ -143,64 +130,30 @@ public class DefaultMetadataFactory implements MetadataFactory
             @Override
             public boolean equals(final Object o)
             {
-                boolean returnMe = super.equals(o) && o instanceof MetricOutputMetadata;
-                if(returnMe)
+                if(!(o instanceof MetricOutputMetadata))
                 {
-                    final MetricOutputMetadata p = ((MetricOutputMetadata)o);
-                    returnMe = p.getMetricID() == getMetricID() && p.getMetricComponentID() == getMetricComponentID()
-                        && Objects.isNull(p.getScenarioIDForBaseline()) == Objects.isNull(getScenarioIDForBaseline())
-                        && p.getInputDimension().equals(getInputDimension());
-                    if(!Objects.isNull(getScenarioIDForBaseline()))
-                    {
-                        returnMe = returnMe && getScenarioIDForBaseline().equals(p.getScenarioIDForBaseline());
-                    }
+                    return false;
                 }
-                return returnMe;
+                final MetricOutputMetadata p = ((MetricOutputMetadata)o);
+                return super.equals(o) && p.getMetricID() == getMetricID()
+                    && p.getMetricComponentID() == getMetricComponentID()
+                    && p.getInputDimension().equals(getInputDimension());
             }
 
             @Override
             public int hashCode()
             {
-                int returnMe = super.hashCode() + getInputDimension().hashCode() + getMetricID().hashCode()
-                    + getMetricComponentID().hashCode() + Boolean.hashCode(Objects.isNull(getScenarioIDForBaseline()));
-                if(!Objects.isNull(getScenarioIDForBaseline()))
-                {
-                    returnMe += getScenarioIDForBaseline().hashCode();
-                }
-                return returnMe;
+                return super.hashCode() + getMetricID().hashCode() + getMetricComponentID().hashCode()
+                    + getInputDimension().hashCode();
             }
 
             @Override
             public String toString()
             {
-                final StringBuilder b = new StringBuilder();
-                b.append("[");
-                if(!Objects.isNull(geospatialID))
-                {
-                    b.append(geospatialID).append(",");
-                }
-                if(!Objects.isNull(variableID))
-                {
-                    b.append(variableID).append(",");
-                }
-                if(!Objects.isNull(scenarioID))
-                {
-                    b.append(scenarioID).append(",");
-                }
-                if(!Objects.isNull(baseScenarioID))
-                {
-                    b.append(baseScenarioID).append(",");
-                }
-                b.append(sampleSize)
-                 .append(",")
-                 .append(dim)
-                 .append(",")
-                 .append(inputDim)
-                 .append(",")
-                 .append(metricID)
-                 .append(",")
-                 .append(componentID)
-                 .append("]");
+                String start = super.toString();
+                start = start.replaceAll("]", ",");
+                final StringBuilder b = new StringBuilder(start);
+                b.append(metricID).append(",").append(componentID).append("]");
                 return b.toString();
             }
 
@@ -220,6 +173,15 @@ public class DefaultMetadataFactory implements MetadataFactory
         //Increment the cache and return
         outputMetaCache.put(testMe.hashCode(), testMe);
         return testMe;
+    }
+
+    @Override
+    public DatasetIdentifier getDatasetIdentifier(String geospatialID,
+                                                  String variableID,
+                                                  String scenarioID,
+                                                  String baselineScenarioID)
+    {
+        return new DatasetIdentifierImpl(geospatialID,variableID,scenarioID,baselineScenarioID);
     }
 
     @Override
@@ -247,7 +209,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             @Override
             public boolean hasDimension()
             {
-                return dimension.equals("DIMENSIONLESS");
+                return "DIMENSIONLESS".equals(dimension);
             }
 
             @Override
@@ -384,28 +346,20 @@ public class DefaultMetadataFactory implements MetadataFactory
     }
 
     /**
-     * Basic implementation of metadata.
+     * Default implementation of {@link Metadata}.
      */
 
-    private static class MetadataImpl implements Metadata
+    private class MetadataImpl implements Metadata
     {
         private final int sampleSize;
         private final Dimension dim;
-        private final String geospatialID;
-        private final String variableID;
-        private final String scenarioID;
+        private final DatasetIdentifier identifier;
 
-        private MetadataImpl(final int sampleSize,
-                             final Dimension dim,
-                             final String geospatialID,
-                             final String variableID,
-                             final String scenarioID)
+        private MetadataImpl(final int sampleSize, final Dimension dim, final DatasetIdentifier identifier)
         {
             this.sampleSize = sampleSize;
             this.dim = dim;
-            this.geospatialID = geospatialID;
-            this.variableID = variableID;
-            this.scenarioID = scenarioID;
+            this.identifier = identifier;
         }
 
         @Override
@@ -418,6 +372,83 @@ public class DefaultMetadataFactory implements MetadataFactory
         public Dimension getDimension()
         {
             return dim;
+        }
+
+        @Override
+        public DatasetIdentifier getIdentifier()
+        {
+            return identifier;
+        }
+
+        @Override
+        public boolean equals(final Object o)
+        {
+            if(!(o instanceof Metadata))
+            {
+                return false;
+            }
+            final Metadata p = (Metadata)o;
+            boolean returnMe = p.getSampleSize() == getSampleSize() && p.getDimension().equals(getDimension())
+                && hasIdentifier() == p.hasIdentifier();
+            if(hasIdentifier())
+            {
+                returnMe = returnMe && identifier.equals(p.getIdentifier());
+            }
+            return returnMe;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int returnMe = Integer.hashCode(sampleSize) + getDimension().hashCode() + Boolean.hashCode(hasIdentifier());
+            if(hasIdentifier())
+            {
+                returnMe += identifier.hashCode();
+            }
+            return returnMe;
+        }
+
+        @Override
+        public String toString()
+        {
+            final StringBuilder b = new StringBuilder();
+            if(hasIdentifier())
+            {
+                String appendMe = identifier.toString();
+                appendMe = appendMe.replaceAll("]", ",");
+                b.append(appendMe);
+            }
+            else
+            {
+                b.append("[");
+            }
+            b.append(sampleSize).append(",").append(dim).append("]");
+            return b.toString();
+        }
+
+    }
+
+    /**
+     * Default implementation of {@link DatasetIdentifier}.
+     */
+
+    private class DatasetIdentifierImpl implements DatasetIdentifier
+    {
+
+        final String geospatialID;
+        final String variableID;
+        final String scenarioID;
+        final String baselineScenarioID;
+
+        private DatasetIdentifierImpl(final String geospatialID,
+                                      String variableID,
+                                      final String scenarioID,
+                                      final String baselineScenarioID)
+        {
+            this.geospatialID = geospatialID;
+            this.variableID = variableID;
+            this.scenarioID = scenarioID;
+            this.baselineScenarioID = baselineScenarioID;
         }
 
         @Override
@@ -439,37 +470,9 @@ public class DefaultMetadataFactory implements MetadataFactory
         }
 
         @Override
-        public boolean equals(final Object o)
+        public String getScenarioIDForBaseline()
         {
-            boolean returnMe = o instanceof Metadata;
-            if(returnMe)
-            {
-                final Metadata p = (Metadata)o;
-                returnMe = p.getSampleSize() == getSampleSize() && p.getDimension().equals(getDimension());
-                //Form a unique combined ID
-                final StringBuilder b = new StringBuilder();
-                b.append(getGeospatialID());
-                b.append(getVariableID());
-                b.append(getScenarioID());
-                final StringBuilder c = new StringBuilder();
-                c.append(p.getGeospatialID());
-                c.append(p.getVariableID());
-                c.append(p.getScenarioID());
-                returnMe = returnMe && b.toString().equals(c.toString());
-            }
-            return returnMe;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            final int returnMe = Integer.hashCode(sampleSize) + getDimension().hashCode();
-            //Form a unique combined ID
-            final StringBuilder b = new StringBuilder();
-            b.append(getGeospatialID());
-            b.append(getVariableID());
-            b.append(getScenarioID());
-            return returnMe + b.toString().hashCode();
+            return baselineScenarioID;
         }
 
         @Override
@@ -477,20 +480,61 @@ public class DefaultMetadataFactory implements MetadataFactory
         {
             final StringBuilder b = new StringBuilder();
             b.append("[");
-            if(!Objects.isNull(geospatialID))
+            if(hasGeospatialID())
             {
-                b.append(geospatialID).append(",");
+                b.append(getGeospatialID()).append(",");
             }
-            if(!Objects.isNull(variableID))
+            if(hasVariableID())
             {
-                b.append(variableID).append(",");
+                b.append(getVariableID()).append(",");
             }
-            if(!Objects.isNull(scenarioID))
+            if(hasScenarioID())
             {
-                b.append(scenarioID).append(",");
+                b.append(getScenarioID()).append(",");
             }
-            b.append(sampleSize).append(",").append(dim).append("]");
+            if(hasScenarioIDForBaseline())
+            {
+                b.append(getScenarioIDForBaseline()).append(",");
+            }
+            b.append("]");
             return b.toString();
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if(!(o instanceof DatasetIdentifier))
+            {
+                return false;
+            }
+            DatasetIdentifier check = (DatasetIdentifier)o;
+            boolean returnMe = hasGeospatialID() == check.hasGeospatialID() && hasVariableID() == check.hasVariableID()
+                && hasScenarioID() == check.hasScenarioID()
+                && hasScenarioIDForBaseline() == check.hasScenarioIDForBaseline();
+            if(hasGeospatialID())
+            {
+                returnMe = returnMe && getGeospatialID().equals(check.getGeospatialID());
+            }
+            if(hasVariableID())
+            {
+                returnMe = returnMe && getVariableID().equals(check.getVariableID());
+            }
+            if(hasScenarioID())
+            {
+                returnMe = returnMe && getScenarioID().equals(check.getScenarioID());
+            }
+            if(hasScenarioIDForBaseline())
+            {
+                returnMe = returnMe && getScenarioIDForBaseline().equals(check.getScenarioIDForBaseline());
+            }
+            return returnMe;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            String uniqueID = getGeospatialID() + getVariableID() + getScenarioID() + getScenarioIDForBaseline();
+            return uniqueID.hashCode();
         }
     }
 

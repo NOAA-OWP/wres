@@ -2,6 +2,7 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.metric.DatasetIdentifier;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
@@ -57,12 +58,12 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metr
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         //Metadata
-        String baseID = null;
-        if(s.hasBaseline() && isSkillScore())
+        DatasetIdentifier id = null;
+        if(s.hasBaseline() && s.getMetadataForBaseline().hasIdentifier())
         {
-            baseID = s.getMetadataForBaseline().getScenarioID();
+            id = s.getMetadataForBaseline().getIdentifier();
         }
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, baseID);
+        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, id);
         //Compute the atomic errors in a stream
         return getOutputFactory().ofScalarOutput(s.getData().stream().mapToDouble(f).average().getAsDouble(), metOut);
     }
