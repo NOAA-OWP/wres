@@ -56,7 +56,7 @@ public class ScalarOutputByLeadThresholdXYChartDataSource extends DefaultXYChart
         getDefaultFullySpecifiedDataSourceDrawingParameters().setYAxisIndex(0);
         
         //TODO Need to ensure that the arguments used below are standard arguments created in the factory that generates images!
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("FORECAST LEAD TIME [HOURS]");
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("FORECAST LEAD TIME [HOUR]");
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("@metricShortName@@outputUnitsText@");
 
         final int seriesCount = input.keySetByThreshold().size();

@@ -99,22 +99,8 @@ public class Chart2DTestOutput extends TestCase
             arguments.addArgument("metricName", metricName);
             arguments.addArgument("metricShortName", metricShortName);
             arguments.addArgument("domainAxisName", "FORECAST LEAD TIME");
-            if(outputUnits.hasDimension())
-            {
-                arguments.addArgument("outputUnitsText", " [" + outputUnits + "]");
-            }
-            else
-            {
-                arguments.addArgument("outputUnitsText", "");
-            }
-            if(inputUnits.hasDimension())
-            {
-                arguments.addArgument("inputUnitsText", " [" + inputUnits + "]");
-            }
-            else
-            {
-                arguments.addArgument("inputUnitsText", "");
-            }
+            arguments.addArgument("outputUnitsText", " [" + outputUnits + "]");
+            arguments.addArgument("inputUnitsText", " [" + inputUnits + "]");
 
             //Build the ChartEngine instance.
             final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
@@ -196,22 +182,8 @@ public class Chart2DTestOutput extends TestCase
             arguments.addArgument("metricName", metricName);
             arguments.addArgument("metricShortName", metricShortName);
             arguments.addArgument("domainAxisName", "THRESHOLD VALUE");
-            if(outputUnits.hasDimension())
-            {
-                arguments.addArgument("outputUnitsText", " [" + outputUnits + "]");
-            }
-            else
-            {
-                arguments.addArgument("outputUnitsText", "");
-            }
-            if(inputUnits.hasDimension())
-            {
-                arguments.addArgument("inputUnitsText", " [" + inputUnits + "]");
-            }
-            else
-            {
-                arguments.addArgument("inputUnitsText", "");
-            }
+            arguments.addArgument("outputUnitsText", " [" + outputUnits + "]");
+            arguments.addArgument("inputUnitsText", " [" + inputUnits + "]");
 
             //Build the ChartEngine instance.
             final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
