@@ -24,11 +24,25 @@ import java.util.TreeMap;
 public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Ensembles.class);
+    private static final Object CACHE_LOCK = new Object();
 
     /**
      *  Internal cache that will store a global collection of details whose details may be accessed through static methods
      */
-	private static Ensembles internalCache = new Ensembles();
+	private static Ensembles INTERNAL_CACHE = null;
+
+	private static final Ensembles getCache()
+	{
+		synchronized (CACHE_LOCK)
+		{
+			if (INTERNAL_CACHE == null)
+			{
+				INTERNAL_CACHE = new Ensembles();
+				INTERNAL_CACHE.init();
+			}
+			return INTERNAL_CACHE;
+		}
+	}
 	
 	/**
 	 * Returns the ID of an Ensemble from the global cache
@@ -37,7 +51,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	 * @throws Exception Thrown if the ID could not be retrieved from the database
 	 */
 	public static Integer getEnsembleID(EnsembleDetails detail) throws Exception {
-		return internalCache.getID(detail);
+		return getCache().getID(detail);
 	}
 	
 	/**
@@ -47,7 +61,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	 * @throws Exception Thrown if the ID could not be retrieved from the database
 	 */
 	public static Integer getEnsembleID(String name) throws Exception {
-		return internalCache.getID(name);
+		return getCache().getID(name);
 	}
 	
 	/**
@@ -58,7 +72,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	 * @throws Exception Thrown if the ID could not be retrieved from the database
 	 */
 	public static Integer getEnsembleID(String name, String memberID) throws Exception {
-		return internalCache.getID(name, memberID);
+		return getCache().getID(name, memberID);
 	}
 	
 	/**
@@ -70,7 +84,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	 * @throws Exception Thrown if the ID could not be retrieved from the database
 	 */
 	public static Integer getEnsembleID(String name, String memberID, String qualifierID) throws Exception {
-		return internalCache.getID(name, memberID, qualifierID);
+		return getCache().getID(name, memberID, qualifierID);
 	}
 	
 	/**
@@ -81,7 +95,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	 */
 	public static Integer getEnsembleID(EnsembleKey grouping) throws Exception
 	{
-		return internalCache.getID(grouping);
+		return getCache().getID(grouping);
 	}
 	
 	@Override
@@ -141,14 +155,14 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 
 		// The closest existing key to what we are trying to retrieve
 		EnsembleKey mostSimilar = null;
-        Integer ID = keyIndex.get(grouping);
+        Integer ID = getKeyIndex().get(grouping);
 		
 		// If no identical groupings are found and the grouping isn't full, attempt to find a similar one
-		if (keyIndex.size() > 0)
+		if (getKeyIndex().size() > 0)
 		{
-			for (EnsembleKey key : keyIndex.keySet())
+			for (EnsembleKey key : getKeyIndex().keySet())
 			{
-			    ID = keyIndex.get(grouping);
+			    ID = getKeyIndex().get(grouping);
 	            if (ID != null)
 	            {
 	                break;
@@ -209,7 +223,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 		
 		if (mostSimilar != null)
 		{
-		    ID = keyIndex.get(mostSimilar);
+		    ID = getKeyIndex().get(mostSimilar);
 		}
 
 		return ID;

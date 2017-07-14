@@ -4,10 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.data.details.FeatureDetails;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.util.concurrent.ConcurrentSkipListMap;
-
 /**
  * Caches details about Features
  * @author Christopher Tubbs
@@ -16,11 +12,25 @@ public class Features extends Cache<FeatureDetails, String>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Features.class);
+    private static final Object CACHE_LOCK = new Object();
 
     /**
      *  Global cache for all Features
      */
-	private static Features internalCache = new Features();
+	private static Features INTERNAL_CACHE = null;
+
+	private static final Features getCache()
+	{
+		synchronized (CACHE_LOCK)
+		{
+			if (INTERNAL_CACHE == null)
+			{
+				INTERNAL_CACHE = new Features();
+				INTERNAL_CACHE.init();
+			}
+			return INTERNAL_CACHE;
+		}
+	}
 	
 	/**
 	 * Returns the ID of a Feature from the global cache based on a full Feature specification
@@ -30,7 +40,7 @@ public class Features extends Cache<FeatureDetails, String>
 	 */
 	public static Integer getFeatureID(FeatureDetails detail) throws Exception {
 	    LOGGER.trace("getFeatureID - args {}", detail);
-		return internalCache.getID(detail);
+		return getCache().getID(detail);
 	}
 	
 	/**
@@ -58,7 +68,7 @@ public class Features extends Cache<FeatureDetails, String>
 	 */
 	public static Integer getVariablePositionID(String lid, String stationName, Integer variableID) throws Exception {
         LOGGER.trace("getVariablePositionID - ars {} ; {} ; {}", lid, stationName, variableID);
-        return internalCache.getVarPosID(lid, stationName, variableID);
+        return getCache().getVarPosID(lid, stationName, variableID);
 	}
     
     /**
@@ -71,7 +81,7 @@ public class Features extends Cache<FeatureDetails, String>
      */
 	private Integer getVarPosID(String lid, String stationName, Integer variableID) throws Exception {
         LOGGER.trace("getVarPosID - args {} ; {} ; {}", lid, stationName, variableID);
-		if (!keyIndex.containsKey(lid))
+		if (!this.getKeyIndex().containsKey(lid))
 		{
 			FeatureDetails detail = new FeatureDetails();
 			detail.setLID(lid);
@@ -83,7 +93,7 @@ public class Features extends Cache<FeatureDetails, String>
 
 		try
 		{
-	        detail = details.get(keyIndex.get(lid));
+	        detail = this.getDetails().get(this.getKeyIndex().get(lid));
 		}
 		catch (NullPointerException error)
 		{
@@ -105,78 +115,13 @@ public class Features extends Cache<FeatureDetails, String>
 	protected int getMaxDetails() {
 		return 1000;
 	}
-	
+
 	/**
 	 * Loads all pre-existing Features into the instanced cache
 	 */
 	@Override
     public synchronized void init()
 	{
-        Connection connection = null;
-        //Statement featureQuery = null;
-        ResultSet features = null;
-        this.details = new ConcurrentSkipListMap<>();
-
-        /*try
-        {
-            connection = Database.getConnection();
-            //featureQuery = connection.createStatement();
-
-            String loadScript = "SELECT F.lid, F.feature_id, F.feature_name" + System.lineSeparator();
-            loadScript += "FROM wres.Feature F" + System.lineSeparator();
-            loadScript += "INNER JOIN wres.FeaturePosition FP" + System.lineSeparator();
-            loadScript += " ON F.feature_id = FP.feature_id;";
-
-            features = Database.getResults(connection, loadScript);
-
-            FeatureDetails detail;
-
-            while (features.next()) {
-                detail = new FeatureDetails();
-                detail.setLID(features.getString("lid"));
-                detail.station_name = features.getString("feature_name");
-                detail.setID(features.getInt("feature_id"));
-
-                detail.loadVariablePositionIDs();
-
-                this.details.put(detail.getId(), detail);
-                this.keyIndex.put(detail.getKey(), detail.getId());
-            }
-        }
-        catch (SQLException error)
-        {
-            LOGGER.error("An error was encountered when trying to populate the Feature cache. ", error);
-        }
-        finally
-        {
-            if (features != null)
-            {
-                try
-                {
-                    features.close();
-                }
-                catch (SQLException exception)
-                {
-                    LOGGER.warn("An error was encountered when trying to close the result set for the features.", exception);
-                }
-            }
-
-            /*if (featureQuery != null)
-            {
-                try
-                {
-                    featureQuery.close();
-                }
-                catch (SQLException exception)
-                {
-                    LOGGER.warn("An error was encountered when trying to close the query for the features.", exception);
-                }
-            }
-
-            if (connection != null)
-            {
-                Database.returnConnection(connection);
-            }
-        }*/
+        LOGGER.trace("The features cache is being created");
 	}
 }

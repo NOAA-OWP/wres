@@ -5,7 +5,8 @@ import wres.util.Collections;
 
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * An collection of details about concepts stored within the database
@@ -15,29 +16,41 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
     protected static final String NEWLINE = System.lineSeparator();
-    
-    // Guarded by lock
-	protected final LinkedHashMap<U, Integer> keyIndex;
-	protected ConcurrentSkipListMap<Integer, T> details;
 
-	public Cache() {
-	    keyIndex = new LinkedHashMap<U, Integer>(getMaxDetails(), 0.75F, true){
-	       
-	        @Override
-	        protected boolean removeEldestEntry(java.util.Map.Entry<U, Integer> eldest)
-	        {
-	            boolean remove = size() > getMaxDetails();
-	            
-	            if (details != null && remove)
-	            {
-	                details.remove(eldest.getValue());
-	            }
-	            
-	            return remove;
-	        }
-	    };
-	    
-	    this.init();
+	private LinkedHashMap<U, Integer> keyIndex;
+	private ConcurrentMap<Integer, T> details;
+	private static final Object DETAIL_LOCK = new Object();
+
+	protected final LinkedHashMap<U, Integer> getKeyIndex()
+    {
+        if (keyIndex == null)
+        {
+            keyIndex = new LinkedHashMap<U, Integer>(getMaxDetails(), 0.75F, true) {
+
+                @Override
+                protected boolean removeEldestEntry (java.util.Map.Entry<U, Integer> eldest) {
+                    boolean remove = size() > getMaxDetails();
+
+                    if (details != null && remove) {
+                        details.remove(eldest.getValue());
+                    }
+
+                    return remove;
+                }
+            };
+        }
+
+        return this.keyIndex;
+    }
+
+	protected final ConcurrentMap<Integer, T> getDetails()
+	{
+	    synchronized (DETAIL_LOCK) {
+            if (this.details == null) {
+                this.details = new ConcurrentHashMap<>();
+            }
+            return this.details;
+        }
 	}
 	/**
 	 * @return The maximum number of details that may be cached at any given time
