@@ -72,29 +72,6 @@ public final class Database {
 	{
 		StringBuilder builder = new StringBuilder();
 
-		/*builder.append("SELECT n.nspname ||'.'||t.relname AS table_name,").append(NEWLINE);
-		builder.append("	i.relname AS index_name,").append(NEWLINE);
-		builder.append("	array_to_string(array_agg(a.attname), ', ') AS column_names").append(NEWLINE);
-		builder.append("FROM pg_class t").append(NEWLINE);
-		builder.append("INNER JOIN pg_namespace n").append(NEWLINE);
-		builder.append("	ON n.oid = t.relnamespace").append(NEWLINE);
-		builder.append("INNER JOIN pg_index ix").append(NEWLINE);
-		builder.append("	ON ix.indrelid = t.oid").append(NEWLINE);
-		builder.append("INNER JOIN pg_class i").append(NEWLINE);
-		builder.append("	ON i.oid = ix.indexrelid").append(NEWLINE);
-		builder.append("INNER JOIN pg_attribute a").append(NEWLINE);
-		builder.append("	ON a.attrelid = t.oid").append(NEWLINE);
-		builder.append("		AND a.attnum = ANY(ix.indkey)").append(NEWLINE);
-		builder.append("WHERE t.relkind = 'r'").append(NEWLINE);
-		builder.append("	AND n.nspname IN ('wres', 'partitions')").append(NEWLINE);
-		builder.append("    AND ix.indisunique = false").append(NEWLINE);
-		builder.append("GROUP BY n.nspname,").append(NEWLINE);
-		builder.append("	t.relname,").append(NEWLINE);
-		builder.append("	i.relname").append(NEWLINE);
-		builder.append("ORDER BY n.nspname,").append(NEWLINE);
-		builder.append("	t.relname,").append(NEWLINE);
-		builder.append("	i.relname;");*/
-
 		builder.append("SELECT 	(idx.indrelid::REGCLASS)::text AS table_name,").append(NEWLINE);
 		builder.append("		T.relname AS index_name,").append(NEWLINE);
 		builder.append("		AM.amname AS index_type,").append(NEWLINE);
@@ -466,10 +443,7 @@ public final class Database {
 		{
 			connection = getConnection();
 			C3P0ProxyConnection proxy = (C3P0ProxyConnection)connection;
-			//Method get_copy_api = PGConnection.class.getMethod(copyAPIMethodName);
 			Object[] arg = new Object[]{};
-			/*CopyManager manager = (CopyManager)proxy.rawConnectionOperation(get_copy_api,
-																			C3P0ProxyConnection.RAW_CONNECTION, arg);*/
 			CopyManager manager = (CopyManager)proxy.rawConnectionOperation(getCopyAPI(),
 																			C3P0ProxyConnection.RAW_CONNECTION, arg);
 			
@@ -534,6 +508,38 @@ public final class Database {
 			}
 		}
 
+	}
+
+	public static synchronized void buildInstance()
+	{
+		Connection connection = null;
+
+		throw new RuntimeException("Database.buildInstance() is not ready for execution.");
+
+		/*try {
+			connection = Database.getConnection();
+			liquibase.database.Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
+			// TODO: MUEY BAD; there needs to be a better solution than accessing the file via a hardcoded path. Maybe a system setting?
+			Liquibase liquibase = new Liquibase("nonsrc/database/db.changelog-master.xml", new ClassLoaderResourceAccessor(), database);
+			liquibase.update(new Contexts(), new LabelExpression());
+			database.close();
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+		catch (DatabaseException e) {
+			e.printStackTrace();
+		}
+		catch (LiquibaseException e) {
+			e.printStackTrace();
+		}
+		finally
+		{
+			if (connection != null)
+			{
+				Database.returnConnection(connection);
+			}
+		}*/
 	}
 	
 	/**

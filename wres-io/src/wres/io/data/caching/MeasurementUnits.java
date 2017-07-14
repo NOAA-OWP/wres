@@ -20,7 +20,21 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
     /**
      *  Internal, Global cache of measurement details
      */
-	private static final MeasurementUnits internalCache = new MeasurementUnits();
+	private static  MeasurementUnits INTERNAL_CACHE = null;
+	private static final Object CACHE_LOCK = new Object();
+
+    private static final MeasurementUnits getCache()
+    {
+        synchronized (CACHE_LOCK)
+        {
+            if (INTERNAL_CACHE == null)
+            {
+                INTERNAL_CACHE = new MeasurementUnits();
+                INTERNAL_CACHE.init();
+            }
+            return INTERNAL_CACHE;
+        }
+    }
 	
 	/**
 	 * Return the ID of a unit of measurement from the global cache based on the specification of the measurement
@@ -30,7 +44,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 	 * @throws Exception Thrown if the ID could not be retrieved from the database 
 	 */
 	public static Integer getMeasurementUnitID(MeasurementDetails detail) throws Exception {
-		return internalCache.getID(detail);
+		return getCache().getID(detail);
 	}
 	
 	/**
@@ -41,7 +55,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 	 */
 	public static Integer getMeasurementUnitID(String unit) throws SQLException
 	{
-		return internalCache.getID(unit.toLowerCase());
+		return getCache().getID(unit.toLowerCase());
 	}
 	
 	/**
@@ -51,7 +65,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 	 */
 	public static String getUnit(Integer measurementunitID)
 	{
-		return internalCache.getKey(measurementunitID);
+		return getCache().getKey(measurementunitID);
 	}
 
 	@Override

@@ -20,6 +20,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	private LinkedHashMap<U, Integer> keyIndex;
 	private ConcurrentMap<Integer, T> details;
 	private static final Object DETAIL_LOCK = new Object();
+	private static final Object KEY_LOCK = new Object();
 
 	protected final LinkedHashMap<U, Integer> getKeyIndex()
     {
@@ -66,22 +67,15 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * Removes all items from the details and keys caches for the instance
 	 */
     void clearCache () {
-	    synchronized(keyIndex)
+	    synchronized(KEY_LOCK)
 	    {
-	        keyIndex.clear();
+	        this.getKeyIndex().clear();
 	    }
 	}
 
 	T get (int id)
 	{
-		T detail = null;
-
-		if (this.details != null)
-		{
-			detail = this.details.get(id);
-		}
-
-		return detail;
+		return this.getDetails().get(id);
 	}
 	
 	/**
@@ -109,9 +103,9 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
     U getKey (int id) {
 		U key;
 		
-		synchronized (keyIndex)
+		synchronized (KEY_LOCK)
 		{
-		    key = Collections.getKeyByValue(keyIndex, id);
+		    key = Collections.getKeyByValue(getKeyIndex(), id);
 		}
 
 		return key;
@@ -132,7 +126,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 		add(element.getKey(), element.getId());
 		if (this.details != null && !this.details.containsKey(element.getId()))
 		{
-		    this.details.put(element.getId(), element);
+		    this.getDetails().put(element.getId(), element);
 		}
 	}
 	
@@ -145,10 +139,10 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	public Integer getID(U key) throws SQLException {
 		Integer id = null;
 		
-		synchronized (keyIndex)
+		synchronized (KEY_LOCK)
 		{
-    		if (keyIndex.containsKey(key)) {
-    			id = keyIndex.get(key);
+    		if (this.getKeyIndex().containsKey(key)) {
+    			id = this.getKeyIndex().get(key);
     		}
 		}
 		
@@ -159,9 +153,9 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	{
 	    boolean hasIt;
 	    
-	    synchronized (keyIndex)
+	    synchronized (KEY_LOCK)
 	    {
-	        hasIt = keyIndex.containsKey(key);
+	        hasIt = this.getKeyIndex().containsKey(key);
 	    }
 	    
 	    return hasIt;
@@ -169,8 +163,8 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	
 	protected void add(U key, Integer id)
 	{
-	    synchronized (keyIndex) {
-	        keyIndex.put(key, id);
+	    synchronized (KEY_LOCK) {
+	        this.getKeyIndex().put(key, id);
 	    }
 	}
 }
