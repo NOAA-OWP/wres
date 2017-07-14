@@ -49,8 +49,12 @@ public class Chart2DTestOutput extends TestCase
      * Generate a plot by lead time on the domain axis.
      */
 
-    public void test1ScalarOutput()
+    public void test2ScalarOutput()
     {
+        final String scenarioName = "test2";
+        final File outputImageFile = new File("testoutput/chart2DTest/" + scenarioName + "_output.png");
+        outputImageFile.delete();
+
         //Construct some single-valued pairs
         final MetricOutputMapByLeadThreshold<ScalarOutput> input = getMetricOutputMapByLeadThresholdOne();
 
@@ -60,87 +64,6 @@ public class Chart2DTestOutput extends TestCase
                                                                   new ScalarOutputByLeadThresholdXYChartDataSource(0,
                                                                                                                    input);
 
-        final String scenarioName = "test2";
-        try
-        {
-            //The arguments processor for example purposes.
-            final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
-
-            final MetricOutputMetadata meta = input.getMetadata();
-            //The following helper factory is part of the wres-datamodel, not the api. It will need to be supplied by 
-            //(i.e. dependency injected from) wres-core as a MetadataFactory, which is part of the API
-            final MetadataFactory factory = DefaultMetadataFactory.getInstance();
-
-            final DatasetIdentifier identifier = meta.getIdentifier();
-            final String locationName = identifier.getGeospatialID();
-            final String variableName = identifier.getVariableID();
-            final String metricName = factory.getMetricName(meta.getMetricID());
-            final String metricShortName = factory.getMetricShortName(meta.getMetricID());
-            final String primaryScenario = identifier.getScenarioID();
-            final String baselineScenario = identifier.getScenarioIDForBaseline(); //Not null if skill
-            final Dimension units = meta.getDimension();
-
-            //Compose a plot title
-            String title = metricName + " for " + primaryScenario + " predictions of " + variableName + " at "
-                + locationName;
-            if(!Objects.isNull(baselineScenario))
-            {
-                title = title + " against predictions from " + baselineScenario;
-            }
-            //Set the range axis name and units
-            final String rangeAxis = metricShortName + " [" + units + "]";
-
-            //Set the arguments
-            arguments.addArgument("plotTitle", title);
-            arguments.addArgument("rangeAxis", rangeAxis);
-            //No lead time units in metadata API: could add this easily, but probably a global WRES assumption
-            arguments.addArgument("domainAxis", "FORECAST LEAD TIME [HOUR]");
-
-            //Build the ChartEngine instance.
-            final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
-                                                                   arguments,
-                                                                   "testinput/chart2DTest/" + scenarioName
-                                                                       + "_template.xml",
-                                                                   null);
-
-            //Generate the output file.
-            ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + scenarioName + "_output.png"),
-                                               engine.buildChart(),
-                                               800,
-                                               600);
-
-            //Compare against OS specific image benchmark.
-            FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + scenarioName
-                + "_output.png"),
-                                                                      new File("testinput/chart2DTest/benchmark."
-                                                                          + scenarioName + "_output.png"),
-                                                                      8,
-                                                                      true,
-                                                                      false);
-        }
-        catch(final Throwable t)
-        {
-            t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
-        }
-    }
-
-    /**
-     * Generate a plot by threshold on the domain axis.
-     */
-
-    public void test2ScalarOutput()
-    {
-        //Construct some single-valued pairs
-        final MetricOutputMapByLeadThreshold<ScalarOutput> input = getMetricOutputMapByLeadThresholdTwo();
-
-        //Construct the source from the pairs assigning it a data source order index of 0.  
-        //The order index indicates the order in which the different sources are rendered.
-        final ScalarOutputByThresholdLeadXYChartDataSource source =
-                                                                  new ScalarOutputByThresholdLeadXYChartDataSource(0,
-                                                                                                                   input);
-
-        final String scenarioName = "test3";
         try
         {
             //The arguments processor for example purposes.
@@ -162,19 +85,22 @@ public class Chart2DTestOutput extends TestCase
             final Dimension inputUnits = meta.getInputDimension();
 
             //Compose a plot title
-            String title = metricName + " for " + primaryScenario + " predictions of " + variableName + " at "
-                + locationName;
+            String baselineText = "";
             if(!Objects.isNull(baselineScenario))
             {
-                title = title + " against predictions from " + baselineScenario;
+                baselineText = " against predictions from " + baselineScenario;
             }
-            //Set the range axis name and units
-            final String rangeAxis = metricShortName + " [" + outputUnits + "]";
 
             //Set the arguments
-            arguments.addArgument("plotTitle", title);
-            arguments.addArgument("rangeAxis", rangeAxis);
-            arguments.addArgument("domainAxis", "THRESHOLD VALUE [" + inputUnits + "]");
+            arguments.addArgument("locationName", locationName);
+            arguments.addArgument("baselineText", baselineText);
+            arguments.addArgument("variableName", variableName);
+            arguments.addArgument("primaryScenario", primaryScenario);
+            arguments.addArgument("metricName", metricName);
+            arguments.addArgument("metricShortName", metricShortName);
+            arguments.addArgument("domainAxisName", "FORECAST LEAD TIME");
+            arguments.addArgument("outputUnitsText", " [" + outputUnits + "]");
+            arguments.addArgument("inputUnitsText", " [" + inputUnits + "]");
 
             //Build the ChartEngine instance.
             final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
@@ -184,17 +110,96 @@ public class Chart2DTestOutput extends TestCase
                                                                    null);
 
             //Generate the output file.
-            ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + scenarioName + "_output.png"),
-                                               engine.buildChart(),
-                                               800,
-                                               600);
+            ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
 
             //Compare against OS specific image benchmark.
-            FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + scenarioName
-                + "_output.png"),
+            FileComparisonUtilities.assertImageFileSimilarToBenchmark(outputImageFile,
                                                                       new File("testinput/chart2DTest/benchmark."
                                                                           + scenarioName + "_output.png"),
-                                                                      8,
+                                                                      4,
+                                                                      true,
+                                                                      false);
+        }
+        catch(final Throwable t)
+        {
+            t.printStackTrace();
+            fail("Unexpected exception: " + t.getMessage());
+        }
+    }
+
+    /**
+     * Generate a plot by threshold on the domain axis.
+     */
+
+    public void test3ScalarOutput()
+    {
+        final String scenarioName = "test3";
+        final File outputImageFile = new File("testoutput/chart2DTest/" + scenarioName + "_output.png");
+        outputImageFile.delete();
+
+        //Construct some single-valued pairs
+        final MetricOutputMapByLeadThreshold<ScalarOutput> input = getMetricOutputMapByLeadThresholdTwo();
+
+        //Construct the source from the pairs assigning it a data source order index of 0.  
+        //The order index indicates the order in which the different sources are rendered.
+        final ScalarOutputByThresholdLeadXYChartDataSource source =
+                                                                  new ScalarOutputByThresholdLeadXYChartDataSource(0,
+                                                                                                                   input);
+
+        try
+        {
+            //The arguments processor for example purposes.
+            final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
+
+            final MetricOutputMetadata meta = input.getMetadata();
+
+            //The following helper factory is part of the wres-datamodel, not the api. It will need to be supplied by 
+            //(i.e. dependency injected from) wres-core as a MetadataFactory, which is part of the API
+            final MetadataFactory factory = DefaultMetadataFactory.getInstance();
+
+            final DatasetIdentifier identifier = meta.getIdentifier();
+            final String locationName = identifier.getGeospatialID();
+            final String variableName = identifier.getVariableID();
+            final String metricName = factory.getMetricName(meta.getMetricID());
+            final String metricShortName = factory.getMetricShortName(meta.getMetricID());
+            final String primaryScenario = identifier.getScenarioID();
+            final String baselineScenario = identifier.getScenarioIDForBaseline(); //Not null if skill
+            final Dimension outputUnits = meta.getDimension();
+            final Dimension inputUnits = meta.getInputDimension();
+
+            //Compose a plot title
+            String baselineText = "";
+            if(!Objects.isNull(baselineScenario))
+            {
+                baselineText = " against predictions from " + baselineScenario;
+            }
+
+            //Set the arguments
+            arguments.addArgument("locationName", locationName);
+            arguments.addArgument("baselineText", baselineText);
+            arguments.addArgument("variableName", variableName);
+            arguments.addArgument("primaryScenario", primaryScenario);
+            arguments.addArgument("metricName", metricName);
+            arguments.addArgument("metricShortName", metricShortName);
+            arguments.addArgument("domainAxisName", "THRESHOLD VALUE");
+            arguments.addArgument("outputUnitsText", " [" + outputUnits + "]");
+            arguments.addArgument("inputUnitsText", " [" + inputUnits + "]");
+
+            //Build the ChartEngine instance.
+            final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
+                                                                   arguments,
+                                                                   "testinput/chart2DTest/" + scenarioName
+                                                                       + "_template.xml",
+                                                                   null);
+
+            //Generate the output file.
+            ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
+
+            //Compare against OS specific image benchmark.
+            FileComparisonUtilities.assertImageFileSimilarToBenchmark(outputImageFile,
+                                                                      new File("testinput/chart2DTest/benchmark."
+                                                                          + scenarioName + "_output.png"),
+                                                                      4,
                                                                       true,
                                                                       false);
         }
