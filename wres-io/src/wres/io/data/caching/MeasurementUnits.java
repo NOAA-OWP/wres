@@ -9,7 +9,6 @@ import wres.util.Strings;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 /**
  * Caches details mapping units of measurements to their IDs
@@ -67,24 +66,21 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
     protected synchronized void init()
 	{
         Connection connection = null;
-        Statement measurementQuery = null;
         ResultSet measurements = null;
 
         try
         {
             connection = Database.getConnection();
-            measurementQuery = connection.createStatement();
-            measurementQuery.setFetchSize(100);
 
             String loadScript = "SELECT measurementunit_id, unit_name" + System.lineSeparator();
             loadScript += "FROM wres.measurementunit" + NEWLINE;
             loadScript += "LIMIT " + getMaxDetails() + ";";
 
-            measurements = measurementQuery.executeQuery(loadScript);
+            measurements = Database.getResults(connection, loadScript);
 
             while (measurements.next())
             {
-                this.keyIndex.put(measurements.getString("unit_name").toLowerCase(), measurements.getInt("measurementunit_id"));
+                this.getKeyIndex().put(measurements.getString("unit_name").toLowerCase(), measurements.getInt("measurementunit_id"));
             }
         }
         catch (SQLException error)
@@ -103,19 +99,6 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
                 catch(SQLException e)
                 {
                     LOGGER.error("An error was encountered when trying to close the resultset that loaded measurements.");
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-            }
-
-            if (measurementQuery != null)
-            {
-                try
-                {
-                    measurementQuery.close();
-                }
-                catch(SQLException e)
-                {
-                    LOGGER.error("An error was encountered when trying to close the statement that retrieved measurement values.");
                     LOGGER.error(Strings.getStackTrace(e));
                 }
             }

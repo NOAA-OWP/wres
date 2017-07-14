@@ -12,17 +12,27 @@ import java.sql.SQLException;
  */
 public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
 
-    private static ForecastTypes internalCache = new ForecastTypes();
+    private static ForecastTypes INTERNAL_CACHE = null;
+    private static final Object CACHE_LOCK = new Object();
 
-    private ForecastTypes() {
-        super();
+    private static final ForecastTypes getCache()
+    {
+        synchronized (CACHE_LOCK)
+        {
+            if (INTERNAL_CACHE == null)
+            {
+                INTERNAL_CACHE = new ForecastTypes();
+                INTERNAL_CACHE.init();
+            }
+            return INTERNAL_CACHE;
+        }
     }
 
     public static Integer getForecastTypeId(String description) throws Exception {
         Integer forecastTypeID;
 
         try {
-            forecastTypeID = internalCache.getID(description);
+            forecastTypeID = getCache().getID(description);
         } catch (Exception e) {
             System.err.println("An error was encountered while trying to get the id for the forecast type named: '" + description + "'.");
             System.err.println(description + " is not a valid forecast type.");
@@ -54,7 +64,7 @@ public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
 
             while (types.next())
             {
-                this.keyIndex.put(types.getString("type_name"), types.getInt("forecasttype_id"));
+                this.getKeyIndex().put(types.getString("type_name"), types.getInt("forecasttype_id"));
             }
 
         }
