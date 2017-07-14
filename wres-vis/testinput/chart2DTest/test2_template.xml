@@ -1,116 +1,37 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
 <chartDrawingParameters>
-
-    <generalParameters>
-        <chartBackgroundColor alpha="255" blue="255" green="255" red="255"/>
-        <plotBackgroundColor alpha="0" blue="255" green="255" red="255"/>
-        <backgroundImage alignment="CENTER" transparency="0.5" path="graphGenChartBG.png"></backgroundImage>
-        <gridLineStyle isDashed="true" width="0.5"/>
-        <timeZone>GMT</timeZone>
-    </generalParameters>  
+    
     <plotTitle>
-        <font family="Dialog" size="12" style="0"/>
-        <color alpha="255" blue="0" green="0" red="0"/>
-        <text>@plotTitle@</text>
-        <border>
-            <lineWidths bottom="0.0" left="0.0" right="0.0" top="0.0"/>
-            <color alpha="255" blue="0" green="0" red="0"/>
-        </border>
-        <horizontalAlignment>CENTER</horizontalAlignment>
-        <textAlignment>CENTER</textAlignment>
-        <textInsets bottom="10.0" left="0.0" right="0.0" top="10.0"/>
+        <text>@metricName@ for @primaryScenario@ predictions of @variableName@ at @locationName@@baselineText@</text>
     </plotTitle>
-    <subPlot subPlotIndex="0" weight="1">
-        <leftRangeAxis inverted="false" visible="true">
-            <axisType>Numerical</axisType>         
+    
+    <subPlot subPlotIndex="0">
+        <leftRangeAxis>       
             <label>
-                <font family="Dialog" size="12" style="0"/>
-                <color alpha="255" blue="0" green="0" red="0"/>
-                <text>@rangeAxis@</text>
+                <text>@metricShortName@@outputUnitsText@</text>
             </label>
         </leftRangeAxis>
     </subPlot>
-    <domainAxis inverted="false" visible="true">
-        <axisType>numerical</axisType>
+    
+    <domainAxis>
         <label>
-            <font family="Dialog" size="12" style="0"/>
-            <color alpha="255" blue="0" green="0" red="0"/>
-            <text>@domainAxis@</text>
+            <text>@domainAxisName@@inputUnitsText@</text>
         </label>
     </domainAxis>
-    <legend visible="true">
-        <position>BOTTOM</position>
-        <title>
-            <font family="Dialog" size="12" style="0"/>
-            <color alpha="255" blue="0" green="0" red="0"/>
-            <text/>
-        </title>
-        <entries>
-            <font family="Dialog" size="12" style="0"/>
-            <color alpha="255" blue="0" green="0" red="0"/>
-        </entries>
-        <fillColor alpha="0" blue="255" green="255" red="255"/>
-        <borderLineColor alpha="255" blue="0" green="0" red="0"/>
-        <borderLineWidth>1.0</borderLineWidth>
-    </legend>
 
     <datasourceDrawingParameters sourceIndex="0">
         <plotter>LineAndScatter</plotter>
         <subPlot>0</subPlot>
         <yAxis>left</yAxis>
-        <seriesDrawingParameters createdIndexOfSeriesToModify="0">
-            <lineColor alpha="255" blue="0" green="0" red="0"/>
-            <fillColor alpha="255" blue="0" green="0" red="255"/>
-            <nameInLegend>Series</nameInLegend>
-            <boxWidth>-1</boxWidth>
-            <showInLegend>true</showInLegend>
-            <includeInPlot>true</includeInPlot>
-            <shape>none</shape>
-            <shapeSize>1.0</shapeSize>
-            <lineWidth>0.5</lineWidth>
-            <shapeFilled>true</shapeFilled>
-            <barWidth>0.9</barWidth>
-        </seriesDrawingParameters>
-        <seriesDrawingParameters createdIndexOfSeriesToModify="1">
-            <lineColor alpha="255" blue="255" green="0" red="0"/>
-            <fillColor alpha="255" blue="0" green="0" red="255"/>
-            <nameInLegend>Series</nameInLegend>
-            <boxWidth>-1</boxWidth>
-            <showInLegend>true</showInLegend>
-            <includeInPlot>true</includeInPlot>
-            <shape>none</shape>
-            <shapeSize>1.0</shapeSize>
-            <lineWidth>0.5</lineWidth>
-            <shapeFilled>true</shapeFilled>
-            <barWidth>0.9</barWidth>
-        </seriesDrawingParameters>        
-        <seriesDrawingParameters createdIndexOfSeriesToModify="2">
-            <lineColor alpha="255" blue="51" green="204" red="51"/>
-            <fillColor alpha="255" blue="0" green="0" red="255"/>
-            <nameInLegend>Series</nameInLegend>
-            <boxWidth>-1</boxWidth>
-            <showInLegend>true</showInLegend>
-            <includeInPlot>true</includeInPlot>
-            <shape>none</shape>
-            <shapeSize>1.0</shapeSize>
-            <lineWidth>0.5</lineWidth>
-            <shapeFilled>true</shapeFilled>
-            <barWidth>0.9</barWidth>
-        </seriesDrawingParameters> 
-        <seriesDrawingParameters createdIndexOfSeriesToModify="3">
-            <lineColor alpha="255" blue="0" green="0" red="255"/>
-            <fillColor alpha="255" blue="0" green="0" red="255"/>
-            <nameInLegend>Series</nameInLegend>
-            <boxWidth>-1</boxWidth>
-            <showInLegend>true</showInLegend>
-            <includeInPlot>true</includeInPlot>
-            <shape>none</shape>
-            <shapeSize>1.0</shapeSize>
-            <lineWidth>0.5</lineWidth>
-            <shapeFilled>true</shapeFilled>
-            <barWidth>0.9</barWidth>
-        </seriesDrawingParameters> 
+        
+        <!-- The colors defined through a palette.  For this test, four colors for four series. -->
+		<lineColorPalette>
+            <color alpha="255" blue="0" green="0" red="0"/>
+			<color alpha="255" blue="255" green="0" red="0" />
+            <color alpha="255" blue="51" green="204" red="51"/>
+            <color alpha="255" blue="0" green="0" red="255"/>
+		</lineColorPalette>
     </datasourceDrawingParameters>
     
 </chartDrawingParameters>

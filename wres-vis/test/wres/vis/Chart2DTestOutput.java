@@ -49,7 +49,7 @@ public class Chart2DTestOutput extends TestCase
      * Generate a plot by lead time on the domain axis.
      */
 
-    public void test1ScalarOutput()
+    public void test2ScalarOutput()
     {
         //Construct some single-valued pairs
         final MetricOutputMapByLeadThreshold<ScalarOutput> input = getMetricOutputMapByLeadThresholdOne();
@@ -78,23 +78,40 @@ public class Chart2DTestOutput extends TestCase
             final String metricShortName = factory.getMetricShortName(meta.getMetricID());
             final String primaryScenario = identifier.getScenarioID();
             final String baselineScenario = identifier.getScenarioIDForBaseline(); //Not null if skill
-            final Dimension units = meta.getDimension();
+            final Dimension outputUnits = meta.getDimension();
+            final Dimension inputUnits = meta.getInputDimension();
 
             //Compose a plot title
-            String title = metricName + " for " + primaryScenario + " predictions of " + variableName + " at "
-                + locationName;
+            String baselineText = "";
             if(!Objects.isNull(baselineScenario))
             {
-                title = title + " against predictions from " + baselineScenario;
+                baselineText = " against predictions from " + baselineScenario;
             }
-            //Set the range axis name and units
-            final String rangeAxis = metricShortName + " [" + units + "]";
 
             //Set the arguments
-            arguments.addArgument("plotTitle", title);
-            arguments.addArgument("rangeAxis", rangeAxis);
-            //No lead time units in metadata API: could add this easily, but probably a global WRES assumption
-            arguments.addArgument("domainAxis", "FORECAST LEAD TIME [HOUR]");
+            arguments.addArgument("locationName", locationName);
+            arguments.addArgument("baselineText", baselineText);
+            arguments.addArgument("variableName", variableName);
+            arguments.addArgument("primaryScenario", primaryScenario);
+            arguments.addArgument("metricName", metricName);
+            arguments.addArgument("metricShortName", metricShortName);
+            arguments.addArgument("domainAxisName", "FORECAST LEAD TIME");
+            if(outputUnits.hasDimension())
+            {
+                arguments.addArgument("outputUnitsText", " [" + outputUnits + "]");
+            }
+            else
+            {
+                arguments.addArgument("outputUnitsText", "");
+            }
+            if(inputUnits.hasDimension())
+            {
+                arguments.addArgument("inputUnitsText", " [" + inputUnits + "]");
+            }
+            else
+            {
+                arguments.addArgument("inputUnitsText", "");
+            }
 
             //Build the ChartEngine instance.
             final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
@@ -114,7 +131,7 @@ public class Chart2DTestOutput extends TestCase
                 + "_output.png"),
                                                                       new File("testinput/chart2DTest/benchmark."
                                                                           + scenarioName + "_output.png"),
-                                                                      8,
+                                                                      4,
                                                                       true,
                                                                       false);
         }
@@ -129,8 +146,12 @@ public class Chart2DTestOutput extends TestCase
      * Generate a plot by threshold on the domain axis.
      */
 
-    public void test2ScalarOutput()
+    public void test3ScalarOutput()
     {
+        final String scenarioName = "test3";
+        final File outputImageFile = new File("testoutput/chart2DTest/" + scenarioName + "_output.png");
+        outputImageFile.delete();
+        
         //Construct some single-valued pairs
         final MetricOutputMapByLeadThreshold<ScalarOutput> input = getMetricOutputMapByLeadThresholdTwo();
 
@@ -140,13 +161,13 @@ public class Chart2DTestOutput extends TestCase
                                                                   new ScalarOutputByThresholdLeadXYChartDataSource(0,
                                                                                                                    input);
 
-        final String scenarioName = "test3";
         try
         {
             //The arguments processor for example purposes.
             final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
 
             final MetricOutputMetadata meta = input.getMetadata();
+            
             //The following helper factory is part of the wres-datamodel, not the api. It will need to be supplied by 
             //(i.e. dependency injected from) wres-core as a MetadataFactory, which is part of the API
             final MetadataFactory factory = DefaultMetadataFactory.getInstance();
@@ -162,19 +183,36 @@ public class Chart2DTestOutput extends TestCase
             final Dimension inputUnits = meta.getInputDimension();
 
             //Compose a plot title
-            String title = metricName + " for " + primaryScenario + " predictions of " + variableName + " at "
-                + locationName;
+            String baselineText = "";
             if(!Objects.isNull(baselineScenario))
             {
-                title = title + " against predictions from " + baselineScenario;
+                baselineText = " against predictions from " + baselineScenario;
             }
-            //Set the range axis name and units
-            final String rangeAxis = metricShortName + " [" + outputUnits + "]";
 
             //Set the arguments
-            arguments.addArgument("plotTitle", title);
-            arguments.addArgument("rangeAxis", rangeAxis);
-            arguments.addArgument("domainAxis", "THRESHOLD VALUE [" + inputUnits + "]");
+            arguments.addArgument("locationName", locationName);
+            arguments.addArgument("baselineText", baselineText);
+            arguments.addArgument("variableName", variableName);
+            arguments.addArgument("primaryScenario", primaryScenario);
+            arguments.addArgument("metricName", metricName);
+            arguments.addArgument("metricShortName", metricShortName);
+            arguments.addArgument("domainAxisName", "THRESHOLD VALUE");
+            if(outputUnits.hasDimension())
+            {
+                arguments.addArgument("outputUnitsText", " [" + outputUnits + "]");
+            }
+            else
+            {
+                arguments.addArgument("outputUnitsText", "");
+            }
+            if(inputUnits.hasDimension())
+            {
+                arguments.addArgument("inputUnitsText", " [" + inputUnits + "]");
+            }
+            else
+            {
+                arguments.addArgument("inputUnitsText", "");
+            }
 
             //Build the ChartEngine instance.
             final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
@@ -194,7 +232,7 @@ public class Chart2DTestOutput extends TestCase
                 + "_output.png"),
                                                                       new File("testinput/chart2DTest/benchmark."
                                                                           + scenarioName + "_output.png"),
-                                                                      8,
+                                                                      4,
                                                                       true,
                                                                       false);
         }
