@@ -32,53 +32,6 @@ public final class ScriptFactory
         
         return new LabeledScript(label, script);
     }
-
-    public static String generateGetViewPairData(MetricSpecification metricSpecification, int progress) throws Exception
-    {
-        // Expose members of the specification to reduce the depth of data accessors
-        ProjectDataSpecification firstSourceSpec = metricSpecification.getFirstSource();
-        ProjectDataSpecification secondSourceSpec = metricSpecification.getSecondSource();
-
-        Integer firstDesiredMeasurementUnitID;
-        Integer secondDesiredMeasurementUnitID;
-
-        if (metricSpecification.getDesiredMeasurementUnit() == null)
-        {
-            firstDesiredMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(firstSourceSpec.getMeasurementUnit());
-            secondDesiredMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(secondSourceSpec.getMeasurementUnit());
-        }
-        else
-        {
-            firstDesiredMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(metricSpecification.getDesiredMeasurementUnit());
-            secondDesiredMeasurementUnitID = firstDesiredMeasurementUnitID;
-        }
-
-        String leadSpecification = metricSpecification.getAggregationSpecification().getLeadQualifier(progress);
-
-        StringBuilder script = new StringBuilder("SELECT * FROM (").append(NEWLINE);
-
-        script.append("WITH sourceTwo AS").append(NEWLINE);
-        script.append("(").append(NEWLINE);
-        script.append("     SELECT FEV.forecasted_date, FEV.measurements").append(NEWLINE);
-        script.append("     FROM matview.ForecastEnsembleValues2 FEV").append(NEWLINE);
-        script.append("     WHERE ").append(leadSpecification).append(NEWLINE);
-        script.append("         AND FEV.variableposition_id = ").append(String.valueOf(secondSourceSpec.getFirstVariablePositionID())).append(NEWLINE);
-        script.append("         AND FEV.to_unit = ").append(String.valueOf(secondDesiredMeasurementUnitID)).append(NEWLINE);
-        script.append("     GROUP BY FEV.forecasted_date, FEV.measurements").append(NEWLINE);
-        script.append(")").append(NEWLINE);
-        script.append("SELECT O.observed_value * UC.factor AS sourceOneValue, FEV.measurements").append(NEWLINE);
-        script.append("FROM wres.Observation O").append(NEWLINE);
-        script.append("INNER JOIN sourceTwo AS FEV").append(NEWLINE);
-        script.append("     ON FEV.forecasted_date = O.observation_time").append(NEWLINE);
-        script.append("INNER JOIN wres.UnitConversion UC").append(NEWLINE);
-        script.append("     ON UC.from_unit = O.measurementunit_id").append(NEWLINE);
-        script.append("WHERE O.variableposition_id = ").append(String.valueOf(firstSourceSpec.getFirstVariablePositionID())).append(NEWLINE);
-        script.append("     AND UC.to_unit = ").append(firstDesiredMeasurementUnitID).append(NEWLINE);
-
-        script.append(") AS pairs;");
-
-        return script.toString();
-    }
     
     public static String generateGetPairData(MetricSpecification metricSpecification, int progress) throws Exception {
         // TODO: Break into multiple functions
@@ -178,7 +131,6 @@ public final class ScriptFactory
             }
             
             script += "     GROUP BY F.forecast_date, FV.lead       -- Combine results based on the date of their initial forecast, then on their lead time" + NEWLINE;
-            //script += "     ORDER BY F.forecast_date" + NEWLINE;
         }
         else
         {
@@ -311,8 +263,6 @@ public final class ScriptFactory
                 script += "     AND FE.ensemble_id = " + firstSourceSpec.getEnsembleCondition() + "       -- Only select values belonging to specific ensembles" + NEWLINE;
             }
             
-            script += "ORDER BY F.forecast_date, FV.lead    --  Return the results based on the date of their values" + NEWLINE;
-            
             script += "GROUP BY F.forecast_date + INTERVAL '1 hour' * FV.lead";
             
             if (firstSourceSpec.getTimeOffset() != null)
@@ -381,8 +331,6 @@ public final class ScriptFactory
                 script += "     AND O.observed_value * UC.factor <= " + firstSourceSpec.getMaximumValue();
                 script += "     -- Limit observed values to those less than or equal to a maximum value" + NEWLINE;
             }
-            
-            script += "ORDER BY O.observation_time      -- Order results based on date (earliest to latest)" + NEWLINE;
         }
         
         return "SELECT * FROM (" + script + ") AS pairs;";

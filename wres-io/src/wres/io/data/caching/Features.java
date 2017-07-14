@@ -123,5 +123,6 @@ public class Features extends Cache<FeatureDetails, String>
     public synchronized void init()
 	{
         LOGGER.trace("The features cache is being created");
+        getDetails();
 	}
 }

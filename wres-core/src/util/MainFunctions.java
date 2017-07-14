@@ -118,7 +118,8 @@ public final class MainFunctions
 		prototypes.put("refreshtestdata", refreshTestData());
 		prototypes.put("refreshstatistics", refreshStatistics());
 		prototypes.put("ingestproject", ingestProject());
-		prototypes.put("loadCoordinates", loadCoordinates());
+		prototypes.put("loadcoordinates", loadCoordinates());
+		prototypes.put("builddatabase", buildDatabase());
 
 		return prototypes;
 	}
@@ -1034,7 +1035,7 @@ public final class MainFunctions
 
                     pairMapping = metric.getPairs();
                     
-                    /*for (final Integer leadKey : pairMapping.keySet())
+                    for (final Integer leadKey : pairMapping.keySet())
                     {
                         System.out.println("\tLead Time: " + leadKey);
                         for (final PairOfDoubleAndVectorOfDoubles pair : pairMapping.get(leadKey))
@@ -1054,11 +1055,11 @@ public final class MainFunctions
                         totalCount++;
                         printCount = 0;
                         
-                        if (totalCount >= totalLimit)
+                        /*if (totalCount >= totalLimit)
                         {
                             break;
-                        }
-                    }*/
+                        }*/
+                    }
 					result = SUCCESS;
                 }
                 catch(final Exception e)
@@ -1356,6 +1357,16 @@ public final class MainFunctions
                 LOGGER.error("There are not enough arguments to run 'loadCoordinates'");
                 LOGGER.error("usage: loadCoordinates <Path to NetCDF File containing coordinate information>");
             }
+
+			return result;
+		};
+	}
+
+	private static Function<String[], Integer> buildDatabase() {
+		return (String[] args) -> {
+			Integer result = FAILURE;
+
+			Database.buildInstance();
 
 			return result;
 		};
