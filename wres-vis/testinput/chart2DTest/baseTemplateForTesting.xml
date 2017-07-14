@@ -21,9 +21,36 @@
         <subPlot>0</subPlot>
         <yAxis>left</yAxis>
         
+        <!-- Color palettes are used to define the default line and fill colors and are applied before series
+             parameter overrides are applied in order to determine the default appearance of the chart series.
+             
+             The color palette is determined based on a list of provided color elements and the attribute 
+             numberOfColors.  If that number is smaller than or equal to the size of the list, then the list 
+             of colors defines the palette.  If that number is larger than the size of the list, then the
+             palette is computed yielding the desired number from the list of colors using a tool within
+             ColorTools (ohdcommonchps.jar).  If that number is not provided, then the palette is computed
+             based on the number of series to which the colors will be assigned such that each series receives
+             a unique color, calling ColorTools if needed.  
+             
+             If the palette size is smaller than the number of series to which it is applied, the color assigned
+             will rotate through the list.
+              -->
+		<lineColorPalette numberOfColors="3">
+			<color alpha="255" blue="255" green="0" red="0" />
+			<color alpha="255" blue="0" green="255" red="0" />
+			<color alpha="255" blue="0" green="0" red="255" />
+		</lineColorPalette>
+		<fillColorPalette>
+			<color alpha="255" blue="255" green="0" red="0" />
+			<color alpha="255" blue="0" green="255" red="0" />
+			<color alpha="255" blue="0" green="0" red="255" />
+		</fillColorPalette>
+		
         <!-- Add one seriesDrawingParameters element for each series to draw, with createdIndexOfSeriesToModify
              set accordingly (0, 1, 2,...).  If not added, the default drawing parameters are used, which are shown here. 
-             This can be an arduous process if an ensemble is plotted, unfortunately. -->
+             If the createdIndexOfSeriesToModify is set to -1 (or any negative value), then the series overrides
+             are assumed to be defaults applied to ALL series.  That override is applied AFTER the defaults are computed
+             by the system and BEFORE the series-specific parameters are applied. -->
         <seriesDrawingParameters createdIndexOfSeriesToModify="0">
             <lineColor alpha="255" blue="0" green="0" red="255"/>
             <fillColor alpha="255" blue="0" green="0" red="255"/>
