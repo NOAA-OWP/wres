@@ -51,6 +51,10 @@ public class Chart2DTestOutput extends TestCase
 
     public void test2ScalarOutput()
     {
+        final String scenarioName = "test2";
+        final File outputImageFile = new File("testoutput/chart2DTest/" + scenarioName + "_output.png");
+        outputImageFile.delete();
+
         //Construct some single-valued pairs
         final MetricOutputMapByLeadThreshold<ScalarOutput> input = getMetricOutputMapByLeadThresholdOne();
 
@@ -60,7 +64,6 @@ public class Chart2DTestOutput extends TestCase
                                                                   new ScalarOutputByLeadThresholdXYChartDataSource(0,
                                                                                                                    input);
 
-        final String scenarioName = "test2";
         try
         {
             //The arguments processor for example purposes.
@@ -121,14 +124,10 @@ public class Chart2DTestOutput extends TestCase
                                                                    null);
 
             //Generate the output file.
-            ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + scenarioName + "_output.png"),
-                                               engine.buildChart(),
-                                               800,
-                                               600);
+            ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
 
             //Compare against OS specific image benchmark.
-            FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + scenarioName
-                + "_output.png"),
+            FileComparisonUtilities.assertImageFileSimilarToBenchmark(outputImageFile,
                                                                       new File("testinput/chart2DTest/benchmark."
                                                                           + scenarioName + "_output.png"),
                                                                       4,
@@ -151,7 +150,7 @@ public class Chart2DTestOutput extends TestCase
         final String scenarioName = "test3";
         final File outputImageFile = new File("testoutput/chart2DTest/" + scenarioName + "_output.png");
         outputImageFile.delete();
-        
+
         //Construct some single-valued pairs
         final MetricOutputMapByLeadThreshold<ScalarOutput> input = getMetricOutputMapByLeadThresholdTwo();
 
@@ -167,7 +166,7 @@ public class Chart2DTestOutput extends TestCase
             final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
 
             final MetricOutputMetadata meta = input.getMetadata();
-            
+
             //The following helper factory is part of the wres-datamodel, not the api. It will need to be supplied by 
             //(i.e. dependency injected from) wres-core as a MetadataFactory, which is part of the API
             final MetadataFactory factory = DefaultMetadataFactory.getInstance();
@@ -222,14 +221,10 @@ public class Chart2DTestOutput extends TestCase
                                                                    null);
 
             //Generate the output file.
-            ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + scenarioName + "_output.png"),
-                                               engine.buildChart(),
-                                               800,
-                                               600);
+            ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
 
             //Compare against OS specific image benchmark.
-            FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + scenarioName
-                + "_output.png"),
+            FileComparisonUtilities.assertImageFileSimilarToBenchmark(outputImageFile,
                                                                       new File("testinput/chart2DTest/benchmark."
                                                                           + scenarioName + "_output.png"),
                                                                       4,

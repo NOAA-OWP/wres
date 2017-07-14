@@ -54,6 +54,10 @@ public class ScalarOutputByThresholdLeadXYChartDataSource extends DefaultXYChart
         getDefaultFullySpecifiedDataSourceDrawingParameters().setPlotterName("LineAndScatter");
         getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(0);
         getDefaultFullySpecifiedDataSourceDrawingParameters().setYAxisIndex(0);
+        
+        //TODO Need to ensure that the arguments used below are standard arguments created in the factory that generates images!
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("THRESHOLD VALUE@inputUnitsText@");
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("@metricShortName@@outputUnitsText@");
 
         final int seriesCount = input.keySetByLead().size();
         constructAllSeriesDrawingParameters(seriesCount);
