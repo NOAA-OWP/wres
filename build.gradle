@@ -105,8 +105,15 @@ subprojects
     jar
     {
         // toward reproducible builds:
-        preserveFileTimestamps = false;
-        reproducibleFileOrder = true;
+        preserveFileTimestamps = false
+        reproducibleFileOrder = true
+
+        // version number should be included
+        manifest
+        {
+            attributes("Implementation-Title": "Water Resources Evaluation Service",
+                       "Implementation-Version": version)
+        }
     }
 }
 
@@ -262,6 +269,7 @@ project(':wres-io')
         compile project(':utilities')
         compile project(':wres-datamodel-api')
         compile project(':wres-datamodel')
+        compile project(':wres-config')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
