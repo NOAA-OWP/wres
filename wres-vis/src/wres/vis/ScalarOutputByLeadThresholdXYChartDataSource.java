@@ -88,5 +88,4 @@ public class ScalarOutputByLeadThresholdXYChartDataSource extends DefaultXYChart
         return new ScalarOutputByLeadThresholdXYDataset(input);
     }
     
-    
 }
