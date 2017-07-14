@@ -5,20 +5,6 @@
     <plotTitle>
         <text>@metricName@ for @primaryScenario@ predictions of @variableName@ at @locationName@@baselineText@</text>
     </plotTitle>
-    
-    <subPlot subPlotIndex="0">
-        <leftRangeAxis>       
-            <label>
-                <text>@metricShortName@@outputUnitsText@</text>
-            </label>
-        </leftRangeAxis>
-    </subPlot>
-    
-    <domainAxis>
-        <label>
-            <text>@domainAxisName@@inputUnitsText@</text>
-        </label>
-    </domainAxis>
 
     <datasourceDrawingParameters sourceIndex="0">
         <plotter>LineAndScatter</plotter>
