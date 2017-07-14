@@ -176,10 +176,10 @@ public class DefaultMetadataFactory implements MetadataFactory
     }
 
     @Override
-    public DatasetIdentifier getDatasetIdentifier(String geospatialID,
-                                                  String variableID,
-                                                  String scenarioID,
-                                                  String baselineScenarioID)
+    public DatasetIdentifier getDatasetIdentifier(final String geospatialID,
+                                                  final String variableID,
+                                                  final String scenarioID,
+                                                  final String baselineScenarioID)
     {
         return new DatasetIdentifierImpl(geospatialID,variableID,scenarioID,baselineScenarioID);
     }
@@ -209,7 +209,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             @Override
             public boolean hasDimension()
             {
-                return "DIMENSIONLESS".equals(dimension);
+                return !"DIMENSIONLESS".equals(dimension);
             }
 
             @Override
@@ -441,7 +441,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         final String baselineScenarioID;
 
         private DatasetIdentifierImpl(final String geospatialID,
-                                      String variableID,
+                                      final String variableID,
                                       final String scenarioID,
                                       final String baselineScenarioID)
         {
@@ -501,13 +501,13 @@ public class DefaultMetadataFactory implements MetadataFactory
         }
 
         @Override
-        public boolean equals(Object o)
+        public boolean equals(final Object o)
         {
             if(!(o instanceof DatasetIdentifier))
             {
                 return false;
             }
-            DatasetIdentifier check = (DatasetIdentifier)o;
+            final DatasetIdentifier check = (DatasetIdentifier)o;
             boolean returnMe = hasGeospatialID() == check.hasGeospatialID() && hasVariableID() == check.hasVariableID()
                 && hasScenarioID() == check.hasScenarioID()
                 && hasScenarioIDForBaseline() == check.hasScenarioIDForBaseline();
@@ -533,7 +533,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         @Override
         public int hashCode()
         {
-            String uniqueID = getGeospatialID() + getVariableID() + getScenarioID() + getScenarioIDForBaseline();
+            final String uniqueID = getGeospatialID() + getVariableID() + getScenarioID() + getScenarioIDForBaseline();
             return uniqueID.hashCode();
         }
     }
