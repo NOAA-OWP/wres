@@ -1,3 +1,5 @@
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.MainFunctions;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
@@ -10,12 +12,19 @@ import java.lang.management.ManagementFactory;
  * Provides the entry point for prototyping development
  */
 public class Main {
-	
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+
 	/**
 	 * Executes and times the requested operation with the given parameters
 	 * @param args Arguments from the command line of the format {@code action <parameter 1, parameter 2, etc>}"
 	 */
 	public static void main(String[] args) {
+
+        if (LOGGER.isInfoEnabled())
+        {
+            LOGGER.info(getVersion());
+        }
 
 		Integer exitCode = -1;
 
@@ -71,4 +80,20 @@ public class Main {
 		System.exit(exitCode);
 	}
 
+    public static String getVersion()
+    {
+        // Empty object for only getting version of the software
+        Package toGetVersion = (new Main()).getClass().getPackage();
+
+        if (toGetVersion != null && toGetVersion.getImplementationVersion() != null)
+        {
+            // When running from a released zip, the version should show up.
+            return "WRES version" + toGetVersion.getImplementationVersion();
+        }
+        else
+        {
+            // When running from source, this will be the expected outcome.
+            return "WRES version is unknown, probably developer version.";
+        }
+    }
 }
