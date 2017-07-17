@@ -24,6 +24,34 @@ public final class DataFactory
             {
                 return second;
             }
+
+            @Override
+            public int compareTo(PairOfDoubles other)
+            {
+                if (this.getItemOne() == other.getItemOne())
+                {
+                    if (this.getItemTwo() == other.getItemTwo())
+                    {
+                        return 0;
+                    }
+                    else if (this.getItemTwo() < other.getItemTwo())
+                    {
+                        return -1;
+                    }
+                    else
+                    {
+                        return 1;
+                    }
+                }
+                else if (this.getItemOne() < other.getItemOne())
+                {
+                    return -1;
+                }
+                else
+                {
+                    return 1;
+                }
+            }
         };
     }
 
