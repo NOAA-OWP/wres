@@ -3,17 +3,7 @@ package wres.datamodel.metric;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.MatrixOfDoubles;
-import wres.datamodel.Pair;
-import wres.datamodel.PairOfBooleans;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.SafeMatrixOfDoubles;
-import wres.datamodel.SafePairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.SafeVectorOfBooleans;
-import wres.datamodel.SafeVectorOfDoubles;
-import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.*;
 
 /**
  * A default factory class for producing metric inputs.
@@ -106,20 +96,7 @@ public class DefaultMetricInputFactory extends DefaultMetricDataFactory implemen
     @Override
     public PairOfDoubles pairOf(final double left, final double right)
     {
-        return new PairOfDoubles()
-        {
-            @Override
-            public double getItemOne()
-            {
-                return left;
-            }
-
-            @Override
-            public double getItemTwo()
-            {
-                return right;
-            }
-        };
+        return DataFactory.pairOf(left, right);
     }
     
     @Override

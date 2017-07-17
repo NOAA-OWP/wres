@@ -54,8 +54,7 @@ implements PairOfDoubleAndVectorOfDoubles
         return s.toString();
     }
 
-    @Override public int compareTo(
-            PairOfDoubleAndVectorOfDoubles other)
+    @Override public int compareTo(PairOfDoubleAndVectorOfDoubles other)
     {
         // if the instances are the same...
         if (this == other)

@@ -10,6 +10,7 @@ package wres.datamodel;
  *
  */
 public interface PairOfDoubles
+extends Comparable<PairOfDoubles>
 {
     double getItemOne();
     double getItemTwo();
