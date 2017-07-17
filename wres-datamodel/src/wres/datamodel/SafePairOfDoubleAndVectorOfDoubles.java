@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.util.Arrays;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
@@ -63,18 +64,8 @@ implements PairOfDoubleAndVectorOfDoubles
         }
         else if (this.getItemOne() == other.getItemOne())
         {
-            // exact same array reference
-            if (this.getItemTwo() == other.getItemTwo())
-            {
-                return 0;
-            }
-            // Same contents based on array equals
-            else if (this.getItemTwo().equals(other.getItemTwo()))
-            {
-                return 0;
-            }
             // this one has fewer elements
-            else if (this.getItemTwo().length < other.getItemTwo().length)
+            if (this.getItemTwo().length < other.getItemTwo().length)
             {
                 return -1;
             }
@@ -94,7 +85,7 @@ implements PairOfDoubleAndVectorOfDoubles
                                               other.getItemTwo()[i]);
                     }
                 }
-                // all values were equal, should not be reached.
+                // all values were equal
                 return 0;
             }
         }

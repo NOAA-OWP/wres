@@ -59,4 +59,14 @@ public class ComparisonTest
         assertTrue("Expect second array pair to be more than first",
                 secondPair.compareTo(firstPair) > 0);
     }
+
+    @Test
+    public void fancyPairEqualsItself()
+    {
+
+        double[] firstArr = {1.0, 2.0};
+        PairOfDoubleAndVectorOfDoubles firstPair = DataFactory.pairOf(4.0, firstArr);
+        assertTrue("Expect a pair to equal itself",
+                   firstPair.compareTo(firstPair) == 0);
+    }
 }
