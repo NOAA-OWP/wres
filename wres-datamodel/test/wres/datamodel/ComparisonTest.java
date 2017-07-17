@@ -63,10 +63,39 @@ public class ComparisonTest
     @Test
     public void fancyPairEqualsItself()
     {
-
         double[] firstArr = {1.0, 2.0};
         PairOfDoubleAndVectorOfDoubles firstPair = DataFactory.pairOf(4.0, firstArr);
         assertTrue("Expect a pair to equal itself",
                    firstPair.compareTo(firstPair) == 0);
+    }
+
+    @Test
+    public void doublePairItemOneDifferent()
+    {
+        PairOfDoubles firstPair = DataFactory.pairOf(1.0, 2.0);
+        PairOfDoubles secondPair = DataFactory.pairOf(3.0, 1.0);
+        assertTrue("Expect first pair to be less than second pair",
+                   firstPair.compareTo(secondPair) < 0);
+        assertTrue("Expect second pair to be more than first pair",
+                secondPair.compareTo(firstPair) > 0);
+    }
+
+    @Test
+    public void doublePairItemOneSameItemTwoDifferent()
+    {
+        PairOfDoubles firstPair = DataFactory.pairOf(1.0, 2.0);
+        PairOfDoubles secondPair = DataFactory.pairOf(1.0, 3.0);
+        assertTrue("Expect first pair to be less than second pair",
+                firstPair.compareTo(secondPair) < 0);
+        assertTrue("Expect second pair to be more than first pair",
+                secondPair.compareTo(firstPair) > 0);
+    }
+
+    @Test
+    public void doublePairEqualsItself()
+    {
+        PairOfDoubles firstPair = DataFactory.pairOf(1.0, 2.0);
+        assertTrue("Expect a pair to equal itself",
+                firstPair.compareTo(firstPair) == 0);
     }
 }
