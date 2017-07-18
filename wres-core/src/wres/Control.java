@@ -39,10 +39,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.Slicer;
+import wres.datamodel.*;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MetricConstants;
@@ -122,6 +119,8 @@ public class Control
      */
     public static void main(final String[] args) throws JAXBException, IOException
     {
+        Control dummy = new Control();
+        LOGGER.info("Running version " + dummy.getClass().getPackage().getImplementationVersion());
         String fileName = "wres-core/nonsrc/config_possibility.xml";
         ProjectConfig projectConfig;
         try
@@ -526,7 +525,8 @@ public class Control
                 {
                     final double observationValue = resultSet.getFloat("observation");
                     final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
-                    final PairOfDoubleAndVectorOfDoubles pair = DataFactory.pairOf(observationValue, forecastValues);
+                    final PairOfDoubleAndVectorOfDoubles pair =
+                            SafePairOfDoubleAndVectorOfDoubles.of(observationValue, forecastValues);
 
                     LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
                                  pair.getItemOne(),
