@@ -16,15 +16,15 @@ import wres.datamodel.metric.SingleValuedPairs;
  * 
  * @author Hank.Herr
  */
-public class MetricInputXYChartDataSource extends DefaultXYChartDataSource
+public class SingleValuedPairsXYChartDataSource extends DefaultXYChartDataSource
 {
-    private final MetricInput metricInput;
+    private final SingleValuedPairs metricInput;
 
     /**
      * @param orderIndex The data source order index within the plotted chart.
      * @param input The {@link MetricInput} for which to display a chart.
      */
-    public MetricInputXYChartDataSource(final int orderIndex, final MetricInput input)
+    public SingleValuedPairsXYChartDataSource(final int orderIndex, final SingleValuedPairs input)
     {
         metricInput = input;
         buildInitialParameters(orderIndex);
@@ -32,9 +32,6 @@ public class MetricInputXYChartDataSource extends DefaultXYChartDataSource
         //TODO This stuff needs to come from meta data for MetricInput!!!
         this.setXAxisType(ChartConstants.AXIS_IS_NUMERICAL);
         this.setComputedDataType(ChartConstants.AXIS_IS_NUMERICAL);
-        this.setSourceNameInTable("TEST TABLE NAME");
-        this.setUnitsString("TEST UNITS");
-        this.setDomainHeader("TEST DOMAIN COL");
     }
 
     /**
@@ -48,39 +45,21 @@ public class MetricInputXYChartDataSource extends DefaultXYChartDataSource
         getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(0);
         getDefaultFullySpecifiedDataSourceDrawingParameters().setYAxisIndex(0);
 
-        //JB @ 27 June 2017: simplified interface for MetricInput 
-        //Initialize the series parameters to be fully defined.
-//        constructAllSeriesDrawingParameters(metricInput.size());
-//        for(int i = 0; i < metricInput.size(); i++)
-//        {
-//            final SeriesDrawingParameters seriesParms = this.getDefaultFullySpecifiedDataSourceDrawingParameters()
-//                                                            .getSeriesDrawingParametersForSeriesIndex(i);
-//
-//            //Need fully specified parameters since these are not overrides.  
-//            seriesParms.setupDefaultParameters();
-//
-//            //Override the default legend names in order to number them starting with 0.
-//            seriesParms.setNameInLegend("Series " + i);
-//            if(i == 0)
-//            {
-//                seriesParms.setNameInLegend("Series First");
-//            }
-//        }
-        //START: JB @ 27 June 2017: simplified interface for MetricInput
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("@domainAxisLabelPrefix@@inputUnitsText@");
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("@rangeAxisLabelPrefix@@inputUnitsText@");
+
         constructAllSeriesDrawingParameters(1);
         final SeriesDrawingParameters seriesParms = this.getDefaultFullySpecifiedDataSourceDrawingParameters()
-        .getSeriesDrawingParametersForSeriesIndex(0);
+                                                        .getSeriesDrawingParametersForSeriesIndex(0);
+        seriesParms.setupDefaultParameters();
 
-        //Need fully specified parameters since these are not overrides.  
-        seriesParms.setupDefaultParameters();        
-        //END: JB
-        seriesParms.setNameInLegend("Series First");
+        seriesParms.setNameInLegend("Series");
     }
 
     @Override
     public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
     {
-        final MetricInputXYChartDataSource copy = new MetricInputXYChartDataSource(getDataSourceOrderIndex(),
+        final SingleValuedPairsXYChartDataSource copy = new SingleValuedPairsXYChartDataSource(getDataSourceOrderIndex(),
                                                                                    metricInput);
 
         copy.copyTheseParametersIntoDataSource(this);
@@ -95,16 +74,9 @@ public class MetricInputXYChartDataSource extends DefaultXYChartDataSource
         //Depending on answer to the question at the top of SingleValuedPairs, we may just call 
         //metricInput.buildXYDataset() to acquire the data set and then set the legend names below.
         //Then we wouldn't need this cheezy instanceof if-clause.
-        if(metricInput instanceof SingleValuedPairs)
-        {
-            dataSet = new SingleValuedPairsXYDataset((SingleValuedPairs)metricInput);
-        }
-        else
-        {
-            throw new IllegalArgumentException("Class of MetricInput not understood.");
-        }
+        dataSet = new SingleValuedPairsXYDataset(metricInput);
 
-        //Set the legend names based on the passed in override parameters.
+        //Set the legend names based on the passed in parameters.
         //Legend names are set in the dataSet itself, which is why this must be done when the dataSet is created.
         //I know... I don't like it either.
         for(int i = 0; i < dataSet.getSeriesCount(); i++)

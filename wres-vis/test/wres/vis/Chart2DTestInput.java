@@ -3,6 +3,7 @@ package wres.vis;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -25,41 +26,34 @@ public class Chart2DTestInput extends TestCase
 {
     public void test1SingleValuedPairsScatter()
     {
-        //Construct some single-valued pairs
+        final Random rand = new Random(0L);
         final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
-        values.add(metIn.pairOf(22.9, 22.8));
-        values.add(metIn.pairOf(75.2, 80));
-        values.add(metIn.pairOf(63.2, 65));
-        values.add(metIn.pairOf(29, 30));
-        values.add(metIn.pairOf(5, 2));
-        values.add(metIn.pairOf(2.1, 3.1));
-        values.add(metIn.pairOf(35000, 37000));
-        values.add(metIn.pairOf(8, 7));
-        values.add(metIn.pairOf(12, 12));
-        values.add(metIn.pairOf(93, 94));
+        for (int i = 0; i < 100; i ++)
+        {
+            values.add(metIn.pairOf(rand.nextGaussian(), rand.nextGaussian()));
+        }
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata(values.size(),
                                                  metFac.getDimension("CMS"),
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
+        
+        //TODO Ideas...
+        //Data identifier should be in the legend entry.
+        //Title should be basic text that does not vary by scatter plot.
+        //Series should be colored according to palette.
 
         //Construct the source from the pairs assigning it a data source order index of 0.  
         //The order index indicates the order in which the different sources are rendered.
-        final MetricInputXYChartDataSource source = new MetricInputXYChartDataSource(0, pairs);
+        final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource(0, pairs);
 
         final String scenarioName = "test1";
         try
         {
-            //The arguments processor for example purposes.
-            final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
-            arguments.addArgument("locationId", "AAAAA");
-
             //Build the ChartEngine instance.
-            final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
-                                                                   arguments,
-                                                                   "testinput/chart2DTest/" + scenarioName
-                                                                       + "_template.xml",
+            final ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine(pairs, 
+                                                                   "singleValuedPairsTemplate.xml",
                                                                    null);
 
             //Generate the output file.
@@ -106,7 +100,7 @@ public class Chart2DTestInput extends TestCase
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
         //Create the data source for charting.
-        final MetricInputXYChartDataSource source = new MetricInputXYChartDataSource(0, pairs);
+        final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource(0, pairs);
 
         try
         {
@@ -154,4 +148,7 @@ public class Chart2DTestInput extends TestCase
 //        }
 //
 //    }
+    
+    
+    
 }

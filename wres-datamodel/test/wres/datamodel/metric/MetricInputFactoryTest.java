@@ -2,6 +2,7 @@ package wres.datamodel.metric;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -195,4 +196,19 @@ public final class MetricInputFactoryTest
         assertEquals(false, bools.getItemTwo());
     }
 
+    @Test
+    public void pairOfDoubleAndVectorOfDoubleToStringTest()
+    {
+        double[] arr = {123456.0, 78910.0, 111213.0};
+        PairOfDoubleAndVectorOfDoubles p = metIn.pairOf(141516.0, arr);
+        String result = p.toString();
+        assertTrue("12345 expected to show up in toString: " + result,
+                   result.contains("12345"));
+        assertTrue("7891 expected to show up in toString: " + result,
+                    result.contains("7891"));
+        assertTrue("11121 expected to show up in toString: " + result,
+                result.contains("11121"));
+        assertTrue("14151 expected to show up in toString: " + result,
+                result.contains("14151"));
+    }
 }
