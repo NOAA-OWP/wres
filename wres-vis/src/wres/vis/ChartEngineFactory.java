@@ -14,7 +14,6 @@ import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.datamodel.metric.DatasetIdentifier;
-import wres.datamodel.metric.DefaultMetadataFactory;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
@@ -54,6 +53,7 @@ public abstract class ChartEngineFactory
      * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
      */
     public static ChartEngine buildGenericScalarOutputChartEngine(final MetricOutputMapByLeadThreshold<ScalarOutput> input,
+                                                                  final MetadataFactory factory,
                                                                   final VisualizationPlotType plotType,
                                                                   final String templateResourceName,
                                                                   final String overrideParametersStr) throws ChartEngineException,
@@ -74,10 +74,6 @@ public abstract class ChartEngineFactory
         final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
 
         final MetricOutputMetadata meta = input.getMetadata();
-
-        //The following helper factory is part of the wres-datamodel, not the api. It will need to be supplied by 
-        //(i.e. dependency injected from) wres-core as a MetadataFactory, which is part of the API
-        final MetadataFactory factory = DefaultMetadataFactory.getInstance();
         final DatasetIdentifier identifier = meta.getIdentifier();
 
         //Setup fixed arguments.

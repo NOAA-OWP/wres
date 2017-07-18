@@ -20,6 +20,7 @@ import junit.framework.TestCase;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
+import wres.datamodel.metric.DefaultMetadataFactory;
 import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MapBiKey;
 import wres.datamodel.metric.MetadataFactory;
@@ -54,8 +55,11 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
+            //Get an implementation of the metadata factory to use for testing.
+            final MetadataFactory factory = DefaultMetadataFactory.getInstance();
+            
             //Call the factory.
-            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
+            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,factory,
                                                                            ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
                                                                            "scalarOutputTemplate.xml",
                                                                            null);
@@ -93,9 +97,11 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-
+            //Get an implementation of the metadata factory to use for testing.
+            final MetadataFactory factory = DefaultMetadataFactory.getInstance();
+            
             //Call the factory.
-            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
+            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input, factory,
                                                                            ChartEngineFactory.VisualizationPlotType.THRESHOLD_LEAD,
                                                                            "scalarOutputTemplate.xml",
                                                                            null);

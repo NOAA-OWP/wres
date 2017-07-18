@@ -339,7 +339,6 @@ project(':wres-vis')
     dependencies
     {
         compile project(':wres-datamodel-api')
-        compile project (':wres-datamodel')
         
         compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
         compile group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '1.2.6'
@@ -352,6 +351,7 @@ project(':wres-vis')
         compile files('../libs/external/jfreechart-1.0.9.jar')
         compile files('../libs/external/ohdcommonchps.jar')
 
+        testCompile project (':wres-datamodel')
         testCompile files('../libs/external/ohdcommonchps.jar')
         testCompile 'junit:junit:4.12'
         //Must load jfreechart explicitly before EVS.jar to avoid conflicting versions
