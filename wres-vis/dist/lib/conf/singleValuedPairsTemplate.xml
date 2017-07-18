@@ -8,8 +8,7 @@
         <yAxis>left</yAxis>
         <seriesDrawingParameters createdIndexOfSeriesToModify="-1">
             <fillColor alpha="255" blue="0" green="0" red="255"/>
-            <nameInLegend>TESTING!!!</nameInLegend>
-            <showInLegend>true</showInLegend>
+            <showInLegend>false</showInLegend>
             <includeInPlot>true</includeInPlot>
             <shape>circle</shape>
             <shapeSize>1.0</shapeSize>

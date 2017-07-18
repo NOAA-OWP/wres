@@ -5,12 +5,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 
 import org.junit.Assert;
-
-import com.google.common.collect.Lists;
 
 import evs.io.xml.ProductFileIO;
 import evs.metric.parameters.DoubleProcedureParameter;
@@ -21,15 +18,8 @@ import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
 import junit.framework.TestCase;
 import ohd.hseb.charter.ChartEngine;
-import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
-import ohd.hseb.charter.datasource.XYChartDataSource;
-import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
-import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
-import ohd.hseb.hefs.utils.xml.XMLTools;
-import wres.datamodel.metric.DatasetIdentifier;
-import wres.datamodel.metric.DefaultMetadataFactory;
 import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MapBiKey;
 import wres.datamodel.metric.MetadataFactory;
@@ -65,8 +55,8 @@ public class Chart2DTestOutput extends TestCase
         try
         {
             //Call the factory.
-            final ChartEngine engine = buildGenericScalarOutputChartEngine(input,
-                                                                           VisualizationPlotType.LEAD_THRESHOLD,
+            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
+                                                                           ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
                                                                            "scalarOutputTemplate.xml",
                                                                            null);
 
@@ -105,8 +95,8 @@ public class Chart2DTestOutput extends TestCase
         {
 
             //Call the factory.
-            final ChartEngine engine = buildGenericScalarOutputChartEngine(input,
-                                                                           VisualizationPlotType.THRESHOLD_LEAD,
+            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
+                                                                           ChartEngineFactory.VisualizationPlotType.THRESHOLD_LEAD,
                                                                            "scalarOutputTemplate.xml",
                                                                            null);
 
@@ -241,86 +231,5 @@ public class Chart2DTestOutput extends TestCase
         return outputFactory.combine(combine);
     }
 
-    /**
-     * Presently valid variables includes only lead time and threshold.
-     * 
-     * @author Hank.Herr
-     */
-    public static enum VisualizationPlotType
-    {
-        LEAD_THRESHOLD, THRESHOLD_LEAD
-    };
-
-    /**
-     * @param input The metrhic output is the input to this method.
-     * @param domainVar The variable to display along the domain axis.
-     * @param legendVar The variable defining the legend entries.
-     * @param templateFile REMOVE THIS IN THE FUTURE! Eventually, for standard scalar output charts, a single template
-     *            will be constructed under nonsrc and specified and used as the template file.
-     * @param overrideParametersStr The configuration XML, as a {@link String}, specifying the user override of the
-     *            chart drawing parameters.
-     * @return A {@link ChartEngine} that can either be used to generate an image file or displayed in a GUI.
-     * @throws ChartEngineException If the {@link ChartEngine} construction fails.
-     * @throws GenericXMLReadingHandlerException If the provided override parameters cannot be parsed.
-     */
-    public static ChartEngine buildGenericScalarOutputChartEngine(final MetricOutputMapByLeadThreshold<ScalarOutput> input,
-                                                                  final VisualizationPlotType plotType,
-                                                                  final String templateResourceName,
-                                                                  final String overrideParametersStr) throws ChartEngineException,
-                                                                                                      GenericXMLReadingHandlerException
-    {
-        //Build the source.
-        XYChartDataSource source = null;
-        if(plotType.equals(VisualizationPlotType.LEAD_THRESHOLD))
-        {
-            source = new ScalarOutputByLeadThresholdXYChartDataSource(0, input);
-        }
-        else if (plotType.equals(VisualizationPlotType.THRESHOLD_LEAD))
-        {
-            source = new ScalarOutputByThresholdLeadXYChartDataSource(0, input);
-        }
-
-        //Setup the arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
-
-        final MetricOutputMetadata meta = input.getMetadata();
-        
-        //The following helper factory is part of the wres-datamodel, not the api. It will need to be supplied by 
-        //(i.e. dependency injected from) wres-core as a MetadataFactory, which is part of the API
-        final MetadataFactory factory = DefaultMetadataFactory.getInstance();
-        final DatasetIdentifier identifier = meta.getIdentifier();
-
-        //Setup fixed arguments.
-        arguments.addArgument("locationName", identifier.getGeospatialID());
-        arguments.addArgument("variableName", identifier.getVariableID());
-        arguments.addArgument("primaryScenario", identifier.getScenarioID());
-        arguments.addArgument("metricName", factory.getMetricName(meta.getMetricID()));
-        arguments.addArgument("metricShortName", factory.getMetricShortName(meta.getMetricID()));
-        arguments.addArgument("outputUnitsText", " [" + meta.getDimension() + "]");
-        arguments.addArgument("inputUnitsText", " [" + meta.getInputDimension() + "]");
-
-        //Setup conditional arguments
-        String baselineText = "";
-        if(!Objects.isNull(identifier.getScenarioIDForBaseline()))
-        {
-            baselineText = " against predictions from " + identifier.getScenarioIDForBaseline();
-        }
-        arguments.addArgument("baselineText", baselineText);
-
-        //Process override parameters.
-        ChartDrawingParameters override = null;
-        if(overrideParametersStr != null)
-        {
-            override = new ChartDrawingParameters();
-            XMLTools.readXMLFromString(overrideParametersStr, override);
-        }
-
-        //Build the ChartEngine instance.
-        final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
-                                                               arguments,
-                                                               templateResourceName,
-                                                               override);
-
-        return engine;
-    }
+   
 }
