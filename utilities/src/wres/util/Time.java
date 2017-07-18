@@ -5,6 +5,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.Arrays;
+import java.util.InvalidPropertiesFormatException;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -29,7 +30,7 @@ public final class Time
     
     private static Map<String, Double> mapTimeToHours()
     {
-        Map<String, Double> mapping = new TreeMap<>();
+        Map<String, Double> mapping = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         
         mapping.put("second", 1/3600.0);
         mapping.put("hour", 1.0);
@@ -166,38 +167,20 @@ public final class Time
         return time;
     }
     
-    public static Double unitsToHours(String unit, double count)
-    {
+    public static Double unitsToHours(String unit, double count) throws InvalidPropertiesFormatException {
+        Double hours = null;
+
+        try
+        {
+            hours = HOUR_CONVERSION.get(unit) * count;
+        }
+        catch (RuntimeException exception)
+        {
+            throw new InvalidPropertiesFormatException("An error was encountered while trying to multiply the value " +
+                                                               String.valueOf(count) +
+                                                               " times the factor indicated by " +
+                                                               String.valueOf(unit));
+        }
         return HOUR_CONVERSION.get(unit) * count;
-    }
-    
-    public static Double secondsToHours(int seconds)
-    {
-        return seconds * HOUR_CONVERSION.get("second");
-    }
-    
-    public static Double secondsToHours(Double seconds)
-    {
-        return seconds * HOUR_CONVERSION.get("second");
-    }
-    
-    public static Double daysToHours(int days)
-    {
-        return days * HOUR_CONVERSION.get("day");
-    }
-    
-    public static Double daysToHours(Double days)
-    {
-        return days * HOUR_CONVERSION.get("day");
-    }
-    
-    public static Double minutesToHours(int minutes)
-    {
-        return minutes * HOUR_CONVERSION.get("minute");
-    }
-    
-    public static Double minutesToHours(Double minutes)
-    {
-        return minutes * HOUR_CONVERSION.get("minute");
     }
 }
