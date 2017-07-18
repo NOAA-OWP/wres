@@ -1,6 +1,5 @@
 package wres.datamodel;
 
-import java.util.Arrays;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
@@ -61,7 +60,7 @@ implements PairOfDoubleAndVectorOfDoubles
         {
             return 0;
         }
-        else if (this.getItemOne() == other.getItemOne())
+        else if (Double.compare(this.getItemOne(), other.getItemOne()) == 0)
         {
             // this one has fewer elements
             if (this.getItemTwo().length < other.getItemTwo().length)

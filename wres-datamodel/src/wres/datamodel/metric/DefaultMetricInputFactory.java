@@ -96,7 +96,7 @@ public class DefaultMetricInputFactory extends DefaultMetricDataFactory implemen
     @Override
     public PairOfDoubles pairOf(final double left, final double right)
     {
-        return DataFactory.pairOf(left, right);
+        return SafePairOfDoubles.of(left, right);
     }
     
     @Override
