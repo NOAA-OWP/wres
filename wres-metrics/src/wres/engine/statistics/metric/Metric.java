@@ -199,7 +199,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
                                                                     getID(),
                                                                     componentID,
                                                                     identifier);
-    }
+    }  
 
     /**
      * Construct a {@link Metric} with a {@link MetricOutputFactory}.

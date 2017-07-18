@@ -3,7 +3,18 @@ package wres.datamodel.metric;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.*;
+import wres.datamodel.DataFactory;
+import wres.datamodel.MatrixOfDoubles;
+import wres.datamodel.Pair;
+import wres.datamodel.PairOfBooleans;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.PairOfDoubles;
+import wres.datamodel.SafeMatrixOfDoubles;
+import wres.datamodel.SafePairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.SafeVectorOfBooleans;
+import wres.datamodel.SafeVectorOfDoubles;
+import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.VectorOfDoubles;
 
 /**
  * A default factory class for producing metric inputs.

@@ -326,8 +326,8 @@ project(':wres-metrics')
     dependencies
     {
         compile project(':wres-datamodel-api')
-
         compile 'org.slf4j:slf4j-api:1.7.25'
+	compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6'
 
         testCompile project (':wres-datamodel')
         testCompile 'junit:junit:4.12'

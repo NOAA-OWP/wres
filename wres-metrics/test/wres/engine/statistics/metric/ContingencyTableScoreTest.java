@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
@@ -35,13 +36,15 @@ public final class ContingencyTableScoreTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(365,
-                                                            metaFac.getDimension(),
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                            MetricConstants.MAIN);
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension(),
+                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                  MetricConstants.MAIN);
 
         final double[][] benchmark = new double[][]{{82.0, 38.0}, {23.0, 222.0}};
         final MatrixOutput expected = outputFactory.ofMatrixOutput(benchmark, m1);
+
+        assertTrue("The Critical Success Index should not have real units.", !cs.hasRealUnits());
 
         //Check the exceptions
         try
