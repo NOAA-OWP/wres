@@ -86,6 +86,12 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     }
 
     @Override
+    public <S extends MetricOutput<?>> MetricOutputMultiMap.Builder<S> ofMultiMap()
+    {
+        return new SafeMetricOutputMultiMap.MultiMapBuilder<>();
+    }    
+
+    @Override
     public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> combine(final List<MetricOutputMapByLeadThreshold<T>> input)
     {
         Objects.requireNonNull(input, "Specify a non-null input map.");
@@ -160,12 +166,6 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
                                 final Condition condition)
     {
         return new SafeQuantileKey(threshold, thresholdUpper, probability, probabilityUpper, condition);
-    }
-
-    @Override
-    public <S extends MetricOutput<?>> MetricOutputMultiMap.Builder<S> ofMultiMap()
-    {
-        return new SafeMetricOutputMultiMap.MultiMapBuilder<>();
     }
 
     /**
