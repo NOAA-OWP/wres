@@ -9,7 +9,6 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.PairFetcher;
 import wres.io.grouping.LabeledScript;
 import wres.io.utilities.Database;
-import wres.util.NullPrintStream;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.XML;
@@ -151,7 +150,7 @@ public class MetricSpecification extends SpecificationElement {
 	    }
 	    else
 	    {
-	        LOGGER.warn("One of these was null: sourceOne.getVariable().getVariableID()", NullPrintStream.get());
+	        LOGGER.warn("One of these was null: sourceOne.getVariable().getVariableID()");
 	    }
 	    return variableID;
 	}
@@ -165,7 +164,7 @@ public class MetricSpecification extends SpecificationElement {
 	    }
 	    else
 	    {
-	        LOGGER.warn("One of these was null: sourceTwo.getVariable().getVariableID()", NullPrintStream.get());
+	        LOGGER.warn("One of these was null: sourceTwo.getVariable().getVariableID()");
 	    }
 	    return variableID;
 	}

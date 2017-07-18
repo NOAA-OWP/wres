@@ -162,4 +162,20 @@ public final class Strings {
         ps.close();
         return baos.toString();
 	}
+
+	public static boolean isOneOf(String possible, String... options)
+	{
+		boolean isOne = false;
+
+		for (String option : options)
+		{
+			if (possible.equalsIgnoreCase(option))
+			{
+				isOne = true;
+				break;
+			}
+		}
+
+		return isOne;
+	}
 }

@@ -53,14 +53,15 @@
                 </xs:complexType>
             </xs:element>
 
-            <xs:element name="feature" minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="feature" minOccurs="1" maxOccurs="unbounded">
                 <xs:complexType>
+                    <xs:choice>
+                        <xs:element name="polygon" type="polygon"/>
+                        <xs:element name="point" type="coordinate"/>
+                        <xs:element name="location" type="location"/>
+                        <xs:element name="index" type="variableIndex" />
+                    </xs:choice>
                     <xs:attribute name="label" type="xs:string" />
-                    <xs:attribute name="lid" type="xs:string" />
-                    <xs:attribute name="comid" type="xs:long" />
-                    <xs:attribute name="gage_id" type="xs:string" />
-                    <xs:attribute name="huc" type="xs:string" />
-                    <xs:attribute name="name" type="xs:string" />
                     <xs:attribute name="exclude" type="xs:boolean" default="false" />
                 </xs:complexType>
             </xs:element>
@@ -80,6 +81,32 @@
                 </xs:complexType>
             </xs:element>
         </xs:sequence>
+        <xs:attribute name="firstLead" type="xs:int" default="1" use="optional"/>
+        <xs:attribute name="lastLead" type="xs:int" use="optional" default="2147483647" />
+    </xs:complexType>
+
+    <xs:complexType name="location">
+        <xs:attribute name="lid" type="xs:string" />
+        <xs:attribute name="comid" type="xs:long" />
+        <xs:attribute name="gage_id" type="xs:string" />
+        <xs:attribute name="huc" type="xs:string" />
+        <xs:attribute name="name" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="coordinate">
+        <xs:attribute name="x" type="xs:double" />
+        <xs:attribute name="y" type="xs:double" />
+    </xs:complexType>
+
+    <xs:complexType name="polygon">
+        <xs:sequence>
+            <xs:element name="point" type="coordinate" minOccurs="3" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="variableIndex">
+        <xs:attribute name="x" type="xs:int" />
+        <xs:attribute name="y" type="xs:int" />
     </xs:complexType>
 
     <xs:complexType name="datasource">
@@ -130,7 +157,7 @@
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
-
+            <xs:element name="rollingTimeAggregation" type="timeAggregation" maxOccurs="1" minOccurs="1"/>
         </xs:sequence>
 
         <xs:attribute name="label" type="xs:string" />
@@ -191,7 +218,7 @@
     <xs:simpleType name="timeAggregationFunction">
         <xs:restriction base="xs:string">
             <xs:enumeration value="sum" />
-            <xs:enumeration value="mean" />
+            <xs:enumeration value="avg" />
             <xs:enumeration value="max" />
             <xs:enumeration value="min" />
             <xs:enumeration value="median" />
@@ -199,7 +226,14 @@
     </xs:simpleType>
 
     <xs:simpleType name="duration">
-        <xs:restriction base="xs:string"/>
+        <xs:restriction base="xs:int"/>
+    </xs:simpleType>
+    <xs:simpleType name="durationUnit">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="MIN" />
+            <xs:enumeration value="HOUR" />
+            <xs:enumeration value="DAY" />
+        </xs:restriction>
     </xs:simpleType>
 
     <xs:simpleType name="timeAggregationMode">
@@ -219,9 +253,10 @@
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="function" type="timeAggregationFunction" />
+            <xs:element name="function" type="timeAggregationFunction" default="avg" />
             <xs:element name="period" type="duration" minOccurs="1" maxOccurs="unbounded"/>
             <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="unit" type="durationUnit" default="HOUR" minOccurs="1" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="mode" type="timeAggregationMode" />
@@ -263,7 +298,7 @@
         <xs:sequence>
             <xs:element name="unit" type="xs:string" />
             <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
-            <xs:element name="timeAggregation" type="timeAggregation" minOccurs="0" maxOccurs="1" />
+            <xs:element name="timeAggregation" type="timeAggregation" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>

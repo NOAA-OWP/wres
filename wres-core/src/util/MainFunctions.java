@@ -7,17 +7,21 @@ import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
+import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.MetricInputFactory;
 import wres.io.concurrency.*;
+import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectSettings;
 import wres.io.config.SystemSettings;
 import wres.io.config.specification.MetricSpecification;
 import wres.io.config.specification.ProjectDataSpecification;
 import wres.io.config.specification.ProjectSpecification;
+import wres.io.config.specification.ScriptFactory;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
+import wres.io.grouping.LabeledScript;
 import wres.io.grouping.LeadResult;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ConfiguredLoader;
@@ -1004,45 +1008,88 @@ public final class MainFunctions
 	{
 	    return (final String[] args) -> {
 			Integer result = FAILURE;
-	        if (args.length > 1)
+	        if (args.length >= 1)
 	        {
                 try
                 {
                     final String projectName = args[0];
-                    final String metricName = args[1];
+                    LOGGER.info("The project name is: {}", projectName);
+                    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping = new TreeMap<>();
+
+                    if (ProjectSettings.isModernProject(projectName))
+                    {
+                        final ProjectConfig foundProject = ProjectSettings.getModernProject(projectName);
+                        Integer variableId = Variables.getVariableID(foundProject
+                                                                             .getInputs()
+                                                                             .getRight()
+                                                                             .getVariable()
+                                                                             .getValue(),
+                                                                     foundProject
+                                                                             .getInputs()
+                                                                             .getRight()
+                                                                             .getVariable()
+                                                                             .getUnit());
+
+                        LabeledScript lastLeadScript = ScriptFactory.generateFindLastLead(variableId);
+
+                        Integer finalLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
+                        Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<>();
+
+                        int step = 1;
+
+                        while (ConfigHelper.leadIsValid(foundProject, step, finalLead))
+						{
+							PairRetriever pairRetriever = new PairRetriever(foundProject, step);
+							pairRetriever.setOnRun(ProgressMonitor.onThreadStartHandler());
+							pairRetriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+							threadResults.put(step, Database.submit(pairRetriever));
+							step++;
+						}
+
+						for (Entry<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResult : threadResults.entrySet())
+						{
+							pairMapping.put(threadResult.getKey(), threadResult.getValue().get());
+						}
+                    }
+                    else if (ProjectSettings.isLegacyProject(projectName))
+                    {
+                        String metricName = args[1];
+                        final ProjectSpecification foundProject = ProjectSettings.getProject(projectName);
+
+                        if (foundProject == null)
+                        {
+                            System.err.println("There is not a project named '" + projectName + "'");
+                            System.err.println("Pairs could not be created because there wasn't a specification.");
+                            return result;
+                        }
+
+                        final MetricSpecification metric = foundProject.getMetric(metricName);
+
+                        if (metric == null)
+                        {
+                            System.err.println("There is not a metric named '" + metricName + "' in the project '" + projectName + '"');
+                            System.err.println("Pairs could not be created because there wasn't a specification.");
+                            return result;
+                        }
+
+                        pairMapping = metric.getPairs();
+
+                    }
+
                     final int printLimit = 100;
                     int printCount = 0;
                     final int totalLimit = 10;
                     int totalCount = 0;
-                    final ProjectSpecification foundProject = ProjectSettings.getProject(projectName);
-                    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping;
 
-                    if (foundProject == null)
-                    {
-                        System.err.println("There is not a project named '" + projectName + "'");
-                        System.err.println("Pairs could not be created because there wasn't a specification.");
-                        return result;
-                    }
+                    LOGGER.info("");
 
-                    final MetricSpecification metric = foundProject.getMetric(metricName);
-
-                    if (metric == null)
-                    {
-                        System.err.println("There is not a metric named '" + metricName + "' in the project '" + projectName + '"');
-                        System.err.println("Pairs could not be created because there wasn't a specification.");
-                        return result;
-                    }
-
-                    pairMapping = metric.getPairs();
-                    
                     for (final Integer leadKey : pairMapping.keySet())
                     {
-                        System.out.println("\tLead Time: " + leadKey);
+                        LOGGER.info("\tLead Time: " + leadKey);
                         for (final PairOfDoubleAndVectorOfDoubles pair : pairMapping.get(leadKey))
                         {
-                            System.out.print("\t\t");
-                            final String representation = pair.toString().substring(0, Math.min(120, pair.toString().length()));
-                            System.out.println(representation);
+                            final String representation = "\t\t" + pair.toString().substring(0, Math.min(120, pair.toString().length()));
+                            LOGGER.info(representation);
                             
                             printCount++;
                             
@@ -1055,10 +1102,10 @@ public final class MainFunctions
                         totalCount++;
                         printCount = 0;
                         
-                        /*if (totalCount >= totalLimit)
+                        if (totalCount >= totalLimit)
                         {
                             break;
-                        }*/
+                        }
                     }
 					result = SUCCESS;
                 }
