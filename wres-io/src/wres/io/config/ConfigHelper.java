@@ -1,10 +1,16 @@
 package wres.io.config;
 
 import wres.config.generated.Conditions;
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.io.data.caching.Features;
+import wres.util.Collections;
+import wres.util.Strings;
+import wres.util.Time;
 
 import java.io.IOException;
+import java.util.InvalidPropertiesFormatException;
 import java.util.StringJoiner;
 
 public class ConfigHelper
@@ -29,9 +35,11 @@ public class ConfigHelper
         try
         {
             // build a sql string of feature_ids, using cache to populate as needed
-            for (Conditions.Feature f : config.getConditions().getFeature())
+            for (Conditions.Feature feature : Collections.where(config.getConditions().getFeature(), feature -> {
+                return feature.getLocation() != null && !feature.getLocation().getLid().isEmpty();
+            }))
             {
-                Integer i = Features.getFeatureID(f.getLid(), f.getName());
+                Integer i = Features.getFeatureID(feature.getLocation().getLid(), feature.getLocation().getName());
                 result.add(Integer.toString(i));
             }
         }
@@ -45,5 +53,110 @@ public class ConfigHelper
         }
 
         return result.toString();
+    }
+
+    /**
+     *
+     * @param projectConfig
+     * @param currentLead
+     * @return
+     * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
+     */
+    private static int getLead(ProjectConfig projectConfig, int currentLead) throws InvalidPropertiesFormatException {
+        return Time.unitsToHours(projectConfig.getPair().getTimeAggregation().getUnit().name(),
+                                 currentLead).intValue();
+    }
+
+    /**
+     *
+     * @param config
+     * @param currentLead
+     * @param finalLead
+     * @return
+     */
+    public static boolean leadIsValid(ProjectConfig config, int currentLead, int finalLead)
+    {
+        Integer lead = null;
+
+        try {
+            lead = getLead(config, currentLead);
+        }
+        catch (InvalidPropertiesFormatException e) {
+            e.printStackTrace();
+        }
+
+        return lead != null &&
+                lead <= finalLead &&
+                lead <= config.getConditions().getLastLead() &&
+                lead >= config.getConditions().getFirstLead();
+    }
+
+    /**
+     *
+     * @param projectConfig
+     * @param step
+     * @return
+     * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
+     */
+    public static String getLeadQualifier(ProjectConfig projectConfig, int step) throws InvalidPropertiesFormatException {
+        String qualifier;
+
+        if (projectConfig.getPair().getTimeAggregation() != null && projectConfig.getPair().getTimeAggregation().getPeriod().get(0) > 1) {
+            int period = projectConfig.getPair().getTimeAggregation().getPeriod().get(0);
+            Double range = null;
+            range = Time.unitsToHours(projectConfig.getPair().getTimeAggregation().getUnit().value(), period);
+            qualifier = String.valueOf((int) (step * range)) + " > lead && lead >= " + String.valueOf((int) ((step - 1) * range));
+        }
+        else
+        {
+            qualifier = "lead = " + getLead(projectConfig, step);
+        }
+
+        return qualifier;
+    }
+
+    public static String getVariablePositionClause(Conditions.Feature feature, int variableId) throws wres.util.NotImplementedException {
+        StringBuilder clause = new StringBuilder();
+
+        if (feature.getLocation() != null)
+        {
+            try
+            {
+                Integer variablePositionId = Features.getVariablePositionID(feature.getLocation().getLid(),
+                                                                            feature.getLocation().getName(),
+                                                                            variableId);
+
+                if (variablePositionId != null)
+                {
+                    clause.append("variableposition_id = ").append(variablePositionId);
+                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        else if (feature.getIndex() != null)
+        {
+            throw new wres.util.NotImplementedException("Selecting a variable position based on its x and y values has not been implemented yet.");
+        }
+        else if (feature.getPoint() != null)
+        {
+            throw new wres.util.NotImplementedException("Selecting a variable position based on a coordinate has not been implemented yet.");
+        }
+        else if (feature.getPolygon() != null)
+        {
+            throw new wres.util.NotImplementedException("Selecting variable positions based on a polygon has not be implemented yet.");
+        }
+
+        return clause.toString();
+    }
+
+    public static boolean isForecast(DataSourceConfig dataSource)
+    {
+        return Strings.isOneOf(dataSource.getType().value(),
+                               DatasourceType.ASSIMILATIONS.value(),
+                               DatasourceType.SIMPLE_FORECASTS.value(),
+                               DatasourceType.ENSEMBLE_FORECASTS.value(),
+                               DatasourceType.MODEL_OUTPUTS.value());
     }
 }

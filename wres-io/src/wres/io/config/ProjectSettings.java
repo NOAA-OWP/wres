@@ -194,6 +194,27 @@ public final class ProjectSettings extends XMLReader {
 		this.projects.add(project);
 	}
 
+    public static boolean isModernProject(final String projectName)
+    {
+        return Collections.exists(ProjectSettings.CONFIGS, projectConfig -> {
+            return projectConfig.getLabel().equalsIgnoreCase(projectName);
+        });
+    }
+
+    public static boolean isLegacyProject(final String projectName)
+    {
+        return Collections.exists(getProjects(), projectSpecification -> {
+            return projectSpecification.getName().equalsIgnoreCase(projectName);
+        });
+    }
+
+    public static ProjectConfig getModernProject(final String projectName)
+    {
+        return Collections.find(ProjectSettings.CONFIGS, projectConfig -> {
+            return projectConfig.getLabel().equalsIgnoreCase(projectName);
+        });
+    }
+
 	/**
 	 * The collection of all loaded projects
 	 */
