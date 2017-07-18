@@ -46,7 +46,7 @@ public class Chart2DTestInput extends TestCase
 
         //Construct the source from the pairs assigning it a data source order index of 0.  
         //The order index indicates the order in which the different sources are rendered.
-        final MetricInputXYChartDataSource source = new MetricInputXYChartDataSource(0, pairs);
+        final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource(0, pairs);
 
         final String scenarioName = "test1";
         try
@@ -100,7 +100,7 @@ public class Chart2DTestInput extends TestCase
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
         //Create the data source for charting.
-        final MetricInputXYChartDataSource source = new MetricInputXYChartDataSource(0, pairs);
+        final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource(0, pairs);
 
         try
         {
