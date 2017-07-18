@@ -11,6 +11,7 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 
 /**
@@ -86,14 +87,22 @@ public class AggregationSpecification extends SpecificationElement {
 	
 	public boolean leadIsValid(int step, int lastLead)
 	{
-	    Double currentLead = getLead(step);
-	    return currentLead != null && 
+	    Double currentLead = null;
+
+		try {
+			currentLead = getLead(step);
+		}
+		catch (InvalidPropertiesFormatException e) {
+			e.printStackTrace();
+		}
+
+		return currentLead != null &&
 	           currentLead <= lastLead && 
 	           currentLead <= this.getLastLead() &&
 	           currentLead >= this.getFirstLead();
 	}
 	
-	private Double getLead(int step) {
+	private Double getLead(int step) throws InvalidPropertiesFormatException {
 	    Double lead = null;
         
         if (getAggregationUnit() != null)
@@ -104,8 +113,7 @@ public class AggregationSpecification extends SpecificationElement {
 	    return lead;
 	}
 	
-	public String getLeadQualifier(int step)
-	{
+	public String getLeadQualifier(int step) throws InvalidPropertiesFormatException {
 	    String lead = null;
 	    
 	    if (getAggregationUnit() != null && aggregationRange() > 0)
