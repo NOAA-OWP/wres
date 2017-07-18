@@ -245,12 +245,18 @@ public class DefaultMetadataFactory implements MetadataFactory
     {
         switch(identifier)
         {
+            case BIAS_FRACTION:
+                return "BIAS FRACTION";
             case BRIER_SCORE:
                 return "BRIER SCORE";
             case BRIER_SKILL_SCORE:
                 return "BRIER SKILL SCORE";
+            case COEFFICIENT_OF_DETERMINATION:
+                return "COEFFICIENT OF DETERMINATION";    
             case CONTINGENCY_TABLE:
                 return "CONTINGENCY TABLE";
+            case CORRELATION_PEARSONS:
+                return "CORRELATION PEARSONS";
             case CRITICAL_SUCCESS_INDEX:
                 return "CRITICAL SUCCESS INDEX";
             case EQUITABLE_THREAT_SCORE:
@@ -284,12 +290,18 @@ public class DefaultMetadataFactory implements MetadataFactory
     {
         switch(identifier)
         {
+            case BIAS_FRACTION:
+                return "BIAS";
             case BRIER_SCORE:
                 return "BS";
             case BRIER_SKILL_SCORE:
                 return "BSS";
+            case COEFFICIENT_OF_DETERMINATION:
+                return "CoD";    
             case CONTINGENCY_TABLE:
                 return "CONTINGENCY TABLE";
+            case CORRELATION_PEARSONS:
+                return "CORRELATION PEARSONS";                
             case CRITICAL_SUCCESS_INDEX:
                 return "CSI";
             case EQUITABLE_THREAT_SCORE:
