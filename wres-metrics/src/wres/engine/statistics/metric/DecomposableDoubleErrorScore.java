@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.MetricOutputFactory;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
 
@@ -12,21 +12,70 @@ import wres.datamodel.metric.VectorOutput;
  * @since 0.1
  */
 
-public abstract class DecomposableDoubleErrorScore<S extends SingleValuedPairs>
-extends
-    Metric<S,VectorOutput>
+public abstract class DecomposableDoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, VectorOutput>
 implements Score
 {
 
     /**
-     * Construct a {@link DecomposableDoubleErrorScore} with a {@link MetricOutputFactory}.
-     * 
-     * @param outputFactory the {@link MetricOutputFactory}.
+     * The decomposition identifier. See {@link MetricConstants#getDecompositionID()}.
      */
 
-    protected DecomposableDoubleErrorScore(final MetricOutputFactory outputFactory)
+    private final MetricConstants decompositionID;
+
+    @Override
+    public boolean isDecomposable()
     {
-        super(outputFactory);
+        return true;
+    }
+
+    @Override
+    public MetricConstants getDecompositionID()
+    {
+        return decompositionID;
+    }
+
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    protected static abstract class DecomposableDoubleErrorScoreBuilder<S extends SingleValuedPairs>
+    extends
+        MetricBuilder<S, VectorOutput>
+    {
+        /**
+         * The type of metric decomposition. See {@link MetricConstants#getDecompositionID()}.
+         */
+
+        private MetricConstants decompositionID = MetricConstants.NONE;
+
+        /**
+         * Sets the decomposition identifier.
+         * 
+         * @param decompositionID the decomposition identifier
+         * @return the builder
+         */
+
+        protected DecomposableDoubleErrorScoreBuilder<S> setDecompositionID(final MetricConstants decompositionID)
+        {
+            this.decompositionID = decompositionID;
+            return this;
+        }
+    }
+
+    /**
+     * Hidden constructor.
+     * 
+     * @param b the builder
+     */
+
+    protected DecomposableDoubleErrorScore(final DecomposableDoubleErrorScoreBuilder<S> b)
+    {
+        super(b.outputFactory);
+        if(!Score.isSupportedDecompositionID(b.decompositionID))
+        {
+            throw new IllegalStateException("Unrecognized decomposition identifier: " + b.decompositionID);
+        }
+        this.decompositionID = b.decompositionID;
     }
 
 }

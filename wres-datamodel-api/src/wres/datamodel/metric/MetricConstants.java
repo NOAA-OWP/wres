@@ -12,6 +12,12 @@ public enum MetricConstants
 {
 
     /**
+     * Identifier for fractional bias or relative mean error. 
+     */
+    
+    BIAS_FRACTION,
+    
+    /**
      * Identifier for a Brier Score.
      */
 
@@ -22,13 +28,25 @@ public enum MetricConstants
      */
 
     BRIER_SKILL_SCORE,
+    
+    /**
+     * Identifier for coefficient of determination.
+     */
 
+    COEFFICIENT_OF_DETERMINATION,
+    
     /**
      * Identifier for a Contingency Table.
      */
 
     CONTINGENCY_TABLE,
 
+    /**
+     * Identifier for Pearson's product-moment correlation coefficient.
+     */
+    
+    CORRELATION_PEARSONS,
+    
     /**
      * Identifier for a Critical Success Index.
      */

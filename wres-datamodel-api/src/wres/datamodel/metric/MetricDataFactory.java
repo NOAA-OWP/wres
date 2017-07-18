@@ -18,5 +18,12 @@ public interface MetricDataFactory
      */
 
     MetadataFactory getMetadataFactory();
+    
+    /**
+     * Returns a {@link Slicer} for slicing data.
+     * 
+     * @return a {@link Slicer}
+     */
 
+    Slicer getSlicer();
 }
