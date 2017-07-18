@@ -12,16 +12,10 @@ import com.google.common.collect.Lists;
 
 import junit.framework.TestCase;
 import ohd.hseb.charter.ChartEngine;
-import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartPanelTools;
 import ohd.hseb.charter.ChartTools;
-import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
-import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
-import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DatasetIdentifier;
-import wres.datamodel.metric.DefaultMetadataFactory;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
@@ -58,7 +52,7 @@ public class Chart2DTestInput extends TestCase
         try
         {
             //Build the ChartEngine instance.
-            final ChartEngine engine = buildSingleValuedPairsChartEngine(pairs, 
+            final ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine(pairs, 
                                                                    "singleValuedPairsTemplate.xml",
                                                                    null);
 
@@ -73,7 +67,7 @@ public class Chart2DTestInput extends TestCase
                 + "_output.png"),
                                                                       new File("testinput/chart2DTest/benchmark."
                                                                           + scenarioName + "_output.png"),
-                                                                      4,
+                                                                      8,
                                                                       true,
                                                                       false);
         }
@@ -157,46 +151,4 @@ public class Chart2DTestInput extends TestCase
     
     
     
-    
-    public static ChartEngine buildSingleValuedPairsChartEngine(final SingleValuedPairs input,
-                                                                  final String templateResourceName,
-                                                                  final String overrideParametersStr) throws ChartEngineException,
-                                                                                                      GenericXMLReadingHandlerException
-    {
-        //Build the source.
-        final MetricInputXYChartDataSource source = new MetricInputXYChartDataSource(0, input);
-
-        //Setup the arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
-        
-        //The following helper factory is part of the wres-datamodel, not the api. It will need to be supplied by 
-        //(i.e. dependency injected from) wres-core as a MetadataFactory, which is part of the API
-        final MetadataFactory factory = DefaultMetadataFactory.getInstance();
-        final Metadata meta = input.getMetadata();
-        final DatasetIdentifier identifier = meta.getIdentifier();
-
-        //Setup fixed arguments.
-        arguments.addArgument("locationName", identifier.getGeospatialID());
-        arguments.addArgument("variableName", identifier.getVariableID());
-        arguments.addArgument("rangeAxisLabelPrefix", "Forecast");
-        arguments.addArgument("domainAxisLabelPrefix",  "Observed");
-        arguments.addArgument("primaryScenario", identifier.getScenarioID());
-        arguments.addArgument("inputUnitsText", " [" + meta.getDimension() + "]");
-
-        //Process override parameters.
-        ChartDrawingParameters override = null;
-        if(overrideParametersStr != null)
-        {
-            override = new ChartDrawingParameters();
-            XMLTools.readXMLFromString(overrideParametersStr, override);
-        }
-
-        //Build the ChartEngine instance.
-        final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
-                                                               arguments,
-                                                               templateResourceName,
-                                                               override);
-
-        return engine;
-    }
 }
