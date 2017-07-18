@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<chartDrawingParameters>
+
+    <datasourceDrawingParameters sourceIndex="0">
+        <plotter>LineAndScatter</plotter>
+        <subPlot>0</subPlot>
+        <yAxis>left</yAxis>
+        <seriesDrawingParameters createdIndexOfSeriesToModify="-1">
+            <fillColor alpha="255" blue="0" green="0" red="255"/>
+            <nameInLegend>TESTING!!!</nameInLegend>
+            <showInLegend>true</showInLegend>
+            <includeInPlot>true</includeInPlot>
+            <shape>circle</shape>
+            <shapeSize>1.0</shapeSize>
+            <lineWidth>0.0</lineWidth>
+            <shapeFilled>true</shapeFilled>
+        </seriesDrawingParameters>
+        
+    </datasourceDrawingParameters>
+    
+    <plotTitle>
+        <text>Single valued pairs for @primaryScenario@ predictions of @variableName@ at @locationName@</text>
+    </plotTitle>
+    
+    <legend visible="true">
+    </legend>
+    
+</chartDrawingParameters>
