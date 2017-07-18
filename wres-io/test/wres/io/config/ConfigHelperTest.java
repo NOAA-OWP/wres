@@ -1,26 +1,23 @@
 package wres.io.config;
 
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+import wres.config.generated.Conditions;
+import wres.config.generated.Location;
+import wres.config.generated.ProjectConfig;
+import wres.io.data.caching.Features;
+import wres.io.utilities.Database;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.modules.junit4.PowerMockRunner;
-
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-
-import wres.config.generated.Conditions;
-import wres.config.generated.ProjectConfig;
-
-import wres.io.data.caching.Features;
-import wres.io.utilities.Database;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -69,16 +66,16 @@ public class ConfigHelperTest
 
         String expected = "feature_id in (1,2,3)";
 
-        Conditions.Feature featureFakeOne = new Conditions.Feature(null, null, null, null, null, "fake", false);
-        Conditions.Feature featureFakeTwo = new Conditions.Feature(null, null, null, null, null, "fake1", false);
-        Conditions.Feature featureFakeThree = new Conditions.Feature(null, null, null, null, null, "fake2", false);
+        Conditions.Feature featureFakeOne = new Conditions.Feature(null, null, new Location("fake1", null, null, null, null), null, null, false);
+        Conditions.Feature featureFakeTwo = new Conditions.Feature(null, null,  new Location("fake2", null, null, null, null), null, null, false);
+        Conditions.Feature featureFakeThree = new Conditions.Feature(null, null,  new Location("fake3", null, null, null, null), null, null, false);
 
         List<Conditions.Feature> features = new ArrayList<>();
         features.add(featureFakeOne);
         features.add(featureFakeTwo);
         features.add(featureFakeThree);
 
-        Conditions c = new Conditions(null, null, null, features, null);
+        Conditions c = new Conditions(null, null, null, features, null, 1, 2818644);
         ProjectConfig config = new ProjectConfig(null, c, null, null, null, null);
         String result = ConfigHelper.getFeatureIdsAndPutIfAbsent(config);
         assertEquals(expected, result);
