@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!-- The template defining the default appearance of a plot of the forecast-observed pairs for a single location. -->
+<chartDrawingParameters>
+
+    <plotTitle>
+        <text>Single valued pairs for @primaryScenario@ predictions of @variableName@ at @locationName@</text>
+    </plotTitle>
+    
+    <datasourceDrawingParameters sourceIndex="0">
+        <plotter>LineAndScatter</plotter>
+        <subPlot>0</subPlot>
+        <yAxis>left</yAxis>
+        
+        <!-- These settings become the default against which all other seriesDrawingParameters apply. -->
+        <seriesDrawingParameters createdIndexOfSeriesToModify="-1">
+            <fillColor alpha="255" blue="0" green="0" red="255"/>
+            <showInLegend>false</showInLegend>
+            <includeInPlot>true</includeInPlot>
+            <shape>circle</shape>
+            <shapeSize>1.0</shapeSize>
+            <lineWidth>0.0</lineWidth>
+            <shapeFilled>true</shapeFilled>
+        </seriesDrawingParameters>
+    </datasourceDrawingParameters>
+    
+</chartDrawingParameters>

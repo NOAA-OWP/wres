@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.util.StringJoiner;
 import java.util.stream.Stream;
 
 public class SafePairOfDoubleAndVectorOfDoubles
@@ -42,17 +43,57 @@ implements PairOfDoubleAndVectorOfDoubles
     @Override
     public String toString()
     {
-        final StringBuilder s = new StringBuilder();
-        s.append("key: ");
-        s.append(getItemOne());
-        s.append(" ");
-        s.append("value: [ ");
+        StringJoiner s = new StringJoiner(",",
+                                          "key: " + getItemOne() + " value: [",
+                                          "]");
         for (final double d : getItemTwo())
         {
-            s.append(d);
-            s.append(" ");
+            s.add(Double.toString(d));
         }
-        s.append("]");
         return s.toString();
+    }
+
+    @Override public int compareTo(PairOfDoubleAndVectorOfDoubles other)
+    {
+        // if the instances are the same...
+        if (this == other)
+        {
+            return 0;
+        }
+        else if (Double.compare(this.getItemOne(), other.getItemOne()) == 0)
+        {
+            // this one has fewer elements
+            if (this.getItemTwo().length < other.getItemTwo().length)
+            {
+                return -1;
+            }
+            // this one has more elements
+            else if (this.getItemTwo().length > other.getItemTwo().length)
+            {
+                return 1;
+            }
+            // compare values until we diverge
+            else // assumption here is lengths are equal
+            {
+                for (int i = 0; i < this.getItemTwo().length; i++)
+                {
+                    if (this.getItemTwo()[i] != other.getItemTwo()[i])
+                    {
+                        return Double.compare(this.getItemTwo()[i],
+                                              other.getItemTwo()[i]);
+                    }
+                }
+                // all values were equal
+                return 0;
+            }
+        }
+        else if (this.getItemOne() < other.getItemOne())
+        {
+            return -1;
+        }
+        else
+        {
+            return 1;
+        }
     }
 }

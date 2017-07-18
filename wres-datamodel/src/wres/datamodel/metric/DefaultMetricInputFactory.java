@@ -10,6 +10,7 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.SafeMatrixOfDoubles;
 import wres.datamodel.SafePairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.SafePairOfDoubles;
 import wres.datamodel.SafeVectorOfBooleans;
 import wres.datamodel.SafeVectorOfDoubles;
 import wres.datamodel.VectorOfBooleans;
@@ -106,20 +107,7 @@ public class DefaultMetricInputFactory extends DefaultMetricDataFactory implemen
     @Override
     public PairOfDoubles pairOf(final double left, final double right)
     {
-        return new PairOfDoubles()
-        {
-            @Override
-            public double getItemOne()
-            {
-                return left;
-            }
-
-            @Override
-            public double getItemTwo()
-            {
-                return right;
-            }
-        };
+        return SafePairOfDoubles.of(left, right);
     }
     
     @Override

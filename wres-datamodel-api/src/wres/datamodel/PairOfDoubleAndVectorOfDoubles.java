@@ -8,6 +8,7 @@ package wres.datamodel;
  * @author jesse
  */
 public interface PairOfDoubleAndVectorOfDoubles
+extends Comparable<PairOfDoubleAndVectorOfDoubles>
 {
 
     /**

@@ -1,0 +1,88 @@
+package wres.engine.statistics.metric;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.junit.Test;
+
+import wres.datamodel.PairOfDoubles;
+import wres.datamodel.metric.DefaultMetricInputFactory;
+import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricInputFactory;
+import wres.datamodel.metric.MetricOutputFactory;
+import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
+import wres.engine.statistics.metric.CorrelationPearsons.CorrelationPearsonsBuilder;
+
+/**
+ * Tests the {@link CorrelationPearsons}.
+ * 
+ * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
+ */
+public final class CorrelationPearsonsTest
+{
+
+    /**
+     * Constructs a {@link CorrelationPearsons}. Minimal test that focuses on the wrapper, and not the underlying
+     * {@link PearsonsCorrelation}.
+     */
+
+    @Test
+    public void test1Correlation()
+    {
+        //Obtain the factories
+        final MetricInputFactory inF = DefaultMetricInputFactory.getInstance();
+        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
+        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+
+        //Build the metric
+        final CorrelationPearsonsBuilder b = new CorrelationPearsons.CorrelationPearsonsBuilder();
+        b.setOutputFactory(outF);
+        final CorrelationPearsons rho = b.build();
+
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension(),
+                                                                  MetricConstants.CORRELATION_PEARSONS,
+                                                                  MetricConstants.MAIN);
+
+        //Compute normally
+        final ScalarOutput actual = rho.apply(input);
+        final ScalarOutput expected = outF.ofScalarOutput(0.9999999910148981, m1);
+        assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
+            + ".", actual.equals(expected));
+
+        //Check the parameters
+        assertTrue("Unexpected name for Pearson's correlation coefficient.",
+                   rho.getName().equals(metaFac.getMetricName(MetricConstants.CORRELATION_PEARSONS)));
+        assertTrue("Pearson's correlation is not decomposable.", !rho.isDecomposable());
+        assertTrue("Pearson's correlation is not a skill score.", !rho.isSkillScore());
+        assertTrue("Pearson's correlation cannot be decomposed.", rho.getDecompositionID() == MetricConstants.NONE);
+        assertTrue("Pearson's correlation does not have real units", !rho.hasRealUnits());
+
+        //Check exceptions
+        List<PairOfDoubles> list = new ArrayList<>();
+        list.add(inF.pairOf(0.0, 0.0));
+        try
+        {
+            rho.apply(inF.ofSingleValuedPairs(list, m1));
+            fail("Expected a checked exception on invalid inputs: insufficient pairs.");
+        }
+        catch(MetricCalculationException e)
+        {
+        }
+
+    }
+
+}

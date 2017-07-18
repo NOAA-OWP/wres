@@ -82,6 +82,14 @@ public final class MeanSquareErrorTest
         catch(final Exception e)
         {
         }
+        try
+        {
+            b.setDecompositionID(MetricConstants.CR_AND_LBR).build().apply(input);
+            fail("Expected an exception, indicating that decomposition has not been implemented.");
+        }
+        catch(final MetricCalculationException e)
+        {
+        }        
 
     }
 

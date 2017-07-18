@@ -1,7 +1,5 @@
 package wres.datamodel.metric;
 
-import java.util.Objects;
-
 /**
  * A default factory class for producing datasets associated with verification metrics.
  * 
@@ -10,27 +8,19 @@ import java.util.Objects;
  * @since 0.1
  */
 
-public abstract class DefaultMetricDataFactory
+public abstract class DefaultMetricDataFactory implements MetricDataFactory
 {
 
-    /**
-     * Instance of the factory.
-     */
-    
-    private MetadataFactory instance = null;
-    
-    /**
-     * Returns a {@link MetadataFactory} for building {@link Metadata}.
-     * 
-     * @return an instance of {@link MetadataFactory} 
-     */
-
+    @Override
     public MetadataFactory getMetadataFactory() {
-        if(Objects.isNull(instance)) {
-            instance = DefaultMetadataFactory.getInstance();
-        }
-        return instance;        
+        return DefaultMetadataFactory.getInstance();  
     }
+
+    @Override
+    public Slicer getSlicer()
+    {
+        return DefaultSlicer.getInstance();  
+    }    
        
     /**
      * Hidden constructor.

@@ -83,12 +83,12 @@ public class Main {
     public static String getVersion()
     {
         // Empty object for only getting version of the software
-        Package toGetVersion = (new Main()).getClass().getPackage();
+        Package toGetVersion = (new MainFunctions()).getClass().getPackage();
 
         if (toGetVersion != null && toGetVersion.getImplementationVersion() != null)
         {
             // When running from a released zip, the version should show up.
-            return "WRES version" + toGetVersion.getImplementationVersion();
+            return "WRES version " + toGetVersion.getImplementationVersion();
         }
         else
         {

@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
+import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MulticategoryPairs;
@@ -43,13 +44,13 @@ public class MetricFactory
      */
 
     private static MetricFactory instance = null;
-    
+
     /**
      * String used in several error messages.
      */
 
-    private static final String error = "Unrecognized metric for identifier"; 
-    
+    private static final String error = "Unrecognized metric for identifier";
+
     /**
      * Returns an instance of a {@link MetricFactory}.
      * 
@@ -68,6 +69,137 @@ public class MetricFactory
     }
 
     /**
+     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link ScalarOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return the metric
+     */
+
+    public Metric<SingleValuedPairs, ScalarOutput> ofSingleValuedScalar(MetricConstants metric)
+    {
+        switch(metric)
+        {
+            case BIAS_FRACTION:
+                return ofBiasFraction();
+            case MEAN_ABSOLUTE_ERROR:
+                return ofMeanAbsoluteError();
+            case MEAN_ERROR:
+                return ofMeanError();
+            case ROOT_MEAN_SQUARE_ERROR:
+                return ofRootMeanSquareError();
+            case CORRELATION_PEARSONS:
+                return ofCorrelationPearsons();
+            case COEFFICIENT_OF_DETERMINATION:
+                return ofCoefficientOfDetermination();
+            default:
+                throw new IllegalArgumentException(error + " '" + metric + "'.");
+        }
+    }
+
+    /**
+     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link VectorOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     */
+
+    public Metric<SingleValuedPairs, VectorOutput> ofSingleValuedVector(MetricConstants metric)
+    {
+        switch(metric)
+        {
+            case MEAN_SQUARE_ERROR:
+                return ofMeanSquareError();
+            case MEAN_SQUARE_ERROR_SKILL_SCORE:
+                return ofMeanSquareErrorSkillScore();
+            default:
+                throw new IllegalArgumentException(error + " '" + metric + "'.");
+        }
+    }
+
+    /**
+     * Returns a {@link Metric} that consumes {@link DiscreteProbabilityPairs} and produces {@link VectorOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     */
+
+    public Metric<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVector(MetricConstants metric)
+    {
+        switch(metric)
+        {
+            case BRIER_SCORE:
+                return ofBrierScore();
+            case BRIER_SKILL_SCORE:
+                return ofBrierSkillScore();
+            default:
+                throw new IllegalArgumentException(error + " '" + metric + "'.");
+        }
+    }
+
+    /**
+     * Returns a {@link Metric} that consumes {@link DichotomousPairs} and produces {@link ScalarOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     */
+
+    public Metric<DichotomousPairs, ScalarOutput> ofDichotomousScalar(MetricConstants metric)
+    {
+        switch(metric)
+        {
+            case CRITICAL_SUCCESS_INDEX:
+                return ofCriticalSuccessIndex();
+            case EQUITABLE_THREAT_SCORE:
+                return ofEquitableThreatScore();
+            case PEIRCE_SKILL_SCORE:
+                return ofPeirceSkillScore();
+            case PROBABILITY_OF_DETECTION:
+                return ofProbabilityOfDetection();
+            case PROBABILITY_OF_FALSE_DETECTION:
+                return ofProbabilityOfFalseDetection();
+            default:
+                throw new IllegalArgumentException(error + " '" + metric + "'.");
+        }
+    }
+
+    /**
+     * Returns a {@link Metric} that consumes {@link MulticategoryPairs} and produces {@link ScalarOutput}. Use
+     * {@link #ofDichotomousScalar(MetricConstants)} when the inputs are dichotomous.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     */
+
+    public Metric<MulticategoryPairs, ScalarOutput> ofMulticategoryScalar(MetricConstants metric)
+    {
+        switch(metric)
+        {
+            case PEIRCE_SKILL_SCORE:
+                return ofPeirceSkillScoreMulti();
+            default:
+                throw new IllegalArgumentException(error + " '" + metric + "'.");
+        }
+    }
+
+    /**
+     * Returns a {@link Metric} that consumes {@link MulticategoryPairs} and produces {@link MatrixOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     */
+
+    public Metric<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrix(MetricConstants metric)
+    {
+        switch(metric)
+        {
+            case CONTINGENCY_TABLE:
+                return ofContingencyTable();
+            default:
+                throw new IllegalArgumentException(error + " '" + metric + "'.");
+        }
+    }
+
+    /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
      * {@link ScalarOutput}.
      * 
@@ -80,20 +212,7 @@ public class MetricFactory
         final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
         for(MetricConstants next: metric)
         {
-            switch(next)
-            {
-                case MEAN_ABSOLUTE_ERROR:
-                    builder.add(ofMeanAbsoluteError());
-                    break;
-                case MEAN_ERROR:
-                    builder.add(ofMeanError());
-                    break;
-                case ROOT_MEAN_SQUARE_ERROR:
-                    builder.add(ofRootMeanSquareError());
-                    break;
-                default:
-                    throw new IllegalArgumentException(error +" '"+ next + "'.");
-            }
+            builder.add(ofSingleValuedScalar(next));
         }
         builder.setOutputFactory(outputFactory);
         return builder.build();
@@ -112,17 +231,7 @@ public class MetricFactory
         final MetricCollectionBuilder<SingleValuedPairs, VectorOutput> builder = MetricCollectionBuilder.of();
         for(MetricConstants next: metric)
         {
-            switch(next)
-            {
-                case MEAN_SQUARE_ERROR:
-                    builder.add(ofMeanSquareError());
-                    break;
-                case MEAN_SQUARE_ERROR_SKILL_SCORE:
-                    builder.add(ofMeanSquareErrorSkillScore());
-                    break;
-                default:
-                    throw new IllegalArgumentException(error +" '"+ next + "'.");
-            }
+            builder.add(ofSingleValuedVector(next));
         }
         builder.setOutputFactory(outputFactory);
         return builder.build();
@@ -141,22 +250,12 @@ public class MetricFactory
         final MetricCollectionBuilder<DiscreteProbabilityPairs, VectorOutput> builder = MetricCollectionBuilder.of();
         for(MetricConstants next: metric)
         {
-            switch(next)
-            {
-                case BRIER_SCORE:
-                    builder.add(ofBrierScore());
-                    break;
-                case BRIER_SKILL_SCORE:
-                    builder.add(ofBrierSkillScore());
-                    break;
-                default:
-                    throw new IllegalArgumentException(error +" '"+ next + "'.");
-            }
+            builder.add(ofDiscreteProbabilityVector(next));
         }
         builder.setOutputFactory(outputFactory);
         return builder.build();
     }
-    
+
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
      * {@link ScalarOutput}.
@@ -170,29 +269,21 @@ public class MetricFactory
         final MetricCollectionBuilder<DichotomousPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
         for(MetricConstants next: metric)
         {
-            switch(next)
-            {
-                case CRITICAL_SUCCESS_INDEX:
-                    builder.add(ofCriticalSuccessIndex());
-                    break;
-                case EQUITABLE_THREAT_SCORE:
-                    builder.add(ofEquitableThreatScore());
-                    break;
-                case PEIRCE_SKILL_SCORE:
-                    builder.add(ofPeirceSkillScore());
-                    break;    
-                case PROBABILITY_OF_DETECTION:
-                    builder.add(ofProbabilityOfDetection());
-                    break;    
-                case PROBABILITY_OF_FALSE_DETECTION:
-                    builder.add(ofProbabilityOfFalseDetection());
-                    break;     
-                default:
-                    throw new IllegalArgumentException(error +" '"+ next + "'.");
-            }
+            builder.add(ofDichotomousScalar(next));
         }
         builder.setOutputFactory(outputFactory);
         return builder.build();
+    }
+
+    /**
+     * Return a default {@link BiasFraction} function.
+     * 
+     * @return a default {@link BiasFraction} function.
+     */
+
+    protected BiasFraction ofBiasFraction()
+    {
+        return (BiasFraction)new BiasFraction.BiasFractionBuilder().setOutputFactory(outputFactory).build();
     }
 
     /**
@@ -201,23 +292,9 @@ public class MetricFactory
      * @return a default {@link BrierScore} function.
      */
 
-    public BrierScore ofBrierScore()
+    protected BrierScore ofBrierScore()
     {
         return (BrierScore)new BrierScore.BrierScoreBuilder().setOutputFactory(outputFactory).build();
-    }
-
-    /**
-     * Return a {@link BrierScore} function with a prescribed decomposition. See {@link Score#getDecompositionID()}.
-     * 
-     * @param decompositionID the decompositionID
-     * @return a {@link BrierScore} function.
-     */
-
-    public BrierScore ofBrierScore(final MetricConstants decompositionID)
-    {
-        return (BrierScore)new BrierScore.BrierScoreBuilder().setDecompositionID(decompositionID)
-                                                             .setOutputFactory(outputFactory)
-                                                             .build();
     }
 
     /**
@@ -226,9 +303,21 @@ public class MetricFactory
      * @return a default {@link BrierSkillScore} function.
      */
 
-    public BrierSkillScore ofBrierSkillScore()
+    protected BrierSkillScore ofBrierSkillScore()
     {
         return (BrierSkillScore)new BrierSkillScore.BrierSkillScoreBuilder().setOutputFactory(outputFactory).build();
+    }
+
+    /**
+     * Return a default {@link CoefficientOfDetermination} function.
+     * 
+     * @return a default {@link CoefficientOfDetermination} function.
+     */
+
+    protected CorrelationPearsons ofCoefficientOfDetermination()
+    {
+        return (CoefficientOfDetermination)new CoefficientOfDetermination.CoefficientOfDeterminationBuilder().setOutputFactory(outputFactory)
+                                                                                                             .build();
     }
 
     /**
@@ -237,10 +326,22 @@ public class MetricFactory
      * @return a default {@link ContingencyTable} function.
      */
 
-    public ContingencyTable<MulticategoryPairs> ofContingencyTable()
+    protected ContingencyTable<MulticategoryPairs> ofContingencyTable()
     {
         return (ContingencyTable<MulticategoryPairs>)new ContingencyTable.ContingencyTableBuilder<>().setOutputFactory(outputFactory)
                                                                                                      .build();
+    }
+
+    /**
+     * Return a default {@link CorrelationPearsons} function.
+     * 
+     * @return a default {@link CorrelationPearsons} function.
+     */
+
+    protected CorrelationPearsons ofCorrelationPearsons()
+    {
+        return (CorrelationPearsons)new CorrelationPearsons.CorrelationPearsonsBuilder().setOutputFactory(outputFactory)
+                                                                                        .build();
     }
 
     /**
@@ -249,7 +350,7 @@ public class MetricFactory
      * @return a default {@link CriticalSuccessIndex} function.
      */
 
-    public CriticalSuccessIndex ofCriticalSuccessIndex()
+    protected CriticalSuccessIndex ofCriticalSuccessIndex()
     {
         return (CriticalSuccessIndex)new CriticalSuccessIndex.CriticalSuccessIndexBuilder().setOutputFactory(outputFactory)
                                                                                            .build();
@@ -260,8 +361,8 @@ public class MetricFactory
      * 
      * @return a default {@link EquitableThreatScore} function.
      */
-
-    public EquitableThreatScore ofEquitableThreatScore()
+    
+    protected EquitableThreatScore ofEquitableThreatScore()
     {
         return (EquitableThreatScore)new EquitableThreatScore.EquitableThreatScoreBuilder().setOutputFactory(outputFactory)
                                                                                            .build();
@@ -273,7 +374,7 @@ public class MetricFactory
      * @return a default {@link MeanAbsoluteError} function.
      */
 
-    public MeanAbsoluteError ofMeanAbsoluteError()
+    protected MeanAbsoluteError ofMeanAbsoluteError()
     {
         return (MeanAbsoluteError)new MeanAbsoluteError.MeanAbsoluteErrorBuilder().setOutputFactory(outputFactory)
                                                                                   .build();
@@ -285,7 +386,7 @@ public class MetricFactory
      * @return a default {@link MeanError} function.
      */
 
-    public MeanError ofMeanError()
+    protected MeanError ofMeanError()
     {
         return (MeanError)new MeanError.MeanErrorBuilder().setOutputFactory(outputFactory).build();
     }
@@ -296,7 +397,7 @@ public class MetricFactory
      * @return a default {@link MeanSquareError} function.
      */
 
-    public MeanSquareError<SingleValuedPairs> ofMeanSquareError()
+    protected MeanSquareError<SingleValuedPairs> ofMeanSquareError()
     {
         return (MeanSquareError<SingleValuedPairs>)new MeanSquareError.MeanSquareErrorBuilder<>().setOutputFactory(outputFactory)
                                                                                                  .build();
@@ -308,7 +409,7 @@ public class MetricFactory
      * @return a default {@link MeanSquareErrorSkillScore} function.
      */
 
-    public MeanSquareErrorSkillScore<SingleValuedPairs> ofMeanSquareErrorSkillScore()
+    protected MeanSquareErrorSkillScore<SingleValuedPairs> ofMeanSquareErrorSkillScore()
     {
         return (MeanSquareErrorSkillScore<SingleValuedPairs>)new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>().setOutputFactory(outputFactory)
                                                                                                                                .build();
@@ -320,7 +421,7 @@ public class MetricFactory
      * @return a default {@link PeirceSkillScore} function for a dichotomous event.
      */
 
-    public PeirceSkillScore<DichotomousPairs> ofPeirceSkillScore()
+    protected PeirceSkillScore<DichotomousPairs> ofPeirceSkillScore()
     {
         return (PeirceSkillScore<DichotomousPairs>)new PeirceSkillScore.PeirceSkillScoreBuilder<DichotomousPairs>().setOutputFactory(outputFactory)
                                                                                                                    .build();
@@ -332,7 +433,7 @@ public class MetricFactory
      * @return a default {@link PeirceSkillScore} function for a multicategory event.
      */
 
-    public PeirceSkillScore<MulticategoryPairs> ofPeirceSkillScoreMulti()
+    protected PeirceSkillScore<MulticategoryPairs> ofPeirceSkillScoreMulti()
     {
         return (PeirceSkillScore<MulticategoryPairs>)new PeirceSkillScore.PeirceSkillScoreBuilder<MulticategoryPairs>().setOutputFactory(outputFactory)
                                                                                                                        .build();
@@ -344,7 +445,7 @@ public class MetricFactory
      * @return a default {@link ProbabilityOfDetection} function.
      */
 
-    public ProbabilityOfDetection ofProbabilityOfDetection()
+    protected ProbabilityOfDetection ofProbabilityOfDetection()
     {
         return (ProbabilityOfDetection)new ProbabilityOfDetection.ProbabilityOfDetectionBuilder().setOutputFactory(outputFactory)
                                                                                                  .build();
@@ -356,7 +457,7 @@ public class MetricFactory
      * @return a default {@link ProbabilityOfFalseDetection} function.
      */
 
-    public ProbabilityOfFalseDetection ofProbabilityOfFalseDetection()
+    protected ProbabilityOfFalseDetection ofProbabilityOfFalseDetection()
     {
         return (ProbabilityOfFalseDetection)new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder().setOutputFactory(outputFactory)
                                                                                                                 .build();
@@ -368,7 +469,7 @@ public class MetricFactory
      * @return a default {@link RootMeanSquareError} function.
      */
 
-    public RootMeanSquareError ofRootMeanSquareError()
+    protected RootMeanSquareError ofRootMeanSquareError()
     {
         return (RootMeanSquareError)new RootMeanSquareError.RootMeanSquareErrorBuilder().setOutputFactory(outputFactory)
                                                                                         .build();

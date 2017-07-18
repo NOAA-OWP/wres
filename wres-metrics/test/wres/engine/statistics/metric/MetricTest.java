@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
@@ -65,6 +66,25 @@ public final class MetricTest
 
         //Check for equality of names
         assertTrue("Unexpected metric name.", metaFac.getMetricName(MetricConstants.MEAN_ERROR).equals(me.toString()));
+    }
+
+    /**
+     * Constructs a {@link Metric} and tests for checked exceptions.
+     */
+
+    @Test
+    public void test3Exceptions()
+    {
+        //Build a metric
+        final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
+        try
+        {
+            b.build();
+            fail("Expected a checked exception on building a metric without an output factory.");
+        }
+        catch(UnsupportedOperationException e)
+        {
+        }
     }
 
 }
