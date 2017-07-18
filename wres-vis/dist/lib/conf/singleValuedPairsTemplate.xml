@@ -2,6 +2,10 @@
 
 <chartDrawingParameters>
 
+    <plotTitle>
+        <text>Single valued pairs for @primaryScenario@ predictions of @variableName@ at @locationName@</text>
+    </plotTitle>
+    
     <datasourceDrawingParameters sourceIndex="0">
         <plotter>LineAndScatter</plotter>
         <subPlot>0</subPlot>
@@ -17,12 +21,5 @@
         </seriesDrawingParameters>
         
     </datasourceDrawingParameters>
-    
-    <plotTitle>
-        <text>Single valued pairs for @primaryScenario@ predictions of @variableName@ at @locationName@</text>
-    </plotTitle>
-    
-    <legend visible="true">
-    </legend>
     
 </chartDrawingParameters>
