@@ -264,18 +264,6 @@ project(':wres-datamodel')
     }
 }
 
-project(':wres-experiment')
-{
-    dependencies
-    {
-        compile group: 'edu.ucar', name: 'cdm', version: '4.6.8'
-        compile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
-
-        //JB @ 02/16/17
-        testCompile 'junit:junit:4.12'
-    }
-}
-
 project(':wres-io')
 {
     dependencies
