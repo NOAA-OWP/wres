@@ -83,11 +83,6 @@ subprojects
         	{
         		srcDirs = ['test']
         	}
-        	
-        	resources
-        	{
-        	    srcDir "dist/lib/conf"
-        	}
         }
     }
 
@@ -236,8 +231,9 @@ project(':wres-core')
                     // Note: to have files land in the distributed zip files,
                     // must put inside lib directory inside below directory.
                     // Must also add the new directory to classpath under
-                    // startScripts below.
-                    'dist'
+                    // startScripts below. For each module that adds to dist,
+                    // add here for now until we can make it grab all of em.
+                    ['dist', '../wres-vis/dist']
                 }
             }
         }
@@ -248,7 +244,7 @@ project(':wres-core')
     {
         // Note gradle in this context assumes lib directory precedes these
         // files. To add more outsidejar directories, they need to be
-        // added to 'nonsrc/outsidejar/lib' and then the directory name
+        // added to 'dist/lib' and then the directory name
         // can be added below.
         classpath += files('conf')
     }
@@ -361,6 +357,7 @@ project(':wres-vis')
         //Must load jfreechart explicitly before EVS.jar to avoid conflicting versions
         testCompile files('../libs/external/jfreechart-1.0.9.jar')
         testCompile files('../libs/external/EVS.jar')
+        testRuntime files('dist/lib/conf')
     }
 }
 
