@@ -36,7 +36,7 @@ public abstract class ChartEngineFactory
      */
     public static enum VisualizationPlotType
     {
-        LEAD_THRESHOLD, THRESHOLD_LEAD, PAIRS
+        LEAD_THRESHOLD, THRESHOLD_LEAD, SINGLE_VALUED_PAIRS
     };
 
     /**
@@ -132,7 +132,7 @@ public abstract class ChartEngineFactory
                                                                                                     GenericXMLReadingHandlerException
     {
         //Build the source.
-        final MetricInputXYChartDataSource source = new MetricInputXYChartDataSource(0, input);
+        final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource(0, input);
 
         //Setup the arguments.
         final WRESArgumentProcessor arguments = new WRESArgumentProcessor();

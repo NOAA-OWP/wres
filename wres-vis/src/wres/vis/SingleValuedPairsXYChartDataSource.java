@@ -16,7 +16,7 @@ import wres.datamodel.metric.SingleValuedPairs;
  * 
  * @author Hank.Herr
  */
-public class MetricInputXYChartDataSource extends DefaultXYChartDataSource
+public class SingleValuedPairsXYChartDataSource extends DefaultXYChartDataSource
 {
     private final SingleValuedPairs metricInput;
 
@@ -24,7 +24,7 @@ public class MetricInputXYChartDataSource extends DefaultXYChartDataSource
      * @param orderIndex The data source order index within the plotted chart.
      * @param input The {@link MetricInput} for which to display a chart.
      */
-    public MetricInputXYChartDataSource(final int orderIndex, final SingleValuedPairs input)
+    public SingleValuedPairsXYChartDataSource(final int orderIndex, final SingleValuedPairs input)
     {
         metricInput = input;
         buildInitialParameters(orderIndex);
@@ -59,7 +59,7 @@ public class MetricInputXYChartDataSource extends DefaultXYChartDataSource
     @Override
     public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
     {
-        final MetricInputXYChartDataSource copy = new MetricInputXYChartDataSource(getDataSourceOrderIndex(),
+        final SingleValuedPairsXYChartDataSource copy = new SingleValuedPairsXYChartDataSource(getDataSourceOrderIndex(),
                                                                                    metricInput);
 
         copy.copyTheseParametersIntoDataSource(this);
