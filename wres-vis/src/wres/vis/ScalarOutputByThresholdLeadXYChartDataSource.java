@@ -85,7 +85,7 @@ public class ScalarOutputByThresholdLeadXYChartDataSource extends DefaultXYChart
     @Override
     protected XYDataset buildXYDataset(final DataSourceDrawingParameters parameters) throws XYChartDataSourceException
     {
-        //Legend items are thresholds, and they are fully defined in the input data source, so an override is unlikely 
+        //Legend items are lead times, and they are fully defined in the input data source, so an override is unlikely 
         //to make sense here. 
         final ScalarOutputByThresholdLeadXYDataset dataSet = new ScalarOutputByThresholdLeadXYDataset(input);
 
