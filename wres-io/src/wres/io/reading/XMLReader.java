@@ -7,10 +7,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 /**
  * @author Tubbs
@@ -20,6 +17,7 @@ public class XMLReader
 {
     private String filename;
     private final boolean find_on_classpath;
+    private final File file;
     private XMLInputFactory factory = null;
 
     private final Logger LOGGER = LoggerFactory.getLogger(XMLReader.class);
@@ -30,13 +28,20 @@ public class XMLReader
 	public XMLReader(String filename)
 	{
 	    this(filename, false);
-		//this.filename = filename;
+	}
+
+	public XMLReader (File file)
+	{
+		this.find_on_classpath = false;
+		this.filename = null;
+		this.file = file;
 	}
 	
 	public XMLReader(String filename, boolean find_on_classpath)
 	{
 	    this.filename = filename;
 	    this.find_on_classpath = find_on_classpath;
+	    this.file = null;
 
 	    LOGGER.trace("Created XMLReader for file: {} find_on_classpath={}", filename, find_on_classpath);
 	}
@@ -119,12 +124,17 @@ public class XMLReader
 			reader = factory.createXMLStreamReader(new FileReader(getFilename()));
 		}
 
-		if (reader == null)
-		{
-			reader = factory.createXMLStreamReader(new FileReader(getFilename()));
-		}
+        if (reader == null && this.file != null)
+        {
+            reader = factory.createXMLStreamReader(new FileReader(this.file));
+        }
+		else if (reader == null && this.filename != null)
+        {
+            reader = factory.createXMLStreamReader(new FileReader(getFilename()));
+        }
 
-	    return reader;
+
+        return reader;
 	}
 	
 	@SuppressWarnings("static-method")

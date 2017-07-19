@@ -14,7 +14,7 @@ import java.io.IOException;
  * 
  * @author Christopher Tubbs
  */
-public class ObservationSaver extends WRESTask implements Runnable {
+public class ObservationSaver extends WRESRunnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ObservationSaver.class);
     
@@ -29,32 +29,31 @@ public class ObservationSaver extends WRESTask implements Runnable {
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
-    public void run() {
+    public void execute() {
 		BasicSource source;
-		this.executeOnRun();
+
 		try {
 			source = ReaderFactory.getReader(this.filepath);
 			FormattedStopwatch watch = new FormattedStopwatch();
-            if (LOGGER.isDebugEnabled())
+            if (this.getLogger().isDebugEnabled())
             {
                 watch.start();
-                LOGGER.debug("Attempting to save '" + this.filepath +"' to the database...");
+				this.getLogger().debug("Attempting to save '" + this.filepath +"' to the database...");
             }
 			source.saveObservation();
 
-            if (LOGGER.isDebugEnabled())
+            if (this.getLogger().isDebugEnabled())
             {
                 watch.stop();
-                LOGGER.debug("'" + this.filepath+ "' attempt to save to the database took "
+				this.getLogger().debug("'" + this.filepath+ "' attempt to save to the database took "
                                      + watch.getFormattedDuration());
             }
 		}
         catch (IOException ioe)
         {
-            LOGGER.error("Failed to save '{}' as an observation", filepath);
-            LOGGER.error("The exception:", ioe);
+			this.getLogger().error("Failed to save '{}' as an observation", filepath);
+			this.getLogger().error("The exception:", ioe);
         }
-		this.executeOnComplete();
 	}
 
 	private String filepath = null;
@@ -62,5 +61,10 @@ public class ObservationSaver extends WRESTask implements Runnable {
 	@Override
 	protected String getTaskName () {
 		return "ObservationSaver: " + this.filepath;
+	}
+
+	@Override
+	protected Logger getLogger () {
+		return ObservationSaver.LOGGER;
 	}
 }

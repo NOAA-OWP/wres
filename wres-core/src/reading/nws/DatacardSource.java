@@ -36,8 +36,8 @@ public class DatacardSource extends BasicSource {
 	public DatacardSource(String filename) {
 		// TODO: Remove hard coding for variable name
 		set_variable_name("precipitation");
-		set_filename(filename);
-		set_source_type(SourceType.DATACARD);
+		setFilename(filename);
+		setSourceType(SourceType.DATACARD);
 	}
 	
 	public String get_datatype_code()

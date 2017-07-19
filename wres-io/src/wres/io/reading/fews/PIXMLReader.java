@@ -14,6 +14,7 @@ import wres.io.utilities.Database;
 import wres.util.*;
 
 import javax.xml.stream.XMLStreamReader;
+import java.io.File;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -98,6 +99,17 @@ public final class PIXMLReader extends XMLReader
 	public PIXMLReader(String filename, boolean isForecast)
 	{
 		super(filename);
+		this.isForecast = isForecast;
+	}
+
+	public PIXMLReader (File source)
+	{
+		super(source);
+	}
+
+	public PIXMLReader(File source, boolean isForecast)
+	{
+		super(source);
 		this.isForecast = isForecast;
 	}
 	

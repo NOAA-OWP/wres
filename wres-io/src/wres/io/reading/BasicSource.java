@@ -1,5 +1,6 @@
 package wres.io.reading;
 
+import wres.config.generated.ProjectConfig;
 import wres.io.config.specification.*;
 import wres.util.Collections;
 
@@ -30,30 +31,40 @@ public abstract class BasicSource {
 		return filename;
 	}
 	
-	protected void set_filename(String name)
+	protected void setFilename (String name)
 	{
 		filename = name;
 	}
 	
 	protected String getAbsoluteFilename()
 	{
-		if (absolute_filename == null)
+		if (absoluteFilename == null)
 		{
-			absolute_filename = Paths.get(getFilename()).toAbsolutePath().toString();
+            absoluteFilename = Paths.get(getFilename()).toAbsolutePath().toString();
 		}
-		return absolute_filename;
+		return absoluteFilename;
 	}
 	
-	public SourceType get_source_type()
+	public SourceType getSourceType()
 	{
-		return source_type;
+		return sourceType;
 	}
 	
-	protected void set_source_type(SourceType type)
+	protected void setSourceType(SourceType type)
 	{
-		source_type = type;
+        sourceType = type;
 	}
-	
+
+	public void setProjectConfig(ProjectConfig projectConfig)
+	{
+		this.projectConfig = projectConfig;
+	}
+
+	protected ProjectConfig getProjectConfig()
+	{
+		return this.projectConfig;
+	}
+
 	public void applySpecification(ProjectDataSpecification specification) {
 	    this.earliestDate = specification.getEarliestDate();
 	    this.latestDate = specification.getLatestDate();
@@ -130,8 +141,8 @@ public abstract class BasicSource {
 	}
 	
 	private String filename = "";
-	private String absolute_filename;
-	private SourceType source_type = SourceType.UNDEFINED;
+	private String absoluteFilename;
+	private SourceType sourceType = SourceType.UNDEFINED;
 	
 	private String earliestDate;
 	private String latestDate;
@@ -147,4 +158,6 @@ public abstract class BasicSource {
 	
 	private boolean isForecast = false;
 	private boolean detailsSpecified = false;
+
+	private ProjectConfig projectConfig;
 }

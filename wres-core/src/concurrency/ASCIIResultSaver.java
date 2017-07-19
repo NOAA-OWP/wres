@@ -1,5 +1,8 @@
 package concurrency;
-import wres.io.concurrency.WRESTask;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.io.concurrency.WRESRunnable;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 
@@ -10,7 +13,9 @@ import java.util.HashMap;
  * @author ctubbs
  *
  */
-public class ASCIIResultSaver extends WRESTask implements Runnable {
+public class ASCIIResultSaver extends WRESRunnable {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ASCIIResultSaver.class);
 	
 	public ASCIIResultSaver(HashMap<Integer, HashMap<String, String[]>> forecasted_values, Integer observationlocation_id)
 	{
@@ -23,15 +28,13 @@ public class ASCIIResultSaver extends WRESTask implements Runnable {
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
-	public void run() {
-	    this.executeOnRun();
+	public void execute() {
 		try {
 			save_mapping();
 		} 
 		catch (SQLException e) {
 			e.printStackTrace();
 		}
-		this.executeOnComplete();
 	}
 	
 	private void save_mapping() throws SQLException
@@ -76,5 +79,10 @@ public class ASCIIResultSaver extends WRESTask implements Runnable {
 	@Override
 	protected String getTaskName () {
 		return "ASCIIResultSaver-" + String.valueOf(Thread.currentThread().getId());
+	}
+
+	@Override
+	protected Logger getLogger () {
+		return ASCIIResultSaver.LOGGER;
 	}
 }

@@ -1,5 +1,7 @@
 package wres.io.concurrency;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metric.DefaultMetricInputFactory;
@@ -11,13 +13,15 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 
 /**
  * Created by ctubbs on 7/17/17.
  */
-public final class PairRetriever extends WRESTask implements Callable<List<PairOfDoubleAndVectorOfDoubles>> {
+public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVectorOfDoubles>>
+{
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PairRetriever.class);
 
     public PairRetriever(ProjectConfig projectConfig, int progress)
     {
@@ -26,8 +30,7 @@ public final class PairRetriever extends WRESTask implements Callable<List<PairO
     }
 
     @Override
-    public List<PairOfDoubleAndVectorOfDoubles> call () throws Exception {
-        this.executeOnRun();
+    public List<PairOfDoubleAndVectorOfDoubles> execute () throws Exception {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
 
         Connection connection = null;
@@ -64,7 +67,6 @@ public final class PairRetriever extends WRESTask implements Callable<List<PairO
             }
         }
 
-        this.executeOnComplete();
         return pairs;
     }
 
@@ -74,5 +76,10 @@ public final class PairRetriever extends WRESTask implements Callable<List<PairO
     @Override
     protected String getTaskName () {
         return "PairRetriever: Step " + String.valueOf(this.progress) + " for " + this.projectConfig.getLabel();
+    }
+
+    @Override
+    protected Logger getLogger () {
+        return PairRetriever.LOGGER;
     }
 }

@@ -7,7 +7,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.NetCDFValueSaver;
-import wres.io.concurrency.WRESTask;
+import wres.io.concurrency.WRESRunnable;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.MeasurementUnits;
@@ -36,7 +36,7 @@ import java.util.concurrent.Future;
 public class NetCDFSource extends BasicSource {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetCDFSource.class);
 
-	private class VariableInserter extends WRESTask implements Runnable
+	private class VariableInserter extends WRESRunnable
 	{
 
 		public VariableInserter(Variable variableToInsert)
@@ -48,8 +48,7 @@ public class NetCDFSource extends BasicSource {
 		}
 
 		@Override
-		public void run() {
-		    this.executeOnRun();
+		public void execute() {
 
 			//try {
                 ProgressMonitor.increment();
@@ -59,7 +58,7 @@ public class NetCDFSource extends BasicSource {
                 VariableDetails details = new VariableDetails();
                 details.setVariableName(this.variableName);
                 details.measurementunitId = MeasurementUnits.getMeasurementUnitID(this.unitName);
-				LOGGER.trace("Getting the id for the variable '{}'", this.variableName);
+				this.getLogger().trace("Getting the id for the variable '{}'", this.variableName);
                 //Integer variableId = Variables.addVariable(details, this.xLength, this.yLength);
                 Integer variableId = Variables.getVariableID(details);
 
@@ -70,16 +69,15 @@ public class NetCDFSource extends BasicSource {
                 saver.setOnRun(ProgressMonitor.onThreadStartHandler());
                 saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 
-                LOGGER.trace("Telling the general executor to save '{}' from '{}'", this.variableName, getFilename());
+				this.getLogger().trace("Telling the general executor to save '{}' from '{}'", this.variableName, getFilename());
                 //Executor.execute(saver);
                 saver.run();
 
                 ProgressMonitor.completeStep();
             }
             catch (SQLException e) {
-                LOGGER.error(Strings.getStackTrace(e));
+				this.getLogger().error(Strings.getStackTrace(e));
             }
-			this.executeOnComplete();
 		}
 
 		private final int xLength;
@@ -91,12 +89,17 @@ public class NetCDFSource extends BasicSource {
 		protected String getTaskName () {
 			return "NetCDFSource.VariableSaver: " + this.variableName;
 		}
+
+		@Override
+		protected Logger getLogger () {
+			return NetCDFSource.LOGGER;
+		}
 	}
 	/**
 	 * 
 	 */
 	public NetCDFSource(String filename) {
-		this.set_filename(filename);
+		this.setFilename(filename);
 	}
 	
 	@Override

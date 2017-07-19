@@ -23,7 +23,7 @@ import java.util.concurrent.Future;
  * Executes the database copy operation for every value in the passed in string
  * @author Christopher Tubbs
  */
-public class NetCDFValueSaver extends WRESTask implements Runnable
+public class NetCDFValueSaver extends WRESRunnable
 {
 	private final static String DELIMITER = ",";
     private static final Logger LOGGER = LoggerFactory.getLogger(NetCDFValueSaver.class);
@@ -51,8 +51,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 	}
 
 	@Override
-    public void run() {
-	    this.executeOnRun();
+    public void execute() {
         builder = new StringBuilder();
 		try {
 
@@ -77,26 +76,26 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 
                     if (currentYIndex == half)
                     {
-                        LOGGER.trace("Currently halfway done with setting up jobs to save {} data from '{}'",
+                        this.getLogger().trace("Currently halfway done with setting up jobs to save {} data from '{}'",
                                 this.variableName,
                                 this.source.getLocation());
                     }
                     else if (currentYIndex == quarter)
                     {
-                        LOGGER.trace("Currently a quarter of the way done setting up jobs to save {} data from '{}'",
+                        this.getLogger().trace("Currently a quarter of the way done setting up jobs to save {} data from '{}'",
                                 this.variableName,
                                 this.source.getLocation());
                     }
                     else if (currentYIndex == threeQuarter)
                     {
-                        LOGGER.trace("Currently three quarters of the way done setting up jobs to save {} data from '{}'",
+                        this.getLogger().trace("Currently three quarters of the way done setting up jobs to save {} data from '{}'",
                                 this.variableName,
                                 this.source.getLocation());
                     }
 
                     currentXIndex = 0;
 
-                    LOGGER.trace("Now looping through a set of x values.");
+                    this.getLogger().trace("Now looping through a set of x values.");
                     for (; currentXIndex < getXLength(); ++currentXIndex)
                     {
                         ProgressMonitor.increment();
@@ -150,7 +149,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 
                 copyValues();
 
-                LOGGER.trace("Now waiting for all tasks used to save {} from '{}' to finish...", this.variableName, this.fileName);
+                this.getLogger().trace("Now waiting for all tasks used to save {} from '{}' to finish...", this.variableName, this.fileName);
 
                 while (!this.operations.empty())
                 {
@@ -161,7 +160,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
                     }
                     catch (Exception e)
                     {
-                        LOGGER.error("Could not complete a task to save {} from '{}'", this.variableName, this.fileName);
+                        this.getLogger().error("Could not complete a task to save {} from '{}'", this.variableName, this.fileName);
                     }
                 }
             }
@@ -176,15 +175,14 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
                 e.printStackTrace();
             }
         }
-		this.executeOnComplete();
 	}
 
 	private NetcdfFile getFile() throws IOException
     {
         if (this.source == null) {
-            LOGGER.trace("Now opening '{}'...", this.fileName);
+            this.getLogger().trace("Now opening '{}'...", this.fileName);
             this.source = NetcdfFile.open(this.fileName);
-            LOGGER.trace("'{}' has been opened for parsing.", this.fileName);
+            this.getLogger().trace("'{}' has been opened for parsing.", this.fileName);
         }
         return this.source;
     }
@@ -203,7 +201,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
         {
             NetcdfFile source = getFile();
 
-            LOGGER.trace("Now looking for {} inside '{}'", this.variableName, this.fileName);
+            this.getLogger().trace("Now looking for {} inside '{}'", this.variableName, this.fileName);
             for (Variable var : source.getVariables())
             {
                 if (var.getShortName().equalsIgnoreCase(this.variableName))
@@ -249,7 +247,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 
 			if (this.copyCount >= SystemSettings.getMaximumCopies())
             {
-                LOGGER.trace("The copy count now exceeds the maximum allowable copies, so the values are being sent to save.");
+                this.getLogger().trace("The copy count now exceeds the maximum allowable copies, so the values are being sent to save.");
                 this.copyValues();
             }
 		}
@@ -264,7 +262,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
                 copier.setOnRun(ProgressMonitor.onThreadStartHandler());
                 copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 
-                LOGGER.trace("Sending NetCDF values to the database executor to copy...");
+                this.getLogger().trace("Sending NetCDF values to the database executor to copy...");
                 this.operations.push(Database.execute(copier));
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
@@ -274,7 +272,7 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
         }
         else
         {
-            LOGGER.warn("Data is not being copied because the builder has no data.");
+            this.getLogger().warn("Data is not being copied because the builder has no data.");
         }
     }
 
@@ -445,5 +443,10 @@ public class NetCDFValueSaver extends WRESTask implements Runnable
 	    name.append(this.fileName);
 
         return name.toString();
+    }
+
+    @Override
+    protected Logger getLogger () {
+        return NetCDFValueSaver.LOGGER;
     }
 }

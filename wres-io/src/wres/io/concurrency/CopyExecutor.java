@@ -4,12 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.Database;
+import wres.util.Strings;
 
 /**
  * Executes the database copy operation for every value in the passed in string
  * @author Christopher Tubbs
  */
-public class CopyExecutor extends WRESTask implements Runnable
+public class CopyExecutor extends WRESRunnable
 {
     private final String table_definition;
     private final String values;
@@ -31,23 +32,26 @@ public class CopyExecutor extends WRESTask implements Runnable
 	}
 
 	@Override
-    public void run() {
-	    this.executeOnRun();
+    public void execute() {
 		try {
-		    LOGGER.trace("Using table_definition {} values {} delimiter {}", 
+		    this.getLogger().trace("Using table_definition {} values {} delimiter {}",
 		                 table_definition, 
 		                 values,
 		                 delimiter);
 		    
 			Database.copy(table_definition, values, delimiter);
 		} catch (Exception e) {
-			e.printStackTrace();
-		}		
-		this.executeOnComplete();
+			this.getLogger().error(Strings.getStackTrace(e));
+		}
 	}
 
 	@Override
 	protected String getTaskName () {
 		return "COPY: " + this.table_definition;
+	}
+
+	@Override
+	protected Logger getLogger () {
+		return CopyExecutor.LOGGER;
 	}
 }

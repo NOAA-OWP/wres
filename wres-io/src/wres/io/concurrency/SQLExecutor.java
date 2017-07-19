@@ -11,7 +11,8 @@ import java.sql.SQLException;
  * 
  * @author Christopher Tubbs
  */
-public class SQLExecutor extends WRESTask implements Runnable {
+public class SQLExecutor extends WRESRunnable
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(SQLExecutor.class);
 
 	/**
@@ -23,20 +24,23 @@ public class SQLExecutor extends WRESTask implements Runnable {
 	}
 
 	@Override
-    public void run() {
-	    this.executeOnRun();
+    public void execute() {
 		try {
 			Database.execute(this.script);
 		} catch (SQLException e) {
 		    // Error Information is handled by the database module
-		}		
-		this.executeOnComplete();
+		}
 	}
 
 	private String script = null;
 
 	@Override
 	protected String getTaskName () {
-		return "SQLExecutor: " + String.valueOf(Thread.currentThread().getId());
+		return "SQLExecutor";
+	}
+
+	@Override
+	protected Logger getLogger () {
+		return SQLExecutor.LOGGER;
 	}
 }
