@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wresconfig>
 	<database>
-        <url>***REMOVED***eds-dev1.***REMOVED***.***REMOVED***</url>
+        <url>localhost</url>
         <!--<ausername>wres_user</ausername>
         <apassword>EvalWaterRes</apassword>-->
-        <username>christopher.tubbs</username>
+        <username>wres_user</username>
         <password>changeme</password>
         <name>wres</name>
         <port>5432</port>
@@ -12,16 +12,16 @@
         <max_idle_time>80</max_idle_time>
         <!-- Warning: Default max connections is 100; approaching
              that will cause deadlocks-->
-        <max_pool_size>25</max_pool_size>
+        <max_pool_size>30</max_pool_size>
 	</database>
-	<maximum_thread_count>18</maximum_thread_count>
-	<fetch_size>400</fetch_size>
+	<maximum_thread_count>10</maximum_thread_count>
+	<fetch_size>5000</fetch_size>
     <maximum_inserts>900</maximum_inserts>
-    <maximum_copies>300</maximum_copies>
+    <maximum_copies>1000</maximum_copies>
     <project_directory>projects</project_directory>
     <should_log>false</should_log>
     <in_development>true</in_development>
-    <!--<update_frequency>1</update_frequency>-->
+    <update_frequency>10</update_frequency>
     <!--IOEP Username: pguser-->
     <!--IOEP Password: pass-->
     <!--IOEP database name: WRESDBTEST-->
