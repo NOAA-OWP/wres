@@ -50,7 +50,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     @Override
     public List<PairOfDoubles> getData()
     {
-        return Collections.unmodifiableList(mainInput);
+        return mainInput;
     }
 
     @Override
@@ -69,7 +69,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     @Override
     public List<PairOfDoubles> getDataForBaseline()
     {
-        return Collections.unmodifiableList(baselineInput);
+        return baselineInput;
     }
 
     @Override
@@ -173,9 +173,10 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         {
             throw new MetricInputException("One or more of the baseline pairs is null.");
         }
-        mainInput = b.mainInput;
+        //Enforce immutable lists
+        mainInput = Collections.unmodifiableList(b.mainInput);
+        baselineInput = Objects.nonNull(b.baselineInput) ? Collections.unmodifiableList(b.baselineInput) : null;
         mainMeta = b.mainMeta;
-        baselineInput = b.baselineInput;
         baselineMeta = b.baselineMeta;
     }
 

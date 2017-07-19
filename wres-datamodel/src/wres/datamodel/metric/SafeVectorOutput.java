@@ -3,6 +3,7 @@ package wres.datamodel.metric;
 import java.util.Arrays;
 import java.util.Objects;
 
+import wres.datamodel.SafeVectorOfDoubles;
 import wres.datamodel.VectorOfDoubles;
 
 /**
@@ -20,7 +21,7 @@ class SafeVectorOutput implements VectorOutput
      * The output.
      */
 
-    private final VectorOfDoubles output;
+    private final SafeVectorOfDoubles output;
 
     /**
      * The metadata associated with the output.
@@ -64,7 +65,7 @@ class SafeVectorOutput implements VectorOutput
      * @param meta the metadata
      */
 
-    SafeVectorOutput(final VectorOfDoubles output, final MetricOutputMetadata meta)
+    SafeVectorOutput(final SafeVectorOfDoubles output, final MetricOutputMetadata meta)
     {
         Objects.requireNonNull(output, "Specify a non-null output.");
         Objects.requireNonNull(meta, "Specify non-null metadata.");
