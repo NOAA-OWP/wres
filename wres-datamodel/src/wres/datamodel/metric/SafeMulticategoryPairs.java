@@ -53,7 +53,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     @Override
     public List<VectorOfBooleans> getData()
     {
-        return Collections.unmodifiableList(mainInput);
+        return mainInput;
     }
 
     @Override
@@ -67,12 +67,12 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     {
         final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
         return metIn.ofMulticategoryPairs(baselineInput, baselineMeta);
-    }          
-    
+    }
+
     @Override
     public List<VectorOfBooleans> getDataForBaseline()
     {
-        return Collections.unmodifiableList(baselineInput);
+        return baselineInput;
     }
 
     @Override
@@ -180,10 +180,11 @@ class SafeMulticategoryPairs implements MulticategoryPairs
             throw new MetricInputException("Specify a non-null baseline input and associated metadata or leave both "
                 + "null.");
         }
-        checkNullOrEmptyInputs(b.mainInput,b.baselineInput);
-        mainInput = b.mainInput;
+        checkNullOrEmptyInputs(b.mainInput, b.baselineInput);
+        //Enforce immutable lists
+        mainInput = Collections.unmodifiableList(b.mainInput);
+        baselineInput = Objects.nonNull(b.baselineInput) ? Collections.unmodifiableList(b.baselineInput) : null;
         mainMeta = b.mainMeta;
-        baselineInput = b.baselineInput;
         baselineMeta = b.baselineMeta;
     }
 
@@ -193,8 +194,9 @@ class SafeMulticategoryPairs implements MulticategoryPairs
      * @param mainInput the main input
      * @param baselineInput the baseline input
      */
-    
-    private void checkNullOrEmptyInputs(List<VectorOfBooleans> mainInput, List<VectorOfBooleans> baselineInput) {
+
+    private void checkNullOrEmptyInputs(List<VectorOfBooleans> mainInput, List<VectorOfBooleans> baselineInput)
+    {
         final List<Integer> size = new ArrayList<>();
         mainInput.stream().forEach(t -> {
             final int count = t.size();
@@ -206,7 +208,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
             {
                 throw new MetricInputException("Two or more elements in the input have an unequal number of "
                     + "categories.");
-            }          
+            }
             checkPair(t);
         });
         if(!Objects.isNull(baselineInput))
@@ -224,9 +226,9 @@ class SafeMulticategoryPairs implements MulticategoryPairs
                 }
                 checkPair(t);
             });
-        }      
+        }
     }
-    
+
     /**
      * Checks for exactly one observed occurrence and one predicted occurrence. Throws an exception if the condition is
      * not met.

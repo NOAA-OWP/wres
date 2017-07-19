@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import wres.datamodel.SafeMatrixOfDoubles;
+import wres.datamodel.SafeVectorOfDoubles;
 import wres.datamodel.metric.Threshold.Condition;
 
 /**
@@ -45,21 +47,21 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     }
 
     @Override
-    public ScalarOutput ofScalarOutput(final double output, final MetricOutputMetadata meta)
+    public SafeScalarOutput ofScalarOutput(final double output, final MetricOutputMetadata meta)
     {
         return new SafeScalarOutput(output, meta);
     }
 
     @Override
-    public VectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta)
+    public SafeVectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta)
     {
-        return new SafeVectorOutput(inputFactory.vectorOf(output), meta);
+        return new SafeVectorOutput((SafeVectorOfDoubles)inputFactory.vectorOf(output), meta);
     }
 
     @Override
-    public MatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta)
+    public SafeMatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta)
     {
-        return new SafeMatrixOutput(inputFactory.matrixOf(output), meta);
+        return new SafeMatrixOutput((SafeMatrixOfDoubles)inputFactory.matrixOf(output), meta);
     }
 
     @Override
@@ -153,13 +155,13 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     }
 
     @Override
-    public Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
+    public SafeThresholdKey getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
     {
         return new SafeThresholdKey(threshold, thresholdUpper, condition);
     }
 
     @Override
-    public Quantile getQuantile(final Double threshold,
+    public SafeQuantileKey getQuantile(final Double threshold,
                                 final Double thresholdUpper,
                                 final Double probability,
                                 final Double probabilityUpper,
