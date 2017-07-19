@@ -37,8 +37,8 @@ public class ASCIISource extends BasicSource
 	{
 		//TODO: Remove variable_name hard coding
 		set_variable_name("precipitation");
-		set_filename(filename);
-		set_source_type(SourceType.ASCII);
+		setFilename(filename);
+		setSourceType(SourceType.ASCII);
 	}
 	
 	private Integer get_observationlocation_id() throws SQLException

@@ -4,13 +4,11 @@ import org.slf4j.LoggerFactory;
 import wres.io.config.specification.MetricSpecification;
 import wres.io.utilities.Database;
 
-import java.util.concurrent.Callable;
-
 /**
  * @author Christopher Tubbs
  *
  */
-public class MetricStepTask extends WRESTask implements Callable<Double>
+public class MetricStepTask extends WRESCallable<Double>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MetricStepTask.class);
@@ -25,33 +23,31 @@ public class MetricStepTask extends WRESTask implements Callable<Double>
     }
 
     @Override
-    public Double call() throws Exception
+    public Double execute() throws Exception
     {
         Double result = null;
-        this.executeOnRun();
         
         if (specification.shouldProcessDirectly() && Metrics.hasDirectFunction(specification.getMetricType()))
         {
-            LOGGER.debug("using first option");
+            this.getLogger().debug("using first option");
             result = Database.submit(() -> {
                     return Metrics.call(specification, step);
                 }).get();
-            LOGGER.debug("result is {}", result);
+            this.getLogger().debug("result is {}", result);
         }
         else if (Metrics.hasFunction(specification.getMetricType()))
         {
-            LOGGER.debug("using second option");
+            this.getLogger().debug("using second option");
             result = Database.submit(()-> {
                     return Metrics.call(specification.getMetricType(), Metrics.getPairs(specification, step));
             }).get();
-            LOGGER.debug("result is {}", result);
+            this.getLogger().debug("result is {}", result);
         }
         else
         {
-            LOGGER.debug("The function: {} is not a valid function. Returning null...", specification);
+            this.getLogger().debug("The function: {} is not a valid function. Returning null...", specification);
         }
 
-        this.executeOnComplete();
         return result;
     }
 
@@ -61,5 +57,10 @@ public class MetricStepTask extends WRESTask implements Callable<Double>
     @Override
     protected String getTaskName () {
         return "MetricStepTask: Step " + String.valueOf(this.step) + " for " + this.specification.getName();
+    }
+
+    @Override
+    protected Logger getLogger () {
+        return MetricStepTask.LOGGER;
     }
 }

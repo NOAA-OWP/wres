@@ -1,6 +1,8 @@
 package concurrency;
 
-import wres.io.concurrency.WRESTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.io.concurrency.WRESRunnable;
 import wres.io.utilities.Database;
 import wres.util.Time;
 
@@ -12,7 +14,9 @@ import java.util.HashMap;
  * @author ctubbs
  *
  */
-public class DatacardResultSaver extends WRESTask implements Runnable {
+public class DatacardResultSaver extends WRESRunnable {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(DatacardResultSaver.class);
 
 	/**
 	 * 
@@ -29,14 +33,12 @@ public class DatacardResultSaver extends WRESTask implements Runnable {
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
-	public void run() {
-	    this.executeOnRun();
+	public void execute() {
 		try {
 			save();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		this.executeOnComplete();
 	}
 	
 	private void save() throws SQLException
@@ -68,9 +70,9 @@ public class DatacardResultSaver extends WRESTask implements Runnable {
 			
 			Database.execute(expression.toString());
 		} catch (SQLException error) {
-			System.err.println("The following query could not be executed:");
-			System.err.println();
-			System.err.println(expression.toString());
+			this.getLogger().error("The following query could not be executed:");
+			this.getLogger().error("");
+			this.getLogger().error(expression.toString());
 			throw error;
 		}
 	}
@@ -82,5 +84,10 @@ public class DatacardResultSaver extends WRESTask implements Runnable {
 	@Override
 	protected String getTaskName () {
 		return "DatacardResultSaver-" + String.valueOf(Thread.currentThread().getId());
+	}
+
+	@Override
+	protected Logger getLogger () {
+		return DatacardResultSaver.LOGGER;
 	}
 }

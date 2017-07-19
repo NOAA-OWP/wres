@@ -22,19 +22,19 @@ public class FEWSSource extends BasicSource {
 	 */
 	public FEWSSource(String filename)
 	{
-		this.set_filename(filename);
+		this.setFilename(filename);
 	}
 
 	@Override
 	public void saveForecast() throws IOException {
-		XMLReader source_reader = new PIXMLReader(this.getFilename());
-		source_reader.parse();		
+		XMLReader sourceReader = new PIXMLReader(this.getFilename());
+		sourceReader.parse();
 	}
 
 	@Override
 	public void saveObservation() throws IOException {
-		XMLReader source_reader = new PIXMLReader(this.getAbsoluteFilename(), false);
-		source_reader.parse();		
+		XMLReader sourceReader = new PIXMLReader(this.getAbsoluteFilename(), false);
+		sourceReader.parse();
 	}
 
 }

@@ -12,7 +12,8 @@ import wres.util.Strings;
  * 
  * @author Christopher Tubbs
  */
-public class ForecastSaver extends WRESTask implements Runnable {
+public class ForecastSaver extends WRESRunnable
+{
 	private static final Logger LOGGER = LoggerFactory.getLogger(ForecastSaver.class);
 
 	/**
@@ -34,8 +35,7 @@ public class ForecastSaver extends WRESTask implements Runnable {
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
-    public void run() {
-	    this.executeOnRun();
+    public void execute() {
 		try
 		{
 			BasicSource source = ReaderFactory.getReader(this.filepath);
@@ -49,11 +49,9 @@ public class ForecastSaver extends WRESTask implements Runnable {
 		}
 		catch (Exception e)
 		{
-			LOGGER.error("A forecast for the data at '" + this.filepath + "' could not be saved to the database.");
-			LOGGER.error(Strings.getStackTrace(e));
+			this.getLogger().error("A forecast for the data at '" + this.filepath + "' could not be saved to the database.");
+            this.getLogger().error(Strings.getStackTrace(e));
 		}
-		
-		this.executeOnComplete();
 	}
 
 	private String filepath = null;
@@ -63,4 +61,9 @@ public class ForecastSaver extends WRESTask implements Runnable {
 	protected String getTaskName () {
 		return "ForecastSaver: " + this.filepath;
 	}
+
+    @Override
+    protected Logger getLogger () {
+        return ForecastSaver.LOGGER;
+    }
 }
