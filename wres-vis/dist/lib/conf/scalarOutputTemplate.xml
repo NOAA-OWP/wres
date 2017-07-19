@@ -18,6 +18,13 @@
             <color alpha="255" blue="51" green="204" red="51"/>
             <color alpha="255" blue="0" green="0" red="255"/>
 		</lineColorPalette>
+		
+		<!-- The only parameter to set for all series is the series name, which  must be empty.  The XYChartDatasource will know
+		     this means to use the defaults supplied by the data to plot. -->
+        <seriesDrawingParameters createdIndexOfSeriesToModify="-1">
+            <nameInLegend></nameInLegend>
+        </seriesDrawingParameters>
+        
     </datasourceDrawingParameters>
     
 </chartDrawingParameters>

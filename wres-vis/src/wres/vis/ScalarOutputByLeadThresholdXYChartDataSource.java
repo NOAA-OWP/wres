@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import org.jfree.data.xy.XYDataset;
 
+import com.google.common.base.Strings;
+
 import ohd.hseb.charter.ChartConstants;
 import ohd.hseb.charter.datasource.DefaultXYChartDataSource;
 import ohd.hseb.charter.datasource.XYChartDataSource;
@@ -85,7 +87,23 @@ public class ScalarOutputByLeadThresholdXYChartDataSource extends DefaultXYChart
     {
         //Legend items are thresholds, and they are fully defined in the input data source, so an override is unlikely 
         //to make sense here. 
-        return new ScalarOutputByLeadThresholdXYDataset(input);
+        final ScalarOutputByLeadThresholdXYDataset dataSet = new ScalarOutputByLeadThresholdXYDataset(input);
+
+        //Set the legend names based on the passed in parameters, which are fully processed.
+        //Legend names are set in the dataSet itself, which is why this must be done when the dataSet is created.
+        //I know... I don't like it either.
+        for(int i = 0; i < dataSet.getSeriesCount(); i++)
+        {
+            if(!Strings.isNullOrEmpty(parameters.getSeriesDrawingParametersForSeriesIndex(i).getNameInLegend()))
+            {
+                dataSet.setLegendName(i,
+                                      parameters.getArguments()
+                                                .replaceArgumentsInString(parameters.getSeriesDrawingParametersForSeriesIndex(i)
+                                                                                    .getArgumentReplacedNameInLegend()));
+            }
+        }
+        
+        return dataSet;
     }
     
 }
