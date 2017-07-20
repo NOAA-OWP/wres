@@ -139,11 +139,6 @@ public class NetCDFSource extends BasicSource {
 
 		for (Variable var : source.getVariables())
 		{
-			if (!this.variableIsApproved(var.getShortName()))
-			{
-				continue;
-			}
-
 			if (var.getDimensions().size() > 1 || var.getDimension(0).getLength() > 1)
 			{
 				VariableInserter inserter = new VariableInserter(var);
@@ -152,9 +147,7 @@ public class NetCDFSource extends BasicSource {
 				tasks.add(Executor.execute(inserter));
 
 				// TODO: This causes the code to only ingest a single variable. Fine for testing, but it needs to get removed
-				if (!this.detailsAreSpecified()) {
-					break;
-				}
+				break;
 			}
 		}
 

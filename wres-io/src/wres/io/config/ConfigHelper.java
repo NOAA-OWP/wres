@@ -14,6 +14,7 @@ import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.InvalidPropertiesFormatException;
 import java.util.StringJoiner;
 
@@ -181,14 +182,16 @@ public class ConfigHelper
     public static DataSourceConfig.Source findDataSourceByFilename(DataSourceConfig dataSourceConfig, String filename)
     {
         DataSourceConfig.Source source = null;
-        filename = filename.toLowerCase();
+        filename = Paths.get(filename).toAbsolutePath().toString();
         String sourcePath = "";
 
         for (DataSourceConfig.Source dataSource : dataSourceConfig.getSource())
         {
-            if (filename.startsWith(dataSource.getValue().toLowerCase()) && dataSource.getValue().length() > sourcePath.length())
+            String fullDataSourcePath = Paths.get(dataSource.getValue()).toAbsolutePath().toString();
+
+            if (filename.startsWith(fullDataSourcePath) && fullDataSourcePath.length() > sourcePath.length())
             {
-                sourcePath = dataSource.getValue();
+                sourcePath = fullDataSourcePath;
                 source = dataSource;
             }
         }
