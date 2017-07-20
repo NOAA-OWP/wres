@@ -21,11 +21,11 @@ class SafeDiscreteProbabilityPairs extends SafeSingleValuedPairs implements Disc
      * A {@link MetricInputBuilder} to build the metric input.
      */
 
-    protected static class DiscreteProbabilityPairsBuilder extends SingleValuedPairsBuilder
+    static class DiscreteProbabilityPairsBuilder extends SingleValuedPairsBuilder
     {
 
         @Override
-        public DiscreteProbabilityPairs build()
+        public SafeDiscreteProbabilityPairs build()
         {
             return new SafeDiscreteProbabilityPairs(this);
         }

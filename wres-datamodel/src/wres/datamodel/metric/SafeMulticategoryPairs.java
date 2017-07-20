@@ -1,7 +1,6 @@
 package wres.datamodel.metric;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -65,8 +64,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     @Override
     public MulticategoryPairs getBaselineData()
     {
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
-        return metIn.ofMulticategoryPairs(baselineInput, baselineMeta);
+        return DefaultMetricInputFactory.getInstance().ofMulticategoryPairs(baselineInput, baselineMeta);
     }
 
     @Override
@@ -97,7 +95,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
      * A {@link MetricInputBuilder} to build the metric input.
      */
 
-    protected static class MulticategoryPairsBuilder implements MetricInputBuilder<List<VectorOfBooleans>>
+    static class MulticategoryPairsBuilder implements MetricInputBuilder<List<VectorOfBooleans>>
     {
 
         /**
@@ -151,7 +149,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         }
 
         @Override
-        public MulticategoryPairs build()
+        public SafeMulticategoryPairs build()
         {
             return new SafeMulticategoryPairs(this);
         }
@@ -164,7 +162,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
      * @throws MetricInputException if the pairs are invalid
      */
 
-    protected SafeMulticategoryPairs(final MulticategoryPairsBuilder b)
+    SafeMulticategoryPairs(final MulticategoryPairsBuilder b)
     {
         //Bounds checks
         if(Objects.isNull(b.mainMeta))
@@ -181,9 +179,10 @@ class SafeMulticategoryPairs implements MulticategoryPairs
                 + "null.");
         }
         checkNullOrEmptyInputs(b.mainInput, b.baselineInput);
-        //Enforce immutable lists
-        mainInput = Collections.unmodifiableList(b.mainInput);
-        baselineInput = Objects.nonNull(b.baselineInput) ? Collections.unmodifiableList(b.baselineInput) : null;
+        //Ensure safe types
+        DefaultMetricInputFactory factory = (DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance();
+        mainInput = factory.getSafeVectorOfBooleansList(b.mainInput);
+        baselineInput = Objects.nonNull(b.baselineInput) ? factory.getSafeVectorOfBooleansList(b.baselineInput) : null;
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
     }

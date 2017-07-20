@@ -1,10 +1,10 @@
 package wres.datamodel.metric;
 
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import wres.datamodel.SafeMatrixOfDoubles;
 import wres.datamodel.SafeVectorOfDoubles;
 import wres.datamodel.metric.Threshold.Condition;
 
@@ -29,7 +29,7 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
      * Instance of an input factory.
      */
 
-    private final MetricInputFactory inputFactory;
+    private final DefaultMetricInputFactory inputFactory;
 
     /**
      * Returns an instance of a {@link MetricOutputFactory}.
@@ -55,13 +55,22 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     @Override
     public SafeVectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta)
     {
-        return new SafeVectorOutput((SafeVectorOfDoubles)inputFactory.vectorOf(output), meta);
+        return new SafeVectorOutput(inputFactory.vectorOf(output), meta);
+    }
+
+    @Override
+    public SafeMultiVectorOutput ofMultiVectorOutput(final Map<MetricConstants, double[]> output,
+                                                     final MetricOutputMetadata meta)
+    {
+        EnumMap<MetricConstants, SafeVectorOfDoubles> map = new EnumMap<>(MetricConstants.class);
+        output.forEach((key, value) -> map.put(key, inputFactory.vectorOf(value)));
+        return new SafeMultiVectorOutput(map, meta);
     }
 
     @Override
     public SafeMatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta)
     {
-        return new SafeMatrixOutput((SafeMatrixOfDoubles)inputFactory.matrixOf(output), meta);
+        return new SafeMatrixOutput(inputFactory.matrixOf(output), meta);
     }
 
     @Override
@@ -91,7 +100,7 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     public <S extends MetricOutput<?>> MetricOutputMultiMap.Builder<S> ofMultiMap()
     {
         return new SafeMetricOutputMultiMap.MultiMapBuilder<>();
-    }    
+    }
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> combine(final List<MetricOutputMapByLeadThreshold<T>> input)
@@ -162,10 +171,10 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
 
     @Override
     public SafeQuantileKey getQuantile(final Double threshold,
-                                final Double thresholdUpper,
-                                final Double probability,
-                                final Double probabilityUpper,
-                                final Condition condition)
+                                       final Double thresholdUpper,
+                                       final Double probability,
+                                       final Double probabilityUpper,
+                                       final Condition condition)
     {
         return new SafeQuantileKey(threshold, thresholdUpper, probability, probabilityUpper, condition);
     }
@@ -176,7 +185,7 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
 
     private DefaultMetricOutputFactory()
     {
-        inputFactory = DefaultMetricInputFactory.getInstance();
+        inputFactory = (DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance();
     }
 
 }
