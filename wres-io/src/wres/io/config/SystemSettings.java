@@ -11,6 +11,7 @@ import wres.util.XML;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * The cache for all configured system settings
@@ -23,17 +24,19 @@ public final class SystemSettings extends XMLReader
 	// The global, static system configuration
     private static SystemSettings INSTANCE;
 
+    // The static path to the configuration path
+    private static final String CONFIG_PATH = "wresconfig.xml";
+
 	static
 	{
 		try
 		{
-			INSTANCE = new SystemSettings();
+			INSTANCE = new SystemSettings(CONFIG_PATH);
 		}
 		catch (IOException ioe)
 		{
-			LOGGER.error("Could not load system settings.", ioe);
-			INSTANCE = null;
-			throw new ExceptionInInitializerError(ioe);
+			LOGGER.warn("Could not find system settings. Using defaults.", ioe);
+			INSTANCE = new SystemSettings();
 		}
 	}
 
@@ -50,9 +53,6 @@ public final class SystemSettings extends XMLReader
     private boolean updateProgressMonitor = true;
 
 
-	// The static path to the configuration path
-    private static final String CONFIG_PATH = "wresconfig.xml";
-
 	/**
 	 * The Default constructor
 	 * 
@@ -62,11 +62,18 @@ public final class SystemSettings extends XMLReader
 	 * Private because only one SystemSettings should exist as it is the global cache
 	 * of configured system settings
 	 */
-    private SystemSettings() throws IOException
+    private SystemSettings(String configPath) throws IOException
     {
-        super(CONFIG_PATH, true);
-        LOGGER.trace("Created SystemSettings using default constructor");
+        super(configPath, true);
         parse();
+    }
+
+    /**
+     * Fall back on default values when file cannot be found.
+     */
+    private SystemSettings()
+    {
+        super(null, false);
     }
 
 	@Override
