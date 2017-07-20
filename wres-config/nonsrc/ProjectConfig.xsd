@@ -222,10 +222,10 @@
         </xs:sequence>
 
         <!-- Image width. -->
-        <xs:attribute name="width" type="xs:positiveInteger" />
+        <xs:attribute name="width" type="xs:int" />
         
         <!-- Image height. -->
-        <xs:attribute name="height" type="xs:positiveInteger" />
+        <xs:attribute name="height" type="xs:int" />
         
         <!-- Location of the template file.  Every plot type has a default file.
         This allows for using a user customized file.  When searching for the 
@@ -244,6 +244,7 @@
         </xs:annotation>
 
         <xs:sequence>
+            <xs:element name="path" type="xs:anyURI" />
             <!-- If output type is graphical (a chart)... -->
             <xs:element name="graphical" type="graphicalType" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
