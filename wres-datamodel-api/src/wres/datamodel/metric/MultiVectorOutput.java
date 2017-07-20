@@ -1,6 +1,6 @@
 package wres.datamodel.metric;
 
-import java.util.EnumMap;
+import java.util.Map;
 
 import wres.datamodel.VectorOfDoubles;
 
@@ -12,24 +12,24 @@ import wres.datamodel.VectorOfDoubles;
  * @since 0.1
  */
 
-public interface MultiVectorOutput extends MetricOutput<EnumMap<MetricConstants,VectorOfDoubles>>
+public interface MultiVectorOutput extends MetricOutput<Map<MetricConstants, VectorOfDoubles>>
 {
-    
+
     /**
      * Returns a prescribed vector from the map or null if no mapping exists.
      * 
      * @param identifier the identifier
      * @return a vector or null
      */
-    
+
     VectorOfDoubles get(MetricConstants identifier);
-    
+
     /**
      * Returns true if the store contains a mapping for the prescribed identifier, false otherwise.
      * 
      * @param identifier the identifier
      * @return true if the mapping exists, false otherwise
      */
-    
+
     boolean containsKey(MetricConstants identifier);
 }

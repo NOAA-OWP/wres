@@ -1,6 +1,5 @@
 package wres.datamodel.metric;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -58,13 +57,12 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     {
         return mainMeta;
     }
-    
+
     @Override
     public SingleValuedPairs getBaselineData()
     {
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
-        return metIn.ofSingleValuedPairs(baselineInput, baselineMeta);
-    }    
+        return DefaultMetricInputFactory.getInstance().ofSingleValuedPairs(baselineInput, baselineMeta);
+    }
 
     @Override
     public List<PairOfDoubles> getDataForBaseline()
@@ -82,7 +80,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * A {@link MetricInputBuilder} to build the metric input.
      */
 
-    public static class SingleValuedPairsBuilder implements MetricInputBuilder<List<PairOfDoubles>>
+    static class SingleValuedPairsBuilder implements MetricInputBuilder<List<PairOfDoubles>>
     {
 
         /**
@@ -136,7 +134,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         }
 
         @Override
-        public SingleValuedPairs build()
+        public SafeSingleValuedPairs build()
         {
             return new SafeSingleValuedPairs(this);
         }
@@ -150,7 +148,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * @throws MetricInputException if the pairs are invalid
      */
 
-    protected SafeSingleValuedPairs(final SingleValuedPairsBuilder b)
+    SafeSingleValuedPairs(final SingleValuedPairsBuilder b)
     {
         //Bounds checks
         if(Objects.isNull(b.mainMeta))
@@ -173,9 +171,10 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         {
             throw new MetricInputException("One or more of the baseline pairs is null.");
         }
-        //Enforce immutable lists
-        mainInput = Collections.unmodifiableList(b.mainInput);
-        baselineInput = Objects.nonNull(b.baselineInput) ? Collections.unmodifiableList(b.baselineInput) : null;
+        //Ensure safe types
+        DefaultMetricInputFactory factory = (DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance();
+        mainInput = factory.getSafePairOfDoublesList(b.mainInput);
+        baselineInput = Objects.nonNull(b.baselineInput) ? factory.getSafePairOfDoublesList(b.baselineInput) : null;
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
     }
