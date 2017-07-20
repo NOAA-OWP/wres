@@ -153,7 +153,7 @@ public class Control implements Function<String[], Integer>
                                  d.sourceLocation().getLineNumber(),
                                  d.sourceLocation().getColumnNumber());
 
-                    if (d.getGraphical().getConfig() != null)
+                    if (d.getGraphical() != null && d.getGraphical().getConfig() != null)
                     {
                         final GraphicalType.Config conf = d.getGraphical().getConfig();
                         LOGGER.debug("Location of config for {} is line {} col {}",
@@ -183,7 +183,7 @@ public class Control implements Function<String[], Integer>
         List<String> xmlLines = new ArrayList<>();
         try
         {
-            Files.readAllLines(Paths.get(fileName));
+            xmlLines = Files.readAllLines(Paths.get(fileName));
         }
         catch (IOException ioe)
         {
@@ -196,7 +196,7 @@ public class Control implements Function<String[], Integer>
 
         for (final DestinationConfig d : projectConfig.getOutputs().getDestination())
         {
-            if (d.getGraphical().getConfig() != null)
+            if (d.getGraphical() != null && d.getGraphical().getConfig() != null)
             {
                 final GraphicalType.Config conf = d.getGraphical().getConfig();
                 final int lineNum = conf.sourceLocation().getLineNumber();
