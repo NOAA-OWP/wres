@@ -2,6 +2,8 @@ package wres;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -34,6 +36,11 @@ import javax.xml.bind.ValidationEvent;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
+import ohd.hseb.charter.ChartEngine;
+import ohd.hseb.charter.ChartEngineException;
+import ohd.hseb.charter.ChartTools;
+import ohd.hseb.charter.datasource.XYChartDataSourceException;
+import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,19 +52,13 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.SafePairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.DefaultMetricOutputFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricInputFactory;
-import wres.datamodel.metric.MetricOutputFactory;
-import wres.datamodel.metric.MetricOutputMapByMetric;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.*;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
+import wres.vis.ChartEngineFactory;
 
 /**
  * Another Main. The reason for creating this class separately from Main is to defer conflict with the existing
@@ -174,13 +175,14 @@ public class Control implements Function<String[], Integer>
         {
             LOGGER.error("A value in the file {} was unable to be converted to a number.", fileName, nfe);
             // communicate failure back up the stack
-            return null;        }
+            return null;
+        }
 
         final Map<DestinationConfig,String> visConfigs = new HashMap<>();
 
         // Read the file again so we can get the exact parts we want for vis.
 
-        List<String> xmlLines = new ArrayList<>();
+        List<String> xmlLines;
         try
         {
             xmlLines = Files.readAllLines(Paths.get(fileName));
@@ -194,7 +196,7 @@ public class Control implements Function<String[], Integer>
         // To read the xml configuration for vis into a string, we go find the
         // start of each, then find the first occurance of </config> ?
 
-        for (final DestinationConfig d : projectConfig.getOutputs().getDestination())
+        for (DestinationConfig d : projectConfig.getOutputs().getDestination())
         {
             if (d.getGraphical() != null && d.getGraphical().getConfig() != null)
             {
@@ -419,7 +421,10 @@ public class Control implements Function<String[], Integer>
         }
 
         @Override
-        public MetricOutputMapByMetric<ScalarOutput> call() throws ProcessingException
+        public MetricOutputMapByMetric<ScalarOutput> call()
+                throws ProcessingException, ChartEngineException,
+                GenericXMLReadingHandlerException, XYChartDataSourceException,
+                IOException, URISyntaxException
         {
             // initialized to empty list in case of failure
             List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
@@ -446,19 +451,44 @@ public class Control implements Function<String[], Integer>
             // List of PairOfDouble for metric calculation.
             final List<PairOfDoubles> simplePairs = Slicer.getFlatDoublePairs(pairs);
 
-            if(LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("metric input for leadTime " + this.leadTime + " should have count " + simplePairs.size());
-            }
-
-            // What follows for the rest of call() is from MetricCollectionTest.
+            // What follows for the rest of call() was originally from MetricCollectionTest.
 
             // Convert pairs into metric input
             final MetricInputFactory inputFactory = DefaultMetricInputFactory.getInstance();
             final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
+            final MetadataFactory metFac = inputFactory.getMetadataFactory();
+            final Metadata meta = metFac.getMetadata(simplePairs.size(),
+                    metFac.getDimension(projectConfig.getPair().getUnit()),
+                    metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
             final SingleValuedPairs input = inputFactory.ofSingleValuedPairs(simplePairs,
-                                                                             inputFactory.getMetadataFactory()
-                                                                                         .getMetadata(pairs.size()));
+                                                                             meta);
+
+            // generate some graphics, this is almost certainly not where we
+            // will do it, but it was a first "go" at integrating graphics into
+            // the pipeline.
+            try
+            {
+                ChartEngine ce = ChartEngineFactory
+                        .buildSingleValuedPairsChartEngine(input,
+                                "singleValuedPairsTemplate.xml",
+                                null);
+
+                //Generate the output file.
+                ChartTools.generateOutputImageFile(
+                        Paths.get(new URI(projectConfig.getOutputs().getDestination().get(1).getPath() + "/" + Integer.toString(leadTime) + ".png")).toFile(),
+                        ce.buildChart(),
+                        projectConfig.getOutputs().getDestination().get(1).getGraphical().getWidth(),
+                        projectConfig.getOutputs().getDestination().get(1).getGraphical().getHeight());
+            }
+            catch (GenericXMLReadingHandlerException
+                    |ChartEngineException
+                    |XYChartDataSourceException
+                    |URISyntaxException
+                    |IOException e)
+            {
+                LOGGER.error("Could not create charts.", e);
+                throw e;
+            }
 
             // Create an immutable collection of metrics that consume single-valued pairs
             // and produce a scalar output

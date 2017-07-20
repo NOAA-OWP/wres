@@ -182,6 +182,7 @@ project(':wres-core')
         compile project(':wres-io')
         compile project(':wres-metrics')
         compile project(':wres-config')
+        compile project(':wres-vis')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
