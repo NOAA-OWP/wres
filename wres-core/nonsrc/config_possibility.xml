@@ -24,18 +24,9 @@
   </inputs>
   <conditions> <!-- aka filters -->
     <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/> <!-- optional, default all -->
-    <!--<values minimum="-1.0" maximum="500.00"/> --><!-- optional, default all -->
-    <!--<features all="true"> --> <!-- optional, default all -->
     <feature>
         <location lid="DRRC2" name="DOLORES - RICO, BLO"/>
     </feature>
-    <!--<polygon>
-      <point x="92" y="89"/>
-      <point x="3032" y="2901"/>
-      <point x="1000" y="1548"/>
-    </polygon>
-    <range x_minimum="42" x_maximum="20000"/>-->
-    <!--</features>-->
   </conditions>
   <pair label="Pairs by location and lead time"> <!-- required for unit -->
     <unit>CMS</unit>
@@ -52,14 +43,15 @@
     <metric>brier_skill_score</metric> <!-- has its own units -->
     <destination type="numeric">file:///home/jesse/text_output"</destination>
     <destination type="graphic">file:///home/jesse/graphics_output
-      <config><needs><tags>Stuff</tags></needs></config>
-    </destination>
-    <destination type="graphic">file:///home/jesse/graphics_output
+    <!--Optional:-->
+    <graphical width="1920" height="1080">
+      <plotType>LEAD_THRESHOLD</plotType>
+      <!--Optional:-->
       <config>
-        <needs>
-          <tags>MORE Stuff</tags>
-        </needs>
+        <!--You may enter ANY elements at this point-->
+        <AnyElement/>
       </config>
+    </graphical>
     </destination>
   </outputs>
 </project>
