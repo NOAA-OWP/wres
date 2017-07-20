@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
+import wres.Control;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metric.DefaultMetricInputFactory;
@@ -119,6 +120,7 @@ public final class MainFunctions
 		prototypes.put("getprojectpairs", getProjectPairs());
 		prototypes.put("executeproject", executeProject());
 		prototypes.put("executeClassProject", new ProjectExecutor());
+		prototypes.put("executeConfigProject", new Control());
 		prototypes.put("refreshtestdata", refreshTestData());
 		prototypes.put("refreshstatistics", refreshStatistics());
 		prototypes.put("ingestproject", ingestProject());
