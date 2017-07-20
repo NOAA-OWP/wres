@@ -1,6 +1,6 @@
 package wres.io.reading;
 
-import wres.config.generated.ProjectConfig;
+import wres.config.generated.DataSourceConfig;
 import wres.io.config.specification.*;
 import wres.util.Collections;
 
@@ -55,14 +55,14 @@ public abstract class BasicSource {
         sourceType = type;
 	}
 
-	public void setProjectConfig(ProjectConfig projectConfig)
+	public void setDataSourceConfig (DataSourceConfig dataSourceConfig)
 	{
-		this.projectConfig = projectConfig;
+		this.dataSourceConfig = dataSourceConfig;
 	}
 
-	protected ProjectConfig getProjectConfig()
+	protected DataSourceConfig getDataSourceConfig ()
 	{
-		return this.projectConfig;
+		return this.dataSourceConfig;
 	}
 
 	public void applySpecification(ProjectDataSpecification specification) {
@@ -159,5 +159,5 @@ public abstract class BasicSource {
 	private boolean isForecast = false;
 	private boolean detailsSpecified = false;
 
-	private ProjectConfig projectConfig;
+	private DataSourceConfig dataSourceConfig;
 }

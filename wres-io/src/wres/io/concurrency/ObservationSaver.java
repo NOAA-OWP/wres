@@ -3,6 +3,7 @@ package wres.io.concurrency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DataSourceConfig;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
 import wres.util.FormattedStopwatch;
@@ -23,7 +24,14 @@ public class ObservationSaver extends WRESRunnable {
 	 */
 	public ObservationSaver(String filepath) {
 		this.filepath = filepath;
+		this.dataSourceConfig = null;
 	}
+
+	public ObservationSaver(String filepath, DataSourceConfig dataSourceConfig)
+    {
+        this.dataSourceConfig = dataSourceConfig;
+        this.filepath = filepath;
+    }
 
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
@@ -40,6 +48,12 @@ public class ObservationSaver extends WRESRunnable {
                 watch.start();
 				this.getLogger().debug("Attempting to save '" + this.filepath +"' to the database...");
             }
+
+            if (this.dataSourceConfig != null)
+            {
+                source.setDataSourceConfig(this.dataSourceConfig);
+            }
+
 			source.saveObservation();
 
             if (this.getLogger().isDebugEnabled())
@@ -67,4 +81,6 @@ public class ObservationSaver extends WRESRunnable {
 	protected Logger getLogger () {
 		return ObservationSaver.LOGGER;
 	}
+
+	private final DataSourceConfig dataSourceConfig;
 }

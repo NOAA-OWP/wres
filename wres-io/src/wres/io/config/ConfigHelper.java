@@ -1,14 +1,18 @@
 package wres.io.config;
 
-import wres.config.generated.Conditions;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.ProjectConfig;
+import wres.config.generated.*;
 import wres.io.data.caching.Features;
 import wres.util.Collections;
 import wres.util.Strings;
 import wres.util.Time;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
+import java.io.File;
 import java.io.IOException;
 import java.util.InvalidPropertiesFormatException;
 import java.util.StringJoiner;
@@ -158,5 +162,37 @@ public class ConfigHelper
                                DatasourceType.SIMPLE_FORECASTS.value(),
                                DatasourceType.ENSEMBLE_FORECASTS.value(),
                                DatasourceType.MODEL_OUTPUTS.value());
+    }
+
+    public static ProjectConfig read(final String path) throws JAXBException {
+        ProjectConfig projectConfig;
+
+        File xmlFile = new File(path);
+        Source xmlSource = new StreamSource(xmlFile);
+        JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
+        Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+
+        JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
+        projectConfig = wrappedConfig.getValue();
+
+        return projectConfig;
+    }
+
+    public static DataSourceConfig.Source findDataSourceByFilename(DataSourceConfig dataSourceConfig, String filename)
+    {
+        DataSourceConfig.Source source = null;
+        filename = filename.toLowerCase();
+        String sourcePath = "";
+
+        for (DataSourceConfig.Source dataSource : dataSourceConfig.getSource())
+        {
+            if (filename.startsWith(dataSource.getValue().toLowerCase()) && dataSource.getValue().length() > sourcePath.length())
+            {
+                sourcePath = dataSource.getValue();
+                source = dataSource;
+            }
+        }
+
+        return source;
     }
 }

@@ -27,6 +27,14 @@ public final class Time
     public final static String DATE_FORMAT = "yyyy-MM-dd[ [HH][:mm][:ss][.SSSSSS]";
     
     public static final Map<String, Double> HOUR_CONVERSION = mapTimeToHours();
+
+    /**
+     * A mapping of time zone abbreviations to their offsets in relation to UTC
+     * <br><br>
+     * The offset is expressed as a Long to accomadate date manipulation functions
+     * without type conversions.
+     */
+    public static final Map<String, Long> TIMEZONE_OFFSET = mapTimeOffsets();
     
     private static Map<String, Double> mapTimeToHours()
     {
@@ -37,6 +45,31 @@ public final class Time
         mapping.put("day", 24.0);
         mapping.put("minute", 1/60.0);
         
+        return mapping;
+    }
+
+    /**
+     * @return A date insensitive mapping between time zone abbreviations and their offsets in relation to UTC
+     */
+    private static Map<String, Long> mapTimeOffsets()
+    {
+        Map<String, Long> mapping = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
+        mapping.put("utc", 0L);
+        mapping.put("gmt", 0L);
+        mapping.put("EDT", -4L);
+        mapping.put("EST", -5L);
+        mapping.put("CDT", -5L);
+        mapping.put("CST", -6L);
+        mapping.put("mdt", -6L);
+        mapping.put("mst", -7L);
+        mapping.put("pdt", -7L);
+        mapping.put("pst", -8L);
+        mapping.put("akdt", -8L);
+        mapping.put("akst", -9L);
+        mapping.put("hadt", -9L);
+        mapping.put("hast", -10L);
+
         return mapping;
     }
     
@@ -168,7 +201,13 @@ public final class Time
     }
     
     public static Double unitsToHours(String unit, double count) throws InvalidPropertiesFormatException {
-        Double hours = null;
+
+        if (!HOUR_CONVERSION.containsKey(unit))
+        {
+            throw new IllegalArgumentException(unit + " is not an acceptable unit of time.");
+        }
+
+        Double hours;
 
         try
         {
@@ -181,6 +220,29 @@ public final class Time
                                                                " times the factor indicated by " +
                                                                String.valueOf(unit));
         }
-        return HOUR_CONVERSION.get(unit) * count;
+        return hours;
+    }
+
+    /**
+     * Converts a string representation of a date and time from one time zone to another
+     * @param date The string representation of a date and time
+     * @param timeZone The time zone abbreviation for the date and time
+     * @return A string representation of the date and time expressed in UTC
+     */
+    public static String standardizeDateTime(String date, final String timeZone)
+    {
+        if (!TIMEZONE_OFFSET.containsKey(timeZone))
+        {
+            throw new IllegalArgumentException(timeZone + "is not a valid timezone.");
+        }
+
+        if (TIMEZONE_OFFSET.get(timeZone) != 0)
+        {
+            OffsetDateTime convertedDate = Time.convertStringToDate(date);
+            convertedDate = convertedDate.plusHours(TIMEZONE_OFFSET.get(timeZone));
+            date = Time.convertDateToString(convertedDate);
+        }
+
+        return date;
     }
 }

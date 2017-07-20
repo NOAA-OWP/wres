@@ -1,7 +1,8 @@
 package wres.util;
 
-import java.util.concurrent.TimeUnit;
 import com.google.common.base.Stopwatch;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Christopher Tubbs
@@ -20,6 +21,7 @@ public class FormattedStopwatch {
 	 * Resets the time keeping and stores the current time in nanoseconds
 	 */
 	public void start() {
+		this.innerWatch.reset();
 	    this.innerWatch.start();
 	}
 	

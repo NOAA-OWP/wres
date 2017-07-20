@@ -1,25 +1,23 @@
 package reading.nws;
 
+import concurrency.DatacardResultSaver;
+import data.caching.Variable;
+import wres.io.concurrency.Executor;
+import wres.io.reading.BasicSource;
+import wres.io.reading.SourceType;
+import wres.io.utilities.Database;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import concurrency.DatacardResultSaver;
-import wres.io.concurrency.Executor;
-import data.caching.Variable;
-
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import wres.io.reading.BasicSource;
-import wres.io.reading.SourceType;
-import wres.io.utilities.Database;
 
 /**
  * @author ctubbs
@@ -252,7 +250,7 @@ public class DatacardSource extends BasicSource {
 
 			OffsetDateTime datetime = OffsetDateTime.of(get_first_year(), get_first_month(), 1, 0, 0, 0, 0, ZoneOffset.UTC);
 
-			int current_lead = 6;
+			int current_lead = get_time_interval();
 
 			//ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
 			HashMap<OffsetDateTime, String> dated_values = new HashMap<>();
