@@ -1,12 +1,12 @@
 package wres.datamodel.metric;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.Pair;
 import wres.datamodel.PairOfBooleans;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.SafeMatrixOfDoubles;
 import wres.datamodel.SafePairOfDoubleAndVectorOfDoubles;
@@ -50,30 +50,30 @@ public class DefaultMetricInputFactory extends DefaultMetricDataFactory implemen
     }
 
     @Override
-    public DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
+    public SafeDichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
     {
-        return (DichotomousPairs)new SafeDichotomousPairs.DichotomousPairsBuilder().setData(pairs)
-                                                                                   .setMetadata(meta)
-                                                                                   .build();
+        return (SafeDichotomousPairs)new SafeDichotomousPairs.DichotomousPairsBuilder().setData(pairs)
+                                                                                       .setMetadata(meta)
+                                                                                       .build();
     }
 
     @Override
-    public MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
+    public SafeMulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
     {
         return new SafeMulticategoryPairs.MulticategoryPairsBuilder().setData(pairs).setMetadata(meta).build();
     }
 
     @Override
-    public DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs, final Metadata meta)
+    public SafeDiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs, final Metadata meta)
     {
         return ofDiscreteProbabilityPairs(pairs, null, meta, null);
     }
 
     @Override
-    public DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
-                                                               final List<PairOfDoubles> basePairs,
-                                                               final Metadata mainMeta,
-                                                               final Metadata baselineMeta)
+    public SafeDiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
+                                                                   final List<PairOfDoubles> basePairs,
+                                                                   final Metadata mainMeta,
+                                                                   final Metadata baselineMeta)
     {
         final SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
                                                                              new SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
@@ -85,16 +85,16 @@ public class DefaultMetricInputFactory extends DefaultMetricDataFactory implemen
     }
 
     @Override
-    public SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Metadata meta)
+    public SafeSingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Metadata meta)
     {
         return ofSingleValuedPairs(pairs, null, meta, null);
     }
 
     @Override
-    public SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
-                                                 final List<PairOfDoubles> basePairs,
-                                                 final Metadata mainMeta,
-                                                 final Metadata baselineMeta)
+    public SafeSingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
+                                                     final List<PairOfDoubles> basePairs,
+                                                     final Metadata mainMeta,
+                                                     final Metadata baselineMeta)
     {
         final SafeSingleValuedPairs.SingleValuedPairsBuilder b = new SafeSingleValuedPairs.SingleValuedPairsBuilder();
         b.setMetadata(mainMeta);
@@ -103,44 +103,31 @@ public class DefaultMetricInputFactory extends DefaultMetricDataFactory implemen
         b.setMetadataForBaseline(baselineMeta);
         return b.build();
     }
-    
+
     @Override
-    public PairOfDoubles pairOf(final double left, final double right)
+    public SafePairOfDoubles pairOf(final double left, final double right)
     {
         return SafePairOfDoubles.of(left, right);
     }
-    
-    @Override
-    public PairOfBooleans pairOf(final boolean left, final boolean right)
-    {
-        return new PairOfBooleans()
-        {
-            @Override
-            public boolean getItemOne()
-            {
-                return left;
-            }
 
-            @Override
-            public boolean getItemTwo()
-            {
-                return right;
-            }
-        };
-    }
-    
     @Override
-    public PairOfDoubleAndVectorOfDoubles pairOf(final double left, final double[] right)
+    public SafePairOfBooleans pairOf(final boolean left, final boolean right)
     {
-        return SafePairOfDoubleAndVectorOfDoubles.of(left, right);
+        return new SafePairOfBooleans(left, right);
     }
-    
+
     @Override
-    public PairOfDoubleAndVectorOfDoubles pairOf(final Double left, final Double[] right)
+    public SafePairOfDoubleAndVectorOfDoubles pairOf(final double left, final double[] right)
     {
-        return SafePairOfDoubleAndVectorOfDoubles.of(left, right);
+        return (SafePairOfDoubleAndVectorOfDoubles)SafePairOfDoubleAndVectorOfDoubles.of(left, right);
     }
-    
+
+    @Override
+    public SafePairOfDoubleAndVectorOfDoubles pairOf(final Double left, final Double[] right)
+    {
+        return (SafePairOfDoubleAndVectorOfDoubles)SafePairOfDoubleAndVectorOfDoubles.of(left, right);
+    }
+
     @Override
     public Pair<VectorOfDoubles, VectorOfDoubles> pairOf(final double[] left, final double[] right)
     {
@@ -159,30 +146,115 @@ public class DefaultMetricInputFactory extends DefaultMetricDataFactory implemen
             }
         };
     }
-    
+
     @Override
-    public VectorOfDoubles vectorOf(final double[] vec)
+    public SafeVectorOfDoubles vectorOf(final double[] vec)
     {
-        return SafeVectorOfDoubles.of(vec);
+        return (SafeVectorOfDoubles)SafeVectorOfDoubles.of(vec);
+    }
+
+    @Override
+    public SafeVectorOfDoubles vectorOf(final Double[] vec)
+    {
+        return (SafeVectorOfDoubles)SafeVectorOfDoubles.of(vec);
+    }
+
+    @Override
+    public SafeVectorOfBooleans vectorOf(final boolean[] vec)
+    {
+        return (SafeVectorOfBooleans)SafeVectorOfBooleans.of(vec);
+    }
+
+    @Override
+    public SafeMatrixOfDoubles matrixOf(final double[][] vec)
+    {
+        return (SafeMatrixOfDoubles)SafeMatrixOfDoubles.of(vec);
+    }
+
+    /**
+     * Returns a safe type from the input by either casting the elementary pairs or creating new elementary pairs that
+     * are safe. Returns the output in an immutable list.
+     * 
+     * @param input the possibly unsafe input
+     * @return the immutable output
+     */
+
+    List<PairOfDoubles> getSafePairOfDoublesList(List<PairOfDoubles> input)
+    {
+        Objects.requireNonNull(input, "Specify a non-null input from which to create a safe type.");
+        List<PairOfDoubles> returnMe = new ArrayList<>();
+        input.forEach(value -> {
+            if(value instanceof SafePairOfDoubles)
+            {
+                returnMe.add(value);
+            }
+            else
+            {
+                returnMe.add(pairOf(value.getItemOne(), value.getItemTwo()));
+            }
+        });
+        return Collections.unmodifiableList(returnMe);
     }
     
-    @Override
-    public VectorOfDoubles vectorOf(final Double[] vec)
+    /**
+     * Returns a safe type from the input by either casting the elementary pairs or creating new elementary pairs that
+     * are safe. Returns the output in an immutable list.
+     * 
+     * @param input the possibly unsafe input
+     * @return the immutable output
+     */
+
+    List<VectorOfBooleans> getSafeVectorOfBooleansList(List<VectorOfBooleans> input)
     {
-        return SafeVectorOfDoubles.of(vec);
-    }
-    
-    @Override
-    public VectorOfBooleans vectorOf(final boolean[] vec)
-    {
-        return SafeVectorOfBooleans.of(vec);
-    }
-    
-    @Override
-    public MatrixOfDoubles matrixOf(final double[][] vec)
-    {
-        return SafeMatrixOfDoubles.of(vec);
+        Objects.requireNonNull(input, "Specify a non-null input from which to create a safe type.");
+        List<VectorOfBooleans> returnMe = new ArrayList<>();
+        input.forEach(value -> {
+            if(value instanceof SafeVectorOfBooleans)
+            {
+                returnMe.add(value);
+            }
+            else
+            {
+                returnMe.add(vectorOf(value.getBooleans()));
+            }
+        });
+        return Collections.unmodifiableList(returnMe);
     }    
+
+    /**
+     * Default implementation of a pair of booleans.
+     */
+
+    class SafePairOfBooleans implements PairOfBooleans
+    {
+        private final boolean left;
+        private final boolean right;
+
+        /**
+         * Construct.
+         * 
+         * @param left the left
+         * @param right the right
+         */
+
+        private SafePairOfBooleans(boolean left, boolean right)
+        {
+            this.left = left;
+            this.right = right;
+        }
+
+        @Override
+        public boolean getItemOne()
+        {
+            return left;
+        }
+
+        @Override
+        public boolean getItemTwo()
+        {
+            return right;
+        }
+    };
 
     /**
      * Prevent construction.

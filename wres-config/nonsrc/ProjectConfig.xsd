@@ -193,6 +193,46 @@
             <xs:enumeration value="graphic" />
         </xs:restriction>
     </xs:simpleType>
+    
+    <!-- Possibilities for the graphical plotType element. -->
+    <xs:simpleType name="plotTypeSelection">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="LEAD_THRESHOLD" />
+            <xs:enumeration value="THRESHOLD_LEAD" />
+            <xs:enumeration value="SINGLE_VALUED_PAIRS" />
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <!-- Element to store options related to generating graphics. -->
+    <xs:complexType name="graphicalType">
+
+        <xs:sequence>
+            <!-- Specifies the type of the plot.  Is required. -->
+            <xs:element name="plotType" type="plotTypeSelection" minOccurs="1" maxOccurs="1"/>
+            
+            <!-- Specifies the override chart drawing parameters.  Will be processed as a String and passed to 
+            charting tool so it can parse it.  Hence, the reason it is skipped. -->
+            <xs:element name="config" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:any processContents="skip" namespace="##any" minOccurs="0" maxOccurs="unbounded" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+
+        <!-- Image width. -->
+        <xs:attribute name="width" type="xs:positiveInteger" />
+        
+        <!-- Image height. -->
+        <xs:attribute name="height" type="xs:positiveInteger" />
+        
+        <!-- Location of the template file.  Every plot type has a default file.
+        This allows for using a user customized file.  When searching for the 
+        file it will begin by loading it as a system resource from the lib/conf
+        directory and, if it is not found, then as a file on the file system. -->
+        <xs:attribute name="template" type="xs:string" />
+    </xs:complexType>
 
     <xs:complexType name="destination">
 
@@ -204,13 +244,8 @@
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="config" minOccurs="0" maxOccurs="1">
-                <xs:complexType>
-                    <xs:sequence>
-                        <xs:any processContents="skip" namespace="##any" minOccurs="0" maxOccurs="unbounded" />
-                    </xs:sequence>
-                </xs:complexType>
-            </xs:element>
+            <!-- If output type is graphical (a chart)... -->
+            <xs:element name="graphical" type="graphicalType" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
 
         <xs:attribute name="type" type="destinationType" />

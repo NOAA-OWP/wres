@@ -36,6 +36,18 @@ public interface MetricOutputFactory extends MetricDataFactory
 
     VectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta);
 
+    
+    /**
+     * Return a {@link MultiVectorOutput}.
+     * 
+     * @param output the output data
+     * @param meta the metadata
+     * @return a {@link MultiVectorOutput}
+     */    
+    
+    MultiVectorOutput ofMultiVectorOutput(final Map<MetricConstants, double[]> output,
+                                                     final MetricOutputMetadata meta);
+    
     /**
      * Return a {@link MatrixOutput}.
      * 

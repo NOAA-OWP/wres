@@ -1,6 +1,7 @@
 package wres.datamodel.metric;
 
 import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
 
 import wres.datamodel.SafeVectorOfDoubles;
@@ -47,11 +48,9 @@ class SafeMultiVectorOutput implements MultiVectorOutput
     }    
     
     @Override
-    public EnumMap<MetricConstants, VectorOfDoubles> getData()
+    public Map<MetricConstants, VectorOfDoubles> getData()
     {
-        EnumMap<MetricConstants, VectorOfDoubles> copy = new EnumMap<>(MetricConstants.class);
-        copy.putAll(output);
-        return copy;
+        return new EnumMap<>(output);
     }
 
     @Override
@@ -78,11 +77,11 @@ class SafeMultiVectorOutput implements MultiVectorOutput
      * @param meta the metadata
      */
 
-    SafeMultiVectorOutput(final EnumMap<MetricConstants, SafeVectorOfDoubles> output, final MetricOutputMetadata meta)
+    SafeMultiVectorOutput(final Map<MetricConstants, SafeVectorOfDoubles> output, final MetricOutputMetadata meta)
     {
         Objects.requireNonNull(output, "Specify a non-null output.");
         Objects.requireNonNull(meta, "Specify non-null metadata.");
-        this.output = output.clone();
+        this.output = new EnumMap<>(output);
         this.meta = meta;
     }
 
