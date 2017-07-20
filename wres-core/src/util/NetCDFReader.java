@@ -160,7 +160,7 @@ final class NetCDFReader {
 	 * @param variable_name The name of the variable to retrieve data from
 	 * @param args coordinates for finding variable values 
 	 */
-	public void print_query(String variable_name, int... args)
+	public void printQuery (String variable_name, int... args)
 	{
 			try (NetcdfFile nc = NetcdfFile.open(path))
 			{

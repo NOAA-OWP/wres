@@ -30,7 +30,7 @@ public final class Database {
     
     private Database(){}
 
-    private static ConcurrentHashMap<String, Map<String, DualString>> SAVED_INDEXES = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Map<String, DualString>> SAVED_INDEXES = new ConcurrentHashMap<>();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
@@ -48,10 +48,10 @@ public final class Database {
 		return copyAPI;
 	}
 
-	private static LinkedBlockingQueue<Future> storedIngestTasks = new LinkedBlockingQueue<>();
+	private static final LinkedBlockingQueue<Future> storedIngestTasks = new LinkedBlockingQueue<>();
 
 	public static Future getStoredIngestTask() throws InterruptedException {
-		return storedIngestTasks.take();
+		return storedIngestTasks.poll();
 	}
 
 	public static void storeIngestTask(Future task)

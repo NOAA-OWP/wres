@@ -26,12 +26,14 @@ import wres.io.grouping.LeadResult;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ConfiguredLoader;
 import wres.io.reading.ReaderFactory;
+import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
+import javax.xml.bind.JAXBException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -59,7 +61,7 @@ public final class MainFunctions
 	private static final String NEWLINE = System.lineSeparator();
 
 	// Mapping of String names to corresponding methods
-	private static final Map<String, Function<String[], Integer>> functions = createMap();
+	private static final Map<String, Function<String[], Integer>> FUNCTIONS = createMap();
 
 	public static void shutdown()
 	{
@@ -77,7 +79,7 @@ public final class MainFunctions
 	 * @return True if there is a method mapped to the operation name
 	 */
 	public static boolean hasOperation (final String operation) {
-		return functions.containsKey(operation.toLowerCase());
+		return FUNCTIONS.containsKey(operation.toLowerCase());
 	}
 
 	/**
@@ -88,7 +90,7 @@ public final class MainFunctions
 	 */
 	public static Integer call (String operation, final String[] args) {
 		operation = operation.toLowerCase();
-		final Integer result = functions.get(operation).apply(args);
+		final Integer result = FUNCTIONS.get(operation).apply(args);
 		shutdown();
 		return result;
 	}
@@ -107,7 +109,6 @@ public final class MainFunctions
 		prototypes.put("commands", printCommands());
 		prototypes.put("--help", printCommands());
 		prototypes.put("-h", printCommands());
-		prototypes.put("systemmetrics", systemMetrics());
 		prototypes.put("saveobservations", saveObservations());
 		prototypes.put("saveforecasts", saveForecasts());
 		prototypes.put("describeprojects", describeProjects());
@@ -124,6 +125,7 @@ public final class MainFunctions
 		prototypes.put("ingestproject", ingestProject());
 		prototypes.put("loadcoordinates", loadCoordinates());
 		prototypes.put("builddatabase", buildDatabase());
+		prototypes.put("ingestbyconfiguration", ingestByConfiguration());
 
 		return prototypes;
 	}
@@ -136,10 +138,10 @@ public final class MainFunctions
 	private static Function<String[], Integer> printCommands()
 	{
 		return (final String[] args) -> {
-			System.out.println("Available commands are:");
-			for (final String command : functions.keySet())
+			LOGGER.info("Available commands are:");
+			for (final String command : FUNCTIONS.keySet())
 			{
-				System.out.println("\t" + command);
+				LOGGER.info("\t{}", command);
 			}
 			return SUCCESS;
 		};
@@ -177,10 +179,10 @@ public final class MainFunctions
 			}
 			else
 			{
-				System.out.println("A path is needed to save data. Please pass that in as the first argument.");
-				System.out.println("For now, ensure that the path points towards a tabular ASCII file.");
-				System.out.print("The current directory is:\t");
-				System.out.println(System.getProperty("user.dir"));
+				LOGGER.error("A path is needed to save data. Please pass that in as the first argument.");
+                LOGGER.error("For now, ensure that the path points towards a tabular ASCII file.");
+                LOGGER.error("The current directory is:\t");
+                LOGGER.error(System.getProperty("user.dir"));
 			}
 			return result;
 		};
@@ -405,33 +407,6 @@ public final class MainFunctions
 	}
 
 	/**
-	 * Creates the "systemMetrics" method
-	 *
-	 * @return A method that will display the available processors, the amount of free memory, the amount of maximum memory,
-	 * and the total memory of the system.
-	 */
-	private static Function<String[], Integer> systemMetrics()
-	{
-		return (final String[] args) -> {
-			Integer result = FAILURE;
-
-			try {
-                LOGGER.info(Strings.getSystemStats());
-
-                // Add white space
-                LOGGER.info("");
-
-                result = SUCCESS;
-            }
-            catch (final RuntimeException e)
-            {
-                LOGGER.error(Strings.getStackTrace(e));
-            }
-            return result;
-		};
-	}
-
-	/**
 	 * Creates the "describeNetCDF" method
 	 *
 	 * @return A method that will read a NetCDF file from the given path and output details about global attributes,
@@ -484,7 +459,7 @@ public final class MainFunctions
                         variable_args[index - 2] = Integer.parseInt(args[index]);
                     }
                     final NetCDFReader reader = new NetCDFReader(filename);
-                    reader.print_query(variable_name, variable_args);
+                    reader.printQuery(variable_name, variable_args);
                     result = SUCCESS;
                 }
                 catch (final RuntimeException e)
@@ -1275,9 +1250,6 @@ public final class MainFunctions
                         }
                     }
 
-                    /*LOGGER.info("Restoring all suspended indices in the database...");
-                    Database.restoreAllIndices();*/
-
                     result = SUCCESS;
                 }
                 catch (Exception e)
@@ -1292,6 +1264,71 @@ public final class MainFunctions
                 System.err.println("usage: executeProject <project name> [<metric name>]");
             }
             return result;
+        };
+    }
+
+    private static Function<String[], Integer> ingestByConfiguration() {
+	    return (String[] args) -> {
+	        int result = FAILURE;
+
+	        if (args.length > 0)
+            {
+                String configLocation = args[0];
+
+                ProjectConfig projectConfig;
+
+                try
+                {
+                    projectConfig = ConfigHelper.read(configLocation);
+                    SourceLoader loader = new SourceLoader(projectConfig);
+                    List<Future> ingestions = loader.load();
+
+                    for (Future task : ingestions)
+                    {
+                        try {
+                            task.get();
+                        }
+                        catch (InterruptedException e) {
+                            LOGGER.error(Strings.getStackTrace(e));
+                        }
+                        catch (ExecutionException e) {
+                            LOGGER.error(Strings.getStackTrace(e));
+                        }
+                    }
+
+                    Future ingestTask = null;
+                    try {
+                        ingestTask = Database.getStoredIngestTask();
+
+                        while (ingestTask != null)
+                        {
+                            try {
+                                ingestTask.get();
+                            }
+                            catch (ExecutionException e) {
+                                LOGGER.error(Strings.getStackTrace(e));
+                            }
+                            ingestTask = Database.getStoredIngestTask();
+                        }
+                    }
+                    catch (InterruptedException e) {
+                        LOGGER.error(Strings.getStackTrace(e));
+                    }
+                }
+                catch (JAXBException e) {
+                    LOGGER.error(Strings.getStackTrace(e));
+                }
+                catch (IOException e) {
+                    LOGGER.error(Strings.getStackTrace(e));
+                }
+            }
+            else
+            {
+                LOGGER.error("There are not enough arguments to run 'ingestByConfiguration'");
+                LOGGER.error("usage: ingestByConfiguration <path to configuration>");
+            }
+
+	        return result;
         };
     }
 

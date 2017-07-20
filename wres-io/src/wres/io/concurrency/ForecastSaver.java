@@ -2,6 +2,7 @@ package wres.io.concurrency;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import wres.config.generated.DataSourceConfig;
 import wres.io.config.specification.ProjectDataSpecification;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
@@ -23,13 +24,22 @@ public class ForecastSaver extends WRESRunnable
     public ForecastSaver(String filepath) {
         this.filepath = filepath;
         this.datasource = null;
+        this.dataSourceConfig = null;
     }
 
     public ForecastSaver(String filepath, ProjectDataSpecification datasource)
 	{
 		this.filepath = filepath;
 		this.datasource = datasource;
+		this.dataSourceConfig = null;
 	}
+
+	public ForecastSaver(String filepath, DataSourceConfig dataSourceConfig)
+    {
+        this.dataSourceConfig = dataSourceConfig;
+        this.filepath = filepath;
+        this.datasource = null;
+    }
 
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
@@ -45,6 +55,11 @@ public class ForecastSaver extends WRESRunnable
 				source.applySpecification(datasource);
 			}
 
+			if (this.dataSourceConfig != null)
+            {
+                source.setDataSourceConfig(this.dataSourceConfig);
+            }
+
 			source.saveForecast();
 		}
 		catch (Exception e)
@@ -56,6 +71,7 @@ public class ForecastSaver extends WRESRunnable
 
 	private String filepath = null;
 	private final ProjectDataSpecification datasource;
+	private final DataSourceConfig dataSourceConfig;
 
 	@Override
 	protected String getTaskName () {
