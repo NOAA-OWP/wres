@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -65,7 +66,7 @@ import wres.io.utilities.Database;
  * request/response is created, a separate Main seemed needed. Has (too many?) private static classes that will need to
  * be split out if they are deemed useful.
  */
-public class Control
+public class Control implements Function<String[], Integer>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
     public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
@@ -93,9 +94,9 @@ public class Control
         catch(final NumberFormatException nfe)
         {
             maxThreads = Runtime.getRuntime().availableProcessors() * MAX_THREADS_DEFAULT_MULTIPLIER;
-            LOGGER.warn("Java -D property {} not set, defaulting Control.MAX_THREADS to {}",
-                        MAX_THREADS_PROP_NAME,
-                        maxThreads);
+            //LOGGER.warn("Java -D property {} not set, defaulting Control.MAX_THREADS to {}",
+            //            MAX_THREADS_PROP_NAME,
+            //            maxThreads);
         }
         if(maxThreads >= 1)
         {
@@ -103,8 +104,8 @@ public class Control
         }
         else
         {
-            LOGGER.warn("Java -D property {} was likely less than 1, setting Control.MAX_THREADS to 1",
-                        MAX_THREADS_PROP_NAME);
+            //LOGGER.warn("Java -D property {} was likely less than 1, setting Control.MAX_THREADS to 1",
+            //            MAX_THREADS_PROP_NAME);
             MAX_THREADS = 1;
         }
     }
@@ -121,7 +122,7 @@ public class Control
      *
      * @param args
      */
-    public static void main(final String[] args) throws JAXBException, IOException
+    public Integer apply(final String[] args)
     {
         final Control dummy = new Control();
         LOGGER.info("Running version " + dummy.getClass().getPackage().getImplementationVersion());
@@ -166,19 +167,30 @@ public class Control
         catch (final JAXBException je)
         {
             LOGGER.error("Could not parse file {}:", fileName, je);
-            throw je;
+            // communicate failure back up the stack
+            return null;
         }
         catch (final NumberFormatException nfe)
         {
             LOGGER.error("A value in the file {} was unable to be converted to a number.", fileName, nfe);
-            throw nfe;
-        }
+            // communicate failure back up the stack
+            return null;        }
 
         final Map<DestinationConfig,String> visConfigs = new HashMap<>();
 
         // Read the file again so we can get the exact parts we want for vis.
 
-        final List<String> xmlLines = Files.readAllLines(Paths.get(fileName));
+        List<String> xmlLines = new ArrayList<>();
+        try
+        {
+            Files.readAllLines(Paths.get(fileName));
+        }
+        catch (IOException ioe)
+        {
+            LOGGER.error("Could not read file " + fileName + ":", ioe);
+            // communicate failure back up the stack
+            return null;
+        }
         // To read the xml configuration for vis into a string, we go find the
         // start of each, then find the first occurance of </config> ?
 
@@ -313,6 +325,8 @@ public class Control
         }
 
         shutDownGracefully(fetchPairExecutor, processPairExecutor);
+
+        return 0;
     }
 
     /**
