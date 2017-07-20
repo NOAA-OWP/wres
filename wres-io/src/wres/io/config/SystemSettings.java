@@ -33,6 +33,7 @@ public final class SystemSettings extends XMLReader
 		{
 			LOGGER.error("Could not load system settings.", ioe);
 			INSTANCE = null;
+			throw new ExceptionInInitializerError(ioe);
 		}
 	}
 
@@ -230,7 +231,8 @@ public final class SystemSettings extends XMLReader
 	/**
 	 * @return A new instance of a connection pool that is built for the system wide configuration
 	 */
-	public static ComboPooledDataSource getConnectionPool() {
+	public static ComboPooledDataSource getConnectionPool()
+	{
         return INSTANCE.databaseConfiguration.createDatasource();
 	}
 
