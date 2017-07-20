@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import wres.datamodel.SafeVectorOfDoubles;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.Threshold.Condition;
 
 /**
@@ -47,28 +47,28 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     }
 
     @Override
-    public SafeScalarOutput ofScalarOutput(final double output, final MetricOutputMetadata meta)
+    public ScalarOutput ofScalarOutput(final double output, final MetricOutputMetadata meta)
     {
         return new SafeScalarOutput(output, meta);
     }
 
     @Override
-    public SafeVectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta)
+    public VectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta)
     {
         return new SafeVectorOutput(inputFactory.vectorOf(output), meta);
     }
 
     @Override
-    public SafeMultiVectorOutput ofMultiVectorOutput(final Map<MetricConstants, double[]> output,
+    public MultiVectorOutput ofMultiVectorOutput(final Map<MetricConstants, double[]> output,
                                                      final MetricOutputMetadata meta)
     {
-        EnumMap<MetricConstants, SafeVectorOfDoubles> map = new EnumMap<>(MetricConstants.class);
+        EnumMap<MetricConstants, VectorOfDoubles> map = new EnumMap<>(MetricConstants.class);
         output.forEach((key, value) -> map.put(key, inputFactory.vectorOf(value)));
         return new SafeMultiVectorOutput(map, meta);
     }
 
     @Override
-    public SafeMatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta)
+    public MatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta)
     {
         return new SafeMatrixOutput(inputFactory.matrixOf(output), meta);
     }
@@ -164,13 +164,13 @@ public class DefaultMetricOutputFactory extends DefaultMetricDataFactory impleme
     }
 
     @Override
-    public SafeThresholdKey getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
+    public Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
     {
         return new SafeThresholdKey(threshold, thresholdUpper, condition);
     }
 
     @Override
-    public SafeQuantileKey getQuantile(final Double threshold,
+    public Quantile getQuantile(final Double threshold,
                                        final Double thresholdUpper,
                                        final Double probability,
                                        final Double probabilityUpper,

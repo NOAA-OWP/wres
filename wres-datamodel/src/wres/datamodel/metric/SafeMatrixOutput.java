@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
-import wres.datamodel.SafeMatrixOfDoubles;
 
 /**
  * An immutable matrix of outputs associated with a metric. The number of elements and the order in which they are
@@ -21,7 +20,7 @@ class SafeMatrixOutput implements MatrixOutput
      * The output data.
      */
 
-    private final SafeMatrixOfDoubles output;
+    private final MatrixOfDoubles output;
 
     /**
      * The metadata associated with the output.
@@ -68,11 +67,11 @@ class SafeMatrixOutput implements MatrixOutput
      * @param meta the metadata.
      */
 
-    SafeMatrixOutput(final SafeMatrixOfDoubles output, final MetricOutputMetadata meta)
+    SafeMatrixOutput(final MatrixOfDoubles output, final MetricOutputMetadata meta)
     {
         Objects.requireNonNull(output, "Specify a non-null output.");
         Objects.requireNonNull(meta, "Specify non-null metadata.");
-        this.output = output;
+        this.output = ((DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance()).safeMatrixOf(output);
         this.meta = meta;
     }
 
