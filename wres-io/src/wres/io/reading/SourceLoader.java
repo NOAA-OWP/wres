@@ -59,9 +59,8 @@ public class SourceLoader
         if (config != null) {
             for (DataSourceConfig.Source source : config.getSource()) {
                 Path sourcePath = Paths.get(source.getValue());
-                final boolean shouldRecurse = source.isRecursive();
 
-                if (Files.exists(sourcePath) && Files.isDirectory(sourcePath) && shouldRecurse) {
+                if (Files.exists(sourcePath) && Files.isDirectory(sourcePath)) {
 
                     List<Future> tasks = loadDirectory(sourcePath, source, config);
 
@@ -142,9 +141,11 @@ public class SourceLoader
             if (!this.dataExists(absolutePath, dataSourceConfig))
             {
                 if (ConfigHelper.isForecast(dataSourceConfig)) {
+                    LOGGER.info("Loading {} as forecast data...", absolutePath);
                     return Executor.execute(new ForecastSaver(absolutePath, dataSourceConfig));
                 }
                 else {
+                    LOGGER.info("Loading {} as Observation data...");
                     return Executor.execute(new ObservationSaver(absolutePath, dataSourceConfig));
                 }
             }
