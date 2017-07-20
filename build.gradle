@@ -403,7 +403,7 @@ project(':wres-config')
     // the latest version (this seems to happen on each build)
     task copyGenerated(type:Copy, dependsOn: xjc) {
         destinationDir = file("${project.projectDir}/src")
-        delete fileTree(dir: destinationDir).include('**/*.java')
+        delete fileTree(dir: destinationDir).include('**/generated/*.java')
         from fileTree("${generatedIntermediateDir}")
         into destinationDir
     }

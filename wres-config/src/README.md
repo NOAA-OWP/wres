@@ -1,7 +1,7 @@
-Code in this module is generated during the build from xsd files.
+Most code in this module is generated during the build from xsd files.
 
-It is not envisioned that java code will be committed to the repository in this
-module.
+It was not envisioned that java code would be committed to the repository in
+this module, however, exceptions related to configuration probably belong here.
 
 In order for xml file location information to be available at runtime, there are
 two requirements:

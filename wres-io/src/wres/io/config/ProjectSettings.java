@@ -3,6 +3,7 @@ package wres.io.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.GraphicalType;
 import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.specification.ProjectSpecification;
@@ -125,9 +126,9 @@ public final class ProjectSettings extends XMLReader {
                                  d.sourceLocation().getLineNumber(),
                                  d.sourceLocation().getColumnNumber());
 
-                    if (d.getConfig() != null)
+                    if (d.getGraphical().getConfig() != null)
                     {
-                        DestinationConfig.Config conf = d.getConfig();
+                        GraphicalType.Config conf = d.getGraphical().getConfig();
                         LOGGER.debug("Location of config for {} is line {} col {}",
                                      d,
                                      conf.sourceLocation().getLineNumber(),

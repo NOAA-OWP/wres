@@ -29,11 +29,11 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
      * A {@link MetricInputBuilder} to build the metric input.
      */
 
-    protected static class DichotomousPairsBuilder extends MulticategoryPairsBuilder
+    static class DichotomousPairsBuilder extends MulticategoryPairsBuilder
     {
 
         @Override
-        public DichotomousPairs build()
+        public SafeDichotomousPairs build()
         {
             return new SafeDichotomousPairs(this);
         }

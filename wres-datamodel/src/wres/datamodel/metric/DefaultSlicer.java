@@ -47,14 +47,14 @@ public class DefaultSlicer implements Slicer
     public double[] getLeftSide(List<PairOfDoubles> input)
     {
         Objects.requireNonNull(input, NULL_ERROR);
-        return input.stream().mapToDouble(a -> a.getItemOne()).toArray();
+        return input.stream().mapToDouble(PairOfDoubles::getItemOne).toArray();
     }
 
     @Override
     public double[] getRightSide(List<PairOfDoubles> input)
     {
         Objects.requireNonNull(input, NULL_ERROR);
-        return input.stream().mapToDouble(a -> a.getItemTwo()).toArray();
+        return input.stream().mapToDouble(PairOfDoubles::getItemTwo).toArray();
     }
 
     /**
