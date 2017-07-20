@@ -339,33 +339,7 @@ public final class Database {
 
 	public static Connection getConnection() throws SQLException
 	{
-		Connection connection = null;
-		short attemptCount = 0;
-		SQLException exception = null;
-
-		while (attemptCount < 10) {
-			try {
-				connection = CONNECTION_POOL.getConnection();
-				break;
-			} catch (SQLException error) {
-				LOGGER.error(System.lineSeparator() + "A connection to the database could not be created" + System.lineSeparator());
-				exception = new SQLException(error);
-			}
-			attemptCount++;
-		}
-
-		if (connection == null)
-		{
-		    if (exception == null)
-            {
-                exception = new SQLException("A connection could not be retrieved, but no errors were encountered.");
-            }
-
-            assert exception != null;
-            throw exception;
-		}
-
-		return connection;
+		return CONNECTION_POOL.getConnection();
 	}
 	
 	/**

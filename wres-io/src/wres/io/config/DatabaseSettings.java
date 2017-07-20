@@ -1,12 +1,15 @@
 package wres.io.config;
 
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+
+import javax.xml.stream.XMLStreamReader;
 import java.beans.PropertyVetoException;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.TreeMap;
-import javax.xml.stream.XMLStreamReader;
-
-import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 /**
  * Contains access to configured settings and objects for accessing the database
@@ -53,10 +56,49 @@ final class DatabaseSettings {
 				}
 				
 			}
+			testConnection();
 		} catch (Exception e) {
-			e.printStackTrace();
+		    throw new ExceptionInInitializerError(e);
+			//e.printStackTrace();
 		}
 	}
+
+	private void testConnection() throws Exception {
+        Connection connection = null;
+
+        try {
+            Class.forName(DRIVER_MAPPING.get(getDatabaseType()));
+            connection = DriverManager.getConnection(this.getConnectionString(), this.username, this.password);
+            Statement test = connection.createStatement();
+            test.execute("SELECT 1;");
+        }
+        catch (SQLException sqlError)
+        {
+            String message = "The database could not be reached for connection verification." + System.lineSeparator() + System.lineSeparator();
+            message += sqlError.getMessage() + System.lineSeparator() + System.lineSeparator();
+            message += "Please ensure that you have:" + System.lineSeparator();
+            message += "1) The correct URL to your database" + System.lineSeparator();
+            message += "2) The correct username for your database" + System.lineSeparator();
+            message += "3) The correct password for your user in the database" + System.lineSeparator();
+            message += "4) An active connection to a network that may reach the requested database server" + System.lineSeparator() + System.lineSeparator();
+            message += "The application will now exit.";
+            throw new Exception(message);
+        }
+        catch (ClassNotFoundException classError)
+        {
+            String message = "The specified database type of '" +
+                    this.getDatabaseType() +
+                    "' is not valid and a connection could not be created. Shutting down...";
+            throw new IllegalArgumentException(message, classError);
+        }
+        finally {
+            if (connection != null)
+            {
+                connection.close();
+            }
+        }
+    }
+
 	
 	public ComboPooledDataSource createDatasource()
 	{
