@@ -106,7 +106,13 @@ public enum MetricConstants
      */
 
     PROBABILITY_OF_FALSE_DETECTION,
+    
+    /**
+     * Identifier for the Relative Operating Characteristic.
+     */
 
+    RELATIVE_OPERATING_CHARACTERISTIC,
+    
     /**
      * Identifier for a Root Mean Square Error.
      */

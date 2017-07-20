@@ -50,11 +50,6 @@ public class ForecastSaver extends WRESRunnable
 		{
 			BasicSource source = ReaderFactory.getReader(this.filepath);
 
-			if (this.datasource != null)
-			{
-				source.applySpecification(datasource);
-			}
-
 			if (this.dataSourceConfig != null)
             {
                 source.setDataSourceConfig(this.dataSourceConfig);

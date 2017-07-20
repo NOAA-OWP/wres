@@ -4,7 +4,6 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
-import wres.datamodel.SafeVectorOfDoubles;
 import wres.datamodel.VectorOfDoubles;
 
 /**
@@ -21,7 +20,7 @@ class SafeMultiVectorOutput implements MultiVectorOutput
      * The output.
      */
 
-    private final EnumMap<MetricConstants, SafeVectorOfDoubles> output;
+    private final EnumMap<MetricConstants, VectorOfDoubles> output;
 
     /**
      * The metadata associated with the output.
@@ -77,11 +76,13 @@ class SafeMultiVectorOutput implements MultiVectorOutput
      * @param meta the metadata
      */
 
-    SafeMultiVectorOutput(final Map<MetricConstants, SafeVectorOfDoubles> output, final MetricOutputMetadata meta)
+    SafeMultiVectorOutput(final Map<MetricConstants, VectorOfDoubles> output, final MetricOutputMetadata meta)
     {
         Objects.requireNonNull(output, "Specify a non-null output.");
         Objects.requireNonNull(meta, "Specify non-null metadata.");
-        this.output = new EnumMap<>(output);
+        this.output = new EnumMap<>(MetricConstants.class);
+        DefaultMetricInputFactory inFac = (DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance();
+        output.forEach((key,value)->this.output.put(key,inFac.safeVectorOf(value)));
         this.meta = meta;
     }
 

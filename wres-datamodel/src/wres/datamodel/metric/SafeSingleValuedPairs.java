@@ -173,8 +173,8 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         }
         //Ensure safe types
         DefaultMetricInputFactory factory = (DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance();
-        mainInput = factory.getSafePairOfDoublesList(b.mainInput);
-        baselineInput = Objects.nonNull(b.baselineInput) ? factory.getSafePairOfDoublesList(b.baselineInput) : null;
+        mainInput = factory.safePairOfDoublesList(b.mainInput);
+        baselineInput = Objects.nonNull(b.baselineInput) ? factory.safePairOfDoublesList(b.baselineInput) : null;
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
     }
