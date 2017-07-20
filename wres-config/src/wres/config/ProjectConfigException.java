@@ -1,3 +1,5 @@
+package wres.config;
+
 import com.sun.xml.bind.Locatable;
 
 /**
