@@ -181,8 +181,8 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         checkNullOrEmptyInputs(b.mainInput, b.baselineInput);
         //Ensure safe types
         DefaultMetricInputFactory factory = (DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance();
-        mainInput = factory.getSafeVectorOfBooleansList(b.mainInput);
-        baselineInput = Objects.nonNull(b.baselineInput) ? factory.getSafeVectorOfBooleansList(b.baselineInput) : null;
+        mainInput = factory.safeVectorOfBooleansList(b.mainInput);
+        baselineInput = Objects.nonNull(b.baselineInput) ? factory.safeVectorOfBooleansList(b.baselineInput) : null;
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
     }
