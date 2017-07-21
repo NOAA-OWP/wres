@@ -87,6 +87,17 @@ public class ProjectConfigPlus
             final JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
             projectConfig = wrappedConfig.getValue();
 
+            LOGGER.info("Unmarshalled project configuration file {}", path);
+
+            if (projectConfig == null
+                || projectConfig.getInputs() == null
+                || projectConfig.getOutputs() == null
+                || projectConfig.getPair() == null)
+            {
+                throw new IOException("Please add required sections in project config file "
+                                      + path + " : <inputs>, <outputs>, <pair>");
+            }
+
             for (final DestinationConfig d : projectConfig.getOutputs().getDestination())
             {
                 if (d.getGraphical() != null && d.getGraphical().getConfig() != null)
