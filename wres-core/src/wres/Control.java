@@ -41,6 +41,7 @@ import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
+import org.eclipse.persistence.sessions.Project;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +56,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.metric.*;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.io.config.ProjectConfigPlus;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
@@ -126,101 +128,20 @@ public class Control implements Function<String[], Integer>
     public Integer apply(final String[] args)
     {
         final Control dummy = new Control();
-        LOGGER.info("Running version " + dummy.getClass().getPackage().getImplementationVersion());
         final String fileName = "wres-core/nonsrc/config_possibility.xml";
-        ProjectConfig projectConfig;
+
+        ProjectConfigPlus projectConfigPlus;
         try
         {
-            final File xmlFile = new File(fileName);
-            final Source xmlSource = new StreamSource(xmlFile);
-            final JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
-            final Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-            jaxbUnmarshaller.setEventHandler(new ValidationEventHandler());
-            final JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
-            projectConfig = wrappedConfig.getValue();
-            LOGGER.debug("ProjectConfig: {}", projectConfig);
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("JAXBContext: {}", jaxbContext);
-                LOGGER.debug("Unmarshaller: {}", jaxbUnmarshaller);
-                LOGGER.debug("ProjectConfig.getName(): {}", projectConfig.getLabel());
-                LOGGER.debug("ProjectConfig metric 0: {}", projectConfig.getOutputs().getMetric().get(0).getValue());
-                LOGGER.debug("ProjectConfig forecast variable: {}", projectConfig.getInputs());
-
-                for (final DestinationConfig d : projectConfig.getOutputs().getDestination())
-                {
-                    LOGGER.debug("Location of destination {} is line {} col {}",
-                                 d,
-                                 d.sourceLocation().getLineNumber(),
-                                 d.sourceLocation().getColumnNumber());
-
-                    if (d.getGraphical() != null && d.getGraphical().getConfig() != null)
-                    {
-                        final GraphicalType.Config conf = d.getGraphical().getConfig();
-                        LOGGER.debug("Location of config for {} is line {} col {}",
-                                     d,
-                                     conf.sourceLocation().getLineNumber(),
-                                     conf.sourceLocation().getColumnNumber());
-                    }
-                }
-            }
-        }
-        catch (final JAXBException je)
-        {
-            LOGGER.error("Could not parse file {}:", fileName, je);
-            // communicate failure back up the stack
-            return null;
-        }
-        catch (final NumberFormatException nfe)
-        {
-            LOGGER.error("A value in the file {} was unable to be converted to a number.", fileName, nfe);
-            // communicate failure back up the stack
-            return null;
-        }
-
-        final Map<DestinationConfig,String> visConfigs = new HashMap<>();
-
-        // Read the file again so we can get the exact parts we want for vis.
-
-        List<String> xmlLines;
-        try
-        {
-            xmlLines = Files.readAllLines(Paths.get(fileName));
+            projectConfigPlus = ProjectConfigPlus.from(Paths.get(fileName));
         }
         catch (IOException ioe)
         {
-            LOGGER.error("Could not read file " + fileName + ":", ioe);
-            // communicate failure back up the stack
+            LOGGER.error("Could not read project configuration: ", ioe);
             return null;
         }
-        // To read the xml configuration for vis into a string, we go find the
-        // start of each, then find the first occurance of </config> ?
 
-        for (DestinationConfig d : projectConfig.getOutputs().getDestination())
-        {
-            if (d.getGraphical() != null && d.getGraphical().getConfig() != null)
-            {
-                final GraphicalType.Config conf = d.getGraphical().getConfig();
-                final int lineNum = conf.sourceLocation().getLineNumber();
-                final int colNum = conf.sourceLocation().getColumnNumber();
-                LOGGER.debug("Location of config for {} is line {} col {}", d,
-                        lineNum, colNum);
-                // lines seem to be 1-based in sourceLocation.
-                final StringBuilder config = new StringBuilder();
-                final String endTag = "</config>";
-                String result = xmlLines.get(lineNum - 1).substring(colNum - 1);
-                for (int i = lineNum; !result.contains(endTag); i++)
-                {
-                    config.append(result + NEWLINE);
-                    result = xmlLines.get(i);
-                }
-                result = result.substring(0, result.indexOf(endTag));
-                config.append(result);
-                final String configToAdd = config.toString();
-                visConfigs.put(d, configToAdd);
-                LOGGER.debug("Added following to visConfigs: {}", configToAdd);
-            }
-        }
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
         final List<Future<List<PairOfDoubleAndVectorOfDoubles>>> pairs = new ArrayList<>();
 
@@ -546,7 +467,7 @@ public class Control implements Function<String[], Integer>
         }
 
         @Override
-        public List<PairOfDoubleAndVectorOfDoubles> call() throws IOException
+        public List<PairOfDoubleAndVectorOfDoubles> call() throws SQLException
         {
             final List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
             String sql;
@@ -559,10 +480,10 @@ public class Control implements Function<String[], Integer>
                     LOGGER.debug("SQL query: {}", sql);
                 }
             }
-            catch(final IOException ioe)
+            catch(SQLException e)
             {
-                LOGGER.error("When trying to build sql for pairs:", ioe);
-                throw ioe;
+                LOGGER.error("When trying to build sql for pairs:", e);
+                throw e;
             }
 
             try (Connection con = Database.getConnection();
@@ -583,10 +504,10 @@ public class Control implements Function<String[], Integer>
                     result.add(pair);
                 }
             }
-            catch(final SQLException se)
+            catch(SQLException se)
             {
-                final String message = "Failed to get pair results for lead " + this.leadTime + " using this query: " + sql;
-                throw new IOException(message, se);
+                String message = "Failed to get pair results for lead " + this.leadTime + " using this query: " + sql;
+                throw new SQLException(message, se);
             }
 
             return result;
@@ -600,9 +521,9 @@ public class Control implements Function<String[], Integer>
      * @param config configuration information for pairing
      * @param lead the lead time to build this query for.
      * @return a SQL string that will retrieve pairs for the given lead time
-     * @throws IOException when any checked (aka non-RuntimeException) exception occurs
+     * @throws SQLException when any checked (aka non-RuntimeException) exception occurs
      */
-    private static String getPairSqlFromConfigForLead(final ProjectConfig config, final int lead) throws IOException
+    private static String getPairSqlFromConfigForLead(final ProjectConfig config, final int lead) throws SQLException
     {
         if(config.getInputs() == null
                 || config.getInputs().getLeft() == null
@@ -633,9 +554,9 @@ public class Control implements Function<String[], Integer>
             startTime = System.currentTimeMillis();
         }
 
-        final int targetUnitID = Control.getMeasurementUnitID(config.getPair().getUnit());
-        final int observationVariableID = Control.getVariableID(observationVariableName, targetUnitID);
-        final int forecastVariableID = Control.getVariableID(forecastVariableName, targetUnitID);
+        int targetUnitID = MeasurementUnits.getMeasurementUnitID(config.getPair().getUnit());
+        int observationVariableID = Variables.getVariableID(observationVariableName, targetUnitID);
+        int forecastVariableID = Variables.getVariableID(forecastVariableName, targetUnitID);
 
         if(LOGGER.isTraceEnabled())
         {
@@ -653,11 +574,11 @@ public class Control implements Function<String[], Integer>
         {
             observationVariablePositionID = Database.getResult(obsVarPosSql, "variableposition_id");
         }
-        catch(final SQLException se)
+        catch(SQLException se)
         {
             final String message = "Couldn't retrieve variableposition_id for observation variable "
                 + observationVariableName + " with obs id " + observationVariableID;
-            throw new IOException(message, se);
+            throw new SQLException(message, se);
         }
 
         if(LOGGER.isTraceEnabled())
@@ -673,11 +594,11 @@ public class Control implements Function<String[], Integer>
         {
             forecastVariablePositionID = Database.getResult(fcVarPosSql, "variableposition_id");
         }
-        catch(final SQLException se)
+        catch(SQLException se)
         {
-            final String message = "Couldn't retrieve variableposition_id for forecast variable "
+            String message = "Couldn't retrieve variableposition_id for forecast variable "
                 + forecastVariableName + " with fc id " + forecastVariableID;
-            throw new IOException(message, se);
+            throw new SQLException(message, se);
         }
 
         if(LOGGER.isTraceEnabled())
@@ -719,67 +640,6 @@ public class Control implements Function<String[], Integer>
                 + "ORDER BY FM.forecasted_date;";
 
         return partA + partB;
-    }
-
-    /**
-     * The following method is obsolete after refactoring Measurements.getMeasurementUnitID to only throw checked
-     * exceptions such as IOException or SQLException, also when Measurements.getMeasurementUnitID gives a meaningful
-     * error message. Those are the only two justifications for this wrapper method.
-     *
-     * @param unitName the unit we want the ID for
-     * @return the result of successful Measurements.getMeasurementUnitID
-     * @throws IOException when any checked (aka non-RuntimeException) exception occurs
-     */
-    // TODO: refactor Measurements.getMeasurementUnitID to declare it throws only checked exceptions, not Exception, then remove:
-    private static int getMeasurementUnitID(final String unitName) throws IOException
-    {
-        int result;
-        try
-        {
-            result = MeasurementUnits.getMeasurementUnitID(unitName);
-        }
-        catch(final Exception e) // see comment below re: Exception
-        {
-            if(e instanceof RuntimeException)
-            {
-                throw (RuntimeException)e;
-            }
-
-            final String message = "Couldn't retrieve/set measurement id for unit id " + unitName;
-            throw new IOException(message, e);
-        }
-        return result;
-    }
-
-    /**
-     * The following method becomes obsolete after refactoring Variables.getVariableID to only throw checked exceptions
-     * such as IOException or SQLException, also when Variables.getVariableID gives a meaningful error message. Those
-     * are the only two justifications for this wrapper method.
-     *
-     * @param variableName the variable name to look for
-     * @param measurementUnitId the targeted measurement unit id
-     * @return the result of successful Variables.getVariableID
-     * @throws IOException when any checked (aka non-RuntimeException) exception occurs
-     */
-    // TODO: refactor MeasurementUnits.getMeasurementUnitID to declare it throws only checked exceptions, not Exception, then remove:
-    private static int getVariableID(final String variableName, final int measurementUnitId) throws IOException
-    {
-        int result;
-        try
-        {
-            result = Variables.getVariableID(variableName, measurementUnitId);
-        }
-        catch(final Exception e) // see comment below re: Exception
-        {
-            if(e instanceof RuntimeException)
-            {
-                throw (RuntimeException)e;
-            }
-
-            final String message = "Couldn't retrieve/set variableid for " + variableName;
-            throw new IOException(message, e);
-        }
-        return result;
     }
 
     private static String getPairInnerWhereClauseFromConfig(final ProjectConfig config)
