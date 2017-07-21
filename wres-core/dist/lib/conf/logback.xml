@@ -3,13 +3,16 @@
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
         <file>wres.log</file>
         <encoder>
-          <pattern>%d{YYYY-MM-dd'T'HH:mm:ss.SSSZ} [%thread] %level %logger - %msg%n</pattern>
+          <!-- %exception{full}: full stacktrace in log file -->
+          <pattern>%d{YYYY-MM-dd'T'HH:mm:ss.SSSZ} [%thread] %level %logger - %msg%n%exception{full}</pattern>
         </encoder>
     </appender>
     <!-- some prefer the message to be printed as formatted in the code -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-          <pattern>%msg%n</pattern>
+          <!-- %nopexception: suppress stacktrace here -->
+          <!-- %exception{short}: just the first line for each exception -->
+          <pattern>%msg%n%exception{short}</pattern>
         </encoder>
     </appender>
 
