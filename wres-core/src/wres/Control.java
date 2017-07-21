@@ -1,10 +1,10 @@
 package wres;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -28,26 +28,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.ValidationEvent;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
-import org.eclipse.persistence.sessions.Project;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.GraphicalType;
-import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
@@ -62,12 +52,10 @@ import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.vis.ChartEngineFactory;
 
+import static java.nio.file.Files.probeContentType;
+
 /**
- * Another Main. The reason for creating this class separately from Main is to defer conflict with the existing
- * Main.java code to a later date, at the request of a teammate. It is expected that eventually one of the two will
- * become Main and the other will be merged into it. In order to make something like MainFunctions where a closed loop
- * request/response is created, a separate Main seemed needed. Has (too many?) private static classes that will need to
- * be split out if they are deemed useful.
+ * Another way to execute a project.
  */
 public class Control implements Function<String[], Integer>
 {
@@ -127,126 +115,134 @@ public class Control implements Function<String[], Integer>
      */
     public Integer apply(final String[] args)
     {
-        final Control dummy = new Control();
-        final String fileName = "wres-core/nonsrc/config_possibility.xml";
+        List<ProjectConfigPlus> projectConfiggies = getProjects(args);
 
-        ProjectConfigPlus projectConfigPlus;
-        try
+        if (projectConfiggies.isEmpty())
         {
-            projectConfigPlus = ProjectConfigPlus.from(Paths.get(fileName));
-        }
-        catch (IOException ioe)
-        {
-            LOGGER.error("Could not read project configuration: ", ioe);
+            LOGGER.error("Validate project configuration files and pass them on the command line like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml");
             return null;
         }
-
-        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-
-        final List<Future<List<PairOfDoubleAndVectorOfDoubles>>> pairs = new ArrayList<>();
+        else
+        {
+            LOGGER.info("Found {} valid projects, beginning execution", projectConfiggies.size());
+        }
 
         // Create the first-level Queue of work: fetching pairs.
         // Devote 9/10 of the max threads to working this Q (more waiting/sleeping here)
-        final int maxFetchThreads = (Control.MAX_THREADS / 10) * 9;
-        final ExecutorService fetchPairExecutor = Executors.newFixedThreadPool(maxFetchThreads);
-
-        // Queue up fetching the pairs from the database.
-        final int leadTimesCount = 2880;
-        for(int i = 0; i < leadTimesCount; i++)
-        {
-            final int leadTime = i + 1;
-            final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair = getFuturePairByLeadTime(projectConfig,
-                                                                                                    leadTime,
-                                                                                                    fetchPairExecutor);
-            pairs.add(futurePair);
-        }
+        int maxFetchThreads = (Control.MAX_THREADS / 10) * 9;
+        ExecutorService fetchPairExecutor = Executors.newFixedThreadPool(maxFetchThreads);
 
         // Create the second-level Queue of work: displaying or processing fetched pairs.
         // Devote 1/10 of the max threads to working this Q (less waiting/sleeping here)
-        final int maxProcessThreads = Control.MAX_THREADS / 10;
-        final ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
+        int maxProcessThreads = Control.MAX_THREADS / 10;
+        ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
 
-        final List<Future<MetricOutputMapByMetric<ScalarOutput>>> futureMetrics = new ArrayList<>();
-
-        // Queue up processing of fetched pairs.
-        for(int i = 0; i < pairs.size(); i++)
+        for (ProjectConfigPlus projectConfigPlus : projectConfiggies)
         {
-            // Here, using index in list to communicate the lead time.
-            // Another structure might be appropriate, for example,
-            // see getPairs in
-            // wres.io.config.specification.MetricSpecification
-            // which uses a Map.
-            final int leadTime = i + 1;
-            final PairsByLeadProcessor processTask = new PairsByLeadProcessor(pairs.get(i), projectConfig, leadTime);
-            final Future<MetricOutputMapByMetric<ScalarOutput>> futureMetric = processPairExecutor.submit(processTask);
-            futureMetrics.add(futureMetric);
-        }
+            ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
-        final Map<Integer, MetricOutputMapByMetric<ScalarOutput>> finalResults = new HashMap<>();
-        // Retrieve metric results from processing queue.
-        try
-        {
-            // counting on communication of data with index for this example
-            for(int i = 0; i < futureMetrics.size(); i++)
+            List<Future<List<PairOfDoubleAndVectorOfDoubles>>> pairs = new ArrayList<>();
+
+            // Queue up fetching the pairs from the database.
+            int leadTimesCount = 2880;
+            for (int i = 0; i < leadTimesCount; i++)
             {
-                // get each result
-                final MetricOutputMapByMetric<ScalarOutput> metrics = futureMetrics.get(i).get();
+                int leadTime = i + 1;
+                Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair =
+                        getFuturePairByLeadTime(projectConfig, leadTime, fetchPairExecutor);
+                pairs.add(futurePair);
+            }
 
-                final int leadTime = i + 1;
-                finalResults.put(leadTime, metrics);
+            List<Future<MetricOutputMapByMetric<ScalarOutput>>> futureMetrics = new ArrayList<>();
 
-                if(LOGGER.isInfoEnabled() && fetchPairExecutor instanceof ThreadPoolExecutor
-                    && processPairExecutor instanceof ThreadPoolExecutor)
+            // Queue up processing of fetched pairs.
+            for (int i = 0; i < pairs.size(); i++)
+            {
+                // Here, using index in list to communicate the lead time.
+                // Another structure might be appropriate, for example,
+                // see getPairs in
+                // wres.io.config.specification.MetricSpecification
+                // which uses a Map.
+                int leadTime = i + 1;
+                PairsByLeadProcessor processTask =
+                        new PairsByLeadProcessor(pairs.get(i),
+                                                 projectConfig,
+                                                 leadTime);
+
+                Future<MetricOutputMapByMetric<ScalarOutput>> futureMetric =
+                        processPairExecutor.submit(processTask);
+                futureMetrics.add(futureMetric);
+            }
+
+            Map<Integer, MetricOutputMapByMetric<ScalarOutput>> finalResults = new HashMap<>();
+            // Retrieve metric results from processing queue.
+            try
+            {
+                // counting on communication of data with index for this example
+                for (int i = 0; i < futureMetrics.size(); i++)
                 {
-                    final long curTime = System.currentTimeMillis();
-                    final long lastTime = lastMessageTime.get();
-                    if(curTime - lastTime > LOG_PROGRESS_INTERVAL_MILLIS
-                        && lastMessageTime.compareAndSet(lastTime, curTime))
+                    // get each result
+                    MetricOutputMapByMetric<ScalarOutput> metrics = futureMetrics.get(i).get();
+
+                    int leadTime = i + 1;
+                    finalResults.put(leadTime, metrics);
+
+                    if (LOGGER.isInfoEnabled() && fetchPairExecutor instanceof ThreadPoolExecutor
+                            && processPairExecutor instanceof ThreadPoolExecutor)
                     {
-                        final ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor)fetchPairExecutor;
-                        final ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor)processPairExecutor;
-                        LOGGER.info("Around {} pair lists fetched. Around {} in the fetch queue. Around {} fetched pairs processed. Around {} in processing queue.",
+                        long curTime = System.currentTimeMillis();
+                        long lastTime = lastMessageTime.get();
+                        if (curTime - lastTime > LOG_PROGRESS_INTERVAL_MILLIS && lastMessageTime
+                                .compareAndSet(lastTime, curTime))
+                        {
+                            ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor) fetchPairExecutor;
+                            ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor) processPairExecutor;
+                            LOGGER.info(
+                                    "Around {} pair lists fetched. Around {} in the fetch queue. Around {} fetched pairs processed. Around {} in processing queue.",
                                     tpeFetch.getCompletedTaskCount(),
-                                    tpeFetch.getQueue().size(),
-                                    tpeProcess.getCompletedTaskCount(),
+                                    tpeFetch.getQueue().size(), tpeProcess.getCompletedTaskCount(),
                                     tpeProcess.getQueue().size());
+                        }
                     }
                 }
             }
-        }
-        catch(final InterruptedException ie)
-        {
-            LOGGER.error("Interrupted while getting results", ie);
-            Thread.currentThread().interrupt();
-        }
-        catch(final ExecutionException ee)
-        {
-            LOGGER.error("While getting results", ee);
-        }
-        finally
-        {
-            fetchPairExecutor.shutdown();
-            processPairExecutor.shutdown();
-        }
-
-        if(LOGGER.isInfoEnabled() && fetchPairExecutor instanceof ThreadPoolExecutor
-            && processPairExecutor instanceof ThreadPoolExecutor)
-        {
-            final ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor)fetchPairExecutor;
-            final ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor)processPairExecutor;
-            LOGGER.info("Total of around {} pair lists completed. Total of around {} pairs processed. Done.",
-                        tpeFetch.getCompletedTaskCount(),
-                        tpeProcess.getCompletedTaskCount());
-        }
-
-        if(LOGGER.isInfoEnabled())
-        {
-            for(final Map.Entry<Integer, MetricOutputMapByMetric<ScalarOutput>> e: finalResults.entrySet())
+            catch (InterruptedException ie)
             {
-                LOGGER.info("For lead time " + e.getKey() + " " + e.getValue().toString());
+                LOGGER.error("Interrupted while getting results", ie);
+                Thread.currentThread().interrupt();
+                break;
+            }
+            catch (ExecutionException ee)
+            {
+                LOGGER.error("While getting results", ee);
+                break;
+            }
+            finally
+            {
+                fetchPairExecutor.shutdown();
+                processPairExecutor.shutdown();
+            }
+
+            if (LOGGER.isInfoEnabled() && fetchPairExecutor instanceof ThreadPoolExecutor
+                    && processPairExecutor instanceof ThreadPoolExecutor)
+            {
+                ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor) fetchPairExecutor;
+                ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor) processPairExecutor;
+                LOGGER.info(
+                        "Total of around {} pair lists completed. Total of around {} pairs processed. Done.",
+                        tpeFetch.getCompletedTaskCount(), tpeProcess.getCompletedTaskCount());
+            }
+
+            if (LOGGER.isInfoEnabled())
+            {
+                for (final Map.Entry<Integer, MetricOutputMapByMetric<ScalarOutput>> e : finalResults
+                        .entrySet())
+                {
+                    LOGGER.info(
+                            "For lead time " + e.getKey() + " " + e.getValue().toString());
+                }
             }
         }
-
         shutDownGracefully(fetchPairExecutor, processPairExecutor);
 
         return 0;
@@ -307,20 +303,44 @@ public class Control implements Function<String[], Integer>
         }
     }
 
-    private static class ValidationEventHandler implements javax.xml.bind.ValidationEventHandler
+    /**
+     * Get project configurations from command line file args.
+     *
+     * @param args
+     * @return the successfully found, read, unmarshalled project configs
+     */
+    private List<ProjectConfigPlus> getProjects(String[] args)
     {
+        List<Path> existingProjectFiles = new ArrayList<>();
 
-        @Override
-        public boolean handleEvent(final ValidationEvent validationEvent)
+        for (String arg : args)
         {
-            if (LOGGER.isDebugEnabled())
+            Path path = Paths.get(arg);
+            if (Files.exists(path))
             {
-                LOGGER.debug("Severity: {}", validationEvent.getSeverity());
-                LOGGER.debug("Location: {}", validationEvent.getLocator());
-                LOGGER.debug("Message: {}", validationEvent.getMessage());
+                existingProjectFiles.add(path);
             }
-            return true;
+            else
+            {
+                LOGGER.warn("Project configuration file {} does not exist!", path);
+            }
         }
+
+        List<ProjectConfigPlus> projectConfiggies = new ArrayList<>();
+
+        for (Path path : existingProjectFiles)
+        {
+            try
+            {
+                ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from(path);
+                projectConfiggies.add(projectConfigPlus);
+            }
+            catch (IOException ioe)
+            {
+                LOGGER.error("Could not read project configuration: ", ioe);
+            }
+        }
+        return projectConfiggies;
     }
 
     /**
