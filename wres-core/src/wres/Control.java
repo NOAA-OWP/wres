@@ -1,11 +1,11 @@
 package wres;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,11 +13,7 @@ import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -47,6 +43,7 @@ import wres.datamodel.metric.*;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.io.config.ProjectConfigPlus;
+import wres.io.config.SystemSettings;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
@@ -119,7 +116,8 @@ public class Control implements Function<String[], Integer>
 
         if (projectConfiggies.isEmpty())
         {
-            LOGGER.error("Validate project configuration files and pass them on the command line like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml");
+            LOGGER.error("Validate project configuration files and either place them in the {} directory, or pass them on the command line like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml",
+                    SystemSettings.getProjectDirectory());
             return null;
         }
         else
@@ -306,6 +304,9 @@ public class Control implements Function<String[], Integer>
     /**
      * Get project configurations from command line file args.
      *
+     * If there are no command line args, look in System Settings for directory
+     * to scan for configurations.
+     *
      * @param args
      * @return the successfully found, read, unmarshalled project configs
      */
@@ -313,17 +314,41 @@ public class Control implements Function<String[], Integer>
     {
         List<Path> existingProjectFiles = new ArrayList<>();
 
-        for (String arg : args)
+        if (args.length > 0)
         {
-            Path path = Paths.get(arg);
-            if (Files.exists(path))
+            for (String arg : args)
             {
-                existingProjectFiles.add(path);
+                Path path = Paths.get(arg);
+                if (Files.exists(path))
+                {
+                    existingProjectFiles.add(path);
+                }
+                else
+                {
+                    LOGGER.warn("Project configuration file {} does not exist!",
+                            path);
+                }
             }
-            else
+        }
+        else
+        {
+            String projectDirectory = SystemSettings.getProjectDirectory();
+
+            LOGGER.info("Looking in {} directory for project configurations.",
+                        SystemSettings.getProjectDirectory());
+
+            Path dir = Paths.get(SystemSettings.getProjectDirectory());
+            FindXmlFiles visitor = new FindXmlFiles();
+
+            try
             {
-                LOGGER.warn("Project configuration file {} does not exist!", path);
+                Files.walkFileTree(dir, visitor);
             }
+            catch (IOException ioe)
+            {
+                LOGGER.warn("An issue occurred while looking in {}:", projectDirectory, ioe);
+            }
+            existingProjectFiles = visitor.getFiles();
         }
 
         List<ProjectConfigPlus> projectConfiggies = new ArrayList<>();
@@ -341,6 +366,26 @@ public class Control implements Function<String[], Integer>
             }
         }
         return projectConfiggies;
+    }
+
+    private class FindXmlFiles extends SimpleFileVisitor<Path>
+    {
+        private List<Path> files = new ArrayList<>();
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+        {
+            if (Files.isReadable(file))
+            {
+                files.add(file);
+            }
+            return FileVisitResult.CONTINUE;
+        }
+
+        public List<Path> getFiles()
+        {
+            return Collections.unmodifiableList(new ArrayList<>(files));
+        }
     }
 
     /**
