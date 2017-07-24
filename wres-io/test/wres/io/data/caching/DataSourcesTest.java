@@ -90,7 +90,7 @@ public class DataSourcesTest
         connectionPoolDataSource.setPassword("");
         MockitoAnnotations.initMocks(this);
         // reader part is not working due to being in static portion?
-        when(systemSettings.create_reader()).thenReturn(this.systemConfigXmlReader);
+        when(systemSettings.createReader()).thenReturn(this.systemConfigXmlReader);
         // but this connection pool part might work...
         when(systemSettings.getConnectionPool()).thenReturn(this.connectionPoolDataSource);
         // only if we
@@ -167,7 +167,7 @@ Caused by: java.io.FileNotFoundException: wresconfig.xml (No such file or direct
 	at java.io.FileInputStream.<init>(FileInputStream.java:138)
 	at java.io.FileInputStream.<init>(FileInputStream.java:93)
 	at java.io.FileReader.<init>(FileReader.java:58)
-	at wres.io.reading.XMLReader.create_reader(XMLReader.java:122)
+	at wres.io.reading.XMLReader.createReader(XMLReader.java:122)
 	at wres.io.reading.XMLReader.parse(XMLReader.java:62)
 	... 45 common frames omitted
 
