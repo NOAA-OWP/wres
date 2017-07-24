@@ -1,9 +1,11 @@
 package reading.misc;
 
+import concurrency.ASCIIResultSaver;
+import data.caching.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import wres.io.concurrency.Executor;
 import wres.io.reading.BasicSource;
-import wres.io.reading.SourceType;
 import wres.io.utilities.Database;
 import wres.util.FormattedStopwatch;
 
@@ -15,10 +17,6 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
-
-import concurrency.ASCIIResultSaver;
-import wres.io.concurrency.Executor;
-import data.caching.Variable;
 
 /**
  * @author ctubbs
@@ -38,7 +36,6 @@ public class ASCIISource extends BasicSource
 		//TODO: Remove variable_name hard coding
 		set_variable_name("precipitation");
 		setFilename(filename);
-		setSourceType(SourceType.ASCII);
 	}
 	
 	private Integer get_observationlocation_id() throws SQLException

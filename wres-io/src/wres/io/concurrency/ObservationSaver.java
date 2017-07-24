@@ -2,13 +2,14 @@ package wres.io.concurrency;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
 import wres.util.FormattedStopwatch;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Saves the observation at the given location
@@ -25,11 +26,15 @@ public class ObservationSaver extends WRESRunnable {
 	public ObservationSaver(String filepath) {
 		this.filepath = filepath;
 		this.dataSourceConfig = null;
+		this.specifiedFeatures = null;
 	}
 
-	public ObservationSaver(String filepath, DataSourceConfig dataSourceConfig)
+	public ObservationSaver(String filepath,
+                            DataSourceConfig dataSourceConfig,
+                            List<Conditions.Feature> specifiedFeatures)
     {
         this.dataSourceConfig = dataSourceConfig;
+        this.specifiedFeatures = specifiedFeatures;
         this.filepath = filepath;
     }
 
@@ -54,6 +59,11 @@ public class ObservationSaver extends WRESRunnable {
                 source.setDataSourceConfig(this.dataSourceConfig);
             }
 
+            if (this.specifiedFeatures != null)
+            {
+                source.setSpecifiedFeatures(this.specifiedFeatures);
+            }
+
 			source.saveObservation();
 
             if (this.getLogger().isDebugEnabled())
@@ -71,6 +81,8 @@ public class ObservationSaver extends WRESRunnable {
 	}
 
 	private String filepath = null;
+	private final List<Conditions.Feature> specifiedFeatures;
+	private final DataSourceConfig dataSourceConfig;
 
 	@Override
 	protected String getTaskName () {
@@ -81,6 +93,4 @@ public class ObservationSaver extends WRESRunnable {
 	protected Logger getLogger () {
 		return ObservationSaver.LOGGER;
 	}
-
-	private final DataSourceConfig dataSourceConfig;
 }

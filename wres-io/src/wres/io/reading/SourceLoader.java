@@ -2,6 +2,7 @@ package wres.io.reading;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
@@ -70,7 +71,7 @@ public class SourceLoader
                     }
                 }
                 else if (Files.exists(sourcePath) && Files.isRegularFile(sourcePath)) {
-                    Future task = saveFile(sourcePath, config);
+                    Future task = saveFile(sourcePath, source, config);
 
                     if (task != null)
                     {
@@ -108,7 +109,7 @@ public class SourceLoader
                 }
                 else if (Files.isRegularFile(path))
                 {
-                    Future task = saveFile(path, dataSourceConfig);
+                    Future task = saveFile(path, source, dataSourceConfig);
 
                     if (task != null)
                     {
@@ -133,35 +134,51 @@ public class SourceLoader
      * @param filePath
      * @return Future if task was created, null otherwise.
      */
-    private Future saveFile(Path filePath, DataSourceConfig dataSourceConfig)
+    private Future saveFile(Path filePath, DataSourceConfig.Source source, DataSourceConfig dataSourceConfig)
     {
         String absolutePath = filePath.toAbsolutePath().toString();
-        try
-        {
-            if (!this.dataExists(absolutePath, dataSourceConfig))
+
+            if (shouldIngest(absolutePath, source, dataSourceConfig))
             {
                 if (ConfigHelper.isForecast(dataSourceConfig)) {
                     LOGGER.info("Loading {} as forecast data...", absolutePath);
-                    return Executor.execute(new ForecastSaver(absolutePath, dataSourceConfig));
+                    return Executor.execute(new ForecastSaver(absolutePath, dataSourceConfig, this.getSpecifiedFeatures()));
                 }
                 else {
                     LOGGER.info("Loading {} as Observation data...");
-                    return Executor.execute(new ObservationSaver(absolutePath, dataSourceConfig));
+                    return Executor.execute(new ObservationSaver(absolutePath, dataSourceConfig, this.getSpecifiedFeatures()));
                 }
             }
             else
             {
-                LOGGER.info("Data will not be loaded from {}. That data is already in the database.", absolutePath);
+                String message = "Data will not be loaded from {}. That data is either not valid input data or is ";
+                message += "already in the database.";
+                LOGGER.info(message, absolutePath);
             }
-        }
-        catch(SQLException exception)
-        {
-            LOGGER.error("The file at: '{}' could not be loaded.", absolutePath);
-            LOGGER.error("Exception was: ", exception);
-        }
+
         return null;
     }
 
+    private boolean shouldIngest(String filePath, DataSourceConfig.Source source, DataSourceConfig dataSourceConfig)
+    {
+        SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
+        SourceType pathFormat = ReaderFactory.getFiletype(filePath);
+
+        boolean ingest = specifiedFormat == SourceType.UNDEFINED || specifiedFormat.equals(pathFormat);
+
+        if (ingest)
+        {
+            try {
+                ingest = !dataExists(filePath, dataSourceConfig);
+            }
+            catch (SQLException e) {
+                e.printStackTrace();
+                ingest = false;
+            }
+        }
+
+        return ingest;
+    }
 
     private boolean dataExists(String sourceName, DataSourceConfig dataSourceConfig) throws SQLException {
         StringBuilder script = new StringBuilder();
@@ -231,6 +248,18 @@ public class SourceLoader
         }
 
         return source;
+    }
+
+    private List<Conditions.Feature> getSpecifiedFeatures()
+    {
+        List<Conditions.Feature> specifiedFeatures = null;
+
+        if (this.projectConfig != null && this.projectConfig.getConditions() != null)
+        {
+            specifiedFeatures = this.projectConfig.getConditions().getFeature();
+        }
+
+        return specifiedFeatures;
     }
 
     private final ProjectConfig projectConfig;

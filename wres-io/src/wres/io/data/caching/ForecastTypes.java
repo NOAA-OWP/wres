@@ -15,7 +15,7 @@ public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
     private static ForecastTypes INTERNAL_CACHE = null;
     private static final Object CACHE_LOCK = new Object();
 
-    private static final ForecastTypes getCache()
+    private static ForecastTypes getCache ()
     {
         synchronized (CACHE_LOCK)
         {
@@ -28,12 +28,12 @@ public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
         }
     }
 
-    public static Integer getForecastTypeId(String description) throws Exception {
+    public static Integer getForecastTypeId(String description) throws SQLException {
         Integer forecastTypeID;
 
         try {
             forecastTypeID = getCache().getID(description);
-        } catch (Exception e) {
+        } catch (SQLException e) {
             System.err.println("An error was encountered while trying to get the id for the forecast type named: '" + description + "'.");
             System.err.println(description + " is not a valid forecast type.");
             e.printStackTrace();

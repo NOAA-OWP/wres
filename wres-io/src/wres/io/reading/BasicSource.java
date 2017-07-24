@@ -1,10 +1,12 @@
 package wres.io.reading;
 
+import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.io.config.ConfigHelper;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.List;
 
 /**
  * @author ctubbs
@@ -42,16 +44,6 @@ public abstract class BasicSource {
 		}
 		return absoluteFilename;
 	}
-	
-	public SourceType getSourceType()
-	{
-		return sourceType;
-	}
-	
-	protected void setSourceType(SourceType type)
-	{
-        sourceType = type;
-	}
 
 	public void setDataSourceConfig (DataSourceConfig dataSourceConfig)
 	{
@@ -62,10 +54,19 @@ public abstract class BasicSource {
 	{
 		return this.dataSourceConfig;
 	}
-	
+
+	public void setSpecifiedFeatures(List<Conditions.Feature> specifiedFeatures)
+    {
+        this.specifiedFeatures = specifiedFeatures;
+    }
+
+    protected List<Conditions.Feature> getSpecifiedFeatures()
+    {
+        return this.specifiedFeatures;
+    }
+
 	private String filename = "";
 	private String absoluteFilename;
-	private SourceType sourceType = SourceType.UNDEFINED;
 
 	protected String getSpecifiedVariableName()
     {
@@ -146,4 +147,5 @@ public abstract class BasicSource {
     }
 
 	private DataSourceConfig dataSourceConfig;
+	private List<Conditions.Feature> specifiedFeatures;
 }

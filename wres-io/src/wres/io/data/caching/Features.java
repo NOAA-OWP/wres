@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.data.details.FeatureDetails;
 
+import java.sql.SQLException;
+
 /**
  * Caches details about Features
  * @author Christopher Tubbs
@@ -19,7 +21,7 @@ public class Features extends Cache<FeatureDetails, String>
      */
 	private static Features INTERNAL_CACHE = null;
 
-	private static final Features getCache()
+	private static Features getCache ()
 	{
 		synchronized (CACHE_LOCK)
 		{
@@ -36,9 +38,9 @@ public class Features extends Cache<FeatureDetails, String>
 	 * Returns the ID of a Feature from the global cache based on a full Feature specification
 	 * @param detail The full specification for a Feature
 	 * @return The ID for the specified feature
-	 * @throws Exception Thrown if the ID could not be retrieved from the Database
+	 * @throws SQLException Thrown if the ID could not be retrieved from the Database
 	 */
-	public static Integer getFeatureID(FeatureDetails detail) throws Exception {
+	public static Integer getFeatureID(FeatureDetails detail) throws SQLException {
 	    LOGGER.trace("getFeatureID - args {}", detail);
 		return getCache().getID(detail);
 	}
@@ -48,9 +50,9 @@ public class Features extends Cache<FeatureDetails, String>
 	 * @param lid The location ID of the Feature
 	 * @param stationName The name of the feature
 	 * @return The ID of the Feature
-	 * @throws Exception Thrown if the ID could not be loaded from the database
+	 * @throws SQLException Thrown if the ID could not be loaded from the database
 	 */
-	public static Integer getFeatureID(String lid, String stationName) throws Exception {
+	public static Integer getFeatureID(String lid, String stationName) throws SQLException {
         LOGGER.trace("getFeatureID - args {} ; {}", lid, stationName);
 		FeatureDetails detail = new FeatureDetails();
 		detail.setLID(lid);
@@ -64,9 +66,9 @@ public class Features extends Cache<FeatureDetails, String>
 	 * @param stationName The name of the Feature to look for
 	 * @param variableID The ID of the variable to look for
 	 * @return The ID of the found variable position
-	 * @throws Exception Thrown if the variable position could not be loaded from the database
+	 * @throws SQLException Thrown if the variable position could not be loaded from the database
 	 */
-	public static Integer getVariablePositionID(String lid, String stationName, Integer variableID) throws Exception {
+	public static Integer getVariablePositionID(String lid, String stationName, Integer variableID) throws SQLException {
         LOGGER.trace("getVariablePositionID - ars {} ; {} ; {}", lid, stationName, variableID);
         return getCache().getVarPosID(lid, stationName, variableID);
 	}
@@ -77,9 +79,9 @@ public class Features extends Cache<FeatureDetails, String>
      * @param stationName The name of the Feature to look for
      * @param variableID The ID of the variable to look for
      * @return The ID of the found variable position
-     * @throws Exception Thrown if the variable position could not be loaded from the database
+     * @throws SQLException Thrown if the variable position could not be loaded from the database
      */
-	private Integer getVarPosID(String lid, String stationName, Integer variableID) throws Exception {
+	private Integer getVarPosID(String lid, String stationName, Integer variableID) throws SQLException {
         LOGGER.trace("getVarPosID - args {} ; {} ; {}", lid, stationName, variableID);
 		if (!this.getKeyIndex().containsKey(lid))
 		{

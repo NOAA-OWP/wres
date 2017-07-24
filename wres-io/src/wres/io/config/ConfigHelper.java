@@ -158,11 +158,12 @@ public class ConfigHelper
 
     public static boolean isForecast(DataSourceConfig dataSource)
     {
-        return Strings.isOneOf(dataSource.getType().value(),
-                               DatasourceType.ASSIMILATIONS.value(),
-                               DatasourceType.SIMPLE_FORECASTS.value(),
-                               DatasourceType.ENSEMBLE_FORECASTS.value(),
-                               DatasourceType.MODEL_OUTPUTS.value());
+        return dataSource != null &&
+                Strings.isOneOf(dataSource.getType().value(),
+                                DatasourceType.ASSIMILATIONS.value(),
+                                DatasourceType.SIMPLE_FORECASTS.value(),
+                                DatasourceType.ENSEMBLE_FORECASTS.value(),
+                                DatasourceType.MODEL_OUTPUTS.value());
     }
 
     public static ProjectConfig read(final String path) throws JAXBException {

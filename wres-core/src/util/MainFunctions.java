@@ -1,7 +1,6 @@
 package util;
 
 import concurrency.Downloader;
-import concurrency.ProjectExecutor;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -13,26 +12,16 @@ import ucar.nc2.Variable;
 import wres.Control;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.MetricInputFactory;
-import wres.io.concurrency.*;
+import wres.io.concurrency.Executor;
+import wres.io.concurrency.PairRetriever;
+import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ConfigHelper;
-import wres.io.config.ProjectSettings;
 import wres.io.config.SystemSettings;
-import wres.io.config.specification.MetricSpecification;
-import wres.io.config.specification.ProjectDataSpecification;
-import wres.io.config.specification.ProjectSpecification;
-import wres.io.config.specification.ScriptFactory;
-import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.grouping.LabeledScript;
-import wres.io.grouping.LeadResult;
-import wres.io.reading.BasicSource;
-import wres.io.reading.ConfiguredLoader;
-import wres.io.reading.ReaderFactory;
 import wres.io.reading.SourceLoader;
-import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptGenerator;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -111,30 +100,18 @@ public final class MainFunctions
 
 		prototypes.put("describenetcdf", describeNetCDF());
 		prototypes.put("connecttodb", connectToDB());
-		prototypes.put("saveforecast", saveForecast());
-		prototypes.put("saveobservation", saveObservation());
 		prototypes.put("querynetcdf", queryNetCDF());
 		prototypes.put("commands", printCommands());
 		prototypes.put("--help", printCommands());
 		prototypes.put("-h", printCommands());
-		prototypes.put("saveobservations", saveObservations());
-		prototypes.put("saveforecasts", saveForecasts());
-		prototypes.put("describeprojects", describeProjects());
 		prototypes.put("flushdatabase", flushDatabase());
-		prototypes.put("flushforecasts", flushForecasts());
-		prototypes.put("flushobservations", flushObservations());
-		prototypes.put("refreshforecasts", refreshForecasts());
-		prototypes.put("getpairs", getPairs());
-		prototypes.put("getprojectpairs", getProjectPairs());
-		prototypes.put("executeproject", executeProject());
-		prototypes.put("executeClassProject", new ProjectExecutor());
-		prototypes.put("executeConfigProject", new Control());
-		prototypes.put("refreshtestdata", refreshTestData());
+		prototypes.put("getpairs", getProjectPairs());
+		prototypes.put("execute", new Control());
+		prototypes.put("downloadtestdata", refreshTestData());
 		prototypes.put("refreshstatistics", refreshStatistics());
-		prototypes.put("ingestproject", ingestProject());
 		prototypes.put("loadcoordinates", loadCoordinates());
 		prototypes.put("builddatabase", buildDatabase());
-		prototypes.put("ingestbyconfiguration", ingestByConfiguration());
+		prototypes.put("ingest", ingestByConfiguration());
 		prototypes.put("testgzip", testGZIP());
 
 		return prototypes;
@@ -154,192 +131,6 @@ public final class MainFunctions
 				LOGGER.info("\t{}", command);
 			}
 			return SUCCESS;
-		};
-	}
-
-	/**
-	 * Creates the "saveForecast" method
-	 *
-	 * @return Method that will attempt to save the file at the given path to the database as forecasts
-	 */
-	private static Function<String[], Integer> saveForecast()
-	{
-		return (final String[] args) -> {
-			Integer result = FAILURE;
-			if (args.length > 0) {
-				try {
-
-					final ForecastSaver saver = new ForecastSaver(Paths.get(args[0]).toAbsolutePath().toString());
-					saver.setOnRun(ProgressMonitor.onThreadStartHandler());
-					saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-					final Future<?> task = Executor.execute(saver);
-
-					task.get();
-
-					Executor.complete();
-					Database.shutdown();
-
-					LOGGER.info("");
-					LOGGER.info("All forecast saving operations complete. Please verify data.");
-					result = SUCCESS;
-				}
-				catch (final Exception e) {
-					e.printStackTrace();
-				}
-			}
-			else
-			{
-				LOGGER.error("A path is needed to save data. Please pass that in as the first argument.");
-                LOGGER.error("For now, ensure that the path points towards a tabular ASCII file.");
-                LOGGER.error("The current directory is:\t");
-                LOGGER.error(System.getProperty("user.dir"));
-			}
-			return result;
-		};
-	}
-
-	/**
-	 * Creates the "saveForecasts" method
-	 *
-	 * @return Method that will attempt to save all files in the given directory to the database as forecasts
-	 */
-	private static Function<String[], Integer> saveForecasts()
-	{
-		return (final String[] args) -> {
-			Integer result = FAILURE;
-			if (args.length > 0)
-			{
-				try
-				{
-					final String directory = args[0];
-					final File[] files = new File(directory).listFiles((final File file) -> {
-						return file.isFile() && file.getName().endsWith(".xml") || file.getName().endsWith("gz") || file.getName().endsWith("nc");
-					});
-
-					final File[] filteredFiles = wres.util.Collections.removeAll(files, (final File file) -> {
-						final String name = file.getName();
-						return name.endsWith(".gz") && wres.util.Collections.find(files, (final File other) -> {
-							return other.getName().equalsIgnoreCase(name.substring(0, name.length() - 3));
-						}) != null;
-					});
-
-					LOGGER.info("");
-					LOGGER.info(String.format("Attempting to save all files in '%s' as forecasts to the database... (This might take a little while)", args[0]));
-					LOGGER.info("");
-
-					final ArrayList<Future<?>> tasks = new ArrayList<>();
-
-
-					for (final File file : filteredFiles) {
-						final ForecastSaver saver = new ForecastSaver(file.getAbsolutePath());
-						saver.setOnRun(ProgressMonitor.onThreadStartHandler());
-						saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-						tasks.add(Executor.execute(saver));
-					}
-
-					for (final Future<?> task : tasks) {
-						task.get();
-					}
-
-					PIXMLReader.saveLeftoverForecasts();
-
-					LOGGER.info("Making sure all ingest tasks are complete...");
-
-					Database.completeAllIngestTasks();
-
-					if (tasks.size() > 0)
-                    {
-                        Database.refreshStatistics();
-                    }
-
-					LOGGER.info("");
-					LOGGER.info("All forecast saving operations complete. Please verify data.");
-					result = SUCCESS;
-				}
-				catch (final Exception e)
-				{
-					e.printStackTrace();
-				}
-			}
-			else
-			{
-				System.out.println("A path to a directory is needed to save data. Please pass that in as the first argument.");
-				System.out.println("usage: saveForecasts <directory path>");
-			}
-			return result;
-		};
-	}
-
-	/**
-	 * Creates the "saveObservation" method
-	 *
-	 * @return Method that will attempt to save a file to the database as an observation
-	 */
-	private static Function<String[], Integer> saveObservation()
-	{
-		return (final String[] args) -> {
-			Integer result = FAILURE;
-			if (args.length > 0) {
-				try {
-					final BasicSource source = ReaderFactory.getReader(args[0]);
-					System.out.println(String.format("Attempting to save '%s' to the database...", args[0]));
-					source.saveObservation();
-					System.out.println("Database save operation completed. Please verify data.");
-					Database.completeAllIngestTasks();
-					result = SUCCESS;
-				}
-				catch (final Exception e)
-				{
-					e.printStackTrace();
-				}
-			}
-			else
-			{
-				System.out.println("A path is needed to save data. Please pass that in as the first argument.");
-				System.out.println("For now, ensure that the path points towards a datacard file.");
-				System.out.print("The current directory is:\t");
-				System.out.println(System.getProperty("user.dir"));
-			}
-			return result;
-		};
-	}
-
-	/**
-	 * Creates a Method that will attempt to save all files in a directory as observations
-	 *
-	 * @return Method that will attempt to save all files in a directory to the database as observations
-	 */
-	private static Function<String[], Integer> saveObservations () {
-		return (final String[] args) -> {
-			final Integer result = FAILURE;
-			if (args.length > 0) {
-				try {
-					final String directory = args[0];
-					final File[] files = new File(directory).listFiles();
-					final ArrayList<Future<?>> tasks = new ArrayList<>();
-					System.out.println(String.format("Attempting to save all files in '%s' as observations to the database...", args[0]));
-					for (final File file : files != null ? files : new File[0]) {
-						tasks.add(Executor.execute(new ObservationSaver(file.getAbsolutePath())));
-					}
-
-					for (final Future<?> task : tasks) {
-						task.get();
-					}
-
-					Executor.complete();
-					Database.shutdown();
-					System.out.println("All observation saving operations complete. Please verify data.");
-					return result;
-				}
-				catch (final Exception e) {
-					e.printStackTrace();
-				}
-			}
-			else {
-				System.out.println("A path to a directory is needed to save data. Please pass that in as the first argument.");
-				System.out.println("usage: saveObservations <directory path>");
-			}
-			return result;
 		};
 	}
 
@@ -366,53 +157,6 @@ public final class MainFunctions
                 LOGGER.error(Strings.getStackTrace(exception));
             }
             return result;
-		};
-	}
-	
-	private static Function<String[], Integer> refreshForecasts()
-	{
-		return (final String[] args) -> {
-			Integer result = SUCCESS;
-			try {
-                LOGGER.info("");
-                LOGGER.info("Cleaning up the Forecast table...");
-				Database.execute("VACUUM ANALYZE wres.Forecast;");
-				Database.execute("REINDEX TABLE wres.Forecast;");
-				LOGGER.info("The Forecast table has been refreshed.");
-                LOGGER.info("");
-			}
-			catch (final SQLException e) {
-				LOGGER.error(Strings.getStackTrace(e));
-                result = FAILURE;
-			}
-
-			try {
-                LOGGER.info("");
-                LOGGER.info("Cleaning up the ForecastEnsemble table...");
-				Database.execute("VACUUM ANALYZE wres.ForecastEnsemble;");
-				Database.execute("REINDEX TABLE wres.ForecastEnsemble;");
-                LOGGER.info("The ForecastEnsemble table has been refreshed.");
-                LOGGER.info("");
-			}
-			catch (final SQLException e) {
-                LOGGER.error(Strings.getStackTrace(e));
-                result = FAILURE;
-			}
-
-			try {
-                LOGGER.info("");
-                LOGGER.info("Cleaning up the ForecastValue table...");
-				Database.execute("VACUUM ANALYZE wres.ForecastValue;");
-				Database.execute("REINDEX TABLE wres.ForecastValue;");
-                LOGGER.info("The ForecastValue table has been refreshed.");
-                LOGGER.info("");
-			}
-			catch (final SQLException e) {
-                LOGGER.error(Strings.getStackTrace(e));
-				result = FAILURE;
-			}
-
-			return result;
 		};
 	}
 
@@ -487,36 +231,6 @@ public final class MainFunctions
 	}
 
 	/**
-	 * Creates the "describeProjects" method
-	 *
-	 * @return A method that will print out details about every found project in the path indicated by the system
-	 * configuration in a more human readable format.
-	 */
-	private static Function<String[], Integer> describeProjects()
-	{
-		return (final String[] args) -> {
-			Integer result = SUCCESS;
-
-			System.out.println();
-			System.out.println();
-			System.out.println("The configured projects are:");
-			System.out.println();
-			System.out.println();
-
-			try {
-				for (final ProjectSpecification project : ProjectSettings.getProjects()) {
-					System.out.println(project.toString());
-				}
-			}
-			catch (final RuntimeException exception)
-			{
-				result = FAILURE;
-			}
-			return result;
-		};
-	}
-
-	/**
 	 * Creates the "flushDatabase" method
 	 *
 	 * @return A method that will remove all dynamic forecast, observation, and variable data from the database. Prepares the
@@ -532,7 +246,6 @@ public final class MainFunctions
 
                 Connection connection = null;
                 ResultSet results = null;
-                boolean partitionsLoaded;
 
                 builder.append("SELECT 'DROP TABLE IF EXISTS '||n.nspname||'.'||c.relname||' CASCADE;'").append(NEWLINE);
                 builder.append("FROM pg_catalog.pg_class c").append(NEWLINE);
@@ -547,7 +260,6 @@ public final class MainFunctions
                     results = Database.getResults(connection, builder.toString());
 
                     builder = new StringBuilder();
-                    partitionsLoaded = true;
 
                     while (results.next()) {
                         builder.append(results.getString(1)).append(NEWLINE);
@@ -557,9 +269,17 @@ public final class MainFunctions
                     LOGGER.error(Strings.getStackTrace(e));
                     throw e;
                 }
+                finally
+                {
+                    if (results != null)
+                    {
+                        results.close();
+                    }
 
-                if (!partitionsLoaded) {
-                    builder = new StringBuilder();
+                    if (connection != null)
+                    {
+                        Database.returnConnection(connection);
+                    }
                 }
 
                 builder.append("TRUNCATE wres.ForecastSource;").append(NEWLINE);
@@ -587,43 +307,6 @@ public final class MainFunctions
                 LOGGER.error(Strings.getStackTrace(e));
                 result = FAILURE;
             }
-			return result;
-		};
-	}
-
-	/**
-	 * Creates the "flushForecasts" method
-	 *
-	 * @return A method that will remove all forecast data from the database.
-	 */
-	private static Function<String[], Integer> flushForecasts()
-	{
-		return (final String[] args) -> {
-			Integer result = FAILURE;
-			String script = "";
-			script += "TRUNCATE wres.ForecastSource;" + NEWLINE;
-			script += "DELETE FROM wres.Source S" + NEWLINE;
-			script += "WHERE NOT EXISTS (" + NEWLINE;
-			script += "      SELECT 1" + NEWLINE;
-			script += "      FROM wres.Observation O" + NEWLINE;
-			script += "      WHERE O.source_id = S.source_id" + NEWLINE;
-			script += ");" + NEWLINE;
-			script += "TRUNCATE wres.ForecastValue;" + NEWLINE;
-			script += "TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;" + NEWLINE;
-			script += "TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;" + NEWLINE;
-
-			try {
-				Database.execute(script);
-				result = SUCCESS;
-			}
-			catch (final Exception e) {
-				LOGGER.error("WRES forecast data could not be removed from the database." + NEWLINE);
-                LOGGER.error("");
-                LOGGER.error(script);
-				LOGGER.error("");
-                LOGGER.error(Strings.getStackTrace(e));
-			}
-
 			return result;
 		};
 	}
@@ -848,131 +531,6 @@ public final class MainFunctions
 		};
 	}
 
-	/**
-	 * Creates the "flushObservations" method
-	 *
-	 * @return A method that will remove all observation data from the database.
-	 */
-	private static Function<String[], Integer> flushObservations()
-	{
-		return (final String[] args) -> {
-			Integer result = FAILURE;
-			String script;
-			script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + NEWLINE;
-			script += "DELETE FROM wres.Source S" + NEWLINE;
-			script += "WHERE NOT EXISTS (" + NEWLINE;
-			script += "      SELECT 1" + NEWLINE;
-			script += "      FROM wres.ForecastSource FS" + NEWLINE;
-			script += "      WHERE FS.source_id = S.source_id" + NEWLINE;
-			script += ");" + NEWLINE;
-
-			try {
-				Database.execute(script);
-				result = SUCCESS;
-			}
-			catch (final Exception e) {
-				LOGGER.error("WRES Observation data could not be removed from the database." + NEWLINE);
-                LOGGER.error("");
-				LOGGER.error(script);
-				LOGGER.error("");
-				LOGGER.error(Strings.getStackTrace(e));
-			}
-			return result;
-		};
-	}
-
-	/**
-	 * Creates the 'getPairs' function
-	 *
-	 * @return Prints the count and the first 10 pairs for all observations and forecasts for the passed in forecast variable,
-	 * observation variable, and lead time
-	 */
-	private static Function<String[], Integer> getPairs () {
-		return (final String[] args) -> {
-
-			Integer result = FAILURE;
-			
-			Connection connection = null;
-			try {
-				final String forecastVariable = args[0];
-				final String observationVariable = args[1];
-				final String lead = args[2];
-				final String targetUnit = args[3];
-				final int targetUnitID = MeasurementUnits.getMeasurementUnitID(targetUnit);
-				final int observationVariableID = Variables.getVariableID(observationVariable, targetUnitID);
-				final int forecastVariableID = Variables.getVariableID(forecastVariable, targetUnitID);
-				int forecastVariablePositionID;
-				int observationVariablePositionID;
-
-				final List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
-				String script;
-
-				script = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = " + observationVariableID + ";";
-				observationVariablePositionID = Database.getResult(script, "variableposition_id");
-
-				script = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = " + forecastVariableID + ";";
-				forecastVariablePositionID = Database.getResult(script, "variableposition_id");
-
-				script = "";
-				script += "WITH forecast_measurements AS (" + NEWLINE;
-				script += "   SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + NEWLINE;
-				script += "       array_agg(FV.forecasted_value * UC.factor) AS forecasts" + NEWLINE;
-				script += "   FROM wres.Forecast F" + NEWLINE;
-				script += "   INNER JOIN wres.ForecastEnsemble FE" + NEWLINE;
-				script += "       ON F.forecast_id = FE.forecast_id" + NEWLINE;
-				script += "   INNER JOIN wres.ForecastValue FV" + NEWLINE;
-				script += "       ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE;
-				script += "   INNER JOIN wres.UnitConversion UC" + NEWLINE;
-				script += "       ON UC.from_unit = FE.measurementunit_id" + NEWLINE;
-				script += "   WHERE lead = " + lead + NEWLINE;
-				script += "       AND FE.variableposition_id = " + forecastVariablePositionID + NEWLINE;
-				script += "       AND UC.to_unit = " + targetUnitID + NEWLINE;
-				script += "   GROUP BY forecasted_date" + NEWLINE;
-				script += ")" + NEWLINE;
-				script += "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + NEWLINE;
-				script += "FROM forecast_measurements FM" + NEWLINE;
-				script += "INNER JOIN wres.Observation O" + NEWLINE;
-				script += "   ON O.observation_time = FM.forecasted_date" + NEWLINE;
-				script += "INNER JOIN wres.UnitConversion UC" + NEWLINE;
-				script += "   ON UC.from_unit = O.measurementunit_id" + NEWLINE;
-				script += "WHERE O.variableposition_id = " + observationVariablePositionID + NEWLINE;
-				script += "   AND UC.to_unit = " + targetUnitID + NEWLINE;
-				script += "ORDER BY FM.forecasted_date;";
-
-				connection = Database.getConnection();
-				final ResultSet results = Database.getResults(connection, script);
-				//JBr: replace DataFactory with with MetricInputFactory
-				MetricInputFactory inFactory = DefaultMetricInputFactory.getInstance();
-				while (results.next()) {
-					pairs.add(inFactory.pairOf((double) results.getFloat("observation"), (Double[]) results.getArray("forecasts").getArray()));
-				}
-
-				System.out.println();
-				System.out.println(pairs.size() + " pairs were retrieved!");
-				System.out.println();
-
-				for (int i = 0; i < 10; ++i) {
-					String representation = pairs.get(i).toString();
-					representation = representation.substring(0, Math.min(100, representation.length()));
-					if (representation.length() == 100) {
-						representation += "...";
-					}
-					System.out.println(representation);
-				}
-				result = SUCCESS;
-			}
-			catch (final Exception e) {
-				e.printStackTrace();
-			}
-			finally {
-				if (connection != null) {
-					Database.returnConnection(connection);
-				}
-			}
-			return result;
-		};
-	}
-
 	private static Function<String[], Integer> refreshStatistics ()
 	{
 		return (final String[] args) -> {
@@ -1001,64 +559,37 @@ public final class MainFunctions
                     LOGGER.info("The project name is: {}", projectName);
                     Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping = new TreeMap<>();
 
-                    if (ProjectSettings.isModernProject(projectName))
+                    final ProjectConfig foundProject = ConfigHelper.read(projectName);// ProjectSettings.getProject(projectName);
+                    Integer variableId = Variables.getVariableID(foundProject
+                                                                         .getInputs()
+                                                                         .getRight()
+                                                                         .getVariable()
+                                                                         .getValue(),
+                                                                 foundProject
+                                                                         .getInputs()
+                                                                         .getRight()
+                                                                         .getVariable()
+                                                                         .getUnit());
+
+                    LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(variableId);
+
+                    Integer finalLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
+                    Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<>();
+
+                    int step = 1;
+
+                    while (ConfigHelper.leadIsValid(foundProject, step, finalLead))
                     {
-                        final ProjectConfig foundProject = ProjectSettings.getModernProject(projectName);
-                        Integer variableId = Variables.getVariableID(foundProject
-                                                                             .getInputs()
-                                                                             .getRight()
-                                                                             .getVariable()
-                                                                             .getValue(),
-                                                                     foundProject
-                                                                             .getInputs()
-                                                                             .getRight()
-                                                                             .getVariable()
-                                                                             .getUnit());
-
-                        LabeledScript lastLeadScript = ScriptFactory.generateFindLastLead(variableId);
-
-                        Integer finalLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
-                        Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<>();
-
-                        int step = 1;
-
-                        while (ConfigHelper.leadIsValid(foundProject, step, finalLead))
-						{
-							PairRetriever pairRetriever = new PairRetriever(foundProject, step);
-							pairRetriever.setOnRun(ProgressMonitor.onThreadStartHandler());
-							pairRetriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-							threadResults.put(step, Database.submit(pairRetriever));
-							step++;
-						}
-
-						for (Entry<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResult : threadResults.entrySet())
-						{
-							pairMapping.put(threadResult.getKey(), threadResult.getValue().get());
-						}
+                        PairRetriever pairRetriever = new PairRetriever(foundProject, step);
+                        pairRetriever.setOnRun(ProgressMonitor.onThreadStartHandler());
+                        pairRetriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                        threadResults.put(step, Database.submit(pairRetriever));
+                        step++;
                     }
-                    else if (ProjectSettings.isLegacyProject(projectName))
+
+                    for (Entry<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResult : threadResults.entrySet())
                     {
-                        String metricName = args[1];
-                        final ProjectSpecification foundProject = ProjectSettings.getProject(projectName);
-
-                        if (foundProject == null)
-                        {
-                            System.err.println("There is not a project named '" + projectName + "'");
-                            System.err.println("Pairs could not be created because there wasn't a specification.");
-                            return result;
-                        }
-
-                        final MetricSpecification metric = foundProject.getMetric(metricName);
-
-                        if (metric == null)
-                        {
-                            System.err.println("There is not a metric named '" + metricName + "' in the project '" + projectName + '"');
-                            System.err.println("Pairs could not be created because there wasn't a specification.");
-                            return result;
-                        }
-
-                        pairMapping = metric.getPairs();
-
+                        pairMapping.put(threadResult.getKey(), threadResult.getValue().get());
                     }
 
                     final int printLimit = 100;
@@ -1101,181 +632,12 @@ public final class MainFunctions
 	        }
 	        else
 	        {
-	            System.err.println("There are not enough arguments to run 'getProjectPairs'");
-	            System.err.println("usage: getProjectPairs <project name> <metric name>");
+	            LOGGER.error("There are not enough arguments to run 'getProjectPairs'");
+	            LOGGER.error("usage: getProjectPairs <project name> <metric name>");
 	        }
 	        return result;
 	    };
 	}
-	
-	private static Function<String[], Integer> executeProject() {
-	    return (final String[] args) -> {
-			Integer result = FAILURE;
-	        if (args.length > 0) {
-	            try {
-                    final String projectName = args[0];
-                    String metricName = null;
-
-                    if (args.length > 1) {
-                        metricName = args[1];
-                    }
-
-                    final ProjectSpecification project = ProjectSettings.getProject(projectName);
-                    final List<Future> ingestOperations = new ArrayList<>();
-
-                    Database.suspendAllIndices();
-
-                    for (final ProjectDataSpecification datasource : project.getDatasources()) {
-                        LOGGER.info("Loading datasource information if it doesn't already exist...");
-                        final ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
-                        try {
-                            ingestOperations.addAll(dataLoader.load());
-                        }
-                        catch (final IOException e) {
-                            LOGGER.error(Strings.getStackTrace(e));
-                        }
-                    }
-
-                    if (ingestOperations.size() > 0) {
-                        for (final Future operation : ingestOperations) {
-                            try {
-                                operation.get();
-                            }
-                            catch (final InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            catch (final ExecutionException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                    ProgressMonitor.resetMonitor();
-					LOGGER.info("");
-                    LOGGER.info("Restoring all suspended indices in the database...");
-                    LOGGER.info("");
-                    Database.restoreAllIndices();
-
-                    final Map<String, List<LeadResult>> results = new TreeMap<>();
-                    final Map<String, Future<List<LeadResult>>> futureResults = new TreeMap<>();
-
-                    if (metricName == null) {
-                        for (int metricIndex = 0; metricIndex < project.metricCount(); ++metricIndex) {
-                            final MetricSpecification specification = project.getMetric(metricIndex);
-                            final MetricTask metric = new MetricTask(specification, null);
-                            metric.setOnRun(ProgressMonitor.onThreadStartHandler());
-                            metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                            System.err.println("Now executing the metric named: " + specification.getName());
-                            futureResults.put(specification.getName(), Executor.submit(metric));
-                        }
-                    }
-                    else {
-                        final MetricSpecification specification = project.getMetric(metricName);
-
-                        if (specification != null) {
-                            final MetricTask metric = new MetricTask(specification, null);
-                            metric.setOnRun(ProgressMonitor.onThreadStartHandler());
-                            metric.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                            System.err.println("Now executing the metric named: " + specification.getName());
-                            futureResults.put(specification.getName(), Executor.submit(metric));
-                        }
-                    }
-
-                    for (final Entry<String, Future<List<LeadResult>>> entry : futureResults.entrySet()) {
-                        try {
-                            results.put(entry.getKey(), entry.getValue().get());
-                        }
-                        catch (InterruptedException | ExecutionException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    System.out.println();
-                    System.out.println("Project: " + projectName);
-                    System.out.println();
-
-                    for (final Entry<String, List<LeadResult>> entry : results.entrySet()) {
-                        System.out.println();
-                        System.out.println(entry.getKey());
-                        System.out.println("--------------------------------------------------------------------------------------");
-
-                        for (final LeadResult metricResult : entry.getValue()) {
-                            System.out.print(metricResult.getLead());
-                            System.out.print("\t\t|\t");
-                            System.out.println(metricResult.getResult());
-                        }
-
-                        System.out.println();
-                    }
-                    result = SUCCESS;
-                }
-                catch (final Exception e)
-                {
-                    LOGGER.error(Strings.getStackTrace(e));
-                    result = FAILURE;
-                }
-	        }
-	        else
-	        {
-	            System.err.println("There are not enough arguments to run 'executeProject'");
-	            System.err.println("usage: executeProject <project name> [<metric name>]");
-	        }
-	        return result;
-	    };
-    }
-
-    private static Function<String[], Integer> ingestProject() {
-        return (final String[] args) -> {
-            Integer result = FAILURE;
-            if (args.length > 0) {
-                try {
-                    final String projectName = args[0];
-
-                    final ProjectSpecification project = ProjectSettings.getProject(projectName);
-                    final List<Future> ingestOperations = new ArrayList<>();
-
-                    Database.suspendAllIndices();
-
-                    for (final ProjectDataSpecification datasource : project.getDatasources()) {
-                        LOGGER.info("Loading datasource information if it doesn't already exist...");
-                        final ConfiguredLoader dataLoader = new ConfiguredLoader(datasource);
-                        try {
-                            ingestOperations.addAll(dataLoader.load());
-                        }
-                        catch (final IOException e) {
-                            LOGGER.error(Strings.getStackTrace(e));
-                        }
-                    }
-
-                    if (ingestOperations.size() > 0) {
-                        for (final Future operation : ingestOperations) {
-                            try {
-                                operation.get();
-                            }
-                            catch (final InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            catch (final ExecutionException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-
-                    result = SUCCESS;
-                }
-                catch (Exception e)
-                {
-                    LOGGER.error(Strings.getStackTrace(e));
-                    result = FAILURE;
-                }
-            }
-            else
-            {
-                System.err.println("There are not enough arguments to run 'executeProject'");
-                System.err.println("usage: executeProject <project name> [<metric name>]");
-            }
-            return result;
-        };
-    }
 
     private static Function<String[], Integer> ingestByConfiguration() {
 	    return (String[] args) -> {
@@ -1298,10 +660,7 @@ public final class MainFunctions
                         try {
                             task.get();
                         }
-                        catch (InterruptedException e) {
-                            LOGGER.error(Strings.getStackTrace(e));
-                        }
-                        catch (ExecutionException e) {
+                        catch (InterruptedException | ExecutionException e) {
                             LOGGER.error(Strings.getStackTrace(e));
                         }
                     }
@@ -1325,10 +684,7 @@ public final class MainFunctions
                         LOGGER.error(Strings.getStackTrace(e));
                     }
                 }
-                catch (JAXBException e) {
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-                catch (IOException e) {
+                catch (JAXBException | IOException e) {
                     LOGGER.error(Strings.getStackTrace(e));
                 }
             }
@@ -1458,11 +814,9 @@ public final class MainFunctions
 
 	private static Function<String[], Integer> buildDatabase() {
 		return (String[] args) -> {
-			Integer result = FAILURE;
-
 			Database.buildInstance();
 
-			return result;
+			return FAILURE;
 		};
 	}
 
@@ -1535,16 +889,10 @@ public final class MainFunctions
                 }
 
 			}
-			catch (FileNotFoundException e) {
+			catch (XMLStreamException | IOException e) {
 				e.printStackTrace();
 			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-			catch (XMLStreamException e) {
-				e.printStackTrace();
-			}
-			finally
+            finally
 			{
 				if (reader != null)
 				{

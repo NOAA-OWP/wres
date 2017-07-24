@@ -1,7 +1,7 @@
 package wres.io.reading;
 
+import wres.config.generated.Format;
 import wres.io.reading.fews.FEWSSource;
-import wres.io.reading.fews.ZippedSource;
 import wres.io.reading.ucar.NetCDFSource;
 
 import java.io.IOException;
@@ -73,4 +73,39 @@ public class ReaderFactory {
 
 		return type;
 	}
+
+	public static SourceType getFileType (Format fileFormat)
+    {
+        SourceType type;
+
+        String formatType = "";
+
+        if (fileFormat != null)
+        {
+            formatType = fileFormat.toString().toLowerCase();
+        }
+
+        if (formatType.equalsIgnoreCase("PI-XML"))
+        {
+            type = SourceType.PI_XML;
+        }
+        else if (formatType.equalsIgnoreCase("datacard"))
+        {
+            type = SourceType.DATACARD;
+        }
+        else if (formatType.equalsIgnoreCase("netcdf"))
+        {
+            type = SourceType.NETCDF;
+        }
+        else if (formatType.equalsIgnoreCase("archive"))
+        {
+            type = SourceType.ARCHIVE;
+        }
+        else
+        {
+            type = SourceType.UNDEFINED;
+        }
+
+        return type;
+    }
 }

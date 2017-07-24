@@ -1,7 +1,6 @@
 package wres.io.reading.fews;
 
 import wres.io.reading.BasicSource;
-import wres.io.reading.XMLReader;
 
 import java.io.IOException;
 
@@ -11,11 +10,6 @@ import java.io.IOException;
  */
 public class FEWSSource extends BasicSource {
 
-	/**
-	 * Constructor
-	 */
-	public FEWSSource() {}
-	
 	/**
 	 * Constructor that sets the filename 
 	 * @param filename The name of the source file
@@ -27,13 +21,17 @@ public class FEWSSource extends BasicSource {
 
 	@Override
 	public void saveForecast() throws IOException {
-		XMLReader sourceReader = new PIXMLReader(this.getFilename());
+		PIXMLReader sourceReader = new PIXMLReader(this.getFilename(), true);
+		sourceReader.setDataSourceConfig(this.getDataSourceConfig());
+		sourceReader.setSpecifiedFeatures(this.getSpecifiedFeatures());
 		sourceReader.parse();
 	}
 
 	@Override
 	public void saveObservation() throws IOException {
-		XMLReader sourceReader = new PIXMLReader(this.getAbsoluteFilename(), false);
+		PIXMLReader sourceReader = new PIXMLReader(this.getAbsoluteFilename(), false);
+		sourceReader.setDataSourceConfig(this.getDataSourceConfig());
+		sourceReader.setSpecifiedFeatures(this.getSpecifiedFeatures());
 		sourceReader.parse();
 	}
 

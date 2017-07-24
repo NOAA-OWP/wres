@@ -19,6 +19,8 @@
             <xs:enumeration value="PI-XML" />
             <xs:enumeration value="netCDF" />
             <xs:enumeration value="datacard" />
+            <xs:enumeration value="archive" />
+            <xs:enumeration value="all" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -81,8 +83,8 @@
                 </xs:complexType>
             </xs:element>
         </xs:sequence>
-        <xs:attribute name="firstLead" type="xs:int" default="1" use="optional"/>
-        <xs:attribute name="lastLead" type="xs:int" use="optional" default="2147483647" />
+        <xs:attribute name="firstLead" type="xs:int" default="1"/>
+        <xs:attribute name="lastLead" type="xs:int" default="2147483647" />
     </xs:complexType>
 
     <xs:complexType name="location">

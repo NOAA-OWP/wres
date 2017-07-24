@@ -1,18 +1,12 @@
-package wres.io.reading.fews;
+package wres.io.reading;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import wres.io.concurrency.Executor;
-import wres.io.concurrency.ForecastSaver;
-import wres.io.concurrency.ObservationSaver;
-import wres.io.concurrency.WRESRunnable;
+import wres.io.concurrency.*;
 import wres.io.config.SystemSettings;
-import wres.io.reading.BasicSource;
-import wres.io.reading.ReaderFactory;
-import wres.io.reading.SourceType;
 import wres.io.utilities.Database;
 import wres.util.ProgressMonitor;
 
@@ -20,7 +14,10 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * @author Christopher Tubbs
@@ -86,7 +83,6 @@ public class ZippedSource extends BasicSource {
         GzipCompressorInputStream decompressedFileStream = null;
         TarArchiveInputStream archive = null;
         TarArchiveEntry archivedSource;
-        byte[] content;
 
         try {
             fileStream = new FileInputStream(this.getAbsoluteFilename());
@@ -112,10 +108,7 @@ public class ZippedSource extends BasicSource {
                 try {
                     ingestTask.get();
                 }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                catch (ExecutionException e) {
+                catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
                 }
                 ingestTask = this.getIngestTask();
@@ -139,10 +132,7 @@ public class ZippedSource extends BasicSource {
                 new File(filename).delete();
             }
         }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-        catch (InterruptedException e) {
+        catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
         finally {
@@ -186,8 +176,6 @@ public class ZippedSource extends BasicSource {
                 }
             }
         }
-
-
     }
 
     private void processFile(TarArchiveEntry source, TarArchiveInputStream archiveInputStream, boolean isForecast) throws IOException
@@ -197,79 +185,36 @@ public class ZippedSource extends BasicSource {
 
         byte[] content = new byte[(int)source.getSize()];
         archiveInputStream.read(content, 0, content.length);
+        WRESRunnable ingest;
 
         if (sourceType == SourceType.PI_XML)
         {
-            WRESRunnable saver = new WRESRunnable() {
-                @Override
-                protected void execute () {
-
-
-                    try (InputStream input = new ByteArrayInputStream(this.content)) {
-                        PIXMLReader reader = new PIXMLReader(this.filename,
-                                                             input,
-                                                             this.isForecast);
-                        reader.parse();
-                    }
-                    catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                @Override
-                protected String getTaskName () {
-                    return "ZippedSource - Saving PIXML - " + this.filename;
-                }
-
-                @Override
-                protected Logger getLogger () {
-                    return ZippedSource.LOGGER;
-                }
-
-                public WRESRunnable init(String filename, byte[] content, boolean isForecast)
-                {
-                    this.filename = filename;
-                    this.content = content;
-                    this.isForecast = isForecast;
-                    return this;
-                }
-
-                private byte[] content;
-                private String filename;
-                private boolean isForecast;
-            }.init(archivedFileName, content, isForecast);
-
-            this.addIngestTask(saver);
+            ingest = new ZippedPIXMLIngest(archivedFileName, content, this.getDataSourceConfig(), this.getSpecifiedFeatures());
+            ingest.setOnRun(ProgressMonitor.onThreadStartHandler());
+            ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+            this.addIngestTask(ingest);
         }
         else
         {
-            FileOutputStream stream = new FileOutputStream(archivedFileName);
-
-            try
+            try (FileOutputStream stream = new FileOutputStream(archivedFileName))
             {
                 stream.write(content);
                 this.savedFiles.add(archivedFileName);
 
-                WRESRunnable saver;
-
                 if (isForecast)
                 {
-                    saver = new ForecastSaver(archivedFileName, this.getDataSourceConfig());
+                    ingest = new ForecastSaver(archivedFileName, this.getDataSourceConfig(), this.getSpecifiedFeatures());
                 }
                 else
                 {
-                    saver = new ObservationSaver(archivedFileName, this.getDataSourceConfig());
+                    ingest = new ObservationSaver(archivedFileName, this.getDataSourceConfig(), this.getSpecifiedFeatures());
                 }
 
-                saver.setOnRun(ProgressMonitor.onThreadStartHandler());
-                saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                ingest.setOnRun(ProgressMonitor.onThreadStartHandler());
+                ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 
-                Future task = Executor.execute(saver);
+                Future task = Executor.execute(ingest);
                 this.addIngestTask(task);
-            }
-            finally
-            {
-                stream.close();
             }
 
         }
