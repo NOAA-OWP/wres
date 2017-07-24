@@ -17,7 +17,7 @@ public class XMLReader
 {
     private String filename;
     private final boolean find_on_classpath;
-    private final File file;
+    private final InputStream inputStream;
     private XMLInputFactory factory = null;
 
     private final Logger LOGGER = LoggerFactory.getLogger(XMLReader.class);
@@ -30,18 +30,18 @@ public class XMLReader
 	    this(filename, false);
 	}
 
-	public XMLReader (File file)
+	public XMLReader (String fileName, InputStream inputStream)
 	{
 		this.find_on_classpath = false;
-		this.filename = null;
-		this.file = file;
+		this.filename = fileName;
+		this.inputStream = inputStream;
 	}
 	
 	public XMLReader(String filename, boolean find_on_classpath)
 	{
 	    this.filename = filename;
 	    this.find_on_classpath = find_on_classpath;
-	    this.file = null;
+	    this.inputStream = null;
 
 	    LOGGER.trace("Created XMLReader for file: {} find_on_classpath={}", filename, find_on_classpath);
 	}
@@ -61,7 +61,7 @@ public class XMLReader
 	    XMLStreamReader reader = null;
 		try
 		{
-			reader = create_reader();
+			reader = createReader();
 			
 			while (reader.hasNext())
 			{
@@ -103,7 +103,7 @@ public class XMLReader
 		this.filename = filename;
 	}
 	
-	protected XMLStreamReader create_reader() throws FileNotFoundException, XMLStreamException
+	protected XMLStreamReader createReader () throws FileNotFoundException, XMLStreamException
 	{
 		XMLStreamReader reader = null;
 
@@ -124,9 +124,9 @@ public class XMLReader
 			reader = factory.createXMLStreamReader(new FileReader(getFilename()));
 		}
 
-        if (reader == null && this.file != null)
+        if (reader == null && this.inputStream != null)
         {
-            reader = factory.createXMLStreamReader(new FileReader(this.file));
+            reader = factory.createXMLStreamReader(inputStream);
         }
 		else if (reader == null && this.filename != null)
         {
