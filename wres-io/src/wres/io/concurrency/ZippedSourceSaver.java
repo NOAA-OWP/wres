@@ -2,12 +2,8 @@ package wres.io.concurrency;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import wres.io.reading.XMLReader;
-import wres.io.reading.fews.PIXMLReader;
-import wres.util.Strings;
 
 import java.io.File;
-import java.io.IOException;
 
 /**
  * Created by ctubbs on 7/19/17.
@@ -28,7 +24,7 @@ public final class ZippedSourceSaver extends WRESRunnable {
     @Override
     public void execute ()
     {
-        try
+        /*try
         {
             XMLReader reader = new PIXMLReader(this.source, this.isForecast);
             reader.parse();
@@ -36,7 +32,7 @@ public final class ZippedSourceSaver extends WRESRunnable {
         catch (IOException e)
         {
             LOGGER.error(Strings.getStackTrace(e));
-        }
+        }*/
     }
 
     @Override

@@ -2,6 +2,9 @@ package util;
 
 import concurrency.Downloader;
 import concurrency.ProjectExecutor;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
@@ -33,11 +36,15 @@ import wres.io.utilities.Database;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
+import wres.util.XML;
 
 import javax.xml.bind.JAXBException;
-import java.io.File;
-import java.io.IOException;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -128,6 +135,7 @@ public final class MainFunctions
 		prototypes.put("loadcoordinates", loadCoordinates());
 		prototypes.put("builddatabase", buildDatabase());
 		prototypes.put("ingestbyconfiguration", ingestByConfiguration());
+		prototypes.put("testgzip", testGZIP());
 
 		return prototypes;
 	}
@@ -1455,6 +1463,141 @@ public final class MainFunctions
 			Database.buildInstance();
 
 			return result;
+		};
+	}
+
+	private static Function<String[], Integer> testGZIP() {
+		return (String[] args) -> {
+
+			final String fileName = "/home/ctubbs/workspace/wres/wres-core/testinput/sharedinput/example.tar.gz";
+
+			final Path path = Paths.get(fileName);
+			/*ZippedSource source = new ZippedSource(fileName);
+			try {
+				source.saveForecast();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}*/
+
+			FileInputStream fileInputStream = null;
+			BufferedInputStream bufferedInputStream = null;
+			GzipCompressorInputStream decompressedFileStream = null;
+			TarArchiveInputStream archiveInputStream = null;
+
+			byte[] content;
+
+			XMLStreamReader reader = null;
+
+			try
+			{
+				fileInputStream = new FileInputStream(fileName);
+				bufferedInputStream = new BufferedInputStream(fileInputStream);
+				decompressedFileStream = new GzipCompressorInputStream(bufferedInputStream);
+				archiveInputStream = new TarArchiveInputStream(decompressedFileStream);
+
+                TarArchiveEntry entry = archiveInputStream.getNextTarEntry();
+
+                XMLInputFactory factory = XMLInputFactory.newFactory();
+
+                if (!entry.isFile())
+                {
+                    entry = archiveInputStream.getNextTarEntry();
+                }
+
+                while (entry != null)
+                {
+                    if (entry.isFile())
+                    {
+                        content = new byte[(int)entry.getSize()];
+                        archiveInputStream.read(content, 0, content.length);
+
+                        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
+
+                        reader = factory.createXMLStreamReader(byteArrayInputStream);
+
+                        while (reader.hasNext())
+                        {
+                            reader.next();
+                            if (XML.xmlTagClosed(reader, "TimeSeries"))
+                            {
+                                LOGGER.info("Hit the end of a forecast...");
+                            }
+                            else if (XML.tagIs(reader, "TimeSeries"))
+                            {
+                                LOGGER.info("Hit the start of a forecast...");
+                                LOGGER.info("The name of the file is: " + path.toAbsolutePath().getParent() + "/" + entry.getName());
+                            }
+                        }
+                    }
+
+                    entry = archiveInputStream.getNextTarEntry();
+                }
+
+			}
+			catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+			catch (XMLStreamException e) {
+				e.printStackTrace();
+			}
+			finally
+			{
+				if (reader != null)
+				{
+					try {
+						reader.close();
+					}
+					catch (XMLStreamException e) {
+						e.printStackTrace();
+					}
+				}
+
+				if (archiveInputStream != null)
+				{
+					try {
+						archiveInputStream.close();
+					}
+					catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+
+				if (decompressedFileStream != null)
+				{
+					try {
+						decompressedFileStream.close();
+					}
+					catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+
+				if (bufferedInputStream != null)
+				{
+					try {
+						bufferedInputStream.close();
+					}
+					catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+
+				if (fileInputStream != null)
+				{
+					try {
+						fileInputStream.close();
+					}
+					catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
+			return FAILURE;
 		};
 	}
 }
