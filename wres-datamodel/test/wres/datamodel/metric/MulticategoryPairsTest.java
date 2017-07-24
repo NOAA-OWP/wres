@@ -29,7 +29,7 @@ public final class MulticategoryPairsTest
     public void test1MulticategoryPairs()
     {
         final List<VectorOfBooleans> values = new ArrayList<>();
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = metIn.getMetadataFactory();
         final MulticategoryPairsBuilder b = new MulticategoryPairsBuilder();
 

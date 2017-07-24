@@ -30,7 +30,7 @@ public final class SingleValuedPairsTest
     {
         final List<PairOfDoubles> values = new ArrayList<>();
         final SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = metIn.getMetadataFactory();
 
         for(int i = 0; i < 10; i++)

@@ -1,10 +1,13 @@
 package wres;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -12,8 +15,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -24,32 +31,36 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
-import javax.xml.bind.ValidationEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.SafePairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.metric.*;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputMapByMetric;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.vis.ChartEngineFactory;
-
-import static java.nio.file.Files.probeContentType;
 
 /**
  * Another way to execute a project.
@@ -59,21 +70,17 @@ public class Control implements Function<String[], Integer>
     private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
     public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
     private static final AtomicLong lastMessageTime = new AtomicLong();
-    private static final AtomicBoolean messagedForEarliestDate = new AtomicBoolean(false);
-    private static final AtomicBoolean messagedForLatestDate = new AtomicBoolean(false);
     private static final AtomicBoolean messagedSqlStatement = new AtomicBoolean(false);
 
     /** System property used to retrieve max thread count, passed as -D */
     public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
-    /** When system property is absent, multiply count of cores by this */
-    public static final int MAX_THREADS_DEFAULT_MULTIPLIER = 8;
+
     public static final int MAX_THREADS;
     // Figure out the max threads from property or by default rule.
     // Ideally priority order would be: -D, SystemSettings, default rule.
     static
     {
-        final String maxThreadsStr = System.getProperty(MAX_THREADS_PROP_NAME);
-        // TODO: try setting using SystemSettings first, -DmaxThreads second. Priority goes to -D.
+        String maxThreadsStr = System.getProperty(MAX_THREADS_PROP_NAME);
         int maxThreads;
         try
         {
@@ -81,12 +88,10 @@ public class Control implements Function<String[], Integer>
         }
         catch(final NumberFormatException nfe)
         {
-            maxThreads = Runtime.getRuntime().availableProcessors() * MAX_THREADS_DEFAULT_MULTIPLIER;
-            //LOGGER.warn("Java -D property {} not set, defaulting Control.MAX_THREADS to {}",
-            //            MAX_THREADS_PROP_NAME,
-            //            maxThreads);
+            maxThreads =  SystemSettings.maximumThreadCount();
         }
-        if(maxThreads >= 1)
+
+        if (maxThreads >= 1)
         {
             MAX_THREADS = maxThreads;
         }
@@ -420,34 +425,33 @@ public class Control implements Function<String[], Integer>
             {
                 pairs = futurePair.get();
             }
-            catch(final InterruptedException ie)
+            catch(InterruptedException ie)
             {
                 LOGGER.error("Interrupted while getting pair for lead time {}", this.leadTime);
                 Thread.currentThread().interrupt();
             }
-            catch(final ExecutionException ee)
+            catch(ExecutionException ee)
             {
                 // This is when execution from the upstream queue has failed.
                 // Propagate an exception back up.
-                final String message = "While getting pair for lead time " + this.leadTime;
+                String message = "While getting pair for lead time " + this.leadTime;
                 throw new ProcessingException(message, ee);
             }
 
             // Grow a List of PairOfDoubleAndVectorOfDoubles into a simpler
             // List of PairOfDouble for metric calculation.
-            final List<PairOfDoubles> simplePairs = Slicer.getFlatDoublePairs(pairs);
+            List<PairOfDoubles> simplePairs = Slicer.getFlatDoublePairs(pairs);
 
             // What follows for the rest of call() was originally from MetricCollectionTest.
 
             // Convert pairs into metric input
-            final MetricInputFactory inputFactory = DefaultMetricInputFactory.getInstance();
-            final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
-            final MetadataFactory metFac = inputFactory.getMetadataFactory();
-            final Metadata meta = metFac.getMetadata(simplePairs.size(),
+            DataFactory dataFactory = DefaultDataFactory.getInstance();
+            MetadataFactory metFac = dataFactory.getMetadataFactory();
+            Metadata meta = metFac.getMetadata(simplePairs.size(),
                     metFac.getDimension(projectConfig.getPair().getUnit()),
                     metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
-            final SingleValuedPairs input = inputFactory.ofSingleValuedPairs(simplePairs,
-                                                                             meta);
+            SingleValuedPairs input = dataFactory.ofSingleValuedPairs(simplePairs,
+                                                                       meta);
 
             // generate some graphics, this is almost certainly not where we
             // will do it, but it was a first "go" at integrating graphics into
@@ -479,11 +483,11 @@ public class Control implements Function<String[], Integer>
             // Create an immutable collection of metrics that consume single-valued pairs
             // and produce a scalar output
             //Build an immutable collection of metrics, to be computed at each of several forecast lead times
-            final MetricFactory metricFactory = MetricFactory.getInstance(outputFactory);
-            final MetricCollection<SingleValuedPairs, ScalarOutput> collection =
-                                                                               metricFactory.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
-                                                                                                                            MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                                                                            MetricConstants.ROOT_MEAN_SQUARE_ERROR);
+            MetricFactory metricFactory = MetricFactory.getInstance(dataFactory);
+            MetricCollection<SingleValuedPairs, ScalarOutput> collection =
+                    metricFactory.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
+                                                                 MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                 MetricConstants.ROOT_MEAN_SQUARE_ERROR);
             //Compute sequentially (i.e. not in parallel)
             return collection.apply(input);
         }
@@ -711,8 +715,8 @@ public class Control implements Function<String[], Integer>
     {
         Objects.requireNonNull(config);
 
-        final LocalDateTime earliest = getEarliestDateTimeFromDataSources(config);
-        final LocalDateTime latest = getLatestDateTimeFromDataSources(config);
+        final LocalDateTime earliest = ConfigHelper.getEarliestDateTimeFromDataSources(config);
+        final LocalDateTime latest = ConfigHelper.getLatestDateTimeFromDataSources(config);
 
         if (earliest == null && latest == null)
         {
@@ -736,94 +740,6 @@ public class Control implements Function<String[], Integer>
         }
     }
 
-    /**
-     * Returns the later of any "earliest" date specified in left or right datasource.
-     * If only one date is specified, that one is returned.
-     * If no dates for "earliest" are specified, null is returned.
-     * @param config
-     * @return the most narrow "earliest" date, null otherwise
-     */
-    private static LocalDateTime getEarliestDateTimeFromDataSources(final ProjectConfig config)
-    {
-        if (config.getConditions() == null)
-        {
-            return null;
-        }
 
-        String earliest = "";
-
-        try
-        {
-            earliest = config.getConditions().getDates().getEarliest();
-            return LocalDateTime.parse(earliest);
-        }
-        catch (final NullPointerException npe)
-        {
-            if (!messagedForEarliestDate.getAndSet(true))
-            {
-                LOGGER.info("No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-07-06T11:35\" /> under <conditions> (near line {} column {} of project file) to specify an earliest date.",
-                        config.getConditions().sourceLocation().getLineNumber(),
-                        config.getConditions().sourceLocation().getColumnNumber());
-            }
-            return null;
-        }
-        catch (final DateTimeParseException dtpe)
-        {
-            if (!messagedForEarliestDate.getAndSet(true))
-            {
-                LOGGER.warn(
-                        "Correct the date \"{}\" near line {} column {} to ISO8601 format such as \"2017-06-27T16:16\"",
-                        earliest,
-                        config.getConditions().getDates().sourceLocation().getLineNumber(),
-                        config.getConditions().getDates().sourceLocation().getColumnNumber());
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Returns the earlier of any "latest" date specified in left or right datasource.
-     * If only one date is specified, that one is returned.
-     * If no dates for "latest" are specified, null is returned.
-     * @param config
-     * @return the most narrow "latest" date, null otherwise.
-     */
-    private static LocalDateTime getLatestDateTimeFromDataSources(final ProjectConfig config)
-    {
-        if (config.getConditions() == null)
-        {
-            return null;
-        }
-
-        String latest = "";
-
-        try
-        {
-            latest = config.getConditions().getDates().getLatest();
-            return LocalDateTime.parse(latest);
-        }
-        catch (final NullPointerException npe)
-        {
-            if (!messagedForLatestDate.getAndSet(true))
-            {
-                LOGGER.info("No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-07-06T11:35\" />  under <conditions> (near line {} col {} of project file) to specify a latest date.",
-                        config.getConditions().sourceLocation().getLineNumber(),
-                        config.getConditions().sourceLocation().getColumnNumber());
-            }
-            return null;
-        }
-        catch (final DateTimeParseException dtpe)
-        {
-            if (!messagedForLatestDate.getAndSet(true))
-            {
-                LOGGER.warn(
-                        "Correct the date \"{}\" after line {} col {} to ISO8601 format such as \"2017-06-27T16:16\"",
-                        latest,
-                        config.getConditions().getDates().sourceLocation().getLineNumber(),
-                        config.getConditions().getDates().sourceLocation().getColumnNumber());
-            }
-            return null;
-        }
-    }
 }
 

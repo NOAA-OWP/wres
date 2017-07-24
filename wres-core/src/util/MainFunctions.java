@@ -12,11 +12,14 @@ import ucar.nc2.Variable;
 import wres.Control;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.PairRetriever;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.grouping.LabeledScript;
 import wres.io.reading.SourceLoader;
@@ -527,6 +530,131 @@ public final class MainFunctions
                 LOGGER.warn("	short_range");
 			}
 
+			return result;
+		};
+	}
+
+	/**
+	 * Creates the "flushObservations" method
+	 *
+	 * @return A method that will remove all observation data from the database.
+	 */
+	private static Function<String[], Integer> flushObservations()
+	{
+		return (final String[] args) -> {
+			Integer result = FAILURE;
+			String script;
+			script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + NEWLINE;
+			script += "DELETE FROM wres.Source S" + NEWLINE;
+			script += "WHERE NOT EXISTS (" + NEWLINE;
+			script += "      SELECT 1" + NEWLINE;
+			script += "      FROM wres.ForecastSource FS" + NEWLINE;
+			script += "      WHERE FS.source_id = S.source_id" + NEWLINE;
+			script += ");" + NEWLINE;
+
+			try {
+				Database.execute(script);
+				result = SUCCESS;
+			}
+			catch (final Exception e) {
+				LOGGER.error("WRES Observation data could not be removed from the database." + NEWLINE);
+                LOGGER.error("");
+				LOGGER.error(script);
+				LOGGER.error("");
+				LOGGER.error(Strings.getStackTrace(e));
+			}
+			return result;
+		};
+	}
+
+	/**
+	 * Creates the 'getPairs' function
+	 *
+	 * @return Prints the count and the first 10 pairs for all observations and forecasts for the passed in forecast variable,
+	 * observation variable, and lead time
+	 */
+	private static Function<String[], Integer> getPairs () {
+		return (final String[] args) -> {
+
+			Integer result = FAILURE;
+			
+			Connection connection = null;
+			try {
+				final String forecastVariable = args[0];
+				final String observationVariable = args[1];
+				final String lead = args[2];
+				final String targetUnit = args[3];
+				final int targetUnitID = MeasurementUnits.getMeasurementUnitID(targetUnit);
+				final int observationVariableID = Variables.getVariableID(observationVariable, targetUnitID);
+				final int forecastVariableID = Variables.getVariableID(forecastVariable, targetUnitID);
+				int forecastVariablePositionID;
+				int observationVariablePositionID;
+
+				final List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+				String script;
+
+				script = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = " + observationVariableID + ";";
+				observationVariablePositionID = Database.getResult(script, "variableposition_id");
+
+				script = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = " + forecastVariableID + ";";
+				forecastVariablePositionID = Database.getResult(script, "variableposition_id");
+
+				script = "";
+				script += "WITH forecast_measurements AS (" + NEWLINE;
+				script += "   SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + NEWLINE;
+				script += "       array_agg(FV.forecasted_value * UC.factor) AS forecasts" + NEWLINE;
+				script += "   FROM wres.Forecast F" + NEWLINE;
+				script += "   INNER JOIN wres.ForecastEnsemble FE" + NEWLINE;
+				script += "       ON F.forecast_id = FE.forecast_id" + NEWLINE;
+				script += "   INNER JOIN wres.ForecastValue FV" + NEWLINE;
+				script += "       ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE;
+				script += "   INNER JOIN wres.UnitConversion UC" + NEWLINE;
+				script += "       ON UC.from_unit = FE.measurementunit_id" + NEWLINE;
+				script += "   WHERE lead = " + lead + NEWLINE;
+				script += "       AND FE.variableposition_id = " + forecastVariablePositionID + NEWLINE;
+				script += "       AND UC.to_unit = " + targetUnitID + NEWLINE;
+				script += "   GROUP BY forecasted_date" + NEWLINE;
+				script += ")" + NEWLINE;
+				script += "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + NEWLINE;
+				script += "FROM forecast_measurements FM" + NEWLINE;
+				script += "INNER JOIN wres.Observation O" + NEWLINE;
+				script += "   ON O.observation_time = FM.forecasted_date" + NEWLINE;
+				script += "INNER JOIN wres.UnitConversion UC" + NEWLINE;
+				script += "   ON UC.from_unit = O.measurementunit_id" + NEWLINE;
+				script += "WHERE O.variableposition_id = " + observationVariablePositionID + NEWLINE;
+				script += "   AND UC.to_unit = " + targetUnitID + NEWLINE;
+				script += "ORDER BY FM.forecasted_date;";
+
+				connection = Database.getConnection();
+				final ResultSet results = Database.getResults(connection, script);
+				//JBr: replace DataFactory with with MetricInputFactory
+				DataFactory inFactory = DefaultDataFactory.getInstance();
+				while (results.next()) {
+					pairs.add(inFactory.pairOf((double) results.getFloat("observation"), (Double[]) results.getArray("forecasts").getArray()));
+				}
+
+				System.out.println();
+				System.out.println(pairs.size() + " pairs were retrieved!");
+				System.out.println();
+
+				for (int i = 0; i < 10; ++i) {
+					String representation = pairs.get(i).toString();
+					representation = representation.substring(0, Math.min(100, representation.length()));
+					if (representation.length() == 100) {
+						representation += "...";
+					}
+					System.out.println(representation);
+				}
+				result = SUCCESS;
+			}
+			catch (final Exception e) {
+				e.printStackTrace();
+			}
+			finally {
+				if (connection != null) {
+					Database.returnConnection(connection);
+				}
+			}
 			return result;
 		};
 	}

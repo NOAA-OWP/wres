@@ -4,10 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.MetricInputFactory;
-import wres.io.utilities.ScriptGenerator;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptGenerator;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -36,7 +36,7 @@ public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVector
         Connection connection = null;
         ResultSet resultingPairs = null;
 
-        final MetricInputFactory dataFactory = DefaultMetricInputFactory.getInstance();
+        final DataFactory dataFactory = DefaultDataFactory.getInstance();
 
         try
         {

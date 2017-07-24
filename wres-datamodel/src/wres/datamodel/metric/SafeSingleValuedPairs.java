@@ -61,7 +61,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     @Override
     public SingleValuedPairs getBaselineData()
     {
-        return DefaultMetricInputFactory.getInstance().ofSingleValuedPairs(baselineInput, baselineMeta);
+        return DefaultDataFactory.getInstance().ofSingleValuedPairs(baselineInput, baselineMeta);
     }
 
     @Override
@@ -172,7 +172,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
             throw new MetricInputException("One or more of the baseline pairs is null.");
         }
         //Ensure safe types
-        DefaultMetricInputFactory factory = (DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance();
+        DefaultDataFactory factory = (DefaultDataFactory)DefaultDataFactory.getInstance();
         mainInput = factory.safePairOfDoublesList(b.mainInput);
         baselineInput = Objects.nonNull(b.baselineInput) ? factory.safePairOfDoublesList(b.baselineInput) : null;
         mainMeta = b.mainMeta;

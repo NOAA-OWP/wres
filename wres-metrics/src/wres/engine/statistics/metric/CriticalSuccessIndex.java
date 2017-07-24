@@ -1,9 +1,9 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.ScalarOutput;
 
 /**
@@ -32,7 +32,7 @@ public final class CriticalSuccessIndex extends ContingencyTableScore<Dichotomou
         is2x2ContingencyTable(output, this);
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
-        return getOutputFactory().ofScalarOutput(cm[0][0] / (cm[0][0] + cm[0][1] + cm[1][0]), getMetadata(output));
+        return getDataFactory().ofScalarOutput(cm[0][0] / (cm[0][0] + cm[0][1] + cm[1][0]), getMetadata(output));
     }
 
     @Override
@@ -57,7 +57,7 @@ public final class CriticalSuccessIndex extends ContingencyTableScore<Dichotomou
         @Override
         protected CriticalSuccessIndex build()
         {
-            return new CriticalSuccessIndex(outputFactory);
+            return new CriticalSuccessIndex(dataFactory);
         }
 
     }
@@ -65,12 +65,12 @@ public final class CriticalSuccessIndex extends ContingencyTableScore<Dichotomou
     /**
      * Hidden constructor.
      * 
-     * @param outputFactory the {@link MetricOutputFactory}.
+     * @param dataFactory the {@link DataFactory}.
      */
 
-    private CriticalSuccessIndex(final MetricOutputFactory outputFactory)
+    private CriticalSuccessIndex(final DataFactory dataFactory)
     {
-        super(outputFactory);
+        super(dataFactory);
     }
 
 }

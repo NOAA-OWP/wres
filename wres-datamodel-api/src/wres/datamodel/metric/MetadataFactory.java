@@ -12,25 +12,6 @@ public interface MetadataFactory
 {
 
     /**
-     * Build a {@link Metadata} object with a sample size and a default {@link Dimension}.
-     * 
-     * @param sampleSize the sample size
-     * @return a {@link Metadata} object
-     */
-
-    Metadata getMetadata(final int sampleSize);
-
-    /**
-     * Build a {@link Metadata} object with a sample size and a prescribed {@link Dimension}.
-     * 
-     * @param sampleSize the sample size
-     * @param dim the dimension
-     * @return a {@link Metadata} object
-     */
-
-    Metadata getMetadata(final int sampleSize, final Dimension dim);
-
-    /**
      * Build a {@link Metadata} object with a sample size and a prescribed {@link Dimension} and several optional
      * identifiers.
      * 
@@ -157,8 +138,45 @@ public interface MetadataFactory
      */
 
     String getMetricComponentName(final MetricConstants identifier);
-    
 
+
+    /**
+     * Build a {@link Metadata} object with a sample size and a default {@link Dimension}.
+     * 
+     * @param sampleSize the sample size
+     * @return a {@link Metadata} object
+     */
+
+    default Metadata getMetadata(final int sampleSize) {
+        return getMetadata(sampleSize, getDimension());
+    }
+
+    /**
+     * Build a {@link Metadata} object with a sample size and a prescribed {@link Dimension}.
+     * 
+     * @param sampleSize the sample size
+     * @param dim the dimension
+     * @return a {@link Metadata} object
+     */
+
+    default Metadata getMetadata(final int sampleSize, final Dimension dim) {
+        return getMetadata(sampleSize,dim,null);
+    }
+    
+    /**
+     * Builds a {@link Metadata} from a prescribed input source and a new {@link Dimension}.
+     * 
+     * @param input the source metadata
+     * @param dim the new dimension
+     * @return a {@link Metadata} object
+     */
+
+    default Metadata getMetadata(final Metadata input, final Dimension dim) {
+        return getMetadata(input.getSampleSize(),
+                           dim,
+                           input.getIdentifier());
+    }    
+    
     /**
      * Returns a dataset identifier.
      * 
@@ -188,6 +206,6 @@ public interface MetadataFactory
                                     identifier.getVariableID(),
                                     identifier.getScenarioID(),
                                     baselineScenarioID);
-    }    
+    }
 
 }
