@@ -1,21 +1,54 @@
 package util;
 
-import concurrency.Downloader;
-import concurrency.ProjectExecutor;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.function.Function;
+
+import javax.xml.bind.JAXBException;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import concurrency.Downloader;
+import concurrency.ProjectExecutor;
 import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import wres.Control;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.MetricInputFactory;
-import wres.io.concurrency.*;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
+import wres.io.concurrency.Executor;
+import wres.io.concurrency.ForecastSaver;
+import wres.io.concurrency.MetricTask;
+import wres.io.concurrency.ObservationSaver;
+import wres.io.concurrency.PairRetriever;
+import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectSettings;
 import wres.io.config.SystemSettings;
@@ -37,23 +70,6 @@ import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.XML;
-
-import javax.xml.bind.JAXBException;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.function.Function;
 
 /**
  * @author ctubbs
@@ -942,7 +958,7 @@ public final class MainFunctions
 				connection = Database.getConnection();
 				final ResultSet results = Database.getResults(connection, script);
 				//JBr: replace DataFactory with with MetricInputFactory
-				MetricInputFactory inFactory = DefaultMetricInputFactory.getInstance();
+				DataFactory inFactory = DefaultDataFactory.getInstance();
 				while (results.next()) {
 					pairs.add(inFactory.pairOf((double) results.getFloat("observation"), (Double[]) results.getArray("forecasts").getArray()));
 				}

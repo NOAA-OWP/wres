@@ -26,7 +26,7 @@ public final class DiscreteProbabilityPairsTest
     public void test1DiscreteProbabilityPairs()
     {
         final List<PairOfDoubles> values = new ArrayList<>();
-        final MetricInputFactory d = DefaultMetricInputFactory.getInstance();
+        final DataFactory d = DefaultDataFactory.getInstance();
         final DiscreteProbabilityPairsBuilder b = new DiscreteProbabilityPairsBuilder();
 
         for(int i = 0; i < 10; i++)

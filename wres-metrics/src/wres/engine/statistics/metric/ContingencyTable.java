@@ -5,9 +5,9 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MulticategoryPairs;
 
@@ -53,7 +53,7 @@ public final class ContingencyTable<S extends MulticategoryPairs> extends Metric
         //Increment the count in a serial stream as the lambda is stateful
         s.getData().stream().forEach(f);
         final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
-        return getOutputFactory().ofMatrixOutput(returnMe, metOut);
+        return getDataFactory().ofMatrixOutput(returnMe, metOut);
     }
 
     @Override
@@ -78,7 +78,7 @@ public final class ContingencyTable<S extends MulticategoryPairs> extends Metric
         @Override
         protected ContingencyTable<S> build()
         {
-            return new ContingencyTable<>(this.outputFactory);
+            return new ContingencyTable<>(this.dataFactory);
         }
 
     }
@@ -86,11 +86,11 @@ public final class ContingencyTable<S extends MulticategoryPairs> extends Metric
     /**
      * Hidden constructor.
      * 
-     * @param outputFactory the {@link MetricOutputFactory}.
+     * @param dataFactory the {@link DataFactory}.
      */
 
-    protected ContingencyTable(final MetricOutputFactory outputFactory)
+    protected ContingencyTable(final DataFactory dataFactory)
     {
-        super(outputFactory);
+        super(dataFactory);
     }
 }

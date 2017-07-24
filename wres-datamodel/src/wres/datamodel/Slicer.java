@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.MetricInputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 
 /**
  * Functions for slicing and dicing data types from the data model.
@@ -49,7 +49,7 @@ public class Slicer
      */
     public static List<PairOfDoubles> getFlatDoublePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs)
     {
-        final MetricInputFactory d = DefaultMetricInputFactory.getInstance();
+        final DataFactory d = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> result = new ArrayList<>();
         for (final PairOfDoubleAndVectorOfDoubles pair : pairs)
         {

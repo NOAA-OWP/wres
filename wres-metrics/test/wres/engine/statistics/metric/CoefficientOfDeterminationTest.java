@@ -9,12 +9,10 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricInputFactory;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -38,15 +36,14 @@ public final class CoefficientOfDeterminationTest
     public void test1CoefficientOfDetermination()
     {
         //Obtain the factories
-        final MetricInputFactory inF = DefaultMetricInputFactory.getInstance();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
+        final DataFactory dataF = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFac = dataF.getMetadataFactory();
 
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Build the metric
         final CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
-        b.setOutputFactory(outF);
+        b.setOutputFactory(dataF);
         final CoefficientOfDetermination rho = (CoefficientOfDetermination)b.build();
 
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
@@ -57,7 +54,7 @@ public final class CoefficientOfDeterminationTest
 
         //Compute normally
         final ScalarOutput actual = rho.apply(input);
-        final ScalarOutput expected = outF.ofScalarOutput(Math.pow(0.9999999910148981, 2), m1);
+        final ScalarOutput expected = dataF.ofScalarOutput(Math.pow(0.9999999910148981, 2), m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));
 
@@ -72,10 +69,10 @@ public final class CoefficientOfDeterminationTest
 
         //Check exceptions
         List<PairOfDoubles> list = new ArrayList<>();
-        list.add(inF.pairOf(0.0, 0.0));
+        list.add(dataF.pairOf(0.0, 0.0));
         try
         {
-            rho.apply(inF.ofSingleValuedPairs(list, m1));
+            rho.apply(dataF.ofSingleValuedPairs(list, m1));
             fail("Expected a checked exception on invalid inputs: insufficient pairs.");
         }
         catch(MetricCalculationException e)

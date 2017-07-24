@@ -1,18 +1,5 @@
 package wres.io.concurrency;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.MetricInputFactory;
-import wres.io.config.specification.MetricSpecification;
-import wres.io.config.specification.ProjectDataSpecification;
-import wres.io.config.specification.ScriptFactory;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.utilities.Database;
-import wres.util.DataModel;
-import wres.util.Strings;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,6 +10,20 @@ import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
+import wres.io.config.specification.MetricSpecification;
+import wres.io.config.specification.ProjectDataSpecification;
+import wres.io.config.specification.ScriptFactory;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.utilities.Database;
+import wres.util.DataModel;
+import wres.util.Strings;
 
 /**
  * A collection of Metrics that may be performed on selected data
@@ -139,7 +140,7 @@ public abstract class Metrics {
         Connection connection = null;
         ResultSet resultingPairs = null;
 
-        final MetricInputFactory dataFactory = DefaultMetricInputFactory.getInstance();
+        final DataFactory dataFactory = DefaultDataFactory.getInstance();
 
         try
         {

@@ -27,7 +27,7 @@ public final class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> 
             left.add(pair.getItemOne()-pair.getItemTwo());
             right.add(pair.getItemOne());
         });
-        return getOutputFactory().ofScalarOutput(left.sum()/right.sum(), metOut);        
+        return getDataFactory().ofScalarOutput(left.sum()/right.sum(), metOut);        
     }
 
     @Override
@@ -83,7 +83,7 @@ public final class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> 
 
     private BiasFraction(final BiasFractionBuilder b)
     {
-        super(b.outputFactory);
+        super(b.dataFactory);
     }
 
 }

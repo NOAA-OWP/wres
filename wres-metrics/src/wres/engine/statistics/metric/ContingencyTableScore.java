@@ -3,11 +3,11 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
+import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
@@ -77,7 +77,7 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
     protected MetricOutputMetadata getMetadata(final MatrixOutput output)
     {
         final MetricOutputMetadata metIn = output.getMetadata();
-        final MetadataFactory f = getOutputFactory().getMetadataFactory();
+        final MetadataFactory f = getDataFactory().getMetadataFactory();
         return f.getOutputMetadata(metIn.getSampleSize(),
                                    f.getDimension(),
                                    metIn.getDimension(),
@@ -129,13 +129,13 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
     /**
      * Hidden constructor.
      * 
-     * @param outputFactory the {@link MetricOutputFactory}
+     * @param dataFactory the {@link DataFactory}
      */
 
-    protected ContingencyTableScore(final MetricOutputFactory outputFactory)
+    protected ContingencyTableScore(final DataFactory dataFactory)
     {
-        super(outputFactory);
-        table = new ContingencyTable<>(outputFactory);
+        super(dataFactory);
+        table = new ContingencyTable<>(dataFactory);
     }
 
 }

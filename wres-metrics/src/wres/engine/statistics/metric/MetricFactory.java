@@ -2,11 +2,11 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -34,10 +34,10 @@ public class MetricFactory
 {
 
     /**
-     * Instance of an {@link MetricOutputFactory} for building metric outputs.
+     * Instance of an {@link DataFactory} for building metric outputs.
      */
 
-    private MetricOutputFactory outputFactory = null;
+    private DataFactory outputFactory = null;
 
     /**
      * Instance of the factory.
@@ -54,16 +54,16 @@ public class MetricFactory
     /**
      * Returns an instance of a {@link MetricFactory}.
      * 
-     * @param outputFactory a {@link MetricOutputFactory}
+     * @param dataFactory a {@link DataFactory}
      * @return a {@link MetricFactory}
      */
 
-    public static MetricFactory getInstance(final MetricOutputFactory outputFactory)
+    public static MetricFactory getInstance(final DataFactory dataFactory)
     {
         //Lazy construction
         if(Objects.isNull(instance))
         {
-            instance = new MetricFactory(outputFactory);
+            instance = new MetricFactory(dataFactory);
         }
         return instance;
     }
@@ -478,17 +478,17 @@ public class MetricFactory
     /**
      * Hidden constructor.
      * 
-     * @param outputFactory a {@link MetricOutputFactory}
+     * @param dataFactory a {@link DataFactory}
      */
 
-    private MetricFactory(final MetricOutputFactory outputFactory)
+    private MetricFactory(final DataFactory dataFactory)
     {
-        if(Objects.isNull(outputFactory))
+        if(Objects.isNull(dataFactory))
         {
             throw new IllegalArgumentException("Specify a non-null metric output factory to construct the "
                 + "metric factory.");
         }
-        this.outputFactory = outputFactory;
+        this.outputFactory = dataFactory;
     }
 
 }

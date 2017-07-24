@@ -31,7 +31,7 @@ public final class DichotomousPairsTest
         final List<VectorOfBooleans> values = new ArrayList<>();
 
         final DichotomousPairsBuilder b = new DichotomousPairsBuilder();
-        final MetricInputFactory d = DefaultMetricInputFactory.getInstance();
+        final DataFactory d = DefaultDataFactory.getInstance();
         for(int i = 0; i < 10; i++)
         {
             values.add(d.vectorOf(new boolean[]{true, true}));

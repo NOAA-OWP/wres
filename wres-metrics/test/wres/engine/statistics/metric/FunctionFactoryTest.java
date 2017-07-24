@@ -6,8 +6,8 @@ import java.util.function.BiPredicate;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.MetricInputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 
 /**
  * Tests the {@link FunctionFactory}.
@@ -26,7 +26,7 @@ public final class FunctionFactoryTest
     @Test
     public void test1FunctionFactory()
     {
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
         assertTrue("Failure on inequality test.", !testMe.test(-1.0, 0.0));
         assertTrue("Failure on absolute error function.",

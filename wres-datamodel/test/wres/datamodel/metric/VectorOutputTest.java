@@ -21,7 +21,7 @@ public final class VectorOutputTest
     @Test
     public void test1Equals()
     {
-        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
@@ -63,7 +63,7 @@ public final class VectorOutputTest
     @Test
     public void test2ToString()
     {
-        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
@@ -83,7 +83,7 @@ public final class VectorOutputTest
     @Test
     public void test3GetMetadata()
     {
-        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
@@ -109,7 +109,7 @@ public final class VectorOutputTest
     @Test
     public void test4HashCode()
     {
-        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),

@@ -64,7 +64,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     @Override
     public MulticategoryPairs getBaselineData()
     {
-        return DefaultMetricInputFactory.getInstance().ofMulticategoryPairs(baselineInput, baselineMeta);
+        return DefaultDataFactory.getInstance().ofMulticategoryPairs(baselineInput, baselineMeta);
     }
 
     @Override
@@ -180,7 +180,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         }
         checkNullOrEmptyInputs(b.mainInput, b.baselineInput);
         //Ensure safe types
-        DefaultMetricInputFactory factory = (DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance();
+        DefaultDataFactory factory = (DefaultDataFactory)DefaultDataFactory.getInstance();
         mainInput = factory.safeVectorOfBooleansList(b.mainInput);
         baselineInput = Objects.nonNull(b.baselineInput) ? factory.safeVectorOfBooleansList(b.baselineInput) : null;
         mainMeta = b.mainMeta;

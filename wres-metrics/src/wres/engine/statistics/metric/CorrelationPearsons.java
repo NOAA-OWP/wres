@@ -32,11 +32,11 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     {
         try
         {
-            Slicer slicer = getOutputFactory().getSlicer();
+            Slicer slicer = getDataFactory().getSlicer();
             final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
             double returnMe =
                             correlation.correlation(slicer.getLeftSide(s.getData()), slicer.getRightSide(s.getData()));
-            return getOutputFactory().ofScalarOutput(returnMe, metOut);
+            return getDataFactory().ofScalarOutput(returnMe, metOut);
         }
         catch(Exception e)
         {
@@ -116,7 +116,7 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
 
     protected CorrelationPearsons(final CorrelationPearsonsBuilder b)
     {
-        super(b.outputFactory);
+        super(b.dataFactory);
         correlation = new PearsonsCorrelation();
     }
 

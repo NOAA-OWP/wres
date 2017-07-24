@@ -3,9 +3,9 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
+import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
 
@@ -41,7 +41,7 @@ public final class PeirceSkillScore<S extends MulticategoryPairs> extends Contin
         //Dichotomous predictand
         if(v.rows() == 2)
         {
-            return getOutputFactory().ofScalarOutput((cm[0][0] / (cm[0][0] + cm[1][0]))
+            return getDataFactory().ofScalarOutput((cm[0][0] / (cm[0][0] + cm[1][0]))
                 - (cm[0][1] / (cm[0][1] + cm[1][1])), getMetadata(output));
         }
 
@@ -77,7 +77,7 @@ public final class PeirceSkillScore<S extends MulticategoryPairs> extends Contin
         //Compose the result
         final double nSquared = n * n;
         final double result = ((diag / n) - (sumProd / nSquared)) / (1.0 - (uniProd / nSquared));
-        return getOutputFactory().ofScalarOutput(result, getMetadata(output));
+        return getDataFactory().ofScalarOutput(result, getMetadata(output));
     }
 
     @Override
@@ -102,7 +102,7 @@ public final class PeirceSkillScore<S extends MulticategoryPairs> extends Contin
         @Override
         public PeirceSkillScore<S> build()
         {
-            return new PeirceSkillScore<>(this.outputFactory);
+            return new PeirceSkillScore<>(this.dataFactory);
         }
 
     }
@@ -110,12 +110,12 @@ public final class PeirceSkillScore<S extends MulticategoryPairs> extends Contin
     /**
      * Hidden constructor.
      * 
-     * @param outputFactory the {@link MetricOutputFactory}.
+     * @param dataFactory the {@link DataFactory}.
      */
 
-    private PeirceSkillScore(final MetricOutputFactory outputFactory)
+    private PeirceSkillScore(final DataFactory dataFactory)
     {
-        super(outputFactory);
+        super(dataFactory);
     }
 
 }

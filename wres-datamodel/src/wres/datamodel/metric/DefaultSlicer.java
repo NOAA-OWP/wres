@@ -26,7 +26,7 @@ public class DefaultSlicer implements Slicer
     /**
      * Returns an instance of a {@link Slicer}.
      * 
-     * @return a {@link MetricOutputFactory}
+     * @return a {@link DataFactory}
      */
 
     public static Slicer getInstance()

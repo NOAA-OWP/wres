@@ -2,7 +2,9 @@ package wres.datamodel.metric;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
@@ -17,6 +19,7 @@ import wres.datamodel.SafeVectorOfBooleans;
 import wres.datamodel.SafeVectorOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metric.Threshold.Condition;
 
 /**
  * A default factory class for producing metric inputs.
@@ -27,29 +30,40 @@ import wres.datamodel.VectorOfDoubles;
  * @since 0.1
  */
 
-public class DefaultMetricInputFactory extends DefaultMetricDataFactory implements MetricInputFactory
+public class DefaultDataFactory implements DataFactory
 {
 
     /**
      * Instance of the factory.
      */
 
-    private static MetricInputFactory instance = null;
+    private static DataFactory instance = null;
 
     /**
-     * Returns an instance of a {@link MetricOutputFactory}.
+     * Returns an instance of a {@link DataFactory}.
      * 
-     * @return a {@link MetricOutputFactory}
+     * @return a {@link DataFactory}
      */
 
-    public static MetricInputFactory getInstance()
+    public static DataFactory getInstance()
     {
         if(Objects.isNull(instance))
         {
-            instance = new DefaultMetricInputFactory();
+            instance = new DefaultDataFactory();
         }
         return instance;
     }
+    
+    @Override
+    public MetadataFactory getMetadataFactory() {
+        return DefaultMetadataFactory.getInstance();  
+    }
+
+    @Override
+    public Slicer getSlicer()
+    {
+        return DefaultSlicer.getInstance();  
+    }     
 
     @Override
     public DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
@@ -172,6 +186,140 @@ public class DefaultMetricInputFactory extends DefaultMetricDataFactory implemen
     {
         return SafeMatrixOfDoubles.of(vec);
     }
+    
+    @Override
+    public ScalarOutput ofScalarOutput(final double output, final MetricOutputMetadata meta)
+    {
+        return new SafeScalarOutput(output, meta);
+    }
+
+    @Override
+    public VectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta)
+    {
+        return new SafeVectorOutput(vectorOf(output), meta);
+    }
+
+    @Override
+    public MultiVectorOutput ofMultiVectorOutput(final Map<MetricConstants, double[]> output,
+                                                     final MetricOutputMetadata meta)
+    {
+        EnumMap<MetricConstants, VectorOfDoubles> map = new EnumMap<>(MetricConstants.class);
+        output.forEach((key, value) -> map.put(key, vectorOf(value)));
+        return new SafeMultiVectorOutput(map, meta);
+    }
+
+    @Override
+    public MatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta)
+    {
+        return new SafeMatrixOutput(matrixOf(output), meta);
+    }
+
+    @Override
+    public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap(final List<T> input)
+    {
+        Objects.requireNonNull(input, "Specify a non-null list of inputs.");
+        final SafeMetricOutputMapByMetric.Builder<T> builder = new SafeMetricOutputMapByMetric.Builder<>();
+        input.forEach(a -> {
+            final MapBiKey<MetricConstants, MetricConstants> key = getMapKey(a.getMetadata().getMetricID(),
+                                                                             a.getMetadata().getMetricComponentID());
+            builder.put(key, a);
+        });
+        return builder.build();
+    }
+
+    @Override
+    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> ofMap(final Map<MapBiKey<Integer, Threshold>, T> input)
+    {
+        Objects.requireNonNull(input, "Specify a non-null input map.");
+        final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
+                                                                    new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        input.forEach(builder::put);
+        return builder.build();
+    }
+
+    @Override
+    public <S extends MetricOutput<?>> MetricOutputMultiMap.Builder<S> ofMultiMap()
+    {
+        return new SafeMetricOutputMultiMap.MultiMapBuilder<>();
+    }
+
+    @Override
+    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> combine(final List<MetricOutputMapByLeadThreshold<T>> input)
+    {
+        Objects.requireNonNull(input, "Specify a non-null input map.");
+        final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
+                                                                    new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        input.forEach(a -> a.forEach(builder::put));
+        builder.setOverrideMetadata(input.get(0).getMetadata());
+        return builder.build();
+    }
+
+    @Override
+    public <S extends Comparable<S>, T extends Comparable<T>> MapBiKey<S, T> getMapKey(final S firstKey,
+                                                                                       final T secondKey)
+    {
+
+        //Bounds checks
+        Objects.requireNonNull(firstKey, "Specify a non-null first key.");
+        Objects.requireNonNull(secondKey, "Specify a non-null second key.");
+
+        /**
+         * Default implementation of a {@link MapBiKey}.
+         */
+
+        class MapKey implements MapBiKey<S, T>
+        {
+
+            @Override
+            public int compareTo(final MapBiKey<S, T> o)
+            {
+                //Compare on lead time, then threshold type, then threshold value, then upper threshold value, where 
+                //it exists
+                Objects.requireNonNull(o, "Specify a non-null map key for comparison.");
+                if(!(o instanceof MapKey))
+                {
+                    return -1;
+                }
+                final int returnMe = firstKey.compareTo(o.getFirstKey());
+                if(returnMe != 0)
+                {
+                    return returnMe;
+                }
+                return o.getSecondKey().compareTo(getSecondKey());
+            }
+
+            @Override
+            public S getFirstKey()
+            {
+                return firstKey;
+            }
+
+            @Override
+            public T getSecondKey()
+            {
+                return secondKey;
+            }
+
+        }
+        return new MapKey();
+    }
+
+    @Override
+    public Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
+    {
+        return new SafeThresholdKey(threshold, thresholdUpper, condition);
+    }
+
+    @Override
+    public Quantile getQuantile(final Double threshold,
+                                       final Double thresholdUpper,
+                                       final Double probability,
+                                       final Double probabilityUpper,
+                                       final Condition condition)
+    {
+        return new SafeQuantileKey(threshold, thresholdUpper, probability, probabilityUpper, condition);
+    }    
+    
 
     /**
      * Returns an immutable list that contains a safe type of the input.
@@ -288,7 +436,7 @@ public class DefaultMetricInputFactory extends DefaultMetricDataFactory implemen
      * Prevent construction.
      */
 
-    private DefaultMetricInputFactory()
+    private DefaultDataFactory()
     {
     }
 

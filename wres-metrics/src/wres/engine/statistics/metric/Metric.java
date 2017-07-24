@@ -3,6 +3,7 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 import java.util.function.Function;
 
+import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DatasetIdentifier;
 import wres.datamodel.metric.Dimension;
 import wres.datamodel.metric.Metadata;
@@ -10,7 +11,6 @@ import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
@@ -38,10 +38,10 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
 {
 
     /**
-     * Instance of a {@link MetricOutputFactory} for constructing a {@link MetricOutput}.
+     * Instance of a {@link DataFactory} for constructing a {@link MetricOutput}.
      */
 
-    private final MetricOutputFactory outputFactory;
+    private final DataFactory dataFactory;
 
     /**
      * Applies the function to the input and throws a {@link MetricCalculationException} if the calculation fails.
@@ -80,7 +80,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
 
     public String getName()
     {
-        return getOutputFactory().getMetadataFactory().getMetricName(getID());
+        return getDataFactory().getMetadataFactory().getMetricName(getID());
     }
 
     /**
@@ -123,7 +123,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
     protected static abstract class MetricBuilder<P extends MetricInput<?>, Q extends MetricOutput<?>>
     {
 
-        protected MetricOutputFactory outputFactory;
+        protected DataFactory dataFactory;
 
         /**
          * Build the {@link Metric}.
@@ -134,29 +134,29 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
         protected abstract Metric<P, Q> build();
 
         /**
-         * Sets the {@link MetricOutputFactory} for constructing a {@link MetricOutput}.
+         * Sets the {@link DataFactory} for constructing a {@link MetricOutput}.
          * 
-         * @param outputFactory the {@link MetricOutputFactory}
+         * @param dataFactory the {@link DataFactory}
          * @return the builder
          */
 
-        protected MetricBuilder<P, Q> setOutputFactory(final MetricOutputFactory outputFactory)
+        protected MetricBuilder<P, Q> setOutputFactory(final DataFactory dataFactory)
         {
-            this.outputFactory = outputFactory;
+            this.dataFactory = dataFactory;
             return this;
         }
 
     }
 
     /**
-     * Returns a {@link MetricOutputFactory} for constructing a {@link MetricOutput}.
+     * Returns a {@link DataFactory} for constructing a {@link MetricOutput}.
      * 
-     * @return a {@link MetricOutputFactory}
+     * @return a {@link DataFactory}
      */
 
-    protected MetricOutputFactory getOutputFactory()
+    protected DataFactory getDataFactory()
     {
-        return outputFactory;
+        return dataFactory;
     }
 
     /**
@@ -185,15 +185,15 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
         }
         else
         {
-            outputDim = outputFactory.getMetadataFactory().getDimension();
+            outputDim = dataFactory.getMetadataFactory().getDimension();
         }
         DatasetIdentifier identifier = metIn.getIdentifier();
         //Add the scenario ID associated with the baseline input
         //This is *not* the baseline ID of the baseline input
         if(Objects.nonNull(baselineID)) {
-            identifier = outputFactory.getMetadataFactory().getDatasetIdentifier(identifier,baselineID.getScenarioID());
+            identifier = dataFactory.getMetadataFactory().getDatasetIdentifier(identifier,baselineID.getScenarioID());
         }
-        return outputFactory.getMetadataFactory().getOutputMetadata(sampleSize,
+        return dataFactory.getMetadataFactory().getOutputMetadata(sampleSize,
                                                                     outputDim,
                                                                     metIn.getDimension(),
                                                                     getID(),
@@ -202,18 +202,18 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
     }  
 
     /**
-     * Construct a {@link Metric} with a {@link MetricOutputFactory}.
+     * Construct a {@link Metric} with a {@link DataFactory}.
      * 
-     * @param outputFactory the {@link MetricOutputFactory}.
+     * @param dataFactory the {@link DataFactory}.
      */
 
-    protected Metric(final MetricOutputFactory outputFactory)
+    protected Metric(final DataFactory dataFactory)
     {
-        if(Objects.isNull(outputFactory))
+        if(Objects.isNull(dataFactory))
         {
-            throw new UnsupportedOperationException("Cannot construct the metric without a metric output factory.");
+            throw new UnsupportedOperationException("Cannot construct the metric without a data factory.");
         }
-        this.outputFactory = outputFactory;
+        this.dataFactory = dataFactory;
     }
 
 }

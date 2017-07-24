@@ -15,7 +15,7 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
     @Override
     public DichotomousPairs getBaselineData()
     {
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         return metIn.ofDichotomousPairs(getDataForBaseline(),getMetadataForBaseline());
     }        
 

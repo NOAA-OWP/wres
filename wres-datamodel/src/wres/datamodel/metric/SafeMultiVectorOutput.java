@@ -81,7 +81,7 @@ class SafeMultiVectorOutput implements MultiVectorOutput
         Objects.requireNonNull(output, "Specify a non-null output.");
         Objects.requireNonNull(meta, "Specify non-null metadata.");
         this.output = new EnumMap<>(MetricConstants.class);
-        DefaultMetricInputFactory inFac = (DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance();
+        DefaultDataFactory inFac = (DefaultDataFactory)DefaultDataFactory.getInstance();
         output.forEach((key,value)->this.output.put(key,inFac.safeVectorOf(value)));
         this.meta = meta;
     }
