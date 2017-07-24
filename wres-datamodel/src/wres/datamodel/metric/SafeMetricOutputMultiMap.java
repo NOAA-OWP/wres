@@ -19,13 +19,13 @@ import java.util.function.BiConsumer;
 
 class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutputMultiMap<S>
 {
-    
+
     /**
      * Output factory.
      */
 
-    private static final DataFactory dataFactory = DefaultDataFactory.getInstance();  
-    
+    private static final DataFactory dataFactory = DefaultDataFactory.getInstance();
+
     /**
      * The store of results.
      */
@@ -87,18 +87,19 @@ class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutpu
             Objects.requireNonNull(result, "Specify a non-null metric result.");
             result.forEach((key, value) -> {
                 final MetricOutputMetadata d = value.getMetadata();
-                final MapBiKey<MetricConstants, MetricConstants> check = dataFactory.getMapKey(d.getMetricID(),
-                                                                                   d.getMetricComponentID());
-                if(internal.containsKey(check))
+                final MapBiKey<MetricConstants, MetricConstants> check =
+                                                                       dataFactory.getMapKey(d.getMetricID(),
+                                                                                             d.getMetricComponentID());
+                //Safe put
+                final SafeMetricOutputMapByLeadThreshold.Builder<S> addMe = new SafeMetricOutputMapByLeadThreshold.Builder<>();
+                addMe.put(dataFactory.getMapKey(leadTime, threshold), value);
+                final SafeMetricOutputMapByLeadThreshold.Builder<S> checkMe =
+                                                                          internal.putIfAbsent(check,
+                                                                                               addMe);
+                //Add if already exists 
+                if(!Objects.isNull(checkMe))
                 {
-                    internal.get(check).put(dataFactory.getMapKey(leadTime, threshold), value);
-                }
-                else
-                {
-                    final SafeMetricOutputMapByLeadThreshold.Builder<S> addMe =
-                                                                              new SafeMetricOutputMapByLeadThreshold.Builder<>();
-                    addMe.put(dataFactory.getMapKey(leadTime, threshold), value);
-                    internal.put(key,addMe);
+                    checkMe.put(dataFactory.getMapKey(leadTime, threshold), value);
                 }
             });
             return this;
@@ -124,7 +125,7 @@ class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutpu
             }
         });
         //Initialize
-        store = new TreeMap<>();     
+        store = new TreeMap<>();
         //Build
         builder.internal.forEach((key, value) -> store.put(key, value.build()));
     }
