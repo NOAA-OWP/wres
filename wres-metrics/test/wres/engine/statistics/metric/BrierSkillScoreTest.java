@@ -4,11 +4,11 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.BrierSkillScore.BrierSkillScoreBuilder;
@@ -36,7 +36,7 @@ public final class BrierSkillScoreTest
 
         //Build the metric
         final BrierSkillScoreBuilder b = new BrierSkillScore.BrierSkillScoreBuilder();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         b.setOutputFactory(outF);
         b.setDecompositionID(MetricConstants.NONE);

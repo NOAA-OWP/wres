@@ -8,9 +8,9 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 
 /**
  * Tests the {@link MetricFactory}.
@@ -26,7 +26,7 @@ public final class MetricFactoryTest
      * Output factory.
      */
     
-    final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+    final DataFactory outF = DefaultDataFactory.getInstance();
     
     /**
      * Metric factory.
@@ -208,9 +208,9 @@ public final class MetricFactoryTest
     {
         try
         {
-            Constructor<MetricFactory> cons = MetricFactory.class.getDeclaredConstructor(MetricOutputFactory.class);
+            Constructor<MetricFactory> cons = MetricFactory.class.getDeclaredConstructor(DataFactory.class);
             cons.setAccessible(true);
-            cons.newInstance((MetricOutputFactory)null);
+            cons.newInstance((DataFactory)null);
             fail("Expected a checked exception on building a metric factory with a null output factory.");
         }
         catch(InvocationTargetException e)

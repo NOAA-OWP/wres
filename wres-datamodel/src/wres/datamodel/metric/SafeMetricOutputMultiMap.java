@@ -24,7 +24,7 @@ class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutpu
      * Output factory.
      */
 
-    private static final MetricOutputFactory outFactory = DefaultMetricOutputFactory.getInstance();  
+    private static final DataFactory dataFactory = DefaultDataFactory.getInstance();  
     
     /**
      * The store of results.
@@ -41,7 +41,7 @@ class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutpu
     @Override
     public MetricOutputMapByLeadThreshold<S> get(final MetricConstants metricID, final MetricConstants componentID)
     {
-        return store.get(outFactory.getMapKey(metricID, componentID));
+        return store.get(dataFactory.getMapKey(metricID, componentID));
     }
 
     @Override
@@ -87,17 +87,17 @@ class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutpu
             Objects.requireNonNull(result, "Specify a non-null metric result.");
             result.forEach((key, value) -> {
                 final MetricOutputMetadata d = value.getMetadata();
-                final MapBiKey<MetricConstants, MetricConstants> check = outFactory.getMapKey(d.getMetricID(),
+                final MapBiKey<MetricConstants, MetricConstants> check = dataFactory.getMapKey(d.getMetricID(),
                                                                                    d.getMetricComponentID());
                 if(internal.containsKey(check))
                 {
-                    internal.get(check).put(outFactory.getMapKey(leadTime, threshold), value);
+                    internal.get(check).put(dataFactory.getMapKey(leadTime, threshold), value);
                 }
                 else
                 {
                     final SafeMetricOutputMapByLeadThreshold.Builder<S> addMe =
                                                                               new SafeMetricOutputMapByLeadThreshold.Builder<>();
-                    addMe.put(outFactory.getMapKey(leadTime, threshold), value);
+                    addMe.put(dataFactory.getMapKey(leadTime, threshold), value);
                     internal.put(key,addMe);
                 }
             });

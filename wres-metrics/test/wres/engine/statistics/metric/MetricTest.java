@@ -5,10 +5,10 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.engine.statistics.metric.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
 import wres.engine.statistics.metric.MeanError.MeanErrorBuilder;
 
@@ -32,7 +32,7 @@ public final class MetricTest
 
         //Build a metric
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         b.setOutputFactory(outF);
         final MeanError me = b.build();
         //Build another metric
@@ -59,7 +59,7 @@ public final class MetricTest
 
         //Build a metric
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         b.setOutputFactory(outF);
         final MeanError me = b.build();

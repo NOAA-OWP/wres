@@ -2,10 +2,10 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.ScalarOutput;
 
 /**
@@ -34,7 +34,7 @@ public final class EquitableThreatScore extends ContingencyTableScore<Dichotomou
         final double[][] cm = v.getData().getDoubles();
         final double t = cm[0][0] + cm[0][1] + cm[1][0];
         final double hitsRandom = ((cm[0][0] + cm[1][0]) * (cm[0][0] + cm[0][1])) / (t + cm[1][1]);
-        return getOutputFactory().ofScalarOutput((cm[0][0] - hitsRandom) / (t - hitsRandom), getMetadata(output));
+        return getDataFactory().ofScalarOutput((cm[0][0] - hitsRandom) / (t - hitsRandom), getMetadata(output));
     }
 
     @Override
@@ -59,7 +59,7 @@ public final class EquitableThreatScore extends ContingencyTableScore<Dichotomou
         @Override
         protected EquitableThreatScore build()
         {
-            return new EquitableThreatScore(outputFactory);
+            return new EquitableThreatScore(dataFactory);
         }
 
     }
@@ -67,12 +67,12 @@ public final class EquitableThreatScore extends ContingencyTableScore<Dichotomou
     /**
      * Hidden constructor.
      * 
-     * @param outputFactory the {@link MetricOutputFactory}.
+     * @param dataFactory the {@link DataFactory}.
      */
 
-    private EquitableThreatScore(final MetricOutputFactory outputFactory)
+    private EquitableThreatScore(final DataFactory dataFactory)
     {
-        super(outputFactory);
+        super(dataFactory);
     }
 
 }

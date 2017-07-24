@@ -7,8 +7,8 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.MetricInputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 
 /**
  * Created by jesse on 6/7/17.
@@ -17,7 +17,7 @@ public class SlicerTest
 {
     private final double THRESHOLD = 0.00001;
     
-    private final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance(); //JBr
+    private final DataFactory metIn = DefaultDataFactory.getInstance(); //JBr
 
     @Test
     public void getAnItemOneForEachItemTwoValueTest()

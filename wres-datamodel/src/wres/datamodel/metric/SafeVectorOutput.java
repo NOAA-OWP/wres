@@ -68,7 +68,7 @@ class SafeVectorOutput implements VectorOutput
     {
         Objects.requireNonNull(output, "Specify a non-null output.");
         Objects.requireNonNull(meta, "Specify non-null metadata.");
-        this.output = ((DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance()).safeVectorOf(output);
+        this.output = ((DefaultDataFactory)DefaultDataFactory.getInstance()).safeVectorOf(output);
         this.meta = meta;
     }
 

@@ -1,19 +1,20 @@
 package wres.io.concurrency;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.config.generated.ProjectConfig;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.MetricInputFactory;
-import wres.io.config.specification.ScriptFactory;
-import wres.io.utilities.Database;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.config.generated.ProjectConfig;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
+import wres.io.config.specification.ScriptFactory;
+import wres.io.utilities.Database;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -36,7 +37,7 @@ public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVector
         Connection connection = null;
         ResultSet resultingPairs = null;
 
-        final MetricInputFactory dataFactory = DefaultMetricInputFactory.getInstance();
+        final DataFactory dataFactory = DefaultDataFactory.getInstance();
 
         try
         {

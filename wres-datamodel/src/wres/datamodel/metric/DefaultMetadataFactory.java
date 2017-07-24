@@ -35,9 +35,9 @@ public class DefaultMetadataFactory implements MetadataFactory
     private final HashMap<Integer, MetricOutputMetadata> outputMetaCache;
 
     /**
-     * Returns an instance of a {@link MetricOutputFactory}.
+     * Returns an instance of a {@link DataFactory}.
      * 
-     * @return a {@link MetricOutputFactory}
+     * @return a {@link DataFactory}
      */
 
     public static MetadataFactory getInstance()

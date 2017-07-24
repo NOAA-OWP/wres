@@ -5,11 +5,11 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 
 /**
@@ -29,7 +29,7 @@ public final class ContingencyTableScoreTest
     @Test
     public void test1ContingencyTableScore()
     {
-        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outputFactory.getMetadataFactory();
         final MetricFactory metricFactory = MetricFactory.getInstance(outputFactory);
         final CriticalSuccessIndex cs = metricFactory.ofCriticalSuccessIndex();

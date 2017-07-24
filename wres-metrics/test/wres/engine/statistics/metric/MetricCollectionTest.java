@@ -12,11 +12,11 @@ import java.util.function.BiPredicate;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
@@ -46,7 +46,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance(outF);
 
         //Finalize
@@ -94,7 +94,7 @@ public class MetricCollectionTest
         //Collectable, they make efficient use of common intermediate data. In this case, all scores require the 2x2
         //Contingency Table, which is computed only once
         final MetricCollectionBuilder<DichotomousPairs, ScalarOutput> m = MetricCollectionBuilder.of();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance(outF);
         m.setOutputFactory(outF);
         //Add some appropriate metrics to the collection     
@@ -152,7 +152,7 @@ public class MetricCollectionTest
 
         //Create a collection metrics that consume probabilistic pairs and generate vector outputs
         final MetricCollectionBuilder<DiscreteProbabilityPairs, VectorOutput> n = MetricCollectionBuilder.of();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance(outF);
         n.setOutputFactory(outF);
 
@@ -196,7 +196,7 @@ public class MetricCollectionTest
 
         //Create a collection metrics that consume single-valued pairs and produce vector outputs
         final MetricCollectionBuilder<SingleValuedPairs, VectorOutput> n = MetricCollectionBuilder.of();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance(outF);
         n.setOutputFactory(outF);
 
@@ -240,7 +240,7 @@ public class MetricCollectionTest
 
         //Create a collection of multicategory metrics that produce a scalar output. 
         final MetricCollectionBuilder<MulticategoryPairs, ScalarOutput> n = MetricCollectionBuilder.of();
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance(outF);
         n.setOutputFactory(outF);
 
@@ -288,7 +288,7 @@ public class MetricCollectionTest
 
             //Create a collection of metrics that consume single-valued pairs and produce a scalar output
             final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> n = MetricCollectionBuilder.of();
-            final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+            final DataFactory outF = DefaultDataFactory.getInstance();
             final MetricFactory metF = MetricFactory.getInstance(outF);
             n.setOutputFactory(outF);
             //Add some appropriate metrics to the collection
@@ -377,7 +377,7 @@ public class MetricCollectionTest
         final ExecutorService pairPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final ExecutorService metricPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         //Construct the factories
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance(outF);
         try
         {
@@ -465,7 +465,7 @@ public class MetricCollectionTest
 
             //Create a collection of metrics that consume single-valued pairs and produce a scalar output
             final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> n = MetricCollectionBuilder.of();
-            final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+            final DataFactory outF = DefaultDataFactory.getInstance();
             final MetricFactory metF = MetricFactory.getInstance(outF);
             n.setOutputFactory(outF);
 
@@ -522,7 +522,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance(outF);
 
         //Add some appropriate metrics to the collection

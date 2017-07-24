@@ -20,7 +20,7 @@ public final class RootMeanSquareError extends DoubleErrorScore<SingleValuedPair
     public ScalarOutput apply(final SingleValuedPairs t)
     {      
         final ScalarOutput intermediate = super.apply(t);
-        return getOutputFactory().ofScalarOutput(Math.pow(intermediate.getData(), 0.5),intermediate.getMetadata());
+        return getDataFactory().ofScalarOutput(Math.pow(intermediate.getData(), 0.5),intermediate.getMetadata());
     }
 
     @Override

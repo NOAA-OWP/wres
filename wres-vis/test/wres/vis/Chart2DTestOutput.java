@@ -20,12 +20,12 @@ import junit.framework.TestCase;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.DefaultMetadataFactory;
-import wres.datamodel.metric.DefaultMetricOutputFactory;
 import wres.datamodel.metric.MapBiKey;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.Quantile;
@@ -134,7 +134,7 @@ public class Chart2DTestOutput extends TestCase
 
     private static MetricOutputMapByLeadThreshold<ScalarOutput> getMetricOutputMapByLeadThreshold()
     {
-        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
         final Map<MapBiKey<Integer, Threshold>, ScalarOutput> rawData = new TreeMap<>();
 
@@ -204,7 +204,7 @@ public class Chart2DTestOutput extends TestCase
 
     public static MetricOutputMapByLeadThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdOne()
     {
-        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetricOutputMapByLeadThreshold<ScalarOutput> full = getMetricOutputMapByLeadThreshold();
         final List<MetricOutputMapByLeadThreshold<ScalarOutput>> combine = new ArrayList<>();
         final double[][] allow = new double[][]{{Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY}, {0.5, 2707.5},
@@ -226,7 +226,7 @@ public class Chart2DTestOutput extends TestCase
 
     public static MetricOutputMapByLeadThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdTwo()
     {
-        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetricOutputMapByLeadThreshold<ScalarOutput> full = getMetricOutputMapByLeadThreshold();
         final List<MetricOutputMapByLeadThreshold<ScalarOutput>> combine = new ArrayList<>();
         final int[] allow = new int[]{42, 258, 474, 690};
