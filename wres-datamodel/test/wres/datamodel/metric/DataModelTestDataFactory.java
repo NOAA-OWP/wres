@@ -35,7 +35,7 @@ public final class DataModelTestDataFactory
 
     public static MetricOutputMapByLeadThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdOne()
     {
-        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
         final Builder<ScalarOutput> builder = new SafeMetricOutputMapByLeadThreshold.Builder<>();
         try

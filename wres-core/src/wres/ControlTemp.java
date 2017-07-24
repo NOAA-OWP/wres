@@ -23,12 +23,10 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metric.DefaultMetricInputFactory;
-import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricInputFactory;
 import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.MetricOutputMultiMap;
 import wres.datamodel.metric.ScalarOutput;
@@ -54,8 +52,7 @@ public class ControlTemp
     private static final Logger LOGGER = LoggerFactory.getLogger(ControlTemp.class);
     public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
     private static final AtomicLong lastMessageTime = new AtomicLong();
-    private static final MetricInputFactory inFac = DefaultMetricInputFactory.getInstance();
-    private static final MetricOutputFactory outFac = DefaultMetricOutputFactory.getInstance();
+    private static final DataFactory dataFac = DefaultDataFactory.getInstance();
 
     /** System property used to retrieve max thread count, passed as -D */
     public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
@@ -114,7 +111,7 @@ public class ControlTemp
                                                 "CFS");
 
         //Build an immutable collection of metrics, to be computed at each of several forecast lead times
-        final MetricFactory metFac = MetricFactory.getInstance(outFac);
+        final MetricFactory metFac = MetricFactory.getInstance(dataFac);
         final MetricCollection<SingleValuedPairs, ScalarOutput> useMe =
                                                                       metFac.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
                                                                                                             MetricConstants.MEAN_ABSOLUTE_ERROR,
@@ -128,7 +125,7 @@ public class ControlTemp
         final ForkJoinPool f = new ForkJoinPool();
 
         //Sink for the results: the results are added incrementally to an immutable store via a builder
-        final MetricOutputMultiMap.Builder<ScalarOutput> resultsBuilder = outFac.ofMultiMap();
+        final MetricOutputMultiMap.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
         //Iterate
         for(int i = 0; i < leadTimesCount; i++)
         {
@@ -141,13 +138,13 @@ public class ControlTemp
             // 5. Monitor progress per lead time
 
             //Threshold = all data for now
-            final Threshold allData = outFac.getThreshold(Double.NEGATIVE_INFINITY, Condition.GREATER);
+            final Threshold allData = dataFac.getThreshold(Double.NEGATIVE_INFINITY, Condition.GREATER);
             final CompletableFuture<Void> c = CompletableFuture
                                                                .supplyAsync(new PairGetterByLeadTime(config,
                                                                                                      lead,
-                                                                                                     inFac),
+                                                                                                     dataFac),
                                                                             f)
-                                                               .thenApplyAsync(new SingleValuedPairProcessor(inFac), f)
+                                                               .thenApplyAsync(new SingleValuedPairProcessor(dataFac), f)
                                                                .thenApplyAsync(useMe, f)
                                                                .thenAcceptAsync(new ResultProcessor<>(lead,
                                                                                                       allData,
@@ -188,7 +185,7 @@ public class ControlTemp
         {
             results.forEach((key, value) -> {
                 LOGGER.info(NEWLINE + "Results for metric "
-                    + inFac.getMetadataFactory().getMetricName(key.getFirstKey()) + " (lead time, threshold, score) "
+                    + dataFac.getMetadataFactory().getMetricName(key.getFirstKey()) + " (lead time, threshold, score) "
                     + NEWLINE + value);
             });
             final long stop = System.currentTimeMillis(); //End time
@@ -239,9 +236,9 @@ public class ControlTemp
     implements Function<List<PairOfDoubleAndVectorOfDoubles>, SingleValuedPairs>
     {
 
-        private final MetricInputFactory metIn;
+        private final DataFactory metIn;
 
-        public SingleValuedPairProcessor(final MetricInputFactory metIn)
+        public SingleValuedPairProcessor(final DataFactory metIn)
         {
             this.metIn = metIn;
         }
@@ -313,9 +310,9 @@ public class ControlTemp
     {
         private final PairConfig config;
         private final int leadTime;
-        private final MetricInputFactory metIn;
+        private final DataFactory metIn;
 
-        private PairGetterByLeadTime(final PairConfig config, final int leadTime, final MetricInputFactory metIn)
+        private PairGetterByLeadTime(final PairConfig config, final int leadTime, final DataFactory metIn)
         {
             this.config = config;
             this.leadTime = leadTime;
@@ -392,7 +389,7 @@ public class ControlTemp
     private static List<PairOfDoubleAndVectorOfDoubles> getImaginaryPairsTemp()
     {
         //Construct some single-valued pairs
-        final MetricInputFactory dataFactory = DefaultMetricInputFactory.getInstance();
+        final DataFactory dataFactory = DefaultDataFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         final double[] ensemble = new double[50];
         //Add 50 members with the same value

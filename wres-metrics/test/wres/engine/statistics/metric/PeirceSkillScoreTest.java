@@ -5,11 +5,11 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DefaultMetricOutputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
@@ -34,7 +34,7 @@ public final class PeirceSkillScoreTest
     public void test1PeirceSkillScore()
     {
         //Obtain the factories
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
@@ -89,7 +89,7 @@ public final class PeirceSkillScoreTest
     public void test2PeirceSkillScore()
     {
         //Obtain the factories
-        final MetricOutputFactory outF = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data

@@ -1,9 +1,9 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.ScalarOutput;
 
 /**
@@ -28,7 +28,7 @@ public final class ProbabilityOfFalseDetection extends ContingencyTableScore<Dic
         is2x2ContingencyTable(output, this);
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
-        return getOutputFactory().ofScalarOutput(cm[0][1] / (cm[0][1] + cm[1][1]), getMetadata(output));
+        return getDataFactory().ofScalarOutput(cm[0][1] / (cm[0][1] + cm[1][1]), getMetadata(output));
     }
 
     @Override
@@ -53,7 +53,7 @@ public final class ProbabilityOfFalseDetection extends ContingencyTableScore<Dic
         @Override
         protected ProbabilityOfFalseDetection build()
         {
-            return new ProbabilityOfFalseDetection(outputFactory);
+            return new ProbabilityOfFalseDetection(dataFactory);
         }
 
     }
@@ -61,11 +61,11 @@ public final class ProbabilityOfFalseDetection extends ContingencyTableScore<Dic
     /**
      * Hidden constructor.
      * 
-     * @param outputFactory the {@link MetricOutputFactory}.
+     * @param dataFactory the {@link DataFactory}.
      */
 
-    private ProbabilityOfFalseDetection(final MetricOutputFactory outputFactory)
+    private ProbabilityOfFalseDetection(final DataFactory dataFactory)
     {
-        super(outputFactory);
+        super(dataFactory);
     }
 }

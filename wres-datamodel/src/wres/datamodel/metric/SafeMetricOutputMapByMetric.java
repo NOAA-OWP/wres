@@ -40,7 +40,7 @@ public class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements M
     @Override
     public T get(final MetricConstants metricID, final MetricConstants componentID)
     {
-        return get(DefaultMetricOutputFactory.getInstance().getMapKey(metricID, componentID));
+        return get(DefaultDataFactory.getInstance().getMapKey(metricID, componentID));
     }
 
     @Override

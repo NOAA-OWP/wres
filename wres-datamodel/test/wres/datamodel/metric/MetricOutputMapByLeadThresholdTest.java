@@ -24,7 +24,7 @@ public final class MetricOutputMapByLeadThresholdTest
     @Test
     public void test1ConstructAndSlice()
     {
-        final MetricOutputFactory outputFactory = DefaultMetricOutputFactory.getInstance();
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetricOutputMapByLeadThreshold<ScalarOutput> results =
                                                                    DataModelTestDataFactory.getMetricOutputMapByLeadThresholdOne();
 

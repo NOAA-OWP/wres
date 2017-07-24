@@ -5,12 +5,12 @@ import java.util.List;
 
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.DefaultMetricInputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricInputFactory;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.SingleValuedPairs;
 
@@ -33,7 +33,7 @@ public final class MetricTestDataFactory
     public static SingleValuedPairs getSingleValuedPairsOne()
     {
         //Construct some single-valued pairs
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
         values.add(metIn.pairOf(22.9, 22.8));
         values.add(metIn.pairOf(75.2, 80));
@@ -58,7 +58,7 @@ public final class MetricTestDataFactory
     public static SingleValuedPairs getSingleValuedPairsTwo()
     {
         //Construct some single-valued pairs
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
         values.add(metIn.pairOf(22.9, 22.8));
         values.add(metIn.pairOf(75.2, 80));
@@ -101,7 +101,7 @@ public final class MetricTestDataFactory
     {
         //Construct some single-valued pairs
         final List<PairOfDoubles> values = new ArrayList<>();
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         for(int i = 0; i < 10000; i++)
         {
             values.add(metIn.pairOf(5, 10));
@@ -124,7 +124,7 @@ public final class MetricTestDataFactory
     {
         //Construct the dichotomous pairs using the example from http://www.cawcr.gov.au/projects/verification/#Contingency_table
         //83 hits, 38 false alarms, 23 misses and 222 correct negatives, i.e. N=365
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         final List<VectorOfBooleans> values = new ArrayList<>();
         //Hits
         for(int i = 0; i < 82; i++)
@@ -162,7 +162,7 @@ public final class MetricTestDataFactory
     public static MulticategoryPairs getMulticategoryPairsOne()
     {
         //Construct the multicategory pairs
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         final List<VectorOfBooleans> values = new ArrayList<>();
         //(1,1)
         for(int i = 0; i < 24; i++)
@@ -225,7 +225,7 @@ public final class MetricTestDataFactory
     public static DiscreteProbabilityPairs getDiscreteProbabilityPairsOne()
     {
         //Construct some probabilistic pairs, and use the same pairs as a reference for skill (i.e. skill = 0.0)
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
         values.add(metIn.pairOf(0, 3.0 / 5.0));
         values.add(metIn.pairOf(0, 1.0 / 5.0));
@@ -249,7 +249,7 @@ public final class MetricTestDataFactory
     public static DiscreteProbabilityPairs getDiscreteProbabilityPairsTwo()
     {
         //Construct some probabilistic pairs, and use some different pairs as a reference
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
         values.add(metIn.pairOf(0, 3.0 / 5.0));
         values.add(metIn.pairOf(0, 1.0 / 5.0));

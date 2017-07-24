@@ -1,0 +1,466 @@
+package wres.datamodel.metric;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import wres.datamodel.MatrixOfDoubles;
+import wres.datamodel.Pair;
+import wres.datamodel.PairOfBooleans;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.PairOfDoubles;
+import wres.datamodel.SafeMatrixOfDoubles;
+import wres.datamodel.SafePairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.SafePairOfDoubles;
+import wres.datamodel.SafeVectorOfBooleans;
+import wres.datamodel.SafeVectorOfDoubles;
+import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metric.Threshold.Condition;
+
+/**
+ * A default factory class for producing metric inputs.
+ * 
+ * @author james.brown@hydrosolved.com
+ * @author jesse
+ * @version 0.1
+ * @since 0.1
+ */
+
+public class DefaultDataFactory implements DataFactory
+{
+
+    /**
+     * Instance of the factory.
+     */
+
+    private static DataFactory instance = null;
+
+    /**
+     * Returns an instance of a {@link DataFactory}.
+     * 
+     * @return a {@link DataFactory}
+     */
+
+    public static DataFactory getInstance()
+    {
+        if(Objects.isNull(instance))
+        {
+            instance = new DefaultDataFactory();
+        }
+        return instance;
+    }
+
+    @Override
+    public MetadataFactory getMetadataFactory()
+    {
+        return DefaultMetadataFactory.getInstance();
+    }
+
+    @Override
+    public Slicer getSlicer()
+    {
+        return DefaultSlicer.getInstance();
+    }
+
+    @Override
+    public DichotomousPairs ofDichotomousPairs(List<VectorOfBooleans> pairs,
+                                               List<VectorOfBooleans> basePairs,
+                                               Metadata mainMeta,
+                                               Metadata baselineMeta)
+    {
+        final SafeDichotomousPairs.DichotomousPairsBuilder b =
+                                                                 new SafeDichotomousPairs.DichotomousPairsBuilder();
+        b.setData(pairs);
+        b.setMetadata(mainMeta);
+        b.setDataForBaseline(basePairs);
+        b.setMetadataForBaseline(baselineMeta);
+        return b.build();
+    }
+    
+    @Override
+    public DichotomousPairs ofDichotomousPairsFromAtomic(List<PairOfBooleans> pairs,
+                                               List<PairOfBooleans> basePairs,
+                                               Metadata mainMeta,
+                                               Metadata baselineMeta)
+    {
+        final SafeDichotomousPairs.DichotomousPairsBuilder b =
+                                                                 new SafeDichotomousPairs.DichotomousPairsBuilder();
+        b.setDataFromAtomic(pairs);
+        b.setMetadata(mainMeta);
+        b.setDataForBaselineFromAtomic(basePairs);
+        b.setMetadataForBaseline(baselineMeta);
+        return b.build();
+    }    
+
+    @Override
+    public MulticategoryPairs ofMulticategoryPairs(List<VectorOfBooleans> pairs,
+                                                   List<VectorOfBooleans> basePairs,
+                                                   Metadata mainMeta,
+                                                   Metadata baselineMeta)
+    {
+        final SafeMulticategoryPairs.MulticategoryPairsBuilder b =
+                                                                 new SafeMulticategoryPairs.MulticategoryPairsBuilder();
+        b.setData(pairs);
+        b.setMetadata(mainMeta);
+        b.setDataForBaseline(basePairs);
+        b.setMetadataForBaseline(baselineMeta);
+        return b.build();
+    }
+
+    @Override
+    public DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
+                                                               final List<PairOfDoubles> basePairs,
+                                                               final Metadata mainMeta,
+                                                               final Metadata baselineMeta)
+    {
+        final SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
+                                                                             new SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
+        b.setData(pairs);
+        b.setMetadata(mainMeta);
+        b.setDataForBaseline(basePairs);
+        b.setMetadataForBaseline(baselineMeta);
+        return b.build();
+    }
+
+    @Override
+    public SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
+                                                 final List<PairOfDoubles> basePairs,
+                                                 final Metadata mainMeta,
+                                                 final Metadata baselineMeta)
+    {
+        final SafeSingleValuedPairs.SingleValuedPairsBuilder b = new SafeSingleValuedPairs.SingleValuedPairsBuilder();
+        b.setMetadata(mainMeta);
+        b.setData(pairs);
+        b.setDataForBaseline(basePairs);
+        b.setMetadataForBaseline(baselineMeta);
+        return b.build();
+    }
+
+    @Override
+    public PairOfDoubles pairOf(final double left, final double right)
+    {
+        return SafePairOfDoubles.of(left, right);
+    }
+
+    @Override
+    public PairOfBooleans pairOf(final boolean left, final boolean right)
+    {
+        return new SafePairOfBooleans(left, right);
+    }
+
+    @Override
+    public PairOfDoubleAndVectorOfDoubles pairOf(final double left, final double[] right)
+    {
+        return SafePairOfDoubleAndVectorOfDoubles.of(left, right);
+    }
+
+    @Override
+    public PairOfDoubleAndVectorOfDoubles pairOf(final Double left, final Double[] right)
+    {
+        return SafePairOfDoubleAndVectorOfDoubles.of(left, right);
+    }
+
+    @Override
+    public Pair<VectorOfDoubles, VectorOfDoubles> pairOf(final double[] left, final double[] right)
+    {
+        return new Pair<VectorOfDoubles, VectorOfDoubles>()
+        {
+            @Override
+            public VectorOfDoubles getItemOne()
+            {
+                return SafeVectorOfDoubles.of(left);
+            }
+
+            @Override
+            public VectorOfDoubles getItemTwo()
+            {
+                return SafeVectorOfDoubles.of(right);
+            }
+        };
+    }
+
+    @Override
+    public VectorOfDoubles vectorOf(final double[] vec)
+    {
+        return SafeVectorOfDoubles.of(vec);
+    }
+
+    @Override
+    public VectorOfDoubles vectorOf(final Double[] vec)
+    {
+        return SafeVectorOfDoubles.of(vec);
+    }
+
+    @Override
+    public VectorOfBooleans vectorOf(final boolean[] vec)
+    {
+        return SafeVectorOfBooleans.of(vec);
+    }
+
+    @Override
+    public MatrixOfDoubles matrixOf(final double[][] vec)
+    {
+        return SafeMatrixOfDoubles.of(vec);
+    }
+
+    @Override
+    public ScalarOutput ofScalarOutput(final double output, final MetricOutputMetadata meta)
+    {
+        return new SafeScalarOutput(output, meta);
+    }
+
+    @Override
+    public VectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta)
+    {
+        return new SafeVectorOutput(vectorOf(output), meta);
+    }
+
+    @Override
+    public MultiVectorOutput ofMultiVectorOutput(final Map<MetricConstants, double[]> output,
+                                                 final MetricOutputMetadata meta)
+    {
+        EnumMap<MetricConstants, VectorOfDoubles> map = new EnumMap<>(MetricConstants.class);
+        output.forEach((key, value) -> map.put(key, vectorOf(value)));
+        return new SafeMultiVectorOutput(map, meta);
+    }
+
+    @Override
+    public MatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta)
+    {
+        return new SafeMatrixOutput(matrixOf(output), meta);
+    }
+
+    @Override
+    public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap(final List<T> input)
+    {
+        Objects.requireNonNull(input, "Specify a non-null list of inputs.");
+        final SafeMetricOutputMapByMetric.Builder<T> builder = new SafeMetricOutputMapByMetric.Builder<>();
+        input.forEach(a -> {
+            final MapBiKey<MetricConstants, MetricConstants> key = getMapKey(a.getMetadata().getMetricID(),
+                                                                             a.getMetadata().getMetricComponentID());
+            builder.put(key, a);
+        });
+        return builder.build();
+    }
+
+    @Override
+    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> ofMap(final Map<MapBiKey<Integer, Threshold>, T> input)
+    {
+        Objects.requireNonNull(input, "Specify a non-null input map.");
+        final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
+                                                                    new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        input.forEach(builder::put);
+        return builder.build();
+    }
+
+    @Override
+    public <S extends MetricOutput<?>> MetricOutputMultiMap.Builder<S> ofMultiMap()
+    {
+        return new SafeMetricOutputMultiMap.MultiMapBuilder<>();
+    }
+
+    @Override
+    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> combine(final List<MetricOutputMapByLeadThreshold<T>> input)
+    {
+        Objects.requireNonNull(input, "Specify a non-null input map.");
+        final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
+                                                                    new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        input.forEach(a -> a.forEach(builder::put));
+        builder.setOverrideMetadata(input.get(0).getMetadata());
+        return builder.build();
+    }
+
+    @Override
+    public <S extends Comparable<S>, T extends Comparable<T>> MapBiKey<S, T> getMapKey(final S firstKey,
+                                                                                       final T secondKey)
+    {
+
+        //Bounds checks
+        Objects.requireNonNull(firstKey, "Specify a non-null first key.");
+        Objects.requireNonNull(secondKey, "Specify a non-null second key.");
+
+        /**
+         * Default implementation of a {@link MapBiKey}.
+         */
+
+        class MapKey implements MapBiKey<S, T>
+        {
+
+            @Override
+            public int compareTo(final MapBiKey<S, T> o)
+            {
+                //Compare on lead time, then threshold type, then threshold value, then upper threshold value, where 
+                //it exists
+                Objects.requireNonNull(o, "Specify a non-null map key for comparison.");
+                if(!(o instanceof MapKey))
+                {
+                    return -1;
+                }
+                final int returnMe = firstKey.compareTo(o.getFirstKey());
+                if(returnMe != 0)
+                {
+                    return returnMe;
+                }
+                return o.getSecondKey().compareTo(getSecondKey());
+            }
+
+            @Override
+            public S getFirstKey()
+            {
+                return firstKey;
+            }
+
+            @Override
+            public T getSecondKey()
+            {
+                return secondKey;
+            }
+
+        }
+        return new MapKey();
+    }
+
+    @Override
+    public Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
+    {
+        return new SafeThresholdKey(threshold, thresholdUpper, condition);
+    }
+
+    @Override
+    public Quantile getQuantile(final Double threshold,
+                                final Double thresholdUpper,
+                                final Double probability,
+                                final Double probabilityUpper,
+                                final Condition condition)
+    {
+        return new SafeQuantileKey(threshold, thresholdUpper, probability, probabilityUpper, condition);
+    }
+
+    /**
+     * Returns an immutable list that contains a safe type of the input.
+     * 
+     * @param input the possibly unsafe input
+     * @return the immutable output
+     */
+
+    List<PairOfDoubles> safePairOfDoublesList(List<PairOfDoubles> input)
+    {
+        Objects.requireNonNull(input, "Specify a non-null input from which to create a safe type.");
+        List<PairOfDoubles> returnMe = new ArrayList<>();
+        input.forEach(value -> {
+            if(value instanceof SafePairOfDoubles)
+            {
+                returnMe.add(value);
+            }
+            else
+            {
+                returnMe.add(SafePairOfDoubles.of(value.getItemOne(), value.getItemTwo()));
+            }
+        });
+        return Collections.unmodifiableList(returnMe);
+    }
+
+    /**
+     * Returns an immutable list that contains a safe type of the input.
+     * 
+     * @param input the possibly unsafe input
+     * @return the immutable output
+     */
+
+    List<VectorOfBooleans> safeVectorOfBooleansList(List<VectorOfBooleans> input)
+    {
+        Objects.requireNonNull(input, "Specify a non-null input from which to create a safe type.");
+        List<VectorOfBooleans> returnMe = new ArrayList<>();
+        input.forEach(value -> {
+            if(value instanceof SafeVectorOfBooleans)
+            {
+                returnMe.add(value);
+            }
+            else
+            {
+                returnMe.add(SafeVectorOfBooleans.of(value.getBooleans()));
+            }
+        });
+        return Collections.unmodifiableList(returnMe);
+    }
+
+    /**
+     * Returns a safe type of the input.
+     * 
+     * @param input the potentially unsafe input
+     * @return a safe implementation of the input
+     */
+
+    VectorOfDoubles safeVectorOf(VectorOfDoubles input)
+    {
+        if(input instanceof SafeVectorOfDoubles)
+        {
+            return input;
+        }
+        return SafeVectorOfDoubles.of(input.getDoubles());
+    }
+
+    /**
+     * Returns a safe type of the input.
+     * 
+     * @param input the potentially unsafe input
+     * @return a safe implementation of the input
+     */
+
+    MatrixOfDoubles safeMatrixOf(MatrixOfDoubles input)
+    {
+        if(input instanceof SafeMatrixOfDoubles)
+        {
+            return input;
+        }
+        return SafeMatrixOfDoubles.of(input.getDoubles());
+    }
+
+    /**
+     * Default implementation of a pair of booleans.
+     */
+
+    class SafePairOfBooleans implements PairOfBooleans
+    {
+        private final boolean left;
+        private final boolean right;
+
+        /**
+         * Construct.
+         * 
+         * @param left the left
+         * @param right the right
+         */
+
+        private SafePairOfBooleans(boolean left, boolean right)
+        {
+            this.left = left;
+            this.right = right;
+        }
+
+        @Override
+        public boolean getItemOne()
+        {
+            return left;
+        }
+
+        @Override
+        public boolean getItemTwo()
+        {
+            return right;
+        }
+    };
+
+    /**
+     * Prevent construction.
+     */
+
+    private DefaultDataFactory()
+    {
+    }
+
+}

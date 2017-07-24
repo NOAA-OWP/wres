@@ -13,7 +13,7 @@ class SafeDiscreteProbabilityPairs extends SafeSingleValuedPairs implements Disc
     @Override
     public DiscreteProbabilityPairs getBaselineData()
     {
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         return metIn.ofDiscreteProbabilityPairs(getDataForBaseline(),getMetadataForBaseline());
     }     
 

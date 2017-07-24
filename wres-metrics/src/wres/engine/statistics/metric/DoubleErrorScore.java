@@ -65,7 +65,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metr
         }
         final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, id);
         //Compute the atomic errors in a stream
-        return getOutputFactory().ofScalarOutput(s.getData().stream().mapToDouble(f).average().getAsDouble(), metOut);
+        return getDataFactory().ofScalarOutput(s.getData().stream().mapToDouble(f).average().getAsDouble(), metOut);
     }
 
     /**
@@ -76,7 +76,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metr
 
     protected DoubleErrorScore(final DoubleErrorScoreBuilder<S> b)
     {
-        super(b.outputFactory);
+        super(b.dataFactory);
         Objects.requireNonNull(b.f, "Specify a non-null function from which to construct the metric.");
         this.f = b.f;
     }

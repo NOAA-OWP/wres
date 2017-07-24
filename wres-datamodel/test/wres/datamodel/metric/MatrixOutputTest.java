@@ -21,7 +21,7 @@ public final class MatrixOutputTest
     @Test
     public void test1Equals()
     {
-        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
@@ -69,7 +69,7 @@ public final class MatrixOutputTest
     @Test
     public void test2ToString()
     {
-        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
@@ -89,7 +89,7 @@ public final class MatrixOutputTest
     @Test
     public void test3GetMetadata()
     {
-        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
         final MetricOutputMetadata m1 = d.getMetadataFactory().getOutputMetadata(10,
                                                                                  metaFac.getDimension(),
@@ -134,7 +134,7 @@ public final class MatrixOutputTest
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
                                                                   metaFac.getDatasetIdentifier("B", "B", "C"));
-        final MetricOutputFactory d = DefaultMetricOutputFactory.getInstance();
+        final DataFactory d = DefaultDataFactory.getInstance();
         final MatrixOutput q = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
         final MatrixOutput r = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m2);
         assertTrue("Expected equal hash codes.", q.hashCode() == r.hashCode());

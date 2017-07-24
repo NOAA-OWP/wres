@@ -14,10 +14,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputFactory;
 import wres.datamodel.metric.MetricOutputMapByMetric;
 
 /**
@@ -52,10 +52,10 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
 {
 
     /**
-     * Instance of a {@link MetricOutputFactory} for constructing a {@link MetricOutput}.
+     * Instance of a {@link DataFactory} for constructing a {@link MetricOutput}.
      */
 
-    private final MetricOutputFactory outputFactory;
+    private final DataFactory dataFactory;
 
     /**
      * The collection of {@link Metric}
@@ -107,10 +107,10 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         private ExecutorService metricPool;
 
         /**
-         * The {@link MetricOutputFactory} to build a {@link MetricOutput}.
+         * The {@link DataFactory} to build a {@link MetricOutput}.
          */
 
-        private MetricOutputFactory outputFactory;
+        private DataFactory dataFactory;
 
         /**
          * The list of {@link Metric}.
@@ -174,15 +174,15 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         }
 
         /**
-         * Sets the {@link MetricOutputFactory} for constructing a {@link MetricOutput}.
+         * Sets the {@link DataFactory} for constructing a {@link MetricOutput}.
          * 
-         * @param outputFactory the {@link MetricOutputFactory}
+         * @param dataFactory the {@link DataFactory}
          * @return the builder
          */
 
-        protected MetricCollectionBuilder<S, T> setOutputFactory(final MetricOutputFactory outputFactory)
+        protected MetricCollectionBuilder<S, T> setOutputFactory(final DataFactory dataFactory)
         {
-            this.outputFactory = outputFactory;
+            this.dataFactory = dataFactory;
             return this;
         }
 
@@ -248,7 +248,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
                .forEach(y -> metricFutures.add(metrics.indexOf(y),
                                                CompletableFuture.supplyAsync(() -> y.apply(s), metricPool)));
         final CompletableFuture<List<T>> results = sequence(metricFutures);
-        return outputFactory.ofMap(results.join()); //This is blocking
+        return dataFactory.ofMap(results.join()); //This is blocking
     }
 
     /**
@@ -297,7 +297,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         {
             m.add(next.get());
         }
-        return outputFactory.ofMap(m);
+        return dataFactory.ofMap(m);
     }
 
     /**
@@ -306,7 +306,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
 
     private MetricCollection(final MetricCollectionBuilder<S, T> builder)
     {
-        if(Objects.isNull(builder.outputFactory))
+        if(Objects.isNull(builder.dataFactory))
         {
             throw new UnsupportedOperationException("Cannot construct the metric collection without a metric output "
                 + "factory.");
@@ -319,7 +319,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         metrics = new ArrayList<>();
         metrics.addAll(builder.builderMetrics);
         input = builder.builderInput;
-        this.outputFactory = builder.outputFactory;
+        this.dataFactory = builder.dataFactory;
         if(Objects.isNull(builder.metricPool))
         {
             metricPool = ForkJoinPool.commonPool();

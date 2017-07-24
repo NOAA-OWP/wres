@@ -35,9 +35,9 @@ public class DefaultMetadataFactory implements MetadataFactory
     private final HashMap<Integer, MetricOutputMetadata> outputMetaCache;
 
     /**
-     * Returns an instance of a {@link MetricOutputFactory}.
+     * Returns an instance of a {@link DataFactory}.
      * 
-     * @return a {@link MetricOutputFactory}
+     * @return a {@link DataFactory}
      */
 
     public static MetadataFactory getInstance()
@@ -47,18 +47,6 @@ public class DefaultMetadataFactory implements MetadataFactory
             instance = new DefaultMetadataFactory();
         }
         return instance;
-    }
-
-    @Override
-    public Metadata getMetadata(final int sampleSize)
-    {
-        return getMetadata(sampleSize, getDimension());
-    }
-
-    @Override
-    public Metadata getMetadata(final int sampleSize, final Dimension dim)
-    {
-        return new MetadataImpl(sampleSize, dim, null);
     }
 
     @Override
@@ -181,7 +169,7 @@ public class DefaultMetadataFactory implements MetadataFactory
                                                   final String scenarioID,
                                                   final String baselineScenarioID)
     {
-        return new DatasetIdentifierImpl(geospatialID,variableID,scenarioID,baselineScenarioID);
+        return new DatasetIdentifierImpl(geospatialID, variableID, scenarioID, baselineScenarioID);
     }
 
     @Override
@@ -252,7 +240,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             case BRIER_SKILL_SCORE:
                 return "BRIER SKILL SCORE";
             case COEFFICIENT_OF_DETERMINATION:
-                return "COEFFICIENT OF DETERMINATION";    
+                return "COEFFICIENT OF DETERMINATION";
             case CONTINGENCY_TABLE:
                 return "CONTINGENCY TABLE";
             case CORRELATION_PEARSONS:
@@ -278,7 +266,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             case PROBABILITY_OF_FALSE_DETECTION:
                 return "PROBABILITY OF FALSE DETECTION";
             case RELATIVE_OPERATING_CHARACTERISTIC:
-                return "RELATIVE OPERATING CHARACTERISTIC";                
+                return "RELATIVE OPERATING CHARACTERISTIC";
             case ROOT_MEAN_SQUARE_ERROR:
                 return "ROOT MEAN SQUARE ERROR";
             default:
@@ -299,11 +287,11 @@ public class DefaultMetadataFactory implements MetadataFactory
             case BRIER_SKILL_SCORE:
                 return "BSS";
             case COEFFICIENT_OF_DETERMINATION:
-                return "CoD";    
+                return "CoD";
             case CONTINGENCY_TABLE:
                 return "CONTINGENCY TABLE";
             case CORRELATION_PEARSONS:
-                return "CORRELATION PEARSONS";                
+                return "CORRELATION PEARSONS";
             case CRITICAL_SUCCESS_INDEX:
                 return "CSI";
             case EQUITABLE_THREAT_SCORE:
@@ -325,7 +313,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             case PROBABILITY_OF_FALSE_DETECTION:
                 return "PoFD";
             case RELATIVE_OPERATING_CHARACTERISTIC:
-                return "ROC";                     
+                return "ROC";
             case ROOT_MEAN_SQUARE_ERROR:
                 return "RMSE";
             default:
@@ -561,6 +549,6 @@ public class DefaultMetadataFactory implements MetadataFactory
     private DefaultMetadataFactory()
     {
         outputMetaCache = new HashMap<>();
-    };
+    }
 
 }

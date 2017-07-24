@@ -16,10 +16,10 @@ import ohd.hseb.charter.ChartPanelTools;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DefaultMetricInputFactory;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricInputFactory;
 import wres.datamodel.metric.SingleValuedPairs;
 
 public class Chart2DTestInput extends TestCase
@@ -27,7 +27,7 @@ public class Chart2DTestInput extends TestCase
     public void test1SingleValuedPairsScatter()
     {
         final Random rand = new Random(0L);
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
         for (int i = 0; i < 100; i ++)
         {
@@ -81,7 +81,7 @@ public class Chart2DTestInput extends TestCase
     public static void main(final String[] args)
     {
         //Construct some single-valued pairs
-        final MetricInputFactory metIn = DefaultMetricInputFactory.getInstance();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
         values.add(metIn.pairOf(22.9, 22.8));
         values.add(metIn.pairOf(75.2, 80));

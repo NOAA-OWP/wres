@@ -70,7 +70,7 @@ implements Score
 
     protected DecomposableDoubleErrorScore(final DecomposableDoubleErrorScoreBuilder<S> b)
     {
-        super(b.outputFactory);
+        super(b.dataFactory);
         if(!Score.isSupportedDecompositionID(b.decompositionID))
         {
             throw new IllegalStateException("Unrecognized decomposition identifier: " + b.decompositionID);

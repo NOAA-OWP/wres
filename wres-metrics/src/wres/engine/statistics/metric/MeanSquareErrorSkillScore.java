@@ -40,7 +40,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
         final double[] result = new double[]{
             FunctionFactory.skill().applyAsDouble(numerator.getData().getDoubles()[0],
                                                   denominator.getData().getDoubles()[0])};
-        return getOutputFactory().ofVectorOutput(result, metOut);
+        return getDataFactory().ofVectorOutput(result, metOut);
     }
 
     @Override

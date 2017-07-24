@@ -4,7 +4,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**
- * A sorted map of {@link MetricOutputMapByLeadThreshold} stored by metric identifier. A builder is included to support
+ * A map of {@link MetricOutputMapByLeadThreshold} stored by metric identifier. A builder is included to support
  * construction on-the-fly from inputs of {@link MetricOutputMapByMetric}.
  * 
  * @author james.brown@hydrosolved.com
@@ -38,25 +38,25 @@ public interface MetricOutputMultiMap<T extends MetricOutput<?>>
      * 
      * @return a view of the keys
      */
-    
+
     Set<MapBiKey<MetricConstants, MetricConstants>> keySet();
-    
+
     /**
      * Consume each pair in the map.
      * 
      * @param consumer the consumer
      */
-    
-    void forEach(BiConsumer<MapBiKey<MetricConstants, MetricConstants>,MetricOutputMapByLeadThreshold<T>> consumer);
-    
+
+    void forEach(BiConsumer<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<T>> consumer);
+
     /**
      * Returns the number of element in the map.
      * 
      * @return the size of the mapping
      */
-    
-    int size();    
-    
+
+    int size();
+
     /**
      * Returns a {@link MetricOutputMap} corresponding to the input identifiers or null
      * 

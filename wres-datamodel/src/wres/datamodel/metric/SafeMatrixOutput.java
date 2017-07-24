@@ -71,7 +71,7 @@ class SafeMatrixOutput implements MatrixOutput
     {
         Objects.requireNonNull(output, "Specify a non-null output.");
         Objects.requireNonNull(meta, "Specify non-null metadata.");
-        this.output = ((DefaultMetricInputFactory)DefaultMetricInputFactory.getInstance()).safeMatrixOf(output);
+        this.output = ((DefaultDataFactory)DefaultDataFactory.getInstance()).safeMatrixOf(output);
         this.meta = meta;
     }
 
