@@ -3,21 +3,32 @@ package wres.io.reading.fews;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.io.concurrency.Executor;
+import wres.io.concurrency.ForecastSaver;
+import wres.io.concurrency.ObservationSaver;
+import wres.io.concurrency.WRESRunnable;
 import wres.io.config.SystemSettings;
 import wres.io.reading.BasicSource;
-import wres.io.reading.XMLReader;
+import wres.io.reading.ReaderFactory;
+import wres.io.reading.SourceType;
+import wres.io.utilities.Database;
+import wres.util.ProgressMonitor;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.io.*;
+import java.nio.file.Paths;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.*;
 
 /**
  * @author Christopher Tubbs
  * Interprets a FEWS (PIXML) source into either forecast or observation data and stores them in the database
  */
 public class ZippedSource extends BasicSource {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ZippedSource.class);
 
     private ExecutorService readerService = createReaderService();
 
@@ -29,10 +40,24 @@ public class ZippedSource extends BasicSource {
         return Executors.newFixedThreadPool(threadCount.intValue());
     }
 
-	/**
-	 * Constructor
-	 */
-	public ZippedSource () {}
+    private void addIngestTask (Runnable task)
+    {
+        this.addIngestTask(readerService.submit(task));
+    }
+
+    private void addIngestTask(Future result)
+    {
+        this.tasks.add(result);
+    }
+
+    private Future getIngestTask()
+    {
+        return tasks.poll();
+    }
+
+    private final Queue<Future> tasks = new LinkedList<>();
+
+    private final Queue<String> savedFiles = new LinkedList<>();
 
 	/**
 	 * Constructor that sets the filename
@@ -40,76 +65,215 @@ public class ZippedSource extends BasicSource {
 	 */
 	public ZippedSource (String filename)
 	{
-		this.setFilename(filename);
-	}
+	    this.setFilename(filename);
+	    this.directoryPath = Paths.get(filename).toAbsolutePath().getParent().toString();
+    }
 
 	@Override
 	public void saveForecast() throws IOException {
-		XMLReader sourceReader = new PIXMLReader(this.getFilename());
-		sourceReader.parse();
+	    issue(true);
 	}
 
 	@Override
 	public void saveObservation() throws IOException {
-		XMLReader sourceReader = new PIXMLReader(this.getAbsoluteFilename(), false);
-		sourceReader.parse();
+	    issue(false);
 	}
 
 	private void issue(boolean isForecast)
     {
-        try {
-            FileInputStream fileStream = new FileInputStream(this.getAbsoluteFilename());
-            BufferedInputStream bufferedFile = new BufferedInputStream(fileStream);
-            GzipCompressorInputStream decompressedFileStream = new GzipCompressorInputStream(bufferedFile);
-            TarArchiveInputStream archive = new TarArchiveInputStream(decompressedFileStream);
+        FileInputStream fileStream = null;
+        BufferedInputStream bufferedFile = null;
+        GzipCompressorInputStream decompressedFileStream = null;
+        TarArchiveInputStream archive = null;
+        TarArchiveEntry archivedSource;
+        byte[] content;
 
-            TarArchiveEntry archivedSource = archive.getNextTarEntry();
+        try {
+            fileStream = new FileInputStream(this.getAbsoluteFilename());
+            bufferedFile = new BufferedInputStream(fileStream);
+            decompressedFileStream = new GzipCompressorInputStream(bufferedFile);
+            archive = new TarArchiveInputStream(decompressedFileStream);
+
+            archivedSource = archive.getNextTarEntry();
 
             while (archivedSource != null)
             {
                 if (archivedSource.isFile())
                 {
-                    processFile(archivedSource, isForecast);
-                }
-                else
-                {
-                    processDirectory(archivedSource, isForecast);
+                    processFile(archivedSource, archive, isForecast);
                 }
 
                 archivedSource = archive.getNextTarEntry();
+            }
+
+            Future ingestTask = this.getIngestTask();
+            while (ingestTask != null)
+            {
+                try {
+                    ingestTask.get();
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+                ingestTask = this.getIngestTask();
+            }
+
+            ingestTask = Database.getStoredIngestTask();
+
+            while (ingestTask != null)
+            {
+                try {
+                    ingestTask.get();
+                }
+                catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+                ingestTask = Database.getStoredIngestTask();
+            }
+
+            for (String filename : this.savedFiles)
+            {
+                new File(filename).delete();
             }
         }
         catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private void processDirectory(TarArchiveEntry source, boolean isForecast)
-    {
-        if (source.isDirectory())
-        {
-            TarArchiveEntry[] directoryEntries = source.getDirectoryEntries();
-
-            for (int directoryIndex = 0; directoryIndex < directoryEntries.length; ++directoryIndex)
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        finally {
+            if (archive != null)
             {
-                if (directoryEntries[directoryIndex].isFile())
-                {
-                    processFile(directoryEntries[directoryIndex], isForecast);
+                try {
+                    archive.close();
                 }
-                else if (directoryEntries[directoryIndex].isDirectory())
-                {
-                    processDirectory(directoryEntries[directoryIndex], isForecast);
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (decompressedFileStream != null)
+            {
+                try {
+                    decompressedFileStream.close();
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (bufferedFile != null)
+            {
+                try {
+                    bufferedFile.close();
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (fileStream != null)
+            {
+                try {
+                    fileStream.close();
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }
+
+
     }
 
-    private void processFile(TarArchiveEntry source, boolean isForecast)
+    private void processFile(TarArchiveEntry source, TarArchiveInputStream archiveInputStream, boolean isForecast) throws IOException
     {
-        if (source.getName().toLowerCase().endsWith(".xml"))
+        String archivedFileName = Paths.get(this.directoryPath, source.getName()).toString();
+        SourceType sourceType = ReaderFactory.getFiletype(archivedFileName);
+
+        byte[] content = new byte[(int)source.getSize()];
+        archiveInputStream.read(content, 0, content.length);
+
+        if (sourceType == SourceType.PI_XML)
         {
-            // TODO: Should this be multithreaded in some way?
-            PIXMLReader sourceReader = new PIXMLReader(source.getFile(), isForecast);
+            WRESRunnable saver = new WRESRunnable() {
+                @Override
+                protected void execute () {
+
+
+                    try (InputStream input = new ByteArrayInputStream(this.content)) {
+                        PIXMLReader reader = new PIXMLReader(this.filename,
+                                                             input,
+                                                             this.isForecast);
+                        reader.parse();
+                    }
+                    catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                protected String getTaskName () {
+                    return "ZippedSource - Saving PIXML - " + this.filename;
+                }
+
+                @Override
+                protected Logger getLogger () {
+                    return ZippedSource.LOGGER;
+                }
+
+                public WRESRunnable init(String filename, byte[] content, boolean isForecast)
+                {
+                    this.filename = filename;
+                    this.content = content;
+                    this.isForecast = isForecast;
+                    return this;
+                }
+
+                private byte[] content;
+                private String filename;
+                private boolean isForecast;
+            }.init(archivedFileName, content, isForecast);
+
+            this.addIngestTask(saver);
+        }
+        else
+        {
+            FileOutputStream stream = new FileOutputStream(archivedFileName);
+
+            try
+            {
+                stream.write(content);
+                this.savedFiles.add(archivedFileName);
+
+                WRESRunnable saver;
+
+                if (isForecast)
+                {
+                    saver = new ForecastSaver(archivedFileName, this.getDataSourceConfig());
+                }
+                else
+                {
+                    saver = new ObservationSaver(archivedFileName, this.getDataSourceConfig());
+                }
+
+                saver.setOnRun(ProgressMonitor.onThreadStartHandler());
+                saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+
+                Future task = Executor.execute(saver);
+                this.addIngestTask(task);
+            }
+            finally
+            {
+                stream.close();
+            }
+
         }
     }
+
+    private final String directoryPath;
 }

@@ -10,5 +10,6 @@ public enum SourceType {
 	DATACARD,
 	NETCDF,
 	PI_XML,
+	ARCHIVE,
 	UNDEFINED;
 }
