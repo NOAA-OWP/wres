@@ -53,43 +53,69 @@ public class DefaultDataFactory implements DataFactory
         }
         return instance;
     }
-    
+
     @Override
-    public MetadataFactory getMetadataFactory() {
-        return DefaultMetadataFactory.getInstance();  
+    public MetadataFactory getMetadataFactory()
+    {
+        return DefaultMetadataFactory.getInstance();
     }
 
     @Override
     public Slicer getSlicer()
     {
-        return DefaultSlicer.getInstance();  
-    }     
-
-    @Override
-    public DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
-    {
-        return (DichotomousPairs)new SafeDichotomousPairs.DichotomousPairsBuilder().setData(pairs)
-                                                                                       .setMetadata(meta)
-                                                                                       .build();
+        return DefaultSlicer.getInstance();
     }
 
     @Override
-    public MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
+    public DichotomousPairs ofDichotomousPairs(List<VectorOfBooleans> pairs,
+                                               List<VectorOfBooleans> basePairs,
+                                               Metadata mainMeta,
+                                               Metadata baselineMeta)
     {
-        return new SafeMulticategoryPairs.MulticategoryPairsBuilder().setData(pairs).setMetadata(meta).build();
+        final SafeDichotomousPairs.DichotomousPairsBuilder b =
+                                                                 new SafeDichotomousPairs.DichotomousPairsBuilder();
+        b.setData(pairs);
+        b.setMetadata(mainMeta);
+        b.setDataForBaseline(basePairs);
+        b.setMetadataForBaseline(baselineMeta);
+        return b.build();
     }
+    
+    @Override
+    public DichotomousPairs ofDichotomousPairsFromAtomic(List<PairOfBooleans> pairs,
+                                               List<PairOfBooleans> basePairs,
+                                               Metadata mainMeta,
+                                               Metadata baselineMeta)
+    {
+        final SafeDichotomousPairs.DichotomousPairsBuilder b =
+                                                                 new SafeDichotomousPairs.DichotomousPairsBuilder();
+        b.setDataFromAtomic(pairs);
+        b.setMetadata(mainMeta);
+        b.setDataForBaselineFromAtomic(basePairs);
+        b.setMetadataForBaseline(baselineMeta);
+        return b.build();
+    }    
 
     @Override
-    public DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs, final Metadata meta)
+    public MulticategoryPairs ofMulticategoryPairs(List<VectorOfBooleans> pairs,
+                                                   List<VectorOfBooleans> basePairs,
+                                                   Metadata mainMeta,
+                                                   Metadata baselineMeta)
     {
-        return ofDiscreteProbabilityPairs(pairs, null, meta, null);
+        final SafeMulticategoryPairs.MulticategoryPairsBuilder b =
+                                                                 new SafeMulticategoryPairs.MulticategoryPairsBuilder();
+        b.setData(pairs);
+        b.setMetadata(mainMeta);
+        b.setDataForBaseline(basePairs);
+        b.setMetadataForBaseline(baselineMeta);
+        return b.build();
     }
 
     @Override
     public DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
-                                                                   final List<PairOfDoubles> basePairs,
-                                                                   final Metadata mainMeta,
-                                                                   final Metadata baselineMeta)
+                                                               final List<PairOfDoubles> basePairs,
+                                                               final Metadata mainMeta,
+                                                               final Metadata baselineMeta)
     {
         final SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
                                                                              new SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
@@ -101,16 +127,10 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Metadata meta)
-    {
-        return ofSingleValuedPairs(pairs, null, meta, null);
-    }
-
-    @Override
     public SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
-                                                     final List<PairOfDoubles> basePairs,
-                                                     final Metadata mainMeta,
-                                                     final Metadata baselineMeta)
+                                                 final List<PairOfDoubles> basePairs,
+                                                 final Metadata mainMeta,
+                                                 final Metadata baselineMeta)
     {
         final SafeSingleValuedPairs.SingleValuedPairsBuilder b = new SafeSingleValuedPairs.SingleValuedPairsBuilder();
         b.setMetadata(mainMeta);
@@ -186,7 +206,7 @@ public class DefaultDataFactory implements DataFactory
     {
         return SafeMatrixOfDoubles.of(vec);
     }
-    
+
     @Override
     public ScalarOutput ofScalarOutput(final double output, final MetricOutputMetadata meta)
     {
@@ -201,7 +221,7 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public MultiVectorOutput ofMultiVectorOutput(final Map<MetricConstants, double[]> output,
-                                                     final MetricOutputMetadata meta)
+                                                 final MetricOutputMetadata meta)
     {
         EnumMap<MetricConstants, VectorOfDoubles> map = new EnumMap<>(MetricConstants.class);
         output.forEach((key, value) -> map.put(key, vectorOf(value)));
@@ -312,14 +332,13 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public Quantile getQuantile(final Double threshold,
-                                       final Double thresholdUpper,
-                                       final Double probability,
-                                       final Double probabilityUpper,
-                                       final Condition condition)
+                                final Double thresholdUpper,
+                                final Double probability,
+                                final Double probabilityUpper,
+                                final Condition condition)
     {
         return new SafeQuantileKey(threshold, thresholdUpper, probability, probabilityUpper, condition);
-    }    
-    
+    }
 
     /**
      * Returns an immutable list that contains a safe type of the input.
@@ -344,7 +363,7 @@ public class DefaultDataFactory implements DataFactory
         });
         return Collections.unmodifiableList(returnMe);
     }
-    
+
     /**
      * Returns an immutable list that contains a safe type of the input.
      * 
@@ -367,36 +386,40 @@ public class DefaultDataFactory implements DataFactory
             }
         });
         return Collections.unmodifiableList(returnMe);
-    }       
-    
+    }
+
     /**
-     * Returns a safe type of the input. 
+     * Returns a safe type of the input.
      * 
      * @param input the potentially unsafe input
      * @return a safe implementation of the input
      */
-    
-    VectorOfDoubles safeVectorOf(VectorOfDoubles input) {
-        if(input instanceof SafeVectorOfDoubles) {
+
+    VectorOfDoubles safeVectorOf(VectorOfDoubles input)
+    {
+        if(input instanceof SafeVectorOfDoubles)
+        {
             return input;
         }
         return SafeVectorOfDoubles.of(input.getDoubles());
-    }    
+    }
 
     /**
-     * Returns a safe type of the input. 
+     * Returns a safe type of the input.
      * 
      * @param input the potentially unsafe input
      * @return a safe implementation of the input
      */
-    
-    MatrixOfDoubles safeMatrixOf(MatrixOfDoubles input) {
-        if(input instanceof SafeMatrixOfDoubles) {
+
+    MatrixOfDoubles safeMatrixOf(MatrixOfDoubles input)
+    {
+        if(input instanceof SafeMatrixOfDoubles)
+        {
             return input;
         }
         return SafeMatrixOfDoubles.of(input.getDoubles());
-    }     
-    
+    }
+
     /**
      * Default implementation of a pair of booleans.
      */

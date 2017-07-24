@@ -22,7 +22,7 @@ import wres.datamodel.metric.Threshold.Condition;
 
 public interface DataFactory
 {
-  
+
     /**
      * Convenience method that returns a {@link MapBiKey} to map a {@link MetricOutput} by forecast lead time and
      * {@link Threshold}.
@@ -84,23 +84,7 @@ public interface DataFactory
     default Quantile getQuantile(final Double threshold, final Double probability, final Condition condition)
     {
         return getQuantile(threshold, null, probability, null, condition);
-    }    
-    
-    /**
-     * Returns a {@link MetadataFactory} for building {@link Metadata}.
-     * 
-     * @return an instance of {@link MetadataFactory} 
-     */
-
-    MetadataFactory getMetadataFactory();
-    
-    /**
-     * Returns a {@link Slicer} for slicing data.
-     * 
-     * @return a {@link Slicer}
-     */
-
-    Slicer getSlicer();
+    }
 
     /**
      * Construct the dichotomous input without any pairs for a baseline.
@@ -109,9 +93,26 @@ public interface DataFactory
      * @param meta the metadata
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
-     */
+     */    
     
-    DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta);
+    default DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
+    {
+        return ofDichotomousPairs(pairs, null, meta, null);
+    }
+    
+    /**
+     * Construct the dichotomous input from atomic {@link PairOfBooleans} without any pairs for a baseline.
+     * 
+     * @param pairs the verification pairs
+     * @param meta the metadata
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */    
+    
+    default DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs, final Metadata meta)
+    {
+        return ofDichotomousPairsFromAtomic(pairs, null, meta, null);
+    }    
 
     /**
      * Construct the multicategory input without any pairs for a baseline.
@@ -121,8 +122,11 @@ public interface DataFactory
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
-    
-    MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs, final Metadata meta);
+
+    default MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
+    {
+        return ofMulticategoryPairs(pairs, null, meta, null);
+    }
 
     /**
      * Construct the discrete probability input without any pairs for a baseline.
@@ -132,138 +136,207 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      * @return the pairs
      */
-    
-    DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
-                                                                      final Metadata meta);
 
-    /**
-     * Construct the discrete probability input with a baseline.
-     * 
-     * @param pairs the discrete probability pairs
-     * @param basePairs the baseline pairs
-     * @param mainMeta the metadata for the main pairs
-     * @param baselineMeta the metadata for the baseline pairs
-     * @throws MetricInputException if the inputs are invalid
-     * @return the pairs
-     */
-    
-    DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
-                                                                      final List<PairOfDoubles> basePairs,
-                                                                      final Metadata mainMeta,
-                                                                      final Metadata baselineMeta);
+    default DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs, final Metadata meta)
+    {
+        return ofDiscreteProbabilityPairs(pairs, null, meta, null);
+    }
 
     /**
      * Construct the single-valued input without any pairs for a baseline.
      * 
-     * @param pairs the verification pairs
+     * @param pairs the single-valued pairs
      * @param meta the metadata
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
-    
-    SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Metadata meta);
+
+    default SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Metadata meta)
+    {
+        return ofSingleValuedPairs(pairs, null, meta, null);
+    }
 
     /**
-     * Construct the single-valued input with a baseline.
+     * Returns a {@link MetadataFactory} for building {@link Metadata}.
      * 
-     * @param pairs the single-valued pairs
+     * @return an instance of {@link MetadataFactory}
+     */
+
+    MetadataFactory getMetadataFactory();
+
+    /**
+     * Returns a {@link Slicer} for slicing data.
+     * 
+     * @return a {@link Slicer}
+     */
+
+    Slicer getSlicer();
+
+    /**
+     * Construct the dichotomous input with pairs for a baseline.
+     * 
+     * @param pairs the main verification pairs
      * @param basePairs the baseline pairs
      * @param mainMeta the metadata for the main pairs
      * @param baselineMeta the metadata for the baseline pairs
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
+
+    DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs,
+                                        final List<VectorOfBooleans> basePairs,
+                                        final Metadata mainMeta,
+                                        final Metadata baselineMeta);
+
+    /**
+     * Construct the dichotomous input from atomic {@link PairOfBooleans} with pairs for a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */    
     
-    SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
+    DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs,
+                                        final List<PairOfBooleans> basePairs,
+                                        final Metadata mainMeta,
+                                        final Metadata baselineMeta);    
+    
+    /**
+     * Construct the multicategory input without any pairs for a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs,
+                                            final List<VectorOfBooleans> basePairs,
+                                            final Metadata mainMeta,
+                                            final Metadata baselineMeta);
+
+    /**
+     * Construct the discrete probability input with a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs
+     * @throws MetricInputException if the inputs are invalid
+     * @return the pairs
+     */
+
+    DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
                                                         final List<PairOfDoubles> basePairs,
                                                         final Metadata mainMeta,
                                                         final Metadata baselineMeta);
 
     /**
+     * Construct the single-valued input with a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
+                                          final List<PairOfDoubles> basePairs,
+                                          final Metadata mainMeta,
+                                          final Metadata baselineMeta);
+
+    /**
      * Return a {@link PairOfDoubles} from two double values.
-     *  
+     * 
      * @param left the left value
      * @param right the right value
      * @return the pair
      */
-    
-    public PairOfDoubles pairOf(final double left, final double right);
+
+    PairOfDoubles pairOf(final double left, final double right);
 
     /**
      * Return a {@link PairOfBooleans} from two boolean values.
-     *  
+     * 
      * @param left the first value
      * @param right the second value
      * @return the pair
-     */    
-    
-    public PairOfBooleans pairOf(final boolean left, final boolean right);
+     */
+
+    PairOfBooleans pairOf(final boolean left, final boolean right);
 
     /**
      * Return a {@link PairOfDoubleAndVectorOfDoubles} from a double value and a double vector of values.
-     *  
+     * 
      * @param left the first value
      * @param right the second value
      * @return the pair
-     */        
-    
-    public PairOfDoubleAndVectorOfDoubles pairOf(final double left, final double[] right);
+     */
+
+    PairOfDoubleAndVectorOfDoubles pairOf(final double left, final double[] right);
 
     /**
      * Return a {@link PairOfDoubleAndVectorOfDoubles} from a double value and a double vector of values.
-     *  
+     * 
      * @param left the first value
      * @param right the second value
      * @return the pair
-     */        
-    
-    public PairOfDoubleAndVectorOfDoubles pairOf(final Double left, final Double[] right);
+     */
+
+    PairOfDoubleAndVectorOfDoubles pairOf(final Double left, final Double[] right);
 
     /**
      * Return a {@link Pair} from two double vectors.
-     *  
+     * 
      * @param left the first value
      * @param right the second value
      * @return the pair
-     */     
-    
-    public Pair<VectorOfDoubles, VectorOfDoubles> pairOf(final double[] left, final double[] right);
+     */
+
+    Pair<VectorOfDoubles, VectorOfDoubles> pairOf(final double[] left, final double[] right);
 
     /**
      * Return a {@link VectorOfDoubles} from a vector of doubles
-     *  
+     * 
      * @param vec the vector of doubles
      * @return the vector
-     */     
-    
-    public VectorOfDoubles vectorOf(final double[] vec);
+     */
+
+    VectorOfDoubles vectorOf(final double[] vec);
 
     /**
      * Return a {@link VectorOfDoubles} from a vector of doubles
-     *  
+     * 
      * @param vec the vector of doubles
      * @return the vector
-     */         
-    
-    public VectorOfDoubles vectorOf(final Double[] vec);
+     */
+
+    VectorOfDoubles vectorOf(final Double[] vec);
 
     /**
      * Return a {@link VectorOfBooleans} from a vector of booleans
-     *  
+     * 
      * @param vec the vector of booleans
      * @return the vector
-     */         
-    
-    public VectorOfBooleans vectorOf(final boolean[] vec);
+     */
+
+    VectorOfBooleans vectorOf(final boolean[] vec);
 
     /**
      * Return a {@link VectorOfBooleans} from a vector of booleans
-     *  
+     * 
      * @param vec the vector of booleans
      * @return the vector
-     */         
-    
-    public MatrixOfDoubles matrixOf(final double[][] vec);
+     */
+
+    MatrixOfDoubles matrixOf(final double[][] vec);
 
     /**
      * Return a {@link ScalarOutput}.
@@ -272,7 +345,7 @@ public interface DataFactory
      * @param meta the metadata
      * @return a {@link ScalarOutput}
      */
-    
+
     ScalarOutput ofScalarOutput(final double output, final MetricOutputMetadata meta);
 
     /**
@@ -282,7 +355,7 @@ public interface DataFactory
      * @param meta the metadata
      * @return a {@link VectorOutput}
      */
-    
+
     VectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta);
 
     /**
@@ -291,10 +364,9 @@ public interface DataFactory
      * @param output the output data
      * @param meta the metadata
      * @return a {@link MultiVectorOutput}
-     */    
-    
-    MultiVectorOutput ofMultiVectorOutput(final Map<MetricConstants, double[]> output,
-                                                     final MetricOutputMetadata meta);
+     */
+
+    MultiVectorOutput ofMultiVectorOutput(final Map<MetricConstants, double[]> output, final MetricOutputMetadata meta);
 
     /**
      * Return a {@link MatrixOutput}.
@@ -303,7 +375,7 @@ public interface DataFactory
      * @param meta the metadata
      * @return a {@link MatrixOutput}
      */
-    
+
     MatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta);
 
     /**
@@ -315,7 +387,7 @@ public interface DataFactory
      * @param secondKey the second key
      * @return a map key
      */
-    
+
     <S extends Comparable<S>, T extends Comparable<T>> MapBiKey<S, T> getMapKey(S firstKey, T secondKey);
 
     /**
@@ -326,7 +398,7 @@ public interface DataFactory
      * @param condition the threshold condition
      * @return a threshold
      */
-    
+
     Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition);
 
     /**
@@ -339,7 +411,7 @@ public interface DataFactory
      * @param condition the threshold condition
      * @return a quantile
      */
-    
+
     Quantile getQuantile(final Double threshold,
                          final Double thresholdUpper,
                          Double probability,
@@ -353,8 +425,8 @@ public interface DataFactory
      * @param input the map of metric outputs
      * @return a {@link MetricOutputMapByLeadThreshold} of metric outputs
      */
-    
-    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> ofMap(final Map<MapBiKey<Integer, Threshold>, T> input);
+
+    <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> ofMap(final Map<MapBiKey<Integer, Threshold>, T> input);
 
     /**
      * Returns a builder for a {@link MetricOutputMultiMap} that allows for the incremental addition of
@@ -363,8 +435,8 @@ public interface DataFactory
      * @param <T> the type of output
      * @return a {@link MetricOutputMultiMap.Builder} for a map of metric outputs by lead time and threshold
      */
-    
-    public <T extends MetricOutput<?>> MetricOutputMultiMap.Builder<T> ofMultiMap();
+
+    <T extends MetricOutput<?>> MetricOutputMultiMap.Builder<T> ofMultiMap();
 
     /**
      * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.
@@ -373,8 +445,8 @@ public interface DataFactory
      * @param input the list of metric outputs
      * @return a {@link MetricOutputMapByMetric} of metric outputs
      */
-    
-    public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap(final List<T> input);
+
+    <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap(final List<T> input);
 
     /**
      * Combines a list of {@link MetricOutputMapByLeadThreshold} into a single map.
@@ -383,6 +455,6 @@ public interface DataFactory
      * @param input the list of input maps
      * @return a combined {@link MetricOutputMapByLeadThreshold} of metric outputs
      */
-    
-    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> combine(final List<MetricOutputMapByLeadThreshold<T>> input);
+
+    <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> combine(final List<MetricOutputMapByLeadThreshold<T>> input);
 }
