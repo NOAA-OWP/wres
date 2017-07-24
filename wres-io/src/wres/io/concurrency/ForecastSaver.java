@@ -2,11 +2,13 @@ package wres.io.concurrency;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
-import wres.io.config.specification.ProjectDataSpecification;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
 import wres.util.Strings;
+
+import java.util.List;
 
 /**
  * Saves the forecast at the indicated path asynchronously
@@ -17,28 +19,11 @@ public class ForecastSaver extends WRESRunnable
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ForecastSaver.class);
 
-	/**
-	 * Creates the saver with the given path to a file containing observation data
-	 * @param filepath The path to the file to save as a forecast
-	 */
-    public ForecastSaver(String filepath) {
-        this.filepath = filepath;
-        this.datasource = null;
-        this.dataSourceConfig = null;
-    }
-
-    public ForecastSaver(String filepath, ProjectDataSpecification datasource)
-	{
-		this.filepath = filepath;
-		this.datasource = datasource;
-		this.dataSourceConfig = null;
-	}
-
-	public ForecastSaver(String filepath, DataSourceConfig dataSourceConfig)
+	public ForecastSaver(String filepath, DataSourceConfig dataSourceConfig, List<Conditions.Feature> specifiedFeatures)
     {
         this.dataSourceConfig = dataSourceConfig;
         this.filepath = filepath;
-        this.datasource = null;
+        this.specifiedFeatures = specifiedFeatures;
     }
 
 	/* (non-Javadoc)
@@ -50,10 +35,9 @@ public class ForecastSaver extends WRESRunnable
 		{
 			BasicSource source = ReaderFactory.getReader(this.filepath);
 
-			if (this.dataSourceConfig != null)
-            {
-                source.setDataSourceConfig(this.dataSourceConfig);
-            }
+			source.setDataSourceConfig(this.dataSourceConfig);
+
+			source.setSpecifiedFeatures(this.specifiedFeatures);
 
 			source.saveForecast();
 		}
@@ -65,8 +49,8 @@ public class ForecastSaver extends WRESRunnable
 	}
 
 	private String filepath = null;
-	private final ProjectDataSpecification datasource;
 	private final DataSourceConfig dataSourceConfig;
+	private final List<Conditions.Feature> specifiedFeatures;
 
 	@Override
 	protected String getTaskName () {

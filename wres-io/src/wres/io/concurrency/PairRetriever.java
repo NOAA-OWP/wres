@@ -6,7 +6,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metric.DefaultMetricInputFactory;
 import wres.datamodel.metric.MetricInputFactory;
-import wres.io.config.specification.ScriptFactory;
+import wres.io.utilities.ScriptGenerator;
 import wres.io.utilities.Database;
 
 import java.sql.Connection;
@@ -40,7 +40,7 @@ public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVector
 
         try
         {
-            final String script = ScriptFactory.generateGetPairData(this.projectConfig, this.progress);
+            final String script = ScriptGenerator.generateGetPairData(this.projectConfig, this.progress);
             connection = Database.getConnection();
             resultingPairs = Database.getResults(connection, script);
 

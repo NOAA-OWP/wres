@@ -6,20 +6,17 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.GraphicalType;
 import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
-import wres.io.config.specification.ProjectSpecification;
 import wres.io.reading.XMLReader;
 import wres.util.Collections;
 import wres.util.Strings;
-import wres.util.XML;
 
-import javax.xml.bind.*;
-import javax.xml.stream.XMLStreamReader;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,42 +44,13 @@ public final class ProjectSettings extends XMLReader {
 		super(SystemSettings.getProjectDirectory());
 		try
 		{
-			loadProjects();
 			loadConfigs();
-		}
-		catch (IOException ioe)
-		{
-			LOGGER.error("Could not load project files.", ioe);
 		}
         catch (JAXBException e) {
             LOGGER.error("The JAXB config was not loaded correctly.");
             LOGGER.error(Strings.getStackTrace(e));
         }
     }
-	
-	/**
-	 * Loads all project configurations defined within a directory
-	 */
-	private void loadProjects() throws IOException
-	{
-		File directory = new File(this.getFilename());
-
-		if (directory == null)
-		{
-			return;
-		}
-		
-		FilenameFilter filter = (dir, name) -> {
-            File possibleFile = new File(Paths.get(dir.getAbsolutePath(), name).toAbsolutePath().toString());
-            return possibleFile.isFile() && possibleFile.getName().endsWith(".xml");
-        };
-		
-		for (File file : directory.listFiles(filter))
-		{
-			set_filename(file.getAbsolutePath());
-			parse();
-		}
-	}
 
 	private void loadConfigs() throws JAXBException {
         final String configLocation = "nonsrc/config_possibility.xml";
@@ -148,76 +116,11 @@ public final class ProjectSettings extends XMLReader {
             throw nfe;
         }
     }
-	
-	/**
-	 * @return The collection of all configured projects
-	 */
-	public static List<ProjectSpecification> getProjects() {
-		return configuration.projects;
-	}
-	
-    @Override
-	protected void parseElement(XMLStreamReader reader)
-    {
-        if (XML.tagIs(reader, "project"))
-        {
-            addProject(new ProjectSpecification(reader));
-        }
-    }
 
-	/**
-	 * Finds a project based on its name
-	 * @param projectName The name of the desired project
-	 * @return The project
-	 */
-	public static ProjectSpecification getProject(String projectName) {
-	    return Collections.find(getProjects(), (ProjectSpecification project) -> {
-	        return project.getName().equalsIgnoreCase(projectName);
-	    });
-	}
-	
-	/**
-	 * Adds a project configuration to the collection of project specifications
-	 * @param project The configuration to add to the list
-	 */
-	private void addProject(ProjectSpecification project)
-	{
-		if (project == null)
-		{
-			return;
-		}
-		
-		if (this.projects == null)
-		{
-			this.projects = new ArrayList<>();
-		}
-		
-		this.projects.add(project);
-	}
-
-    public static boolean isModernProject(final String projectName)
-    {
-        return Collections.exists(ProjectSettings.CONFIGS, projectConfig -> {
-            return projectConfig.getLabel().equalsIgnoreCase(projectName);
-        });
-    }
-
-    public static boolean isLegacyProject(final String projectName)
-    {
-        return Collections.exists(getProjects(), projectSpecification -> {
-            return projectSpecification.getName().equalsIgnoreCase(projectName);
-        });
-    }
-
-    public static ProjectConfig getModernProject(final String projectName)
+    public static ProjectConfig getProject(final String projectName)
     {
         return Collections.find(ProjectSettings.CONFIGS, projectConfig -> {
             return projectConfig.getLabel().equalsIgnoreCase(projectName);
         });
     }
-
-	/**
-	 * The collection of all loaded projects
-	 */
-	private List<ProjectSpecification> projects;
 }

@@ -4,7 +4,6 @@ import concurrency.DatacardResultSaver;
 import data.caching.Variable;
 import wres.io.concurrency.Executor;
 import wres.io.reading.BasicSource;
-import wres.io.reading.SourceType;
 import wres.io.utilities.Database;
 
 import java.io.BufferedReader;
@@ -35,7 +34,6 @@ public class DatacardSource extends BasicSource {
 		// TODO: Remove hard coding for variable name
 		set_variable_name("precipitation");
 		setFilename(filename);
-		setSourceType(SourceType.DATACARD);
 	}
 	
 	public String get_datatype_code()

@@ -1,22 +1,25 @@
 package wres.io.reading.fews;
 
+import wres.config.generated.Conditions;
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.EnsembleCondition;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.config.SystemSettings;
-import wres.io.config.specification.EnsembleSpecification;
-import wres.io.config.specification.FeatureSpecification;
-import wres.io.config.specification.LocationSpecification;
-import wres.io.config.specification.VariableSpecification;
 import wres.io.data.caching.*;
 import wres.io.data.details.ForecastDetails;
 import wres.io.data.details.ForecastEnsembleDetails;
 import wres.io.reading.XMLReader;
 import wres.io.utilities.Database;
-import wres.util.*;
+import wres.util.Collections;
+import wres.util.ProgressMonitor;
+import wres.util.Time;
+import wres.util.XML;
 
+import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.InputStream;
 import java.sql.SQLException;
-import java.time.OffsetDateTime;
+import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -102,11 +105,6 @@ public final class PIXMLReader extends XMLReader
 		this.isForecast = isForecast;
 	}
 
-	public PIXMLReader (String filename, InputStream inputStream)
-	{
-		super(filename, inputStream);
-	}
-
 	public PIXMLReader(String filename, InputStream inputStream, boolean isForecast)
 	{
 		super(filename, inputStream);
@@ -135,8 +133,7 @@ public final class PIXMLReader extends XMLReader
 	 * @param reader The XML reader, positioned at a "series" tag
 	 * @throws Exception Thrown if the XML could not be properly read or interpreted
 	 */
-	private void parseSeries(XMLStreamReader reader) throws Exception
-	{
+	private void parseSeries(XMLStreamReader reader) throws XMLStreamException, SQLException, InvalidPropertiesFormatException {
 		//	If the current tag is the series tag itself, move on to the next tag
 		if (reader.isStartElement() && reader.getLocalName().equalsIgnoreCase("series"))
 		{
@@ -185,8 +182,7 @@ public final class PIXMLReader extends XMLReader
 	 * @param reader The reader containing the current event tag
 	 * @throws Exception Any possible error thrown while attempting to read the database
 	 */
-	private void parseEvent(XMLStreamReader reader) throws Exception
-	{
+	private void parseEvent(XMLStreamReader reader) throws SQLException {
 		this.incrementLead();
 		Float value = null;
 		StringBuilder time = new StringBuilder();
@@ -207,7 +203,7 @@ public final class PIXMLReader extends XMLReader
 		}
 		
 		if (value != null && !value.equals(currentMissingValue)) {
-			if (isForecast && dateIsApproved(time.toString()) && valueIsApproved(value)) {
+			if (isForecast) {
 				addForecastEvent(value, currentLeadTime, getForecastEnsembleID());
 			} else {
 				addObservedEvent(time.toString(), value);
@@ -222,10 +218,9 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * Adds measurement information to the current insert script in the form of forecast data
 	 * @param forecastedValue The value parsed out of the XML
-	 * @throws Exception Any possible error encountered while trying to collect the forecast ensemble ID
+	 * @throws SQLException Any possible error encountered while trying to collect the forecast ensemble ID
 	 */
-	private static void addForecastEvent(Float forecastedValue, Integer lead, Integer forecastEnsembleID) throws Exception
-	{
+	private static void addForecastEvent(Float forecastedValue, Integer lead, Integer forecastEnsembleID) throws SQLException {
 		synchronized (groupLock) {
             PIXMLReader.getBuilder(lead)
                     .append(forecastEnsembleID)
@@ -255,13 +250,9 @@ public final class PIXMLReader extends XMLReader
 	 * Adds measurement information to the current insert script in the form of observation data
 	 * @param observedTime The time when the measurement was taken
 	 * @param observedValue The value retrieved from the XML
-	 * @throws Exception Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
+	 * @throws SQLException Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
 	 */
-	private void addObservedEvent(String observedTime, Float observedValue) throws Exception {
-        if (!dateIsApproved(observedTime) || !valueIsApproved(observedValue)) {
-            return;
-        }
-        
+	private void addObservedEvent(String observedTime, Float observedValue) throws SQLException {
 		if (insertCount > 0)
 		{
 			currentScript.append(NEWLINE);
@@ -322,10 +313,9 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * Interprets the information within PIXML "header" tags
 	 * @param reader The XML reader, positioned at a "header" tag
-	 * @throws Exception Thrown if the XML could not be read or interpreted properly
+	 * @throws SQLException Thrown if the XML could not be read or interpreted properly
 	 */
-	private void parseHeader(XMLStreamReader reader) throws Exception
-	{
+	private void parseHeader(XMLStreamReader reader) throws XMLStreamException, SQLException, InvalidPropertiesFormatException {
 		//	If the current tag is the header tag itself, move on to the next tag
 		if (reader.isStartElement() && reader.getLocalName().equalsIgnoreCase("header"))
 		{
@@ -484,9 +474,9 @@ public final class PIXMLReader extends XMLReader
 	
 	/**
 	 * @return The ID of the current ensemble
-	 * @throws Exception Thrown if the ensemble ID could not be retrieved from the cache
+	 * @throws SQLException Thrown if the ensemble ID could not be retrieved from the cache
 	 */
-	private int getEnsembleID() throws Exception {
+	private int getEnsembleID() throws SQLException {
 		if (currentEnsembleID == null) {
 			currentEnsembleID = Ensembles.getEnsembleID(currentEnsembleName, currentEnsembleMemberID, currentQualifierID);
 		}
@@ -502,17 +492,17 @@ public final class PIXMLReader extends XMLReader
 	
 	/**
 	 * @return The ID of the forecast that is currently being parsed
-	 * @throws Exception Thrown if the forecast could not be retrieved properly
+	 * @throws SQLException Thrown if the forecast could not be retrieved properly
 	 */
-	private int getForecastID() throws Exception {
+	private int getForecastID() throws SQLException {
 		return currentForecast.getForecastID();
 	}
 	
 	/**
 	 * @return The ID of the position for the variable being parsed
-	 * @throws Exception Thrown if the ID of the position could not be loaded from the cache
+	 * @throws SQLException Thrown if the ID of the position could not be loaded from the cache
 	 */
-	private int getVariablePositionID() throws Exception {
+	private int getVariablePositionID() throws SQLException {
 		if (currentVariablePositionID == null) {
 			currentVariablePositionID = Features.getVariablePositionID(currentLID, currentStationName, getVariableID());
 		}
@@ -521,10 +511,10 @@ public final class PIXMLReader extends XMLReader
 	
 	/**
 	 * @return The ID of the ensemble for the forecast that is tied to a specific variable
-	 * @throws Exception Thrown if intermediary values could not be loaded from their own caches or if interaction
+	 * @throws SQLException Thrown if intermediary values could not be loaded from their own caches or if interaction
 	 * with the database failed.
 	 */
-	private int getForecastEnsembleID() throws Exception {
+	private int getForecastEnsembleID() throws SQLException {
 		if (currentForecastEnsembleID == null) {
 			currentForecastEnsemble.setEnsembleID(getEnsembleID());
 			currentForecastEnsemble.setForecastID(getForecastID());
@@ -537,10 +527,9 @@ public final class PIXMLReader extends XMLReader
 	
 	/**
 	 * @return The ID of the variable currently being measured
-	 * @throws Exception Thrown if interaction with the database failed.
+	 * @throws SQLException Thrown if interaction with the database failed.
 	 */
-	private int getVariableID() throws Exception
-	{		
+	private int getVariableID() throws SQLException {
 		if (currentVariableID == null)
 		{
 			this.currentVariableID = Variables.getVariableID(currentVariableName, currentMeasurementUnit);
@@ -550,10 +539,9 @@ public final class PIXMLReader extends XMLReader
 	
 	/**
 	 * @return A valid ID for the source of this PIXML file from the database
-	 * @throws Exception Thrown if an ID could not be retrieved from the database
+	 * @throws SQLException Thrown if an ID could not be retrieved from the database
 	 */
-	private int getSourceID() throws Exception
-	{
+	private int getSourceID() throws SQLException {
 		if (currentSourceID == null)
 		{
 			String output_time;
@@ -570,98 +558,69 @@ public final class PIXMLReader extends XMLReader
 		}
 		return currentSourceID;
 	}
-	
-	public void setSpecifiedEarliestDate(String earliestDate) {
-	    this.specifiedEarliestDate = Time.convertStringToDate(earliestDate);
-	    this.detailsSpecified = true;
-	}
-	
-	public void setSpecifiedLatestDate(String latestDate) {
-	    this.specifiedLatestDate = Time.convertStringToDate(latestDate);
-	    this.detailsSpecified = true;
-	}
-	
-	public void setSpecifiedMinimumValue(String minimumValue) {
-	    if (Strings.isNumeric(minimumValue)) {
-	        this.specifiedMinimumValue = Float.parseFloat(minimumValue);
-	        this.detailsSpecified = true;
-	    }
-	}
-	
-	public void setSpecifiedMaximumValue(String maximumValue) {
-	    if (Strings.isNumeric(maximumValue)) {
-	        this.specifiedMaximumValue = Float.parseFloat(maximumValue);
-	        this.detailsSpecified = true;
-	    }
-	}
-	
-	public void setSpecifiedVariables(List<VariableSpecification> variables) {
-	    this.specifiedVariables = variables;
-	    this.loadAllVariables = this.specifiedVariables == null || this.specifiedVariables.size() == 0;
-	    if (!loadAllVariables) {
-	        this.detailsSpecified = true;
-	    }
-	}
-	
-	public void setSpecifiedEnsembles(List<EnsembleSpecification> ensembles) {
-	    this.specifiedEnsemblesToLoad = ensembles;
-	    this.loadAllEnsembles = this.specifiedEnsemblesToLoad == null || this.specifiedEnsemblesToLoad.size() == 0;
-	    if (!loadAllEnsembles) {
-	        this.detailsSpecified = true;
-	    }
-	}
-	
-	public void setSpecifiedFeatures(List<FeatureSpecification> features) {
-	    this.specifiedFeatures = features;
-	    this.loadAllFeatures = this.specifiedFeatures == null || this.specifiedFeatures.size() == 0;
-	    if (!loadAllFeatures) {
-	        this.detailsSpecified = true;
-	    }
-	}
-	
-	private boolean dateIsApproved(String date) {
-	    if (!detailsSpecified || (this.specifiedEarliestDate == null && this.specifiedLatestDate == null)) {
-	        return true;
-	    }
-	    OffsetDateTime dateToApprove = Time.convertStringToDate(date);
-	    return dateToApprove.isAfter(specifiedEarliestDate) && dateToApprove.isBefore(specifiedLatestDate);
-	}
-	
-	private boolean valueIsApproved(Float value) {
-	    return !value.equals(this.currentMissingValue) &&
-	           value >= this.specifiedMinimumValue && 
-	           value <= this.specifiedMaximumValue; 
-	}
     
     private boolean variableIsApproved (String name) {
-        return !this.detailsSpecified || 
-               this.loadAllVariables || 
-               this.specifiedVariables == null ||
-               this.specifiedVariables.size() == 0 ||
-               Collections.exists(this.specifiedVariables, (VariableSpecification specification) -> {
-                   return specification.name().equalsIgnoreCase(name);
-        });
+	    boolean approved = true;
+
+	    // If there is a specification for what variables to include
+	    if (this.getDataSourceConfig() != null &&
+                this.getDataSourceConfig().getVariable() != null &&
+                this.getDataSourceConfig().getVariable().getValue() != null)
+        {
+            // Approve if the passed in variable name matches that of the configured variable name
+            approved = this.getDataSourceConfig().getVariable().getValue().isEmpty() ||
+                    this.getDataSourceConfig().getVariable().getValue().equalsIgnoreCase(name);
+        }
+
+        return approved;
     }
     
-    private boolean ensembleIsApproved (String name, String ensembleMemberID) {
-        return !isForecast ||
-               !detailsSpecified || 
-               this.loadAllEnsembles || 
-               this.specifiedEnsemblesToLoad == null ||
-               this.specifiedEnsemblesToLoad.size() == 0 ||
-               Collections.exists(this.specifiedEnsemblesToLoad, (EnsembleSpecification specification) -> {
-                   return specification.getName().equalsIgnoreCase(name) && specification.getMemberID().equalsIgnoreCase(ensembleMemberID);
-        });
+    private boolean ensembleIsApproved (final String name, final String ensembleMemberID) {
+	    boolean approved = true;
+
+	    // If there is a configuration for approved ensembles...
+	    if (this.getDataSourceConfig() != null &&
+                this.getDataSourceConfig().getEnsemble() != null &&
+                this.getDataSourceConfig().getEnsemble().size() > 0)
+        {
+            // Determine if there are instructions to ignore specific ensembles
+            final boolean exclusions = Collections.exists(this.getDataSourceConfig().getEnsemble(), EnsembleCondition::isExclude);
+
+            // If the configuration has an exclusion clause...
+            if (exclusions)
+            {
+                // Approve if there are no instructions to exclude this ensemble
+                approved = !Collections.exists(this.getDataSourceConfig().getEnsemble(), (EnsembleCondition ensemble) -> {
+                    return ensemble.isExclude() &&
+                            ensemble.getName().equalsIgnoreCase(name) &&
+                            ensemble.getMemberId().equalsIgnoreCase(ensembleMemberID);
+                });
+            }
+            else
+            {
+                // Only approve if the ensemble has explicit inclusion specified
+                approved = Collections.exists(this.getDataSourceConfig().getEnsemble(), (EnsembleCondition ensemble) -> {
+                    return ensemble.isExclude() &&
+                            ensemble.getName().equalsIgnoreCase(name) &&
+                            ensemble.getMemberId().equalsIgnoreCase(ensembleMemberID);
+                });
+            }
+        }
+
+        return approved;
     }
     
-    private boolean featureIsApproved (String lid) {
-        return !detailsSpecified || 
-               this.loadAllFeatures ||
-               this.specifiedFeatures == null ||
-               this.specifiedFeatures.size() == 0 ||
-               Collections.exists(this.specifiedFeatures, (FeatureSpecification specification) -> {
-                   return specification.isLocation() && ((LocationSpecification)specification).lid().equalsIgnoreCase(lid);
-               });
+    private boolean featureIsApproved (final String lid) {
+	    boolean approved = true;
+	    if (this.getSpecifiedFeatures() != null && this.getSpecifiedFeatures().size() > 0)
+        {
+            approved = Collections.exists(this.getSpecifiedFeatures(), (Conditions.Feature feature) -> {
+                return feature.getLocation() !=  null &&
+                        feature.getLocation().getLid() != null &&
+                        feature.getLocation().getLid().equalsIgnoreCase(lid);
+            });
+        }
+        return approved;
     }
     
     private boolean seriesIsApproved () {
@@ -824,10 +783,6 @@ public final class PIXMLReader extends XMLReader
         }
     }
 
-	private String getForecastInsertHeader() throws SQLException {
-	    return getForecastInsertHeader(this.currentLeadTime);
-	}
-
 	private static String getForecastInsertHeader(Integer lead) throws SQLException {
 	    synchronized (PIXMLReader.headerMap) {
             if (!PIXMLReader.headerMap.containsKey(lead)) {
@@ -837,17 +792,28 @@ public final class PIXMLReader extends XMLReader
 	    return PIXMLReader.headerMap.get(lead);
     }
 
-    private OffsetDateTime specifiedEarliestDate = null;
-    private OffsetDateTime specifiedLatestDate = null;
-    private Float specifiedMinimumValue = Float.MIN_VALUE;
-    private Float specifiedMaximumValue = Float.MAX_VALUE;
-    private List<VariableSpecification> specifiedVariables = null;
-    private boolean loadAllVariables = true;
-    private boolean loadAllEnsembles = true;
-    private List<EnsembleSpecification> specifiedEnsemblesToLoad = null;
-    private boolean loadAllFeatures = true;
-    private List<FeatureSpecification> specifiedFeatures = null;
-    private boolean detailsSpecified = false;
+    public void setDataSourceConfig(DataSourceConfig dataSourceConfig)
+	{
+		this.dataSourceConfig = dataSourceConfig;
+	}
+
+	private DataSourceConfig getDataSourceConfig()
+	{
+		return this.dataSourceConfig;
+	}
+
+	public void setSpecifiedFeatures(List<Conditions.Feature> specifiedFeatures)
+    {
+        this.specifiedFeatures = specifiedFeatures;
+    }
+
+    private List<Conditions.Feature> getSpecifiedFeatures()
+    {
+        return this.specifiedFeatures;
+    }
+
+    private DataSourceConfig dataSourceConfig;
+    private List<Conditions.Feature> specifiedFeatures;
 
     private static final Map<Integer, StringBuilder> builderMap = new TreeMap<>();
     private static final Map<Integer, String> headerMap = new TreeMap<>();

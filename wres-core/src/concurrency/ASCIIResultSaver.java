@@ -13,13 +13,13 @@ import java.util.HashMap;
  * @author ctubbs
  *
  */
+@Deprecated
 public class ASCIIResultSaver extends WRESRunnable {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ASCIIResultSaver.class);
 	
 	public ASCIIResultSaver(HashMap<Integer, HashMap<String, String[]>> forecasted_values, Integer observationlocation_id)
 	{
-		//System.err.println("Thread created...");
 		this.forecasted_values = forecasted_values;
 		this.observationlocation_id = observationlocation_id;
 	}

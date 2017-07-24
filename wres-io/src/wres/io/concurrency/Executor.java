@@ -12,7 +12,7 @@ import java.util.concurrent.*;
 public final class Executor {
 
 	// The underlying thread executor
-	private static ExecutorService service = createService();
+	private static ExecutorService SERVICE = createService();
 
     private Executor()
     {
@@ -21,7 +21,7 @@ public final class Executor {
 
     public static float getLoad()
 	{
-		return ((ThreadPoolExecutor)service).getActiveCount() / SystemSettings.maximumThreadCount();
+		return ((ThreadPoolExecutor) SERVICE).getActiveCount() / SystemSettings.maximumThreadCount();
 	}
 
 	/**
@@ -29,23 +29,12 @@ public final class Executor {
 	 * @return A new thread executor that may run the maximum number of configured threads
 	 */
 	private static ExecutorService createService() {
-		if (service != null)
+		if (SERVICE != null)
 		{
-			service.shutdown();
+			SERVICE.shutdown();
 		}
-		/*if (submittedCount != null)
-		{
-		    submittedCount.set(0);
-		}
-		ThreadPoolExecutor executor = new ThreadPoolExecutor(SystemSettings.maximumThreadCount(),
-				SystemSettings.maximumThreadCount(),
-				SystemSettings.poolObjectLifespan(),
-				TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<>(SystemSettings.maximumThreadCount() * 10)
-		);
 
-		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());*/
-		return /*executor;*/ Executors.newFixedThreadPool(SystemSettings.maximumThreadCount());
+		return Executors.newFixedThreadPool(SystemSettings.maximumThreadCount());
 	}
 	
 	/**
@@ -55,13 +44,12 @@ public final class Executor {
 	 */
 	public static <U> Future<U> submit(Callable<U> task)
 	{
-		if (service == null || service.isShutdown())
+		if (SERVICE == null || SERVICE.isShutdown())
 		{
-			service = createService();
+			SERVICE = createService();
 		}
 
-		//submittedCount.incrementAndGet();
-		return service.submit(task);
+		return SERVICE.submit(task);
 	}
 	
 	/**
@@ -71,13 +59,12 @@ public final class Executor {
 	 */
 	public static Future execute(Runnable task)
 	{
-		if (service == null || service.isShutdown())
+		if (SERVICE == null || SERVICE.isShutdown())
 		{
-			service = createService();
+			SERVICE = createService();
 		}
 
-       // submittedCount.incrementAndGet();
-		return service.submit(task);
+		return SERVICE.submit(task);
 	}
 	
 	/**
@@ -85,19 +72,10 @@ public final class Executor {
 	 */
 	public static void complete()
 	{
-		if (!service.isShutdown())
+		if (!SERVICE.isShutdown())
 		{
-			service.shutdown();
-			while (!service.isTerminated());
-		}
-	}
-
-	public static void kill()
-	{
-		if (!service.isShutdown())
-		{
-			service.shutdownNow();
-			while (!service.isTerminated());
+			SERVICE.shutdown();
+			while (!SERVICE.isTerminated());
 		}
 	}
 }

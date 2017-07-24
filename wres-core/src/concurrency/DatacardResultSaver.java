@@ -14,6 +14,7 @@ import java.util.HashMap;
  * @author ctubbs
  *
  */
+@Deprecated
 public class DatacardResultSaver extends WRESRunnable {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatacardResultSaver.class);

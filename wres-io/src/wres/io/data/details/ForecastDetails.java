@@ -6,6 +6,7 @@ import wres.io.data.caching.ForecastTypes;
 import wres.io.utilities.Database;
 
 import javax.annotation.concurrent.GuardedBy;
+import java.sql.SQLException;
 
 /**
  * Important details about a forecast that predicted values for different variables over some span of time
@@ -83,10 +84,9 @@ public final class ForecastDetails {
 	
 	/**
 	 * @return The ID of the forecast stored in the database
-	 * @throws Exception Thrown if the ID could not be loaded from the database
+	 * @throws SQLException Thrown if the ID could not be loaded from the database
 	 */
-	public int getForecastID() throws Exception
-	{
+	public int getForecastID() throws SQLException {
 		if (this.forecast_id == null)
 		{
 			save();
@@ -98,10 +98,9 @@ public final class ForecastDetails {
 	/**
 	 * Saves the ID of the Forecast to the Forecast Details. The Forecast is added to the
 	 * database if it does not currently exist
-	 * @throws Exception Thrown if the ID could not be retrieved from the database
+	 * @throws SQLException Thrown if the ID could not be retrieved from the database
 	 */
-	private void save() throws Exception
-	{
+	private void save() throws SQLException {
 		String script = "";
 
 		script += "WITH new_forecast AS" + NEWLINE;
@@ -180,9 +179,9 @@ public final class ForecastDetails {
 	
 	/**
 	 * Links the forecast the information about the source of its data in the database
-	 * @throws Exception Thrown if the Forecast and its source could not be properly linked
+	 * @throws SQLException Thrown if the Forecast and its source could not be properly linked
 	 */
-	private void saveForecastSource() throws Exception {
+	private void saveForecastSource() throws SQLException {
 
         int sourceID = DataSources.getSourceID(sourcePath, getSourceDate(), this.lead);
 
