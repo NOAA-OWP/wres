@@ -1,5 +1,9 @@
 package wres.io.reading;
 
+import wres.io.reading.fews.FEWSSource;
+import wres.io.reading.fews.ZippedSource;
+import wres.io.reading.ucar.NetCDFSource;
+
 import java.io.IOException;
 
 /**
@@ -24,11 +28,14 @@ public class ReaderFactory {
 				// TODO: Implement new ASCII reader that adheres to new schema
 				//source = new wres.io.reading.misc.ASCIISource(filename);
 				break;
+            case ARCHIVE:
+                source = new ZippedSource(filename);
+                break;
 			case NETCDF:
-				source = new wres.io.reading.ucar.NetCDFSource(filename);
+				source = new NetCDFSource(filename);
 				break;
 			case PI_XML:
-				source = new wres.io.reading.fews.FEWSSource(filename);
+				source = new FEWSSource(filename);
 				break;
 			default:
 				String message = "The file '%s' is not a valid data file.";
@@ -38,18 +45,18 @@ public class ReaderFactory {
 		return source;
 	}
 	
-	private static SourceType getFiletype(String filename)
+	public static SourceType getFiletype(String filename)
 	{
-		SourceType type = SourceType.UNDEFINED;
+		SourceType type;
 		
 		filename = filename.toLowerCase();
 		if (filename.endsWith(".asc"))
 		{
 			type = SourceType.ASCII;
 		}
-		else if (filename.endsWith("map06"))
+		else if (filename.endsWith("tar.gz") || filename.endsWith(".tgz"))
 		{
-			type = SourceType.DATACARD;
+			type = SourceType.ARCHIVE;
 		}
 		else if (filename.endsWith(".nc") || filename.endsWith(".gz"))
 		{
@@ -58,6 +65,10 @@ public class ReaderFactory {
 		else if (filename.endsWith(".xml"))
 		{
 			type = SourceType.PI_XML;
+		}
+		else
+		{
+			type = SourceType.DATACARD;
 		}
 
 		return type;
