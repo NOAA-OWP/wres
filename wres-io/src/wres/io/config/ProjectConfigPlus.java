@@ -17,6 +17,30 @@ import java.nio.file.Path;
 
 import java.util.*;
 
+/**
+ * Associates a project configuration object with its graphgen xml string.
+ *
+ * Also useful for jaxb-discovered validation issues during parsing.
+ *
+ * At the highest level, when reading the project config from a path, we also
+ * gather the xml string needed by wres-vis to generate graphics.
+ *
+ * The reason for this extra step is to facilitate re-use of existing code that
+ * expects an unmarshaled xml string, and this works OK for now.
+ *
+ * It is anticipated that most parts of WRES will use ProjectConfig.
+ *
+ * When performing initial read of the config and validation, it will be handy
+ * to keep a copy of the (stateful) information that was found during read, so
+ * as of 2017-07-24 ProjectConfigPlus is anticipated to be used primarily by
+ * the control module.
+ *
+ * Intended to be Thread-safe, and the object is. But no guarantee can be made
+ * that the configuration file itself did not change between xml unmarshaling
+ * and the reading of graphgen strings. It should be pretty rare. When this
+ * occurs in the wild, more logic will need to be added to detect the scenario
+ * and throw an exception.
+ */
 public class ProjectConfigPlus
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectConfigPlus.class);
