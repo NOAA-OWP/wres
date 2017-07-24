@@ -3,9 +3,11 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MultiVectorOutput;
+import wres.datamodel.metric.ScalarOutput;
 
 /**
  * Computes the Relative Operating Characteristic (ROC; also known as the Receiver Operating Characteristic), which
@@ -21,20 +23,27 @@ import wres.datamodel.metric.MultiVectorOutput;
 public final class RelativeOperatingCharacteristic extends Metric<DiscreteProbabilityPairs, MultiVectorOutput>
 {
 
+    /**
+     * Components of the ROC.
+     */
+
+    private final MetricCollection<DichotomousPairs, ScalarOutput> roc;
+
     @Override
     public MultiVectorOutput apply(final DiscreteProbabilityPairs s)
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         //Determine the empirical ROC. 
         //For each classifier, derive the pairs of booleans and compute the PoD and PoFD from the
-        //2x2 contingency table
-        //BUT then need an instance of a more generic data factory
+        //2x2 contingency table, using a metric collection to compute the table only once
         
         
         
+        
+        
+
         //Filter by occurrence or non-occurrence
-        
-        
+
 //        Map<Double, List<PairOfDoubles>> filtered =
 //                                                  s.getData()
 //                                                   .stream()
@@ -86,5 +95,8 @@ public final class RelativeOperatingCharacteristic extends Metric<DiscreteProbab
     protected RelativeOperatingCharacteristic(final DataFactory dataFactory)
     {
         super(dataFactory);
+        roc = MetricFactory.getInstance(dataFactory)
+                           .ofDichotomousScalarCollection(MetricConstants.PROBABILITY_OF_DETECTION,
+                                                          MetricConstants.PROBABILITY_OF_FALSE_DETECTION);
     }
 }
