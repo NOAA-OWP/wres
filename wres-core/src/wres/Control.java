@@ -2,7 +2,6 @@ package wres;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -10,11 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -39,18 +34,13 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.SafePairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.metric.*;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.io.Operations;
-import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
-import wres.io.utilities.Database;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -61,7 +51,6 @@ public class Control implements Function<String[], Integer>
     private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
     public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
     private static final AtomicLong lastMessageTime = new AtomicLong();
-    private static final AtomicBoolean messagedSqlStatement = new AtomicBoolean(false);
 
     /** System property used to retrieve max thread count, passed as -D */
     public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
@@ -97,7 +86,6 @@ public class Control implements Function<String[], Integer>
     private static final String NEWLINE = System.lineSeparator();
 
     private static final String SQL_FORMAT = "yyyy-MM-dd HH:mm:ss";
-    private static final DateTimeFormatter SQL_FORMATTER = DateTimeFormatter.ofPattern(SQL_FORMAT);
 
     /**
      * Processes *existing* pairs non-lazily (lacking specification for ingest). Creates two execution queues for pair
@@ -120,14 +108,8 @@ public class Control implements Function<String[], Integer>
             LOGGER.info("Found {} valid projects, beginning execution", projectConfiggies.size());
         }
 
-        // Create the first-level Queue of work: fetching pairs.
-        // Devote 9/10 of the max threads to working this Q (more waiting/sleeping here)
-        int maxFetchThreads = (Control.MAX_THREADS / 10) * 9;
-        ExecutorService fetchPairExecutor = Executors.newFixedThreadPool(maxFetchThreads);
-
-        // Create the second-level Queue of work: displaying or processing fetched pairs.
-        // Devote 1/10 of the max threads to working this Q (less waiting/sleeping here)
-        int maxProcessThreads = Control.MAX_THREADS / 10;
+        // Create a queue of work: displaying or processing fetched pairs.
+        int maxProcessThreads = Control.MAX_THREADS;
         ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
 
         DataFactory dataFac = DefaultDataFactory.getInstance();
@@ -148,31 +130,37 @@ public class Control implements Function<String[], Integer>
                 return null;
             }
 
-            List<Future<List<PairOfDoubleAndVectorOfDoubles>>> pairs = new ArrayList<>();
-
-            // Queue up fetching the pairs from the database.
-            int leadTimesCount = 2880;
-            for (int i = 0; i < leadTimesCount; i++)
+            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairs;
+            // Ask the IO module for pairs
+            try
             {
-                int leadTime = i + 1;
-                Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair =
-                        getFuturePairByLeadTime(projectConfig, leadTime, fetchPairExecutor);
-                pairs.add(futurePair);
+                pairs = Operations.getPairs(projectConfig);
+            }
+            catch (ExecutionException | SQLException e)
+            {
+                LOGGER.error("While getting results", e);
+                return null;
+            }
+            catch (InterruptedException ie)
+            {
+                LOGGER.error("Interrupted while getting results", ie);
+                Thread.currentThread().interrupt();
+                return null;
             }
 
             List<Future<MetricOutputMapByMetric<ScalarOutput>>> futureMetrics = new ArrayList<>();
 
             // Queue up processing of fetched pairs.
-            for (int i = 0; i < pairs.size(); i++)
+            for (Map.Entry<Integer, List<PairOfDoubleAndVectorOfDoubles>> pair : pairs.entrySet())
             {
                 // Here, using index in list to communicate the lead time.
                 // Another structure might be appropriate, for example,
                 // see getPairs in
                 // wres.io.config.specification.MetricSpecification
                 // which uses a Map.
-                int leadTime = i + 1;
+                int leadTime = pair.getKey();
                 PairsByLeadProcessor processTask =
-                        new PairsByLeadProcessor(pairs.get(i),
+                        new PairsByLeadProcessor(pair.getValue(),
                                                  projectConfig,
                                                  leadTime);
 
@@ -197,20 +185,17 @@ public class Control implements Function<String[], Integer>
                     Threshold fakeThreshold = dataFac.getThreshold(Double.NEGATIVE_INFINITY, Threshold.Condition.GREATER);
                     resultsBuilder.add(leadTime, fakeThreshold, metrics);
 
-                    if (LOGGER.isInfoEnabled() && fetchPairExecutor instanceof ThreadPoolExecutor
-                            && processPairExecutor instanceof ThreadPoolExecutor)
+                    if (LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
                     {
                         long curTime = System.currentTimeMillis();
                         long lastTime = lastMessageTime.get();
                         if (curTime - lastTime > LOG_PROGRESS_INTERVAL_MILLIS && lastMessageTime
                                 .compareAndSet(lastTime, curTime))
                         {
-                            ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor) fetchPairExecutor;
                             ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor) processPairExecutor;
                             LOGGER.info(
-                                    "Around {} pair lists fetched. Around {} in the fetch queue. Around {} fetched pairs processed. Around {} in processing queue.",
-                                    tpeFetch.getCompletedTaskCount(),
-                                    tpeFetch.getQueue().size(), tpeProcess.getCompletedTaskCount(),
+                                    "Around {} fetched pairs processed. Around {} in processing queue.",
+                                    tpeProcess.getCompletedTaskCount(),
                                     tpeProcess.getQueue().size());
                         }
                     }
@@ -229,18 +214,14 @@ public class Control implements Function<String[], Integer>
             }
             finally
             {
-                fetchPairExecutor.shutdown();
                 processPairExecutor.shutdown();
             }
 
-            if (LOGGER.isInfoEnabled() && fetchPairExecutor instanceof ThreadPoolExecutor
-                    && processPairExecutor instanceof ThreadPoolExecutor)
+            if (LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
             {
-                ThreadPoolExecutor tpeFetch = (ThreadPoolExecutor) fetchPairExecutor;
                 ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor) processPairExecutor;
-                LOGGER.info(
-                        "Total of around {} pair lists completed. Total of around {} pairs processed. Done.",
-                        tpeFetch.getCompletedTaskCount(), tpeProcess.getCompletedTaskCount());
+                LOGGER.info("Total of around {} pairs processed. Done.",
+                            tpeProcess.getCompletedTaskCount());
             }
 
             //Build final results:
@@ -306,7 +287,7 @@ public class Control implements Function<String[], Integer>
             }
         }
 
-        shutDownGracefully(fetchPairExecutor, processPairExecutor);
+        shutDownGracefully(processPairExecutor);
 
         return 0;
     }
@@ -314,18 +295,15 @@ public class Control implements Function<String[], Integer>
     /**
      * Kill off the executors passed in even if there are remaining tasks.
      *
-     * @param fetchPairExecutor
      * @param processPairExecutor
      */
-    private static void shutDownGracefully(final ExecutorService fetchPairExecutor,
-                                           final ExecutorService processPairExecutor)
+    private static void shutDownGracefully(ExecutorService processPairExecutor)
     {
         // (There are probably better ways to do this, e.g. awaitTermination)
-        int fetchesSkipped = 0;
         int processingSkipped = 0;
         int i = 0;
         boolean deathTime = false;
-        while(!fetchPairExecutor.isTerminated() || !processPairExecutor.isTerminated())
+        while(!processPairExecutor.isTerminated())
         {
             if(i == 0)
             {
@@ -351,17 +329,15 @@ public class Control implements Function<String[], Integer>
                 if(deathTime)
                 {
                     LOGGER.info("Forcing shutdown.");
-                    fetchesSkipped += fetchPairExecutor.shutdownNow().size();
                     processingSkipped += processPairExecutor.shutdownNow().size();
                 }
             }
             i++;
         }
 
-        if(fetchesSkipped > 0 || processingSkipped > 0)
+        if(processingSkipped > 0)
         {
             LOGGER.info("Abandoned {} pair fetch tasks, abandoned {} processing tasks.",
-                        fetchesSkipped,
                         processingSkipped);
         }
     }
@@ -438,15 +414,15 @@ public class Control implements Function<String[], Integer>
      */
     private static class PairsByLeadProcessor implements Callable<MetricOutputMapByMetric<ScalarOutput>>
     {
-        private final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePair;
+        private final List<PairOfDoubleAndVectorOfDoubles> pairs;
         private final ProjectConfig projectConfig;
         private final int leadTime;
 
-        private PairsByLeadProcessor(final Future<List<PairOfDoubleAndVectorOfDoubles>> futurePairs,
+        private PairsByLeadProcessor(final List<PairOfDoubleAndVectorOfDoubles> pairs,
                                      final ProjectConfig projectConfig,
                                      final int leadTime)
         {
-            this.futurePair = futurePairs;
+            this.pairs = pairs;
             this.projectConfig = projectConfig;
             this.leadTime = leadTime;
         }
@@ -457,27 +433,6 @@ public class Control implements Function<String[], Integer>
                 GenericXMLReadingHandlerException, XYChartDataSourceException,
                 IOException, URISyntaxException
         {
-            // initialized to empty list in case of failure
-            List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
-
-            // Wait for the result from whichever queue is executing it.
-            try
-            {
-                pairs = futurePair.get();
-            }
-            catch(InterruptedException ie)
-            {
-                LOGGER.error("Interrupted while getting pair for lead time {}", this.leadTime);
-                Thread.currentThread().interrupt();
-            }
-            catch(ExecutionException ee)
-            {
-                // This is when execution from the upstream queue has failed.
-                // Propagate an exception back up.
-                String message = "While getting pair for lead time " + this.leadTime;
-                throw new ProcessingException(message, ee);
-            }
-
             // Grow a List of PairOfDoubleAndVectorOfDoubles into a simpler
             // List of PairOfDouble for metric calculation.
             List<PairOfDoubles> simplePairs = Slicer.getFlatDoublePairs(pairs);
@@ -517,242 +472,5 @@ public class Control implements Function<String[], Integer>
             super(s, t);
         }
     }
-
-    /**
-     * Calls executorService.submit on a list of pairs for leadTime with config.
-     *
-     * @param config
-     * @param leadTime
-     * @param executorService
-     * @return the Future from the executorService
-     */
-    private static Future<List<PairOfDoubleAndVectorOfDoubles>> getFuturePairByLeadTime(final ProjectConfig config,
-                                                                                        final int leadTime,
-                                                                                        final ExecutorService executorService)
-    {
-        final PairGetterByLeadTime pair = new PairGetterByLeadTime(config, leadTime);
-        return executorService.submit(pair);
-    }
-
-    /**
-     * Retrieves a list of pairs from the database by lead time.
-     */
-    private static class PairGetterByLeadTime implements Callable<List<PairOfDoubleAndVectorOfDoubles>>
-    {
-        private final ProjectConfig config;
-        private final int leadTime;
-
-        private PairGetterByLeadTime(final ProjectConfig config, final int leadTime)
-        {
-            this.config = config;
-            this.leadTime = leadTime;
-        }
-
-        @Override
-        public List<PairOfDoubleAndVectorOfDoubles> call() throws SQLException
-        {
-            final List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
-            String sql;
-
-            try
-            {
-                sql = getPairSqlFromConfigForLead(this.config, this.leadTime);
-                if (LOGGER.isDebugEnabled() && !messagedSqlStatement.getAndSet(true))
-                {
-                    LOGGER.debug("SQL query: {}", sql);
-                }
-            }
-            catch(SQLException e)
-            {
-                LOGGER.error("When trying to build sql for pairs:", e);
-                throw e;
-            }
-
-            try (Connection con = Database.getConnection();
-            Statement statement = con.createStatement();
-            ResultSet resultSet = statement.executeQuery(sql))
-            {
-                while(resultSet.next())
-                {
-                    final double observationValue = resultSet.getFloat("observation");
-                    final Double[] forecastValues = (Double[])resultSet.getArray("forecasts").getArray();
-                    final PairOfDoubleAndVectorOfDoubles pair =
-                            SafePairOfDoubleAndVectorOfDoubles.of(observationValue, forecastValues);
-
-                    LOGGER.trace("Adding a pair with observationValue {} and forecastValues {}",
-                                 pair.getItemOne(),
-                                 pair.getItemTwo());
-
-                    result.add(pair);
-                }
-            }
-            catch(SQLException se)
-            {
-                String message = "Failed to get pair results for lead " + this.leadTime + " using this query: " + sql;
-                throw new SQLException(message, se);
-            }
-
-            return result;
-        }
-    }
-
-    /**
-     * Builds a pairing query based on values already present in the database. Side-effects include reaching out to the
-     * database for values, and inserting values to generate ids if they are not already present.
-     *
-     * @param config configuration information for pairing
-     * @param lead the lead time to build this query for.
-     * @return a SQL string that will retrieve pairs for the given lead time
-     * @throws SQLException when any checked (aka non-RuntimeException) exception occurs
-     */
-    private static String getPairSqlFromConfigForLead(final ProjectConfig config, final int lead) throws SQLException
-    {
-        if(config.getInputs() == null
-                || config.getInputs().getLeft() == null
-                || config.getInputs().getLeft().getVariable() == null
-                || config.getInputs().getLeft().getVariable().getValue() == null
-                || config.getInputs().getRight() == null
-                || config.getInputs().getRight().getVariable() == null
-                || config.getInputs().getRight().getVariable().getValue() == null
-                || config.getPair() == null
-                || config.getPair().getUnit() == null)
-        {
-            throw new IllegalArgumentException("Forecast and obs variables as well as target unit must be specified.");
-        }
-
-        final String observationVariableName = config.getInputs()
-                                                     .getLeft()
-                                                     .getVariable()
-                                                     .getValue();
-
-        final String forecastVariableName = config.getInputs()
-                                                  .getRight()
-                                                  .getVariable()
-                                                  .getValue();
-
-        long startTime = Long.MAX_VALUE; // used during debug
-        if(LOGGER.isTraceEnabled())
-        {
-            startTime = System.currentTimeMillis();
-        }
-
-        int targetUnitID = MeasurementUnits.getMeasurementUnitID(config.getPair().getUnit());
-        int observationVariableID = Variables.getVariableID(observationVariableName, targetUnitID);
-        int forecastVariableID = Variables.getVariableID(forecastVariableName, targetUnitID);
-
-        if(LOGGER.isTraceEnabled())
-        {
-            final long duration = System.currentTimeMillis() - startTime;
-            LOGGER.trace("Retrieving meas unit, fc var, obs var IDs took {}ms", duration);
-            startTime = System.currentTimeMillis();
-        }
-
-        Integer observationVariablePositionID;
-        Integer forecastVariablePositionID;
-
-        final String obsVarPosSql = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = "
-            + observationVariableID + ";";
-        try
-        {
-            observationVariablePositionID = Database.getResult(obsVarPosSql, "variableposition_id");
-        }
-        catch(SQLException se)
-        {
-            final String message = "Couldn't retrieve variableposition_id for observation variable "
-                + observationVariableName + " with obs id " + observationVariableID;
-            throw new SQLException(message, se);
-        }
-
-        if(LOGGER.isTraceEnabled())
-        {
-            final long duration = System.currentTimeMillis() - startTime;
-            LOGGER.trace("Retrieving variableposition_id for obs id {} took {}ms", observationVariableID, duration);
-            startTime = System.currentTimeMillis();
-        }
-
-        final String fcVarPosSql = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = "
-            + forecastVariableID + ";";
-        try
-        {
-            forecastVariablePositionID = Database.getResult(fcVarPosSql, "variableposition_id");
-        }
-        catch(SQLException se)
-        {
-            String message = "Couldn't retrieve variableposition_id for forecast variable "
-                + forecastVariableName + " with fc id " + forecastVariableID;
-            throw new SQLException(message, se);
-        }
-
-        if(LOGGER.isTraceEnabled())
-        {
-            final long duration = System.currentTimeMillis() - startTime;
-            LOGGER.trace("Retrieving variableposition_id for fc id {} took {}ms", forecastVariableID, duration);
-        }
-
-        final String innerWhere = getPairInnerWhereClauseFromConfig(config);
-
-        final String partA = "WITH forecast_measurements AS (" + NEWLINE
-                + "    SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + NEWLINE
-                + "        array_agg(FV.forecasted_value * UC.factor) AS forecasts" + NEWLINE
-                + "    FROM wres.Forecast F" + NEWLINE
-                + "    INNER JOIN wres.ForecastEnsemble FE" + NEWLINE
-                + "        ON F.forecast_id = FE.forecast_id" + NEWLINE
-                + "    INNER JOIN wres.ForecastValue FV" + NEWLINE
-                + "        ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE
-                + "    INNER JOIN wres.UnitConversion UC" + NEWLINE
-                + "        ON UC.from_unit = FE.measurementunit_id" + NEWLINE
-                + "    WHERE lead = " + lead + NEWLINE
-                + "        AND FE.variableposition_id = " + forecastVariablePositionID + NEWLINE
-                + "        AND UC.to_unit = " + targetUnitID + NEWLINE;
-        String partB = "";
-        if (innerWhere.length() > 0)
-        {
-            partB += "        AND " + innerWhere + NEWLINE;
-        }
-        partB += "    GROUP BY forecasted_date" + NEWLINE
-                + ")" + NEWLINE
-                + "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + NEWLINE
-                + "FROM forecast_measurements FM" + NEWLINE
-                + "INNER JOIN wres.Observation O" + NEWLINE
-                + "    ON O.observation_time = FM.forecasted_date" + NEWLINE
-                + "INNER JOIN wres.UnitConversion UC" + NEWLINE
-                + "    ON UC.from_unit = O.measurementunit_id" + NEWLINE
-                + "WHERE O.variableposition_id = " + observationVariablePositionID + NEWLINE
-                + "    AND UC.to_unit = " + targetUnitID + NEWLINE
-                + "ORDER BY FM.forecasted_date;";
-
-        return partA + partB;
-    }
-
-    private static String getPairInnerWhereClauseFromConfig(final ProjectConfig config)
-    {
-        Objects.requireNonNull(config);
-
-        final LocalDateTime earliest = ConfigHelper.getEarliestDateTimeFromDataSources(config);
-        final LocalDateTime latest = ConfigHelper.getLatestDateTimeFromDataSources(config);
-
-        if (earliest == null && latest == null)
-        {
-            return "";
-        }
-
-        if (earliest == null)
-        {
-            return "(F.forecast_date + INTERVAL '1 hour' * lead) <= '" + latest.format(SQL_FORMATTER) + "'";
-        }
-        else if (latest == null)
-        {
-            return "(F.forecast_date + INTERVAL '1 hour' * lead) >= '" + earliest.format(SQL_FORMATTER)
-                + "'";
-        }
-        else
-        {
-            return "((F.forecast_date + INTERVAL '1 hour' * lead) >= '" + earliest.format(SQL_FORMATTER)
-                + "'" + NEWLINE + "             AND (F.forecast_date + INTERVAL '1 hour' * lead) <= '"
-                + latest.format(SQL_FORMATTER) + "')";
-        }
-    }
-
-
 }
 
