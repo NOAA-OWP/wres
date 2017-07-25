@@ -1,15 +1,17 @@
 package wres.datamodel.metric;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.function.BiConsumer;
 
 /**
  * Immutable map of {@link MetricOutput} stored by forecast lead time and threshold in their natural order.
@@ -64,16 +66,33 @@ public class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> imple
     }
 
     @Override
-    public void forEach(final BiConsumer<MapBiKey<Integer, Threshold>, T> consumer)
+    public boolean containsKey(final MapBiKey<Integer, Threshold> key)
     {
-        store.forEach(consumer);
+        return store.containsKey(key);
+    }
+
+    @Override
+    public boolean containsValue(T value)
+    {
+        return store.containsValue(value);
+    }
+
+    @Override
+    public Collection<T> values()
+    {
+        return Collections.unmodifiableCollection(store.values());
     }
 
     @Override
     public Set<MapBiKey<Integer, Threshold>> keySet()
     {
-        final Set<MapBiKey<Integer, Threshold>> returnMe = new TreeSet<>(store.keySet());
-        return Collections.unmodifiableSet(returnMe);
+        return Collections.unmodifiableSet(store.keySet());
+    }
+
+    @Override
+    public Set<Entry<MapBiKey<Integer, Threshold>, T>> entrySet()
+    {
+        return Collections.unmodifiableSet(store.entrySet());
     }
 
     @Override
@@ -97,6 +116,51 @@ public class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> imple
     {
         return store.size();
     }
+
+    @Override
+    public SortedMap<MapBiKey<Integer, Threshold>, T> subMap(MapBiKey<Integer, Threshold> fromKey,
+                                                             MapBiKey<Integer, Threshold> toKey)
+    {
+        return (SortedMap<MapBiKey<Integer, Threshold>, T>)Collections.unmodifiableMap(store.subMap(fromKey, toKey));
+    }
+
+    @Override
+    public SortedMap<MapBiKey<Integer, Threshold>, T> headMap(MapBiKey<Integer, Threshold> toKey)
+    {
+        return (SortedMap<MapBiKey<Integer, Threshold>, T>)Collections.unmodifiableMap(store.headMap(toKey));
+    }
+
+    @Override
+    public SortedMap<MapBiKey<Integer, Threshold>, T> tailMap(MapBiKey<Integer, Threshold> fromKey)
+    {
+        return (SortedMap<MapBiKey<Integer, Threshold>, T>)Collections.unmodifiableMap(store.tailMap(fromKey));
+    }
+
+    @Override
+    public MapBiKey<Integer, Threshold> firstKey()
+    {
+        return store.firstKey();
+    }
+
+    @Override
+    public MapBiKey<Integer, Threshold> lastKey()
+    {
+        return store.lastKey();
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if(! (o instanceof SafeMetricOutputMapByLeadThreshold)) {
+            return false;
+        }
+        SafeMetricOutputMapByLeadThreshold<?> in = (SafeMetricOutputMapByLeadThreshold<?>)o;
+        return in.metadata.equals(metadata) && in.store.equals(store);     
+    }
+    
+    @Override
+    public int hashCode() {
+        return metadata.hashCode() + store.hashCode();     
+    }    
 
     @Override
     public MetricOutputMapWithBiKey<Integer, Threshold, T> sliceByFirst(final Integer first)

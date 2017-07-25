@@ -72,7 +72,7 @@ public class DefaultSlicer implements Slicer
         Objects.requireNonNull(input, NULL_ERROR);
         Objects.requireNonNull(mapper, "Specify a non-null mapper function.");
         List<PairOfDoubles> mainPairs = input.getData();
-        List<PairOfBooleans> mainPairsTransformed = new ArrayList<PairOfBooleans>();
+        List<PairOfBooleans> mainPairsTransformed = new ArrayList<>();
         mainPairs.stream().map(mapper).forEach(mainPairsTransformed::add);
         Metadata metaTransformed =
                                  dataFac.getMetadataFactory().getMetadata(input.getMetadata(),
@@ -80,7 +80,7 @@ public class DefaultSlicer implements Slicer
         if(input.hasBaseline())
         {
             List<PairOfDoubles> basePairs = input.getDataForBaseline();
-            List<PairOfBooleans> basePairsTransformed = new ArrayList<PairOfBooleans>();
+            List<PairOfBooleans> basePairsTransformed = new ArrayList<>();
             basePairs.stream().map(mapper).forEach(basePairsTransformed::add);
             Metadata metaBaseTransformed = dataFac.getMetadataFactory()
                                                   .getMetadata(input.getMetadataForBaseline(),

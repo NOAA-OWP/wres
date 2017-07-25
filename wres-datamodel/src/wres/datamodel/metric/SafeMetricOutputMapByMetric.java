@@ -1,13 +1,15 @@
 package wres.datamodel.metric;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.BiConsumer;
 
 /**
  * Immutable map of {@link MetricOutput} stored by unique metric identifier.
@@ -56,16 +58,33 @@ public class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements M
     }
 
     @Override
-    public void forEach(final BiConsumer<MapBiKey<MetricConstants, MetricConstants>, T> consumer)
+    public boolean containsKey(final MapBiKey<MetricConstants, MetricConstants> key)
     {
-        store.forEach(consumer);
+        return store.containsKey(key);
+    }
+
+    @Override
+    public boolean containsValue(T value)
+    {
+        return store.containsValue(value);
+    }
+
+    @Override
+    public Collection<T> values()
+    {
+        return Collections.unmodifiableCollection(store.values());
     }
 
     @Override
     public Set<MapBiKey<MetricConstants, MetricConstants>> keySet()
     {
-        final Set<MapBiKey<MetricConstants, MetricConstants>> returnMe = new TreeSet<>(store.keySet());
-        return Collections.unmodifiableSet(returnMe);
+        return Collections.unmodifiableSet(store.keySet());
+    }
+
+    @Override
+    public Set<Entry<MapBiKey<MetricConstants, MetricConstants>, T>> entrySet()
+    {
+        return Collections.unmodifiableSet(store.entrySet());
     }
 
     @Override
@@ -88,6 +107,38 @@ public class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements M
     public int size()
     {
         return store.size();
+    }
+
+    @Override
+    public SortedMap<MapBiKey<MetricConstants, MetricConstants>, T> subMap(MapBiKey<MetricConstants, MetricConstants> fromKey,
+                                                                           MapBiKey<MetricConstants, MetricConstants> toKey)
+    {
+        return (SortedMap<MapBiKey<MetricConstants, MetricConstants>, T>)Collections.unmodifiableMap(store.subMap(fromKey,
+                                                                                                                  toKey));
+    }
+
+    @Override
+    public SortedMap<MapBiKey<MetricConstants, MetricConstants>, T> headMap(MapBiKey<MetricConstants, MetricConstants> toKey)
+    {
+        return (SortedMap<MapBiKey<MetricConstants, MetricConstants>, T>)Collections.unmodifiableMap(store.headMap(toKey));
+    }
+
+    @Override
+    public SortedMap<MapBiKey<MetricConstants, MetricConstants>, T> tailMap(MapBiKey<MetricConstants, MetricConstants> fromKey)
+    {
+        return (SortedMap<MapBiKey<MetricConstants, MetricConstants>, T>)Collections.unmodifiableMap(store.tailMap(fromKey));
+    }
+
+    @Override
+    public MapBiKey<MetricConstants, MetricConstants> firstKey()
+    {
+        return store.firstKey();
+    }
+
+    @Override
+    public MapBiKey<MetricConstants, MetricConstants> lastKey()
+    {
+        return store.lastKey();
     }
 
     @Override

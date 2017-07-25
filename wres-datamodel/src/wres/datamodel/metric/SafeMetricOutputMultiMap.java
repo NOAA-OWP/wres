@@ -1,13 +1,13 @@
 package wres.datamodel.metric;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.function.BiConsumer;
 
 /**
  * Default implementation of a safe multi-map that contains {@link MetricOutputMapByLeadThreshold} for several metrics.
@@ -45,6 +45,24 @@ class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutpu
     }
 
     @Override
+    public boolean containsKey(MapBiKey<MetricConstants, MetricConstants> key)
+    {
+        return store.containsKey(key);
+    }
+
+    @Override
+    public boolean containsValue(MetricOutputMapByLeadThreshold<S> value)
+    {
+        return store.containsValue(value);
+    }
+
+    @Override
+    public Collection<MetricOutputMapByLeadThreshold<S>> values()
+    {
+        return Collections.unmodifiableCollection(store.values());
+    }    
+    
+    @Override
     public int size()
     {
         return store.size();
@@ -53,15 +71,14 @@ class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutpu
     @Override
     public Set<MapBiKey<MetricConstants, MetricConstants>> keySet()
     {
-        final Set<MapBiKey<MetricConstants, MetricConstants>> returnMe = new TreeSet<>(store.keySet());
-        return Collections.unmodifiableSet(returnMe);
+        return Collections.unmodifiableSet(store.keySet());
     }
 
     @Override
-    public void forEach(BiConsumer<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<S>> consumer)
+    public Set<Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<S>>> entrySet()
     {
-        store.forEach(consumer);
-    }
+        return Collections.unmodifiableSet(store.entrySet());
+    }    
 
     protected static class MultiMapBuilder<S extends MetricOutput<?>> implements Builder<S>
     {
@@ -129,4 +146,5 @@ class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutpu
         //Build
         builder.internal.forEach((key, value) -> store.put(key, value.build()));
     }
+
 }
