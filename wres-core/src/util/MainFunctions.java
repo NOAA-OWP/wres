@@ -1,9 +1,6 @@
 package util;
 
 import concurrency.Downloader;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
@@ -12,38 +9,25 @@ import ucar.nc2.Variable;
 import wres.Control;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.io.concurrency.Executor;
-import wres.io.concurrency.PairRetriever;
+import wres.io.Operations;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
-import wres.io.grouping.LabeledScript;
-import wres.io.reading.SourceLoader;
 import wres.io.utilities.Database;
-import wres.io.utilities.ScriptGenerator;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-import wres.util.XML;
 
 import javax.xml.bind.JAXBException;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
@@ -57,18 +41,13 @@ public final class MainFunctions
 	public static final Integer SUCCESS = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFunctions.class);
 
-	// Clean definition of the newline character for the system
-	private static final String NEWLINE = System.lineSeparator();
-
 	// Mapping of String names to corresponding methods
 	private static final Map<String, Function<String[], Integer>> FUNCTIONS = createMap();
 
 	public static void shutdown()
 	{
 		LOGGER.info("Shutting down the application...");
-		Database.restoreAllIndices();
-		Executor.complete();
-		Database.shutdown();
+		wres.io.Operations.shutdown();
 		ProgressMonitor.deactivate();
 	}
 
@@ -107,15 +86,14 @@ public final class MainFunctions
 		prototypes.put("commands", printCommands());
 		prototypes.put("--help", printCommands());
 		prototypes.put("-h", printCommands());
-		prototypes.put("flushdatabase", flushDatabase());
-		prototypes.put("getpairs", getProjectPairs());
+		prototypes.put("cleandatabase", cleanDatabase());
+		prototypes.put("getpairs", getPairs());
 		prototypes.put("execute", new Control());
 		prototypes.put("downloadtestdata", refreshTestData());
-		prototypes.put("refreshstatistics", refreshStatistics());
+		prototypes.put("refreshdatabase", refreshDatabase());
 		prototypes.put("loadcoordinates", loadCoordinates());
-		prototypes.put("builddatabase", buildDatabase());
-		prototypes.put("ingest", ingestByConfiguration());
-		prototypes.put("testgzip", testGZIP());
+		prototypes.put("install", install());
+		prototypes.put("ingest", ingest());
 
 		return prototypes;
 	}
@@ -145,19 +123,10 @@ public final class MainFunctions
 	private static Function<String[], Integer> connectToDB () {
 		return (final String[] args) -> {
 			Integer result = FAILURE;
-			try {
-				final String version = Database.getResult("Select version() AS version_detail", "version_detail");
-				LOGGER.info(version);
-				LOGGER.info("Successfully connected to the database");
-				result = SUCCESS;
-			}
-			catch (final SQLException e) {
-				LOGGER.error("Could not connect to database because:");
-				LOGGER.error(Strings.getStackTrace(e));
-			}
-			catch (final RuntimeException exception)
+			boolean successfullyConnected = Operations.testConnection();
+			if (successfullyConnected)
             {
-                LOGGER.error(Strings.getStackTrace(exception));
+                result = SUCCESS;
             }
             return result;
 		};
@@ -234,81 +203,19 @@ public final class MainFunctions
 	}
 
 	/**
-	 * Creates the "flushDatabase" method
+	 * Creates the "cleanDatabase" method
 	 *
 	 * @return A method that will remove all dynamic forecast, observation, and variable data from the database. Prepares the
 	 * database for a cold start.
 	 */
-	private static Function<String[], Integer> flushDatabase()
+	private static Function<String[], Integer> cleanDatabase ()
 	{
 		return (final String[] args) -> {
-			Integer result = SUCCESS;
-
-			try {
-                StringBuilder builder = new StringBuilder();
-
-                Connection connection = null;
-                ResultSet results = null;
-
-                builder.append("SELECT 'DROP TABLE IF EXISTS '||n.nspname||'.'||c.relname||' CASCADE;'").append(NEWLINE);
-                builder.append("FROM pg_catalog.pg_class c").append(NEWLINE);
-                builder.append("INNER JOIN pg_catalog.pg_namespace n").append(NEWLINE);
-                builder.append("    ON N.oid = C.relnamespace").append(NEWLINE);
-                builder.append("WHERE relchecks > 0").append(NEWLINE);
-                builder.append("    AND nspname = 'wres' OR nspname = 'partitions'").append(NEWLINE);
-                builder.append("    AND relkind = 'r';");
-
-                try {
-                    connection = Database.getConnection();
-                    results = Database.getResults(connection, builder.toString());
-
-                    builder = new StringBuilder();
-
-                    while (results.next()) {
-                        builder.append(results.getString(1)).append(NEWLINE);
-                    }
-                }
-                catch (final SQLException e) {
-                    LOGGER.error(Strings.getStackTrace(e));
-                    throw e;
-                }
-                finally
-                {
-                    if (results != null)
-                    {
-                        results.close();
-                    }
-
-                    if (connection != null)
-                    {
-                        Database.returnConnection(connection);
-                    }
-                }
-
-                builder.append("TRUNCATE wres.ForecastSource;").append(NEWLINE);
-                builder.append("TRUNCATE wres.ForecastValue;").append(NEWLINE);
-                builder.append("TRUNCATE wres.Observation;").append(NEWLINE);
-                builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(NEWLINE);
-                builder.append("TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;").append(NEWLINE);
-                builder.append("TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;").append(NEWLINE);
-                builder.append("TRUNCATE wres.Variable RESTART IDENTITY CASCADE;").append(NEWLINE);
-
-                try {
-                    Database.execute(builder.toString());
-                }
-                catch (final SQLException e) {
-                    LOGGER.error("WRES data could not be removed from the database." + NEWLINE);
-                    LOGGER.error("");
-                    LOGGER.error(builder.toString());
-                    LOGGER.error("");
-                    LOGGER.error(Strings.getStackTrace(e));
-                    throw e;
-                }
-            }
-            catch (final Exception e)
+			Integer result = FAILURE;
+            boolean successfullyCleaned = Operations.cleanDatabase();
+            if (successfullyCleaned)
             {
-                LOGGER.error(Strings.getStackTrace(e));
-                result = FAILURE;
+                result = SUCCESS;
             }
 			return result;
 		};
@@ -318,7 +225,8 @@ public final class MainFunctions
 		return (final String[] args) -> {
 			Integer result = FAILURE;
 			if (args.length >= 2) {
-				final String date = args[0];
+			    final ExecutorService executorService = Executors.newFixedThreadPool(SystemSettings.maximumThreadCount());
+			    final String date = args[0];
 				final String range = args[1];
 
                 int cutoff = -1;
@@ -488,7 +396,7 @@ public final class MainFunctions
                         final Downloader downloadOperation = new Downloader(Paths.get(downloadDirectory.getAbsolutePath(), filename), address);
                         downloadOperation.setOnRun(ProgressMonitor.onThreadStartHandler());
                         downloadOperation.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                        downloadOperations.put(filename, Executor.execute(downloadOperation));
+                        downloadOperations.put(filename, executorService.submit(downloadOperation));
 
                         current += hourIncrement;
                     }
@@ -534,137 +442,12 @@ public final class MainFunctions
 		};
 	}
 
-	/**
-	 * Creates the "flushObservations" method
-	 *
-	 * @return A method that will remove all observation data from the database.
-	 */
-	private static Function<String[], Integer> flushObservations()
-	{
-		return (final String[] args) -> {
-			Integer result = FAILURE;
-			String script;
-			script = "TRUNCATE wres.Observation RESTART IDENTITY CASCADE;" + NEWLINE;
-			script += "DELETE FROM wres.Source S" + NEWLINE;
-			script += "WHERE NOT EXISTS (" + NEWLINE;
-			script += "      SELECT 1" + NEWLINE;
-			script += "      FROM wres.ForecastSource FS" + NEWLINE;
-			script += "      WHERE FS.source_id = S.source_id" + NEWLINE;
-			script += ");" + NEWLINE;
-
-			try {
-				Database.execute(script);
-				result = SUCCESS;
-			}
-			catch (final Exception e) {
-				LOGGER.error("WRES Observation data could not be removed from the database." + NEWLINE);
-                LOGGER.error("");
-				LOGGER.error(script);
-				LOGGER.error("");
-				LOGGER.error(Strings.getStackTrace(e));
-			}
-			return result;
-		};
-	}
-
-	/**
-	 * Creates the 'getPairs' function
-	 *
-	 * @return Prints the count and the first 10 pairs for all observations and forecasts for the passed in forecast variable,
-	 * observation variable, and lead time
-	 */
-	private static Function<String[], Integer> getPairs () {
-		return (final String[] args) -> {
-
-			Integer result = FAILURE;
-			
-			Connection connection = null;
-			try {
-				final String forecastVariable = args[0];
-				final String observationVariable = args[1];
-				final String lead = args[2];
-				final String targetUnit = args[3];
-				final int targetUnitID = MeasurementUnits.getMeasurementUnitID(targetUnit);
-				final int observationVariableID = Variables.getVariableID(observationVariable, targetUnitID);
-				final int forecastVariableID = Variables.getVariableID(forecastVariable, targetUnitID);
-				int forecastVariablePositionID;
-				int observationVariablePositionID;
-
-				final List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
-				String script;
-
-				script = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = " + observationVariableID + ";";
-				observationVariablePositionID = Database.getResult(script, "variableposition_id");
-
-				script = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = " + forecastVariableID + ";";
-				forecastVariablePositionID = Database.getResult(script, "variableposition_id");
-
-				script = "";
-				script += "WITH forecast_measurements AS (" + NEWLINE;
-				script += "   SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + NEWLINE;
-				script += "       array_agg(FV.forecasted_value * UC.factor) AS forecasts" + NEWLINE;
-				script += "   FROM wres.Forecast F" + NEWLINE;
-				script += "   INNER JOIN wres.ForecastEnsemble FE" + NEWLINE;
-				script += "       ON F.forecast_id = FE.forecast_id" + NEWLINE;
-				script += "   INNER JOIN wres.ForecastValue FV" + NEWLINE;
-				script += "       ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE;
-				script += "   INNER JOIN wres.UnitConversion UC" + NEWLINE;
-				script += "       ON UC.from_unit = FE.measurementunit_id" + NEWLINE;
-				script += "   WHERE lead = " + lead + NEWLINE;
-				script += "       AND FE.variableposition_id = " + forecastVariablePositionID + NEWLINE;
-				script += "       AND UC.to_unit = " + targetUnitID + NEWLINE;
-				script += "   GROUP BY forecasted_date" + NEWLINE;
-				script += ")" + NEWLINE;
-				script += "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + NEWLINE;
-				script += "FROM forecast_measurements FM" + NEWLINE;
-				script += "INNER JOIN wres.Observation O" + NEWLINE;
-				script += "   ON O.observation_time = FM.forecasted_date" + NEWLINE;
-				script += "INNER JOIN wres.UnitConversion UC" + NEWLINE;
-				script += "   ON UC.from_unit = O.measurementunit_id" + NEWLINE;
-				script += "WHERE O.variableposition_id = " + observationVariablePositionID + NEWLINE;
-				script += "   AND UC.to_unit = " + targetUnitID + NEWLINE;
-				script += "ORDER BY FM.forecasted_date;";
-
-				connection = Database.getConnection();
-				final ResultSet results = Database.getResults(connection, script);
-				//JBr: replace DataFactory with with MetricInputFactory
-				DataFactory inFactory = DefaultDataFactory.getInstance();
-				while (results.next()) {
-					pairs.add(inFactory.pairOf((double) results.getFloat("observation"), (Double[]) results.getArray("forecasts").getArray()));
-				}
-
-				System.out.println();
-				System.out.println(pairs.size() + " pairs were retrieved!");
-				System.out.println();
-
-				for (int i = 0; i < 10; ++i) {
-					String representation = pairs.get(i).toString();
-					representation = representation.substring(0, Math.min(100, representation.length()));
-					if (representation.length() == 100) {
-						representation += "...";
-					}
-					System.out.println(representation);
-				}
-				result = SUCCESS;
-			}
-			catch (final Exception e) {
-				e.printStackTrace();
-			}
-			finally {
-				if (connection != null) {
-					Database.returnConnection(connection);
-				}
-			}
-			return result;
-		};
-	}
-
-	private static Function<String[], Integer> refreshStatistics ()
+	private static Function<String[], Integer> refreshDatabase ()
 	{
 		return (final String[] args) -> {
 			Integer result = FAILURE;
 			try {
-                Database.refreshStatistics();
+                Operations.refreshDatabase();
                 result = SUCCESS;
             }
             catch (final Exception e)
@@ -675,7 +458,7 @@ public final class MainFunctions
 		};
 	}
 
-	private static Function<String[], Integer> getProjectPairs()
+	private static Function<String[], Integer> getPairs()
 	{
 	    return (final String[] args) -> {
 			Integer result = FAILURE;
@@ -685,40 +468,9 @@ public final class MainFunctions
                 {
                     final String projectName = args[0];
                     LOGGER.info("The project name is: {}", projectName);
-                    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping = new TreeMap<>();
 
                     final ProjectConfig foundProject = ConfigHelper.read(projectName);// ProjectSettings.getProject(projectName);
-                    Integer variableId = Variables.getVariableID(foundProject
-                                                                         .getInputs()
-                                                                         .getRight()
-                                                                         .getVariable()
-                                                                         .getValue(),
-                                                                 foundProject
-                                                                         .getInputs()
-                                                                         .getRight()
-                                                                         .getVariable()
-                                                                         .getUnit());
-
-                    LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(variableId);
-
-                    Integer finalLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
-                    Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<>();
-
-                    int step = 1;
-
-                    while (ConfigHelper.leadIsValid(foundProject, step, finalLead))
-                    {
-                        PairRetriever pairRetriever = new PairRetriever(foundProject, step);
-                        pairRetriever.setOnRun(ProgressMonitor.onThreadStartHandler());
-                        pairRetriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                        threadResults.put(step, Database.submit(pairRetriever));
-                        step++;
-                    }
-
-                    for (Entry<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResult : threadResults.entrySet())
-                    {
-                        pairMapping.put(threadResult.getKey(), threadResult.getValue().get());
-                    }
+                    final Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping = Operations.getPairs(foundProject);
 
                     final int printLimit = 100;
                     int printCount = 0;
@@ -767,7 +519,7 @@ public final class MainFunctions
 	    };
 	}
 
-    private static Function<String[], Integer> ingestByConfiguration() {
+    private static Function<String[], Integer> ingest () {
 	    return (String[] args) -> {
 	        int result = FAILURE;
 
@@ -780,37 +532,7 @@ public final class MainFunctions
                 try
                 {
                     projectConfig = ConfigHelper.read(configLocation);
-                    SourceLoader loader = new SourceLoader(projectConfig);
-                    List<Future> ingestions = loader.load();
-
-                    for (Future task : ingestions)
-                    {
-                        try {
-                            task.get();
-                        }
-                        catch (InterruptedException | ExecutionException e) {
-                            LOGGER.error(Strings.getStackTrace(e));
-                        }
-                    }
-
-                    Future ingestTask = null;
-                    try {
-                        ingestTask = Database.getStoredIngestTask();
-
-                        while (ingestTask != null)
-                        {
-                            try {
-                                ingestTask.get();
-                            }
-                            catch (ExecutionException e) {
-                                LOGGER.error(Strings.getStackTrace(e));
-                            }
-                            ingestTask = Database.getStoredIngestTask();
-                        }
-                    }
-                    catch (InterruptedException e) {
-                        LOGGER.error(Strings.getStackTrace(e));
-                    }
+                    Operations.ingest(projectConfig);
                 }
                 catch (JAXBException | IOException e) {
                     LOGGER.error(Strings.getStackTrace(e));
@@ -818,8 +540,8 @@ public final class MainFunctions
             }
             else
             {
-                LOGGER.error("There are not enough arguments to run 'ingestByConfiguration'");
-                LOGGER.error("usage: ingestByConfiguration <path to configuration>");
+                LOGGER.error("There are not enough arguments to run 'ingest'");
+                LOGGER.error("usage: ingest <path to configuration>");
             }
 
 	        return result;
@@ -853,9 +575,7 @@ public final class MainFunctions
                     // TODO: Add the datum checks
                     final int customSRID = 900914;
 
-					final String copyHeader = "wres.NetCDFCoordinate (x_position, y_position, geographic_coordinate, resolution)";
 					final String insertHeader = "INSERT INTO wres.NetCDFCoordinate (x_position, y_position, geographic_coordinate, resolution) VALUES ";
-					final String delimiter = "|";
 					final short tempResolution = 1000;
 					StringBuilder builder = new StringBuilder(insertHeader);
 					int copyCount = 0;
@@ -940,138 +660,9 @@ public final class MainFunctions
 		};
 	}
 
-	private static Function<String[], Integer> buildDatabase() {
+	private static Function<String[], Integer> install() {
 		return (String[] args) -> {
-			Database.buildInstance();
-
-			return FAILURE;
-		};
-	}
-
-	private static Function<String[], Integer> testGZIP() {
-		return (String[] args) -> {
-
-			final String fileName = "/home/ctubbs/workspace/wres/wres-core/testinput/sharedinput/example.tar.gz";
-
-			final Path path = Paths.get(fileName);
-			/*ZippedSource source = new ZippedSource(fileName);
-			try {
-				source.saveForecast();
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}*/
-
-			FileInputStream fileInputStream = null;
-			BufferedInputStream bufferedInputStream = null;
-			GzipCompressorInputStream decompressedFileStream = null;
-			TarArchiveInputStream archiveInputStream = null;
-
-			byte[] content;
-
-			XMLStreamReader reader = null;
-
-			try
-			{
-				fileInputStream = new FileInputStream(fileName);
-				bufferedInputStream = new BufferedInputStream(fileInputStream);
-				decompressedFileStream = new GzipCompressorInputStream(bufferedInputStream);
-				archiveInputStream = new TarArchiveInputStream(decompressedFileStream);
-
-                TarArchiveEntry entry = archiveInputStream.getNextTarEntry();
-
-                XMLInputFactory factory = XMLInputFactory.newFactory();
-
-                if (!entry.isFile())
-                {
-                    entry = archiveInputStream.getNextTarEntry();
-                }
-
-                while (entry != null)
-                {
-                    if (entry.isFile())
-                    {
-                        content = new byte[(int)entry.getSize()];
-                        archiveInputStream.read(content, 0, content.length);
-
-                        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
-
-                        reader = factory.createXMLStreamReader(byteArrayInputStream);
-
-                        while (reader.hasNext())
-                        {
-                            reader.next();
-                            if (XML.xmlTagClosed(reader, "TimeSeries"))
-                            {
-                                LOGGER.info("Hit the end of a forecast...");
-                            }
-                            else if (XML.tagIs(reader, "TimeSeries"))
-                            {
-                                LOGGER.info("Hit the start of a forecast...");
-                                LOGGER.info("The name of the file is: " + path.toAbsolutePath().getParent() + "/" + entry.getName());
-                            }
-                        }
-                    }
-
-                    entry = archiveInputStream.getNextTarEntry();
-                }
-
-			}
-			catch (XMLStreamException | IOException e) {
-				e.printStackTrace();
-			}
-            finally
-			{
-				if (reader != null)
-				{
-					try {
-						reader.close();
-					}
-					catch (XMLStreamException e) {
-						e.printStackTrace();
-					}
-				}
-
-				if (archiveInputStream != null)
-				{
-					try {
-						archiveInputStream.close();
-					}
-					catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-
-				if (decompressedFileStream != null)
-				{
-					try {
-						decompressedFileStream.close();
-					}
-					catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-
-				if (bufferedInputStream != null)
-				{
-					try {
-						bufferedInputStream.close();
-					}
-					catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-
-				if (fileInputStream != null)
-				{
-					try {
-						fileInputStream.close();
-					}
-					catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			}
+			Operations.install();
 
 			return FAILURE;
 		};

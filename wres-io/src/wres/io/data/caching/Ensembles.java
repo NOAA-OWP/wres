@@ -6,6 +6,7 @@ import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.Database;
 import wres.util.Collections;
+import wres.util.Internal;
 import wres.util.Strings;
 
 import java.sql.Connection;
@@ -21,6 +22,7 @@ import java.util.TreeMap;
  * Cached details about Ensembles from the database
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Ensembles.class);

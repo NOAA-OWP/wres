@@ -3,6 +3,7 @@ package wres.io.data.details;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.utilities.Database;
+import wres.util.Internal;
 
 import java.sql.SQLException;
 
@@ -10,13 +11,13 @@ import java.sql.SQLException;
  * Details about a variable as defined in the Database
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public final class VariableDetails extends CachedDetail<VariableDetails, String>{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(VariableDetails.class);
 	private String variable_name = null;
 	public Integer measurementunitId = null;
 	private Integer variable_id = null;
-	public boolean recentlyAdded = false;
 	private Integer maxXIndex;
 	private Integer maxYIndex;
 	private static Object saveLock = new Object();
@@ -27,7 +28,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	{
 		if (this.variable_id == null)
 		{
-			LOGGER.info("The maximum x position was requested for this variable, but there is no id for it.");
+			LOGGER.error("The maximum x position was requested for this variable, but there is no id for it.");
 			return null;
 		}
 
@@ -44,7 +45,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 				String message = "The maximum x position for the variable with the name '";
 				message += String.valueOf(this.variable_name);
 				message += "' could not be retrieved.";
-				LOGGER.info(message);
+				LOGGER.error(message);
 				e.printStackTrace();
 			}
 		}
@@ -56,7 +57,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	{
 		if (this.variable_id == null)
         {
-			LOGGER.info("The maximum y position was requested for this variable, but there is no id for it.");
+			LOGGER.error("The maximum y position was requested for this variable, but there is no id for it.");
             return null;
         }
 
@@ -73,7 +74,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
                 String message = "The maximum x position for the variable with the name '";
                 message += String.valueOf(this.variable_name);
                 message += "' could not be retrieved.";
-                LOGGER.info(message);
+                LOGGER.error(message);
                 e.printStackTrace();
             }
         }

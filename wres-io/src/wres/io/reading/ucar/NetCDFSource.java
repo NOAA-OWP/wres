@@ -16,6 +16,7 @@ import wres.io.data.details.ForecastDetails;
 import wres.io.data.details.VariableDetails;
 import wres.io.reading.BasicSource;
 import wres.util.Collections;
+import wres.util.Internal;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
@@ -33,12 +34,15 @@ import java.util.concurrent.Future;
  * @author ctubbs
  *
  */
+@Internal(exclusivePackage = "wres.io")
 public class NetCDFSource extends BasicSource {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetCDFSource.class);
 
+	@Internal(exclusivePackage = "wres.io")
 	private class VariableInserter extends WRESRunnable
 	{
 
+		@Internal(exclusivePackage = "wres.io")
 		public VariableInserter(Variable variableToInsert)
 		{
 			this.unitName = variableToInsert.getUnitsString();
@@ -98,6 +102,7 @@ public class NetCDFSource extends BasicSource {
 	/**
 	 * 
 	 */
+	@Internal(exclusivePackage = "wres.io")
 	public NetCDFSource(String filename) {
 		this.setFilename(filename);
 	}

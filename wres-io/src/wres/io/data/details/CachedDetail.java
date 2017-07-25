@@ -1,13 +1,15 @@
 package wres.io.data.details;
 
-import java.sql.SQLException;
-
 import wres.io.utilities.Database;
+import wres.util.Internal;
+
+import java.sql.SQLException;
 
 /**
  * Describes detail about data from the database that may be accessed through a global cache
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public abstract class CachedDetail<U, V extends Comparable<V>> implements Comparable<U> {
     /**
      * System independent definition for a newline string

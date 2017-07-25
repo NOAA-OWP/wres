@@ -3,6 +3,7 @@ package wres.io.reading;
 import wres.config.generated.Format;
 import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.ucar.NetCDFSource;
+import wres.util.Internal;
 
 import java.io.IOException;
 
@@ -10,6 +11,7 @@ import java.io.IOException;
  * @author ctubbs
  *
  */
+@Internal(exclusivePackage = "wres.io")
 public class ReaderFactory {
     private ReaderFactory(){}
     

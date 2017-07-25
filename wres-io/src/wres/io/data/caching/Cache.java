@@ -2,6 +2,7 @@ package wres.io.data.caching;
 
 import wres.io.data.details.CachedDetail;
 import wres.util.Collections;
+import wres.util.Internal;
 
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentMap;
  * @param <T> The type of detail within the database
  * @param <U> The key for the type within the database
  */
+@Internal(exclusivePackage = "wres.io")
 abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
     protected static final String NEWLINE = System.lineSeparator();
 

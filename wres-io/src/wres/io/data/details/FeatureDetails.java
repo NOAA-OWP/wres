@@ -3,6 +3,7 @@ package wres.io.data.details;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.utilities.Database;
+import wres.util.Internal;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -15,6 +16,7 @@ import java.util.concurrent.ConcurrentMap;
  * Defines the important details of a feature as stored in the database
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDetails.class);

@@ -120,8 +120,7 @@ public class ConfigHelper
 
         if (projectConfig.getPair().getTimeAggregation() != null && projectConfig.getPair().getTimeAggregation().getPeriod().get(0) > 1) {
             int period = projectConfig.getPair().getTimeAggregation().getPeriod().get(0);
-            Double range = null;
-            range = Time.unitsToHours(projectConfig.getPair().getTimeAggregation().getUnit().value(), period);
+            Double range = Time.unitsToHours(projectConfig.getPair().getTimeAggregation().getUnit().value(), period);
             qualifier = String.valueOf((int) (step * range)) + " > lead && lead >= " + String.valueOf((int) ((step - 1) * range));
         }
         else
@@ -178,10 +177,15 @@ public class ConfigHelper
                                 DatasourceType.MODEL_OUTPUTS.value());
     }
 
-    public static ProjectConfig read(final String path) throws JAXBException {
+    public static ProjectConfig read(final String path) throws JAXBException, IOException
+    {
         ProjectConfig projectConfig;
 
         File xmlFile = new File(path);
+        if (!xmlFile.exists())
+        {
+            throw new IOException("A project configuration file does not exist at " + path);
+        }
         Source xmlSource = new StreamSource(xmlFile);
         JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();

@@ -1,8 +1,11 @@
 package wres.io.data.details;
 
+import wres.util.Internal;
+
 /**
  * Represents details about a type of forecast (such as short range, long range, analysis and assimilation, etc)
  */
+@Internal(exclusivePackage = "wres.io")
 public class ForecastTypeDetails extends CachedDetail<ForecastTypeDetails, String> {
     private final String description = null;
     private Integer forecastRangeID = null;

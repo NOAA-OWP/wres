@@ -6,6 +6,7 @@ import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.reading.fews.PIXMLReader;
+import wres.util.Internal;
 import wres.util.Strings;
 
 import java.io.ByteArrayInputStream;
@@ -16,6 +17,7 @@ import java.util.List;
 /**
  * Created by ctubbs on 7/19/17.
  */
+@Internal(exclusivePackage = "wres.io")
 public final class ZippedPIXMLIngest extends WRESRunnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedPIXMLIngest.class);
@@ -25,7 +27,11 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
     private final List<Conditions.Feature> specifiedFeatures;
     private final DataSourceConfig dataSourceConfig;
 
-    public ZippedPIXMLIngest (final String fileName, final byte[] content, final DataSourceConfig dataSourceConfig, final List<Conditions.Feature> specifiedFeatures)
+    @Internal(exclusivePackage = "wres.io")
+    public ZippedPIXMLIngest (final String fileName,
+                              final byte[] content,
+                              final DataSourceConfig dataSourceConfig,
+                              final List<Conditions.Feature> specifiedFeatures)
     {
         this.fileName = fileName;
         this.content = content;

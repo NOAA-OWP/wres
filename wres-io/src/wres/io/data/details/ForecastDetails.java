@@ -1,24 +1,23 @@
 package wres.io.data.details;
 
 import wres.io.data.caching.DataSources;
-
 import wres.io.data.caching.ForecastTypes;
 import wres.io.utilities.Database;
+import wres.util.Internal;
 
-import javax.annotation.concurrent.GuardedBy;
 import java.sql.SQLException;
 
 /**
  * Important details about a forecast that predicted values for different variables over some span of time
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public final class ForecastDetails {
 	private final static String NEWLINE = System.lineSeparator();
 	
 	private String sourcePath = null;
 	private String forecastDate = null;
 
-	@GuardedBy("forecastIdLock")
 	private Integer forecast_id = null;
 	private String creationDate = null;
 	private String range = null;
@@ -28,6 +27,7 @@ public final class ForecastDetails {
 	 * The path to the file that contains data for the forecast
 	 * @param path The path to the forecast file on the file system
 	 */
+	@Internal(exclusivePackage = "wres.io")
 	public ForecastDetails(String path) {
 		this.sourcePath = path;
 	}
@@ -155,9 +155,7 @@ public final class ForecastDetails {
         script += ";";
 
 
-        //synchronized (forecastIdLock) {
-            forecast_id = Database.getResult(script, "forecast_id");
-        //}
+		forecast_id = Database.getResult(script, "forecast_id");
 		
 		saveForecastSource();
 	}

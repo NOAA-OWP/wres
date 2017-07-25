@@ -10,6 +10,7 @@ import wres.io.concurrency.ForecastSaver;
 import wres.io.concurrency.ObservationSaver;
 import wres.io.config.ConfigHelper;
 import wres.io.utilities.Database;
+import wres.util.Internal;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,6 +26,7 @@ import java.util.stream.Stream;
  * @author Christopher Tubbs
  *
  */
+@Internal(exclusivePackage = "wres.io")
 public class SourceLoader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceLoader.class);
@@ -34,6 +36,7 @@ public class SourceLoader
     /**
      *
      */
+    @Internal(exclusivePackage = "wres.io")
     public SourceLoader (ProjectConfig projectConfig) {
         this.projectConfig = projectConfig;
     }
@@ -137,26 +140,27 @@ public class SourceLoader
     private Future saveFile(Path filePath, DataSourceConfig.Source source, DataSourceConfig dataSourceConfig)
     {
         String absolutePath = filePath.toAbsolutePath().toString();
+        Future task = null;
 
-            if (shouldIngest(absolutePath, source, dataSourceConfig))
-            {
-                if (ConfigHelper.isForecast(dataSourceConfig)) {
-                    LOGGER.info("Loading {} as forecast data...", absolutePath);
-                    return Executor.execute(new ForecastSaver(absolutePath, dataSourceConfig, this.getSpecifiedFeatures()));
-                }
-                else {
-                    LOGGER.info("Loading {} as Observation data...");
-                    return Executor.execute(new ObservationSaver(absolutePath, dataSourceConfig, this.getSpecifiedFeatures()));
-                }
+        if (shouldIngest(absolutePath, source, dataSourceConfig))
+        {
+            if (ConfigHelper.isForecast(dataSourceConfig)) {
+                LOGGER.trace("Loading {} as forecast data...", absolutePath);
+                task = Executor.execute(new ForecastSaver(absolutePath, dataSourceConfig, this.getSpecifiedFeatures()));
             }
-            else
-            {
-                String message = "Data will not be loaded from {}. That data is either not valid input data or is ";
-                message += "already in the database.";
-                LOGGER.info(message, absolutePath);
+            else {
+                LOGGER.trace("Loading {} as Observation data...");
+                task = Executor.execute(new ObservationSaver(absolutePath, dataSourceConfig, this.getSpecifiedFeatures()));
             }
+        }
+        else
+        {
+            String message = "Data will not be loaded from {}. That data is either not valid input data or is ";
+            message += "already in the database.";
+            LOGGER.debug(message, absolutePath);
+        }
 
-        return null;
+        return task;
     }
 
     private boolean shouldIngest(String filePath, DataSourceConfig.Source source, DataSourceConfig dataSourceConfig)

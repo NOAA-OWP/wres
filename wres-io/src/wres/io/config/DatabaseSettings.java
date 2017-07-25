@@ -1,6 +1,7 @@
 package wres.io.config;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import wres.util.Internal;
 
 import javax.xml.stream.XMLStreamReader;
 import java.beans.PropertyVetoException;
@@ -15,6 +16,7 @@ import java.util.TreeMap;
  * Contains access to configured settings and objects for accessing the database
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 final class DatabaseSettings {
 
 	// A mapping of database names to the name of the class for the 

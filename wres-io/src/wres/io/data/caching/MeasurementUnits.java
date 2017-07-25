@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.utilities.Database;
+import wres.util.Internal;
 import wres.util.Strings;
 
 import java.sql.Connection;
@@ -14,6 +15,7 @@ import java.sql.SQLException;
  * Caches details mapping units of measurements to their IDs
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MeasurementUnits.class);

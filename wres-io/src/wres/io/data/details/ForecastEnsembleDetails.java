@@ -1,13 +1,15 @@
 package wres.io.data.details;
 
-import java.sql.SQLException;
-
 import wres.io.utilities.Database;
+import wres.util.Internal;
+
+import java.sql.SQLException;
 
 /**
  * Defines details about an Ensemble linked to a specific forecast
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public final class ForecastEnsembleDetails {
 	private static final String NEWLINE = System.lineSeparator();
 	

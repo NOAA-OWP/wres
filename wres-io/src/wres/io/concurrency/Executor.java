@@ -1,6 +1,7 @@
 package wres.io.concurrency;
 
 import wres.io.config.SystemSettings;
+import wres.util.Internal;
 
 import java.util.concurrent.*;
 
@@ -9,6 +10,7 @@ import java.util.concurrent.*;
  * 
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public final class Executor {
 
 	// The underlying thread executor
