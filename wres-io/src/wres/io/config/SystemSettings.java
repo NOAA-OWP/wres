@@ -11,6 +11,8 @@ import wres.util.XML;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The cache for all configured system settings
@@ -34,19 +36,21 @@ public final class SystemSettings extends XMLReader
 		}
 		catch (IOException ioe)
 		{
-			LOGGER.warn("Could not find system settings. Using defaults.", ioe);
+			LOGGER.warn("Using default system settings due to problem reading config:", ioe);
 			INSTANCE = new SystemSettings();
 		}
 	}
 
     private DatabaseSettings databaseConfiguration = null;
-    private int maximumThreadCount = 0;
+    private int maximumThreadCount = 10;
     private int poolObjectLifespan = 30000;
     private int fetchSize = 100;
     private int maximumInserts = 5000;
     private int maximumCopies = 200;
-    private Long updateFrequency = null;
+    private Long updateFrequency = new Long(5000);
     private boolean updateProgressMonitor = true;
+    private int defaultChartWidth = 800;
+    private int defaultChartHeight = 600;
 
 
 	/**
@@ -65,11 +69,12 @@ public final class SystemSettings extends XMLReader
     }
 
     /**
-     * Fall back on default values when file cannot be found.
+     * Fall back on default values when file cannot be found or parsed.
      */
     private SystemSettings()
     {
         super(null, false);
+		databaseConfiguration = new DatabaseSettings();
     }
 
 	@Override
@@ -133,11 +138,19 @@ public final class SystemSettings extends XMLReader
 					this.updateProgressMonitor = Strings.isTrue(XML.getXMLText(reader));
 					ProgressMonitor.setShouldUpdate(this.updateProgressMonitor);
 				}
+                else if (XML.tagIs(reader, "default_chart_width"))
+                {
+                    this.defaultChartWidth = Integer.parseInt(XML.getXMLText(reader));
+                }
+                else if (XML.tagIs(reader, "default_chart_height"))
+                {
+                    this.defaultChartHeight = Integer.parseInt(XML.getXMLText(reader));
+                }
 			}
 		}
 		catch (Exception error)
 		{
-			error.printStackTrace();
+			LOGGER.error("Failed to parse system settings:", error);
 		}
 	}
 
@@ -189,6 +202,22 @@ public final class SystemSettings extends XMLReader
 		return INSTANCE.maximumCopies;
 	}
 
+    /**
+     * @return The default to use for chart width
+     */
+    public static int getDefaultChartWidth()
+    {
+        return INSTANCE.defaultChartWidth;
+    }
+
+	/**
+	 * @return The default to use for chart height
+	 */
+	public static int getDefaultChartHeight()
+	{
+		return INSTANCE.defaultChartHeight;
+	}
+
 	/**
 	 * @return The type of database to build queries for
 	 * <br><br>
@@ -229,7 +258,13 @@ public final class SystemSettings extends XMLReader
 		string_rep += String.valueOf(maximumInserts);
 		string_rep += System.lineSeparator();
 		string_rep += System.lineSeparator();
-		
+        string_rep += "Default chart width:\t";
+        string_rep += String.valueOf(defaultChartWidth);
+        string_rep += System.lineSeparator();
+        string_rep += "Default chart height:\t";
+        string_rep += String.valueOf(defaultChartHeight);
+        string_rep += System.lineSeparator();
+
 		if (databaseConfiguration != null)
 		{
 			string_rep += System.lineSeparator();

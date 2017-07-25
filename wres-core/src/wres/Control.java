@@ -1,12 +1,40 @@
 package wres;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
@@ -22,23 +50,6 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.vis.ChartEngineFactory;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 
 /**
  * Another way to execute a project.
@@ -117,6 +128,11 @@ public class Control implements Function<String[], Integer>
         int maxProcessThreads = Control.MAX_THREADS / 10;
         ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
 
+        DataFactory dataFac = DefaultDataFactory.getInstance();
+
+        //Sink for the results: the results are added incrementally to an immutable store via a builder
+        MetricOutputMultiMap.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
+
         for (ProjectConfigPlus projectConfigPlus : projectConfiggies)
         {
             ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -154,7 +170,9 @@ public class Control implements Function<String[], Integer>
                 futureMetrics.add(futureMetric);
             }
 
-            Map<Integer, MetricOutputMapByMetric<ScalarOutput>> finalResults = new HashMap<>();
+            // use resultsBuilder instead of finalResults
+            // Map<Integer, MetricOutputMapByMetric<ScalarOutput>> finalResults = new HashMap<>();
+
             // Retrieve metric results from processing queue.
             try
             {
@@ -165,7 +183,8 @@ public class Control implements Function<String[], Integer>
                     MetricOutputMapByMetric<ScalarOutput> metrics = futureMetrics.get(i).get();
 
                     int leadTime = i + 1;
-                    finalResults.put(leadTime, metrics);
+                    Threshold fakeThreshold = dataFac.getThreshold(Double.NEGATIVE_INFINITY, Threshold.Condition.GREATER);
+                    resultsBuilder.add(leadTime, fakeThreshold, metrics);
 
                     if (LOGGER.isInfoEnabled() && fetchPairExecutor instanceof ThreadPoolExecutor
                             && processPairExecutor instanceof ThreadPoolExecutor)
@@ -213,16 +232,61 @@ public class Control implements Function<String[], Integer>
                         tpeFetch.getCompletedTaskCount(), tpeProcess.getCompletedTaskCount());
             }
 
-            if (LOGGER.isInfoEnabled())
+            //Build final results:
+            MetricOutputMultiMap<ScalarOutput> results = resultsBuilder.build();
+
+            // Make charts!
+            try
             {
-                for (final Map.Entry<Integer, MetricOutputMapByMetric<ScalarOutput>> e : finalResults
+                for (Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> e : results
                         .entrySet())
                 {
-                    LOGGER.info(
-                            "For lead time " + e.getKey() + " " + e.getValue().toString());
+                    DestinationConfig dest = projectConfig.getOutputs().getDestination().get(1);
+                    String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+
+                    ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(
+                            e.getValue(),
+                            dataFac.getMetadataFactory(),
+                            ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
+                            "scalarOutputTemplate.xml",
+                            graphicsString);
+
+                    File outputImageFile = new File(dest.getPath() + "_" + e.getKey().getFirstKey() + "_output.png");
+
+                    int width = SystemSettings.getDefaultChartWidth();
+                    int height = SystemSettings.getDefaultChartHeight();
+
+                    if (dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
+                    {
+                        width = dest.getGraphical().getWidth();
+                    }
+                    if (dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
+                    {
+                        width = dest.getGraphical().getHeight();
+                    }
+
+                    ChartTools.generateOutputImageFile(outputImageFile,
+                                                       engine.buildChart(),
+                                                       width,
+                                                       height);
                 }
             }
+            catch (ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+            {
+                LOGGER.error("Could not generate plots:", e);
+                return null;
+            }
+
+            if (LOGGER.isInfoEnabled())
+            {
+                results.forEach((key, value) -> {
+                    LOGGER.info(NEWLINE + "Results for metric "
+                            + dataFac.getMetadataFactory().getMetricName(key.getFirstKey()) + " (lead time, threshold, score) "
+                            + NEWLINE + value);
+                });
+            }
         }
+
         shutDownGracefully(fetchPairExecutor, processPairExecutor);
 
         return 0;
@@ -409,33 +473,6 @@ public class Control implements Function<String[], Integer>
                     metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
             SingleValuedPairs input = dataFactory.ofSingleValuedPairs(simplePairs,
                                                                        meta);
-
-            // generate some graphics, this is almost certainly not where we
-            // will do it, but it was a first "go" at integrating graphics into
-            // the pipeline.
-            try
-            {
-                ChartEngine ce = ChartEngineFactory
-                        .buildSingleValuedPairsChartEngine(input,
-                                "singleValuedPairsTemplate.xml",
-                                null);
-
-                //Generate the output file.
-                ChartTools.generateOutputImageFile(
-                        Paths.get(new URI(projectConfig.getOutputs().getDestination().get(1).getPath() + "/" + Integer.toString(leadTime) + ".png")).toFile(),
-                        ce.buildChart(),
-                        projectConfig.getOutputs().getDestination().get(1).getGraphical().getWidth(),
-                        projectConfig.getOutputs().getDestination().get(1).getGraphical().getHeight());
-            }
-            catch (GenericXMLReadingHandlerException
-                    |ChartEngineException
-                    |XYChartDataSourceException
-                    |URISyntaxException
-                    |IOException e)
-            {
-                LOGGER.error("Could not create charts.", e);
-                throw e;
-            }
 
             // Create an immutable collection of metrics that consume single-valued pairs
             // and produce a scalar output
