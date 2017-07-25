@@ -11,7 +11,6 @@ import wres.util.XML;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
-import java.nio.file.Path;
 
 /**
  * The cache for all configured system settings
@@ -46,9 +45,6 @@ public final class SystemSettings extends XMLReader
     private int fetchSize = 100;
     private int maximumInserts = 5000;
     private int maximumCopies = 200;
-    private String projectDirectory = "projects";
-    private boolean shouldLog = true;
-    private boolean inDevelopment = false;
     private Long updateFrequency = null;
     private boolean updateProgressMonitor = true;
 
@@ -119,18 +115,6 @@ public final class SystemSettings extends XMLReader
 				{
 					maximumCopies = Integer.parseInt(XML.getXMLText(reader));
 				}
-				else if (XML.tagIs(reader, "project_directory"))
-				{
-					projectDirectory = XML.getXMLText(reader);
-				}
-				else if (XML.tagIs(reader, "in_development"))
-				{
-				    this.inDevelopment = Strings.isTrue(XML.getXMLText(reader));
-				}
-				else if (XML.tagIs(reader, "should_log"))
-				{
-				    this.shouldLog = Strings.isTrue(XML.getXMLText(reader));
-				}
 				else if (XML.tagIs(reader, "update_frequency"))
 				{
 					String frequency = XML.getXMLText(reader);
@@ -155,16 +139,6 @@ public final class SystemSettings extends XMLReader
 		{
 			error.printStackTrace();
 		}
-	}
-	
-	public static boolean shouldLogMessages()
-	{
-	    return INSTANCE.shouldLog;
-	}
-	
-	public static boolean isInDevelopment()
-	{
-	    return INSTANCE.inDevelopment;
 	}
 
 	public static Long getUpdateFrequency()
@@ -216,13 +190,6 @@ public final class SystemSettings extends XMLReader
 	}
 
 	/**
-	 * @return The directory of the project configuration files
-	 */
-	public static String getProjectDirectory() {
-		return INSTANCE.projectDirectory;
-	}
-
-	/**
 	 * @return The type of database to build queries for
 	 * <br><br>
 	 * <b>Acceptable Values are:</b>
@@ -261,8 +228,6 @@ public final class SystemSettings extends XMLReader
 		string_rep += "Maximum number of inserts into the database at any given time:\t";
 		string_rep += String.valueOf(maximumInserts);
 		string_rep += System.lineSeparator();
-		string_rep += "Project XML is stored in:\t";
-		string_rep += String.valueOf(projectDirectory);
 		string_rep += System.lineSeparator();
 		
 		if (databaseConfiguration != null)

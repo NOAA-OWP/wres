@@ -3,6 +3,7 @@ package wres.io.data.caching;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.data.details.FeatureDetails;
+import wres.util.Internal;
 
 import java.sql.SQLException;
 
@@ -10,6 +11,7 @@ import java.sql.SQLException;
  * Caches details about Features
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public class Features extends Cache<FeatureDetails, String>
 {
 

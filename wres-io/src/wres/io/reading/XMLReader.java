@@ -2,6 +2,7 @@ package wres.io.reading;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import wres.util.Internal;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -13,6 +14,7 @@ import java.io.*;
  * @author Tubbs
  *
  */
+@Internal(exclusivePackage = "wres.io")
 public class XMLReader 
 {
     private String filename;
@@ -25,18 +27,21 @@ public class XMLReader
 	/**
 	 * 
 	 */
+	@Internal(exclusivePackage = "wres.io")
 	public XMLReader(String filename)
 	{
 	    this(filename, false);
 	}
 
+	@Internal(exclusivePackage = "wres.io")
 	public XMLReader (String fileName, InputStream inputStream)
 	{
 		this.find_on_classpath = false;
 		this.filename = fileName;
 		this.inputStream = inputStream;
 	}
-	
+
+	@Internal(exclusivePackage = "wres.io")
 	public XMLReader(String filename, boolean find_on_classpath)
 	{
 	    this.filename = filename;

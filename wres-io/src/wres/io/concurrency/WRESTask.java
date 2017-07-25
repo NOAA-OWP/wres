@@ -1,6 +1,7 @@
 package wres.io.concurrency;
 
 import org.slf4j.Logger;
+import wres.util.Internal;
 
 import java.util.function.Consumer;
 
@@ -8,6 +9,7 @@ import java.util.function.Consumer;
  * @author Christopher Tubbs
  *
  */
+@Internal(exclusivePackage = "wres.io")
 public abstract class WRESTask
 {
     protected final static String NEWLINE = System.lineSeparator();

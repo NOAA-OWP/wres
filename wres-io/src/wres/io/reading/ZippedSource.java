@@ -6,23 +6,23 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.concurrency.*;
+import wres.io.concurrency.Executor;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.Database;
+import wres.util.Internal;
 import wres.util.ProgressMonitor;
 
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * @author Christopher Tubbs
- * Interprets a FEWS (PIXML) source into either forecast or observation data and stores them in the database
+ * Reads source files from an archived and saves their data to the database
  */
+@Internal(exclusivePackage = "wres.io")
 public class ZippedSource extends BasicSource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedSource.class);
@@ -31,10 +31,18 @@ public class ZippedSource extends BasicSource {
 
     private ExecutorService createReaderService()
     {
-        Double threadCount = Math.ceil(SystemSettings.maximumThreadCount() / 10F);
-        threadCount = Math.max(threadCount, 2.0F);
+        int threadCount = ((Double)Math.ceil(SystemSettings.maximumThreadCount() / 10F)).intValue();
+        threadCount = Math.max(threadCount, 2);
 
-        return Executors.newFixedThreadPool(threadCount.intValue());
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(threadCount,
+                                                             threadCount,
+                                                             SystemSettings.poolObjectLifespan(),
+                                                             TimeUnit.MILLISECONDS,
+                                                             new ArrayBlockingQueue<>(threadCount));
+
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+
+        return executor;
     }
 
     private void addIngestTask (Runnable task)
@@ -60,6 +68,7 @@ public class ZippedSource extends BasicSource {
 	 * Constructor that sets the filename
 	 * @param filename The name of the source file
 	 */
+    @Internal(exclusivePackage = "wres.io")
 	public ZippedSource (String filename)
 	{
 	    this.setFilename(filename);

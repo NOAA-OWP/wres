@@ -7,6 +7,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
 import wres.util.FormattedStopwatch;
+import wres.util.Internal;
 
 import java.io.IOException;
 import java.util.List;
@@ -16,19 +17,13 @@ import java.util.List;
  * 
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public class ObservationSaver extends WRESRunnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ObservationSaver.class);
-    
-	/**
-	 * Creates a new save with the given path
-	 */
-	public ObservationSaver(String filepath) {
-		this.filepath = filepath;
-		this.dataSourceConfig = null;
-		this.specifiedFeatures = null;
-	}
 
+
+    @Internal(exclusivePackage = "wres.io")
 	public ObservationSaver(String filepath,
                             DataSourceConfig dataSourceConfig,
                             List<Conditions.Feature> specifiedFeatures)

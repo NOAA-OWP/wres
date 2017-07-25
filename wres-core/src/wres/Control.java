@@ -1,57 +1,18 @@
 package wres;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.SafePairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMapByMetric;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.*;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.io.config.ConfigHelper;
@@ -61,6 +22,23 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.vis.ChartEngineFactory;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 /**
  * Another way to execute a project.
@@ -121,8 +99,7 @@ public class Control implements Function<String[], Integer>
 
         if (projectConfiggies.isEmpty())
         {
-            LOGGER.error("Validate project configuration files and either place them in the {} directory, or pass them on the command line like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml",
-                    SystemSettings.getProjectDirectory());
+            LOGGER.error("Validate project configuration files and place them in the command line like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml");
             return null;
         }
         else
@@ -334,26 +311,6 @@ public class Control implements Function<String[], Integer>
                             path);
                 }
             }
-        }
-        else
-        {
-            String projectDirectory = SystemSettings.getProjectDirectory();
-
-            LOGGER.info("Looking in {} directory for project configurations.",
-                        SystemSettings.getProjectDirectory());
-
-            Path dir = Paths.get(SystemSettings.getProjectDirectory());
-            FindXmlFiles visitor = new FindXmlFiles();
-
-            try
-            {
-                Files.walkFileTree(dir, visitor);
-            }
-            catch (IOException ioe)
-            {
-                LOGGER.warn("An issue occurred while looking in {}:", projectDirectory, ioe);
-            }
-            existingProjectFiles = visitor.getFiles();
         }
 
         List<ProjectConfigPlus> projectConfiggies = new ArrayList<>();

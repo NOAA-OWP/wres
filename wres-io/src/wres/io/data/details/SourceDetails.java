@@ -1,13 +1,15 @@
 package wres.io.data.details;
 
-import java.util.Objects;
-
 import wres.io.data.details.SourceDetails.SourceKey;
+import wres.util.Internal;
+
+import java.util.Objects;
 
 /**
  * Details about a source of observation or forecast data
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 
 	private String sourcePath = null;

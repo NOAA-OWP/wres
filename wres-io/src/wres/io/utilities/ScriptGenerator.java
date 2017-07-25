@@ -11,6 +11,7 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.grouping.LabeledScript;
+import wres.util.Internal;
 import wres.util.NotImplementedException;
 
 import java.sql.SQLException;
@@ -21,6 +22,7 @@ import java.util.StringJoiner;
  * @author Christopher Tubbs
  *
  */
+@Internal(exclusivePackage = "wres.io")
 public final class ScriptGenerator
 {
     private ScriptGenerator (){}

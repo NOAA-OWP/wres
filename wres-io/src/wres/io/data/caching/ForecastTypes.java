@@ -2,6 +2,7 @@ package wres.io.data.caching;
 
 import wres.io.data.details.ForecastTypeDetails;
 import wres.io.utilities.Database;
+import wres.util.Internal;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -10,6 +11,7 @@ import java.sql.SQLException;
 /**
  * Cache of available types of forecast
  */
+@Internal(exclusivePackage = "wres.io")
 public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
 
     private static ForecastTypes INTERNAL_CACHE = null;

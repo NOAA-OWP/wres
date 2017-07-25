@@ -1,5 +1,7 @@
 package wres.io.reading.fews;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
@@ -10,10 +12,7 @@ import wres.io.data.details.ForecastDetails;
 import wres.io.data.details.ForecastEnsembleDetails;
 import wres.io.reading.XMLReader;
 import wres.io.utilities.Database;
-import wres.util.Collections;
-import wres.util.ProgressMonitor;
-import wres.util.Time;
-import wres.util.XML;
+import wres.util.*;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -29,8 +28,10 @@ import java.util.TreeMap;
  * Loads a PIXML file, iterates through it, and saves all data to the database, whether it is
  * forecast or observation data
  */
+@Internal(exclusivePackage = "wres.io")
 public final class PIXMLReader extends XMLReader 
 {
+	private static final Logger LOGGER = LoggerFactory.getLogger(PIXMLReader.class);
 	private static final int PARTITION_HOURS = 80;
 
     /**
@@ -87,24 +88,18 @@ public final class PIXMLReader extends XMLReader
 	private static final Object PARTITION_LOCK = new Object();
 
 	/**
-	 * Constructor for a reader for forecast data
-	 * @param filename The path to the file to read
-	 */
-	public PIXMLReader(String filename) {
-		super(filename);
-	}
-	
-	/**
 	 * Constructor for a reader that may be for forecasts or observations
 	 * @param filename The path to the file to read
 	 * @param isForecast Whether or not the reader is for forecast data
 	 */
+    @Internal(exclusivePackage = "wres.io")
 	public PIXMLReader(String filename, boolean isForecast)
 	{
 		super(filename);
 		this.isForecast = isForecast;
 	}
 
+    @Internal(exclusivePackage = "wres.io")
 	public PIXMLReader(String filename, InputStream inputStream, boolean isForecast)
 	{
 		super(filename, inputStream);
@@ -122,7 +117,7 @@ public final class PIXMLReader extends XMLReader
 				try {
 					parseSeries(reader);
 				} catch (Exception e) {
-					e.printStackTrace();
+					LOGGER.error(Strings.getStackTrace(e));
 				}
 			}
 		}
@@ -209,6 +204,11 @@ public final class PIXMLReader extends XMLReader
 				addObservedEvent(time.toString(), value);
 			}
 		}
+		else if (value != null && value.equals(currentMissingValue)) {
+			LOGGER.debug("The value '{}' is not being saved because it equals '{}', which is the 'missing value'.",
+						 value,
+						 currentMissingValue);
+		}
 		
 		if (insertCount >= SystemSettings.getMaximumCopies()) {
             saveLeftoverObservations();
@@ -290,7 +290,7 @@ public final class PIXMLReader extends XMLReader
                         Database.storeIngestTask(Database.execute(copier));
                         PIXMLReader.builderMap.put(builderPair.getKey(), new StringBuilder());
                     } catch (SQLException e) {
-                        e.printStackTrace();
+                        LOGGER.error(Strings.getStackTrace(e));
                     }
                 }
             }
@@ -572,6 +572,13 @@ public final class PIXMLReader extends XMLReader
                     this.getDataSourceConfig().getVariable().getValue().equalsIgnoreCase(name);
         }
 
+        if (!approved)
+        {
+            LOGGER.debug("The variable '{}' is not approved. The configuration says the variable should be: '{}'",
+                         name,
+                         this.getDataSourceConfig().getVariable().getValue());
+        }
+
         return approved;
     }
     
@@ -607,12 +614,22 @@ public final class PIXMLReader extends XMLReader
             }
         }
 
+        if (!approved)
+		{
+			LOGGER.error("The ensemble with the name {} and ensemblemember id of {} was not approved.", name, ensembleMemberID);
+		}
+
         return approved;
     }
     
     private boolean featureIsApproved (final String lid) {
 	    boolean approved = true;
-	    if (this.getSpecifiedFeatures() != null && this.getSpecifiedFeatures().size() > 0)
+
+	    boolean hasLocations = Collections.exists(this.getSpecifiedFeatures(), (Conditions.Feature feature) -> {
+            return feature.getLocation() != null && feature.getLocation().getLid() != null;
+        });
+
+	    if (hasLocations)
         {
             approved = Collections.exists(this.getSpecifiedFeatures(), (Conditions.Feature feature) -> {
                 return feature.getLocation() !=  null &&
@@ -620,6 +637,7 @@ public final class PIXMLReader extends XMLReader
                         feature.getLocation().getLid().equalsIgnoreCase(lid);
             });
         }
+
         return approved;
     }
     

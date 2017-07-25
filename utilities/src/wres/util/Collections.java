@@ -127,7 +127,13 @@ public final class Collections
      * @return A new list containing  all elements that passed through the filter
      */
     public static <U> List<U> where(Collection<U> source, Predicate<U> expression) {
-        return source.stream().filter(expression).collect(Collectors.toList());
+        List<U> filteredValues = null;
+
+        if (source != null)
+        {
+            filteredValues = source.stream().filter(expression).collect(Collectors.toList());
+        }
+        return filteredValues;
     }
     
     /**
@@ -139,7 +145,7 @@ public final class Collections
     public static <U> U find(Collection<U> source, Predicate<U> expression) {
         U val = null;
         List<U> collection = where(source, expression);
-        if (collection.size() > 0) {
+        if (collection != null && collection.size() > 0) {
             val = collection.get(0);
         }
         
@@ -158,7 +164,14 @@ public final class Collections
     }
     
     public static <U> boolean exists(Collection<U> source, Predicate<U> expression) {
-        return !where(source, expression).isEmpty();
+        Collection<U> filteredCollection = where(source, expression);
+        boolean valueExists = false;
+
+        if (filteredCollection != null)
+        {
+            valueExists = !filteredCollection.isEmpty();
+        }
+        return valueExists;
     }
     
     /**
@@ -206,7 +219,16 @@ public final class Collections
 
         return objectsLeft;
     }
-    
+
+    /**
+     * Finds a key matching up with an indicated value
+     * @param mapping The mapping between keys and values
+     * @param value The value to look for
+     * @param <U> The type of the key
+     * @param <V> The type of the value
+     * @return The first key found with the correct value. If multiple keys have the same value, you're not
+     * guarenteed to get the same value each time
+     */
     public static <U, V> U getKeyByValue(Map<U, V> mapping, V value)
     {
         U key = null;

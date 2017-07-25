@@ -6,6 +6,7 @@ import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
+import wres.util.Internal;
 import wres.util.Strings;
 
 import java.util.List;
@@ -15,10 +16,12 @@ import java.util.List;
  * 
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public class ForecastSaver extends WRESRunnable
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ForecastSaver.class);
 
+    @Internal(exclusivePackage = "wres.io")
 	public ForecastSaver(String filepath, DataSourceConfig dataSourceConfig, List<Conditions.Feature> specifiedFeatures)
     {
         this.dataSourceConfig = dataSourceConfig;

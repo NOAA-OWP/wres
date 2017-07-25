@@ -269,12 +269,11 @@ public final class Database {
                                                              CONNECTION_POOL.getMaxPoolSize(),
                                                              SystemSettings.poolObjectLifespan(),
                                                              TimeUnit.MILLISECONDS,
-                                                             //new LinkedBlockingQueue<>(1200)
 															 new ArrayBlockingQueue<>(1200)
 		);
 
 		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-		return executor;// Executors.newFixedThreadPool(CONNECTION_POOL.getMaxPoolSize());
+		return executor;
 	}
 
 	public static void completeAllIngestTasks()
@@ -648,6 +647,73 @@ public final class Database {
 		results = statement.executeQuery(query);
         return results; 
     }
+
+    public static void clean() throws SQLException {
+		StringBuilder builder = new StringBuilder();
+
+		Connection connection = null;
+		ResultSet results = null;
+
+		builder.append("SELECT 'DROP TABLE IF EXISTS '||n.nspname||'.'||c.relname||' CASCADE;'").append(NEWLINE);
+		builder.append("FROM pg_catalog.pg_class c").append(NEWLINE);
+		builder.append("INNER JOIN pg_catalog.pg_namespace n").append(NEWLINE);
+		builder.append("    ON N.oid = C.relnamespace").append(NEWLINE);
+		builder.append("WHERE relchecks > 0").append(NEWLINE);
+		builder.append("    AND nspname = 'wres' OR nspname = 'partitions'").append(NEWLINE);
+		builder.append("    AND relkind = 'r';");
+
+		try {
+			connection = Database.getConnection();
+			results = Database.getResults(connection, builder.toString());
+
+			builder = new StringBuilder();
+
+			while (results.next()) {
+				builder.append(results.getString(1)).append(NEWLINE);
+			}
+		}
+		catch (final SQLException e) {
+			LOGGER.error(Strings.getStackTrace(e));
+			throw e;
+		}
+		finally
+		{
+			if (results != null)
+			{
+				try {
+					results.close();
+				}
+				catch (SQLException e) {
+					LOGGER.error(Strings.getStackTrace(e));
+				}
+			}
+
+			if (connection != null)
+			{
+				Database.returnConnection(connection);
+			}
+		}
+
+		builder.append("TRUNCATE wres.ForecastSource;").append(NEWLINE);
+		builder.append("TRUNCATE wres.ForecastValue;").append(NEWLINE);
+		builder.append("TRUNCATE wres.Observation;").append(NEWLINE);
+		builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(NEWLINE);
+		builder.append("TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;").append(NEWLINE);
+		builder.append("TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;").append(NEWLINE);
+		builder.append("TRUNCATE wres.Variable RESTART IDENTITY CASCADE;").append(NEWLINE);
+
+		try {
+			Database.execute(builder.toString());
+		}
+		catch (final SQLException e) {
+			LOGGER.error("WRES data could not be removed from the database." + NEWLINE);
+			LOGGER.error("");
+			LOGGER.error(builder.toString());
+			LOGGER.error("");
+			LOGGER.error(Strings.getStackTrace(e));
+			throw e;
+		}
+	}
 
     public static ComboPooledDataSource getPool()
     {

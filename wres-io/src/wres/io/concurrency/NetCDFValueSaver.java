@@ -10,6 +10,7 @@ import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
 import wres.io.utilities.Database;
 import wres.util.Collections;
+import wres.util.Internal;
 import wres.util.ProgressMonitor;
 
 import java.io.IOException;
@@ -23,6 +24,7 @@ import java.util.concurrent.Future;
  * Executes the database copy operation for every value in the passed in string
  * @author Christopher Tubbs
  */
+@Internal(exclusivePackage = "wres.io")
 public class NetCDFValueSaver extends WRESRunnable
 {
 	private final static String DELIMITER = ",";
@@ -43,6 +45,7 @@ public class NetCDFValueSaver extends WRESRunnable
     private int rank = Integer.MIN_VALUE;
     private final Stack<Future<?>> operations = new Stack<>();
 
+    @Internal(exclusivePackage = "wres.io")
 	public NetCDFValueSaver(String fileName, String variableName, int variableID, Double invalidValue)
 	{
 		this.fileName = fileName;
