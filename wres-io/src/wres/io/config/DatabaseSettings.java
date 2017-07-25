@@ -19,7 +19,17 @@ final class DatabaseSettings {
 
 	// A mapping of database names to the name of the class for the 
 	private static final Map<String, String> DRIVER_MAPPING = createDriverMapping();
-	
+
+	private String url = "localhost";
+	private String username = "wres";
+	private String password = "wres";
+	private String port = "5432";
+	private String databaseName = "wres";
+	private String databaseType = "postgresql";
+	private String connection_string = null;
+	private int max_pool_size = 10;
+	private int max_idle_time = 30;
+
 	/**
 	 * Creates the mapping between the names of databases to the name of the classes that may connect to them
 	 * @return Map of database names to class names
@@ -31,12 +41,12 @@ final class DatabaseSettings {
 		mapping.put("postgresql", "org.postgresql.Driver");
 		return mapping;
 	}
-	
+
 	/**
 	 * Parses the settings for the database from an XMLReader
 	 * @param reader The reader containing XML data
 	 */
-	public DatabaseSettings(XMLStreamReader reader)
+	DatabaseSettings(XMLStreamReader reader)
 	{
 		try {
 			while (reader.hasNext())
@@ -54,13 +64,18 @@ final class DatabaseSettings {
 					parseElement(reader);
 					reader.next();
 				}
-				
 			}
 			testConnection();
 		} catch (Exception e) {
 		    throw new ExceptionInInitializerError(e);
-			//e.printStackTrace();
 		}
+	}
+
+	/**
+	 * For when there is something wrong with the file with database settings.
+	 */
+	DatabaseSettings()
+	{
 	}
 
 	private void testConnection() throws Exception {
@@ -82,7 +97,7 @@ final class DatabaseSettings {
             message += "3) The correct password for your user in the database" + System.lineSeparator();
             message += "4) An active connection to a network that may reach the requested database server" + System.lineSeparator() + System.lineSeparator();
             message += "The application will now exit.";
-            throw new Exception(message);
+            throw new SQLException(message);
         }
         catch (ClassNotFoundException classError)
         {
@@ -290,13 +305,4 @@ final class DatabaseSettings {
 		return string_rep;
 	}
 
-	private String url = null;
-	private String username = null;
-	private String password = "";
-	private String port = null;
-	private String databaseName = null;
-	private String databaseType = null;
-	private String connection_string = null;
-	private int max_pool_size = 10;
-	private int max_idle_time = 30;
 }
