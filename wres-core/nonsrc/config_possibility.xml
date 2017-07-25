@@ -3,13 +3,13 @@
   <inputs>
     <left label="My Desired Name For Graphics" type="observation">
       <type>observations</type>
-      <source format="PI-XML">file:///media/sf_userprofile/code/hefs_data/testinput/sharedinput/</source>
+      <source recursive="true" all="true" format="PI-XML">/media/sf_userprofile/hefs_data/resources/DRRC2SQIN.xml</source>
       <source recursive="false" format="netCDF">https://my.observations.com/bar/some.nc</source>
       <variable>QINE</variable>
     </left>
     <right label="My Name I want to see on charts">
       <type>ensemble forecasts</type>
-      <source recursive="false" format="PI-XML">file:///media/sf_userprofile/code/hefs_data/testinput/sharedinput/forecasts/1985010112_DRRC2_SQIN_case_gefs_climatology_export.xml</source>
+      <source format="PI-XML">/media/sf_userprofile/hefs_data/resources/forecasts/</source>
       <source recursive="false">https://my.data.com/foo</source>
       <variable>SQIN</variable>
       <rollingTimeAggregation>
@@ -41,8 +41,8 @@
     <metric label="ME">mean_error</metric>
     <metric>correlation_coefficient</metric>
     <metric>brier_skill_score</metric> <!-- has its own units -->
-    <destination type="numeric">file:///home/jesse/text_output"</destination>
-    <destination type="graphic"><path>file:///tmp/</path>
+    <destination type="numeric">/home/jesse/text_output"</destination>
+    <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->
     <graphical width="1920" height="1080">
       <plotType>LEAD_THRESHOLD</plotType>
