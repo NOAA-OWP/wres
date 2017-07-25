@@ -44,6 +44,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.metric.*;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
@@ -137,6 +138,15 @@ public class Control implements Function<String[], Integer>
         for (ProjectConfigPlus projectConfigPlus : projectConfiggies)
         {
             ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+            // Need to ingest first.
+            boolean ingestResult = Operations.ingest(projectConfig);
+
+            if (!ingestResult)
+            {
+                LOGGER.warn("Ingest did not complete smoothly. Aborting.");
+                return null;
+            }
 
             List<Future<List<PairOfDoubleAndVectorOfDoubles>>> pairs = new ArrayList<>();
 
@@ -252,7 +262,7 @@ public class Control implements Function<String[], Integer>
                             "scalarOutputTemplate.xml",
                             graphicsString);
 
-                    Path outputImage = Paths.get(new URI(dest.getPath() + e.getKey().getFirstKey() + "_output.png"));
+                    Path outputImage = Paths.get(dest.getPath() + e.getKey().getFirstKey() + "_output.png");
 
                     if (LOGGER.isWarnEnabled() && Files.exists(outputImage))
                     {
@@ -280,7 +290,7 @@ public class Control implements Function<String[], Integer>
                                                        height);
                 }
             }
-            catch (ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException | URISyntaxException e)
+            catch (ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
             {
                 LOGGER.error("Could not generate plots:", e);
                 return null;
