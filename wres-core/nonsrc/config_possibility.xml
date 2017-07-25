@@ -23,7 +23,7 @@
     </baseline>
   </inputs>
   <conditions> <!-- aka filters -->
-    <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/> <!-- optional, default all -->
+<!--    <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>--> <!-- optional, default all -->
     <feature>
         <location lid="DRRC2" name="DOLORES - RICO, BLO"/>
     </feature>
@@ -46,12 +46,7 @@
     <!--Optional:-->
     <graphical width="1920" height="1080">
       <plotType>LEAD_THRESHOLD</plotType>
-      <!--Optional:-->
-      <config>
-        <!--You may enter ANY elements at this point-->
-        <AnyElement/>
-      </config>
-    </graphical>
+      </graphical>
     </destination>
   </outputs>
 </project>

@@ -2,6 +2,7 @@ package wres;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -251,7 +252,15 @@ public class Control implements Function<String[], Integer>
                             "scalarOutputTemplate.xml",
                             graphicsString);
 
-                    File outputImageFile = new File(dest.getPath() + "_" + e.getKey().getFirstKey() + "_output.png");
+                    Path outputImage = Paths.get(new URI(dest.getPath() + e.getKey().getFirstKey() + "_output.png"));
+
+                    if (LOGGER.isWarnEnabled() && Files.exists(outputImage))
+                    {
+                        LOGGER.warn("File {} already existed and is being overwritten.",
+                                    outputImage);
+                    }
+
+                    File outputImageFile = outputImage.toFile();
 
                     int width = SystemSettings.getDefaultChartWidth();
                     int height = SystemSettings.getDefaultChartHeight();
@@ -262,7 +271,7 @@ public class Control implements Function<String[], Integer>
                     }
                     if (dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
                     {
-                        width = dest.getGraphical().getHeight();
+                        height = dest.getGraphical().getHeight();
                     }
 
                     ChartTools.generateOutputImageFile(outputImageFile,
@@ -271,7 +280,7 @@ public class Control implements Function<String[], Integer>
                                                        height);
                 }
             }
-            catch (ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+            catch (ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException | URISyntaxException e)
             {
                 LOGGER.error("Could not generate plots:", e);
                 return null;
