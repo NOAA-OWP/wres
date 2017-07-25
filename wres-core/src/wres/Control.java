@@ -3,14 +3,10 @@ package wres;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.SQLException;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -18,7 +14,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -84,8 +79,6 @@ public class Control implements Function<String[], Integer>
     }
 
     private static final String NEWLINE = System.lineSeparator();
-
-    private static final String SQL_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     /**
      * Processes *existing* pairs non-lazily (lacking specification for ingest). Creates two execution queues for pair
@@ -387,26 +380,6 @@ public class Control implements Function<String[], Integer>
             }
         }
         return projectConfiggies;
-    }
-
-    private class FindXmlFiles extends SimpleFileVisitor<Path>
-    {
-        private List<Path> files = new ArrayList<>();
-
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-        {
-            if (Files.isReadable(file))
-            {
-                files.add(file);
-            }
-            return FileVisitResult.CONTINUE;
-        }
-
-        public List<Path> getFiles()
-        {
-            return Collections.unmodifiableList(new ArrayList<>(files));
-        }
     }
 
     /**
