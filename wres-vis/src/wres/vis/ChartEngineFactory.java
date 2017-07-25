@@ -1,5 +1,6 @@
 package wres.vis;
 
+import java.util.HashMap;
 import java.util.Objects;
 
 import org.jfree.chart.JFreeChart;
@@ -22,12 +23,34 @@ import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 
 /**
- * Factory to use in order to construct a wres-vis chart.  
+ * Factory to use in order to construct a wres-vis chart.
+ * 
  * @author Hank.Herr
- *
  */
 public abstract class ChartEngineFactory
 {
+
+    /**
+     * Maintains information about the different plot types, including defaults and expected classes.
+     */
+    //TODO I have put this in place in case it comes in handy, later.  However, its uncelar to me that
+    //this will be needed.  Until such time (i.e., when Jesse asks for it), I'm going to halt development
+    //of this map.
+    private static HashMap<VisualizationPlotType, PlotTypeInformation> plotTypeInfoMap = new HashMap<>();
+    static
+    {
+        plotTypeInfoMap.put(VisualizationPlotType.LEAD_THRESHOLD,
+                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                    ScalarOutput.class,
+                                                    "scalarOutputTemplate.xml"));
+        plotTypeInfoMap.put(VisualizationPlotType.THRESHOLD_LEAD,
+                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                    ScalarOutput.class,
+                                                    "scalarOutputTemplate.xml"));
+        plotTypeInfoMap.put(VisualizationPlotType.SINGLE_VALUED_PAIRS,
+                            new PlotTypeInformation(SingleValuedPairs.class, null, "singleValuedPairsTemplate.xml"));
+    }
+
     /**
      * Presently valid variables includes only lead time and threshold.
      * 
@@ -161,5 +184,39 @@ public abstract class ChartEngineFactory
                                                                override);
 
         return engine;
+    }
+
+    /**
+     * Stores information about each {@link VisualizationPlotType} necessary to validation user parameters.
+     * 
+     * @author hank.herr
+     */
+    public static class PlotTypeInformation
+    {
+        private final Class expectedPlotDataClass;
+        private final Class dataGenericType;
+        private final String defaultTemplateName;
+
+        public PlotTypeInformation(final Class expectedPlotDataClass, final Class dataGenericType, final String defaultTemplateName)
+        {
+            this.expectedPlotDataClass = expectedPlotDataClass;
+            this.dataGenericType = dataGenericType;
+            this.defaultTemplateName = defaultTemplateName;
+        }
+
+        public Class getExpectedPlotDataClass()
+        {
+            return expectedPlotDataClass;
+        }
+
+        public Class getDataGenericType()
+        {
+            return dataGenericType;
+        }
+
+        public String getDefaultTemplateName()
+        {
+            return defaultTemplateName;
+        }
     }
 }
