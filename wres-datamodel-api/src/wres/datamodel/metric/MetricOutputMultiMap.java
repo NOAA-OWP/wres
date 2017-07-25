@@ -1,11 +1,15 @@
 package wres.datamodel.metric;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**
- * A map of {@link MetricOutputMapByLeadThreshold} stored by metric identifier. A builder is included to support
- * construction on-the-fly from inputs of {@link MetricOutputMapByMetric}.
+ * A map of {@link MetricOutputMapByLeadThreshold} stored by metric identifier. Implements the same read-only API as the
+ * {@link Map}. However, for an immutable implementation, changes in the returned values are not backed by this map. A
+ * builder is included to support construction on-the-fly from inputs of {@link MetricOutputMapByMetric}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -14,48 +18,6 @@ import java.util.function.BiConsumer;
 
 public interface MetricOutputMultiMap<T extends MetricOutput<?>>
 {
-
-    /**
-     * Returns a builder.
-     * 
-     * @return a builder
-     */
-
-    Builder<T> builder();
-
-    /**
-     * Returns a {@link MetricOutputMap} corresponding to the input identifiers or null
-     * 
-     * @param metricID the metric identifier
-     * @param componentID the metric component identifier
-     * @return the mapping or null
-     */
-
-    MetricOutputMapByLeadThreshold<T> get(MetricConstants metricID, MetricConstants componentID);
-
-    /**
-     * Returns a view of the keys in the map for iteration.
-     * 
-     * @return a view of the keys
-     */
-
-    Set<MapBiKey<MetricConstants, MetricConstants>> keySet();
-
-    /**
-     * Consume each pair in the map.
-     * 
-     * @param consumer the consumer
-     */
-
-    void forEach(BiConsumer<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<T>> consumer);
-
-    /**
-     * Returns the number of element in the map.
-     * 
-     * @return the size of the mapping
-     */
-
-    int size();
 
     /**
      * Returns a {@link MetricOutputMap} corresponding to the input identifiers or null
@@ -81,6 +43,99 @@ public interface MetricOutputMultiMap<T extends MetricOutput<?>>
     {
         return get(metricID, MetricConstants.MAIN);
     }
+
+    /**
+     * Returns true if the map is empty, false otherwise.
+     * 
+     * @return true if the map is empty, false otherwise
+     */
+
+    default boolean isEmpty()
+    {
+        return size() > 0;
+    }
+
+    /**
+     * Consume each pair in the map.
+     * 
+     * @param consumer the consumer
+     */
+
+    default void forEach(BiConsumer<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<T>> consumer)
+    {
+        for(Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<T>> entry: entrySet())
+        {
+            consumer.accept(entry.getKey(), entry.getValue());
+        }
+    }
+
+    /**
+     * Returns a builder.
+     * 
+     * @return a builder
+     */
+
+    Builder<T> builder();
+
+    /**
+     * Returns a {@link MetricOutputMap} corresponding to the input identifiers or null
+     * 
+     * @param metricID the metric identifier
+     * @param componentID the metric component identifier
+     * @return the mapping or null
+     */
+
+    MetricOutputMapByLeadThreshold<T> get(MetricConstants metricID, MetricConstants componentID);
+
+    /**
+     * Returns true if the mapping contains the specified key, false otherwise.
+     * 
+     * @param key the key
+     * @return true if the map contains the key, false otherwise
+     */
+
+    boolean containsKey(MapBiKey<MetricConstants, MetricConstants> key);
+
+    /**
+     * Returns true if the mapping contains the specified value, false otherwise.
+     * 
+     * @param value the value
+     * @return true if the map contains the value, false otherwise
+     */
+
+    boolean containsValue(MetricOutputMapByLeadThreshold<T> value);
+
+    /**
+     * Returns a collection view of the values in the map.
+     * 
+     * @return a collection view of the values
+     */
+
+    Collection<MetricOutputMapByLeadThreshold<T>> values();
+
+    /**
+     * Returns a view of the keys in the map for iteration.
+     * 
+     * @return a view of the keys
+     */
+
+    Set<MapBiKey<MetricConstants, MetricConstants>> keySet();
+
+    /**
+     * Returns a view of the entries in the map for iteration.
+     * 
+     * @return a view of the map entries
+     */
+
+    Set<Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<T>>> entrySet();
+
+    /**
+     * Returns the number of element in the map.
+     * 
+     * @return the size of the mapping
+     */
+
+    int size();
 
     /**
      * A builder.

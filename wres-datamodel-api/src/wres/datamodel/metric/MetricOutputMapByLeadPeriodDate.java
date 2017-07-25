@@ -21,7 +21,8 @@ package wres.datamodel.metric;
  * @since 0.1
  */
 
-public interface MetricOutputMapByLeadPeriodDate<T extends MetricOutput<?>>
+public interface MetricOutputMapByLeadPeriodDate
+//<T extends MetricOutput<?>>
 //extends MetricOutputMapWithTriKey<LeadPeriod, Integer, ZonedDateTime, T>
 {
 
