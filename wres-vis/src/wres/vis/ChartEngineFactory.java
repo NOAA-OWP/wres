@@ -33,6 +33,9 @@ public abstract class ChartEngineFactory
     /**
      * Maintains information about the different plot types, including defaults and expected classes.
      */
+    //TODO I have put this in place in case it comes in handy, later.  However, its uncelar to me that
+    //this will be needed.  Until such time (i.e., when Jesse asks for it), I'm going to halt development
+    //of this map.
     private static HashMap<VisualizationPlotType, PlotTypeInformation> plotTypeInfoMap = new HashMap<>();
     static
     {
@@ -194,7 +197,7 @@ public abstract class ChartEngineFactory
         private final Class dataGenericType;
         private final String defaultTemplateName;
 
-        public PlotTypeInformation(Class expectedPlotDataClass, Class dataGenericType, String defaultTemplateName)
+        public PlotTypeInformation(final Class expectedPlotDataClass, final Class dataGenericType, final String defaultTemplateName)
         {
             this.expectedPlotDataClass = expectedPlotDataClass;
             this.dataGenericType = dataGenericType;
