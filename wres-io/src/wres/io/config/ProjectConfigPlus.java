@@ -45,6 +45,7 @@ public class ProjectConfigPlus
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectConfigPlus.class);
 
+    private final Path path;
     private final ProjectConfig projectConfig;
     private final Map<DestinationConfig, String> graphicsStrings;
     private final List<ValidationEvent> validationEvents;
@@ -52,14 +53,21 @@ public class ProjectConfigPlus
     /** Used to find the end of the graphics custom configuration */
     private static final String GFX_END_TAG = "</config>";
 
-    private ProjectConfigPlus(ProjectConfig projectConfig,
+    private ProjectConfigPlus(Path path,
+                              ProjectConfig projectConfig,
                               Map<DestinationConfig, String> graphicsStrings,
                               List<ValidationEvent> validationEvents)
     {
+        this.path = path;
         this.projectConfig = projectConfig;
         this.graphicsStrings = Collections.unmodifiableMap(graphicsStrings);
         List<ValidationEvent> copiedList = new ArrayList<>(validationEvents);
         this.validationEvents = Collections.unmodifiableList(copiedList);
+    }
+
+    public Path getPath()
+    {
+        return this.path;
     }
 
     public ProjectConfig getProjectConfig()
@@ -90,7 +98,7 @@ public class ProjectConfigPlus
     public static ProjectConfigPlus from(Path path) throws IOException
     {
         List<ValidationEvent> events = new ArrayList<>();
-        class ValidationEventHandler implements javax.xml.bind.ValidationEventHandler
+        class ProjValidationEventHandler implements ValidationEventHandler
         {
             @Override
             public boolean handleEvent(final ValidationEvent validationEvent)
@@ -107,7 +115,7 @@ public class ProjectConfigPlus
             Source xmlSource = new StreamSource(xmlFile);
             JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
             Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-            jaxbUnmarshaller.setEventHandler(new ValidationEventHandler());
+            jaxbUnmarshaller.setEventHandler(new ProjValidationEventHandler());
             final JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
             projectConfig = wrappedConfig.getValue();
 
@@ -194,6 +202,6 @@ public class ProjectConfigPlus
             }
         }
 
-        return new ProjectConfigPlus(projectConfig, visConfigs, events);
+        return new ProjectConfigPlus(path, projectConfig, visConfigs, events);
     }
 }
