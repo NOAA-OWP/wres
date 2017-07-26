@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 /**
@@ -36,5 +37,52 @@ public class SafeVectorOfDoubles implements VectorOfDoubles
     public int size()
     {
         return doubles.length;
+    }
+
+    @Override public int compareTo(VectorOfDoubles other)
+    {
+        double[] otherDoubles = other.getDoubles();
+        return compareDoubleArray(this.doubles, otherDoubles);
+    }
+
+    /**
+     * Consistent comparison of double arrays, first checks count of elements,
+     * next goes through values.
+     *
+     * If first has fewer values, return -1, if first has more values, return 1.
+     *
+     * If value count is equal, go through in order until an element is less
+     * or greater than another. If all values are equal, return 0.
+     *
+     * @param first
+     * @param second
+     * @return -1 if first is less than second, 0 if equal, 1 otherwise.
+     */
+    public static int compareDoubleArray(double[] first, double[] second)
+    {
+        // this one has fewer elements
+        if (first.length < second.length)
+        {
+            return -1;
+        }
+        // this one has more elements
+        else if (first.length > second.length)
+        {
+            return 1;
+        }
+        // compare values until we diverge
+        else // assumption here is lengths are equal
+        {
+            for (int i = 0; i < first.length; i++)
+            {
+                if (first[i] != second[i])
+                {
+                    return Double.compare(first[i],
+                            second[i]);
+                }
+            }
+            // all values were equal
+            return 0;
+        }
     }
 }
