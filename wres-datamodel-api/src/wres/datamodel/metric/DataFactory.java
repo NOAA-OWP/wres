@@ -379,7 +379,7 @@ public interface DataFactory
     MatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta);
 
     /**
-     * Returns a {@link MapBiKey} to map a {@link MetricOutput} by forecast lead time and {@link Threshold}.
+     * Returns a {@link MapBiKey} to map a {@link MetricOutput} by two elementary keys.
      * 
      * @param <S> the type of the first key
      * @param <T> the type of the second key

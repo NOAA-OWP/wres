@@ -114,6 +114,12 @@ public enum MetricConstants
     RELATIVE_OPERATING_CHARACTERISTIC,
     
     /**
+     * Identifier for the Reliability Diagram.
+     */
+
+    RELIABILITY_DIAGRAM,    
+    
+    /**
      * Identifier for a Root Mean Square Error.
      */
 
@@ -201,6 +207,17 @@ public enum MetricConstants
      * Identifier for the sample size component of a metric.
      */
 
-    SAMPLE_SIZE
+    SAMPLE_SIZE,
+    
+    /**
+     * Identifier for a forecast probability.
+     */
 
+    FORECAST_PROBABILITY,
+    
+    /**
+     * Identifier for the conditional observed probability of an event, given the forecast probability. 
+     */
+    
+    OBSERVED_GIVEN_FORECAST_PROBABILITY
 }
