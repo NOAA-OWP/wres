@@ -118,10 +118,14 @@ public abstract class ChartEngineFactory
 
         //Process override parameters.
         ChartDrawingParameters override = null;
-        if(overrideParametersStr != null)
+        if(overrideParametersStr != null)//TRIM ONLY IF NOT NULL!
         {
-            override = new ChartDrawingParameters();
-            XMLTools.readXMLFromString(overrideParametersStr, override);
+            final String usedStr = overrideParametersStr.trim();
+            if(!usedStr.isEmpty())
+            {
+                override = new ChartDrawingParameters();
+                XMLTools.readXMLFromString(usedStr, override);
+            }
         }
 
         //Build the ChartEngine instance.
@@ -171,10 +175,14 @@ public abstract class ChartEngineFactory
 
         //Process override parameters.
         ChartDrawingParameters override = null;
-        if(overrideParametersStr != null)
+        if(overrideParametersStr != null)//TRIM ONLY IF NOT NULL!
         {
-            override = new ChartDrawingParameters();
-            XMLTools.readXMLFromString(overrideParametersStr, override);
+            final String usedStr = overrideParametersStr.trim();
+            if(!usedStr.isEmpty())
+            {
+                override = new ChartDrawingParameters();
+                XMLTools.readXMLFromString(usedStr, override);
+            }
         }
 
         //Build the ChartEngine instance.
@@ -197,7 +205,9 @@ public abstract class ChartEngineFactory
         private final Class dataGenericType;
         private final String defaultTemplateName;
 
-        public PlotTypeInformation(final Class expectedPlotDataClass, final Class dataGenericType, final String defaultTemplateName)
+        public PlotTypeInformation(final Class expectedPlotDataClass,
+                                   final Class dataGenericType,
+                                   final String defaultTemplateName)
         {
             this.expectedPlotDataClass = expectedPlotDataClass;
             this.dataGenericType = dataGenericType;
