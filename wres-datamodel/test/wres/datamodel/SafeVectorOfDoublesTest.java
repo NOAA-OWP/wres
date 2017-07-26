@@ -55,4 +55,14 @@ public class SafeVectorOfDoublesTest
         assertTrue("Expect a vec to equal itself",
                    vec.equals(vec));
     }
+
+    @Test
+    public void differentTypeNotEqual()
+    {
+        double[] doubles = {1.0, 2.0};
+        VectorOfDoubles vec = SafeVectorOfDoubles.of(doubles);
+        Boolean thisIsABoolean = true;
+        assertFalse("Expect a Boolean to not equal an array",
+                    vec.equals(thisIsABoolean));
+    }
 }

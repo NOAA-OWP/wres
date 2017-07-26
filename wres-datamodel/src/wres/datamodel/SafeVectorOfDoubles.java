@@ -90,11 +90,7 @@ public class SafeVectorOfDoubles implements VectorOfDoubles
     @Override
     public boolean equals(Object other)
     {
-        if (this.doubles == other)
-        {
-            return true;
-        }
-        else if (other instanceof VectorOfDoubles)
+        if (other instanceof VectorOfDoubles)
         {
             VectorOfDoubles otherVec = (VectorOfDoubles) other;
             return 0 == compareDoubleArray(this.getDoubles(), otherVec.getDoubles());
