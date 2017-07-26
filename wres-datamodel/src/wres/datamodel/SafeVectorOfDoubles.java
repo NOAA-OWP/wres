@@ -42,7 +42,7 @@ public class SafeVectorOfDoubles implements VectorOfDoubles
     @Override public int compareTo(VectorOfDoubles other)
     {
         double[] otherDoubles = other.getDoubles();
-        return compareDoubleArray(this.doubles, otherDoubles);
+        return compareDoubleArray(this.getDoubles(), otherDoubles);
     }
 
     /**
@@ -58,7 +58,8 @@ public class SafeVectorOfDoubles implements VectorOfDoubles
      * @param second
      * @return -1 if first is less than second, 0 if equal, 1 otherwise.
      */
-    public static int compareDoubleArray(double[] first, double[] second)
+    public static int compareDoubleArray(final double[] first,
+                                         final double[] second)
     {
         // this one has fewer elements
         if (first.length < second.length)
@@ -75,14 +76,38 @@ public class SafeVectorOfDoubles implements VectorOfDoubles
         {
             for (int i = 0; i < first.length; i++)
             {
-                if (first[i] != second[i])
+                int safeComparisonResult = Double.compare(first[i], second[i]);
+                if (safeComparisonResult != 0)
                 {
-                    return Double.compare(first[i],
-                            second[i]);
+                    return safeComparisonResult;
                 }
             }
             // all values were equal
             return 0;
         }
+    }
+
+    @Override
+    public boolean equals(Object other)
+    {
+        if (this.doubles == other)
+        {
+            return true;
+        }
+        else if (other instanceof VectorOfDoubles)
+        {
+            VectorOfDoubles otherVec = (VectorOfDoubles) other;
+            return 0 == compareDoubleArray(this.getDoubles(), otherVec.getDoubles());
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Arrays.hashCode(this.getDoubles());
     }
 }
