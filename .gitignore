@@ -31,3 +31,8 @@ out
 *.hprof
 *.hprof.txt
 *.iml
+
+# sundry
+/*.xml
+/resources
+/testinput/sharedinput/*
