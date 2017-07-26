@@ -107,4 +107,14 @@ public class SafePairOfDoubleAndVectorOfDoublesTest
                    firstPair.hashCode() == firstPair.hashCode());
     }
 
+    @Test
+    public void fancyPairNotEqualToDifferentType()
+    {
+        double[] theArr = {1.0, 2.0};
+        PairOfDoubleAndVectorOfDoubles thePair =
+                SafePairOfDoubleAndVectorOfDoubles.of(3.0, theArr);
+        Integer notAPair = 4;
+        assertFalse("Expect a fancyPair to not equal a non-fancyPair",
+                    thePair.equals(notAPair));
+    }
 }
