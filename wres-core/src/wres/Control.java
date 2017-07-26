@@ -38,6 +38,8 @@ import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
+import javax.xml.bind.ValidationEvent;
+
 /**
  * Another way to execute a project.
  */
@@ -93,13 +95,32 @@ public class Control implements Function<String[], Integer>
 
         if (projectConfiggies.isEmpty())
         {
-            LOGGER.error("Validate project configuration files and place them in the command line like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml");
+            LOGGER.error("Please correct project configuration files (see above) and pass them in the command line like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml");
             return null;
         }
         else
         {
-            LOGGER.info("Found {} valid projects, beginning execution", projectConfiggies.size());
+            LOGGER.info("Successfully unmarshalled {} project configurations, validating further...", projectConfiggies.size());
         }
+
+        boolean validationsPassed = true;
+
+        // Validate all projects, not stopping until after getting through all.
+        for (ProjectConfigPlus projectConfigPlus : projectConfiggies)
+        {
+            if (!isProjectValid(projectConfigPlus))
+            {
+                validationsPassed = false;
+            }
+        }
+
+        if (!validationsPassed)
+        {
+            return null;
+        }
+
+        LOGGER.info("Successfully read and validated {} project configuration(s). Beginning execution...",
+                    projectConfiggies.size());
 
         // Create a queue of work: displaying or processing fetched pairs.
         int maxProcessThreads = Control.MAX_THREADS;
@@ -110,8 +131,10 @@ public class Control implements Function<String[], Integer>
         //Sink for the results: the results are added incrementally to an immutable store via a builder
         MetricOutputMultiMap.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
 
+
         for (ProjectConfigPlus projectConfigPlus : projectConfiggies)
         {
+
             ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
             // Need to ingest first.
@@ -445,5 +468,47 @@ public class Control implements Function<String[], Integer>
             super(s, t);
         }
     }
-}
 
+    /**
+     * Quick validation of the project configuration, will emit detailed
+     * information to the user regarding issues about the configuration.
+     *
+     * Strict for now, i.e. return false even on minor xml problems.
+     *
+     * Does not return on first issue, tries to inform the user of all issues
+     * before returning.
+     *
+     * @param projectConfigPlus
+     * @return true if no issues were detected, false otherwise
+     */
+    public static boolean isProjectValid(ProjectConfigPlus projectConfigPlus)
+    {
+        // Assume valid until demonstrated otherwise
+        boolean result = true;
+
+        for (ValidationEvent ve : projectConfigPlus.getValidationEvents())
+        {
+            if (LOGGER.isWarnEnabled())
+            {
+                if (ve.getLocator() != null)
+                {
+                    LOGGER.warn(
+                            "In file {}, near line {} and column {}, WRES found a small issue with project configuration. The parser said:",
+                            projectConfigPlus.getPath(),
+                            ve.getLocator().getLineNumber(),
+                            ve.getLocator().getColumnNumber(),
+                            ve.getLinkedException());
+                }
+                else
+                {
+                    LOGGER.warn("In file {}, WRES found a small issue with project configuration. The parser said:",
+                            projectConfigPlus.getPath(),
+                            ve.getLinkedException());
+                }
+            }
+            // Any validation event means we fail.
+            result = false;
+        }
+        return result;
+    }
+}
