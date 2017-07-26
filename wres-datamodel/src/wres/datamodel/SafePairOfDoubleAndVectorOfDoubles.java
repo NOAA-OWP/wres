@@ -1,5 +1,7 @@
 package wres.datamodel;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
@@ -73,5 +75,26 @@ implements PairOfDoubleAndVectorOfDoubles
         {
             return 1;
         }
+    }
+
+    @Override
+    public boolean equals(Object other)
+    {
+        if (other instanceof PairOfDoubleAndVectorOfDoubles)
+        {
+            PairOfDoubleAndVectorOfDoubles otherPair =
+                    (PairOfDoubleAndVectorOfDoubles) other;
+            return 0 == this.compareTo(otherPair);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(this.getItemOne(), Arrays.hashCode(this.getItemTwo()));
     }
 }
