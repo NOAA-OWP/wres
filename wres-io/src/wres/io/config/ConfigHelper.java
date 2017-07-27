@@ -16,6 +16,7 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -195,7 +196,7 @@ public class ConfigHelper
         File xmlFile = new File(path);
         if (!xmlFile.exists())
         {
-            throw new IOException("A project configuration file does not exist at " + path);
+            throw new FileNotFoundException("A project configuration file does not exist at " + path);
         }
         Source xmlSource = new StreamSource(xmlFile);
         JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);

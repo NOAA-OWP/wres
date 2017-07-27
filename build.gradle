@@ -21,10 +21,13 @@ plugins
     id 'org.ajoberstar.grgit' version '1.7.2'
 }
 
-/* used by jacocoRootReport task */
 repositories
 {
     mavenCentral()
+    maven 
+    {
+        url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/"// 
+    }
 }
 
 
@@ -151,103 +154,6 @@ project(':wres-datamodel-api')
 	dependencies
     {
         testCompile 'junit:junit:4.12'
-    }
-}
-
-project(':wres-core')
-{
-    apply plugin: 'application'
-
-    mainClassName = 'Main'
-
-    applicationDefaultJvmArgs = ['-Xms1024m']
-
-    // Get the commit and date from the TOP for this project, it is outermost.
-    def gitCommit = grgit.head()
-    def gitCommitId = gitCommit.id
-    def gitCommitDate = gitCommit.getDate()
-    def gitIsClean = grgit.status().isClean()
-
-    version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
-    if (!gitIsClean)
-    {
-        version = version + '-dev'
-    }
-
-    dependencies
-    {
-        compile project(':utilities')
-        compile project(':wres-datamodel-api')
-        compile project(':wres-datamodel')
-        compile project(':wres-io')
-        compile project(':wres-metrics')
-        compile project(':wres-config')
-        compile project(':wres-vis')
-
-        compile 'org.slf4j:slf4j-api:1.7.25'
-
-        compile('edu.ucar:cdm:4.6.8')
-        {
-            // because we are getting a later version from diff group:
-            exclude group: 'c3p0', module: 'c3p0'
-            // because these shouldn't be on compile classpath:
-            exclude group: 'ch.qos.logback', module: 'logback-classic'
-            exclude group: 'ch.qos.logback', module: 'logback-core'
-        }
-
-        // to use native postgres copy, need this on compile, otherwise runtime
-        compile 'org.postgresql:postgresql:42.0.0'
-
-		// connection pooling:
-		compile 'com.mchange:c3p0:0.9.5.2'
-
-        runtime 'ch.qos.logback:logback-classic:1.2.3'
-
-        //JB @ 02/16/17
-        testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
-    }
-
-    // Allows this:
-    // gradlew run -PappArgs="['saveForecast','/path/to/file']"
-    run
-    {
-        if (project.hasProperty("appArgs"))
-        {
-            args Eval.me(appArgs)
-        }
-        // Allow profiling during run
-        //jvmArgs = ['-agentlib:hprof=cpu=samples,interval=5,depth=25']
-    }
-
-    // Default location in gradle is 'src/dist' but we want conf files that are
-    // outside the jar to be from the 'dist' directory.
-    distributions
-    {
-        main
-        {
-            contents
-            {
-                from
-                {
-                    // Note: to have files land in the distributed zip files,
-                    // must put inside lib directory inside below directory.
-                    // Must also add the new directory to classpath under
-                    // startScripts below. For each module that adds to dist,
-                    // add here for now until we can make it grab all of em.
-                    ['dist', '../wres-vis/dist']
-                }
-            }
-        }
-    }
-
-    // Add configuration files to the classpath when running via script
-    startScripts
-    {
-        // Note gradle in this context assumes lib directory precedes these
-        // files. To add more outsidejar directories, they need to be
-        // added to 'dist/lib' and then the directory name
-        // can be added below.
-        classpath += files('conf')
     }
 }
 
@@ -438,4 +344,126 @@ task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [su
     {
         executionData = files(executionData.findAll { it.exists() })
     }
+}
+
+
+
+
+
+apply plugin: 'application'
+
+mainClassName = 'Main'
+
+applicationDefaultJvmArgs = ['-Xms1024m']
+
+// Get the commit and date from the TOP for this project, it is outermost.
+def gitCommit = grgit.head()
+def gitCommitId = gitCommit.id
+def gitCommitDate = gitCommit.getDate()
+def gitIsClean = grgit.status().isClean()
+
+version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
+if (!gitIsClean)
+{
+    version = version + '-dev'
+}
+
+dependencies
+{
+    compile project(':utilities')
+    compile project(':wres-datamodel-api')
+    compile project(':wres-datamodel')
+    compile project(':wres-io')
+    compile project(':wres-metrics')
+    compile project(':wres-config')
+    compile project(':wres-vis')
+
+    compile 'org.slf4j:slf4j-api:1.7.25'
+
+    compile('edu.ucar:cdm:4.6.8')
+    {
+        // because we are getting a later version from diff group:
+        exclude group: 'c3p0', module: 'c3p0'
+        // because these shouldn't be on compile classpath:
+        exclude group: 'ch.qos.logback', module: 'logback-classic'
+        exclude group: 'ch.qos.logback', module: 'logback-core'
+    }
+
+    // to use native postgres copy, need this on compile, otherwise runtime
+    compile 'org.postgresql:postgresql:42.0.0'
+
+    // connection pooling:
+    compile 'com.mchange:c3p0:0.9.5.2'
+
+    runtime 'ch.qos.logback:logback-classic:1.2.3'
+
+    //JB @ 02/16/17
+    testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
+}
+
+sourceSets
+{
+    main
+    {
+        java
+        {
+            srcDirs = ['src', 'dist/lib/conf']
+        }
+
+        resources
+        {
+            srcDirs = ['nonsrc']
+        }
+    }
+
+    test
+    {
+        java
+        {
+            srcDirs = ['test']
+        }
+    }
+}
+
+// Allows this:
+// gradlew run -PappArgs="['saveForecast','/path/to/file']"
+run
+{
+    if (project.hasProperty("appArgs"))
+    {
+        args Eval.me(appArgs)
+    }
+    // Allow profiling during run
+    //jvmArgs = ['-agentlib:hprof=cpu=samples,interval=5,depth=25']
+}
+
+// Default location in gradle is 'src/dist' but we want conf files that are
+// outside the jar to be from the 'dist' directory.
+distributions
+{
+    main
+    {
+        contents
+        {
+            from
+            {
+                // Note: to have files land in the distributed zip files,
+                // must put inside lib directory inside below directory.
+                // Must also add the new directory to classpath under
+                // startScripts below. For each module that adds to dist,
+                // add here for now until we can make it grab all of em.
+                ['dist', '../wres-vis/dist']
+            }
+        }
+    }
+}
+
+// Add configuration files to the classpath when running via script
+startScripts
+{
+    // Note gradle in this context assumes lib directory precedes these
+    // files. To add more outsidejar directories, they need to be
+    // added to 'dist/lib' and then the directory name
+    // can be added below.
+    classpath += files('conf')
 }

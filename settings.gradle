@@ -1,2 +1,4 @@
-include 'utilities', 'wres-core', 'wres-datamodel-api', 'wres-datamodel', 'wres-io', 'wres-metrics', 'wres-vis', 'wres-config'
+include 'utilities', 'wres-datamodel-api', 'wres-datamodel', 'wres-io', 'wres-metrics', 'wres-vis', 'wres-config'
+rootProject.name = 'wres'
+
 

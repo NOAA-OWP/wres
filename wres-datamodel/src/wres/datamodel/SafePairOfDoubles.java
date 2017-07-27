@@ -1,5 +1,7 @@
 package wres.datamodel;
 
+import java.util.Objects;
+
 public class SafePairOfDoubles implements PairOfDoubles
 {
     private final double itemOne;
@@ -54,5 +56,25 @@ public class SafePairOfDoubles implements PairOfDoubles
         {
             return 1;
         }
+    }
+
+    @Override
+    public boolean equals(Object other)
+    {
+        if (other instanceof PairOfDoubles)
+        {
+            PairOfDoubles otherPair = (PairOfDoubles) other;
+            return 0 == this.compareTo(otherPair);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(itemOne, itemTwo);
     }
 }
