@@ -6,6 +6,6 @@ if [ $# -lt 3 ]; then
     echo ''
 else
     scripts/compile
-    cd SQL
+    cd wres-io/SQL
     ./BuildDatabase $1 $2 $3
 fi

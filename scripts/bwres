@@ -6,7 +6,7 @@ if [ $# -eq 0 ]; then
     echo ''
 else
     echo 'Building WRES...'
-    ../gradlew installDist javadoc
+    scripts/compile
     result=$?
     if [[ $result -eq 0 ]]
     then
