@@ -4,7 +4,7 @@ if [ $# -eq 0 ]; then
     echo ''
     echo 'usage: ./wres <prototype function name>'
     echo ''
-    build/install/wres-core/bin/wres-core commands
+    build/install/wres/bin/wres commands
 else
-    build/install/wres-core/bin/wres-core $@
+    build/install/wres/bin/wres $@
 fi
