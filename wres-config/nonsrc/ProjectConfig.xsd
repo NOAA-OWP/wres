@@ -175,7 +175,7 @@
 
     <!-- There is a mapping between these names and the enum in MetricConstants.
          For now, these two lists must be periodically synchronized manually.-->
-    <xs:simpleType name="metricConstant">
+    <xs:simpleType name="metricConfigName">
         <xs:restriction base="xs:string">
             <xs:enumeration value="BIAS_FRACTION" />
             <xs:enumeration value="BRIER_SCORE" />
@@ -224,7 +224,7 @@
         </xs:annotation>
 
         <xs:simpleContent>
-            <xs:extension base="metricConstant">
+            <xs:extension base="metricConfigName">
                 <xs:attribute name="label" type="xs:string" />
             </xs:extension>
         </xs:simpleContent>
