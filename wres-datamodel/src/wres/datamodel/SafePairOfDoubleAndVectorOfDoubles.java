@@ -1,5 +1,7 @@
 package wres.datamodel;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
@@ -62,30 +64,8 @@ implements PairOfDoubleAndVectorOfDoubles
         }
         else if (Double.compare(this.getItemOne(), other.getItemOne()) == 0)
         {
-            // this one has fewer elements
-            if (this.getItemTwo().length < other.getItemTwo().length)
-            {
-                return -1;
-            }
-            // this one has more elements
-            else if (this.getItemTwo().length > other.getItemTwo().length)
-            {
-                return 1;
-            }
-            // compare values until we diverge
-            else // assumption here is lengths are equal
-            {
-                for (int i = 0; i < this.getItemTwo().length; i++)
-                {
-                    if (this.getItemTwo()[i] != other.getItemTwo()[i])
-                    {
-                        return Double.compare(this.getItemTwo()[i],
-                                              other.getItemTwo()[i]);
-                    }
-                }
-                // all values were equal
-                return 0;
-            }
+            return SafeVectorOfDoubles.compareDoubleArray(this.getItemTwo(),
+                                                          other.getItemTwo());
         }
         else if (this.getItemOne() < other.getItemOne())
         {
@@ -95,5 +75,26 @@ implements PairOfDoubleAndVectorOfDoubles
         {
             return 1;
         }
+    }
+
+    @Override
+    public boolean equals(Object other)
+    {
+        if (other instanceof PairOfDoubleAndVectorOfDoubles)
+        {
+            PairOfDoubleAndVectorOfDoubles otherPair =
+                    (PairOfDoubleAndVectorOfDoubles) other;
+            return 0 == this.compareTo(otherPair);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(this.getItemOne(), Arrays.hashCode(this.getItemTwo()));
     }
 }

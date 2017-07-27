@@ -2,6 +2,7 @@ package wres.datamodel;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class SafePairOfDoublesTest
@@ -15,6 +16,12 @@ public class SafePairOfDoublesTest
                 firstPair.compareTo(secondPair) < 0);
         assertTrue("Expect second pair to be more than first pair",
                 secondPair.compareTo(firstPair) > 0);
+        assertFalse("Expect first pair to not equal second pair",
+                   firstPair.equals(secondPair));
+        assertFalse("Expect second pair to not equal first pair",
+                    secondPair.equals(firstPair));
+        assertTrue("Expect different pairs to have different hashCode",
+                   firstPair.hashCode() != secondPair.hashCode());
     }
 
     @Test
@@ -26,6 +33,12 @@ public class SafePairOfDoublesTest
                 firstPair.compareTo(secondPair) < 0);
         assertTrue("Expect second pair to be more than first pair",
                 secondPair.compareTo(firstPair) > 0);
+        assertFalse("Expect first pair to not equal second pair",
+                firstPair.equals(secondPair));
+        assertFalse("Expect second pair to not equal first pair",
+                secondPair.equals(firstPair));
+        assertTrue("Expect different pairs to have different hashCode",
+                firstPair.hashCode() != secondPair.hashCode());
     }
 
     @Test
@@ -34,5 +47,18 @@ public class SafePairOfDoublesTest
         PairOfDoubles firstPair = SafePairOfDoubles.of(1.0, 2.0);
         assertTrue("Expect a pair to equal itself",
                 firstPair.compareTo(firstPair) == 0);
+        assertTrue("Expect a pair to equal itself",
+                   firstPair.equals(firstPair));
+        assertTrue("Expect a pair's hashcode to be consistent",
+                   firstPair.hashCode() == firstPair.hashCode());
+    }
+
+    @Test
+    public void notEqualToAnotherType()
+    {
+        PairOfDoubles thePair = SafePairOfDoubles.of(1.0, 2.0);
+        Integer iAmAnInteger = 5;
+        assertFalse("Expect a pair to not equal another type",
+                    thePair.equals(iAmAnInteger));
     }
 }

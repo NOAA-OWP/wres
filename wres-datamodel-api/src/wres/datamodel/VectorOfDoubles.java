@@ -7,6 +7,7 @@ package wres.datamodel;
  * @author jesse
  */
 public interface VectorOfDoubles
+extends Comparable<VectorOfDoubles>
 {
     double[] getDoubles();
 

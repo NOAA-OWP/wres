@@ -116,14 +116,14 @@ final class SafeQuantileKey extends SafeThresholdKey implements Quantile
         if(o instanceof Quantile)
         {
             final Quantile q = (Quantile)o;
-            returnMe = Double.compare(probability,q.getThresholdProbability());
+            returnMe = Double.compare(q.getThresholdProbability(),probability);
             if(returnMe != 0)
             {
                 return returnMe;
             }
             if(hasBetweenCondition())
             {
-                returnMe = Double.compare(probabilityUpper,q.getThresholdUpperProbability());
+                returnMe = Double.compare(q.getThresholdUpperProbability(),probabilityUpper);
                 if(returnMe != 0)
                 {
                     return returnMe;
