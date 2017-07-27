@@ -1,6 +1,9 @@
 #!/bin/bash
 
-../gradlew clean
-../gradlew installDist
-rm -f build/resources/main/wresconfig.xml
-ln -s nonsrc/wresconfig.xml build/resources/main/wresconfig.xml
+./gradlew clean
+./gradlew installDist
+rm -f build/install/wres/lib/conf/wresconfig.xml
+ln  dist/lib/conf/wresconfig.xml build/install/wres/lib/conf/wresconfig.xml
+
+rm -f build/install/wres/lib/conf/logback.xml
+ln dist/lib/conf/logback.xml build/install/wres/lib/conf/logback.xml
