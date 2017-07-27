@@ -7,6 +7,8 @@ import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import wres.Control;
+import wres.config.generated.Conditions;
+import wres.config.generated.Coordinate;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.io.Operations;
@@ -470,7 +472,43 @@ public final class MainFunctions
                     LOGGER.info("The project name is: {}", projectName);
 
                     final ProjectConfig foundProject = ConfigHelper.read(projectName);// ProjectSettings.getProject(projectName);
-                    final Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairMapping = Operations.getPairs(foundProject);
+
+                    final Map<String, Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>>> pairMapping = new TreeMap<>();
+
+                    for (Conditions.Feature feature : foundProject.getConditions().getFeature())
+                    {
+                        String description = feature.toString();
+
+                        if (feature.getLocation() != null)
+                        {
+                            description = feature.getLocation().getLid();
+                        }
+                        else if (feature.getPoint() != null)
+                        {
+                            description = "(" + String.valueOf(feature.getPoint().getX()) + "," +
+                                    String.valueOf(feature.getPoint().getY()) + ")";
+                        }
+                        else if (feature.getPolygon() != null)
+                        {
+                            description = "[";
+
+                            for (Coordinate point : feature.getPolygon().getPoint())
+                            {
+                                description += "(" + String.valueOf(point.getX()) + "," +
+                                        String.valueOf(point.getY()) + ")";
+                            }
+
+                            description += "]";
+                        }
+                        else if (feature.getIndex() != null)
+                        {
+                            description = "X = " + String.valueOf(feature.getIndex().getX()) +
+                                    ", Y = " + String.valueOf(feature.getIndex().getY());
+                        }
+
+                        pairMapping.put(description, Operations.getPairs(foundProject, feature));
+                    }
+
 
                     final int printLimit = 100;
                     int printCount = 0;
@@ -479,29 +517,41 @@ public final class MainFunctions
 
                     LOGGER.info("");
 
-                    for (final Integer leadKey : pairMapping.keySet())
+                    for (final String locationDescription : pairMapping.keySet())
                     {
-                        LOGGER.info("\tLead Time: " + leadKey);
-                        for (final PairOfDoubleAndVectorOfDoubles pair : pairMapping.get(leadKey))
-                        {
-                            final String representation = "\t\t" + pair.toString().substring(0, Math.min(120, pair.toString().length()));
-                            LOGGER.info(representation);
-                            
-                            printCount++;
-                            
-                            if (printCount >= printLimit)
-                            {
-                                break;
+                        /*LOGGER.info("");
+                        LOGGER.info("Feature: {}", locationDescription);
+                        LOGGER.info("");*/
+                        for (final Integer leadKey : pairMapping.get(locationDescription).keySet()) {
+                            //LOGGER.info("\tLead Time: " + leadKey);
+
+                            List<PairOfDoubleAndVectorOfDoubles> pairs = pairMapping.get(locationDescription)
+                                                                                    .get(leadKey)
+                                                                                    .get();
+
+                            /*for (final PairOfDoubleAndVectorOfDoubles pair : pairs) {
+                                final String representation = "\t\t" + pair.toString()
+                                                                           .substring(0,
+                                                                                      Math.min(120,
+                                                                                               pair.toString().length()));
+                                LOGGER.info(representation);
+
+                                printCount++;
+
+                                if (printCount >= printLimit) {
+                                    break;
+                                }
                             }
+
+                            totalCount++;
+                            printCount = 0;
+
+                            if (totalCount >= totalLimit) {
+                                break;
+                            }*/
                         }
-                        
-                        totalCount++;
-                        printCount = 0;
-                        
-                        if (totalCount >= totalLimit)
-                        {
-                            break;
-                        }
+
+                        totalCount = 0;
                     }
 					result = SUCCESS;
                 }

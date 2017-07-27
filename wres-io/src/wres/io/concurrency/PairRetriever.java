@@ -2,6 +2,7 @@ package wres.io.concurrency;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metric.DataFactory;
@@ -26,9 +27,10 @@ public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVector
     private static final Logger LOGGER = LoggerFactory.getLogger(PairRetriever.class);
 
     @Internal(exclusivePackage = "wres.io")
-    public PairRetriever(ProjectConfig projectConfig, int progress)
+    public PairRetriever(ProjectConfig projectConfig, Conditions.Feature feature, int progress)
     {
         this.projectConfig = projectConfig;
+        this.feature = feature;
         this.progress = progress;
     }
 
@@ -43,7 +45,7 @@ public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVector
 
         try
         {
-            final String script = ScriptGenerator.generateGetPairData(this.projectConfig, this.progress);
+            final String script = ScriptGenerator.generateGetPairData(this.projectConfig, this.feature, this.progress);
             connection = Database.getConnection();
             resultingPairs = Database.getResults(connection, script);
 
@@ -75,6 +77,7 @@ public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVector
 
     private final int progress;
     private final ProjectConfig projectConfig;
+    private final Conditions.Feature feature;
 
     @Override
     protected String getTaskName () {

@@ -1,30 +1,13 @@
 package wres;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.config.generated.Conditions;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -37,6 +20,21 @@ import wres.io.Operations;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.vis.ChartEngineFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 /**
  * Another way to execute a project.
@@ -123,28 +121,27 @@ public class Control implements Function<String[], Integer>
                 return null;
             }
 
-            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> pairs;
+            Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> pairs = new TreeMap<>();
+
             // Ask the IO module for pairs
             try
             {
-                pairs = Operations.getPairs(projectConfig);
+                for (Conditions.Feature feature : projectConfig.getConditions().getFeature()) {
+                    // TODO: This will reassign features to the last feature in the list; each iteration, the pairs
+                    //  will need to somehow be passed to their respective metrics and have their output created
+                    pairs = Operations.getPairs(projectConfig, feature);
+                }
             }
-            catch (ExecutionException | SQLException e)
+            catch (SQLException e)
             {
                 LOGGER.error("While getting results", e);
-                return null;
-            }
-            catch (InterruptedException ie)
-            {
-                LOGGER.error("Interrupted while getting results", ie);
-                Thread.currentThread().interrupt();
                 return null;
             }
 
             List<Future<MetricOutputMapByMetric<ScalarOutput>>> futureMetrics = new ArrayList<>();
 
             // Queue up processing of fetched pairs.
-            for (Map.Entry<Integer, List<PairOfDoubleAndVectorOfDoubles>> pair : pairs.entrySet())
+            for (Map.Entry<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> pair : pairs.entrySet())
             {
                 // Here, using index in list to communicate the lead time.
                 // Another structure might be appropriate, for example,
@@ -152,10 +149,16 @@ public class Control implements Function<String[], Integer>
                 // wres.io.config.specification.MetricSpecification
                 // which uses a Map.
                 int leadTime = pair.getKey();
-                PairsByLeadProcessor processTask =
-                        new PairsByLeadProcessor(pair.getValue(),
-                                                 projectConfig,
-                                                 leadTime);
+                PairsByLeadProcessor processTask = null;
+                try {
+                    processTask = new PairsByLeadProcessor(pair.getValue().get(),
+                                                           projectConfig,
+                                                           leadTime);
+                }
+                catch (InterruptedException | ExecutionException e) {
+                    LOGGER.error("While preparing metrics", e);
+                    return null;
+                }
 
                 Future<MetricOutputMapByMetric<ScalarOutput>> futureMetric =
                         processPairExecutor.submit(processTask);

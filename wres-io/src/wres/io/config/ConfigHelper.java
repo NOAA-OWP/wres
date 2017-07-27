@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.config.generated.*;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.Variables;
 import wres.util.Collections;
 import wres.util.Strings;
 import wres.util.Time;
@@ -17,6 +18,7 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.InvalidPropertiesFormatException;
@@ -84,6 +86,13 @@ public class ConfigHelper
                                  currentLead).intValue();
     }
 
+    public static Integer getVariableID(DataSourceConfig dataSourceConfig) throws SQLException
+    {
+        return Variables.getVariableID(dataSourceConfig.getVariable().getValue(),
+                                       dataSourceConfig.getVariable().getUnit());
+    }
+
+
     /**
      *
      * @param config
@@ -110,22 +119,24 @@ public class ConfigHelper
 
     /**
      *
-     * @param projectConfig
-     * @param step
-     * @return
+     * @param projectConfig The configuration that controls how windows are calculated
+     * @param windowNumber The indicator of the window whose lead description needs.  In the simplest case, the first
+     *                     window could represent 'lead = 1' while the third 'lead = 3'. In more complicated cases,
+     *                     the first window could be '40 &gt; lead AND lead &ge; 1' and the second '80 &gt; lead AND lead &ge; 40'
+     * @return A description of what a window number means in terms of lead times
      * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
      */
-    public static String getLeadQualifier(ProjectConfig projectConfig, int step) throws InvalidPropertiesFormatException {
+    public static String getLeadQualifier(ProjectConfig projectConfig, int windowNumber) throws InvalidPropertiesFormatException {
         String qualifier;
 
         if (projectConfig.getPair().getTimeAggregation() != null && projectConfig.getPair().getTimeAggregation().getPeriod().get(0) > 1) {
             int period = projectConfig.getPair().getTimeAggregation().getPeriod().get(0);
             Double range = Time.unitsToHours(projectConfig.getPair().getTimeAggregation().getUnit().value(), period);
-            qualifier = String.valueOf((int) (step * range)) + " > lead && lead >= " + String.valueOf((int) ((step - 1) * range));
+            qualifier = String.valueOf((int) (windowNumber * range)) + " > lead AND lead >= " + String.valueOf((int) ((windowNumber - 1) * range));
         }
         else
         {
-            qualifier = "lead = " + getLead(projectConfig, step);
+            qualifier = "lead = " + getLead(projectConfig, windowNumber);
         }
 
         return qualifier;
