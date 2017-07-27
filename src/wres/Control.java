@@ -26,7 +26,6 @@ import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
-import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -451,9 +450,7 @@ public class Control implements Function<String[], Integer>
             //Build an immutable collection of metrics, to be computed at each of several forecast lead times
             MetricFactory metricFactory = MetricFactory.getInstance(dataFactory);
             MetricCollection<SingleValuedPairs, ScalarOutput> collection =
-                    metricFactory.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
-                                                                 MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                 MetricConstants.ROOT_MEAN_SQUARE_ERROR);
+                    metricFactory.ofSingleValuedScalarCollection(projectConfig);
             //Compute sequentially (i.e. not in parallel)
             return collection.apply(input);
         }
