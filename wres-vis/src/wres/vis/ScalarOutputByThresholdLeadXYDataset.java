@@ -34,7 +34,7 @@ public class ScalarOutputByThresholdLeadXYDataset extends AbstractXYDataset
     private final List<String> legendNames = new ArrayList<>();
 
     /**
-     * Data sliced by series, i.e. one threshold per slice, where each slice contains all lead times for one score.
+     * Data sliced by series, i.e. one lead time per slice, where each slice contains all thresholds for one score.
      */
 
     private final transient List<MetricOutputMapByLeadThreshold<ScalarOutput>> data = new ArrayList<>();
@@ -52,6 +52,11 @@ public class ScalarOutputByThresholdLeadXYDataset extends AbstractXYDataset
             data.add(input.sliceByLead(key));
             legendNames.add(key.toString()+"h"); //Assumes WRES uses hours for lead times globally
         });
+        
+        data.get(0).forEach((key,value)->{
+            System.out.println(key.getSecondKey());
+        });
+        
     }
 
     /**
