@@ -513,7 +513,7 @@ public class Control implements Function<String[], Integer>
         }
 
         // validate graphics portion
-        result = isGraphicsPortionOfProjectValid(projectConfigPlus);
+        result = result && isGraphicsPortionOfProjectValid(projectConfigPlus);
 
         return result;
     }
@@ -531,7 +531,9 @@ public class Control implements Function<String[], Integer>
         final String END_COMMENT = "-->";
 
         boolean result = true;
+
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
         for (DestinationConfig d : projectConfig.getOutputs().getDestination())
         {
             String customString = projectConfigPlus.getGraphicsStrings().get(d);
