@@ -90,6 +90,7 @@ public class MetricFactory
                                                      .stream()
                                                      .map(MetricConfig::getValue)
                                                      .collect(Collectors.toList());
+
         //Find the matching metrics 
         Set<MetricConstants> metrics = MetricConstants.MetricGroup.SINGLE_VALUED_SCALAR.getMetrics();
         metrics.removeIf(a -> !metricsConfig.contains(a.toString()));

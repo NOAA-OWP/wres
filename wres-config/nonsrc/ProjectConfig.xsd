@@ -196,21 +196,6 @@
             <xs:enumeration value="RELATIVE_OPERATING_CHARACTERISTIC" />
             <xs:enumeration value="RELIABILITY_DIAGRAM" />
             <xs:enumeration value="ROOT_MEAN_SQUARE_ERROR" />
-            <xs:enumeration value="NONE" />
-            <xs:enumeration value="CR" />
-            <xs:enumeration value="LBR" />
-            <xs:enumeration value="CR_AND_LBR" />
-            <xs:enumeration value="MAIN" />
-            <xs:enumeration value="RELIABILITY" />
-            <xs:enumeration value="RESOLUTION" />
-            <xs:enumeration value="UNCERTAINTY" />
-            <xs:enumeration value="POTENTIAL" />
-            <xs:enumeration value="TYPE_II_BIAS" />
-            <xs:enumeration value="DISCRIMINATION" />
-            <xs:enumeration value="SHARPNESS" />
-            <xs:enumeration value="SAMPLE_SIZE" />
-            <xs:enumeration value="FORECAST_PROBABILITY" />
-            <xs:enumeration value="OBSERVED_GIVEN_FORECAST_PROBABILITY" />
         </xs:restriction>
     </xs:simpleType>
 
