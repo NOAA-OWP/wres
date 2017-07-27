@@ -1,6 +1,7 @@
 package wres;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,6 +21,7 @@ import java.util.function.ToDoubleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
@@ -36,6 +38,7 @@ import wres.datamodel.metric.Threshold.Condition;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.io.config.ProjectConfigPlus;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
@@ -103,6 +106,17 @@ public class ControlTemp
      */
     public static void main(final String[] args)
     {
+        
+        try {
+        
+            ProjectConfig config = ProjectConfigPlus.from(Paths.get("D:/Applications/WRES/Code/wres/nonsrc/config_possibility.xml")).getProjectConfig();
+            MetricCollection<SingleValuedPairs,ScalarOutput> metrics = MetricFactory.getInstance(dataFac).ofSingleValuedScalarCollection(config);
+            System.out.println(metrics!=null);
+        
+        } catch(Exception e) {
+            
+        }
+        
         final long start = System.currentTimeMillis(); //Start time
         final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 1, 0),
                                                 LocalDateTime.of(2010, 12, 31, 23, 59),
