@@ -6,6 +6,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import wres.config.generated.MetricConfig;
+import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricConstant;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
@@ -84,11 +86,11 @@ public class MetricFactory
     public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(ProjectConfig config)
     {
         Objects.requireNonNull(config, "Specify a non-null project from which to generate metrics.");
-        List<String> metricsConfig = config.getOutputs()
-                                           .getMetric()
-                                           .stream()
-                                           .map(MetricConfig::getValue)
-                                           .collect(Collectors.toList());
+        List<MetricConfigName> metricsConfig = config.getOutputs()
+                                                     .getMetric()
+                                                     .stream()
+                                                     .map(MetricConfig::getValue)
+                                                     .collect(Collectors.toList());
         //Find the matching metrics 
         Set<MetricConstants> metrics = MetricConstants.MetricGroup.SINGLE_VALUED_SCALAR.getMetrics();
         metrics.removeIf(a -> !metricsConfig.contains(a.toString()));
