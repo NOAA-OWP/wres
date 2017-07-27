@@ -1,7 +1,9 @@
 package wres.util;
 
-import java.lang.reflect.Array;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -204,20 +206,8 @@ public final class Collections
             return array;
         }
         List<U> copy = Arrays.asList(array);
-
-        List<U> remove = where(copy, filter);
-        U[] objectsLeft = (U[])Array.newInstance(array[0].getClass(), array.length - remove.size());
-
-        int addedIndex = 0;
-
-        for (final U arrayMember : array) {
-            if (!remove.contains(arrayMember)) {
-                objectsLeft[addedIndex] = arrayMember;
-                addedIndex++;
-            }
-        }
-
-        return objectsLeft;
+        copy.removeIf(filter);
+        return (U[])copy.toArray();
     }
 
     /**

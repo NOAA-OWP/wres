@@ -3,6 +3,7 @@
  */
 package wres.io.utilities;
 
+import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.ProjectConfig;
@@ -46,14 +47,16 @@ public final class ScriptGenerator
         return new LabeledScript(label, script);
     }
 
-    public static String generateGetPairData(final ProjectConfig projectConfig, final int progress) throws NotImplementedException
+    public static String generateGetPairData(final ProjectConfig projectConfig,
+                                             final Conditions.Feature feature,
+                                             final int progress) throws NotImplementedException
     {
         StringBuilder script = new StringBuilder("SELECT * FROM (");
 
         try {
 
-            script.append(constructSourceTwoClause(projectConfig, progress));
-            script.append(constructSourceOneClause(projectConfig, progress));
+            script.append(constructSourceTwoClause(projectConfig, feature, progress));
+            script.append(constructSourceOneClause(projectConfig, feature, progress));
         }
         catch (SQLException | InvalidPropertiesFormatException e) {
             e.printStackTrace();
@@ -64,22 +67,30 @@ public final class ScriptGenerator
         return script.toString();
     }
 
-    private static String constructSourceOneClause(ProjectConfig projectConfig, int progress) throws SQLException, NotImplementedException, InvalidPropertiesFormatException {
+    private static String constructSourceOneClause (ProjectConfig projectConfig,
+                                                    Conditions.Feature feature,
+                                                    int progress) throws SQLException,
+                                                                         NotImplementedException,
+                                                                         InvalidPropertiesFormatException
+    {
         StringBuilder script = new StringBuilder("SELECT ");
 
         if (ConfigHelper.isForecast(projectConfig.getInputs().getLeft()))
         {
-            script.append(constructForecastSourceOneClause(projectConfig, progress));
+            script.append(constructForecastSourceOneClause(projectConfig, feature, progress));
         }
         else
         {
-            script.append(constructObservationSourceOneClause(projectConfig));
+            script.append(constructObservationSourceOneClause(projectConfig, feature));
         }
 
         return script.toString();
     }
 
-    private static String constructObservationSourceOneClause(ProjectConfig projectConfig) throws SQLException, NotImplementedException {
+    private static String constructObservationSourceOneClause(ProjectConfig projectConfig,
+                                                              Conditions.Feature feature) throws SQLException,
+                                                                                                 NotImplementedException
+    {
         StringBuilder script = new StringBuilder();
 
         DataSourceConfig leftSource = projectConfig.getInputs().getLeft();
@@ -91,11 +102,7 @@ public final class ScriptGenerator
         String earliestDate = null;
         String latestDate = null;
 
-        String leftVariablePositionClause = ConfigHelper.getVariablePositionClause(projectConfig
-                                                                                           .getConditions()
-                                                                                           .getFeature()
-                                                                                           .get(0),
-                                                                                   leftVariableId);
+        String leftVariablePositionClause = ConfigHelper.getVariablePositionClause(feature, leftVariableId);
 
         Integer leftTimeShift = null;
 
@@ -223,9 +230,11 @@ public final class ScriptGenerator
         return script.toString();
     }
 
-    private static String constructForecastSourceOneClause(ProjectConfig projectConfig, int progress) throws SQLException,
-                                                                                                             NotImplementedException,
-                                                                                                             InvalidPropertiesFormatException
+    private static String constructForecastSourceOneClause(ProjectConfig projectConfig,
+                                                           Conditions.Feature feature,
+                                                           int progress) throws SQLException,
+                                                                                NotImplementedException,
+                                                                                InvalidPropertiesFormatException
     {
         StringBuilder script = new StringBuilder();
 
@@ -240,11 +249,7 @@ public final class ScriptGenerator
         String earliestIssueDate = null;
         String latestIssueDate = null;
 
-        String leftVariablePositionClause = ConfigHelper.getVariablePositionClause(projectConfig
-                                                                                           .getConditions()
-                                                                                           .getFeature()
-                                                                                           .get(0),
-                                                                                   leftVariableId);
+        String leftVariablePositionClause = ConfigHelper.getVariablePositionClause(feature, leftVariableId);
 
         Integer leftTimeShift = null;
 
@@ -439,9 +444,12 @@ public final class ScriptGenerator
         return script.toString();
     }
 
-    private static String constructSourceTwoClause(ProjectConfig projectConfig, int progress) throws SQLException,
-                                                                                                     NotImplementedException,
-                                                                                                     InvalidPropertiesFormatException {
+    private static String constructSourceTwoClause(ProjectConfig projectConfig,
+                                                   Conditions.Feature feature,
+                                                   int progress) throws SQLException,
+                                                                        NotImplementedException,
+                                                                        InvalidPropertiesFormatException
+    {
         StringBuilder script = new StringBuilder();
 
         script.append("WITH sourceTwo AS        -- The CTE that produces the array for the second source")
@@ -452,11 +460,11 @@ public final class ScriptGenerator
 
         if (ConfigHelper.isForecast(projectConfig.getInputs().getRight()))
         {
-            script.append(constructForecastSourceTwoClause(projectConfig, progress));
+            script.append(constructForecastSourceTwoClause(projectConfig, feature, progress));
         }
         else
         {
-            script.append(constructObservationSourceTwoClause(projectConfig));
+            script.append(constructObservationSourceTwoClause(projectConfig, feature));
         }
 
 
@@ -465,9 +473,11 @@ public final class ScriptGenerator
         return script.toString();
     }
 
-    private static String constructObservationSourceTwoClause(ProjectConfig projectConfig) throws SQLException,
-                                                                                                  NotImplementedException,
-                                                                                                  InvalidPropertiesFormatException {
+    private static String constructObservationSourceTwoClause(ProjectConfig projectConfig,
+                                                              Conditions.Feature feature) throws SQLException,
+                                                                                                 NotImplementedException,
+                                                                                                 InvalidPropertiesFormatException
+    {
         StringBuilder script = new StringBuilder();
         DataSourceConfig rightSource = projectConfig.getInputs().getRight();
         Integer rightVariableId = Variables.getVariableID(rightSource.getVariable().getValue(), rightSource.getVariable().getUnit());
@@ -479,11 +489,7 @@ public final class ScriptGenerator
 
         Integer rightTimeShift = null;
 
-        String rightVariablePositionClause = ConfigHelper.getVariablePositionClause(projectConfig
-                                                                                            .getConditions()
-                                                                                            .getFeature()
-                                                                                            .get(0),
-                                                                                    rightVariableId);
+        String rightVariablePositionClause = ConfigHelper.getVariablePositionClause(feature, rightVariableId);
 
         if (projectConfig.getConditions().getValues() != null)
         {
@@ -593,7 +599,11 @@ public final class ScriptGenerator
         return script.toString();
     }
 
-    private static String constructForecastSourceTwoClause(ProjectConfig projectConfig, int progress) throws SQLException, NotImplementedException, InvalidPropertiesFormatException {
+    private static String constructForecastSourceTwoClause(ProjectConfig projectConfig,
+                                                           Conditions.Feature feature,
+                                                           int progress) throws SQLException,
+                                                                                NotImplementedException,
+                                                                                InvalidPropertiesFormatException {
         StringBuilder script = new StringBuilder();
         DataSourceConfig rightSource = projectConfig.getInputs().getRight();
         Integer rightVariableId = Variables.getVariableID(rightSource.getVariable().getValue(), rightSource.getVariable().getUnit());
@@ -607,11 +617,7 @@ public final class ScriptGenerator
         String rightDate = null;
         Integer rightTimeShift = null;
 
-        String rightVariablePositionClause = ConfigHelper.getVariablePositionClause(projectConfig
-                                                                                            .getConditions()
-                                                                                            .getFeature()
-                                                                                            .get(0),
-                                                                                    rightVariableId);
+        String rightVariablePositionClause = ConfigHelper.getVariablePositionClause(feature, rightVariableId);
 
         if (projectConfig.getConditions().getValues() != null)
         {
