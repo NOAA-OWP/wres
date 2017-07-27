@@ -453,7 +453,7 @@ distributions
                 // Must also add the new directory to classpath under
                 // startScripts below. For each module that adds to dist,
                 // add here for now until we can make it grab all of em.
-                ['dist', '../wres-vis/dist']
+                ['dist', 'wres-vis/dist']
             }
         }
     }
@@ -467,4 +467,18 @@ startScripts
     // added to 'dist/lib' and then the directory name
     // can be added below.
     classpath += files('conf')
+}
+
+jar
+{
+    // toward reproducible builds:
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+
+    // version number should be included
+    manifest
+    {
+        attributes("Implementation-Title": "Water Resources Evaluation Service",
+                   "Implementation-Version": version)
+    }
 }
