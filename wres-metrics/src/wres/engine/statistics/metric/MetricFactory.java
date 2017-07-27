@@ -85,6 +85,7 @@ public class MetricFactory
     public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(ProjectConfig config)
     {
         Objects.requireNonNull(config, "Specify a non-null project from which to generate metrics.");
+        //Obtain the list of metrics
         List<MetricConfigName> metricsConfig = config.getOutputs()
                                                      .getMetric()
                                                      .stream()
@@ -93,7 +94,7 @@ public class MetricFactory
 
         //Find the matching metrics 
         Set<MetricConstants> metrics = MetricConstants.MetricGroup.SINGLE_VALUED_SCALAR.getMetrics();
-        metrics.removeIf(a -> !metricsConfig.contains(a.toString()));
+        metrics.removeIf(a -> !metricsConfig.contains(a.toMetricConfigName()));
         if(!metrics.isEmpty())
         {
             return ofSingleValuedScalarCollection(metrics.toArray(new MetricConstants[metrics.size()]));

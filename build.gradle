@@ -155,7 +155,8 @@ project(':wres-datamodel-api')
 {
 	dependencies
     {
-        testCompile 'junit:junit:4.12'
+	compile project(':wres-config')        
+	testCompile 'junit:junit:4.12'
     }
 }
 
