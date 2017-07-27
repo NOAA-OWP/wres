@@ -361,7 +361,7 @@ public class MetricFactory
      * 
      * @return a default {@link EquitableThreatScore} function.
      */
-    
+
     protected EquitableThreatScore ofEquitableThreatScore()
     {
         return (EquitableThreatScore)new EquitableThreatScore.EquitableThreatScoreBuilder().setOutputFactory(outputFactory)

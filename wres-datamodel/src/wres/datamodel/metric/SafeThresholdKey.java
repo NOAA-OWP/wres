@@ -164,14 +164,14 @@ class SafeThresholdKey implements Threshold
         {
             return -1;
         }
-        int returnMe = Double.compare(threshold, o.getThreshold());
+        int returnMe = Double.compare(o.getThreshold(),threshold);
         if(returnMe != 0)
         {
             return returnMe;
         }
         if(hasBetweenCondition())
         {
-            returnMe = Double.compare(thresholdUpper, o.getThresholdUpper());
+            returnMe = Double.compare(o.getThresholdUpper(),thresholdUpper);
             if(returnMe != 0)
             {
                 return returnMe;

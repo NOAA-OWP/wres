@@ -267,6 +267,8 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "PROBABILITY OF FALSE DETECTION";
             case RELATIVE_OPERATING_CHARACTERISTIC:
                 return "RELATIVE OPERATING CHARACTERISTIC";
+            case RELIABILITY_DIAGRAM:
+                return "RELIABILITY_DIAGRAM";                   
             case ROOT_MEAN_SQUARE_ERROR:
                 return "ROOT MEAN SQUARE ERROR";
             default:
@@ -314,6 +316,8 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "PoFD";
             case RELATIVE_OPERATING_CHARACTERISTIC:
                 return "ROC";
+            case RELIABILITY_DIAGRAM:
+                return "RELIABILITY_DIAGRAM";    
             case ROOT_MEAN_SQUARE_ERROR:
                 return "RMSE";
             default:
