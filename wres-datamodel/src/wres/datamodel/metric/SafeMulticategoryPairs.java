@@ -156,7 +156,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     }
 
     /**
-     * Construct the single-valued pairs with a builder.
+     * Construct the pairs with a builder.
      * 
      * @param b the builder
      * @throws MetricInputException if the pairs are invalid

@@ -9,17 +9,17 @@ import wres.datamodel.PairOfDoubles;
 import wres.datamodel.metric.SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
 
 /**
- * Tests the {@link DiscreteProbabilityPairs}.
+ * Tests the {@link SafeDiscreteProbabilityPairs}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public final class DiscreteProbabilityPairsTest
+public final class SafeDiscreteProbabilityPairsTest
 {
 
     /**
-     * Tests the {@link DiscreteProbabilityPairs}.
+     * Tests the {@link SafeDiscreteProbabilityPairs}.
      */
 
     @Test

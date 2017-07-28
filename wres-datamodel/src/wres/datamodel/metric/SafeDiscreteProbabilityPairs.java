@@ -33,7 +33,7 @@ class SafeDiscreteProbabilityPairs extends SafeSingleValuedPairs implements Disc
     }    
     
     /**
-     * Construct the probability pairs with a builder. TODO placeholder for check the inputs are valid probabilities
+     * Construct the pairs with a builder. TODO: check the inputs are valid probabilities
      * 
      * @param b the builder
      * @throws MetricInputException if the pairs are invalid

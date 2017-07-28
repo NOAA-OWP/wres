@@ -3,24 +3,23 @@ package wres.datamodel.metric;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.PairOfDoubles;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
 /**
- * Immutable implementation of a store of verification pairs that comprise two single-valued, continuous numerical,
- * variables.
+ * Immutable implementation of a store of verification pairs that comprise a single value and an ensemble of values.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-class SafeSingleValuedPairs implements SingleValuedPairs
+class SafeEnsemblePairs implements EnsemblePairs
 {
 
     /**
      * The verification pairs.
      */
 
-    private final List<PairOfDoubles> mainInput;
+    private final List<PairOfDoubleAndVectorOfDoubles> mainInput;
 
     /**
      * Metadata associated with the verification pairs.
@@ -32,7 +31,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * The verification pairs for a baseline (may be null).
      */
 
-    private final List<PairOfDoubles> baselineInput;
+    private final List<PairOfDoubleAndVectorOfDoubles> baselineInput;
 
     /**
      * Metadata associated with the baseline verification pairs (may be null).
@@ -47,7 +46,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     }
 
     @Override
-    public List<PairOfDoubles> getData()
+    public List<PairOfDoubleAndVectorOfDoubles> getData()
     {
         return mainInput;
     }
@@ -59,13 +58,13 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     }
 
     @Override
-    public SingleValuedPairs getBaselineData()
+    public EnsemblePairs getBaselineData()
     {
-        return DefaultDataFactory.getInstance().ofSingleValuedPairs(baselineInput, baselineMeta);
+        return DefaultDataFactory.getInstance().ofEnsemblePairs(baselineInput, baselineMeta);
     }
 
     @Override
-    public List<PairOfDoubles> getDataForBaseline()
+    public List<PairOfDoubleAndVectorOfDoubles> getDataForBaseline()
     {
         return baselineInput;
     }
@@ -80,18 +79,18 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * A {@link MetricInputBuilder} to build the metric input.
      */
 
-    static class SingleValuedPairsBuilder implements MetricInputBuilder<List<PairOfDoubles>>
+    static class EnsemblePairsBuilder implements MetricInputBuilder<List<PairOfDoubleAndVectorOfDoubles>>
     {
 
         /**
          * Pairs.
          */
-        private List<PairOfDoubles> mainInput;
+        private List<PairOfDoubleAndVectorOfDoubles> mainInput;
 
         /**
          * Pairs for baseline.
          */
-        private List<PairOfDoubles> baselineInput;
+        private List<PairOfDoubleAndVectorOfDoubles> baselineInput;
 
         /**
          * Metadata for input.
@@ -106,37 +105,37 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         private Metadata baselineMeta;
 
         @Override
-        public SingleValuedPairsBuilder setData(final List<PairOfDoubles> mainInput)
+        public EnsemblePairsBuilder setData(final List<PairOfDoubleAndVectorOfDoubles> mainInput)
         {
             this.mainInput = mainInput;
             return this;
         }
 
         @Override
-        public SingleValuedPairsBuilder setMetadata(final Metadata mainMeta)
+        public EnsemblePairsBuilder setMetadata(final Metadata mainMeta)
         {
             this.mainMeta = mainMeta;
             return this;
         }
 
         @Override
-        public SingleValuedPairsBuilder setDataForBaseline(final List<PairOfDoubles> baselineInput)
+        public EnsemblePairsBuilder setDataForBaseline(final List<PairOfDoubleAndVectorOfDoubles> baselineInput)
         {
             this.baselineInput = baselineInput;
             return this;
         }
 
         @Override
-        public SingleValuedPairsBuilder setMetadataForBaseline(final Metadata baselineMeta)
+        public EnsemblePairsBuilder setMetadataForBaseline(final Metadata baselineMeta)
         {
             this.baselineMeta = baselineMeta;
             return this;
         }
 
         @Override
-        public SafeSingleValuedPairs build()
+        public SafeEnsemblePairs build()
         {
-            return new SafeSingleValuedPairs(this);
+            return new SafeEnsemblePairs(this);
         }
 
     }
@@ -148,7 +147,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * @throws MetricInputException if the pairs are invalid
      */
 
-    SafeSingleValuedPairs(final SingleValuedPairsBuilder b)
+    SafeEnsemblePairs(final EnsemblePairsBuilder b)
     {
         //Bounds checks
         if(Objects.isNull(b.mainMeta))
@@ -173,8 +172,9 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         }
         //Ensure safe types
         DefaultDataFactory factory = (DefaultDataFactory)DefaultDataFactory.getInstance();
-        mainInput = factory.safePairOfDoublesList(b.mainInput);
-        baselineInput = Objects.nonNull(b.baselineInput) ? factory.safePairOfDoublesList(b.baselineInput) : null;
+        mainInput = factory.safePairOfDoubleAndVectorOfDoublesList(b.mainInput);
+        baselineInput =
+                      Objects.nonNull(b.baselineInput) ? factory.safePairOfDoubleAndVectorOfDoublesList(b.baselineInput) : null;
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
     }

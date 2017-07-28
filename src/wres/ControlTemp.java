@@ -30,7 +30,7 @@ import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputMapByMetric;
-import wres.datamodel.metric.MetricOutputMultiMap;
+import wres.datamodel.metric.MultiMetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.Threshold;
@@ -139,7 +139,7 @@ public class ControlTemp
         final ForkJoinPool f = new ForkJoinPool();
 
         //Sink for the results: the results are added incrementally to an immutable store via a builder
-        final MetricOutputMultiMap.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
+        final MultiMetricOutputMapByLeadThreshold.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
         //Iterate
         for(int i = 0; i < leadTimesCount; i++)
         {
@@ -192,7 +192,7 @@ public class ControlTemp
         }
 
         //Build final results: 
-        MetricOutputMultiMap<ScalarOutput> results = resultsBuilder.build();
+        MultiMetricOutputMapByLeadThreshold<ScalarOutput> results = resultsBuilder.build();
 
         //Print info to logger
         if(LOGGER.isInfoEnabled())
@@ -294,7 +294,7 @@ public class ControlTemp
          * A store of the results.
          */
 
-        private final MetricOutputMultiMap.Builder<S> builder;
+        private final MultiMetricOutputMapByLeadThreshold.Builder<S> builder;
 
         /**
          * Construct the processor with a lead time.
@@ -303,7 +303,7 @@ public class ControlTemp
          */
         public ResultProcessor(final int leadTime,
                                final Threshold threshold,
-                               final MetricOutputMultiMap.Builder<S> builder)
+                               final MultiMetricOutputMapByLeadThreshold.Builder<S> builder)
         {
             this.threshold = threshold;
             this.leadTime = leadTime;

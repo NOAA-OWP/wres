@@ -130,7 +130,7 @@ public class Control implements Function<String[], Integer>
         DataFactory dataFac = DefaultDataFactory.getInstance();
 
         //Sink for the results: the results are added incrementally to an immutable store via a builder
-        MetricOutputMultiMap.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
+        MultiMetricOutputMapByLeadThreshold.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
 
 
         for (ProjectConfigPlus projectConfigPlus : projectConfiggies)
@@ -242,7 +242,7 @@ public class Control implements Function<String[], Integer>
             }
 
             //Build final results:
-            MetricOutputMultiMap<ScalarOutput> results = resultsBuilder.build();
+            MultiMetricOutputMapByLeadThreshold<ScalarOutput> results = resultsBuilder.build();
 
             // Make charts!
             try
