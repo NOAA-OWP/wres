@@ -1,3 +1,7 @@
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
+
 /* used by sonarqube static analysis and git versioning */
 buildscript
 {
@@ -9,6 +13,8 @@ buildscript
     {
         // for static analysis tool sonarqube:
         classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.4'
+        // For markdown -> html
+        classpath 'com.atlassian.commonmark:commonmark:0.9.0'
     }
 }
 
@@ -277,7 +283,7 @@ project(':wres-config')
         jaxb 'com.sun.xml.bind:jaxb-xjc:2.2.11'
     }
 
-    def generatedIntermediateDir = "${project.projectDir}/build/generated"
+    def generatedIntermediateDir = "${project.buildDir}/generated"
 
     jaxb
     {
@@ -351,18 +357,60 @@ task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [su
 }
 
 /**
- * This task is a placeholder until we have a markdown processor that works.
- * When we have a compileMarkdown task working, then we can use that to take
- * source markdown and produce html (or pdf, etc.)
+ * Task to compile markdown to html
  */
-task(copyDocs, type: Copy, group: 'Documentation')
+task(buildDocs, group: 'Documentation')
 {
-    description = 'Copies documentation source to distribution directory.'
-    from 'documentation/src'
-    into 'dist/doc'
+    description = 'Compiles markdown documentation into html'
+    def srcDir = "${project.projectDir}/documentation/src" // seems odd that we have to do this
+    def destDir = "${project.buildDir}/doc" // define these and use them later.
+
+    inputs.dir(srcDir)
+    outputs.dir(destDir)
+
+    doFirst {
+        // in case a source was removed, get rid of all html files.
+        delete fileTree(dir: destDir).include('**/*.html')
+    }
+
+    doLast {
+        def destFile = new File(destDir)
+        destFile.mkdirs()
+
+        def parser = org.commonmark.parser.Parser.builder().build()
+        def renderer = org.commonmark.renderer.html.HtmlRenderer.builder().build()
+        inputs.files.each {
+            // yuck, but I haven't found the better way yet
+            def srcIdx =  it.path.indexOf(srcDir)
+            def basePath = it.path.substring(srcIdx + srcDir.length(), it.path.length() - 3)
+
+            // The meat - using commonmark to transform md to html
+            def document = parser.parseReader(new FileReader(it))
+            def output = renderer.render(document)
+            def outputPath = Paths.get(destDir, basePath + '.html')
+            Files.write(outputPath, output.getBytes(), StandardOpenOption.CREATE)
+        }
+    }
 }
 
+/**
+ * Kind of like xjc, there is an intermediate location in the build directory
+ * so that gradle clean will remove these files.
+ */
+task(copyDocs, type: Copy, group: 'Documentation', dependsOn: buildDocs)
+{
+    description = 'Copies documentation source to distribution directory.'
 
+    destinationDir = file("${project.projectDir}/dist/doc")
+
+    doFirst {
+        // in case a source file was removed, clean up old html files.
+        delete fileTree(dir: destinationDir).include('**/*.html')
+    }
+
+    from buildDocs
+    into destinationDir
+}
 
 apply plugin: 'application'
 
