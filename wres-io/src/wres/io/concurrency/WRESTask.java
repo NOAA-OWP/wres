@@ -2,6 +2,7 @@ package wres.io.concurrency;
 
 import org.slf4j.Logger;
 import wres.util.Internal;
+import wres.util.Strings;
 
 import java.util.function.Consumer;
 
@@ -40,16 +41,19 @@ public abstract class WRESTask
 
     private void setThreadName()
     {
-        String threadName = this.getTaskName();
-        threadName += " - ";
-        threadName += this.getThreadID();
+        String threadName = Thread.currentThread().getName();
+        String newName = "[" + this.getTaskName() + "]";
+
+        if (Strings.contains(threadName, "\\[.+\\]"))
+        {
+            threadName = threadName.replace("\\[.+\\]", newName);
+        }
+        else
+        {
+            threadName += " " + newName;
+        }
 
         Thread.currentThread().setName(threadName);
-    }
-
-    private String getThreadID()
-    {
-        return String.valueOf(Thread.currentThread().getId());
     }
 
     private Consumer<Object> onComplete;

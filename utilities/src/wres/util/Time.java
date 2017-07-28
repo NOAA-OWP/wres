@@ -245,4 +245,10 @@ public final class Time
 
         return date;
     }
+
+    public static String normalize(String date)
+    {
+        OffsetDateTime absoluteDate = Time.convertStringToDate(date);
+        return Time.convertDateToString(absoluteDate);
+    }
 }

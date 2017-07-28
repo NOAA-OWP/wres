@@ -81,7 +81,7 @@ public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVector
 
     @Override
     protected String getTaskName () {
-        return "PairRetriever: Step " + String.valueOf(this.progress) + " for " + this.projectConfig.getLabel();
+        return "PairRetriever: Step " + String.valueOf(this.progress);
     }
 
     @Override

@@ -14,29 +14,25 @@ import java.util.concurrent.*;
 public final class Executor {
 
 	// The underlying thread executor
-	private static ExecutorService SERVICE = createService();
+	private static ThreadPoolExecutor SERVICE = createService();
 
     private Executor()
     {
         // prevent direct construction
     }
 
-    public static float getLoad()
-	{
-		return ((ThreadPoolExecutor) SERVICE).getActiveCount() / SystemSettings.maximumThreadCount();
-	}
-
 	/**
 	 * Creates a new thread executor
 	 * @return A new thread executor that may run the maximum number of configured threads
 	 */
-	private static ExecutorService createService() {
+	private static ThreadPoolExecutor createService() {
 		if (SERVICE != null)
 		{
 			SERVICE.shutdown();
 		}
 
-		return Executors.newFixedThreadPool(SystemSettings.maximumThreadCount());
+		ThreadFactory factory = runnable -> new Thread(runnable, "Executor Thread: ");
+		return (ThreadPoolExecutor)Executors.newFixedThreadPool(SystemSettings.maximumThreadCount(), factory);
 	}
 	
 	/**

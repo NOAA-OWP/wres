@@ -4,8 +4,10 @@ import util.MainFunctions;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
 import wres.util.Strings;
+import wres.util.Time;
 
 import java.lang.management.ManagementFactory;
+import java.time.OffsetDateTime;
 
 /**
  * @author Christopher Tubbs
@@ -39,8 +41,15 @@ public class Main {
                 }));
 
 				args = Collections.removeIndexFromArray(args, 0);
-				System.out.println(ManagementFactory.getRuntimeMXBean().getName());
-				System.out.println("Beginning operation: '" + operation + "'...");
+				String process = "Process: ";
+				process += Strings.extractWord(ManagementFactory.getRuntimeMXBean().getName(), "\\d+(?=@)");
+				System.out.println(process);
+
+				System.out.println("Beginning operation: '" +
+										   operation +
+										   "' at " +
+										   Time.convertDateToString(OffsetDateTime.now()) +
+										   "...");
 
                 FormattedStopwatch watch = new FormattedStopwatch();
                 watch.start();

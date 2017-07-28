@@ -36,6 +36,9 @@ public final class Database {
 
     private static final ComboPooledDataSource CONNECTION_POOL = SystemSettings.getConnectionPool();
 
+	// A thread executor specifically for SQL calls
+	private static ThreadPoolExecutor SQL_TASKS = createService();
+
     private static final String NEWLINE = System.lineSeparator();
 
     private static Method copyAPI = null;
@@ -57,15 +60,6 @@ public final class Database {
 	public static void storeIngestTask(Future task)
 	{
 		storedIngestTasks.add(task);
-	}
-
-	// A thread executor specifically for SQL calls
-	private static ExecutorService sqlTasks = createService();
-
-	public static void kill()
-	{
-		shutdown();
-		CONNECTION_POOL.close();
 	}
 
 	public synchronized static void suspendAllIndices()
@@ -258,18 +252,20 @@ public final class Database {
 	 * Creates a new thread executor
 	 * @return A new thread executor that may run the maximum number of configured threads
 	 */
-	private static ExecutorService createService()
+	private static ThreadPoolExecutor createService()
 	{
-		if (sqlTasks != null)
+		if (SQL_TASKS != null)
 		{
-			sqlTasks.shutdown();
-			while (!sqlTasks.isTerminated());
+			SQL_TASKS.shutdown();
+			while (!SQL_TASKS.isTerminated());
 		}
+		ThreadFactory factory = runnable -> new Thread(runnable, "Database Thread: ");
 		ThreadPoolExecutor executor = new ThreadPoolExecutor(CONNECTION_POOL.getMaxPoolSize(),
                                                              CONNECTION_POOL.getMaxPoolSize(),
                                                              SystemSettings.poolObjectLifespan(),
                                                              TimeUnit.MILLISECONDS,
-															 new ArrayBlockingQueue<>(1200)
+															 new ArrayBlockingQueue<>(CONNECTION_POOL.getMaxPoolSize() * 5),
+															 factory
 		);
 
 		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
@@ -306,21 +302,21 @@ public final class Database {
 	 */
 	public static Future<?> execute(Runnable task)
 	{
-		if (sqlTasks == null || sqlTasks.isShutdown())
+		if (SQL_TASKS == null || SQL_TASKS.isShutdown())
 		{
-			sqlTasks = createService();
+			SQL_TASKS = createService();
 		}
 
-		return sqlTasks.submit(task);
+		return SQL_TASKS.submit(task);
 	}
 
 	public static <V> Future<V> submit(Callable<V> task)
 	{
-		if (sqlTasks == null || sqlTasks.isShutdown())
+		if (SQL_TASKS == null || SQL_TASKS.isShutdown())
 		{
-			sqlTasks = createService();
+			SQL_TASKS = createService();
 		}
-		return sqlTasks.submit(task);
+		return SQL_TASKS.submit(task);
 	}
 	
 	/**
@@ -328,10 +324,10 @@ public final class Database {
 	 */
 	public static void shutdown()
 	{
-		if (!sqlTasks.isShutdown())
+		if (!SQL_TASKS.isShutdown())
 		{
-			sqlTasks.shutdown();
-			while (!sqlTasks.isTerminated());
+			SQL_TASKS.shutdown();
+			while (!SQL_TASKS.isTerminated());
             CONNECTION_POOL.close();
 		}
 	}

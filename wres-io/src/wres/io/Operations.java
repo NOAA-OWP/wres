@@ -117,7 +117,7 @@ public final class Operations {
             PairRetriever pairRetriever = new PairRetriever(projectConfig, feature, step);
             pairRetriever.setOnRun(ProgressMonitor.onThreadStartHandler());
             pairRetriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-            threadResults.put(step, Executor.submit(pairRetriever));
+            threadResults.put(step, Database.submit(pairRetriever));
             step++;
         }
 
