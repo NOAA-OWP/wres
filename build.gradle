@@ -414,7 +414,7 @@ task(copyDocs, type: Copy, group: 'Documentation', dependsOn: buildDocs)
 
 apply plugin: 'application'
 
-mainClassName = 'Main'
+mainClassName = 'wres.Main'
 
 applicationDefaultJvmArgs = ['-Xms1024m']
 
