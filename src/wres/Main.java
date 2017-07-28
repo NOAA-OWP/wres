@@ -1,5 +1,6 @@
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import util.MainFunctions;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
@@ -23,6 +24,11 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
+		String processName = ManagementFactory.getRuntimeMXBean().getName();
+		String processId = Strings.extractWord(processName, "\\d+(?=@)");
+
+		MDC.put("pid", processId);
+
         if (LOGGER.isInfoEnabled())
         {
             LOGGER.info(getVersion());
@@ -42,7 +48,7 @@ public class Main {
 
 				args = Collections.removeIndexFromArray(args, 0);
 				String process = "Process: ";
-				process += Strings.extractWord(ManagementFactory.getRuntimeMXBean().getName(), "\\d+(?=@)");
+				process += processId;
 				System.out.println(process);
 
 				System.out.println("Beginning operation: '" +
