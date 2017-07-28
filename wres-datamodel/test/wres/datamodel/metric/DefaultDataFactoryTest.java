@@ -17,14 +17,14 @@ import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
 
 /**
- * Tests the {@link MetricInputFactory}.
+ * Tests the {@link DefaultDataFactory}.
  * 
  * @author james.brown@hydrosolved.com
  * @jesse
  * @version 0.1
  * @since 0.1
  */
-public final class DataFactoryTest
+public final class DefaultDataFactoryTest
 {
 
     public static final double THRESHOLD = 0.00001;
@@ -32,7 +32,7 @@ public final class DataFactoryTest
     private final DataFactory metIn = DefaultDataFactory.getInstance();
 
     /**
-     * Tests the pairing methods in {@link DataFactory}.
+     * Tests the pairing methods in {@link DefaultDataFactory}.
      */
 
     @Test
@@ -59,6 +59,11 @@ public final class DataFactoryTest
         metIn.ofDiscreteProbabilityPairs(dInput, dInput, m2, m3);
         metIn.ofSingleValuedPairs(dInput, m3);
         metIn.ofSingleValuedPairs(dInput, dInput, m2, m3);
+        
+        final List<PairOfDoubleAndVectorOfDoubles> eInput = new ArrayList<>();
+        eInput.add(metIn.pairOf(0.0, new double[]{1.0,2.0}));
+        metIn.ofEnsemblePairs(eInput, m3);
+        metIn.ofEnsemblePairs(eInput, eInput, m2, m3);       
     }
 
     @Test

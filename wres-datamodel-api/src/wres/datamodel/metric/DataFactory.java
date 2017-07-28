@@ -155,6 +155,20 @@ public interface DataFactory
     {
         return ofSingleValuedPairs(pairs, null, meta, null);
     }
+    
+    /**
+     * Construct the ensemble input without any pairs for a baseline.
+     * 
+     * @param pairs the ensemble pairs
+     * @param meta the metadata
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    default EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs, final Metadata meta)
+    {
+        return ofEnsemblePairs(pairs, null, meta, null);
+    }    
 
     /**
      * Returns a {@link MetadataFactory} for building {@link Metadata}.
@@ -252,6 +266,22 @@ public interface DataFactory
                                           final Metadata mainMeta,
                                           final Metadata baselineMeta);
 
+    /**
+     * Construct the ensemble input with a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs,
+                                          final List<PairOfDoubleAndVectorOfDoubles> basePairs,
+                                          final Metadata mainMeta,
+                                          final Metadata baselineMeta);    
+    
     /**
      * Return a {@link PairOfDoubles} from two double values.
      * 
@@ -429,14 +459,14 @@ public interface DataFactory
     <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> ofMap(final Map<MapBiKey<Integer, Threshold>, T> input);
 
     /**
-     * Returns a builder for a {@link MetricOutputMultiMap} that allows for the incremental addition of
+     * Returns a builder for a {@link MultiMetricOutputMapByLeadThreshold} that allows for the incremental addition of
      * {@link MetricOutputMapByLeadThreshold} as they are computed.
      * 
      * @param <T> the type of output
-     * @return a {@link MetricOutputMultiMap.Builder} for a map of metric outputs by lead time and threshold
+     * @return a {@link MultiMetricOutputMapByLeadThreshold.Builder} for a map of metric outputs by lead time and threshold
      */
 
-    <T extends MetricOutput<?>> MetricOutputMultiMap.Builder<T> ofMultiMap();
+    <T extends MetricOutput<?>> MultiMetricOutputMapByLeadThreshold.Builder<T> ofMultiMap();
 
     /**
      * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.

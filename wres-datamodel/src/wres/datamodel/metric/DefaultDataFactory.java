@@ -72,29 +72,27 @@ public class DefaultDataFactory implements DataFactory
                                                Metadata mainMeta,
                                                Metadata baselineMeta)
     {
-        final SafeDichotomousPairs.DichotomousPairsBuilder b =
-                                                                 new SafeDichotomousPairs.DichotomousPairsBuilder();
+        final SafeDichotomousPairs.DichotomousPairsBuilder b = new SafeDichotomousPairs.DichotomousPairsBuilder();
         b.setData(pairs);
         b.setMetadata(mainMeta);
         b.setDataForBaseline(basePairs);
         b.setMetadataForBaseline(baselineMeta);
         return b.build();
     }
-    
+
     @Override
     public DichotomousPairs ofDichotomousPairsFromAtomic(List<PairOfBooleans> pairs,
-                                               List<PairOfBooleans> basePairs,
-                                               Metadata mainMeta,
-                                               Metadata baselineMeta)
+                                                         List<PairOfBooleans> basePairs,
+                                                         Metadata mainMeta,
+                                                         Metadata baselineMeta)
     {
-        final SafeDichotomousPairs.DichotomousPairsBuilder b =
-                                                                 new SafeDichotomousPairs.DichotomousPairsBuilder();
+        final SafeDichotomousPairs.DichotomousPairsBuilder b = new SafeDichotomousPairs.DichotomousPairsBuilder();
         b.setDataFromAtomic(pairs);
         b.setMetadata(mainMeta);
         b.setDataForBaselineFromAtomic(basePairs);
         b.setMetadataForBaseline(baselineMeta);
         return b.build();
-    }    
+    }
 
     @Override
     public MulticategoryPairs ofMulticategoryPairs(List<VectorOfBooleans> pairs,
@@ -133,6 +131,20 @@ public class DefaultDataFactory implements DataFactory
                                                  final Metadata baselineMeta)
     {
         final SafeSingleValuedPairs.SingleValuedPairsBuilder b = new SafeSingleValuedPairs.SingleValuedPairsBuilder();
+        b.setMetadata(mainMeta);
+        b.setData(pairs);
+        b.setDataForBaseline(basePairs);
+        b.setMetadataForBaseline(baselineMeta);
+        return b.build();
+    }
+
+    @Override
+    public EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs,
+                                         final List<PairOfDoubleAndVectorOfDoubles> basePairs,
+                                         final Metadata mainMeta,
+                                         final Metadata baselineMeta)
+    {
+        final SafeEnsemblePairs.EnsemblePairsBuilder b = new SafeEnsemblePairs.EnsemblePairsBuilder();
         b.setMetadata(mainMeta);
         b.setData(pairs);
         b.setDataForBaseline(basePairs);
@@ -258,9 +270,9 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public <S extends MetricOutput<?>> MetricOutputMultiMap.Builder<S> ofMultiMap()
+    public <S extends MetricOutput<?>> MultiMetricOutputMapByLeadThreshold.Builder<S> ofMultiMap()
     {
-        return new SafeMetricOutputMultiMap.MultiMapBuilder<>();
+        return new SafeMultiMetricOutputMapByLeadThreshold.MultiMapBuilder<>();
     }
 
     @Override
@@ -371,6 +383,30 @@ public class DefaultDataFactory implements DataFactory
      * @return the immutable output
      */
 
+    List<PairOfDoubleAndVectorOfDoubles> safePairOfDoubleAndVectorOfDoublesList(List<PairOfDoubleAndVectorOfDoubles> input)
+    {
+        Objects.requireNonNull(input, "Specify a non-null input from which to create a safe type.");
+        List<PairOfDoubleAndVectorOfDoubles> returnMe = new ArrayList<>();
+        input.forEach(value -> {
+            if(value instanceof SafePairOfDoubleAndVectorOfDoubles)
+            {
+                returnMe.add(value);
+            }
+            else
+            {
+                returnMe.add(SafePairOfDoubleAndVectorOfDoubles.of(value.getItemOne(), value.getItemTwo()));
+            }
+        });
+        return Collections.unmodifiableList(returnMe);
+    }
+
+    /**
+     * Returns an immutable list that contains a safe type of the input.
+     * 
+     * @param input the possibly unsafe input
+     * @return the immutable output
+     */
+
     List<VectorOfBooleans> safeVectorOfBooleansList(List<VectorOfBooleans> input)
     {
         Objects.requireNonNull(input, "Specify a non-null input from which to create a safe type.");
@@ -453,6 +489,24 @@ public class DefaultDataFactory implements DataFactory
         {
             return right;
         }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if(!(o instanceof SafePairOfBooleans))
+            {
+                return false;
+            }
+            SafePairOfBooleans b = (SafePairOfBooleans)o;
+            return b.getItemOne() == getItemOne() && b.getItemTwo() == getItemTwo();
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Boolean.hashCode(getItemOne()) + Boolean.hashCode(getItemTwo());
+        }
+
     };
 
     /**
