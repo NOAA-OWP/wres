@@ -12,17 +12,17 @@ import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.metric.SafeMulticategoryPairs.MulticategoryPairsBuilder;
 
 /**
- * Tests the {@link MulticategoryPairs}.
+ * Tests the {@link SafeMulticategoryPairs}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public final class MulticategoryPairsTest
+public final class SafeMulticategoryPairsTest
 {
 
     /**
-     * Tests the {@link MulticategoryPairs}.
+     * Tests the {@link SafeMulticategoryPairs}.
      */
 
     @Test
@@ -45,19 +45,19 @@ public final class MulticategoryPairsTest
         //Check category count
         assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);
         //Check pair count
-        assertTrue("Unexpected pair count at first index [10," + p.getData().size() + "].", p.getData().size() == 10);
+        assertTrue("Unexpected pair count for main pairs [10," + p.getData().size() + "].", p.getData().size() == 10);
         //Check category count of two when fully expanded
         final MulticategoryPairsBuilder bn = new MulticategoryPairsBuilder();
         values.clear();
         values.add(metIn.vectorOf(new boolean[]{true, false, true, false}));
         final MulticategoryPairs q = bn.setData(values).setMetadata(meta).build();
         assertTrue("Unexpected category count on inputs [2," + q.getCategoryCount() + "].", q.getCategoryCount() == 2);
-        //Check dataset count
-        assertTrue("Expected dataset count of one [false," + p.hasBaseline() + "].", !p.hasBaseline());
-        //Check dataset count of two
+        //Check for no baseline
+        assertTrue("Expected a dataset without a baseline [false," + p.hasBaseline() + "].", !p.hasBaseline());
+        //Check for baseline
         p = b.setDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
-        //Check the addition of a Dimension 
-        assertTrue("Expected dataset count of two [true," + p.hasBaseline() + "].", p.hasBaseline());
+        assertTrue("Expected a dataset with a baseline [true," + p.hasBaseline() + "].", p.hasBaseline());
+        //Check the metadata
         final Metadata t = metaFac.getMetadata(10);
         b.setMetadata(t);
         p = b.build();

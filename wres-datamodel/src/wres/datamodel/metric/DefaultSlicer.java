@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import wres.datamodel.PairOfBooleans;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 
 /**
@@ -92,6 +93,33 @@ public class DefaultSlicer implements Slicer
         }
         return dataFac.ofDichotomousPairsFromAtomic(mainPairsTransformed, metaTransformed);
     }
+    
+    @Override
+    public SingleValuedPairs transformPairs(EnsemblePairs input, Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper)
+    {
+        Objects.requireNonNull(input, NULL_ERROR);
+        Objects.requireNonNull(mapper, "Specify a non-null mapper function.");
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubles> mainPairsTransformed = new ArrayList<>();
+        mainPairs.stream().map(mapper).forEach(mainPairsTransformed::add);
+        Metadata metaTransformed =
+                                 dataFac.getMetadataFactory().getMetadata(input.getMetadata(),
+                                                                          dataFac.getMetadataFactory().getDimension());
+        if(input.hasBaseline())
+        {
+            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getDataForBaseline();
+            List<PairOfDoubles> basePairsTransformed = new ArrayList<>();
+            basePairs.stream().map(mapper).forEach(basePairsTransformed::add);
+            Metadata metaBaseTransformed = dataFac.getMetadataFactory()
+                                                  .getMetadata(input.getMetadataForBaseline(),
+                                                               dataFac.getMetadataFactory().getDimension());
+            return dataFac.ofSingleValuedPairs(mainPairsTransformed,
+                                                        basePairsTransformed,
+                                                        metaTransformed,
+                                                        metaBaseTransformed);
+        }
+        return dataFac.ofSingleValuedPairs(mainPairsTransformed, metaTransformed);
+    }    
 
     /**
      * Hidden constructor.

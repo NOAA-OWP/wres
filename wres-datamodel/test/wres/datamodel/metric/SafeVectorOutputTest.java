@@ -5,17 +5,17 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 /**
- * Tests the {@link ScalarOutput}.
+ * Tests the {@link SafeVectorOutput}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public final class ScalarOutputTest
+public final class SafeVectorOutputTest
 {
 
     /**
-     * Constructs a {@link ScalarOutput} and tests for equality with another {@link ScalarOutput}.
+     * Constructs a {@link SafeVectorOutput} and tests for equality with another {@link SafeVectorOutput}.
      */
 
     @Test
@@ -41,23 +41,23 @@ public final class ScalarOutputTest
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
                                                                   metaFac.getDatasetIdentifier("B", "B", "C"));
-        final ScalarOutput s = d.ofScalarOutput(1.0, m1);
-        final ScalarOutput t = d.ofScalarOutput(1.0, m1);
+        final VectorOutput s = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
+        final VectorOutput t = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
         assertTrue("Expected equal outputs.", s.equals(t));
         assertTrue("Expected non-equal outputs.", !s.equals(null));
         assertTrue("Expected non-equal outputs.", !s.equals(new Double(1.0)));
-        assertTrue("Expected non-equal outputs.", !s.equals(d.ofScalarOutput(2.0, m1)));
-        assertTrue("Expected non-equal outputs.", !s.equals(d.ofScalarOutput(1.0, m2)));
-        final ScalarOutput q = d.ofScalarOutput(1.0, m2);
-        final ScalarOutput r = d.ofScalarOutput(1.0, m3);
-        assertTrue("Expected non-equal outputs.", !s.equals(q));
+        assertTrue("Expected non-equal outputs.", !s.equals(d.ofVectorOutput(new double[]{2.0, 10}, m1)));
+        assertTrue("Expected non-equal outputs.", !s.equals(d.ofVectorOutput(new double[]{2.0, 10}, m2)));
+        final VectorOutput q = d.ofVectorOutput(new double[]{1.0, 1.0}, m2);
+        final VectorOutput r = d.ofVectorOutput(new double[]{1.0, 1.0}, m3);
         assertTrue("Expected equal outputs.", q.equals(q));
+        assertTrue("Expected non-equal outputs.", !s.equals(q));
         assertTrue("Expected non-equal outputs.", !q.equals(s));
         assertTrue("Expected non-equal outputs.", !q.equals(r));
     }
 
     /**
-     * Constructs a {@link ScalarOutput} and checks the {@link ScalarOutput#toString()} representation.
+     * Constructs a {@link SafeVectorOutput} and checks the {@link SafeVectorOutput#toString()} representation.
      */
 
     @Test
@@ -71,13 +71,13 @@ public final class ScalarOutputTest
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
                                                                   metaFac.getDatasetIdentifier("A", "B", "C"));
-        final ScalarOutput s = d.ofScalarOutput(1.0, m1);
-        final ScalarOutput t = d.ofScalarOutput(1.0, m1);
+        final VectorOutput s = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
+        final VectorOutput t = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
         assertTrue("Expected equal string representations.", s.toString().equals(t.toString()));
     }
 
     /**
-     * Constructs a {@link ScalarOutput} and checks the {@link ScalarOutput#getMetadata()}.
+     * Constructs a {@link SafeVectorOutput} and checks the {@link SafeVectorOutput#getMetadata()}.
      */
 
     @Test
@@ -97,13 +97,13 @@ public final class ScalarOutputTest
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
                                                                   metaFac.getDatasetIdentifier("B", "B", "C"));
-        final ScalarOutput q = d.ofScalarOutput(1.0, m1);
-        final ScalarOutput r = d.ofScalarOutput(1.0, m2);
-        assertTrue("Unequal metadata.", !q.getMetadata().equals(r.getMetadata()));
+        final VectorOutput q = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
+        final VectorOutput r = d.ofVectorOutput(new double[]{1.0, 1.0}, m2);
+        assertTrue("Expected unequal dimensions.", !q.getMetadata().equals(r.getMetadata()));
     }
 
     /**
-     * Constructs a {@link ScalarOutput} and checks the {@link ScalarOutput#hashCode()}.
+     * Constructs a {@link SafeVectorOutput} and checks the {@link SafeVectorOutput#hashCode()}.
      */
 
     @Test
@@ -129,10 +129,10 @@ public final class ScalarOutputTest
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
                                                                   metaFac.getDatasetIdentifier("B", "B", "C"));
-        final ScalarOutput q = d.ofScalarOutput(1.0, m1);
-        final ScalarOutput r = d.ofScalarOutput(1.0, m2);
+        final VectorOutput q = d.ofVectorOutput(new double[]{1.0, 1.0}, m1);
+        final VectorOutput r = d.ofVectorOutput(new double[]{1.0, 1.0}, m2);
         assertTrue("Expected equal hash codes.", q.hashCode() == r.hashCode());
-        assertTrue("Expected unequal hash codes.", q.hashCode() != d.ofScalarOutput(1.0, m3).hashCode());
+        assertTrue("Expected unequal hash codes.", q.hashCode() != d.ofVectorOutput(new double[]{1.0}, m3).hashCode());
     }
 
 }

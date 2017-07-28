@@ -7,13 +7,13 @@ import org.junit.Test;
 import wres.datamodel.metric.Threshold.Condition;
 
 /**
- * Tests the {@link ScalarOutput}.
+ * Tests the {@link SafeMetricOutputMapByLeadThreshold}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public final class MetricOutputMapByLeadThresholdTest
+public final class SafeMetricOutputMapByLeadThresholdTest
 {
 
     /**

@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * @since 0.1
  */
 
-class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutputMultiMap<S>
+class SafeMultiMetricOutputMapByLeadThreshold<S extends MetricOutput<?>> implements MultiMetricOutputMapByLeadThreshold<S>
 {
 
     /**
@@ -91,13 +91,13 @@ class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutpu
                                                                                                                                 new ConcurrentSkipListMap<>();
 
         @Override
-        public SafeMetricOutputMultiMap<S> build()
+        public SafeMultiMetricOutputMapByLeadThreshold<S> build()
         {
-            return new SafeMetricOutputMultiMap<>(this);
+            return new SafeMultiMetricOutputMapByLeadThreshold<>(this);
         }
 
         @Override
-        public wres.datamodel.metric.MetricOutputMultiMap.Builder<S> add(final int leadTime,
+        public wres.datamodel.metric.MultiMetricOutputMapByLeadThreshold.Builder<S> add(final int leadTime,
                                                                          final Threshold threshold,
                                                                          final MetricOutputMapByMetric<S> result)
         {
@@ -128,7 +128,7 @@ class SafeMetricOutputMultiMap<S extends MetricOutput<?>> implements MetricOutpu
      * 
      * @param builder the builder
      */
-    private SafeMetricOutputMultiMap(final MultiMapBuilder<S> builder)
+    private SafeMultiMetricOutputMapByLeadThreshold(final MultiMapBuilder<S> builder)
     {
         //Bounds checks
         builder.internal.forEach((key, value) -> {

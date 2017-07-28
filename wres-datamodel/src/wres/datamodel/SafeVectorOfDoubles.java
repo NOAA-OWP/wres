@@ -54,8 +54,8 @@ public class SafeVectorOfDoubles implements VectorOfDoubles
      * If value count is equal, go through in order until an element is less
      * or greater than another. If all values are equal, return 0.
      *
-     * @param first
-     * @param second
+     * @param first the first array
+     * @param second the second array
      * @return -1 if first is less than second, 0 if equal, 1 otherwise.
      */
     public static int compareDoubleArray(final double[] first,
