@@ -1,0 +1,9 @@
+# This is the target directory for "compiled" docs, from md -> html, pdf, etc.
+# So we don't want to include any of these in version control.
+# The origin directory is "documentation/src" under the root.
+*.md
+*.markdown
+*.doc
+*.docx
+*.html
+*.pdf

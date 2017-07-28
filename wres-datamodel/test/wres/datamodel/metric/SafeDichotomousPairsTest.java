@@ -12,17 +12,17 @@ import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.metric.SafeDichotomousPairs.DichotomousPairsBuilder;
 
 /**
- * Tests the {@link DichotomousPairs}.
+ * Tests the {@link SafeDichotomousPairs}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public final class DichotomousPairsTest
+public final class SafeDichotomousPairsTest
 {
 
     /**
-     * Tests the {@link DichotomousPairs}.
+     * Tests the {@link SafeDichotomousPairs}.
      */
 
     @Test

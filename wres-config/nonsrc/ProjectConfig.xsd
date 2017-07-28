@@ -173,6 +173,32 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <!-- There is a mapping between these names and the enum in MetricConstants.
+         For now, these two lists must be periodically synchronized manually.-->
+    <xs:simpleType name="metricConfigName">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="BIAS_FRACTION" />
+            <xs:enumeration value="BRIER_SCORE" />
+            <xs:enumeration value="BRIER_SKILL_SCORE" />
+            <xs:enumeration value="COEFFICIENT_OF_DETERMINATION" />
+            <xs:enumeration value="CONTINGENCY_TABLE" />
+            <xs:enumeration value="CORRELATION_PEARSONS" />
+            <xs:enumeration value="CRITICAL_SUCCESS_INDEX" />
+            <xs:enumeration value="EQUITABLE_THREAT_SCORE" />
+            <xs:enumeration value="MEAN_ABSOLUTE_ERROR" />
+            <xs:enumeration value="MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE" />
+            <xs:enumeration value="MEAN_ERROR" />
+            <xs:enumeration value="MEAN_SQUARE_ERROR" />
+            <xs:enumeration value="MEAN_SQUARE_ERROR_SKILL_SCORE" />
+            <xs:enumeration value="PEIRCE_SKILL_SCORE" />
+            <xs:enumeration value="PROBABILITY_OF_DETECTION" />
+            <xs:enumeration value="PROBABILITY_OF_FALSE_DETECTION" />
+            <xs:enumeration value="RELATIVE_OPERATING_CHARACTERISTIC" />
+            <xs:enumeration value="RELIABILITY_DIAGRAM" />
+            <xs:enumeration value="ROOT_MEAN_SQUARE_ERROR" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:complexType name="metric">
 
         <!-- for class naming using xjc-->
@@ -183,7 +209,7 @@
         </xs:annotation>
 
         <xs:simpleContent>
-            <xs:extension base="xs:string">
+            <xs:extension base="metricConfigName">
                 <xs:attribute name="label" type="xs:string" />
             </xs:extension>
         </xs:simpleContent>

@@ -1,13 +1,31 @@
 package wres;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+
+import com.sun.xml.bind.Locatable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.config.generated.Conditions;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -22,20 +40,6 @@ import wres.io.config.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
 import javax.xml.bind.ValidationEvent;
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 
 /**
  * Another way to execute a project.
@@ -97,7 +101,7 @@ public class Control implements Function<String[], Integer>
         }
         else
         {
-            LOGGER.info("Successfully unmarshalled {} project configurations, validating further...", projectConfiggies.size());
+            LOGGER.info("Successfully unmarshalled {} project configuration(s), validating further...", projectConfiggies.size());
         }
 
         boolean validationsPassed = true;
@@ -126,7 +130,7 @@ public class Control implements Function<String[], Integer>
         DataFactory dataFac = DefaultDataFactory.getInstance();
 
         //Sink for the results: the results are added incrementally to an immutable store via a builder
-        MetricOutputMultiMap.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
+        MultiMetricOutputMapByLeadThreshold.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
 
 
         for (ProjectConfigPlus projectConfigPlus : projectConfiggies)
@@ -243,7 +247,7 @@ public class Control implements Function<String[], Integer>
             }
 
             //Build final results:
-            MetricOutputMultiMap<ScalarOutput> results = resultsBuilder.build();
+            MultiMetricOutputMapByLeadThreshold<ScalarOutput> results = resultsBuilder.build();
 
             // Make charts!
             try
@@ -335,7 +339,7 @@ public class Control implements Function<String[], Integer>
 
             try
             {
-                Thread.currentThread().sleep(500);
+                Thread.sleep(500);
             }
             catch(final InterruptedException ie)
             {
@@ -451,9 +455,7 @@ public class Control implements Function<String[], Integer>
             //Build an immutable collection of metrics, to be computed at each of several forecast lead times
             MetricFactory metricFactory = MetricFactory.getInstance(dataFactory);
             MetricCollection<SingleValuedPairs, ScalarOutput> collection =
-                    metricFactory.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
-                                                                 MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                 MetricConstants.ROOT_MEAN_SQUARE_ERROR);
+                    metricFactory.ofSingleValuedScalarCollection(projectConfig);
             //Compute sequentially (i.e. not in parallel)
             return collection.apply(input);
         }
@@ -510,6 +512,88 @@ public class Control implements Function<String[], Integer>
             }
             // Any validation event means we fail.
             result = false;
+        }
+
+        // validate graphics portion
+        result = result && isGraphicsPortionOfProjectValid(projectConfigPlus);
+
+        return result;
+    }
+
+    /**
+     * Validates graphics portion, similar to isProjectValid, but targeted.
+     * @param projectConfigPlus
+     * @return
+     */
+    public static boolean isGraphicsPortionOfProjectValid(ProjectConfigPlus projectConfigPlus)
+    {
+        final String BEGIN_TAG = "<chartDrawingParameters>";
+        final String END_TAG = "</chartDrawingParameters>";
+        final String BEGIN_COMMENT = "<!--";
+        final String END_COMMENT = "-->";
+
+        boolean result = true;
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        for (DestinationConfig d : projectConfig.getOutputs().getDestination())
+        {
+            String customString = projectConfigPlus.getGraphicsStrings().get(d);
+            if (customString != null)
+            {
+                // For to give a helpful message, find closeby tag without NPE
+                Locatable nearbyTag;
+                if (d.getGraphical() != null && d.getGraphical().getConfig() != null)
+                {
+                    // best case
+                    nearbyTag = d.getGraphical().getConfig();
+                }
+                else if (d.getGraphical() != null)
+                {
+                    // not as targeted but close
+                    nearbyTag = d.getGraphical();
+                }
+                else
+                {
+                    // destination tag.
+                    nearbyTag = d;
+                }
+
+                // If a custom vis config was provided, make sure string either
+                // starts with the correct tag or starts with a comment.
+                String trimmedCustomString = customString.trim();
+                if (!trimmedCustomString.startsWith(BEGIN_TAG)
+                    && !trimmedCustomString.startsWith(BEGIN_COMMENT))
+                {
+                    String msg = "In file {}, near line {} and column {}, "
+                            + "WRES found an issue with the project "
+                            + " configuration in the area of custom "
+                            + "graphics configuration. If customization is "
+                            + "provided, please start it with " + BEGIN_TAG;
+
+                    LOGGER.warn(msg, projectConfigPlus.getPath(),
+                            nearbyTag.sourceLocation().getLineNumber(),
+                            nearbyTag.sourceLocation().getColumnNumber());
+
+                    result = false;
+                }
+
+                if (!trimmedCustomString.endsWith(END_TAG)
+                    && !trimmedCustomString.endsWith(END_COMMENT))
+                {
+                    String msg = "In file {}, near line {} and column {}, "
+                            + "WRES found an issue with the project "
+                            + " configuration in the area of custom "
+                            + "graphics configuration. If customization is "
+                            + "provided, please end it with " + END_TAG;
+
+                    LOGGER.warn(msg, projectConfigPlus.getPath(),
+                            nearbyTag.sourceLocation().getLineNumber(),
+                            nearbyTag.sourceLocation().getColumnNumber());
+
+                    result = false;
+                }
+            }
         }
         return result;
     }

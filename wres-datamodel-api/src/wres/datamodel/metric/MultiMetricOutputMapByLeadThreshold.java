@@ -16,7 +16,7 @@ import java.util.function.BiConsumer;
  * @since 0.1
  */
 
-public interface MetricOutputMultiMap<T extends MetricOutput<?>>
+public interface MultiMetricOutputMapByLeadThreshold<T extends MetricOutput<?>>
 {
 
     /**
@@ -152,7 +152,7 @@ public interface MetricOutputMultiMap<T extends MetricOutput<?>>
          * @return the result store
          */
 
-        MetricOutputMultiMap<T> build();
+        MultiMetricOutputMapByLeadThreshold<T> build();
 
         /**
          * Adds a new result for a collection of metrics to the internal store.

@@ -1,6 +1,7 @@
 package wres;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,6 +21,7 @@ import java.util.function.ToDoubleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
@@ -28,7 +30,7 @@ import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputMapByMetric;
-import wres.datamodel.metric.MetricOutputMultiMap;
+import wres.datamodel.metric.MultiMetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.Threshold;
@@ -36,6 +38,7 @@ import wres.datamodel.metric.Threshold.Condition;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.io.config.ProjectConfigPlus;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
@@ -103,6 +106,17 @@ public class ControlTemp
      */
     public static void main(final String[] args)
     {
+        
+        try {
+        
+            ProjectConfig config = ProjectConfigPlus.from(Paths.get("D:/Applications/WRES/Code/wres/nonsrc/config_possibility.xml")).getProjectConfig();
+            MetricCollection<SingleValuedPairs,ScalarOutput> metrics = MetricFactory.getInstance(dataFac).ofSingleValuedScalarCollection(config);
+            System.out.println(metrics!=null);
+        
+        } catch(Exception e) {
+            
+        }
+        
         final long start = System.currentTimeMillis(); //Start time
         final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 1, 0),
                                                 LocalDateTime.of(2010, 12, 31, 23, 59),
@@ -125,7 +139,7 @@ public class ControlTemp
         final ForkJoinPool f = new ForkJoinPool();
 
         //Sink for the results: the results are added incrementally to an immutable store via a builder
-        final MetricOutputMultiMap.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
+        final MultiMetricOutputMapByLeadThreshold.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
         //Iterate
         for(int i = 0; i < leadTimesCount; i++)
         {
@@ -178,7 +192,7 @@ public class ControlTemp
         }
 
         //Build final results: 
-        MetricOutputMultiMap<ScalarOutput> results = resultsBuilder.build();
+        MultiMetricOutputMapByLeadThreshold<ScalarOutput> results = resultsBuilder.build();
 
         //Print info to logger
         if(LOGGER.isInfoEnabled())
@@ -280,7 +294,7 @@ public class ControlTemp
          * A store of the results.
          */
 
-        private final MetricOutputMultiMap.Builder<S> builder;
+        private final MultiMetricOutputMapByLeadThreshold.Builder<S> builder;
 
         /**
          * Construct the processor with a lead time.
@@ -289,7 +303,7 @@ public class ControlTemp
          */
         public ResultProcessor(final int leadTime,
                                final Threshold threshold,
-                               final MetricOutputMultiMap.Builder<S> builder)
+                               final MultiMetricOutputMapByLeadThreshold.Builder<S> builder)
         {
             this.threshold = threshold;
             this.leadTime = leadTime;

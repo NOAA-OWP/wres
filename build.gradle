@@ -19,6 +19,8 @@ plugins
     id 'org.openrepose.gradle.plugins.jaxb' version '2.2.3'
     // for ability to use git ids for versioning jar files:
     id 'org.ajoberstar.grgit' version '1.7.2'
+    // To compile user documentation (not working: blows up on compileMarkdown)
+    //id 'org.uulib.gradle.markdown' version '0.0.1'
 }
 
 repositories
@@ -153,7 +155,8 @@ project(':wres-datamodel-api')
 {
 	dependencies
     {
-        testCompile 'junit:junit:4.12'
+	compile project(':wres-config')        
+	testCompile 'junit:junit:4.12'
     }
 }
 
@@ -223,6 +226,7 @@ project(':wres-metrics')
     dependencies
     {
         compile project(':wres-datamodel-api')
+	compile project(':wres-config')
         compile 'org.slf4j:slf4j-api:1.7.25'
 	compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6'
 
@@ -346,7 +350,17 @@ task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [su
     }
 }
 
-
+/**
+ * This task is a placeholder until we have a markdown processor that works.
+ * When we have a compileMarkdown task working, then we can use that to take
+ * source markdown and produce html (or pdf, etc.)
+ */
+task(copyDocs, type: Copy, group: 'Documentation')
+{
+    description = 'Copies documentation source to distribution directory.'
+    from 'documentation/src'
+    into 'dist/doc'
+}
 
 
 
@@ -452,11 +466,14 @@ distributions
                 // Must also add the new directory to classpath under
                 // startScripts below. For each module that adds to dist,
                 // add here for now until we can make it grab all of em.
-                ['dist', '../wres-vis/dist']
+                ['dist', 'wres-vis/dist']
             }
         }
     }
 }
+
+// hook to get documentation into default zip/tar/etc.
+processResources.dependsOn(copyDocs)
 
 // Add configuration files to the classpath when running via script
 startScripts
@@ -466,4 +483,18 @@ startScripts
     // added to 'dist/lib' and then the directory name
     // can be added below.
     classpath += files('conf')
+}
+
+jar
+{
+    // toward reproducible builds:
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+
+    // version number should be included
+    manifest
+    {
+        attributes("Implementation-Title": "Water Resources Evaluation Service",
+                   "Implementation-Version": version)
+    }
 }
