@@ -472,6 +472,9 @@ distributions
     }
 }
 
+// hook to get documentation into default zip/tar/etc.
+processResources.dependsOn(copyDocs)
+
 // Add configuration files to the classpath when running via script
 startScripts
 {
