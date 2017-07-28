@@ -17,8 +17,9 @@
           <totalSizeCap>256MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-          <!-- %exception{full}: full stacktrace in log file -->
-          <pattern>%d{YYYY-MM-dd'T'HH:mm:ss.SSSZ} [%thread] %level %logger - %msg%n%exception{full}</pattern>
+          <!-- %exception{full}: full stacktrace in log file.
+               %X{pid}: pid disambiguates multiple wres processes running. -->
+          <pattern>%d{YYYY-MM-dd'T'HH:mm:ss.SSSZ} %X{pid} [%thread] %level %logger - %msg%n%exception{full}</pattern>
         </encoder>
     </appender>
     <!-- some prefer the message to be printed as formatted in the code -->
