@@ -2,6 +2,7 @@ package wres.io.data.details;
 
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.util.Internal;
+import wres.util.Time;
 
 import java.util.Objects;
 
@@ -123,27 +124,9 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 		return script;
 	}
 
-	/*@Override
-	public void save() throws SQLException {
-		super.save();
-
-		synchronized (partitionLock) {
-			String partition = "";
-			partition += "CREATE TABLE IF NOT EXISTS partitions.NETCDFVALUE_SOURCE_";
-			partition += this.getId().toString();
-			partition += " ( " + newline;
-			partition += "	CHECK (source_id = ";
-			partition += this.getId().toString();
-			partition += ")" + newline;
-			partition += ") INHERITS (wres.NetCDFValue);";
-
-			Database.execute(partition);
-		}
-	}*/
-
 	public static SourceKey createKey(String sourcePath, String sourceTime, Integer lead)
 	{
-	    return new SourceKey(sourcePath, sourceTime, lead);
+	    return new SourceKey(sourcePath, Time.normalize(sourceTime), lead);
 	}
 
 	public static class SourceKey implements Comparable<SourceKey>
