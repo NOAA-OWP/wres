@@ -1,6 +1,6 @@
 package wres.datamodel.metric;
 
-import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import wres.datamodel.PairOfBooleans;
@@ -19,28 +19,57 @@ public interface Slicer
 {
 
     /**
-     * Returns the left side of a list of {@link PairOfDoubles} as a primitive array of doubles.
+     * Returns the left side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
      * 
      * @param input the input pairs
      * @return the left side
      */
 
-    double[] getLeftSide(List<PairOfDoubles> input);
+    double[] getLeftSide(SingleValuedPairs input);
 
     /**
-     * Returns the right side of a list of {@link PairOfDoubles} as a primitive array of doubles.
+     * Returns the right side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
      * 
      * @param input the input pairs
      * @return the right side
      */
 
-    double[] getRightSide(List<PairOfDoubles> input);
+    double[] getRightSide(SingleValuedPairs input);
+
+    /**
+     * Returns the left side of {@link EnsemblePairs#getData()} as a primitive array of doubles.
+     * 
+     * @param input the input pairs
+     * @return the left side
+     */
+
+    double[] getLeftSide(EnsemblePairs input);
+
+    /**
+     * Returns a subset of pairs where the {@link Threshold} is met on the left side or null for the empty subset.
+     * 
+     * @param input the {@link SingleValuedPairs} to slice
+     * @param threshold the {@link Threshold} on which to slice
+     * @return the subset of pairs that meet the condition or null
+     */
+
+    SingleValuedPairs sliceByLeft(SingleValuedPairs input, Threshold threshold);
+
+    /**
+     * Returns a subset of pairs where the {@link Threshold} is met on the left side or null for the empty subset.
+     * 
+     * @param input the {@link EnsemblePairs} to slice
+     * @param threshold the {@link Threshold} on which to slice
+     * @return the subset of pairs that meet the condition or null
+     */
+
+    EnsemblePairs sliceByLeft(EnsemblePairs input, Threshold threshold);
 
     /**
      * Produces {@link DichotomousPairs} from a {@link SingleValuedPairs} by applying a mapper function to the input.
      * 
-     * @param input the single-valued pairs
-     * @param mapper the function that maps single-valued pairs to dichotomous pairs
+     * @param input the {@link SingleValuedPairs} pairs
+     * @param mapper the function that maps from {@link SingleValuedPairs} to {@link DichotomousPairs}
      * @return the dichotomous pairs
      */
 
@@ -49,12 +78,60 @@ public interface Slicer
     /**
      * Produces {@link SingleValuedPairs} from a {@link EnsemblePairs} by applying a mapper function to the input.
      * 
-     * @param input the ensemble pairs
-     * @param mapper the function that maps ensemble pairs to single-valued pairs
-     * @return the single-valued pairs
+     * @param input the {@link EnsemblePairs}
+     * @param mapper the function that maps from {@link EnsemblePairs} to {@link SingleValuedPairs} pairs
+     * @return the {@link SingleValuedPairs} pairs
      */
 
     SingleValuedPairs transformPairs(EnsemblePairs input,
-                                    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper);
+                                     Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper);
+
+    /**
+     * Produces {@link DiscreteProbabilityPairs} from a {@link EnsemblePairs} by applying a mapper function to the input
+     * using a prescribed {@link Threshold}.
+     * 
+     * @param input the {@link EnsemblePairs}
+     * @param threshold the {@link Threshold} used to transform the pairs
+     * @param mapper the function that maps from {@link EnsemblePairs} to {@link DiscreteProbabilityPairs}
+     * @return the {@link DiscreteProbabilityPairs} pairs
+     */
+
+    DiscreteProbabilityPairs transformPairs(EnsemblePairs input,
+                                            Threshold threshold,
+                                            BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper);
+
+    /**
+     * Converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} that contains the probabilities that
+     * a discrete event occurs according to the left side and the right side, respectively. The event is represented by
+     * a {@link Threshold}.
+     * 
+     * @param pair the pair to transform
+     * @param threshold the threshold
+     * @return the transformed pair
+     */
+
+    PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair, Threshold threshold);
+
+    /**
+     * Returns a value from the sorted array that corresponds to the input non-exceedence probability. This method 
+     * produces undefined results if the input array is unsorted.
+     * 
+     * @param probability the non-exceedence probability in [0,1]
+     * @param sorted the sorted input array
+     * @return the threshold
+     */
+
+    double getInverseCumulativeProbability(double probability, double[] sorted);    
+    
+    /**
+     * Returns a {@link QuantileThreshold} for the prescribed {@link ProbabilityThreshold}, where the quantiles are
+     * mapped using {@link #getInverseCumulativeProbability(double, double[])}.
+     * 
+     * @param sorted the sorted input array
+     * @param threshold the {@link ProbabilityThreshold} from which the {@link QuantileThreshold} is determined
+     * @return the {@link QuantileThreshold}
+     */
+
+     QuantileThreshold getQuantileFromProbability(ProbabilityThreshold threshold, double[] sorted);
 
 }

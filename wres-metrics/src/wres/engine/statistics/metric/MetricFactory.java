@@ -1,25 +1,23 @@
 package wres.engine.statistics.metric;
 
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
+import wres.datamodel.metric.EnsemblePairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricGroup;
+import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
+import wres.engine.statistics.metric.RelativeOperatingCharacteristic.RelativeOperatingCharacteristicBuilder;
+import wres.engine.statistics.metric.ReliabilityDiagram.ReliabilityDiagramBuilder;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
@@ -81,13 +79,37 @@ public class MetricFactory
      * 
      * @param config the project configuration
      * @return a collection of metrics or null
+     * @deprecated
      */
 
+    @Deprecated
     public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(ProjectConfig config)
     {
-        //Obtain the list of metrics and find the matching metrics 
-        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.SINGLE_VALUED_SCALAR);
-        return metrics.length == 0 ? null : ofSingleValuedScalarCollection(metrics);
+        return getSingleValuedProcessor(config).singleValuedScalar;
+    }
+
+    /**
+     * Returns an instance of a {@link MetricProcessor} for processing {@link EnsemblePairs}.
+     * 
+     * @param config the project configuration
+     * @return the {@link MetricProcessor}
+     */
+
+    public MetricProcessor<EnsemblePairs> getEnsembleProcessor(final ProjectConfig config)
+    {
+        return MetricProcessorEnsemble.of(outputFactory, config);
+    }
+
+    /**
+     * Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}.
+     * 
+     * @param config the project configuration
+     * @return the {@link MetricProcessor}
+     */
+
+    public MetricProcessor<SingleValuedPairs> getSingleValuedProcessor(final ProjectConfig config)
+    {
+        return MetricProcessorSingleValued.of(outputFactory, config);
     }
 
     /**
@@ -111,21 +133,6 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
-     * {@link VectorOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
-     * 
-     * @param config the project configuration
-     * @return a collection of metrics or null
-     */
-
-    public MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection(ProjectConfig config)
-    {
-        //Obtain the list of metrics and find the matching metrics 
-        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.SINGLE_VALUED_VECTOR);
-        return metrics.length == 0 ? null : ofSingleValuedVectorCollection(metrics);
-    }
-
-    /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
      * {@link VectorOutput}.
      * 
      * @param metric the metric identifiers
@@ -141,21 +148,6 @@ public class MetricFactory
         }
         builder.setOutputFactory(outputFactory);
         return builder.build();
-    }
-
-    /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
-     * {@link VectorOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
-     * 
-     * @param config the project configuration
-     * @return a collection of metrics or null
-     */
-
-    public MetricCollection<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVectorCollection(ProjectConfig config)
-    {
-        //Obtain the list of metrics and find the matching metrics 
-        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.DISCRETE_PROBABILITY_VECTOR);
-        return metrics.length == 0 ? null : ofDiscreteProbabilityVectorCollection(metrics);
     }
 
     /**
@@ -179,21 +171,6 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
-     * {@link ScalarOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
-     * 
-     * @param config the project configuration
-     * @return a collection of metrics or null
-     */
-
-    public MetricCollection<DichotomousPairs, ScalarOutput> ofDichotomousScalarCollection(ProjectConfig config)
-    {
-        //Obtain the list of metrics and find the matching metrics 
-        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.DICHOTOMOUS_SCALAR);
-        return metrics.length == 0 ? null : ofDichotomousScalarCollection(metrics);
-    }
-
-    /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
      * {@link ScalarOutput}.
      * 
      * @param metric the metric identifiers
@@ -206,6 +183,45 @@ public class MetricFactory
         for(MetricConstants next: metric)
         {
             builder.add(ofDichotomousScalar(next));
+        }
+        builder.setOutputFactory(outputFactory);
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
+     * {@link MultiVectorOutput}.
+     * 
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput> ofDiscreteProbabilityMultiVectorCollection(MetricConstants... metric)
+    {
+        final MetricCollectionBuilder<DiscreteProbabilityPairs, MultiVectorOutput> builder =
+                                                                                           MetricCollectionBuilder.of();
+        for(MetricConstants next: metric)
+        {
+            builder.add(ofDiscreteProbabilityMultiVector(next));
+        }
+        builder.setOutputFactory(outputFactory);
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link MulticategoryPairs} and produce
+     * {@link MatrixOutput}.
+     * 
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrixCollection(MetricConstants... metric)
+    {
+        final MetricCollectionBuilder<MulticategoryPairs, MatrixOutput> builder = MetricCollectionBuilder.of();
+        for(MetricConstants next: metric)
+        {
+            builder.add(ofMulticategoryMatrix(next));
         }
         builder.setOutputFactory(outputFactory);
         return builder.build();
@@ -319,6 +335,26 @@ public class MetricFactory
         {
             case PEIRCE_SKILL_SCORE:
                 return ofPeirceSkillScoreMulti();
+            default:
+                throw new IllegalArgumentException(error + " '" + metric + "'.");
+        }
+    }
+
+    /**
+     * Returns a {@link Metric} that consumes {@link DiscreteProbabilityPairs} and produces {@link MultiVectorOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     */
+
+    public Metric<DiscreteProbabilityPairs, MultiVectorOutput> ofDiscreteProbabilityMultiVector(MetricConstants metric)
+    {
+        switch(metric)
+        {
+            case RELIABILITY_DIAGRAM:
+                return ofReliabilityDiagram();
+            case RELATIVE_OPERATING_CHARACTERISTIC:
+                return ofRelativeOperatingCharacteristic();
             default:
                 throw new IllegalArgumentException(error + " '" + metric + "'.");
         }
@@ -543,26 +579,26 @@ public class MetricFactory
     }
 
     /**
-     * Returns a set of {@link MetricConstants} from a {@link ProjectConfig} for a specified {@link MetricGroup} or null
-     * if no metrics exist.
+     * Return a default {@link ReliabilityDiagram} function.
      * 
-     * @param config the project configuration
-     * @return a set of {@link MetricConstants} for a specified {@link MetricGroup} or null
+     * @return a default {@link ReliabilityDiagram} function.
      */
 
-    private static MetricConstants[] getMetricsFromConfig(ProjectConfig config, MetricGroup group)
+    protected ReliabilityDiagram ofReliabilityDiagram()
     {
-        Objects.requireNonNull(config, "Specify a non-null project from which to generate metrics.");
-        //Obtain the list of metrics
-        List<MetricConfigName> metricsConfig = config.getOutputs()
-                                                     .getMetric()
-                                                     .stream()
-                                                     .map(MetricConfig::getValue)
-                                                     .collect(Collectors.toList());
-        //Find the matching metrics 
-        Set<MetricConstants> metrics = group.getMetrics();
-        metrics.removeIf(a -> !metricsConfig.contains(a.toMetricConfigName()));
-        return metrics.toArray(new MetricConstants[metrics.size()]);
+        return (ReliabilityDiagram)new ReliabilityDiagramBuilder().setOutputFactory(outputFactory).build();
+    }
+
+    /**
+     * Return a default {@link RelativeOperatingCharacteristic} function.
+     * 
+     * @return a default {@link RelativeOperatingCharacteristic} function.
+     */
+
+    protected RelativeOperatingCharacteristic ofRelativeOperatingCharacteristic()
+    {
+        return (RelativeOperatingCharacteristic)new RelativeOperatingCharacteristicBuilder().setOutputFactory(outputFactory)
+                                                                                            .build();
     }
 
     /**

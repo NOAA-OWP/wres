@@ -1,8 +1,10 @@
 package wres.datamodel.metric;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import wres.datamodel.PairOfBooleans;
@@ -49,29 +51,122 @@ public class DefaultSlicer implements Slicer
     }
 
     /**
-     * Null error message.
+     * Null input error message.
      */
-    private static final String NULL_ERROR = "Specify a non-null input to slice.";
+    private static final String NULL_INPUT = "Specify a non-null input to slice.";
+
+    /**
+     * Null mapper function error message.
+     */
+
+    private static final String NULL_MAPPER = "Specify a non-null function to map the input to an output.";
 
     @Override
-    public double[] getLeftSide(List<PairOfDoubles> input)
+    public double[] getLeftSide(SingleValuedPairs input)
     {
-        Objects.requireNonNull(input, NULL_ERROR);
-        return input.stream().mapToDouble(PairOfDoubles::getItemOne).toArray();
+        Objects.requireNonNull(input, NULL_INPUT);
+        return input.getData().stream().mapToDouble(PairOfDoubles::getItemOne).toArray();
     }
 
     @Override
-    public double[] getRightSide(List<PairOfDoubles> input)
+    public double[] getLeftSide(EnsemblePairs input)
     {
-        Objects.requireNonNull(input, NULL_ERROR);
-        return input.stream().mapToDouble(PairOfDoubles::getItemTwo).toArray();
+        Objects.requireNonNull(input, NULL_INPUT);
+        return input.getData().stream().mapToDouble(PairOfDoubleAndVectorOfDoubles::getItemOne).toArray();
+    }
+
+    @Override
+    public double[] getRightSide(SingleValuedPairs input)
+    {
+        Objects.requireNonNull(input, NULL_INPUT);
+        return input.getData().stream().mapToDouble(PairOfDoubles::getItemTwo).toArray();
+    }
+
+    @Override
+    public SingleValuedPairs sliceByLeft(SingleValuedPairs input, Threshold threshold)
+    {
+        Objects.requireNonNull(input, NULL_INPUT);
+        Objects.requireNonNull(threshold, "Specify a non-null threshold.");
+        List<PairOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubles> mainPairsSubset = new ArrayList<>();
+        mainPairs.forEach(a -> {
+            if(threshold.test(a.getItemOne()))
+                mainPairsSubset.add(a);
+        });
+        //No pairs in the subset
+        if(mainPairsSubset.isEmpty())
+        {
+            return null;
+        }
+        Metadata metaTransformed =
+                                 dataFac.getMetadataFactory().getMetadata(input.getMetadata(),
+                                                                          dataFac.getMetadataFactory().getDimension());
+        if(input.hasBaseline())
+        {
+            List<PairOfDoubles> basePairs = input.getDataForBaseline();
+            List<PairOfDoubles> basePairsSubset = new ArrayList<>();
+            basePairs.forEach(a -> {
+                if(threshold.test(a.getItemOne()))
+                    basePairsSubset.add(a);
+            });
+            Metadata metaBaseTransformed = dataFac.getMetadataFactory()
+                                                  .getMetadata(input.getMetadataForBaseline(),
+                                                               dataFac.getMetadataFactory().getDimension());
+            //No pairs in the subset
+            if(basePairsSubset.isEmpty())
+            {
+                return null;
+            }
+            return dataFac.ofSingleValuedPairs(mainPairsSubset, basePairsSubset, metaTransformed, metaBaseTransformed);
+        }
+        return dataFac.ofSingleValuedPairs(mainPairsSubset, metaTransformed);
+    }
+
+    @Override
+    public EnsemblePairs sliceByLeft(EnsemblePairs input, Threshold threshold)
+    {
+        Objects.requireNonNull(input, NULL_INPUT);
+        Objects.requireNonNull(threshold, "Specify a non-null threshold.");
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubleAndVectorOfDoubles> mainPairsSubset = new ArrayList<>();
+        mainPairs.forEach(a -> {
+            if(threshold.test(a.getItemOne()))
+                mainPairsSubset.add(a);
+        });
+        //No pairs in the subset
+        if(mainPairsSubset.isEmpty())
+        {
+            return null;
+        }
+        Metadata metaTransformed =
+                                 dataFac.getMetadataFactory().getMetadata(input.getMetadata(),
+                                                                          dataFac.getMetadataFactory().getDimension());
+        if(input.hasBaseline())
+        {
+            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getDataForBaseline();
+            List<PairOfDoubleAndVectorOfDoubles> basePairsSubset = new ArrayList<>();
+            basePairs.forEach(a -> {
+                if(threshold.test(a.getItemOne()))
+                    basePairsSubset.add(a);
+            });
+            Metadata metaBaseTransformed = dataFac.getMetadataFactory()
+                                                  .getMetadata(input.getMetadataForBaseline(),
+                                                               dataFac.getMetadataFactory().getDimension());
+            //No pairs in the subset
+            if(basePairsSubset.isEmpty())
+            {
+                return null;
+            }
+            return dataFac.ofEnsemblePairs(mainPairsSubset, basePairsSubset, metaTransformed, metaBaseTransformed);
+        }
+        return dataFac.ofEnsemblePairs(mainPairsSubset, metaTransformed);
     }
 
     @Override
     public DichotomousPairs transformPairs(SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper)
     {
-        Objects.requireNonNull(input, NULL_ERROR);
-        Objects.requireNonNull(mapper, "Specify a non-null mapper function.");
+        Objects.requireNonNull(input, NULL_INPUT);
+        Objects.requireNonNull(mapper, NULL_MAPPER);
         List<PairOfDoubles> mainPairs = input.getData();
         List<PairOfBooleans> mainPairsTransformed = new ArrayList<>();
         mainPairs.stream().map(mapper).forEach(mainPairsTransformed::add);
@@ -93,12 +188,13 @@ public class DefaultSlicer implements Slicer
         }
         return dataFac.ofDichotomousPairsFromAtomic(mainPairsTransformed, metaTransformed);
     }
-    
+
     @Override
-    public SingleValuedPairs transformPairs(EnsemblePairs input, Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper)
+    public SingleValuedPairs transformPairs(EnsemblePairs input,
+                                            Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper)
     {
-        Objects.requireNonNull(input, NULL_ERROR);
-        Objects.requireNonNull(mapper, "Specify a non-null mapper function.");
+        Objects.requireNonNull(input, NULL_INPUT);
+        Objects.requireNonNull(mapper, NULL_MAPPER);
         List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
         List<PairOfDoubles> mainPairsTransformed = new ArrayList<>();
         mainPairs.stream().map(mapper).forEach(mainPairsTransformed::add);
@@ -114,12 +210,87 @@ public class DefaultSlicer implements Slicer
                                                   .getMetadata(input.getMetadataForBaseline(),
                                                                dataFac.getMetadataFactory().getDimension());
             return dataFac.ofSingleValuedPairs(mainPairsTransformed,
-                                                        basePairsTransformed,
-                                                        metaTransformed,
-                                                        metaBaseTransformed);
+                                               basePairsTransformed,
+                                               metaTransformed,
+                                               metaBaseTransformed);
         }
         return dataFac.ofSingleValuedPairs(mainPairsTransformed, metaTransformed);
-    }    
+    }
+
+    @Override
+    public DiscreteProbabilityPairs transformPairs(EnsemblePairs input,
+                                                   Threshold threshold,
+                                                   BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper)
+    {
+        Objects.requireNonNull(input, NULL_INPUT);
+        Objects.requireNonNull(mapper, NULL_MAPPER);
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubles> mainPairsTransformed = new ArrayList<>();
+        mainPairs.forEach(pair -> mainPairsTransformed.add(mapper.apply(pair, threshold)));
+        Metadata metaTransformed =
+                                 dataFac.getMetadataFactory().getMetadata(input.getMetadata(),
+                                                                          dataFac.getMetadataFactory().getDimension());
+        if(input.hasBaseline())
+        {
+            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getDataForBaseline();
+            List<PairOfDoubles> basePairsTransformed = new ArrayList<>();
+            basePairs.forEach(pair -> basePairsTransformed.add(mapper.apply(pair, threshold)));
+            Metadata metaBaseTransformed = dataFac.getMetadataFactory()
+                                                  .getMetadata(input.getMetadataForBaseline(),
+                                                               dataFac.getMetadataFactory().getDimension());
+            return dataFac.ofDiscreteProbabilityPairs(mainPairsTransformed,
+                                                      basePairsTransformed,
+                                                      metaTransformed,
+                                                      metaBaseTransformed);
+        }
+        return dataFac.ofDiscreteProbabilityPairs(mainPairsTransformed, metaTransformed);
+    }
+
+    @Override
+    public PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair, Threshold threshold)
+    {
+        double rhs = Arrays.stream(pair.getItemTwo()).map(a -> threshold.test(a) ? 1 : 0).average().getAsDouble();
+        return dataFac.pairOf(threshold.test(pair.getItemOne()) ? 1 : 0, rhs);
+    }
+
+    @Override
+    public double getInverseCumulativeProbability(double probability, double[] sorted)
+    {
+        if(probability < 0 || probability > 1.0) {
+            throw new IllegalArgumentException("The input probability is not within the unit interval: "+probability);
+        }
+        if(sorted.length==0) {
+            throw new IllegalArgumentException("Cannot compute the inverse cumulative probability from empty input.");
+        }
+        if(Double.compare(probability,0)==0) {
+            return sorted[0];
+        }
+        if(Double.compare(probability,1)==0) {
+            return sorted[sorted.length-1];
+        }
+        double index = probability * sorted.length;
+        int lower = (int)Math.floor(index);
+        double fraction = index - lower;
+        return sorted[lower] + fraction*(sorted[lower+1]-sorted[lower]); 
+    }
+
+    @Override
+    public QuantileThreshold getQuantileFromProbability(ProbabilityThreshold threshold, double[] sorted)
+    {
+        Objects.requireNonNull(threshold, "Specify a non-null probability threshold.");
+        Objects.requireNonNull(sorted, "Specify a non-null array of sorted values.");
+        Double first = getInverseCumulativeProbability(threshold.getThreshold(), sorted);
+        Double second = null;
+        if(threshold.hasBetweenCondition())
+        {
+            second = getInverseCumulativeProbability(threshold.getThresholdUpper(), sorted);
+        }
+        return dataFac.getQuantileThreshold(first,
+                                            second,
+                                            threshold.getThreshold(),
+                                            threshold.getThresholdUpper(),
+                                            threshold.getCondition());
+    }
 
     /**
      * Hidden constructor.

@@ -18,7 +18,7 @@ import java.util.TreeSet;
  * @version 0.1
  * @since 0.1
  */
-public class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOutputMapByMetric<T>
+class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOutputMapByMetric<T>
 {
 
     /**
