@@ -127,7 +127,7 @@ public class Control implements Function<String[], Integer>
         DataFactory dataFac = DefaultDataFactory.getInstance();
 
         //Sink for the results: the results are added incrementally to an immutable store via a builder
-        MultiMetricOutputMapByLeadThreshold.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
+        MetricOutputMultiMapByLeadThreshold.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
 
 
         for (ProjectConfigPlus projectConfigPlus : projectConfiggies)
@@ -202,7 +202,7 @@ public class Control implements Function<String[], Integer>
 
                     int leadTime = i + 1;
                     Threshold fakeThreshold = dataFac.getThreshold(Double.NEGATIVE_INFINITY, Threshold.Condition.GREATER);
-                    resultsBuilder.add(leadTime, fakeThreshold, metrics);
+                    resultsBuilder.put(leadTime, fakeThreshold, metrics);
 
                     if (LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
                     {
@@ -244,7 +244,7 @@ public class Control implements Function<String[], Integer>
             }
 
             //Build final results:
-            MultiMetricOutputMapByLeadThreshold<ScalarOutput> results = resultsBuilder.build();
+            MetricOutputMultiMapByLeadThreshold<ScalarOutput> results = resultsBuilder.build();
 
             // Make charts!
             try

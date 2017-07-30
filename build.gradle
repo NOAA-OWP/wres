@@ -160,8 +160,7 @@ project(':utilities')
 project(':wres-datamodel-api')
 {
 	dependencies
-    {
-	compile project(':wres-config')        
+    {     
 	testCompile 'junit:junit:4.12'
     }
 }
@@ -233,11 +232,12 @@ project(':wres-metrics')
     {
         compile project(':wres-datamodel-api')
 	compile project(':wres-config')
-        compile 'org.slf4j:slf4j-api:1.7.25'
 	compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6'
+        compile 'org.slf4j:slf4j-api:1.7.25'
 
         testCompile project (':wres-datamodel')
         testCompile 'junit:junit:4.12'
+        testCompile 'org.slf4j:slf4j-api:1.7.25'
     }
 }
 

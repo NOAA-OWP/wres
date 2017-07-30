@@ -262,7 +262,7 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> ofMap(final Map<MapBiKey<Integer, Threshold>, T> input)
     {
-        Objects.requireNonNull(input, "Specify a non-null input map.");
+        Objects.requireNonNull(input, "Specify a non-null map of inputs by lead time and threshold.");
         final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
                                                                     new SafeMetricOutputMapByLeadThreshold.Builder<>();
         input.forEach(builder::put);
@@ -270,20 +270,62 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public <S extends MetricOutput<?>> MultiMetricOutputMapByLeadThreshold.Builder<S> ofMultiMap()
+    public <T extends MetricOutput<?>> MetricOutputMultiMapByThreshold<T> ofMultiMap(final Map<MapKey<Threshold>, MetricOutputMapByMetric<T>> input)
     {
-        return new SafeMultiMetricOutputMapByLeadThreshold.MultiMapBuilder<>();
+        Objects.requireNonNull(input, "Specify a non-null map of inputs by threshold.");
+        final SafeMetricOutputMultiMapByThreshold.MultiMapBuilder<T> builder =
+                                                                             new SafeMetricOutputMultiMapByThreshold.MultiMapBuilder<>();
+        input.forEach(builder::put);
+        return builder.build();
+    }
+
+    @Override
+    public <S extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold.Builder<S> ofMultiMap()
+    {
+        return new SafeMetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder<>();
     }
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> combine(final List<MetricOutputMapByLeadThreshold<T>> input)
     {
-        Objects.requireNonNull(input, "Specify a non-null input map.");
+        Objects.requireNonNull(input, "Specify a non-null map of inputs to combine.");
         final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
                                                                     new SafeMetricOutputMapByLeadThreshold.Builder<>();
         input.forEach(a -> a.forEach(builder::put));
         builder.setOverrideMetadata(input.get(0).getMetadata());
         return builder.build();
+    }
+
+    @Override
+    public <S extends Comparable<S>> MapKey<S> getMapKey(final S key)
+    {
+
+        //Bounds checks
+        Objects.requireNonNull(key, "Specify a non-null key.");
+
+        /**
+         * Default implementation of a {@link MapKey}.
+         */
+
+        class DefaultMapKey implements MapKey<S>
+        {
+
+            @Override
+            public int compareTo(final MapKey<S> o)
+            {
+                //Compare the key
+                Objects.requireNonNull(o, "Specify a non-null map key for comparison.");
+                return key.compareTo(o.getKey());
+            }
+
+            @Override
+            public S getKey()
+            {
+                return key;
+            }
+
+        }
+        return new DefaultMapKey();
     }
 
     @Override
@@ -299,19 +341,14 @@ public class DefaultDataFactory implements DataFactory
          * Default implementation of a {@link MapBiKey}.
          */
 
-        class MapKey implements MapBiKey<S, T>
+        class DefaultMapBiKey implements MapBiKey<S, T>
         {
 
             @Override
             public int compareTo(final MapBiKey<S, T> o)
             {
-                //Compare on lead time, then threshold type, then threshold value, then upper threshold value, where 
-                //it exists
+                //Compare the keys
                 Objects.requireNonNull(o, "Specify a non-null map key for comparison.");
-                if(!(o instanceof MapKey))
-                {
-                    return -1;
-                }
                 final int returnMe = firstKey.compareTo(o.getFirstKey());
                 if(returnMe != 0)
                 {
@@ -333,25 +370,38 @@ public class DefaultDataFactory implements DataFactory
             }
 
         }
-        return new MapKey();
+        return new DefaultMapBiKey();
     }
 
     @Override
     public Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
     {
-        return new SafeThresholdKey(threshold, thresholdUpper, condition);
+        return new SafeThreshold(threshold, thresholdUpper, condition);
     }
 
     @Override
-    public Quantile getQuantile(final Double threshold,
-                                final Double thresholdUpper,
-                                final Double probability,
-                                final Double probabilityUpper,
-                                final Condition condition)
+    public ProbabilityThreshold getProbabilityThreshold(final Double threshold,
+                                                        final Double thresholdUpper,
+                                                        final Condition condition)
     {
-        return new SafeQuantileKey(threshold, thresholdUpper, probability, probabilityUpper, condition);
+        return new SafeProbabilityThreshold(threshold, thresholdUpper, condition);
     }
 
+    @Override
+    public QuantileThreshold getQuantileThreshold(final Double threshold,
+                                                  final Double thresholdUpper,
+                                                  final Double probability,
+                                                  final Double probabilityUpper,
+                                                  final Condition condition)
+    {
+        return new SafeQuantileThreshold(threshold, thresholdUpper, probability, probabilityUpper, condition);
+    }
+
+    @Override
+    public MetricOutputForProjectByThreshold.Builder ofMetricOutputForProjectByThreshold() {
+        return new SafeMetricOutputForProjectByThreshold.MetricOutputForProjectByThresholdBuilder();
+    }
+    
     /**
      * Returns an immutable list that contains a safe type of the input.
      * 
@@ -361,7 +411,8 @@ public class DefaultDataFactory implements DataFactory
 
     List<PairOfDoubles> safePairOfDoublesList(List<PairOfDoubles> input)
     {
-        Objects.requireNonNull(input, "Specify a non-null input from which to create a safe type.");
+        Objects.requireNonNull(input,
+                               "Specify a non-null list of single-valued pairs from which to create a safe type.");
         List<PairOfDoubles> returnMe = new ArrayList<>();
         input.forEach(value -> {
             if(value instanceof SafePairOfDoubles)
@@ -385,7 +436,7 @@ public class DefaultDataFactory implements DataFactory
 
     List<PairOfDoubleAndVectorOfDoubles> safePairOfDoubleAndVectorOfDoublesList(List<PairOfDoubleAndVectorOfDoubles> input)
     {
-        Objects.requireNonNull(input, "Specify a non-null input from which to create a safe type.");
+        Objects.requireNonNull(input, "Specify a non-null list of ensemble pairs from which to create a safe type.");
         List<PairOfDoubleAndVectorOfDoubles> returnMe = new ArrayList<>();
         input.forEach(value -> {
             if(value instanceof SafePairOfDoubleAndVectorOfDoubles)
@@ -409,7 +460,8 @@ public class DefaultDataFactory implements DataFactory
 
     List<VectorOfBooleans> safeVectorOfBooleansList(List<VectorOfBooleans> input)
     {
-        Objects.requireNonNull(input, "Specify a non-null input from which to create a safe type.");
+        Objects.requireNonNull(input,
+                               "Specify a non-null list of dichotomous inputs from which to create a safe type.");
         List<VectorOfBooleans> returnMe = new ArrayList<>();
         input.forEach(value -> {
             if(value instanceof SafeVectorOfBooleans)
