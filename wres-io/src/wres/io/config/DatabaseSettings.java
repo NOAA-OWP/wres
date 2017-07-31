@@ -139,6 +139,30 @@ final class DatabaseSettings {
 
         return datasource;
 	}
+
+	public ComboPooledDataSource createHighPriorityDataSource()
+	{
+		ComboPooledDataSource highPrioritySource = new ComboPooledDataSource();
+
+		try
+		{
+			highPrioritySource.setDriverClass(DRIVER_MAPPING.get(getDatabaseType()));
+			highPrioritySource.setJdbcUrl(getConnectionString());
+			highPrioritySource.setUser(username);
+			highPrioritySource.setPassword(password);
+			highPrioritySource.setAutoCommitOnClose(true);
+			highPrioritySource.setMaxIdleTime(10);
+			highPrioritySource.setMaxPoolSize(5);
+			highPrioritySource.setPreferredTestQuery("SELECT 1");
+			highPrioritySource.setTestConnectionOnCheckout(false);
+		}
+		catch (PropertyVetoException e)
+		{
+			e.printStackTrace();
+		}
+
+		return highPrioritySource;
+	}
 	
 	/**
 	 * Sets the URL of the database to connect to

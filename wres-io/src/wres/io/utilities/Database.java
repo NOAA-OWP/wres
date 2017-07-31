@@ -35,6 +35,7 @@ public final class Database {
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
     private static final ComboPooledDataSource CONNECTION_POOL = SystemSettings.getConnectionPool();
+    private static final ComboPooledDataSource HIGH_PRIORITY_CONNECTION_POOL = SystemSettings.getHighPriorityConnectionPool();
 
 	// A thread executor specifically for SQL calls
 	private static ThreadPoolExecutor SQL_TASKS = createService();
@@ -336,6 +337,12 @@ public final class Database {
 	{
 		return CONNECTION_POOL.getConnection();
 	}
+
+	public static Connection getHighPriorityConnection() throws SQLException
+    {
+        LOGGER.debug("Retrieving a high priority database connection...");
+        return HIGH_PRIORITY_CONNECTION_POOL.getConnection();
+    }
 	
 	/**
 	 * Returns the connection to the connection pool.
@@ -356,6 +363,23 @@ public final class Database {
             }
 	    }
 	}
+
+	public static void returnHighPriorityConnection(Connection connection)
+    {
+        if (connection != null)
+        {
+            try
+            {
+                connection.close();
+                LOGGER.debug("A high priority database operation has completed.");
+            }
+            catch (SQLException error)
+            {
+                LOGGER.error("A high priority connection could not be returned to the connection pool properly.");
+                LOGGER.error(Strings.getStackTrace(error));
+            }
+        }
+    }
 	
 	public static void execute(final String query) throws SQLException
 	{	

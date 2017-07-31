@@ -58,7 +58,7 @@ public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
 
         try
         {
-            connection = Database.getConnection();
+            connection = Database.getHighPriorityConnection();
             String loadScript = "SELECT forecasttype_id, type_name, timestep" + NEWLINE;
             loadScript += "FROM wres.ForecastType;";
 
@@ -90,7 +90,7 @@ public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
 
             if (connection != null)
             {
-                Database.returnConnection(connection);
+                Database.returnHighPriorityConnection(connection);
             }
         }
     }

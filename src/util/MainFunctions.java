@@ -14,8 +14,10 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.io.Operations;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ConfigHelper;
+import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptGenerator;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -96,6 +98,7 @@ public final class MainFunctions
 		prototypes.put("loadcoordinates", loadCoordinates());
 		prototypes.put("install", install());
 		prototypes.put("ingest", ingest());
+		prototypes.put("generatepairscript", generatePairScript());
 
 		return prototypes;
 	}
@@ -471,7 +474,7 @@ public final class MainFunctions
                     final String projectName = args[0];
                     LOGGER.info("The project name is: {}", projectName);
 
-                    final ProjectConfig foundProject = ConfigHelper.read(projectName);// ProjectSettings.getProject(projectName);
+                    final ProjectConfig foundProject = ProjectConfigPlus.from(Paths.get(projectName)).getProjectConfig();
 
                     final Map<String, Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>>> pairMapping = new TreeMap<>();
 
@@ -509,50 +512,6 @@ public final class MainFunctions
                         pairMapping.put(description, Operations.getPairs(foundProject, feature));
                     }
 
-
-                    final int printLimit = 100;
-                    int printCount = 0;
-                    final int totalLimit = 10;
-                    int totalCount = 0;
-
-                    LOGGER.info("");
-
-                    for (final String locationDescription : pairMapping.keySet())
-                    {
-                        /*LOGGER.info("");
-                        LOGGER.info("Feature: {}", locationDescription);
-                        LOGGER.info("");*/
-                        for (final Integer leadKey : pairMapping.get(locationDescription).keySet()) {
-                            //LOGGER.info("\tLead Time: " + leadKey);
-
-                            List<PairOfDoubleAndVectorOfDoubles> pairs = pairMapping.get(locationDescription)
-                                                                                    .get(leadKey)
-                                                                                    .get();
-
-                            /*for (final PairOfDoubleAndVectorOfDoubles pair : pairs) {
-                                final String representation = "\t\t" + pair.toString()
-                                                                           .substring(0,
-                                                                                      Math.min(120,
-                                                                                               pair.toString().length()));
-                                LOGGER.info(representation);
-
-                                printCount++;
-
-                                if (printCount >= printLimit) {
-                                    break;
-                                }
-                            }
-
-                            totalCount++;
-                            printCount = 0;
-
-                            if (totalCount >= totalLimit) {
-                                break;
-                            }*/
-                        }
-
-                        totalCount = 0;
-                    }
 					result = SUCCESS;
                 }
                 catch(final Exception e)
@@ -569,7 +528,43 @@ public final class MainFunctions
 	    };
 	}
 
-    private static Function<String[], Integer> ingest () {
+	private static Function<String[], Integer> generatePairScript()
+    {
+        return (String[] args) ->
+        {
+            int result = SUCCESS;
+
+            if (args.length > 0)
+            {
+                String projectPath = args[0];
+
+                try {
+                    ProjectConfig config = ConfigHelper.read(projectPath);
+
+                    Conditions.Feature firstFeature = config.getConditions().getFeature().get(0);
+
+                    String script = ScriptGenerator.generateGetPairData(config, firstFeature, 1);
+
+                    LOGGER.info(script);
+                }
+                catch (Exception error) {
+                    LOGGER.error(Strings.getStackTrace(error));
+                    result = FAILURE;
+                }
+            }
+            else
+            {
+                LOGGER.error("Not enough parameters were entered to generate a pair script");
+                LOGGER.info("usage: generatePairScript <path to project>");
+                result = FAILURE;
+            }
+
+            return result;
+        };
+    }
+
+    private static Function<String[], Integer> ingest ()
+    {
 	    return (String[] args) -> {
 	        int result = FAILURE;
 

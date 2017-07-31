@@ -131,7 +131,7 @@ public final class Variables extends Cache<VariableDetails, String>
             ResultSet variables = null;
             try
             {
-                connection = Database.getConnection();
+                connection = Database.getHighPriorityConnection();
 
                 String loadScript = "SELECT variable_id, variable_name, measurementunit_id" + System.lineSeparator();
                 loadScript += "FROM wres.variable;";
@@ -171,7 +171,7 @@ public final class Variables extends Cache<VariableDetails, String>
 
                 if (connection != null)
                 {
-                    Database.returnConnection(connection);
+                    Database.returnHighPriorityConnection(connection);
                 }
             }
         }

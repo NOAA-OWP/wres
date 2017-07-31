@@ -167,7 +167,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 
 		try
 		{
-		    connection = Database.getConnection();
+		    connection = Database.getHighPriorityConnection();
 		    loadQuery = connection.createStatement();
 		    loadQuery.setFetchSize(100);
 
@@ -202,7 +202,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 
             if (connection != null)
             {
-                Database.returnConnection(connection);
+                Database.returnHighPriorityConnection(connection);
             }
 		}
 	}

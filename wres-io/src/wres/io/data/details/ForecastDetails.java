@@ -193,8 +193,6 @@ public final class ForecastDetails {
         script += "         AND source_id = " + sourceID + NEWLINE;
         script += ");";
 
-        //synchronized (ForecastDetails.sourceLock) {
-			Database.execute(script);
-		//}
+		Database.execute(script);
 	}
 }

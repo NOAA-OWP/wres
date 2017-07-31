@@ -11,8 +11,6 @@ import wres.util.XML;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The cache for all configured system settings
@@ -237,6 +235,11 @@ public final class SystemSettings extends XMLReader
 	public static ComboPooledDataSource getConnectionPool()
 	{
         return INSTANCE.databaseConfiguration.createDatasource();
+	}
+
+	public static ComboPooledDataSource getHighPriorityConnectionPool()
+	{
+		return INSTANCE.databaseConfiguration.createHighPriorityDataSource();
 	}
 
 	@Override

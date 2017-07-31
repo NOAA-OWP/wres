@@ -86,9 +86,9 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 
         try
         {
-            connection = Database.getConnection();
+            connection = Database.getHighPriorityConnection();
 
-            String loadScript = "SELECT measurementunit_id, unit_name" + System.lineSeparator();
+            String loadScript = "SELECT measurementunit_id, unit_name" + NEWLINE;
             loadScript += "FROM wres.measurementunit" + NEWLINE;
             loadScript += "LIMIT " + getMaxDetails() + ";";
 
@@ -121,7 +121,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 
             if (connection != null)
             {
-                Database.returnConnection(connection);
+                Database.returnHighPriorityConnection(connection);
             }
         }
 	}

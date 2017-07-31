@@ -114,7 +114,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 
         try
         {
-            connection = Database.getConnection();
+            connection = Database.getHighPriorityConnection();
             String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time" + System.lineSeparator();
             loadScript += "FROM wres.Source" + System.lineSeparator();
             loadScript += "LIMIT " + getMaxDetails();
@@ -152,7 +152,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 
             if (connection != null)
             {
-                Database.returnConnection(connection);
+                Database.returnHighPriorityConnection(connection);
             }
         }
     }
