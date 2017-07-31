@@ -52,11 +52,6 @@ public class ScalarOutputByThresholdLeadXYDataset extends AbstractXYDataset
             data.add(input.sliceByLead(key));
             legendNames.add(key.toString()+"h"); //Assumes WRES uses hours for lead times globally
         });
-        
-        data.get(0).forEach((key,value)->{
-            System.out.println(key.getSecondKey());
-        });
-        
     }
 
     /**

@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * @version 0.1
  * @since 0.1
  */
-public class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements MetricOutputMapByLeadThreshold<T>
+class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements MetricOutputMapByLeadThreshold<T>
 {
 
     /**

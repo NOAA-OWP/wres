@@ -44,7 +44,7 @@ public final class CoefficientOfDeterminationTest
         //Build the metric
         final CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
         b.setOutputFactory(dataF);
-        final CoefficientOfDetermination rho = (CoefficientOfDetermination)b.build();
+        final CoefficientOfDetermination cod = (CoefficientOfDetermination)b.build();
 
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
                                                                   metaFac.getDimension(),
@@ -53,26 +53,26 @@ public final class CoefficientOfDeterminationTest
                                                                   MetricConstants.MAIN);
 
         //Compute normally
-        final ScalarOutput actual = rho.apply(input);
+        final ScalarOutput actual = cod.apply(input);
         final ScalarOutput expected = dataF.ofScalarOutput(Math.pow(0.9999999910148981, 2), m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));
 
         //Check the parameters
         assertTrue("Unexpected name for Coefficient of determination.",
-                   rho.getName().equals(metaFac.getMetricName(MetricConstants.COEFFICIENT_OF_DETERMINATION)));
-        assertTrue("Coefficient of determination is not decomposable.", !rho.isDecomposable());
-        assertTrue("Coefficient of determination is not a skill score.", !rho.isSkillScore());
+                   cod.getName().equals(metaFac.getMetricName(MetricConstants.COEFFICIENT_OF_DETERMINATION)));
+        assertTrue("Coefficient of determination is not decomposable.", !cod.isDecomposable());
+        assertTrue("Coefficient of determination is not a skill score.", !cod.isSkillScore());
         assertTrue("Coefficient of determination cannot be decomposed.",
-                   rho.getDecompositionID() == MetricConstants.NONE);
-        assertTrue("Coefficient of determination does not have real units", !rho.hasRealUnits());
-
+                   cod.getDecompositionID() == MetricConstants.NONE);
+        assertTrue("Coefficient of determination does not have real units", !cod.hasRealUnits());
+       
         //Check exceptions
         List<PairOfDoubles> list = new ArrayList<>();
         list.add(dataF.pairOf(0.0, 0.0));
         try
         {
-            rho.apply(dataF.ofSingleValuedPairs(list, m1));
+            cod.apply(dataF.ofSingleValuedPairs(list, m1));
             fail("Expected a checked exception on invalid inputs: insufficient pairs.");
         }
         catch(MetricCalculationException e)
