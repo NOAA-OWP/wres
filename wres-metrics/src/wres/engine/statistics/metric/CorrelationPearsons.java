@@ -1,6 +1,8 @@
 package wres.engine.statistics.metric;
 
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMetadata;
@@ -26,6 +28,12 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
      */
 
     private final PearsonsCorrelation correlation;
+    
+    /**
+     * Message logger.
+     */
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(CorrelationPearsons.class);
 
     @Override
     public ScalarOutput apply(SingleValuedPairs s)
@@ -35,11 +43,12 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
             Slicer slicer = getDataFactory().getSlicer();
             final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
             double returnMe =
-                            correlation.correlation(slicer.getLeftSide(s.getData()), slicer.getRightSide(s.getData()));
+                            correlation.correlation(slicer.getLeftSide(s), slicer.getRightSide(s));
             return getDataFactory().ofScalarOutput(returnMe, metOut);
         }
         catch(Exception e)
         {
+            LOGGER.error("While computing Pearson's correlation coefficient.",e);
             throw new MetricCalculationException("Error computing Pearson's correlation coefficient: "
                 + e.getMessage());
         }
