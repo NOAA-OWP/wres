@@ -30,7 +30,7 @@ public final class SafeMetricOutputMapByLeadThresholdTest
 
         //Acquire a submap by threshold = 531.88 and lead time = 42
         final int leadTimeOne = 42;
-        final Quantile q = outputFactory.getQuantile(531.88, 0.005, Condition.GREATER);
+        final QuantileThreshold q = outputFactory.getQuantileThreshold(531.88, 0.005, Condition.GREATER);
         final MapBiKey<Integer, Threshold> testKeyOne = outputFactory.getMapKey(leadTimeOne, q);
         final MetricOutputMapByLeadThreshold<ScalarOutput> subMap =
                                                                   results.sliceByLead(leadTimeOne).sliceByThreshold(q);
@@ -39,7 +39,7 @@ public final class SafeMetricOutputMapByLeadThresholdTest
 
         //Acquire a submap by threshold = all data and lead time = 714
         final int leadTimeTwo = 714;
-        final Quantile q2 = outputFactory.getQuantile(Double.NEGATIVE_INFINITY,
+        final QuantileThreshold q2 = outputFactory.getQuantileThreshold(Double.NEGATIVE_INFINITY,
                                                       Double.NEGATIVE_INFINITY,
                                                       Condition.GREATER);
         final MapBiKey<Integer, Threshold> testKeyTwo = outputFactory.getMapKey(leadTimeTwo, q2);

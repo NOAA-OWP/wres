@@ -83,11 +83,11 @@ public final class CoefficientOfDetermination extends CorrelationPearsons
     {
         MetricOutputMetadata in = output.getMetadata();
         MetricOutputMetadata meta = getDataFactory().getMetadataFactory().getOutputMetadata(in.getSampleSize(),
-                                                                                              in.getDimension(),
-                                                                                              in.getInputDimension(),
-                                                                                              getID(),
-                                                                                              MetricConstants.MAIN,
-                                                                                              in.getIdentifier());
+                                                                                            in.getDimension(),
+                                                                                            in.getInputDimension(),
+                                                                                            getID(),
+                                                                                            MetricConstants.MAIN,
+                                                                                            in.getIdentifier());
         return getDataFactory().ofScalarOutput(Math.pow(output.getData(), 2), meta);
     }
 

@@ -9,7 +9,7 @@ import java.util.Objects;
  * @version 0.1
  * @since 0.1
  */
-class SafeThresholdKey implements Threshold
+class SafeThreshold implements Threshold
 {
 
     /**
@@ -38,7 +38,7 @@ class SafeThresholdKey implements Threshold
      * @param condition the condition
      */
 
-    protected SafeThresholdKey(final Double threshold, final Double thresholdUpper, final Condition condition)
+    protected SafeThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
     {
         //Bounds checks
         Objects.requireNonNull(threshold, "Specify a non-null threshold for the map key.");
@@ -92,11 +92,11 @@ class SafeThresholdKey implements Threshold
     @Override
     public boolean equals(final Object o)
     {
-        if(!(o instanceof SafeThresholdKey))
+        if(!(o instanceof SafeThreshold))
         {
             return false;
         }
-        final SafeThresholdKey in = (SafeThresholdKey)o;
+        final SafeThreshold in = (SafeThreshold)o;
         boolean returnMe = in.getThreshold().equals(threshold) && in.getCondition().equals(condition);
         if(in.hasBetweenCondition())
         {
@@ -132,9 +132,10 @@ class SafeThresholdKey implements Threshold
     }
 
     /**
-     * Returns a string representation of the condition.
+     * Returns a string representation of the elementary condition (e.g. one part of a {@link Condition#BETWEEN}
+     * condition).
      * 
-     * @return a string for the condition
+     * @return a string for the elementary condition
      */
 
     protected String getConditionID()
@@ -164,20 +165,42 @@ class SafeThresholdKey implements Threshold
         {
             return -1;
         }
-        int returnMe = Double.compare(o.getThreshold(),threshold);
+        int returnMe = Double.compare(o.getThreshold(), threshold);
         if(returnMe != 0)
         {
             return returnMe;
         }
         if(hasBetweenCondition())
         {
-            returnMe = Double.compare(o.getThresholdUpper(),thresholdUpper);
+            returnMe = Double.compare(o.getThresholdUpper(), thresholdUpper);
             if(returnMe != 0)
             {
                 return returnMe;
             }
         }
         return 0;
+    }
+
+    @Override
+    public boolean test(Double t)
+    {
+        switch(condition)
+        {
+            case GREATER:
+                return t > threshold;
+            case LESS:
+                return t < threshold;
+            case GREATER_EQUAL:
+                return t >= threshold;
+            case LESS_EQUAL:
+                return t <= threshold;
+            case BETWEEN:
+                return t >= threshold && t < thresholdUpper;
+            case EQUAL:
+                return Double.compare(t, threshold) == 0;
+            default:
+                throw new UnsupportedOperationException("Unexpected logical condition.");
+        }
     }
 
 }

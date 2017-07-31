@@ -1,5 +1,7 @@
 package wres.datamodel.metric;
 
+import java.util.function.Predicate;
+
 /**
  * Stores a threshold value and associated logical condition. A threshold may comprise one or two threshold values. If
  * the threshold comprises two values, {@link #getCondition()} must return {@link Condition#BETWEEN} and
@@ -11,11 +13,11 @@ package wres.datamodel.metric;
  * @since 0.1
  */
 
-public interface Threshold extends Comparable<Threshold>
+public interface Threshold extends Comparable<Threshold>, Predicate<Double>
 {
 
     /**
-     * Enumeration for slicing data in a {@link MapKey}
+     * Logical conditions associated with a {@link Threshold}.
      */
 
     public enum Condition

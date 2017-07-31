@@ -72,7 +72,7 @@ public final class DataModelTestDataFactory
                     final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final Quantile q = outputFactory.getQuantile(constants[0], probConstants[0], Condition.GREATER);
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0], probConstants[0], Condition.GREATER);
                     final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, q);
 
                     //Build the scalar result
