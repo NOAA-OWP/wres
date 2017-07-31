@@ -3,14 +3,14 @@ package wres.datamodel.metric;
 import java.util.Objects;
 
 /**
- * Concrete implementation of a {@link Quantile}.
+ * Concrete implementation of a {@link QuantileThreshold}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-final class SafeQuantileKey extends SafeThresholdKey implements Quantile
+final class SafeQuantileThreshold extends SafeThreshold implements QuantileThreshold
 {
 
     /**
@@ -36,7 +36,7 @@ final class SafeQuantileKey extends SafeThresholdKey implements Quantile
      * @param condition the condition
      */
 
-    protected SafeQuantileKey(final Double threshold,
+    protected SafeQuantileThreshold(final Double threshold,
                           final Double thresholdUpper,
                           final Double probability,
                           final Double probabilityUpper,
@@ -91,10 +91,10 @@ final class SafeQuantileKey extends SafeThresholdKey implements Quantile
     @Override
     public boolean equals(final Object o)
     {
-        boolean returnMe = super.equals(o) && o instanceof SafeQuantileKey;
+        boolean returnMe = super.equals(o) && o instanceof SafeQuantileThreshold;
         if(returnMe)
         {
-            final SafeQuantileKey in = (SafeQuantileKey)o;
+            final SafeQuantileThreshold in = (SafeQuantileThreshold)o;
             returnMe = returnMe && in.getThresholdProbability().equals(probability);
             if(in.hasBetweenCondition())
             {
@@ -113,9 +113,9 @@ final class SafeQuantileKey extends SafeThresholdKey implements Quantile
             return returnMe;
         }
         //Check additional quantile fields
-        if(o instanceof Quantile)
+        if(o instanceof QuantileThreshold)
         {
-            final Quantile q = (Quantile)o;
+            final QuantileThreshold q = (QuantileThreshold)o;
             returnMe = Double.compare(q.getThresholdProbability(),probability);
             if(returnMe != 0)
             {

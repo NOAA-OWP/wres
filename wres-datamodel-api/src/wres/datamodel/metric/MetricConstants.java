@@ -3,8 +3,6 @@ package wres.datamodel.metric;
 import java.util.EnumSet;
 import java.util.Set;
 
-import wres.config.generated.MetricConfigName;
-
 /**
  * Metric constants. The metric identifiers are grouped by metric input/output type, as defined by the
  * {@link MetricGroup}.
@@ -266,59 +264,6 @@ public enum MetricConstants
     }
 
     /**
-     * Maps between metric identifiers in {@link MetricConstants} and those in {@link MetricConfigName}.
-     * 
-     * @return the corresponding {@link MetricConfigName}.
-     */
-
-    public MetricConfigName toMetricConfigName()
-    {
-        switch(this)
-        {
-            case BIAS_FRACTION:
-                return MetricConfigName.BIAS_FRACTION;
-            case BRIER_SCORE:
-                return MetricConfigName.BRIER_SCORE;
-            case BRIER_SKILL_SCORE:
-                return MetricConfigName.BRIER_SKILL_SCORE;
-            case COEFFICIENT_OF_DETERMINATION:
-                return MetricConfigName.COEFFICIENT_OF_DETERMINATION;
-            case CONTINGENCY_TABLE:
-                return MetricConfigName.CONTINGENCY_TABLE;
-            case CORRELATION_PEARSONS:
-                return MetricConfigName.CORRELATION_PEARSONS;
-            case CRITICAL_SUCCESS_INDEX:
-                return MetricConfigName.CRITICAL_SUCCESS_INDEX;
-            case EQUITABLE_THREAT_SCORE:
-                return MetricConfigName.EQUITABLE_THREAT_SCORE;
-            case MEAN_ABSOLUTE_ERROR:
-                return MetricConfigName.MEAN_ABSOLUTE_ERROR;
-            case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
-                return MetricConfigName.MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
-            case MEAN_ERROR:
-                return MetricConfigName.MEAN_ERROR;
-            case MEAN_SQUARE_ERROR:
-                return MetricConfigName.MEAN_SQUARE_ERROR;
-            case MEAN_SQUARE_ERROR_SKILL_SCORE:
-                return MetricConfigName.MEAN_SQUARE_ERROR_SKILL_SCORE;
-            case PEIRCE_SKILL_SCORE:
-                return MetricConfigName.PEIRCE_SKILL_SCORE;
-            case PROBABILITY_OF_DETECTION:
-                return MetricConfigName.PROBABILITY_OF_DETECTION;
-            case PROBABILITY_OF_FALSE_DETECTION:
-                return MetricConfigName.PROBABILITY_OF_FALSE_DETECTION;
-            case RELATIVE_OPERATING_CHARACTERISTIC:
-                return MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC;
-            case RELIABILITY_DIAGRAM:
-                return MetricConfigName.RELIABILITY_DIAGRAM;
-            case ROOT_MEAN_SQUARE_ERROR:
-                return MetricConfigName.ROOT_MEAN_SQUARE_ERROR;
-            default:
-                return null;
-        }
-    }
-
-    /**
      * Metric groups.
      */
 
@@ -336,6 +281,12 @@ public enum MetricConstants
          */
 
         SINGLE_VALUED_VECTOR,
+        
+        /**
+         * Metrics that consume single-valued inputs and produce multi-vector outputs.
+         */
+
+        SINGLE_VALUED_MULTIVECTOR,        
 
         /**
          * Metrics that consume discrete probability inputs and produce vector outputs.
@@ -359,8 +310,20 @@ public enum MetricConstants
          * Metrics that consume multi-category inputs and produce matrix outputs.
          */
 
-        MULTICATEGORY_MATRIX;
+        MULTICATEGORY_MATRIX,
+        
+        /**
+         * Metrics that consume ensemble inputs and produce vector outputs.
+         */
 
+        ENSEMBLE_VECTOR,
+        
+        /**
+         * Metrics that consume ensemble inputs and produce multi-vector outputs.
+         */
+
+        ENSEMBLE_MULTIVECTOR;        
+        
         /**
          * Returns all {@link MetricConstants} associated with the current {@link MetricGroup}.
          * 

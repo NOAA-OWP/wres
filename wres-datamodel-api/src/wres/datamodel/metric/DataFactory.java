@@ -73,7 +73,20 @@ public interface DataFactory
     }
 
     /**
-     * Returns a {@link Quantile} from the specified input
+     * Returns {@link ProbabilityThreshold} from the specified input. The input must be in the unit interval, [0,1].
+     * 
+     * @param threshold the threshold value or lower bound
+     * @param condition the threshold condition
+     * @return a threshold
+     */
+
+    default Threshold getProbabilityThreshold(final Double threshold, final Condition condition)
+    {
+        return getProbabilityThreshold(threshold, null, condition);
+    }
+
+    /**
+     * Returns a {@link QuantileThreshold} from the specified input
      * 
      * @param threshold the threshold value
      * @param probability the probability associated with the threshold
@@ -81,9 +94,11 @@ public interface DataFactory
      * @return a quantile
      */
 
-    default Quantile getQuantile(final Double threshold, final Double probability, final Condition condition)
+    default QuantileThreshold getQuantileThreshold(final Double threshold,
+                                                   final Double probability,
+                                                   final Condition condition)
     {
-        return getQuantile(threshold, null, probability, null, condition);
+        return getQuantileThreshold(threshold, null, probability, null, condition);
     }
 
     /**
@@ -93,13 +108,13 @@ public interface DataFactory
      * @param meta the metadata
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
-     */    
-    
+     */
+
     default DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
     {
         return ofDichotomousPairs(pairs, null, meta, null);
     }
-    
+
     /**
      * Construct the dichotomous input from atomic {@link PairOfBooleans} without any pairs for a baseline.
      * 
@@ -107,12 +122,12 @@ public interface DataFactory
      * @param meta the metadata
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
-     */    
-    
+     */
+
     default DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs, final Metadata meta)
     {
         return ofDichotomousPairsFromAtomic(pairs, null, meta, null);
-    }    
+    }
 
     /**
      * Construct the multicategory input without any pairs for a baseline.
@@ -155,7 +170,7 @@ public interface DataFactory
     {
         return ofSingleValuedPairs(pairs, null, meta, null);
     }
-    
+
     /**
      * Construct the ensemble input without any pairs for a baseline.
      * 
@@ -168,7 +183,7 @@ public interface DataFactory
     default EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs, final Metadata meta)
     {
         return ofEnsemblePairs(pairs, null, meta, null);
-    }    
+    }
 
     /**
      * Returns a {@link MetadataFactory} for building {@link Metadata}.
@@ -211,13 +226,13 @@ public interface DataFactory
      * @param baselineMeta the metadata for the baseline pairs
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
-     */    
-    
+     */
+
     DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs,
-                                        final List<PairOfBooleans> basePairs,
-                                        final Metadata mainMeta,
-                                        final Metadata baselineMeta);    
-    
+                                                  final List<PairOfBooleans> basePairs,
+                                                  final Metadata mainMeta,
+                                                  final Metadata baselineMeta);
+
     /**
      * Construct the multicategory input without any pairs for a baseline.
      * 
@@ -278,10 +293,10 @@ public interface DataFactory
      */
 
     EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs,
-                                          final List<PairOfDoubleAndVectorOfDoubles> basePairs,
-                                          final Metadata mainMeta,
-                                          final Metadata baselineMeta);    
-    
+                                  final List<PairOfDoubleAndVectorOfDoubles> basePairs,
+                                  final Metadata mainMeta,
+                                  final Metadata baselineMeta);
+
     /**
      * Return a {@link PairOfDoubles} from two double values.
      * 
@@ -409,6 +424,16 @@ public interface DataFactory
     MatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta);
 
     /**
+     * Returns a {@link MapKey} to map a {@link MetricOutput} by an elementary key.
+     * 
+     * @param <S> the type of key
+     * @param key the key
+     * @return a map key
+     */
+
+    <S extends Comparable<S>> MapKey<S> getMapKey(S key);
+
+    /**
      * Returns a {@link MapBiKey} to map a {@link MetricOutput} by two elementary keys.
      * 
      * @param <S> the type of the first key
@@ -432,7 +457,20 @@ public interface DataFactory
     Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition);
 
     /**
-     * Returns a {@link Quantile} from the specified input
+     * Returns {@link ProbabilityThreshold} from the specified input. Both inputs must be in the unit interval, [0,1].
+     * 
+     * @param threshold the threshold value or lower bound of a {@link Condition#BETWEEN} condition
+     * @param thresholdUpper the upper threshold of a {@link Condition#BETWEEN} or null
+     * @param condition the threshold condition
+     * @return a threshold
+     */
+
+    ProbabilityThreshold getProbabilityThreshold(final Double threshold,
+                                                 final Double thresholdUpper,
+                                                 final Condition condition);
+
+    /**
+     * Returns a {@link QuantileThreshold} from the specified input
      * 
      * @param threshold the threshold value or lower bound of a {@link Condition#BETWEEN} condition
      * @param thresholdUpper the upper threshold of a {@link Condition#BETWEEN} or null
@@ -442,11 +480,11 @@ public interface DataFactory
      * @return a quantile
      */
 
-    Quantile getQuantile(final Double threshold,
-                         final Double thresholdUpper,
-                         Double probability,
-                         Double probabilityUpper,
-                         final Condition condition);
+    QuantileThreshold getQuantileThreshold(final Double threshold,
+                                           final Double thresholdUpper,
+                                           Double probability,
+                                           Double probabilityUpper,
+                                           final Condition condition);
 
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} from the raw map of inputs.
@@ -459,14 +497,34 @@ public interface DataFactory
     <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> ofMap(final Map<MapBiKey<Integer, Threshold>, T> input);
 
     /**
-     * Returns a builder for a {@link MultiMetricOutputMapByLeadThreshold} that allows for the incremental addition of
+     * Returns a {@link MetricOutputMultiMapByThreshold} from a map of inputs by {@link Threshold}.
+     * 
+     * @param <T> the type of output
+     * @param input the input map of metric outputs by threshold
+     * @return a map of metric outputs by threshold for several metrics
+     */
+
+    <T extends MetricOutput<?>> MetricOutputMultiMapByThreshold<T> ofMultiMap(final Map<MapKey<Threshold>, MetricOutputMapByMetric<T>> input);
+
+    /**
+     * Returns a builder for a {@link MetricOutputMultiMapByLeadThreshold} that allows for the incremental addition of
      * {@link MetricOutputMapByLeadThreshold} as they are computed.
      * 
      * @param <T> the type of output
-     * @return a {@link MultiMetricOutputMapByLeadThreshold.Builder} for a map of metric outputs by lead time and threshold
+     * @return a {@link MetricOutputMultiMapByLeadThreshold.Builder} for a map of metric outputs by lead time and
+     *         threshold
      */
 
-    <T extends MetricOutput<?>> MultiMetricOutputMapByLeadThreshold.Builder<T> ofMultiMap();
+    <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold.Builder<T> ofMultiMap();
+    
+    /**
+     * Returns a builder for a {@link MetricOutputForProjectByThreshold}.
+     * 
+     * @return a {@link MetricOutputForProjectByThreshold.Builder} for a map of metric outputs by lead time and
+     *         threshold
+     */
+
+    MetricOutputForProjectByThreshold.Builder ofMetricOutputForProjectByThreshold();    
 
     /**
      * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.

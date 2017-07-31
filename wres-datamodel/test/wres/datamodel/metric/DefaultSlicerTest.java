@@ -45,8 +45,10 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(1, 1.0 / 5.0));
         double[] expected = new double[]{0, 0, 1, 1, 0, 1};
         assertTrue("The left side of the test data does not match the benchmark.",
-                   Arrays.equals(slicer.getLeftSide(values), expected));
-
+                   Arrays.equals(slicer.getLeftSide(metIn.ofSingleValuedPairs(values,
+                                                                              metIn.getMetadataFactory()
+                                                                                   .getMetadata(6))),
+                                 expected));
     }
 
     /**
@@ -66,8 +68,10 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(1, 1.0 / 5.0));
         double[] expected = new double[]{3.0 / 5.0, 1.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0, 0.0 / 5.0, 1.0 / 5.0};
         assertTrue("The right side of the test data does not match the benchmark.",
-                   Arrays.equals(slicer.getRightSide(values), expected));
-
+                   Arrays.equals(slicer.getRightSide(metIn.ofSingleValuedPairs(values,
+                                                                               metIn.getMetadataFactory()
+                                                                                    .getMetadata(6))),
+                                 expected));
     }
 
     /**
@@ -92,20 +96,16 @@ public final class DefaultSlicerTest
         };
         double[] expected = new double[]{3.0, 8.0, 13.0, 18.0, 23.0, 28.0};
         //Test without baseline
-        double[] actualNoBase = slicer.getRightSide(slicer.transformPairs(metIn.ofEnsemblePairs(values, meta), mapper)
-                                                          .getData());
-        assertTrue("The transformed test data does not match the benchmark.",
-                   Arrays.equals(actualNoBase, expected));
+        double[] actualNoBase = slicer.getRightSide(slicer.transformPairs(metIn.ofEnsemblePairs(values, meta), mapper));
+        assertTrue("The transformed test data does not match the benchmark.", Arrays.equals(actualNoBase, expected));
         //Test baseline
-        double[] actualBase = slicer.getRightSide(slicer.transformPairs(input, mapper).getDataForBaseline());
-        assertTrue("The transformed test data does not match the benchmark.",
-                   Arrays.equals(actualBase, expected));
+        double[] actualBase = slicer.getRightSide(slicer.transformPairs(input, mapper).getBaselineData());
+        assertTrue("The transformed test data does not match the benchmark.", Arrays.equals(actualBase, expected));
     }
 
     /**
-     * Tests the {@link Slicer#transformPairs(SingleValuedPairs, Function)}.
-     * 
-     * TODO: implement equals in {@link SafeVectorOfBooleans}, then uncomment below
+     * Tests the {@link Slicer#transformPairs(SingleValuedPairs, Function)}. TODO: implement equals in
+     * {@link SafeVectorOfBooleans}, then uncomment below
      */
 
 //    @Test
