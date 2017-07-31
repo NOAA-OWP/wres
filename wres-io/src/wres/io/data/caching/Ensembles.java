@@ -242,7 +242,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
         ResultSet ensembles = null;
         try
         {
-            connection = Database.getConnection();
+            connection = Database.getHighPriorityConnection();
             ensembleQuery = connection.createStatement();
             
             String loadScript = "SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id" + NEWLINE;
@@ -298,7 +298,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 
             if (connection != null)
             {
-                Database.returnConnection(connection);
+                Database.returnHighPriorityConnection(connection);
             }
         }
 	}

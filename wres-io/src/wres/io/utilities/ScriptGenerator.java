@@ -9,7 +9,6 @@ import wres.config.generated.EnsembleCondition;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.grouping.LabeledScript;
 import wres.util.Internal;
@@ -96,7 +95,6 @@ public final class ScriptGenerator
         DataSourceConfig leftSource = projectConfig.getInputs().getLeft();
         Integer leftVariableId = Variables.getVariableID(leftSource.getVariable().getValue(), leftSource.getVariable().getUnit());
 
-        Integer desiredMeasurementID = MeasurementUnits.getMeasurementUnitID(projectConfig.getPair().getUnit());
         Double minimumValue = null;
         Double maximumValue = null;
         String earliestDate = null;
@@ -137,13 +135,21 @@ public final class ScriptGenerator
             leftTimeShift = leftSource.getTimeShift().getWidth();
         }
 
-        script.append("O.observed_value * UC.factor AS sourceOneValue,")
+        script.append("O.observed_value AS sourceOneValue,")
               .append("         ")
               .append("-- Select a single observed value converted to the requested unit of measurement")
               .append(NEWLINE);
-        script.append("     ST.measurements")
+        script.append("     ST.measurements,")
               .append("         ")
               .append("-- Select the values from the previous query")
+              .append(NEWLINE);
+        script.append("     O.measurementunit_id AS sourceOneMeasurementUnitID,")
+              .append("         ")
+              .append("-- Select the unit that the observation was recorded in")
+              .append(NEWLINE);
+        script.append("     ST.sourceTwoMeasurementUnitID")
+              .append("         ")
+              .append("-- Select the unit that the second source was measured in")
               .append(NEWLINE);
         script.append("FROM wres.Observation O")
               .append("         ")
@@ -164,21 +170,9 @@ public final class ScriptGenerator
               .append("         ")
               .append("-- Match the values based on their dates")
               .append(NEWLINE);
-        script.append("INNER JOIN wres.UnitConversion UC")
-              .append("         ")
-              .append("-- Determine the conversion factor")
-              .append(NEWLINE);
-        script.append("     ON UC.from_unit = O.measurementunit_id")
-              .append("         ")
-              .append("-- Match on the unit to convert from")
-              .append(NEWLINE);
         script.append("WHERE ").append(leftVariablePositionClause)
               .append("         ")
               .append("-- Select only observations from a variable at a specific location")
-              .append(NEWLINE);
-        script.append("     AND UC.to_unit = ").append(desiredMeasurementID)
-              .append("         ")
-              .append("-- Find the correct conversion factor based on the unit of measurement to convert to")
               .append(NEWLINE);
 
         if (earliestDate != null)
@@ -212,7 +206,7 @@ public final class ScriptGenerator
 
         if (minimumValue != null)
         {
-            script.append("     AND O.observed_value * UC.factor >= ").append(minimumValue)
+            script.append("     AND O.observed_value >= ").append(minimumValue)
                   .append("         ")
                   .append("-- Limit observed values to those greater than or equal to the indicated value")
                   .append(NEWLINE);
@@ -220,7 +214,7 @@ public final class ScriptGenerator
 
         if (maximumValue != null)
         {
-            script.append("     AND O.observed_value * UC.factor <= ")
+            script.append("     AND O.observed_value <= ")
                   .append(maximumValue)
                   .append("         ")
                   .append("-- Limit the observed values to those less than or equal to the indicated value")
@@ -241,7 +235,6 @@ public final class ScriptGenerator
         DataSourceConfig source = projectConfig.getInputs().getLeft();
         Integer leftVariableId = Variables.getVariableID(source.getVariable().getValue(), source.getVariable().getUnit());
 
-        Integer desiredMeasurementID = MeasurementUnits.getMeasurementUnitID(projectConfig.getPair().getUnit());
         Double minimumValue = null;
         Double maximumValue = null;
         String earliestDate = null;
@@ -300,13 +293,21 @@ public final class ScriptGenerator
         String leadSpecification = ConfigHelper.getLeadQualifier(projectConfig, progress);
 
         script.append(source.getRollingTimeAggregation().getFunction())
-              .append("(FV.forecasted_value * UC.factor) AS sourceOneValue,")
+              .append("(FV.forecasted_value) AS sourceOneValue,")
               .append("             ")
               .append("-- Aggregate the results since it is possible that there will be many modeled values")
               .append(NEWLINE);
-        script.append("     ST.measurements")
+        script.append("     ST.measurements,")
               .append("             ")
               .append("-- The array of values to pair with")
+              .append(NEWLINE);
+        script.append("     FE.measurementunit_id AS sourceOneMeasurementUnitID,")
+              .append("             ")
+              .append("-- The unit of measurement produced by the simulation")
+              .append(NEWLINE);
+        script.append("     ST.sourceTwoMeasurementUnitID")
+              .append("             ")
+              .append("-- The unit of the second source")
               .append(NEWLINE);
         script.append("FROM wres.Forecast F")
               .append("         ")
@@ -342,14 +343,6 @@ public final class ScriptGenerator
         script.append(" = ST.sourceTwoDate          ")
               .append("-- Match the found forecasts with the values from the previous queries based on their shared dates")
               .append(NEWLINE);
-        script.append("INNER JOIN wres.UnitConversion UC")
-              .append("            ")
-              .append("-- Identify the factor to convert the values for the forecasts to the desired unit of measurement")
-              .append(NEWLINE);
-        script.append("     ON UC.from_unit = FE.measurementunit_id")
-              .append("             ")
-              .append("-- Match the conversion factor to the measurements by the id of the unit to convert")
-              .append(NEWLINE);
         script.append("WHERE ").append(leftVariablePositionClause)
               .append("             ")
               .append("-- Limit the forecast values to those attached to variable values at specific locations")
@@ -357,10 +350,6 @@ public final class ScriptGenerator
         script.append("     AND ").append(leadSpecification)
               .append("             ")
               .append("-- The range of lead times to select forecasted values from")
-              .append(NEWLINE);
-        script.append("     AND UC.to_unit = ").append(desiredMeasurementID)
-              .append("             ")
-              .append("-- Determine the conversion factor based on the unit of measurement we want to convert to")
               .append(NEWLINE);
 
         String ensembleClause = constructEnsembleClause(source);
@@ -420,7 +409,7 @@ public final class ScriptGenerator
 
         if (minimumValue != null)
         {
-            script.append("     AND FV.forecasted_value * UC.factor >= ")
+            script.append("     AND FV.forecasted_value >= ")
                   .append(minimumValue)
                   .append("         ")
                   .append("-- Limit the forecasted values to those greater than or equal to the given value")
@@ -429,7 +418,7 @@ public final class ScriptGenerator
 
         if (maximumValue != null)
         {
-            script.append("     AND FV.forecasted_value * UC.factor <= ")
+            script.append("     AND FV.forecasted_value <= ")
                   .append(maximumValue)
                   .append("         ")
                   .append("-- Limit the forecasted values to those greater than or equal to the given value")
@@ -481,7 +470,6 @@ public final class ScriptGenerator
         StringBuilder script = new StringBuilder();
         DataSourceConfig rightSource = projectConfig.getInputs().getRight();
         Integer rightVariableId = Variables.getVariableID(rightSource.getVariable().getValue(), rightSource.getVariable().getUnit());
-        Integer desiredMeasurementID = MeasurementUnits.getMeasurementUnitID(projectConfig.getPair().getUnit());
         Double minimumValue = null;
         Double maximumValue = null;
         String earliestDate = null;
@@ -533,33 +521,21 @@ public final class ScriptGenerator
               .append("         ")
               .append("-- Retrieve the date of the observed value, modified by a suggested offset")
               .append(NEWLINE);
-        script.append("         ARRAY[O.observed_value * UC.factor]")
+        script.append("         ARRAY[O.observed_value],")
               .append("         ")
               .append("-- Place the observed value into an array and convert it to the desired measurement unit")
               .append(NEWLINE);
-
+        script.append("         O.measurementunit_id AS sourceTwoMeasurementUnitID")
+              .append("         ")
+              .append("-- The unit that the observation was gather in")
+              .append(NEWLINE);
         script.append("     FROM wres.Observation O")
               .append("         ")
               .append("-- Start by selecting observations")
               .append(NEWLINE);
-
-        script.append("     INNER JOIN wres.UnitConversion UC")
-              .append("         ")
-              .append("-- Retrieve the conversion factor to convert the observed value to the desired measurement unit")
-              .append(NEWLINE);
-
-        script.append("         ON UC.from_unit = O.measurementunit_id")
-              .append("         ")
-              .append("-- The conversion factor will be obtained by matching the unit from the ensemble")
-              .append(NEWLINE);
         script.append("     WHERE ").append(rightVariablePositionClause)
               .append("         ")
               .append("-- Select only the values that pertain to the specific variable and location")
-              .append(NEWLINE);
-
-        script.append("         AND UC.to_unit = ").append(desiredMeasurementID)
-              .append("         ")
-              .append("-- Determine the unit conversion by specifying the id of the unit to convert to")
               .append(NEWLINE);
 
         if (earliestDate != null)
@@ -607,14 +583,13 @@ public final class ScriptGenerator
         StringBuilder script = new StringBuilder();
         DataSourceConfig rightSource = projectConfig.getInputs().getRight();
         Integer rightVariableId = Variables.getVariableID(rightSource.getVariable().getValue(), rightSource.getVariable().getUnit());
-        Integer desiredMeasurementID = MeasurementUnits.getMeasurementUnitID(projectConfig.getPair().getUnit());
         Double minimumValue = null;
         Double maximumValue = null;
         String earliestDate = null;
         String latestDate = null;
         String earliestIssueDate = null;
         String latestIssueDate = null;
-        String rightDate = null;
+        String rightDate;
         Integer rightTimeShift = null;
 
         String rightVariablePositionClause = ConfigHelper.getVariablePositionClause(feature, rightVariableId);
@@ -674,8 +649,12 @@ public final class ScriptGenerator
 
         script.append(rightDate)
               .append(" AS sourceTwoDate,       -- The date to match the first source's").append(NEWLINE);
-        script.append("         array_agg(FV.forecasted_value * UC.factor) AS measurements  ")
+        script.append("         array_agg(FV.forecasted_value) AS measurements,  ")
               .append(" -- Array consisting of each ensemble member corresponding to a lead from a forecast")
+              .append(NEWLINE);
+        script.append("     FE.measurementunit_id AS sourceTwoMeasurementUnitID")
+              .append("         ")
+              .append("-- The unit of the measurement from the simulation")
               .append(NEWLINE);
         script.append("     FROM wres.Forecast F    ")
               .append("-- Start by selecting from the available forecasts")
@@ -690,13 +669,6 @@ public final class ScriptGenerator
         script.append("         ON FV.forecastensemble_id = FE.forecastensemble_id")
               .append(" -- Match on the generated identifierfor the ensemble matched with the forecast")
               .append(NEWLINE);
-        script.append("     INNER JOIN wres.unitConversion UC       ")
-              .append("-- Retrieve the conversion factor to convert the value with the ensemble's unit to the desired unit")
-              .append(NEWLINE);
-        script.append("         ON UC.from_unit = FE.measurementunit_id     ")
-              .append("-- The conversion factor will be obtained by matching the unit from the ensemble ")
-              .append("with the factor's unit to convert from")
-              .append(NEWLINE);
         script.append("     WHERE ").append(leadSpecification)
               .append("         ")
               .append("-- Select that values attached to the lead time specification")
@@ -704,11 +676,6 @@ public final class ScriptGenerator
         script.append("            AND ").append(rightVariablePositionClause)
               .append("         ")
               .append("-- Select only the values that pertain to the specific variable and location")
-              .append(NEWLINE);
-        script.append("             AND UC.to_unit = ")
-              .append(desiredMeasurementID)
-              .append("         ")
-              .append("-- Determine the unit conversion by specifying the id of the unit to convert to")
               .append(NEWLINE);
 
         String ensembleClause = constructEnsembleClause(rightSource);
@@ -770,7 +737,7 @@ public final class ScriptGenerator
                   .append(NEWLINE);
         }
 
-        script.append("     GROUP BY F.forecast_date, FV.lead")
+        script.append("     GROUP BY F.forecast_date, FV.lead, FE.measurementunit_id")
               .append("                     ")
               .append("-- Combine results based on the date and lead time")
               .append(NEWLINE);

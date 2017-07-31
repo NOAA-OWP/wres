@@ -7,15 +7,17 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
-import wres.io.utilities.ScriptGenerator;
+import wres.io.data.caching.UnitConversions;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptGenerator;
 import wres.util.Internal;
+import wres.util.NotImplementedException;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -40,23 +42,15 @@ public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVector
 
         Connection connection = null;
         ResultSet resultingPairs = null;
-
-        final DataFactory dataFactory = DefaultDataFactory.getInstance();
-
+        final String script = ScriptGenerator.generateGetPairData(this.projectConfig, this.feature, this.progress);
         try
         {
-            final String script = ScriptGenerator.generateGetPairData(this.projectConfig, this.feature, this.progress);
             connection = Database.getConnection();
             resultingPairs = Database.getResults(connection, script);
 
             while (resultingPairs.next())
             {
-                pairs.add(dataFactory.pairOf(resultingPairs.getDouble("sourceOneValue"),
-                                             Stream.of((Double[]) resultingPairs
-                                                     .getArray("measurements")
-                                                     .getArray())
-                                                   .mapToDouble(Double::doubleValue)
-                                                   .toArray()));
+                pairs.add(createPair(resultingPairs));
             }
         }
         finally
@@ -75,6 +69,30 @@ public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVector
         return pairs;
     }
 
+    private PairOfDoubleAndVectorOfDoubles createPair(ResultSet row) throws SQLException, NotImplementedException
+    {
+        final DataFactory dataFactory = DefaultDataFactory.getInstance();
+        Double[] measurements = (Double[])row.getArray("measurements").getArray();
+        double[] convertedMeasurements = new double[measurements.length];
+
+        int sourceOneUnitID = row.getInt("sourceOneMeasurementUnitID");
+        int sourceTwoUnitID = row.getInt("sourceTwoMeasurementUnitID");
+        String desiredMeasurementUnit = this.projectConfig.getPair().getUnit();
+
+
+        for (int measurementIndex = 0; measurementIndex < measurements.length; ++measurementIndex)
+        {
+            convertedMeasurements[measurementIndex] = UnitConversions.convert(measurements[measurementIndex],
+                                                                              sourceTwoUnitID,
+                                                                              desiredMeasurementUnit);
+        }
+
+        double convertedSourceOne = UnitConversions.convert(row.getDouble("sourceOneValue"),
+                                                            sourceOneUnitID,
+                                                            desiredMeasurementUnit);
+
+        return dataFactory.pairOf(convertedSourceOne, convertedMeasurements);
+    }
     private final int progress;
     private final ProjectConfig projectConfig;
     private final Conditions.Feature feature;

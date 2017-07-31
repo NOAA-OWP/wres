@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS wres.UnitConversion
 	from_unit SMALLINT,
 	to_unit SMALLINT,
 	factor DOUBLE PRECISION,
+	initial_offset DOUBLE PRECISION DEFAULT 0,
+	final_offset DOUBLE PRECISION DEFAULT 0,
 	CONSTRAINT from_measurementunit_fk FOREIGN KEY (from_unit)
 		REFERENCES wres.MeasurementUnit(measurementunit_id) MATCH SIMPLE
 		ON UPDATE NO ACTION ON DELETE CASCADE,
@@ -540,6 +542,40 @@ FROM wres.MeasurementUnit F
 INNER JOIN wres.MeasurementUnit T
 	ON T.unit_name = 'S'
 WHERE F.unit_name = 'M'
+	AND NOT EXISTS (
+		SELECT 1
+		FROM wres.UnitConversion
+		WHERE from_unit = F.measurementunit_id
+			AND to_unit = T.measurementunit_id
+	);
+
+
+-- Temperature
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, initial_offset)
+SELECT	F.measurementunit_id,
+	T.measurementunit_id,
+	(5.0 / 9.0),
+	-32.0
+FROM wres.MeasurementUnit F
+INNER JOIN wres.MeasurementUnit T
+	ON T.unit_name = 'C'
+WHERE F.unit_name = 'F'
+	AND NOT EXISTS (
+		SELECT 1
+		FROM wres.UnitConversion
+		WHERE from_unit = F.measurementunit_id
+			AND to_unit = T.measurementunit_id
+	);
+
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, final_offset)
+SELECT	F.measurementunit_id,
+	T.measurementunit_id,
+	(9.0 / 5.0),
+	32.0
+FROM wres.MeasurementUnit F
+INNER JOIN wres.MeasurementUnit T
+	ON T.unit_name = 'F'
+WHERE F.unit_name = 'C'
 	AND NOT EXISTS (
 		SELECT 1
 		FROM wres.UnitConversion
