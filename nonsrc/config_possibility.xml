@@ -38,9 +38,9 @@
   </pair>
   <outputs>
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
-    <metric label="ME">mean_error</metric>
-    <metric>correlation_coefficient</metric>
-    <metric>brier_skill_score</metric> <!-- has its own units -->
+    <metric label="ME">MEAN_ERROR</metric>
+    <metric>CORRELATION_PEARSONS</metric>
+    <metric>BRIER_SKILL_SCORE</metric> <!-- has its own units -->
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->
