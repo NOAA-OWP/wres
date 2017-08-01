@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="UnitConversion1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'wres'
+                        AND table_name = 'UnitConversion'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="UnitConversion" schemaName="wres">
+            <column name="from_unit" type="smallint" >
+                <constraints references="wres.MeasurementUnit(measurementunit_id)" deferrable="true" />
+            </column>
+            <column name="to_unit" type="smallint">
+                <constraints references="wres.MeasurementUnit(measurementunit_id" deferrable="true"/>
+            </column>
+            <column name="factor" type="DOUBLE PRECISION" defaultValue="1" >
+                <constraints nullable="false" />
+            </column>
+            <column name="initial_offset" type="DOUBLE PRECISION" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="final_offset" type="DOUBLE PRECISION" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <sql>
+            ALTER TABLE wres.UnitConversion OWNER TO wres;
+        </sql>
+        <createIndex tableName="UnitConversion" schemaName="wres" indexName="unitconversion_measurement_idx">
+            <column name="from_unit" type="smallint" />
+            <column name="to_unit" type="smallint" />
+        </createIndex>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit)
+            SELECT measurementunit_id, measurementunit_id
+            FROM wres.MeasurementUnit M
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = M.measurementunit_id
+                    AND UC.to_unit = M.measurementunit_id
+            );
+        </sql>
+    </changeSet>
+    <changeSet id="Volumn UnitConversion v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <sql>
+            INSERT INTO wres.UnitConversion (from_unit, to_unit, factor)
+            SELECT  F.measurementunit_id,
+                    T.measurementunit_id,
+                    35.3146662127
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'CFS'
+            WHERE F.unit_name = 'CMS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT 	F.measurementunit_id,
+                    T.measurementunit_id,
+                    1/35.3146662127
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'CMS'
+            WHERE F.unit_name = 'CFS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                    AND to_unit = T.measurementunit_id
+                );
+        </sql>
+    </changeSet>
+    <changeSet id="Distance UnitConversions v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    3.28084
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'FT'
+            WHERE F.unit_name = 'M'
+                AND NOT EXISTS (
+                        SELECT 1
+                        FROM wres.UnitConversion
+                        WHERE from_unit = F.measurementunit_id
+                            AND to_unit = T.measurementunit_id
+                    );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    0.00328084
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'FT'
+            WHERE F.unit_name = 'MM'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                T.measurementunit_id,
+                0.08333333333333
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'FT'
+            WHERE F.unit_name = 'IN'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                T.measurementunit_id,
+                12
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'IN'
+            WHERE F.unit_name = 'FT'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                T.measurementunit_id,
+                39.3701
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'IN'
+            WHERE F.unit_name = 'M'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                T.measurementunit_id,
+                0.0328084
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'FT'
+            WHERE F.unit_name = 'CM'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                T.measurementunit_id,
+                0.0393701
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'IN'
+            WHERE F.unit_name = 'MM'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    0.393701
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'IN'
+            WHERE F.unit_name = 'CM'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    0.3048
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'M'
+            WHERE F.unit_name = 'FT'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                T.measurementunit_id,
+                0.0254
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'M'
+            WHERE F.unit_name = 'IN'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    0.001
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'M'
+            WHERE F.unit_name = 'MM'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    0.01
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'MM'
+            WHERE F.unit_name = 'CM'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+        </sql>
+    </changeSet>
+    <changeSet id="Time UnitConversion V1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    1.6667e-5
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'M'
+            WHERE F.unit_name = 'MS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    60
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'M'
+            WHERE F.unit_name = 'HR'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    60
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'M'
+            WHERE F.unit_name = 'H'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    0.0166667
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'M'
+            WHERE F.unit_name = 'S'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    60000
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'MS'
+            WHERE F.unit_name = 'M'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    3.6e6
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'MS'
+            WHERE F.unit_name = 'HR'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    3.6e6
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'MS'
+            WHERE F.unit_name = 'H'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    1000
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'MS'
+            WHERE F.unit_name = 'S'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    0.0166667
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'HR'
+            WHERE F.unit_name = 'M'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    2.7778e-7
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'HR'
+            WHERE F.unit_name = 'MS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    1
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'HR'
+            WHERE F.unit_name = 'H'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                T.measurementunit_id,
+                0.000277778
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'HR'
+            WHERE F.unit_name = 'S'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    2.7778e-7
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'H'
+            WHERE F.unit_name = 'MS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    1
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'H'
+            WHERE F.unit_name = 'HR'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    0.0166667
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'H'
+            WHERE F.unit_name = 'M'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    0.000277778
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'H'
+            WHERE F.unit_name = 'S'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    0.001
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                    ON T.unit_name = 'S'
+            WHERE F.unit_name = 'MS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    3600
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'S'
+            WHERE F.unit_name = 'HR'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    3600
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'S'
+            WHERE F.unit_name = 'H'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT	F.measurementunit_id,
+                T.measurementunit_id,
+                60
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'S'
+            WHERE F.unit_name = 'M'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+        </sql>
+    </changeSet>
+    <changeSet id="Temperature UnitConversion v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, initial_offset)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    (5.0 / 9.0),
+                    -32.0
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'C'
+            WHERE F.unit_name = 'F'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, final_offset)
+            SELECT	F.measurementunit_id,
+                    T.measurementunit_id,
+                    (9.0 / 5.0),
+                    32.0
+            FROM wres.MeasurementUnit F
+            INNER JOIN wres.MeasurementUnit T
+                ON T.unit_name = 'F'
+            WHERE F.unit_name = 'C'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion
+                    WHERE from_unit = F.measurementunit_id
+                        AND to_unit = T.measurementunit_id
+                );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

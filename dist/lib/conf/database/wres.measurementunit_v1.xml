@@ -5,11 +5,75 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
 
-    <changeSet id="changelog-1.1" author="Tubbs">
-        <createTable tableName="TablesAndTables">
-            <column name="COLUMN1" type="TEXT">
-                <constraints nullable="true" primaryKey="false" unique="false" />
+    <changeSet id="MeasurementUnit1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'wres'
+                        AND table_name = 'MeasurementUnit'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="MeasurementUnit" schemaName="wres">
+            <column name="measurementunit_id" type="smallserial">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="unit_name" type="text">
+                <constraints nullable="false"/>
             </column>
         </createTable>
+        <sql>
+            ALTER TABLE wres.MeasurementUnit OWNER TO wres;
+        </sql>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">NONE</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">CMS</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">CFS</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">FT</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">F</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">C</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">IN</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">M</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">MS</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">HR</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">H</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">S</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">MM</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">CM</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">m3 s-1</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">kg m{-2}</column>
+        </insert>
     </changeSet>
 </databaseChangeLog>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="Observations v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'wres'
+                        AND table_name = 'Observation'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="Observation" schemaName="wres">
+            <column name="variableposition_id" type="integer">
+                <constraints nullable="false" deferrable="true" />
+            </column>
+            <column name="observation_time" type="timestamp without time zone" >
+                <constraints nullable="false" />
+            </column>
+            <column name="observed_value" type="double precision" />
+            <column name="measurementunit_id" type="integer" >
+                <constraints nullable="false" />
+            </column>
+            <column name="source_id" type="integer">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <sql>
+            ALTER TABLE wres.Observation OWNER TO wres;
+        </sql>
+        <createIndex tableName="Observation" schemaName="wres" indexName="observation_time_idx">
+            <column name="observation_time" type="timestamp without time zone" />
+        </createIndex>
+        <sql>
+            ALTER TABLE wres.Observation CLUSTER ON observation_time_idx;
+        </sql>
+        <createIndex tableName="Observation" schemaName="wres" indexName="observation_variableposition_idx">
+            <column name="variableposition_id" type="integer" />
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
