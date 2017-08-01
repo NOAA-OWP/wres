@@ -10,6 +10,7 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MultiVectorOutput;
@@ -27,7 +28,9 @@ import wres.datamodel.metric.Slicer;
  * @since 0.1
  */
 
-public final class RelativeOperatingCharacteristic extends Metric<DiscreteProbabilityPairs, MultiVectorOutput>
+public abstract class RelativeOperatingCharacteristic<T extends MetricOutput<?>>
+extends
+    Metric<DiscreteProbabilityPairs, T>
 {
 
     /**
@@ -37,24 +40,29 @@ public final class RelativeOperatingCharacteristic extends Metric<DiscreteProbab
     private final MetricCollection<DichotomousPairs, ScalarOutput> roc;
 
     /**
-     * Number of points in the empirical ROC diagram.
+     * Returns the components of the Relative Operating Characteristic for a prescribed number of thresholds. The
+     * thresholds are used to divide the unit interval equally. A binary classifier is derived from each threshold and
+     * used to classify the observed and forecast probabilities of a discrete event according to whether the threshold
+     * is exceeded. Each classifier produces a pair of MetricConstants.PROBABILITY_OF_DETECTION (PoD) and
+     * MetricConstants.PROBABILITY_OF_FALSE_DETECTION (PoFD), which are returned in the result.
+     * 
+     * @param s the pairs
+     * @param points the number of thresholds
+     * @return a {@link MultiVectorOutput} containing the pairs of PoD and PoFD
      */
 
-    private final int points;
-
-    @Override
-    public MultiVectorOutput apply(final DiscreteProbabilityPairs s)
+    MultiVectorOutput getROC(final DiscreteProbabilityPairs s, int points)
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         //Determine the empirical ROC. 
         //For each classifier, derive the pairs of booleans and compute the PoD and PoFD from the
         //2x2 contingency table, using a metric collection to compute the table only once
         double constant = 1.0 / points;
-        double[] pOD = new double[points+1];
-        double[] pOFD = new double[points+1];
+        double[] pOD = new double[points + 1];
+        double[] pOFD = new double[points + 1];
         DataFactory d = getDataFactory();
         Slicer slice = d.getSlicer();
-        
+
         for(int i = 1; i < points; i++)
         {
             double prob = Precision.round(1.0 - (i * constant), 5);
@@ -82,32 +90,9 @@ public final class RelativeOperatingCharacteristic extends Metric<DiscreteProbab
     }
 
     @Override
-    public MetricConstants getID()
-    {
-        return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC;
-    }
-
-    @Override
     public boolean hasRealUnits()
     {
         return false;
-    }
-
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    protected static class RelativeOperatingCharacteristicBuilder
-    extends
-        MetricBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
-    {
-
-        @Override
-        protected RelativeOperatingCharacteristic build()
-        {
-            return new RelativeOperatingCharacteristic(this.dataFactory);
-        }
-
     }
 
     /**
@@ -116,13 +101,11 @@ public final class RelativeOperatingCharacteristic extends Metric<DiscreteProbab
      * @param dataFactory the {@link DataFactory}.
      */
 
-    protected RelativeOperatingCharacteristic(final DataFactory dataFactory)
+    RelativeOperatingCharacteristic(final DataFactory dataFactory)
     {
         super(dataFactory);
         roc = MetricFactory.getInstance(dataFactory)
                            .ofDichotomousScalarCollection(MetricConstants.PROBABILITY_OF_DETECTION,
                                                           MetricConstants.PROBABILITY_OF_FALSE_DETECTION);
-        //Set the default points
-        points = 10;
     }
 }
