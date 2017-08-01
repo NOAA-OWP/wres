@@ -401,6 +401,12 @@ public class DefaultDataFactory implements DataFactory
     public MetricOutputForProjectByThreshold.Builder ofMetricOutputForProjectByThreshold() {
         return new SafeMetricOutputForProjectByThreshold.MetricOutputForProjectByThresholdBuilder();
     }
+
+    @Override
+    public boolean doubleEquals(double first, double second, int digits)
+    {
+        return Math.abs(first - second) < 1.0 / digits;
+    }    
     
     /**
      * Returns an immutable list that contains a safe type of the input.

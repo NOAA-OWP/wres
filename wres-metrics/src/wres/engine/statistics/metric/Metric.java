@@ -162,7 +162,10 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
     /**
      * Returns the {@link MetricOutputMetadata} using a prescribed {@link MetricInput} and the current {@link Metric} to
      * compose, along with an explicit component identifier or decomposition template and an identifier for the
-     * baseline, where applicable
+     * baseline, where applicable. This helper method is not intended for implementations of {@link Collectable}, whose
+     * {@link Collectable#getCollectionInput(MetricInput)} should return the {@link MetricConstants} identifier
+     * associated with the implementing class and not the caller. This method identifies the metric by calling
+     * {@link #getID()}.
      * 
      * @param input the metric input
      * @param sampleSize the sample size
@@ -176,6 +179,11 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
                                                final MetricConstants componentID,
                                                final DatasetIdentifier baselineID)
     {
+        if(this instanceof Collectable)
+        {
+            throw new UnsupportedOperationException("Cannot safely obtain the metadata for the collectable "
+                + "implementation of '" + getID() + "': build the metadata in the implementing class.");
+        }
         final Metadata metIn = input.getMetadata();
         Dimension outputDim = null;
         //Dimensioned?
@@ -190,16 +198,18 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
         DatasetIdentifier identifier = metIn.getIdentifier();
         //Add the scenario ID associated with the baseline input
         //This is *not* the baseline ID of the baseline input
-        if(Objects.nonNull(baselineID)) {
-            identifier = dataFactory.getMetadataFactory().getDatasetIdentifier(identifier,baselineID.getScenarioID());
+        if(Objects.nonNull(baselineID))
+        {
+            identifier = dataFactory.getMetadataFactory().getDatasetIdentifier(identifier, baselineID.getScenarioID());
         }
-        return dataFactory.getMetadataFactory().getOutputMetadata(sampleSize,
-                                                                    outputDim,
-                                                                    metIn.getDimension(),
-                                                                    getID(),
-                                                                    componentID,
-                                                                    identifier);
-    }  
+        return dataFactory.getMetadataFactory()
+                          .getOutputMetadata(sampleSize,
+                                             outputDim,
+                                             metIn.getDimension(),
+                                             getID(),
+                                             componentID,
+                                             identifier);
+    }
 
     /**
      * Construct a {@link Metric} with a {@link DataFactory}.

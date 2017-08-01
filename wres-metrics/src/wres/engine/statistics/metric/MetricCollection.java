@@ -61,7 +61,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
      * The collection of {@link Metric}
      */
 
-    private final ArrayList<Metric<S, T>> metrics;
+    private final List<Metric<S, T>> metrics;
 
     /**
      * The metric input.
@@ -116,7 +116,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
          * The list of {@link Metric}.
          */
 
-        private final ArrayList<Metric<S, T>> builderMetrics = new ArrayList<>();
+        private final List<Metric<S, T>> builderMetrics = new ArrayList<>();
 
         /**
          * Returns a builder.
@@ -229,13 +229,12 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
                                                                                                 .collect(Collectors.groupingBy(Collectable::getCollectionOf));
         //Consumer that computes the intermediate output once and applies it to all grouped instances of Collectable
         final Consumer<List<Collectable<S, MetricOutput<?>, T>>> c = x -> {
-            //Compute a future of the dependent (intermediate) result
-            final CompletableFuture<MetricOutput<?>> base = CompletableFuture.supplyAsync(
-                                                                                          () -> x.get(0)
-                                                                                                 .getCollectionInput(s),
-                                                                                          metricPool);
+            final CompletableFuture<MetricOutput<?>> baseFuture = CompletableFuture.supplyAsync(
+                                                                                                () -> x.get(0)
+                                                                                                       .getCollectionInput(s),
+                                                                                                metricPool);
             //Using the future dependent result, compute a future of each of the independent results
-            x.forEach(y -> metricFutures.add(metrics.indexOf(y), base.thenApplyAsync(y::apply)));
+            x.forEach(y -> metricFutures.add(baseFuture.thenApplyAsync(y::apply)));
         };
 
         //Compute the collectable metrics    
@@ -245,8 +244,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         //When the collection completes, aggregate the results and return them
         metrics.stream()
                .filter(p -> !(p instanceof Collectable)) //Only work with non-collectable metrics here
-               .forEach(y -> metricFutures.add(metrics.indexOf(y),
-                                               CompletableFuture.supplyAsync(() -> y.apply(s), metricPool)));
+               .forEach(y -> metricFutures.add(CompletableFuture.supplyAsync(() -> y.apply(s), metricPool)));
         final CompletableFuture<List<T>> results = sequence(metricFutures);
         return dataFactory.ofMap(results.join()); //This is blocking
     }
@@ -261,8 +259,8 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
      */
 
     private MetricOutputMapByMetric<T> callInternal() throws MetricCalculationException,
-                                                     InterruptedException,
-                                                     ExecutionException
+                                                      InterruptedException,
+                                                      ExecutionException
     {
         if(Objects.isNull(input))
         {
@@ -284,13 +282,11 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         collectable.forEach((a, b) -> {
             final Callable<MetricOutput<?>> intermediate = getCollectableTask(b.get(0));
             final Future<MetricOutput<?>> result = metricPool.submit(intermediate); //Compute once
-            b.forEach(c -> tasks.add(metrics.indexOf(c), new CollectableTask<>(c, result)));
+            b.forEach(c -> tasks.add(new CollectableTask<>(c, result)));
         });
 
         //For each non-Collectable metric, add a task
-        metrics.stream()
-               .filter(p -> !(p instanceof Collectable))
-               .forEach(y -> tasks.add(metrics.indexOf(y), new MetricTask<>(y, input)));
+        metrics.stream().filter(p -> !(p instanceof Collectable)).forEach(y -> tasks.add(new MetricTask<>(y, input)));
         //Compute
         final List<Future<T>> results = metricPool.invokeAll(tasks);
         for(final Future<T> next: results)
