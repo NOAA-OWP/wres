@@ -80,7 +80,7 @@ public class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull(input, NULL_INPUT);
         return input.getData().stream().mapToDouble(PairOfDoubles::getItemTwo).toArray();
-    }
+    }    
 
     @Override
     public SingleValuedPairs sliceByLeft(SingleValuedPairs input, Threshold threshold)
