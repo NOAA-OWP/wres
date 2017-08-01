@@ -29,7 +29,7 @@ import wres.datamodel.metric.VectorOutput;
  * </p>
  * <p>
  * Mason, S. J. and Graham, N. E. (2002) Areas beneath the relative operating characteristics (ROC) and relative
- * operating levels (ROL) curves: Statistical significance and interpretation, Q. J. R. Meteorol. Soc. 128, 2145–2166.
+ * operating levels (ROL) curves: Statistical significance and interpretation, Q. J. R. Meteorol. Soc. 128, 2145-2166.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
