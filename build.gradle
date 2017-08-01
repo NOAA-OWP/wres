@@ -236,6 +236,7 @@ project(':wres-metrics')
         compile 'org.slf4j:slf4j-api:1.7.25'
 
         testCompile project (':wres-datamodel')
+        testCompile project (':wres-io')
         testCompile 'junit:junit:4.12'
         testCompile 'org.slf4j:slf4j-api:1.7.25'
     }

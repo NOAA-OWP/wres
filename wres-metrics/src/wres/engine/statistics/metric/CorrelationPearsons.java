@@ -4,6 +4,9 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
@@ -28,11 +31,11 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
      */
 
     private final PearsonsCorrelation correlation;
-    
+
     /**
      * Message logger.
      */
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(CorrelationPearsons.class);
 
     @Override
@@ -40,15 +43,23 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     {
         try
         {
-            Slicer slicer = getDataFactory().getSlicer();
-            final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
-            double returnMe =
-                            correlation.correlation(slicer.getLeftSide(s), slicer.getRightSide(s));
-            return getDataFactory().ofScalarOutput(returnMe, metOut);
+            DataFactory d = getDataFactory();
+            MetadataFactory mF = d.getMetadataFactory();
+            Slicer slicer = d.getSlicer();
+            Metadata in = s.getMetadata();
+            //Set the metadata explicitly since this class implements Collectable and getID() may be overridden
+            MetricOutputMetadata meta = mF.getOutputMetadata(in.getSampleSize(),
+                                                             in.getDimension(),
+                                                             mF.getDimension(),
+                                                             MetricConstants.CORRELATION_PEARSONS,
+                                                             MetricConstants.MAIN,
+                                                             in.getIdentifier());
+            double returnMe = correlation.correlation(slicer.getLeftSide(s), slicer.getRightSide(s));
+            return getDataFactory().ofScalarOutput(returnMe, meta);
         }
         catch(Exception e)
         {
-            LOGGER.error("While computing Pearson's correlation coefficient.",e);
+            LOGGER.error("While computing Pearson's correlation coefficient.", e);
             throw new MetricCalculationException("Error computing Pearson's correlation coefficient: "
                 + e.getMessage());
         }
@@ -93,13 +104,14 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     @Override
     public ScalarOutput getCollectionInput(SingleValuedPairs input)
     {
+
         return apply(input);
     }
 
     @Override
     public MetricConstants getCollectionOf()
     {
-        return getID();
+        return MetricConstants.CORRELATION_PEARSONS;
     }
 
     /**

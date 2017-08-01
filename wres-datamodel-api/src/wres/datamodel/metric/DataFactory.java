@@ -80,7 +80,7 @@ public interface DataFactory
      * @return a threshold
      */
 
-    default Threshold getProbabilityThreshold(final Double threshold, final Condition condition)
+    default ProbabilityThreshold getProbabilityThreshold(final Double threshold, final Condition condition)
     {
         return getProbabilityThreshold(threshold, null, condition);
     }
@@ -545,4 +545,16 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> combine(final List<MetricOutputMapByLeadThreshold<T>> input);
+    
+    /**
+     * Helper that checks for the equality of two double values using a prescribed number of significant digits.
+     * 
+     * @param first the first double
+     * @param second the second double
+     * @param digits the number of significant digits
+     * @return true if the first and second are equal to the number of significant digits
+     */
+    
+    boolean doubleEquals(double first, double second, int digits);
+    
 }
