@@ -268,7 +268,7 @@ public class DefaultSlicer implements Slicer
         if(Double.compare(probability,1)==0) {
             return sorted[sorted.length-1];
         }
-        double index = probability * sorted.length;
+        double index = probability * sorted.length -1;
         int lower = (int)Math.floor(index);
         double fraction = index - lower;
         return sorted[lower] + fraction*(sorted[lower+1]-sorted[lower]); 
@@ -279,6 +279,9 @@ public class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull(threshold, "Specify a non-null probability threshold.");
         Objects.requireNonNull(sorted, "Specify a non-null array of sorted values.");
+        if(sorted.length==0) {
+            throw new IllegalArgumentException("Cannot compute the quantile from empty input.");
+        }        
         Double first = getInverseCumulativeProbability(threshold.getThreshold(), sorted);
         Double second = null;
         if(threshold.hasBetweenCondition())

@@ -35,7 +35,7 @@ import wres.datamodel.metric.Threshold;
  * @since 0.1
  */
 
-class MetricProcessorSingleValued extends MetricProcessor<SingleValuedPairs>
+final class MetricProcessorSingleValuedPairs extends MetricProcessor<SingleValuedPairs>
 {
 
     /**
@@ -43,14 +43,14 @@ class MetricProcessorSingleValued extends MetricProcessor<SingleValuedPairs>
      * {@link ScalarOutput}.
      */
 
-    final MetricCollection<DichotomousPairs, ScalarOutput> dichotomousScalar;
+    private final MetricCollection<DichotomousPairs, ScalarOutput> dichotomousScalar;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link MulticategoryPairs} and produce
      * {@link MatrixOutput}.
      */
 
-    final MetricCollection<MulticategoryPairs, MatrixOutput> multicategoryMatrix;
+    private final MetricCollection<MulticategoryPairs, MatrixOutput> multicategoryMatrix;
 
     @Override
     public MetricOutputForProjectByThreshold apply(SingleValuedPairs t)
@@ -70,7 +70,7 @@ class MetricProcessorSingleValued extends MetricProcessor<SingleValuedPairs>
         }
 
         //Process and return the result        
-        return futures.getResults();
+        return futures.getMetricOutput();
     }
 
     /**
@@ -80,9 +80,9 @@ class MetricProcessorSingleValued extends MetricProcessor<SingleValuedPairs>
      * @param config the project configuration
      */
 
-    public static MetricProcessorSingleValued of(DataFactory dataFactory, ProjectConfig config)
+    public static MetricProcessorSingleValuedPairs of(DataFactory dataFactory, ProjectConfig config)
     {
-        return new MetricProcessorSingleValued(dataFactory, config);
+        return new MetricProcessorSingleValuedPairs(dataFactory, config);
     }
 
     @Override
@@ -229,7 +229,7 @@ class MetricProcessorSingleValued extends MetricProcessor<SingleValuedPairs>
      * @param config the project configuration
      */
 
-    private MetricProcessorSingleValued(DataFactory dataFactory, ProjectConfig config)
+    private MetricProcessorSingleValuedPairs(DataFactory dataFactory, ProjectConfig config)
     {
         super(dataFactory, config);
         //Validate the configuration

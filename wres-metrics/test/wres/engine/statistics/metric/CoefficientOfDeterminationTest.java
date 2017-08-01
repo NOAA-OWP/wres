@@ -27,7 +27,7 @@ import wres.engine.statistics.metric.CoefficientOfDetermination.CoefficientOfDet
  */
 public final class CoefficientOfDeterminationTest
 {
-
+    
     /**
      * Constructs a {@link CoefficientOfDetermination}.
      */

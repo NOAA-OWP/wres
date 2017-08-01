@@ -41,11 +41,11 @@ class SafeThreshold implements Threshold
     protected SafeThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
     {
         //Bounds checks
-        Objects.requireNonNull(threshold, "Specify a non-null threshold for the map key.");
-        Objects.requireNonNull(condition, "Specify a non-null condition for the map key.");
+        Objects.requireNonNull(threshold, "Specify a non-null threshold.");
+        Objects.requireNonNull(condition, "Specify a non-null condition.");
         if(condition.equals(Condition.BETWEEN))
         {
-            Objects.requireNonNull(thresholdUpper, "Specify a non-null upper threshold for the map key.");
+            Objects.requireNonNull(thresholdUpper, "Specify a non-null upper threshold.");
             if(thresholdUpper <= threshold)
             {
                 throw new IllegalArgumentException("The upper threshold must be greater than the lower threshold: ["
@@ -54,9 +54,9 @@ class SafeThreshold implements Threshold
         }
         else
         {
-            if(!Objects.isNull(thresholdUpper))
+            if(Objects.nonNull(thresholdUpper))
             {
-                throw new IllegalArgumentException("Specify a null upper threshold for the map key or define an "
+                throw new IllegalArgumentException("Specify a null upper threshold or define an "
                     + "appropriate BETWEEN condition.");
             }
         }
