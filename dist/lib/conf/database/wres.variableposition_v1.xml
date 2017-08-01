@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="VariablePosition v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'wres'
+                        AND table_name = 'VariablePosition'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="VariablePosition" schemaName="wres">
+            <column name="variableposition_id" type="serial"/>
+            <column name="variable_id" type="smallint" />
+            <column name="x_position" type="integer" >
+                <constraints nullable="false" />
+            </column>
+            <column name="y_position" type="integer" />
+        </createTable>
+        <sql>
+            ALTER TABLE wres.VariablePosition OWNER TO wres;
+        </sql>
+        <createIndex tableName="VariablePosition" schemaName="wres" indexName="variableposition_variable_idx">
+            <column name="variable_id" type="smallint" />
+        </createIndex>
+        <createIndex tableName="VariablePosition" schemaName="wres" indexName="variableposition_coord_idx">
+            <column name="variable_id" type="smallint" />
+            <column name="x_position" type="integer" />
+            <column name="y_position" type="integer" />
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

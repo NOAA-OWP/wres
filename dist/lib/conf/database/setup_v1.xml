@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="Setup WRES Role v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_roles
+                    WHERE rolname = 'wres'
+                );
+            </sqlCheck>
+        </preConditions>
+        <sql>
+            CREATE ROLE wres
+                NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
+        </sql>
+    </changeSet>
+    <changeSet id="Setup wres_user Role v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_roles
+                    WHERE rolname = 'wres_user'
+                );
+            </sqlCheck>
+        </preConditions>
+        <sql>
+            CREATE ROLE wres_user LOGIN PASSWORD 'changeme'
+                NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
+        </sql>
+        <sql>
+            GRANT wres TO wres_user;
+        </sql>
+    </changeSet>
+    <changeSet id="Setup Database v1.0" author="Christopher Tubbs" dbms="PostgreSQL" >
+        <sql>
+            CREATE DATABASE IF NOT EXISTS wres;
+        </sql>
+    </changeSet>
+    <changeSet id="Setup WRES Schema v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <sql>
+            CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
+        </sql>
+    </changeSet>
+    <changeSet id="Setup PARTITIONS Schema v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <sql>
+            CREATE SCHEMA IF NOT EXISTS partitions AUTHORIZATION wres;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

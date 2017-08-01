@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="Variable v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'wres'
+                        AND table_name = 'Variable'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="Variable" schemaName="wres">
+            <column name="variable_id" type="smallserial">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="variable_name" type="text">
+                <constraints nullable="false" deferrable="true" unique="true"/>
+            </column>
+            <column name="measurementunit_id" type="smallint">
+                <constraints deferrable="true" references="wres.MeasurementUnit(measurementunit_id)" />
+            </column>
+        </createTable>
+        <sql>
+            ALTER TABLE wres.Variable OWNER TO wres;
+        </sql>
+        <createIndex tableName="Variable" schemaName="wres" indexName="variable_variable_name_idx">
+            <column name="variable_name" />
+        </createIndex>
+        <createIndex tableName="Variable" schemaName="wres" indexName="variable_idx">
+            <column name="variable_id" type="smallint" />
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
