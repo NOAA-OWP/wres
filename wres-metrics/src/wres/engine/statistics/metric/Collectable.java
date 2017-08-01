@@ -4,6 +4,7 @@ import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputMetadata;
 
 /**
  * An interface that allows for a {@link Metric} to be computed from an intermediate {@link MetricOutput}, thereby
@@ -31,8 +32,9 @@ public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>
     U apply(T output);
 
     /**
-     * Returns the result whose method {@link Metric#apply(wres.datamodel.metric.MetricInput)} provides
-     * the input to {@link #apply(MetricOutput)}
+     * Returns the result whose method {@link Metric#apply(wres.datamodel.metric.MetricInput)} provides the input to
+     * {@link #apply(MetricOutput)}. Ensure that the {@link Metric#getID()} associated with the
+     * {@link MetricOutputMetadata} of the output corresponds to that of the implementing class and not the caller.
      * 
      * @param input the metric input
      * @return the intermediate output that forms the input to metrics within this collection
@@ -41,11 +43,20 @@ public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>
     T getCollectionInput(S input);
 
     /**
-     * Returns the {@link Metric#getID()} of the metric whose output forms the input to this metric. Metrics with
-     * common intermediate inputs are collected by the name of the metric that produces the intermediate input.
+     * Returns the {@link Metric#getID()} of the metric whose output forms the input to this metric. Metrics with common
+     * intermediate inputs are collected by the name of the metric that produces the intermediate input.
      * 
      * @return the {@link Metric#getID()} of the metric whose output forms the input to this metric
      */
 
     MetricConstants getCollectionOf();
+
+    /**
+     * Returns the {@link Metric#getID()} of this metric.
+     * 
+     * @return the {@link Metric#getID()} of this metric
+     */
+
+    MetricConstants getID();
+
 }

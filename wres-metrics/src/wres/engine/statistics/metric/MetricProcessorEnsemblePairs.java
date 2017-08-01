@@ -40,7 +40,7 @@ import wres.datamodel.metric.VectorOutput;
  * @since 0.1
  */
 
-class MetricProcessorEnsemble extends MetricProcessor<EnsemblePairs>
+final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
 {
 
     /**
@@ -48,39 +48,39 @@ class MetricProcessorEnsemble extends MetricProcessor<EnsemblePairs>
      * {@link VectorOutput}.
      */
 
-    final MetricCollection<DiscreteProbabilityPairs, VectorOutput> discreteProbabilityVector;
+    private final MetricCollection<DiscreteProbabilityPairs, VectorOutput> discreteProbabilityVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
      * {@link ScalarOutput}.
      */
 
-    final MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput> discreteProbabilityMultiVector;
+    private final MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput> discreteProbabilityMultiVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link VectorOutput}.
      */
 
-    final MetricCollection<EnsemblePairs, VectorOutput> ensembleVector;
+    private final MetricCollection<EnsemblePairs, VectorOutput> ensembleVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce
      * {@link MultiVectorOutput}.
      */
 
-    final MetricCollection<EnsemblePairs, MultiVectorOutput> ensembleMultiVector;
+    private final MetricCollection<EnsemblePairs, MultiVectorOutput> ensembleMultiVector;
 
     /**
      * Function to map between ensemble pairs and single-valued pairs.
      */
 
-    final Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> toSingleValues;
+    private final Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> toSingleValues;
 
     /**
      * Function to map between ensemble pairs and discrete probabilities.
      */
 
-    final BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> toDiscreteProbabilities;
+    private final BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> toDiscreteProbabilities;
 
     @Override
     public MetricOutputForProjectByThreshold apply(EnsemblePairs t)
@@ -111,7 +111,7 @@ class MetricProcessorEnsemble extends MetricProcessor<EnsemblePairs>
         }
 
         //Process and return the result        
-        return futures.getResults();
+        return futures.getMetricOutput();
     }
 
     /**
@@ -121,9 +121,9 @@ class MetricProcessorEnsemble extends MetricProcessor<EnsemblePairs>
      * @param config the project configuration
      */
 
-    public static MetricProcessorEnsemble of(DataFactory dataFactory, ProjectConfig config)
+    public static MetricProcessorEnsemblePairs of(DataFactory dataFactory, ProjectConfig config)
     {
-        return new MetricProcessorEnsemble(dataFactory, config);
+        return new MetricProcessorEnsemblePairs(dataFactory, config);
     }
 
     @Override
@@ -396,7 +396,7 @@ class MetricProcessorEnsemble extends MetricProcessor<EnsemblePairs>
      * @param config the project configuration
      */
 
-    private MetricProcessorEnsemble(DataFactory dataFactory, ProjectConfig config)
+    private MetricProcessorEnsemblePairs(DataFactory dataFactory, ProjectConfig config)
     {
         super(dataFactory, config);
         //Validate the configuration

@@ -97,9 +97,9 @@ public class MetricFactory
 
     public MetricProcessor<EnsemblePairs> getEnsembleProcessor(final ProjectConfig config)
     {
-        return MetricProcessorEnsemble.of(outputFactory, config);
+        return MetricProcessorEnsemblePairs.of(outputFactory, config);
     }
-
+    
     /**
      * Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}.
      * 
@@ -109,7 +109,7 @@ public class MetricFactory
 
     public MetricProcessor<SingleValuedPairs> getSingleValuedProcessor(final ProjectConfig config)
     {
-        return MetricProcessorSingleValued.of(outputFactory, config);
+        return MetricProcessorSingleValuedPairs.of(outputFactory, config);
     }
 
     /**

@@ -63,7 +63,7 @@ import wres.datamodel.metric.VectorOutput;
  * </p>
  * Upon calling {@link #apply(Object)} with a concrete {@link MetricInput}, the configured {@link Metric} are computed
  * asynchronously for each {@link Threshold}. These asynchronous tasks are stored in a {@link MetricFutures} whose
- * method, {@link MetricFutures#getResults()} returns the full suite of results in a
+ * method, {@link MetricFutures#getMetricOutput()} returns the full suite of results in a
  * {@link MetricOutputForProjectByThreshold}.
  * </p>
  * 
@@ -203,8 +203,8 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
     {
         return Objects.nonNull(singleValuedScalar) || Objects.nonNull(singleValuedVector)
             || Objects.nonNull(singleValuedMultiVector);
-    }    
-    
+    }
+
     /**
      * Returns true if the input list of thresholds contains one or more probability thresholds, false otherwise.
      * 
@@ -330,7 +330,7 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
          * @return the metric results
          */
 
-        MetricOutputForProjectByThreshold getResults()
+        MetricOutputForProjectByThreshold getMetricOutput()
         {
             MetricOutputForProjectByThreshold.Builder builder = dataFactory.ofMetricOutputForProjectByThreshold();
             if(!scalar.isEmpty())
@@ -377,31 +377,6 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
     }
 
     /**
-     * Constructor.
-     * 
-     * @param dataFactory the data factory
-     * @param config the project configuration
-     */
-
-    MetricProcessor(final DataFactory dataFactory, final ProjectConfig config)
-    {
-        Objects.requireNonNull(config,
-                               "Specify a non-null project configuration from which to construct the metric processor.");
-        this.dataFactory = dataFactory;
-        metricFactory = MetricFactory.getInstance(dataFactory);
-        //Construct the metrics that are common to more than one type of input pairs
-        singleValuedScalar = ofSingleValuedScalarCollection(config);
-        singleValuedVector = ofSingleValuedVectorCollection(config);
-        //TODO: implement metrics that consume single-valued pairs and produce multi-vector output
-        singleValuedMultiVector = null; //ofSingleValuedMultiVectorCollection(config);
-
-        //Obtain the thresholds for each metric and store them
-        localThresholds = new EnumMap<>(MetricConstants.class);
-        globalThresholds = new EnumMap<>(MetricGroup.class);
-        setThresholds(dataFactory, config);
-    }
-
-    /**
      * Helper that returns a sorted set of values from the left side of the input pairs if any of the thresholds are
      * {@link ProbabilityThreshold}.
      * 
@@ -419,6 +394,32 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
             Arrays.sort(sorted);
         }
         return sorted;
+    }
+
+    /**
+     * Constructor.
+     * 
+     * @param dataFactory the data factory
+     * @param config the project configuration
+     */
+
+    MetricProcessor(final DataFactory dataFactory, final ProjectConfig config)
+    {
+        Objects.requireNonNull(config,
+                               "Specify a non-null project configuration from which to construct the metric processor.");
+        Objects.requireNonNull(dataFactory,
+                               "Specify a non-null data factory from which to construct the metric processor.");
+        this.dataFactory = dataFactory;
+        metricFactory = MetricFactory.getInstance(dataFactory);
+        //Construct the metrics that are common to more than one type of input pairs
+        singleValuedScalar = ofSingleValuedScalarCollection(config);
+        singleValuedVector = ofSingleValuedVectorCollection(config);
+        //TODO: implement metrics that consume single-valued pairs and produce multi-vector output
+        singleValuedMultiVector = null; //ofSingleValuedMultiVectorCollection(config);
+        //Obtain the thresholds for each metric and store them
+        localThresholds = new EnumMap<>(MetricConstants.class);
+        globalThresholds = new EnumMap<>(MetricGroup.class);
+        setThresholds(dataFactory, config);
     }
 
     /**
@@ -495,11 +496,15 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
             //Obtain conditions here
             List<Threshold> thresholds = new ArrayList<>();
             //TODO: implement this when threshold conditions are available in the configuration
-            //If no thresholds are available for a given metric, add the global ones
-
-            localThresholds.put(fromMetricConfigName(metric.getValue()), thresholds);
+            if(!thresholds.isEmpty())
+            {
+                localThresholds.put(fromMetricConfigName(metric.getValue()), thresholds);
+            }
         });
-        this.localThresholds.putAll(localThresholds);
+        if(!localThresholds.isEmpty())
+        {
+            this.localThresholds.putAll(localThresholds);
+        }
         //TODO: implement this when threshold conditions are available in the configuration
         List<Threshold> globalThresholds = new ArrayList<>();
         //Set a single global threshold representing all data until thresholds are available
@@ -565,7 +570,8 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
             case ROOT_MEAN_SQUARE_ERROR:
                 return MetricConfigName.ROOT_MEAN_SQUARE_ERROR;
             default:
-                return null;
+                throw new IllegalArgumentException("Failure to map identifier in project configuration, '" + translate
+                    + "', to recognized metric identifier.");
         }
     }
 
@@ -578,6 +584,9 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
 
     private static MetricConstants fromMetricConfigName(MetricConfigName translate)
     {
+        Objects.requireNonNull(translate,
+                               "One or more metric identifiers in the project configuration could not be mapped "
+                                   + "to a supported metric identifier.");
         switch(translate)
         {
             case BIAS_FRACTION:
@@ -619,7 +628,8 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
             case ROOT_MEAN_SQUARE_ERROR:
                 return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
             default:
-                return null;
+                throw new IllegalArgumentException("Unrecognized metric identifier in project configuration '"
+                    + translate + "'.");
         }
     }
 
