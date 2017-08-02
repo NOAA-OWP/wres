@@ -414,8 +414,7 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
         //Construct the metrics that are common to more than one type of input pairs
         singleValuedScalar = ofSingleValuedScalarCollection(config);
         singleValuedVector = ofSingleValuedVectorCollection(config);
-        //TODO: implement metrics that consume single-valued pairs and produce multi-vector output
-        singleValuedMultiVector = null; //ofSingleValuedMultiVectorCollection(config);
+        singleValuedMultiVector = ofSingleValuedMultiVectorCollection(config);
         //Obtain the thresholds for each metric and store them
         localThresholds = new EnumMap<>(MetricConstants.class);
         globalThresholds = new EnumMap<>(MetricGroup.class);
@@ -480,6 +479,21 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
         MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.SINGLE_VALUED_VECTOR);
         return metrics.length == 0 ? null : metricFactory.ofSingleValuedVectorCollection(metrics);
     }
+    
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
+     * {@link MultiVectorOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
+     * 
+     * @param config the project configuration
+     * @return a collection of metrics or null
+     */
+
+    private MetricCollection<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVectorCollection(ProjectConfig config)
+    {
+        //Obtain the list of metrics and find the matching metrics 
+        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.SINGLE_VALUED_MULTIVECTOR);
+        return metrics.length == 0 ? null : metricFactory.ofSingleValuedMultiVectorCollection(metrics);
+    }    
 
     /**
      * Sets the thresholds for each metric in the configuration, including any thresholds that apply globally (to all
@@ -563,6 +577,8 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
                 return MetricConfigName.PROBABILITY_OF_DETECTION;
             case PROBABILITY_OF_FALSE_DETECTION:
                 return MetricConfigName.PROBABILITY_OF_FALSE_DETECTION;
+            case QUANTILE_QUANTILE_DIAGRAM:
+                return MetricConfigName.QUANTILE_QUANTILE_DIAGRAM;        
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
@@ -621,6 +637,8 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
                 return MetricConstants.PEIRCE_SKILL_SCORE;
             case PROBABILITY_OF_DETECTION:
                 return MetricConstants.PROBABILITY_OF_DETECTION;
+            case QUANTILE_QUANTILE_DIAGRAM:
+                return MetricConstants.QUANTILE_QUANTILE_DIAGRAM;    
             case PROBABILITY_OF_FALSE_DETECTION:
                 return MetricConstants.PROBABILITY_OF_FALSE_DETECTION;
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:

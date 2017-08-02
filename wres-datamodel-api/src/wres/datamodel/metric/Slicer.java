@@ -113,25 +113,31 @@ public interface Slicer
     PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair, Threshold threshold);
 
     /**
-     * Returns a value from the sorted array that corresponds to the input non-exceedence probability. This method 
-     * produces undefined results if the input array is unsorted.
+     * Returns a value from the sorted array that corresponds to the input non-exceedence probability (p). This method
+     * produces undefined results if the input array is unsorted. Corresponds to method 4 in the R function,
+     * quantile{stats}: <a href=
+     * "https://stat.ethz.ch/R-manual/R-devel/library/stats/html/quantile.html">https://stat.ethz.ch/R-manual/R-devel/library/stats/html/quantile.html</a>.
+     * Specifically, conducts linear interpolation of the empirical distribution function. When
+     * <code>p &lt; 1 / N</code>, the first sample value is returned. When <code>p = 1</code>, the last sample value is
+     * returned. Also see: <a href=
+     * "https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample">https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample</a>.
      * 
      * @param probability the non-exceedence probability in [0,1]
      * @param sorted the sorted input array
      * @return the threshold
      */
 
-    double getInverseCumulativeProbability(double probability, double[] sorted);    
-    
+    double getQuantile(double probability, double[] sorted);
+
     /**
      * Returns a {@link QuantileThreshold} for the prescribed {@link ProbabilityThreshold}, where the quantiles are
-     * mapped using {@link #getInverseCumulativeProbability(double, double[])}.
+     * mapped using {@link #getQuantile(double, double[])}.
      * 
      * @param sorted the sorted input array
      * @param threshold the {@link ProbabilityThreshold} from which the {@link QuantileThreshold} is determined
      * @return the {@link QuantileThreshold}
      */
 
-     QuantileThreshold getQuantileFromProbability(ProbabilityThreshold threshold, double[] sorted);
+    QuantileThreshold getQuantileFromProbability(ProbabilityThreshold threshold, double[] sorted);
 
 }

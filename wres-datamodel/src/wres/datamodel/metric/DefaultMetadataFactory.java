@@ -254,7 +254,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
                 return "MEAN CONTINUOUS RANKED PROBABILITY SKILL SCORE";
             case MEAN_ERROR:
-                return "MEAN_ERROR";
+                return "MEAN ERROR";
             case MEAN_SQUARE_ERROR:
                 return "MEAN SQUARE ERROR";
             case MEAN_SQUARE_ERROR_SKILL_SCORE:
@@ -265,12 +265,14 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "PROBABILITY OF DETECTION";
             case PROBABILITY_OF_FALSE_DETECTION:
                 return "PROBABILITY OF FALSE DETECTION";
+            case QUANTILE_QUANTILE_DIAGRAM:
+                return "QUANTILE-QUANTILE DIAGRAM";    
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return "RELATIVE OPERATING CHARACTERISTIC";
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
                 return "RELATIVE OPERATING CHARACTERISTIC SCORE";    
             case RELIABILITY_DIAGRAM:
-                return "RELIABILITY_DIAGRAM";                   
+                return "RELIABILITY DIAGRAM";                   
             case ROOT_MEAN_SQUARE_ERROR:
                 return "ROOT MEAN SQUARE ERROR";
             default:
@@ -305,7 +307,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
                 return "MEAN CRPSS";
             case MEAN_ERROR:
-                return "MEAN_ERROR";
+                return "MEAN ERROR";
             case MEAN_SQUARE_ERROR:
                 return "MSE";
             case MEAN_SQUARE_ERROR_SKILL_SCORE:
@@ -316,12 +318,14 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "PoD";
             case PROBABILITY_OF_FALSE_DETECTION:
                 return "PoFD";
+            case QUANTILE_QUANTILE_DIAGRAM:
+                return "QQ DIAGRAM";    
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return "ROC";
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
                 return "ROC SCORE";   
             case RELIABILITY_DIAGRAM:
-                return "RELIABILITY_DIAGRAM";    
+                return "RELIABILITY DIAGRAM";    
             case ROOT_MEAN_SQUARE_ERROR:
                 return "RMSE";
             default:
