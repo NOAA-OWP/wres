@@ -348,7 +348,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#getInverseCumulativeProbability(double, double[])}.
+     * Tests the {@link Slicer#getQuantile(double, double[])}.
      */
 
     @Test
@@ -367,17 +367,17 @@ public final class DefaultSlicerTest
 
         //Test for equality
         assertTrue("The inverse cumulative probability does not match the benchmark",
-                   metIn.doubleEquals(slicer.getInverseCumulativeProbability(testA, sorted), expectedA, 7));
+                   metIn.doubleEquals(slicer.getQuantile(testA, sorted), expectedA, 7));
         assertTrue("The inverse cumulative probability does not match the benchmark",
-                   metIn.doubleEquals(slicer.getInverseCumulativeProbability(testB, sorted), expectedB, 7));
+                   metIn.doubleEquals(slicer.getQuantile(testB, sorted), expectedB, 7));
         assertTrue("The inverse cumulative probability does not match the benchmark",
-                   metIn.doubleEquals(slicer.getInverseCumulativeProbability(testC, sorted), expectedC, 7));
+                   metIn.doubleEquals(slicer.getQuantile(testC, sorted), expectedC, 7));
         assertTrue("The inverse cumulative probability does not match the benchmark",
-                   metIn.doubleEquals(slicer.getInverseCumulativeProbability(testD, sorted), expectedD, 7));
+                   metIn.doubleEquals(slicer.getQuantile(testD, sorted), expectedD, 7));
         //Test the exception conditions
         try
         {
-            slicer.getInverseCumulativeProbability(-0.1, sorted);
+            slicer.getQuantile(-0.1, sorted);
             fail("Expected and exception on using an out-of-bounds probability.");
         }
         catch(Exception e)
@@ -385,7 +385,7 @@ public final class DefaultSlicerTest
         }
         try
         {
-            slicer.getInverseCumulativeProbability(1.1, sorted);
+            slicer.getQuantile(1.1, sorted);
             fail("Expected and exception on using an out-of-bounds probability.");
         }
         catch(Exception e)
@@ -393,7 +393,7 @@ public final class DefaultSlicerTest
         }
         try
         {
-            slicer.getInverseCumulativeProbability(0.0, new double[]{});
+            slicer.getQuantile(0.0, new double[]{});
             fail("Expected and exception on using an empty test array.");
         }
         catch(Exception e)
