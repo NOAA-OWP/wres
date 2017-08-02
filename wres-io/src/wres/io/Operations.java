@@ -185,16 +185,18 @@ public final class Operations {
     public static void logExecution(String arguments, String project, String start, String stop, boolean failed)
     {
         try {
-            String systemConfiguration = "'" + SystemSettings.getRawConfiguration() + "'::xml";
+            String systemConfiguration = SystemSettings.getRawConfiguration();
             String username = SystemSettings.getUserName();
 
-            String address = "local";
+            String address;
 
-            try {
+            try
+            {
                 address = String.valueOf(InetAddress.getLocalHost());
             }
             catch (UnknownHostException e) {
-                e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace(e));
+                address = "Unknown";
             }
 
             if (project == null || project.isEmpty())
@@ -209,10 +211,18 @@ public final class Operations {
 
             StringBuilder script = new StringBuilder();
 
-            script.append("INSERT INTO ExecutionLog(arguments, system_settings, project, username, address, start_time, run_time, failed) ");
+            script.append("INSERT INTO ExecutionLog(")
+                  .append("arguments, ")
+                  .append("system_settings, ")
+                  .append("project, ")
+                  .append("username, ")
+                  .append("address, ")
+                  .append("start_time, ")
+                  .append("run_time, ")
+                  .append("failed) ");
             script.append("VALUES (")
                   .append("'").append(arguments).append("', ")
-                  .append(systemConfiguration).append(", ")
+                  .append("'").append(systemConfiguration).append("', ")
                   .append(project).append(", ")
                   .append("'").append(username).append("', ")
                   .append("'").append(address).append("', ")
@@ -222,17 +232,14 @@ public final class Operations {
 
             Database.execute(script.toString());
         }
-        catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        catch (XMLStreamException e) {
-            e.printStackTrace();
-        }
-        catch (TransformerException e) {
-            e.printStackTrace();
+        catch (FileNotFoundException | XMLStreamException | TransformerException e)
+        {
+            LOGGER.error("The system configuration could not be loaded. Execution information was not logged to the database.");
+            LOGGER.error(Strings.getStackTrace(e));
         }
         catch (SQLException e) {
-            e.printStackTrace();
+            LOGGER.error("Execution information could not be saved to the database.");
+            LOGGER.error(Strings.getStackTrace(e));
         }
     }
 

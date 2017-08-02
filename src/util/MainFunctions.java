@@ -204,9 +204,9 @@ public final class MainFunctions
 			}
 			else
 			{
-				System.out.println("A path is needed to describe the data. Please pass that in as the first argument.");
-				System.out.print("The current directory is:\t");
-				System.out.println(System.getProperty("user.dir"));
+				LOGGER.error("A path is needed to describe the data. Please pass that in as the first argument.");
+                LOGGER.error("The current directory is:\t");
+                LOGGER.error(System.getProperty("user.dir"));
 			}
 			return result;
 		};
@@ -243,8 +243,8 @@ public final class MainFunctions
 			}
 			else
 			{
-				System.out.println("There are not enough parameters to query the netcdf.");
-				System.out.println("usage: queryNetCDF <filename> <variable> [index0, index1,...indexN]");
+                LOGGER.error("There are not enough parameters to query the netcdf.");
+                LOGGER.error("usage: queryNetCDF <filename> <variable> [index0, index1,...indexN]");
 			}
 			return result;
 		};

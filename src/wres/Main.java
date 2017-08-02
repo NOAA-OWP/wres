@@ -46,9 +46,9 @@ public class Main {
                 op = args[0];
             }
             else if (!MainFunctions.hasOperation(args[0])) {
-                System.out.println(String.format("Running \"%s\" is not currently supported.", args[0]));
-                System.out.print("Custom handling needs to be added to prototyping.Prototype.main ");
-                System.out.println("to test the indicated prototype.");
+                LOGGER.info(String.format("Running \"%s\" is not currently supported.", args[0]));
+                LOGGER.info("Custom handling needs to be added to prototyping.Prototype.main ");
+                LOGGER.info("to test the indicated prototype.");
             }
             return op;
         }).get();
@@ -58,10 +58,10 @@ public class Main {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             MainFunctions.shutdown();
 
-            System.out.print("The function '");
-            System.out.print(operation);
-            System.out.print("' took ");
-            System.out.println(watch.getFormattedDuration());
+            LOGGER.info("The function '");
+            LOGGER.info(operation);
+            LOGGER.info("' took ");
+            LOGGER.info(watch.getFormattedDuration());
         }));
 
         String[] cutArgs = Collections.removeIndexFromArray(args, 0);
