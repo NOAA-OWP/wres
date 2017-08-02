@@ -115,7 +115,13 @@ public enum MetricConstants
      * Identifier for the Relative Operating Characteristic.
      */
 
-    RELATIVE_OPERATING_CHARACTERISTIC(MetricGroup.DISCRETE_PROBABILITY_MULTIVECTOR),
+    RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM(MetricGroup.DISCRETE_PROBABILITY_MULTIVECTOR),
+    
+    /**
+     * Identifier for the Relative Operating Characteristic Score.
+     */    
+    
+    RELATIVE_OPERATING_CHARACTERISTIC_SCORE(MetricGroup.DISCRETE_PROBABILITY_VECTOR),
 
     /**
      * Identifier for the Reliability Diagram.

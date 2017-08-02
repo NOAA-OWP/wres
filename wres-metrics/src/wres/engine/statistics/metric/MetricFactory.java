@@ -16,7 +16,7 @@ import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
-import wres.engine.statistics.metric.RelativeOperatingCharacteristic.RelativeOperatingCharacteristicBuilder;
+import wres.engine.statistics.metric.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
 import wres.engine.statistics.metric.ReliabilityDiagram.ReliabilityDiagramBuilder;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
@@ -353,7 +353,7 @@ public class MetricFactory
         {
             case RELIABILITY_DIAGRAM:
                 return ofReliabilityDiagram();
-            case RELATIVE_OPERATING_CHARACTERISTIC:
+            case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return ofRelativeOperatingCharacteristic();
             default:
                 throw new IllegalArgumentException(error + " '" + metric + "'.");
@@ -590,14 +590,14 @@ public class MetricFactory
     }
 
     /**
-     * Return a default {@link RelativeOperatingCharacteristic} function.
+     * Return a default {@link RelativeOperatingCharacteristicDiagram} function.
      * 
-     * @return a default {@link RelativeOperatingCharacteristic} function.
+     * @return a default {@link RelativeOperatingCharacteristicDiagram} function.
      */
 
-    protected RelativeOperatingCharacteristic ofRelativeOperatingCharacteristic()
+    protected RelativeOperatingCharacteristicDiagram ofRelativeOperatingCharacteristic()
     {
-        return (RelativeOperatingCharacteristic)new RelativeOperatingCharacteristicBuilder().setOutputFactory(outputFactory)
+        return (RelativeOperatingCharacteristicDiagram)new RelativeOperatingCharacteristicBuilder().setOutputFactory(outputFactory)
                                                                                             .build();
     }
 

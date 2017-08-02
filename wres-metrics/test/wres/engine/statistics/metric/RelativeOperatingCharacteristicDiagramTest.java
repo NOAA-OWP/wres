@@ -14,20 +14,20 @@ import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MultiVectorOutput;
-import wres.engine.statistics.metric.RelativeOperatingCharacteristic.RelativeOperatingCharacteristicBuilder;
+import wres.engine.statistics.metric.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
 
 /**
- * Tests the {@link RelativeOperatingCharacteristic}.
+ * Tests the {@link RelativeOperatingCharacteristicDiagram}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public final class RelativeOperatingCharacteristicTest
+public final class RelativeOperatingCharacteristicDiagramTest
 {
 
     /**
-     * Constructs a {@link RelativeOperatingCharacteristic} and compares the actual result to the expected result. Also,
+     * Constructs a {@link RelativeOperatingCharacteristicDiagram} and compares the actual result to the expected result. Also,
      * checks the parameters of the metric. Uses the data from
      * {@link MetricTestDataFactory#getDiscreteProbabilityPairsThree()}.
      */
@@ -44,14 +44,14 @@ public final class RelativeOperatingCharacteristicTest
         final MetadataFactory metaFac = outF.getMetadataFactory();
         b.setOutputFactory(outF);
 
-        final RelativeOperatingCharacteristic roc = b.build();
+        final RelativeOperatingCharacteristicDiagram roc = b.build();
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
                                       metaFac.getOutputMetadata(input.getMetadata().getSampleSize(),
                                                                 metaFac.getDimension(),
                                                                 metaFac.getDimension(),
-                                                                MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC,
+                                                                MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                                 MetricConstants.MAIN,
                                                                 metaFac.getDatasetIdentifier("Tampere", "MAP", "FMI"));
 
@@ -70,7 +70,7 @@ public final class RelativeOperatingCharacteristicTest
         assertTrue("Difference between actual and expected ROC.", actual.equals(expected));
         //Check the parameters
         assertTrue("Unexpected name for the Relative Operating Characteristic.",
-                   roc.getName().equals(metaFac.getMetricName(MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC)));
+                   roc.getName().equals(metaFac.getMetricName(MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM)));
 
     }
 
