@@ -34,5 +34,8 @@
             <column name="x_position" type="integer" />
             <column name="y_position" type="integer" />
         </createIndex>
+        <comment>
+            The wres.VariablePosition table has been added to the database.
+        </comment>
     </changeSet>
 </databaseChangeLog>

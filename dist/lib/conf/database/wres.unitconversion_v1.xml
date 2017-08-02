@@ -51,8 +51,11 @@
                     AND UC.to_unit = M.measurementunit_id
             );
         </sql>
+        <comment>
+            The wres.UnitConversion table has been created and all default identity conversions have been added.
+        </comment>
     </changeSet>
-    <changeSet id="Volumn UnitConversion v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="Volumn and Flow UnitConversion v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <sql>
             INSERT INTO wres.UnitConversion (from_unit, to_unit, factor)
             SELECT  F.measurementunit_id,
@@ -84,6 +87,9 @@
                     AND to_unit = T.measurementunit_id
                 );
         </sql>
+        <comment>
+            All initial unit conversions for volumn and flow have been added to the database.
+        </comment>
     </changeSet>
     <changeSet id="Distance UnitConversions v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <sql>
@@ -267,6 +273,9 @@
                         AND to_unit = T.measurementunit_id
                 );
         </sql>
+        <comment>
+            All initial distance unit conversions have been added to the database.
+        </comment>
     </changeSet>
     <changeSet id="Time UnitConversion V1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <sql>
@@ -570,6 +579,9 @@
                         AND to_unit = T.measurementunit_id
                 );
         </sql>
+        <comment>
+            All initial time unit conversions have been added to the database.
+        </comment>
     </changeSet>
     <changeSet id="Temperature UnitConversion v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <sql>
@@ -605,5 +617,8 @@
                         AND to_unit = T.measurementunit_id
                 );
         </sql>
+        <comment>
+            All initial temperature unit conversions have been added to the database.
+        </comment>
     </changeSet>
 </databaseChangeLog>

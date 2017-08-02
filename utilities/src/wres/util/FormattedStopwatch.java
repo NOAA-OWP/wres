@@ -2,6 +2,7 @@ package wres.util;
 
 import com.google.common.base.Stopwatch;
 
+import java.time.OffsetDateTime;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,6 +24,7 @@ public class FormattedStopwatch {
 	public void start() {
 		this.innerWatch.reset();
 	    this.innerWatch.start();
+	    this.startTime = OffsetDateTime.now();
 	}
 	
 	/**
@@ -30,6 +32,7 @@ public class FormattedStopwatch {
 	 */
 	public void stop() {
 	    this.innerWatch.stop();
+	    this.stopTime = OffsetDateTime.now();
 	}
 	
 	/**
@@ -74,6 +77,31 @@ public class FormattedStopwatch {
 		
 		return duration;
 	}
+
+	public String getStartTime()
+	{
+		String start = "";
+
+		if (this.startTime != null) {
+			start =  Time.convertDateToString(this.startTime);
+		}
+
+		return start;
+	}
+
+	public String getStopTime()
+	{
+		String stop = "";
+
+		if (this.stopTime != null)
+		{
+			stop = Time.convertDateToString(this.stopTime);
+		}
+
+		return stop;
+	}
 	
 	private Stopwatch innerWatch;
+	private OffsetDateTime stopTime;
+	private OffsetDateTime startTime;
 }

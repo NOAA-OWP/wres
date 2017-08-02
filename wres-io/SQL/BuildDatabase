@@ -63,12 +63,20 @@ else
     psql -U $1 -d $3 -h $2 -f get_variableposition_id.sql >/dev/null
 
     echo ''
-    echo 'Adding wres.ForecastSource...'
-    psql -U $1 -d $3 -h $2 -f wres.ForecastSource.sql >/dev/null
-
-    echo ''
     echo 'Adding wres.NetCDFCoordinate...'
     psql -U $1 -d $3 -h $2 -f wres.NetCDFCoordinate.sql >/dev/null
+
+    echo ''
+    echo 'Adding wres.NetCDFFeature...'
+    psql -U $1 -d $3 -h $2 -f wres.NetCDFFeature.sql >/dev/null
+
+    echo ''
+    echo 'Adding add_netcdffeature function...'
+    psql -U $1 -d $3 -h $2 -f wres.add_netcdffeature.sql >/dev/null
+
+    echo ''
+    echo 'Adding wres.ForecastSource...'
+    psql -U $1 -d $3 -h $2 -f wres.ForecastSource.sql >/dev/null
 
     echo ''
     echo 'The wres schema has been sucessfully added.'
@@ -151,6 +159,10 @@ else
     echo ''
     echo 'Transferring Locations from the public schema to the WRES schema...'
     psql -U $1 -d $3 -h $2 -f TransferLocationsToWRES.sql >/dev/null
+
+    echo ''
+    echo 'Adding the execution log...'
+    psql -U $1 -d $3 -h $2 -f executionlog.sql >/dev/null
 
     echo ''
     echo 'Creating the schema for dynamically generated partitions...'

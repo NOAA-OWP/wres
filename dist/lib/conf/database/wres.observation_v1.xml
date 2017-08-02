@@ -42,5 +42,8 @@
         <createIndex tableName="Observation" schemaName="wres" indexName="observation_variableposition_idx">
             <column name="variableposition_id" type="integer" />
         </createIndex>
+        <comment>
+            The wres.Observation table has been created.
+        </comment>
     </changeSet>
 </databaseChangeLog>
