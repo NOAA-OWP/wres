@@ -110,7 +110,13 @@ public enum MetricConstants
      */
 
     PROBABILITY_OF_FALSE_DETECTION(MetricGroup.DICHOTOMOUS_SCALAR),
+    
+    /**
+     * Quantile-quantile diagram.
+     */
 
+    QUANTILE_QUANTILE_DIAGRAM(MetricGroup.SINGLE_VALUED_MULTIVECTOR),
+    
     /**
      * Identifier for the Relative Operating Characteristic.
      */
@@ -229,8 +235,20 @@ public enum MetricConstants
      * Identifier for the conditional observed probability of an event, given the forecast probability.
      */
 
-    OBSERVED_GIVEN_FORECAST_PROBABILITY;
+    OBSERVED_GIVEN_FORECAST_PROBABILITY,
+    
+    /**
+     * Identifier for predicted quantiles.
+     */
 
+    PREDICTED_QUANTILES,
+    
+    /**
+     * Identifier for observed quantiles.
+     */
+
+    OBSERVED_QUANTILES;  
+    
     /**
      * The {@link MetricGroup} or null if the {@link MetricConstant} does not belong to a group.
      */

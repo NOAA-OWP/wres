@@ -80,7 +80,7 @@ public class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull(input, NULL_INPUT);
         return input.getData().stream().mapToDouble(PairOfDoubles::getItemTwo).toArray();
-    }    
+    }
 
     @Override
     public SingleValuedPairs sliceByLeft(SingleValuedPairs input, Threshold threshold)
@@ -254,24 +254,43 @@ public class DefaultSlicer implements Slicer
     }
 
     @Override
-    public double getInverseCumulativeProbability(double probability, double[] sorted)
+    public double getQuantile(double probability, double[] sorted)
     {
-        if(probability < 0 || probability > 1.0) {
-            throw new IllegalArgumentException("The input probability is not within the unit interval: "+probability);
+        if(probability < 0 || probability > 1.0)
+        {
+            throw new IllegalArgumentException("The input probability is not within the unit interval: " + probability);
         }
-        if(sorted.length==0) {
+        if(sorted.length == 0)
+        {
             throw new IllegalArgumentException("Cannot compute the inverse cumulative probability from empty input.");
         }
-        if(Double.compare(probability,0)==0) {
+        //Single item
+        if(sorted.length == 1) 
+        {
             return sorted[0];
         }
-        if(Double.compare(probability,1)==0) {
-            return sorted[sorted.length-1];
+        //Lower bound
+        if(Double.compare(probability, 0) == 0)
+        {
+            return sorted[0];
         }
-        double index = probability * sorted.length -1;
-        int lower = (int)Math.floor(index);
-        double fraction = index - lower;
-        return sorted[lower] + fraction*(sorted[lower+1]-sorted[lower]); 
+        //Upper bound
+        if(Double.compare(probability, 1) == 0)
+        {
+            return sorted[sorted.length - 1];
+        }
+
+        //Find the low index, zero-based
+        double lowIndex = probability * sorted.length -1;
+        //If the probability maps below the first sample, return the first sample as the lower bound is undefined
+        if(lowIndex < 0.0)
+        {
+            return sorted[0];
+        }
+        //Otherwise, linearly interpolate between samples
+        int lower = (int)Math.floor(lowIndex);
+        double fraction = lowIndex - lower;
+        return sorted[lower] + fraction * (sorted[lower + 1] - sorted[lower]);
     }
 
     @Override
@@ -279,14 +298,15 @@ public class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull(threshold, "Specify a non-null probability threshold.");
         Objects.requireNonNull(sorted, "Specify a non-null array of sorted values.");
-        if(sorted.length==0) {
+        if(sorted.length == 0)
+        {
             throw new IllegalArgumentException("Cannot compute the quantile from empty input.");
-        }        
-        Double first = getInverseCumulativeProbability(threshold.getThreshold(), sorted);
+        }
+        Double first = getQuantile(threshold.getThreshold(), sorted);
         Double second = null;
         if(threshold.hasBetweenCondition())
         {
-            second = getInverseCumulativeProbability(threshold.getThresholdUpper(), sorted);
+            second = getQuantile(threshold.getThresholdUpper(), sorted);
         }
         return dataFac.getQuantileThreshold(first,
                                             second,

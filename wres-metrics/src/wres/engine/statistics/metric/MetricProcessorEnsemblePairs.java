@@ -71,10 +71,10 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
     private final MetricCollection<EnsemblePairs, MultiVectorOutput> ensembleMultiVector;
 
     /**
-     * Function to map between ensemble pairs and single-valued pairs.
+     * Default function that maps between ensemble pairs and single-valued pairs.
      */
 
-    private final Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> toSingleValues;
+    private final Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> toSingleValues;       
 
     /**
      * Function to map between ensemble pairs and discrete probabilities.
@@ -183,18 +183,18 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
     {
         return Objects.nonNull(ensembleVector) || Objects.nonNull(ensembleMultiVector);
     }
-    
+
     @Override
     public boolean hasDichotomousInput()
     {
         return false;
-    }    
-    
+    }
+
     @Override
     public boolean hasMulticategoryInput()
     {
         return false;
-    }     
+    }
 
     /**
      * Processes a set of metric futures that consume {@link EnsemblePairs}, which are mapped from the input pairs,
@@ -420,6 +420,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
         toSingleValues = in -> dataFactory.pairOf(in.getItemOne(),
                                                   Arrays.stream(in.getItemTwo()).average().getAsDouble());
+        
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
         toDiscreteProbabilities = dataFactory.getSlicer()::transformPair;
     }

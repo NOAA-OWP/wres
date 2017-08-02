@@ -193,6 +193,7 @@
             <xs:enumeration value="PEIRCE_SKILL_SCORE" />
             <xs:enumeration value="PROBABILITY_OF_DETECTION" />
             <xs:enumeration value="PROBABILITY_OF_FALSE_DETECTION" />
+            <xs:enumeration value="QUANTILE_QUANTILE_DIAGRAM" />
             <xs:enumeration value="RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM" />
             <xs:enumeration value="RELATIVE_OPERATING_CHARACTERISTIC_SCORE" />
             <xs:enumeration value="RELIABILITY_DIAGRAM" />

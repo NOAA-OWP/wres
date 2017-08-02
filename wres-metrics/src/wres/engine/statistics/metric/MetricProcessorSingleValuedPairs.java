@@ -94,6 +94,8 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor<SingleValue
                 return Objects.nonNull(singleValuedScalar);
             case SINGLE_VALUED_VECTOR:
                 return Objects.nonNull(singleValuedVector);
+            case SINGLE_VALUED_MULTIVECTOR:
+                return Objects.nonNull(singleValuedMultiVector);    
             case DICHOTOMOUS_SCALAR:
                 return Objects.nonNull(dichotomousScalar);
             case MULTICATEGORY_MATRIX:

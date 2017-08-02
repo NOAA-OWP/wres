@@ -99,7 +99,7 @@ public class MetricFactory
     {
         return MetricProcessorEnsemblePairs.of(outputFactory, config);
     }
-    
+
     /**
      * Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}.
      * 
@@ -145,6 +145,25 @@ public class MetricFactory
         for(MetricConstants next: metric)
         {
             builder.add(ofSingleValuedVector(next));
+        }
+        builder.setOutputFactory(outputFactory);
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
+     * {@link MultiVectorOutput}.
+     * 
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVectorCollection(MetricConstants... metric)
+    {
+        final MetricCollectionBuilder<SingleValuedPairs, MultiVectorOutput> builder = MetricCollectionBuilder.of();
+        for(MetricConstants next: metric)
+        {
+            builder.add(ofSingleValuedMultiVector(next));
         }
         builder.setOutputFactory(outputFactory);
         return builder.build();
@@ -270,6 +289,24 @@ public class MetricFactory
                 return ofMeanSquareError();
             case MEAN_SQUARE_ERROR_SKILL_SCORE:
                 return ofMeanSquareErrorSkillScore();
+            default:
+                throw new IllegalArgumentException(error + " '" + metric + "'.");
+        }
+    }
+
+    /**
+     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link MultiVectorOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     */
+
+    public Metric<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVector(MetricConstants metric)
+    {
+        switch(metric)
+        {
+            case QUANTILE_QUANTILE_DIAGRAM:
+                return ofQuantileQuantileDiagram();
             default:
                 throw new IllegalArgumentException(error + " '" + metric + "'.");
         }
@@ -567,6 +604,18 @@ public class MetricFactory
     }
 
     /**
+     * Return a default {@link QuantileQuantileDiagram} function.
+     * 
+     * @return a default {@link QuantileQuantileDiagram} function.
+     */
+
+    protected QuantileQuantileDiagram ofQuantileQuantileDiagram()
+    {
+        return (QuantileQuantileDiagram)new QuantileQuantileDiagram.QuantileQuantileDiagramBuilder().setOutputFactory(outputFactory)
+                                                                                                    .build();
+    }
+
+    /**
      * Return a default {@link RootMeanSquareError} function.
      * 
      * @return a default {@link RootMeanSquareError} function.
@@ -598,7 +647,7 @@ public class MetricFactory
     protected RelativeOperatingCharacteristicDiagram ofRelativeOperatingCharacteristic()
     {
         return (RelativeOperatingCharacteristicDiagram)new RelativeOperatingCharacteristicBuilder().setOutputFactory(outputFactory)
-                                                                                            .build();
+                                                                                                   .build();
     }
 
     /**
