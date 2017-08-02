@@ -563,8 +563,10 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
                 return MetricConfigName.PROBABILITY_OF_DETECTION;
             case PROBABILITY_OF_FALSE_DETECTION:
                 return MetricConfigName.PROBABILITY_OF_FALSE_DETECTION;
-            case RELATIVE_OPERATING_CHARACTERISTIC:
-                return MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC;
+            case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
+                return MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
+            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
+                return MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC_SCORE;                
             case RELIABILITY_DIAGRAM:
                 return MetricConfigName.RELIABILITY_DIAGRAM;
             case ROOT_MEAN_SQUARE_ERROR:
@@ -621,8 +623,10 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
                 return MetricConstants.PROBABILITY_OF_DETECTION;
             case PROBABILITY_OF_FALSE_DETECTION:
                 return MetricConstants.PROBABILITY_OF_FALSE_DETECTION;
-            case RELATIVE_OPERATING_CHARACTERISTIC:
-                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC;
+            case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
+                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
+            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
+                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE;                
             case RELIABILITY_DIAGRAM:
                 return MetricConstants.RELIABILITY_DIAGRAM;
             case ROOT_MEAN_SQUARE_ERROR:

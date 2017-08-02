@@ -90,11 +90,10 @@ public class MeanSquareError<S extends SingleValuedPairs> extends DecomposableDo
 
     private VectorOutput getMSENoDecomp(final SingleValuedPairs s)
     {
-        final double[] result = new double[]{
-            s.getData().stream().mapToDouble(FunctionFactory.squareError()).average().getAsDouble()};
+        double mse = s.getData().stream().mapToDouble(FunctionFactory.squareError()).average().getAsDouble();
         //Metadata
         final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
-        return getDataFactory().ofVectorOutput(result, metOut);
+        return getDataFactory().ofVectorOutput(new double[]{mse}, metOut);
     }
 
 }
