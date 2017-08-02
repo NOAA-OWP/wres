@@ -16,10 +16,7 @@
 	<fetch_size>5000</fetch_size>
     <maximum_inserts>900</maximum_inserts>
     <maximum_copies>1000</maximum_copies>
-    <project_directory>projects</project_directory>
-    <should_log>false</should_log>
-    <in_development>true</in_development>
-    <update_frequency>10</update_frequency>
+    <update_frequency>1</update_frequency>
     <!--IOEP Username: pguser-->
     <!--IOEP Password: pass-->
     <!--IOEP database name: WRESDBTEST-->

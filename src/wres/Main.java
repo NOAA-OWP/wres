@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import util.MainFunctions;
+import wres.io.Operations;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
 import wres.util.Strings;
@@ -11,6 +12,9 @@ import wres.util.Time;
 
 import java.lang.management.ManagementFactory;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * @author Christopher Tubbs
@@ -36,63 +40,61 @@ public class Main {
             LOGGER.info(getVersion());
         }
 
-		Integer exitCode = -1;
+        final String operation = ((Supplier<String>) () -> {
+            String op = "-h";
+            if (args.length > 0) {
+                op = args[0];
+            }
+            else if (!MainFunctions.hasOperation(args[0])) {
+                System.out.println(String.format("Running \"%s\" is not currently supported.", args[0]));
+                System.out.print("Custom handling needs to be added to prototyping.Prototype.main ");
+                System.out.println("to test the indicated prototype.");
+            }
+            return op;
+        }).get();
 
-		if (args.length > 0)
-		{
-			String operation = args[0];
-			
-			if (MainFunctions.hasOperation(operation))
-			{
-				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    MainFunctions.shutdown();
-                }));
+        FormattedStopwatch watch = new FormattedStopwatch();
 
-				args = Collections.removeIndexFromArray(args, 0);
-				String process = "Process: ";
-				process += processId;
-				System.out.println(process);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            MainFunctions.shutdown();
 
-				System.out.println("Beginning operation: '" +
-										   operation +
-										   "' at " +
-										   Time.convertDateToString(OffsetDateTime.now()) +
-										   "...");
+            System.out.print("The function '");
+            System.out.print(operation);
+            System.out.print("' took ");
+            System.out.println(watch.getFormattedDuration());
+        }));
 
-                FormattedStopwatch watch = new FormattedStopwatch();
-                watch.start();
+        String[] cutArgs = Collections.removeIndexFromArray(args, 0);
+        String process = "Process: ";
+        process += processId;
+        LOGGER.info(process);
 
-				Integer result = MainFunctions.call(operation, args);
+        LOGGER.info("Beginning operation: '" +
+                                   operation +
+                                   "' at " +
+                                   Time.convertDateToString(OffsetDateTime.now()) +
+                                   "...");
+        watch.start();
 
-				if (result == null)
-				{
-					result = MainFunctions.FAILURE;
-				}
+        Integer exitCode = MainFunctions.call(operation, cutArgs);
 
-				exitCode = result;
+        if (exitCode == null)
+        {
+            exitCode = MainFunctions.FAILURE;
+        }
 
-				watch.stop();
-				
-				System.out.print("The function '");
-				System.out.print(operation);
-				System.out.print("' took ");
-				System.out.println(watch.getFormattedDuration());
+        watch.stop();
 
-				System.out.println();
-				System.out.println(Strings.getSystemStats());
-				//MainFunctions.shutdown();
-			}
-			else
-			{
-				System.out.println(String.format("Running \"%s\" is not currently supported.", operation));
-				System.out.print("Custom handling needs to be added to prototyping.Prototype.main ");
-				System.out.println("to test the indicated prototype.");
-			}
-		}
-		else
-		{
-			System.out.println("No prototype function has been specified");
-		}
+        String arguments = Arrays.asList(args)
+                                 .stream()
+                                 .map(Object::toString)
+                                 .collect(Collectors.joining(" "));
+
+        Operations.logExecution(arguments,
+                                MainFunctions.getRawProject(),
+                                watch.getStartTime(),
+                                watch.getStopTime(),
+                                exitCode != MainFunctions.SUCCESS);
 
 		System.exit(exitCode);
 	}

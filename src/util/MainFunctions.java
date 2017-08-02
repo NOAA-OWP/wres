@@ -13,9 +13,12 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.io.Operations;
 import wres.io.concurrency.SQLExecutor;
+import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
+import wres.io.reading.ReaderFactory;
+import wres.io.reading.SourceType;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.NetCDF;
@@ -27,6 +30,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
@@ -45,14 +51,51 @@ public final class MainFunctions
 	public static final Integer SUCCESS = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFunctions.class);
 
+    // TODO: This is a dumb location/process for storing the path to a project. This needs to be refactored.
+    private static String PROJECT_PATH = null;
+
+    @Deprecated
+    public static String getRawProject()
+    {
+        File projectFile = null;
+
+        if (PROJECT_PATH != null)
+        {
+            projectFile = new File(PROJECT_PATH);
+        }
+
+        String rawProject = null;
+
+        if (projectFile != null && projectFile.exists() && projectFile.isFile())
+        {
+            try {
+                StringBuilder projectBuilder = new StringBuilder();
+                Files.lines(projectFile.toPath().toAbsolutePath()).forEach((String line) -> {
+                    projectBuilder.append(line).append(System.lineSeparator());
+                });
+                rawProject = projectBuilder.toString();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        return rawProject;
+    }
+
 	// Mapping of String names to corresponding methods
 	private static final Map<String, Function<String[], Integer>> FUNCTIONS = createMap();
 
 	public static void shutdown()
 	{
+	    ProgressMonitor.deactivate();
+	    LOGGER.info("");
 		LOGGER.info("Shutting down the application...");
 		wres.io.Operations.shutdown();
-		ProgressMonitor.deactivate();
+
+        LOGGER.info("");
+        LOGGER.info(Strings.getSystemStats());
 	}
 
 	/**
@@ -74,7 +117,6 @@ public final class MainFunctions
 	public static Integer call (String operation, final String[] args) {
 		operation = operation.toLowerCase();
 		final Integer result = FUNCTIONS.get(operation).apply(args);
-		shutdown();
 		return result;
 	}
 
@@ -99,6 +141,7 @@ public final class MainFunctions
 		prototypes.put("install", install());
 		prototypes.put("ingest", ingest());
 		prototypes.put("generatepairscript", generatePairScript());
+		prototypes.put("loadfeatures", loadFeatures());
 
 		return prototypes;
 	}
@@ -471,10 +514,10 @@ public final class MainFunctions
 	        {
                 try
                 {
-                    final String projectName = args[0];
-                    LOGGER.info("The project name is: {}", projectName);
+                    PROJECT_PATH = args[0];
+                    LOGGER.info("The project is from: {}", PROJECT_PATH);
 
-                    final ProjectConfig foundProject = ProjectConfigPlus.from(Paths.get(projectName)).getProjectConfig();
+                    final ProjectConfig foundProject = ProjectConfigPlus.from(Paths.get(PROJECT_PATH)).getProjectConfig();
 
                     final Map<String, Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>>> pairMapping = new TreeMap<>();
 
@@ -536,10 +579,10 @@ public final class MainFunctions
 
             if (args.length > 0)
             {
-                String projectPath = args[0];
+                PROJECT_PATH = args[0];
 
                 try {
-                    ProjectConfig config = ConfigHelper.read(projectPath);
+                    ProjectConfig config = ConfigHelper.read(PROJECT_PATH);
 
                     Conditions.Feature firstFeature = config.getConditions().getFeature().get(0);
 
@@ -570,13 +613,13 @@ public final class MainFunctions
 
 	        if (args.length > 0)
             {
-                String configLocation = args[0];
+                PROJECT_PATH = args[0];
 
                 ProjectConfig projectConfig;
 
                 try
                 {
-                    projectConfig = ConfigHelper.read(configLocation);
+                    projectConfig = ConfigHelper.read(PROJECT_PATH);
                     Operations.ingest(projectConfig);
                 }
                 catch (JAXBException | IOException e) {
@@ -704,6 +747,135 @@ public final class MainFunctions
 			return result;
 		};
 	}
+
+	private static Function<String[], Integer> loadFeatures() {
+	    return (final String[] args) ->
+        {
+            Integer result = FAILURE;
+
+            if (args.length > 0)
+            {
+                String filePath = args[0];
+                try
+                {
+
+                    if (Files.notExists(Paths.get(filePath)) || ReaderFactory.getFiletype(filePath) != SourceType.NETCDF)
+                    {
+                        throw new IOException("There is not a NetCDFFile at the indicated path");
+                    }
+
+                    NetcdfFile file = NetcdfFile.open(filePath);
+
+                    if (!NetCDF.hasVariable(file, "feature_id"))
+                    {
+                        throw new IOException("The NetCDF file at: '" + filePath + "' lacks a proper feature variable (feature_id)");
+                    }
+
+                    Variable var = NetCDF.getVariable(file, "feature_id");
+                    List<int[]> parameters = new ArrayList<>();;
+                    Array features = var.read();
+
+                    Function<List<int[]>, WRESRunnable> createThread = (List<int[]> params) ->
+                    {
+                        return new WRESRunnable() {
+                            @Override
+                            protected void execute () {
+                                if (this.parameters == null || this.parameters.size() == 0)
+                                {
+                                    return;
+                                }
+
+                                Connection connection = null;
+                                CallableStatement statement = null;
+                                try
+                                {
+                                    connection = Database.getConnection();
+                                    statement = connection.prepareCall("{call wres.add_netcdffeature(?, ?)}");
+
+                                    for (int[] parameter : this.parameters)
+                                    {
+                                        statement.setInt(1, parameter[0]);
+                                        statement.setInt(2, parameter[1]);
+                                        statement.addBatch();
+                                    }
+                                    statement.executeBatch();
+                                }
+                                catch (SQLException e) {
+                                    e.printStackTrace();
+                                }
+                                finally {
+                                    if (statement != null)
+                                    {
+                                        try {
+                                            statement.close();
+                                        }
+                                        catch (SQLException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+
+                                    if (connection != null)
+                                    {
+                                        Database.returnConnection(connection);
+                                    }
+                                }
+                            }
+
+                            @Override
+                            protected String getTaskName () {
+                                return "Adding Features " +
+                                        String.valueOf(this.parameters.get(0)[1]) +
+                                        " through " +
+                                        String.valueOf(this.parameters.get(this.parameters.size() - 1)[1]);
+                            }
+
+                            @Override
+                            protected Logger getLogger () {
+                                return MainFunctions.LOGGER;
+                            }
+
+                            public WRESRunnable init(List<int[]> parameters)
+                            {
+                                this.parameters = parameters;
+                                return this;
+                            }
+
+                            private List<int[]> parameters;
+                        }.init(params);
+                    };
+
+                    for (Integer featureIndex = 0; featureIndex < features.getSize(); ++featureIndex)
+                    {
+                        if (parameters.size() >= SystemSettings.maximumDatabaseInsertStatements())
+                        {
+                            WRESRunnable runnable = createThread.apply(parameters);
+
+                            Database.storeIngestTask(Database.execute(runnable));
+                            parameters = new ArrayList<>();
+                        }
+
+                        parameters.add(new int[]{featureIndex, features.getInt(featureIndex)});
+                    }
+
+                    WRESRunnable runnable = createThread.apply(parameters);
+                    Database.storeIngestTask(Database.execute(runnable));
+
+                    Database.completeAllIngestTasks();
+
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            else
+            {
+                LOGGER.error("There are not enough arguments to run 'loadFeatures'");
+                LOGGER.error("usage: loadCoordinates <Path to NetCDF file containing feature information>");
+            }
+
+            return result;
+        };
+    }
 
 	private static Function<String[], Integer> install() {
 		return (String[] args) -> {

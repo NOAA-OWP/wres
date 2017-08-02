@@ -7,6 +7,7 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.PairRetriever;
 import wres.io.config.ConfigHelper;
+import wres.io.config.SystemSettings;
 import wres.io.grouping.LabeledScript;
 import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
@@ -15,7 +16,12 @@ import wres.io.utilities.ScriptGenerator;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
+import javax.xml.stream.XMLStreamException;
+import javax.xml.transform.TransformerException;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -174,6 +180,60 @@ public final class Operations {
     {
         Database.refreshStatistics();
         return SUCCESS;
+    }
+
+    public static void logExecution(String arguments, String project, String start, String stop, boolean failed)
+    {
+        try {
+            String systemConfiguration = "'" + SystemSettings.getRawConfiguration() + "'::xml";
+            String username = SystemSettings.getUserName();
+
+            String address = "local";
+
+            try {
+                address = String.valueOf(InetAddress.getLocalHost());
+            }
+            catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+
+            if (project == null || project.isEmpty())
+            {
+                project = "null";
+            }
+            else
+            {
+                project = "'" + project + "'::xml";
+            }
+
+
+            StringBuilder script = new StringBuilder();
+
+            script.append("INSERT INTO ExecutionLog(arguments, system_settings, project, username, address, start_time, run_time, failed) ");
+            script.append("VALUES (")
+                  .append("'").append(arguments).append("', ")
+                  .append(systemConfiguration).append(", ")
+                  .append(project).append(", ")
+                  .append("'").append(username).append("', ")
+                  .append("'").append(address).append("', ")
+                  .append("'").append(start).append("'::timestamp, ")
+                  .append("'").append(stop).append("'::timestamp - '").append(start).append("'::timestamp")
+                  .append(", ").append(String.valueOf(failed)).append(");");
+
+            Database.execute(script.toString());
+        }
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        catch (XMLStreamException e) {
+            e.printStackTrace();
+        }
+        catch (TransformerException e) {
+            e.printStackTrace();
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
 }

@@ -126,7 +126,10 @@ final class NetCDFReader {
                     	{
                 			System.out.print("\t");
                 			System.out.print(data.next());
-                			System.out.print(" " + unit);
+
+                			if (unit != null && !unit.equalsIgnoreCase("null")) {
+								System.out.print(" " + unit);
+							}
                 			counter = counter + 1;
                 			if (counter >= 5) {
                 				System.out.println();
@@ -173,7 +176,7 @@ final class NetCDFReader {
 				System.arraycopy(args, 0, origin, 0, Math.min(args.length, var.getRank()));
 				
 				System.out.print(var.read(origin, size).getObject(0));
-				if (var.getUnitsString().equalsIgnoreCase("null"))
+				if (var.getUnitsString() != null && !var.getUnitsString().equalsIgnoreCase("null"))
 				{
 					System.out.print(" " + var.getUnitsString());
 				}

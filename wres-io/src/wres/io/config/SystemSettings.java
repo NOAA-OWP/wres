@@ -9,7 +9,10 @@ import wres.util.Strings;
 import wres.util.XML;
 
 import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.TransformerException;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 /**
@@ -241,6 +244,15 @@ public final class SystemSettings extends XMLReader
 	{
 		return INSTANCE.databaseConfiguration.createHighPriorityDataSource();
 	}
+
+	public static String getUserName()
+	{
+		return INSTANCE.databaseConfiguration.getUsername();
+	}
+
+	public static String getRawConfiguration() throws FileNotFoundException, XMLStreamException, TransformerException {
+        return INSTANCE.getRawXML();
+    }
 
 	@Override
 	public String toString()

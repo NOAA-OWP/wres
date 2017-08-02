@@ -8,6 +8,11 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stax.StAXSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 
 /**
@@ -138,8 +143,15 @@ public class XMLReader
             reader = factory.createXMLStreamReader(new FileReader(getFilename()));
         }
 
-
         return reader;
+	}
+
+	public String getRawXML() throws FileNotFoundException, XMLStreamException, TransformerException {
+		XMLStreamReader reader = createReader();
+		Transformer transformer = TransformerFactory.newInstance().newTransformer();
+		StringWriter stringWriter = new StringWriter();
+		transformer.transform(new StAXSource(reader), new StreamResult(stringWriter));
+		return stringWriter.toString();
 	}
 	
 	@SuppressWarnings("static-method")

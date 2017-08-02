@@ -18,6 +18,7 @@
             CREATE ROLE wres
                 NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
         </sql>
+        <comment>The wres database role has been created.</comment>
     </changeSet>
     <changeSet id="Setup wres_user Role v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
@@ -30,26 +31,30 @@
             </sqlCheck>
         </preConditions>
         <sql>
-            CREATE ROLE wres_user LOGIN PASSWORD 'changeme'
+            CREATE ROLE wres_user LOGIN PASSWORD 'EvalWaterRes'
                 NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
         </sql>
         <sql>
             GRANT wres TO wres_user;
         </sql>
+        <comment>The default wres_user has been added to the database.</comment>
     </changeSet>
     <changeSet id="Setup Database v1.0" author="Christopher Tubbs" dbms="PostgreSQL" >
         <sql>
             CREATE DATABASE IF NOT EXISTS wres;
         </sql>
+        <comment>The wres database has been created.</comment>
     </changeSet>
     <changeSet id="Setup WRES Schema v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <sql>
             CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
         </sql>
+        <comment>The wres schema has been created.</comment>
     </changeSet>
     <changeSet id="Setup PARTITIONS Schema v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <sql>
             CREATE SCHEMA IF NOT EXISTS partitions AUTHORIZATION wres;
         </sql>
+        <comment>The partitions schema has been created.</comment>
     </changeSet>
 </databaseChangeLog>
