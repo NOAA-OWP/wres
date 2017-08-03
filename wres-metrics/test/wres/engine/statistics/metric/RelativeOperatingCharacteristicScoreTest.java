@@ -56,7 +56,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add(outF.pairOf(1, 1.0));
         values.add(outF.pairOf(1, 1.0));
 
-        final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs(values, metaFac.getMetadata(15));
+        final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs(values, metaFac.getMetadata());
 
         //Build the metric
         final RelativeOperatingCharacteristicScoreBuilder b = new RelativeOperatingCharacteristicScoreBuilder();
@@ -65,7 +65,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         final RelativeOperatingCharacteristicScore rocs = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getMetadata().getSampleSize(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.size(),
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension(),
                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
@@ -114,7 +114,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add(outF.pairOf(0, 0.0));
         values.add(outF.pairOf(1, 0.984));
         values.add(outF.pairOf(1, 0.952));
-        Metadata meta = metaFac.getMetadata(15);
+        Metadata meta = metaFac.getMetadata();
         final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs(values, meta);
 
         //Build the metric
@@ -124,7 +124,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         final RelativeOperatingCharacteristicScore rocs = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getMetadata().getSampleSize(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.size(),
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension(),
                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,

@@ -12,16 +12,81 @@ public interface MetadataFactory
 {
 
     /**
-     * Build a {@link Metadata} object with a sample size and a prescribed {@link Dimension} and several optional
-     * identifiers.
+     * Build a {@link Metadata} object with a default {@link Dimension}.
      * 
-     * @param sampleSize the sample size
+     * @return a {@link Metadata} object
+     */
+
+    default Metadata getMetadata()
+    {
+        return getMetadata(getDimension());
+    }
+
+    /**
+     * Build a {@link Metadata} object with a sample size and a prescribed {@link Dimension}.
+     * 
+     * @param dim the dimension
+     * @return a {@link Metadata} object
+     */
+
+    default Metadata getMetadata(final Dimension dim)
+    {
+        return getMetadata(dim, null);
+    }
+
+    /**
+     * Builds a {@link Metadata} from a prescribed input source and a new {@link Dimension}.
+     * 
+     * @param input the source metadata
+     * @param dim the new dimension
+     * @return a {@link Metadata} object
+     */
+
+    default Metadata getMetadata(final Metadata input, final Dimension dim)
+    {
+        return getMetadata(dim, input.getIdentifier());
+    }
+
+    /**
+     * Returns a dataset identifier.
+     * 
+     * @param geospatialID an optional geospatial identifier (may be null)
+     * @param variableID an optional variable identifier (may be null)
+     * @param scenarioID an optional scenario identifier (may be null)
+     * @return a dataset identifier
+     */
+
+    default DatasetIdentifier getDatasetIdentifier(final String geospatialID,
+                                                   final String variableID,
+                                                   final String scenarioID)
+    {
+        return getDatasetIdentifier(geospatialID, variableID, scenarioID, null);
+    }
+
+    /**
+     * Returns a new dataset identifier with an override for the {@link DatasetIdentifier#getScenarioIDForBaseline()}.
+     * 
+     * @param identifier the dataset identifier
+     * @param baselineScenarioID a scenario identifier for a baseline dataset
+     * @return a dataset identifier
+     */
+    default DatasetIdentifier getDatasetIdentifier(DatasetIdentifier identifier, String baselineScenarioID)
+    {
+        return getDatasetIdentifier(identifier.getGeospatialID(),
+                                    identifier.getVariableID(),
+                                    identifier.getScenarioID(),
+                                    baselineScenarioID);
+    }
+
+    /**
+     * Build a {@link Metadata} object with a prescribed {@link Dimension} and optional identifier.
+     * 
      * @param dim the dimension
      * @param identifier an optional dataset identifier (may be null)
      * @return a {@link Metadata} object
      */
 
-    Metadata getMetadata(final int sampleSize, final Dimension dim, final DatasetIdentifier identifier);
+    Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier);
 
     /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
@@ -138,74 +203,5 @@ public interface MetadataFactory
      */
 
     String getMetricComponentName(final MetricConstants identifier);
-
-
-    /**
-     * Build a {@link Metadata} object with a sample size and a default {@link Dimension}.
-     * 
-     * @param sampleSize the sample size
-     * @return a {@link Metadata} object
-     */
-
-    default Metadata getMetadata(final int sampleSize) {
-        return getMetadata(sampleSize, getDimension());
-    }
-
-    /**
-     * Build a {@link Metadata} object with a sample size and a prescribed {@link Dimension}.
-     * 
-     * @param sampleSize the sample size
-     * @param dim the dimension
-     * @return a {@link Metadata} object
-     */
-
-    default Metadata getMetadata(final int sampleSize, final Dimension dim) {
-        return getMetadata(sampleSize,dim,null);
-    }
-    
-    /**
-     * Builds a {@link Metadata} from a prescribed input source and a new {@link Dimension}.
-     * 
-     * @param input the source metadata
-     * @param dim the new dimension
-     * @return a {@link Metadata} object
-     */
-
-    default Metadata getMetadata(final Metadata input, final Dimension dim) {
-        return getMetadata(input.getSampleSize(),
-                           dim,
-                           input.getIdentifier());
-    }    
-    
-    /**
-     * Returns a dataset identifier.
-     * 
-     * @param geospatialID an optional geospatial identifier (may be null)
-     * @param variableID an optional variable identifier (may be null)
-     * @param scenarioID an optional scenario identifier (may be null)
-     * @return a dataset identifier
-     */
-
-    default DatasetIdentifier getDatasetIdentifier(final String geospatialID,
-                                                   final String variableID,
-                                                   final String scenarioID)
-    {
-        return getDatasetIdentifier(geospatialID, variableID, scenarioID, null);
-    }
-
-    /**
-     * Returns a new dataset identifier with an override for the {@link DatasetIdentifier#getScenarioIDForBaseline()}.
-     * 
-     * @param identifier the dataset identifier
-     * @param baselineScenarioID a scenario identifier for a baseline dataset
-     * @return a dataset identifier
-     */
-    default DatasetIdentifier getDatasetIdentifier(DatasetIdentifier identifier, String baselineScenarioID)
-    {
-        return getDatasetIdentifier(identifier.getGeospatialID(),
-                                    identifier.getVariableID(),
-                                    identifier.getScenarioID(),
-                                    baselineScenarioID);
-    }
 
 }

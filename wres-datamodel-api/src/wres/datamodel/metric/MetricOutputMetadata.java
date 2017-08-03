@@ -1,7 +1,7 @@
 package wres.datamodel.metric;
 
 /**
- * A class that stores the metadata associated with a metric output.
+ * A class that stores the metadata associated with a {@link MetricOutput}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -9,7 +9,7 @@ package wres.datamodel.metric;
  */
 public interface MetricOutputMetadata extends Metadata
 {
-
+  
     /**
      * Returns an identifier associated with the metric that produced the output.
      * 
@@ -36,6 +36,14 @@ public interface MetricOutputMetadata extends Metadata
      */
 
     Dimension getInputDimension();
+    
+    /**
+     * Returns the sample size from which the {@link MetricOutput} was produced.
+     * 
+     * @return the sample size
+     */
+
+    int getSampleSize();    
 
     /**
      * <p>

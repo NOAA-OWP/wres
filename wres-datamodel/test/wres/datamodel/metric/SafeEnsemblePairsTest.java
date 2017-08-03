@@ -37,7 +37,7 @@ public final class SafeEnsemblePairsTest
         {
             values.add(metIn.pairOf(1, new double[]{1,2,3,4}));
         }
-        final Metadata meta = metaFac.getMetadata(values.size());
+        final Metadata meta = metaFac.getMetadata();
         EnsemblePairs p = b.setData(values).setMetadata(meta).build();
 
         //Check dataset count

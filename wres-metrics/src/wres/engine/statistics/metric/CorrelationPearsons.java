@@ -48,7 +48,7 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
             Slicer slicer = d.getSlicer();
             Metadata in = s.getMetadata();
             //Set the metadata explicitly since this class implements Collectable and getID() may be overridden
-            MetricOutputMetadata meta = mF.getOutputMetadata(in.getSampleSize(),
+            MetricOutputMetadata meta = mF.getOutputMetadata(s.size(),
                                                              in.getDimension(),
                                                              mF.getDimension(),
                                                              MetricConstants.CORRELATION_PEARSONS,

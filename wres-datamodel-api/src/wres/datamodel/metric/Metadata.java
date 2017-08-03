@@ -13,14 +13,6 @@ public interface Metadata
 {
 
     /**
-     * Returns the sample size associated with the metric data.
-     * 
-     * @return the sample size
-     */
-
-    int getSampleSize();
-
-    /**
      * Returns the dimension associated with the metric.
      * 
      * @return the dimension

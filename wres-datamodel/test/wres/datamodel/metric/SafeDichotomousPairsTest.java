@@ -38,8 +38,7 @@ public final class SafeDichotomousPairsTest
         }
 
         final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-        final Metadata meta = metaFac.getMetadata(values.size(),
-                                                  metaFac.getDimension(),
+        final Metadata meta = metaFac.getMetadata(metaFac.getDimension(),
                                                   metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
 
         final DichotomousPairs p = (DichotomousPairs)b.setData(values).setMetadata(meta).build();

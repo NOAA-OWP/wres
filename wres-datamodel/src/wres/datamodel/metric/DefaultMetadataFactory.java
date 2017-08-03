@@ -50,9 +50,9 @@ public class DefaultMetadataFactory implements MetadataFactory
     }
 
     @Override
-    public Metadata getMetadata(final int sampleSize, final Dimension dim, final DatasetIdentifier identifier)
+    public Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier)
     {
-        return new MetadataImpl(sampleSize, dim, identifier);
+        return new MetadataImpl(dim, identifier);
     }
 
     @Override
@@ -87,7 +87,7 @@ public class DefaultMetadataFactory implements MetadataFactory
 
             private MetricOutputMetadataImpl()
             {
-                super(sampleSize, dim, identifier);
+                super(dim, identifier);
             }
 
             @Override
@@ -109,6 +109,12 @@ public class DefaultMetadataFactory implements MetadataFactory
             }
 
             @Override
+            public int getSampleSize()
+            {
+                return sampleSize;
+            }
+
+            @Override
             public boolean minimumEquals(final MetricOutputMetadata o)
             {
                 return o.getMetricID() == getMetricID() && o.getMetricComponentID() == getMetricComponentID()
@@ -123,7 +129,7 @@ public class DefaultMetadataFactory implements MetadataFactory
                     return false;
                 }
                 final MetricOutputMetadata p = ((MetricOutputMetadata)o);
-                return super.equals(o) && p.getMetricID() == getMetricID()
+                return super.equals(o) && p.getSampleSize() == getSampleSize() && p.getMetricID() == getMetricID()
                     && p.getMetricComponentID() == getMetricComponentID()
                     && p.getInputDimension().equals(getInputDimension());
             }
@@ -131,8 +137,8 @@ public class DefaultMetadataFactory implements MetadataFactory
             @Override
             public int hashCode()
             {
-                return super.hashCode() + getMetricID().hashCode() + getMetricComponentID().hashCode()
-                    + getInputDimension().hashCode();
+                return super.hashCode() + Integer.hashCode(sampleSize) + getMetricID().hashCode()
+                    + getMetricComponentID().hashCode() + getInputDimension().hashCode();
             }
 
             @Override
@@ -141,7 +147,7 @@ public class DefaultMetadataFactory implements MetadataFactory
                 String start = super.toString();
                 start = start.replaceAll("]", ",");
                 final StringBuilder b = new StringBuilder(start);
-                b.append(metricID).append(",").append(componentID).append("]");
+                b.append(sampleSize).append(",").append(metricID).append(",").append(componentID).append("]");
                 return b.toString();
             }
 
@@ -266,13 +272,13 @@ public class DefaultMetadataFactory implements MetadataFactory
             case PROBABILITY_OF_FALSE_DETECTION:
                 return "PROBABILITY OF FALSE DETECTION";
             case QUANTILE_QUANTILE_DIAGRAM:
-                return "QUANTILE-QUANTILE DIAGRAM";    
+                return "QUANTILE-QUANTILE DIAGRAM";
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return "RELATIVE OPERATING CHARACTERISTIC";
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
-                return "RELATIVE OPERATING CHARACTERISTIC SCORE";    
+                return "RELATIVE OPERATING CHARACTERISTIC SCORE";
             case RELIABILITY_DIAGRAM:
-                return "RELIABILITY DIAGRAM";                   
+                return "RELIABILITY DIAGRAM";
             case ROOT_MEAN_SQUARE_ERROR:
                 return "ROOT MEAN SQUARE ERROR";
             default:
@@ -319,13 +325,13 @@ public class DefaultMetadataFactory implements MetadataFactory
             case PROBABILITY_OF_FALSE_DETECTION:
                 return "PoFD";
             case QUANTILE_QUANTILE_DIAGRAM:
-                return "QQ DIAGRAM";    
+                return "QQ DIAGRAM";
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return "ROC";
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
-                return "ROC SCORE";   
+                return "ROC SCORE";
             case RELIABILITY_DIAGRAM:
-                return "RELIABILITY DIAGRAM";    
+                return "RELIABILITY DIAGRAM";
             case ROOT_MEAN_SQUARE_ERROR:
                 return "RMSE";
             default:
@@ -367,21 +373,13 @@ public class DefaultMetadataFactory implements MetadataFactory
 
     private class MetadataImpl implements Metadata
     {
-        private final int sampleSize;
         private final Dimension dim;
         private final DatasetIdentifier identifier;
 
-        private MetadataImpl(final int sampleSize, final Dimension dim, final DatasetIdentifier identifier)
+        private MetadataImpl(final Dimension dim, final DatasetIdentifier identifier)
         {
-            this.sampleSize = sampleSize;
             this.dim = dim;
             this.identifier = identifier;
-        }
-
-        @Override
-        public int getSampleSize()
-        {
-            return sampleSize;
         }
 
         @Override
@@ -404,8 +402,7 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return false;
             }
             final Metadata p = (Metadata)o;
-            boolean returnMe = p.getSampleSize() == getSampleSize() && p.getDimension().equals(getDimension())
-                && hasIdentifier() == p.hasIdentifier();
+            boolean returnMe = p.getDimension().equals(getDimension()) && hasIdentifier() == p.hasIdentifier();
             if(hasIdentifier())
             {
                 returnMe = returnMe && identifier.equals(p.getIdentifier());
@@ -416,7 +413,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         @Override
         public int hashCode()
         {
-            int returnMe = Integer.hashCode(sampleSize) + getDimension().hashCode() + Boolean.hashCode(hasIdentifier());
+            int returnMe = getDimension().hashCode() + Boolean.hashCode(hasIdentifier());
             if(hasIdentifier())
             {
                 returnMe += identifier.hashCode();
@@ -438,7 +435,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             {
                 b.append("[");
             }
-            b.append(sampleSize).append(",").append(dim).append("]");
+            b.append(dim).append("]");
             return b.toString();
         }
 

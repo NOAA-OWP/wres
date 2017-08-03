@@ -202,7 +202,7 @@ public interface DataFactory
     Slicer getSlicer();
 
     /**
-     * Construct the dichotomous input with pairs for a baseline.
+     * Construct the single-valued input with a baseline.
      * 
      * @param pairs the main verification pairs
      * @param basePairs the baseline pairs
@@ -212,13 +212,13 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs,
-                                        final List<VectorOfBooleans> basePairs,
-                                        final Metadata mainMeta,
-                                        final Metadata baselineMeta);
+    SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
+                                          final List<PairOfDoubles> basePairs,
+                                          final Metadata mainMeta,
+                                          final Metadata baselineMeta);
 
     /**
-     * Construct the dichotomous input from atomic {@link PairOfBooleans} with pairs for a baseline.
+     * Construct the ensemble input with a baseline.
      * 
      * @param pairs the main verification pairs
      * @param basePairs the baseline pairs
@@ -228,11 +228,11 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs,
-                                                  final List<PairOfBooleans> basePairs,
-                                                  final Metadata mainMeta,
-                                                  final Metadata baselineMeta);
-
+    EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs,
+                                  final List<PairOfDoubleAndVectorOfDoubles> basePairs,
+                                  final Metadata mainMeta,
+                                  final Metadata baselineMeta);    
+    
     /**
      * Construct the multicategory input without any pairs for a baseline.
      * 
@@ -264,9 +264,9 @@ public interface DataFactory
                                                         final List<PairOfDoubles> basePairs,
                                                         final Metadata mainMeta,
                                                         final Metadata baselineMeta);
-
+    
     /**
-     * Construct the single-valued input with a baseline.
+     * Construct the dichotomous input with pairs for a baseline.
      * 
      * @param pairs the main verification pairs
      * @param basePairs the baseline pairs
@@ -276,13 +276,13 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
-                                          final List<PairOfDoubles> basePairs,
-                                          final Metadata mainMeta,
-                                          final Metadata baselineMeta);
+    DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs,
+                                        final List<VectorOfBooleans> basePairs,
+                                        final Metadata mainMeta,
+                                        final Metadata baselineMeta);
 
     /**
-     * Construct the ensemble input with a baseline.
+     * Construct the dichotomous input from atomic {@link PairOfBooleans} with pairs for a baseline.
      * 
      * @param pairs the main verification pairs
      * @param basePairs the baseline pairs
@@ -292,10 +292,10 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs,
-                                  final List<PairOfDoubleAndVectorOfDoubles> basePairs,
-                                  final Metadata mainMeta,
-                                  final Metadata baselineMeta);
+    DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs,
+                                                  final List<PairOfBooleans> basePairs,
+                                                  final Metadata mainMeta,
+                                                  final Metadata baselineMeta);    
 
     /**
      * Return a {@link PairOfDoubles} from two double values.

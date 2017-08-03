@@ -254,7 +254,7 @@ public class ControlTemp
                                                         mean.applyAsDouble(metIn.vectorOf(nextPair.getItemTwo())));
                 returnMe.add(pair);
             }
-            return metIn.ofSingleValuedPairs(returnMe, metIn.getMetadataFactory().getMetadata(returnMe.size()));
+            return metIn.ofSingleValuedPairs(returnMe, metIn.getMetadataFactory().getMetadata());
         }
     }
 

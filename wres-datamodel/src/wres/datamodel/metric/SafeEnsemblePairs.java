@@ -74,7 +74,13 @@ class SafeEnsemblePairs implements EnsemblePairs
     {
         return baselineMeta;
     }
-
+    
+    @Override
+    public int size()
+    {
+        return mainInput.size();
+    }
+    
     /**
      * A {@link MetricInputBuilder} to build the metric input.
      */

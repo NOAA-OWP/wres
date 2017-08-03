@@ -75,6 +75,12 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     {
         return baselineMeta;
     }
+    
+    @Override
+    public int size()
+    {
+        return mainInput.size();
+    }    
 
     /**
      * A {@link MetricInputBuilder} to build the metric input.
