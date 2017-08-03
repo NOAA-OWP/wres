@@ -95,7 +95,7 @@ public class MetricFactory
      * @return the {@link MetricProcessor}
      */
 
-    public MetricProcessor getProcessor(final ProjectConfig config)
+    public MetricProcessor getMetricProcessor(final ProjectConfig config)
     {
         return MetricProcessor.of(outputFactory, config);
     }
