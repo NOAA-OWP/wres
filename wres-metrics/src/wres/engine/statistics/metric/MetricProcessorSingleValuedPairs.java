@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -12,8 +11,9 @@ import wres.datamodel.PairOfDoubles;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MatrixOutput;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricGroup;
+import wres.datamodel.metric.MetricConstants.MetricInputGroup;
+import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
+import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputForProjectByThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
@@ -35,7 +35,7 @@ import wres.datamodel.metric.Threshold;
  * @since 0.1
  */
 
-final class MetricProcessorSingleValuedPairs extends MetricProcessor<SingleValuedPairs>
+final class MetricProcessorSingleValuedPairs extends MetricProcessor
 {
 
     /**
@@ -53,20 +53,24 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor<SingleValue
     private final MetricCollection<MulticategoryPairs, MatrixOutput> multicategoryMatrix;
 
     @Override
-    public MetricOutputForProjectByThreshold apply(SingleValuedPairs t)
+    public MetricOutputForProjectByThreshold apply(MetricInput<?> t)
     {
+        if(!(t instanceof SingleValuedPairs))
+        {
+            throw new MetricCalculationException("Expected single-valued pairs for metric processing.");
+        }
 
         //Metric futures
         MetricFutures futures = new MetricFutures();
 
         //Process the metrics that consume single-valued pairs
-        if(hasSingleValuedInput())
+        if(hasMetrics(MetricInputGroup.SINGLE_VALUED))
         {
-            processSingleValuedPairs(t, futures);
+            processSingleValuedPairs((SingleValuedPairs)t, futures);
         }
-        if(hasDichotomousInput())
+        if(hasMetrics(MetricInputGroup.DICHOTOMOUS))
         {
-            processDichotomousPairs(t,futures);
+            processDichotomousPairs((SingleValuedPairs)t, futures);
         }
 
         //Process and return the result        
@@ -74,83 +78,49 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor<SingleValue
     }
 
     /**
-     * Returns an instance of the processor.
+     * Hidden constructor.
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
      */
 
-    public static MetricProcessorSingleValuedPairs of(DataFactory dataFactory, ProjectConfig config)
+    MetricProcessorSingleValuedPairs(DataFactory dataFactory, ProjectConfig config)
     {
-        return new MetricProcessorSingleValuedPairs(dataFactory, config);
-    }
-
-    @Override
-    public boolean hasMetrics(MetricGroup group)
-    {
-        switch(group)
+        super(dataFactory, config);
+        //Validate the configuration
+        if(hasMetrics(MetricInputGroup.DICHOTOMOUS))
         {
-            case SINGLE_VALUED_SCALAR:
-                return Objects.nonNull(singleValuedScalar);
-            case SINGLE_VALUED_VECTOR:
-                return Objects.nonNull(singleValuedVector);
-            case SINGLE_VALUED_MULTIVECTOR:
-                return Objects.nonNull(singleValuedMultiVector);    
-            case DICHOTOMOUS_SCALAR:
-                return Objects.nonNull(dichotomousScalar);
-            case MULTICATEGORY_MATRIX:
-                return Objects.nonNull(multicategoryMatrix);
-            default:
-                return false;
+            throw new IllegalArgumentException("Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
+                + config.getLabel() + "'.");
         }
-    }
-
-    @Override
-    public boolean hasScalarOutput()
-    {
-        return Objects.nonNull(singleValuedScalar) || Objects.nonNull(dichotomousScalar);
-    }
-
-    @Override
-    public boolean hasVectorOutput()
-    {
-        return Objects.nonNull(singleValuedVector);
-    }
-
-    @Override
-    public boolean hasMultiVectorOutput()
-    {
-        return Objects.nonNull(singleValuedMultiVector);
-    }
-
-    @Override
-    public boolean hasMatrixOutput()
-    {
-        return Objects.nonNull(multicategoryMatrix);
-    }
-
-    @Override
-    public boolean hasDichotomousInput()
-    {
-        return Objects.nonNull(dichotomousScalar);
-    }
-
-    @Override
-    public boolean hasMulticategoryInput()
-    {
-        return Objects.nonNull(multicategoryMatrix);
-    }
-
-    @Override
-    public boolean hasDiscreteProbabilityInput()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean hasEnsembleInput()
-    {
-        return false;
+        if(hasMetrics(MetricInputGroup.MULTICATEGORY))
+        {
+            throw new IllegalArgumentException("Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
+                + config.getLabel() + "'.");
+        }
+        //Construct the metrics
+        if(hasMetrics(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR))
+        {
+            dichotomousScalar =
+                              metricFactory.ofDichotomousScalarCollection(getSelectedMetrics(metrics,
+                                                                                             MetricInputGroup.DICHOTOMOUS,
+                                                                                             MetricOutputGroup.SCALAR));
+        }
+        else
+        {
+            dichotomousScalar = null;
+        }
+        if(hasMetrics(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR))
+        {
+            multicategoryMatrix =
+                                metricFactory.ofMulticategoryMatrixCollection(getSelectedMetrics(metrics,
+                                                                                                 MetricInputGroup.MULTICATEGORY,
+                                                                                                 MetricOutputGroup.MATRIX));
+        }
+        else
+        {
+            multicategoryMatrix = null;
+        }
     }
 
     /**
@@ -167,12 +137,12 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor<SingleValue
         //Metric-specific overrides are currently unsupported
         String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
         //Check and obtain the global thresholds by metric group for iteration
-        if(hasMetrics(MetricGroup.DICHOTOMOUS_SCALAR))
+        if(hasMetrics(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR))
         {
             //Deal with global thresholds
-            if(hasGlobalThresholds(MetricGroup.DICHOTOMOUS_SCALAR))
+            if(hasGlobalThresholds(MetricInputGroup.DICHOTOMOUS))
             {
-                List<Threshold> global = globalThresholds.get(MetricGroup.DICHOTOMOUS_SCALAR);
+                List<Threshold> global = globalThresholds.get(MetricInputGroup.DICHOTOMOUS);
                 double[] sorted = getSortedLeftSide(input, global);
                 global.forEach(threshold -> processDichotomousThreshold(threshold,
                                                                         sorted,
@@ -222,62 +192,6 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor<SingleValue
         //Slice the pairs
         DichotomousPairs transformed = dataFactory.getSlicer().transformPairs(pairs, mapper);
         futures.put(useMe, CompletableFuture.supplyAsync(() -> collection.apply(transformed)));
-    }
-
-    /**
-     * Hidden constructor.
-     * 
-     * @param dataFactory the data factory
-     * @param config the project configuration
-     */
-
-    private MetricProcessorSingleValuedPairs(DataFactory dataFactory, ProjectConfig config)
-    {
-        super(dataFactory, config);
-        //Validate the configuration
-        if(getMetricsFromConfig(config, MetricGroup.DICHOTOMOUS_SCALAR).length > 0)
-        {
-            throw new IllegalArgumentException("Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
-                + config.getLabel() + "'.");
-        }
-        if(getMetricsFromConfig(config, MetricGroup.MULTICATEGORY_MATRIX).length > 0)
-        {
-            throw new IllegalArgumentException("Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
-                + config.getLabel() + "'.");
-        }
-        //Construct the metrics
-        dichotomousScalar = ofDichotomousScalarCollection(config);
-        multicategoryMatrix = ofMulticategoryMatrixCollection(config);
-    }
-
-    /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
-     * {@link ScalarOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
-     * 
-     * @param config the project configuration
-     * @return a collection of metrics or null
-     */
-
-    private MetricCollection<DichotomousPairs, ScalarOutput> ofDichotomousScalarCollection(ProjectConfig config)
-    {
-        //Obtain the list of metrics and find the matching metrics 
-        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.DICHOTOMOUS_SCALAR);
-        return metrics.length == 0 ? null : metricFactory.ofDichotomousScalarCollection(metrics);
-    }
-
-    /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link MulticategoryPairs} and produce
-     * {@link MatrixOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
-     * 
-     * @param config the project configuration
-     * @return a collection of metrics or null
-     */
-
-    private MetricCollection<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrixCollection(ProjectConfig config)
-    {
-        //Obtain the list of metrics and find the matching metrics 
-        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.MULTICATEGORY_MATRIX);
-        return metrics.length == 0 ? null : metricFactory.ofMulticategoryMatrixCollection(metrics);
     }
 
 }

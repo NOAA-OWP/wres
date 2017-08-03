@@ -44,7 +44,8 @@ public final class MetricProcessorEnsemblePairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
-            MetricProcessorEnsemblePairs processor = MetricProcessorEnsemblePairs.of(dataFactory, config);
+            MetricProcessorEnsemblePairs processor = (MetricProcessorEnsemblePairs)MetricProcessor.of(dataFactory,
+                                                                                                      config);
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             MetricOutputForProjectByThreshold results = processor.apply(pairs);
             MetricOutputMapByMetric<ScalarOutput> testMe = results.getScalarOutput()
