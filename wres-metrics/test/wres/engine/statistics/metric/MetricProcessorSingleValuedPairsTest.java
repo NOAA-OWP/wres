@@ -44,7 +44,9 @@ public final class MetricProcessorSingleValuedPairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
-            MetricProcessorSingleValuedPairs processor = MetricProcessorSingleValuedPairs.of(dataFactory, config);
+            MetricProcessorSingleValuedPairs processor =
+                                                       (MetricProcessorSingleValuedPairs)MetricProcessor.of(dataFactory,
+                                                                                                            config);
             SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
             MetricOutputForProjectByThreshold results = processor.apply(pairs);
             MetricOutputMapByMetric<ScalarOutput> testMe = results.getScalarOutput()

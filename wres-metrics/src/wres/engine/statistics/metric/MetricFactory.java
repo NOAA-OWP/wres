@@ -6,9 +6,9 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
-import wres.datamodel.metric.EnsemblePairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
@@ -85,31 +85,19 @@ public class MetricFactory
     @Deprecated
     public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(ProjectConfig config)
     {
-        return getSingleValuedProcessor(config).singleValuedScalar;
+        return MetricProcessorSingleValuedPairs.of(outputFactory, config).singleValuedScalar;
     }
 
     /**
-     * Returns an instance of a {@link MetricProcessor} for processing {@link EnsemblePairs}.
+     * Returns an instance of a {@link MetricProcessor} for processing {@link MetricInput}.
      * 
      * @param config the project configuration
      * @return the {@link MetricProcessor}
      */
 
-    public MetricProcessor<EnsemblePairs> getEnsembleProcessor(final ProjectConfig config)
+    public MetricProcessor getProcessor(final ProjectConfig config)
     {
-        return MetricProcessorEnsemblePairs.of(outputFactory, config);
-    }
-
-    /**
-     * Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}.
-     * 
-     * @param config the project configuration
-     * @return the {@link MetricProcessor}
-     */
-
-    public MetricProcessor<SingleValuedPairs> getSingleValuedProcessor(final ProjectConfig config)
-    {
-        return MetricProcessorSingleValuedPairs.of(outputFactory, config);
+        return MetricProcessor.of(outputFactory, config);
     }
 
     /**

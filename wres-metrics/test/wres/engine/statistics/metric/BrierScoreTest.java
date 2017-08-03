@@ -9,6 +9,7 @@ import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.BrierScore.BrierScoreBuilder;
@@ -32,8 +33,10 @@ public final class BrierScoreTest
     public void test1BrierScore()
     {
         //Generate some data
-        final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
+        final MetricInput<?> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
+        
+        
         //Build the metric
         final BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -54,7 +57,7 @@ public final class BrierScoreTest
                                                                                                "HEFS"));
 
         //Check the results       
-        final VectorOutput actual = bs.apply(input);
+        final VectorOutput actual = bs.apply((DiscreteProbabilityPairs)input);
         final VectorOutput expected = outF.ofVectorOutput(new double[]{0.26}, m1);
         assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
             + ".", actual.equals(expected));

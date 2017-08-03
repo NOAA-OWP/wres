@@ -3,7 +3,6 @@ package wres.engine.statistics.metric;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -15,8 +14,9 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.EnsemblePairs;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricGroup;
+import wres.datamodel.metric.MetricConstants.MetricInputGroup;
+import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
+import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputForProjectByThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
@@ -40,7 +40,7 @@ import wres.datamodel.metric.VectorOutput;
  * @since 0.1
  */
 
-final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
+final class MetricProcessorEnsemblePairs extends MetricProcessor
 {
 
     /**
@@ -74,7 +74,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
      * Default function that maps between ensemble pairs and single-valued pairs.
      */
 
-    private final Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> toSingleValues;       
+    private final Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> toSingleValues;
 
     /**
      * Function to map between ensemble pairs and discrete probabilities.
@@ -83,8 +83,12 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
     private final BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> toDiscreteProbabilities;
 
     @Override
-    public MetricOutputForProjectByThreshold apply(EnsemblePairs t)
+    public MetricOutputForProjectByThreshold apply(MetricInput<?> t)
     {
+        if(!(t instanceof EnsemblePairs))
+        {
+            throw new MetricCalculationException("Expected ensemble pairs for metric processing.");
+        }
 
         //Slicer
         Slicer slicer = dataFactory.getSlicer();
@@ -93,21 +97,21 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
         MetricFutures futures = new MetricFutures();
 
         //Process the metrics that consume ensemble pairs
-        if(hasEnsembleInput())
+        if(hasMetrics(MetricInputGroup.ENSEMBLE))
         {
-            processEnsemblePairs(t, futures);
+            processEnsemblePairs((EnsemblePairs)t, futures);
         }
         //Process the metrics that consume single-valued pairs
-        if(hasSingleValuedInput())
+        if(hasMetrics(MetricInputGroup.SINGLE_VALUED))
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
-            SingleValuedPairs input = slicer.transformPairs(t, toSingleValues);
+            SingleValuedPairs input = slicer.transformPairs((EnsemblePairs)t, toSingleValues);
             processSingleValuedPairs(input, futures);
         }
         //Process the metrics that consume discrete probability pairs
-        if(hasDiscreteProbabilityInput())
+        if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY))
         {
-            processDiscreteProbabilityPairs(t, futures);
+            processDiscreteProbabilityPairs((EnsemblePairs)t, futures);
         }
 
         //Process and return the result        
@@ -115,85 +119,83 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
     }
 
     /**
-     * Returns an instance of the processor.
+     * Hidden constructor.
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
      */
 
-    public static MetricProcessorEnsemblePairs of(DataFactory dataFactory, ProjectConfig config)
+    MetricProcessorEnsemblePairs(DataFactory dataFactory, ProjectConfig config)
     {
-        return new MetricProcessorEnsemblePairs(dataFactory, config);
-    }
-
-    @Override
-    public boolean hasMetrics(MetricGroup group)
-    {
-        switch(group)
+        super(dataFactory, config);
+        //Validate the configuration
+        if(hasMetrics(MetricInputGroup.DICHOTOMOUS))
         {
-            case SINGLE_VALUED_SCALAR:
-                return Objects.nonNull(singleValuedScalar);
-            case SINGLE_VALUED_VECTOR:
-                return Objects.nonNull(singleValuedVector);
-            case DISCRETE_PROBABILITY_VECTOR:
-                return Objects.nonNull(discreteProbabilityVector);
-            case DISCRETE_PROBABILITY_MULTIVECTOR:
-                return Objects.nonNull(discreteProbabilityMultiVector);
-            case ENSEMBLE_VECTOR:
-                return Objects.nonNull(ensembleVector);
-            case ENSEMBLE_MULTIVECTOR:
-                return Objects.nonNull(ensembleMultiVector);
-            default:
-                return false;
+            throw new IllegalArgumentException("Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
+                + config.getLabel() + "'.");
         }
-    }
+        if(hasMetrics(MetricInputGroup.MULTICATEGORY))
+        {
+            throw new IllegalArgumentException("Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
+                + config.getLabel() + "'.");
+        }
+        //Construct the metrics
+        if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR))
+        {
+            discreteProbabilityVector =
+                                      metricFactory.ofDiscreteProbabilityVectorCollection(getSelectedMetrics(metrics,
+                                                                                                             MetricInputGroup.DISCRETE_PROBABILITY,
+                                                                                                             MetricOutputGroup.VECTOR));
+        }
+        else
+        {
+            discreteProbabilityVector = null;
+        }
+        if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR))
+        {
+            discreteProbabilityMultiVector =
+                                           metricFactory.ofDiscreteProbabilityMultiVectorCollection(getSelectedMetrics(metrics,
+                                                                                                                       MetricInputGroup.DISCRETE_PROBABILITY,
+                                                                                                                       MetricOutputGroup.MULTIVECTOR));
+        }
+        else
+        {
+            discreteProbabilityMultiVector = null;
+        }
 
-    @Override
-    public boolean hasScalarOutput()
-    {
-        return Objects.nonNull(singleValuedScalar);
-    }
+        //TODO: implement the ensemble metrics
+        ensembleVector = null;
+        ensembleMultiVector = null;
 
-    @Override
-    public boolean hasVectorOutput()
-    {
-        return Objects.nonNull(singleValuedVector) || Objects.nonNull(discreteProbabilityVector);
-    }
+//        if(hasMetrics(MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR))
+//        {
+//            ensembleVector =
+//                              metricFactory.ofEnsembleVectorCollection(getSelectedMetrics(metrics,
+//                                                                                             MetricInputGroup.ENSEMBLE,
+//                                                                                             MetricOutputGroup.VECTOR));
+//        }
+//        else
+//        {
+//            ensembleVector = null;
+//        }
+//        if(hasMetrics(MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR))
+//        {
+//            ensembleMultiVector =
+//                                metricFactory.ofEnsembleMultiVectorCollection(getSelectedMetrics(metrics,
+//                                                                                                 MetricInputGroup.ENSEMBLE,
+//                                                                                                 MetricOutputGroup.MULTIVECTOR));
+//        }
+//        else
+//        {
+//            ensembleMultiVector = null;
+//        }                   
 
-    @Override
-    public boolean hasMultiVectorOutput()
-    {
-        return Objects.nonNull(discreteProbabilityMultiVector) || Objects.nonNull(singleValuedMultiVector);
-    }
+        //Construct the default mapper from ensembles to single-values: this is not currently configurable
+        toSingleValues = in -> dataFactory.pairOf(in.getItemOne(),
+                                                  Arrays.stream(in.getItemTwo()).average().getAsDouble());
 
-    @Override
-    public boolean hasMatrixOutput()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean hasDiscreteProbabilityInput()
-    {
-        return Objects.nonNull(discreteProbabilityVector) || Objects.nonNull(discreteProbabilityMultiVector);
-    }
-
-    @Override
-    public boolean hasEnsembleInput()
-    {
-        return Objects.nonNull(ensembleVector) || Objects.nonNull(ensembleMultiVector);
-    }
-
-    @Override
-    public boolean hasDichotomousInput()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean hasMulticategoryInput()
-    {
-        return false;
+        //Construct the default mapper from ensembles to probabilities: this is not currently configurable
+        toDiscreteProbabilities = dataFactory.getSlicer()::transformPair;
     }
 
     /**
@@ -210,12 +212,12 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
         //Metric-specific overrides are currently unsupported
         String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
         //Check and obtain the global thresholds by metric group for iteration
-        if(hasMetrics(MetricGroup.ENSEMBLE_VECTOR))
+        if(hasMetrics(MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR))
         {
             //Deal with global thresholds
-            if(hasGlobalThresholds(MetricGroup.ENSEMBLE_VECTOR))
+            if(hasGlobalThresholds(MetricInputGroup.ENSEMBLE))
             {
-                List<Threshold> global = globalThresholds.get(MetricGroup.ENSEMBLE_VECTOR);
+                List<Threshold> global = globalThresholds.get(MetricInputGroup.ENSEMBLE);
                 double[] sorted = getSortedLeftSide(input, global);
                 global.forEach(threshold -> processEnsembleThreshold(threshold,
                                                                      sorted,
@@ -231,12 +233,12 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
             }
         }
         //Check and obtain the global thresholds by metric group for iteration
-        if(hasMetrics(MetricGroup.ENSEMBLE_MULTIVECTOR))
+        if(hasMetrics(MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR))
         {
             //Deal with global thresholds
-            if(hasGlobalThresholds(MetricGroup.ENSEMBLE_MULTIVECTOR))
+            if(hasGlobalThresholds(MetricInputGroup.ENSEMBLE))
             {
-                List<Threshold> global = globalThresholds.get(MetricGroup.ENSEMBLE_MULTIVECTOR);
+                List<Threshold> global = globalThresholds.get(MetricInputGroup.ENSEMBLE);
                 double[] sorted = getSortedLeftSide(input, global);
                 global.forEach(threshold -> processEnsembleThreshold(threshold,
                                                                      sorted,
@@ -267,12 +269,12 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
         //Metric-specific overrides are currently unsupported
         String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
         //Check and obtain the global thresholds by metric group for iteration
-        if(hasMetrics(MetricGroup.DISCRETE_PROBABILITY_VECTOR))
+        if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR))
         {
             //Deal with global thresholds
-            if(hasGlobalThresholds(MetricGroup.DISCRETE_PROBABILITY_VECTOR))
+            if(hasGlobalThresholds(MetricInputGroup.DISCRETE_PROBABILITY))
             {
-                List<Threshold> global = globalThresholds.get(MetricGroup.DISCRETE_PROBABILITY_VECTOR);
+                List<Threshold> global = globalThresholds.get(MetricInputGroup.DISCRETE_PROBABILITY);
                 double[] sorted = getSortedLeftSide(input, global);
                 global.forEach(threshold -> processDiscreteProbabilityThreshold(threshold,
                                                                                 sorted,
@@ -288,12 +290,12 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
             }
         }
         //Check and obtain the global thresholds by metric group for iteration
-        if(hasMetrics(MetricGroup.DISCRETE_PROBABILITY_MULTIVECTOR))
+        if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR))
         {
             //Deal with global thresholds
-            if(hasGlobalThresholds(MetricGroup.DISCRETE_PROBABILITY_MULTIVECTOR))
+            if(hasGlobalThresholds(MetricInputGroup.DISCRETE_PROBABILITY))
             {
-                List<Threshold> global = globalThresholds.get(MetricGroup.DISCRETE_PROBABILITY_MULTIVECTOR);
+                List<Threshold> global = globalThresholds.get(MetricInputGroup.DISCRETE_PROBABILITY);
                 double[] sorted = getSortedLeftSide(input, global);
                 global.forEach(threshold -> processDiscreteProbabilityThreshold(threshold,
                                                                                 sorted,
@@ -389,69 +391,4 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor<EnsemblePairs>
         return sorted;
     }
 
-    /**
-     * Hidden constructor.
-     * 
-     * @param dataFactory the data factory
-     * @param config the project configuration
-     */
-
-    private MetricProcessorEnsemblePairs(DataFactory dataFactory, ProjectConfig config)
-    {
-        super(dataFactory, config);
-        //Validate the configuration
-        if(getMetricsFromConfig(config, MetricGroup.DICHOTOMOUS_SCALAR).length > 0)
-        {
-            throw new IllegalArgumentException("Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
-                + config.getLabel() + "'.");
-        }
-        if(getMetricsFromConfig(config, MetricGroup.MULTICATEGORY_MATRIX).length > 0)
-        {
-            throw new IllegalArgumentException("Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
-                + config.getLabel() + "'.");
-        }
-
-        discreteProbabilityVector = ofDiscreteProbabilityVectorCollection(config);
-        discreteProbabilityMultiVector = ofDiscreteProbabilityMultiVectorCollection(config);
-        //TODO: implement ensemble metrics
-        ensembleVector = null; //ofEnsembleVectorCollection(config);
-        ensembleMultiVector = null; //ofEnsembleMultiVectorCollection(config);        
-
-        //Construct the default mapper from ensembles to single-values: this is not currently configurable
-        toSingleValues = in -> dataFactory.pairOf(in.getItemOne(),
-                                                  Arrays.stream(in.getItemTwo()).average().getAsDouble());
-        
-        //Construct the default mapper from ensembles to probabilities: this is not currently configurable
-        toDiscreteProbabilities = dataFactory.getSlicer()::transformPair;
-    }
-
-    /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
-     * {@link VectorOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
-     * 
-     * @param config the project configuration
-     * @return a collection of metrics or null
-     */
-
-    private MetricCollection<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVectorCollection(ProjectConfig config)
-    {
-        //Obtain the list of metrics and find the matching metrics 
-        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.DISCRETE_PROBABILITY_VECTOR);
-        return metrics.length == 0 ? null : metricFactory.ofDiscreteProbabilityVectorCollection(metrics);
-    }
-
-    /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
-     * {@link MultiVectorOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
-     * 
-     * @param config the project configuration
-     * @return a collection of metrics or null
-     */
-
-    private MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput> ofDiscreteProbabilityMultiVectorCollection(ProjectConfig config)
-    {
-        //Obtain the list of metrics and find the matching metrics 
-        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.DISCRETE_PROBABILITY_MULTIVECTOR);
-        return metrics.length == 0 ? null : metricFactory.ofDiscreteProbabilityMultiVectorCollection(metrics);
-    }
 }
