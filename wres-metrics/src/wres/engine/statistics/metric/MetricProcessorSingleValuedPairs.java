@@ -10,14 +10,12 @@ import wres.datamodel.PairOfBooleans;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
-import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants.MetricInputGroup;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputForProjectByThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
-import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ProbabilityThreshold;
 import wres.datamodel.metric.QuantileThreshold;
 import wres.datamodel.metric.ScalarOutput;
@@ -44,13 +42,6 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
      */
 
     private final MetricCollection<DichotomousPairs, ScalarOutput> dichotomousScalar;
-
-    /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link MulticategoryPairs} and produce
-     * {@link MatrixOutput}.
-     */
-
-    private final MetricCollection<MulticategoryPairs, MatrixOutput> multicategoryMatrix;
 
     @Override
     public MetricOutputForProjectByThreshold apply(MetricInput<?> t)
@@ -87,17 +78,6 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
     MetricProcessorSingleValuedPairs(DataFactory dataFactory, ProjectConfig config)
     {
         super(dataFactory, config);
-        //Validate the configuration
-        if(hasMetrics(MetricInputGroup.DICHOTOMOUS))
-        {
-            throw new IllegalArgumentException("Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
-                + config.getLabel() + "'.");
-        }
-        if(hasMetrics(MetricInputGroup.MULTICATEGORY))
-        {
-            throw new IllegalArgumentException("Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
-                + config.getLabel() + "'.");
-        }
         //Construct the metrics
         if(hasMetrics(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR))
         {
@@ -109,17 +89,6 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
         else
         {
             dichotomousScalar = null;
-        }
-        if(hasMetrics(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR))
-        {
-            multicategoryMatrix =
-                                metricFactory.ofMulticategoryMatrixCollection(getSelectedMetrics(metrics,
-                                                                                                 MetricInputGroup.MULTICATEGORY,
-                                                                                                 MetricOutputGroup.MATRIX));
-        }
-        else
-        {
-            multicategoryMatrix = null;
         }
     }
 

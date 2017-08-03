@@ -18,7 +18,6 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.EnsemblePairs;
-import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricConstants.MetricInputGroup;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
@@ -160,35 +159,31 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
     {
         return getSelectedMetrics(metrics, inGroup, outGroup).length > 0;
     }
-    
+
     /**
-     * Returns true if metrics are available for the input {@link MetricInputGroup}, false
-     * otherwise.
+     * Returns true if metrics are available for the input {@link MetricInputGroup}, false otherwise.
      * 
      * @param inGroup the {@link MetricInputGroup}
-     * @return true if metrics are available for the input {@link MetricInputGroup} false
-     *         otherwise
+     * @return true if metrics are available for the input {@link MetricInputGroup} false otherwise
      */
 
     public boolean hasMetrics(MetricInputGroup inGroup)
     {
         return metrics.stream().anyMatch(a -> a.isInGroup(inGroup));
 
-    }    
-    
+    }
+
     /**
-     * Returns true if metrics are available for the input {@link MetricOutputGroup}, false
-     * otherwise.
+     * Returns true if metrics are available for the input {@link MetricOutputGroup}, false otherwise.
      * 
      * @param outGroup the {@link MetricOutputGroup}
-     * @return true if metrics are available for the input {@link MetricOutputGroup} false
-     *         otherwise
+     * @return true if metrics are available for the input {@link MetricOutputGroup} false otherwise
      */
 
     public boolean hasMetrics(MetricOutputGroup outGroup)
     {
         return metrics.stream().anyMatch(a -> a.isInGroup(outGroup));
-    }        
+    }
 
     /**
      * Constructor.
@@ -363,7 +358,6 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
         final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<VectorOutput>>> vector = new HashMap<>();
         final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
                                                                                                         new HashMap<>();
-        final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<MatrixOutput>>> matrix = new HashMap<>();
 
         /**
          * Returns the results associated with the futures. This method is blocking.
@@ -385,10 +379,6 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
             if(!multivector.isEmpty())
             {
                 multivector.forEach((threshold, future) -> builder.addMultiVectorOutput(threshold, future.join()));
-            }
-            if(!matrix.isEmpty())
-            {
-                matrix.forEach((threshold, future) -> builder.addMatrixOutput(threshold, future.join()));
             }
             return builder.build();
         }

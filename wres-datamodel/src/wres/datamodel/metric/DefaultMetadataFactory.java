@@ -129,9 +129,10 @@ public class DefaultMetadataFactory implements MetadataFactory
                     return false;
                 }
                 final MetricOutputMetadata p = ((MetricOutputMetadata)o);
-                return super.equals(o) && p.getSampleSize() == getSampleSize() && p.getMetricID() == getMetricID()
-                    && p.getMetricComponentID() == getMetricComponentID()
+                boolean returnMe = super.equals(o) && p.getSampleSize() == getSampleSize()
                     && p.getInputDimension().equals(getInputDimension());
+                return returnMe && p.getMetricID() == getMetricID()
+                    && p.getMetricComponentID() == getMetricComponentID();
             }
 
             @Override

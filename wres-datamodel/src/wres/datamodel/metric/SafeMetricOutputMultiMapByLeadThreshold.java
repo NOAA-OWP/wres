@@ -124,9 +124,7 @@ implements MetricOutputMultiMapByLeadThreshold<S>
         public Builder<S> put(int leadTime, MetricOutputMultiMapByThreshold<S> result)
         {
             Objects.requireNonNull(result, "Specify a non-null metric result.");
-            result.forEach((threshold,value) -> {
-                put(leadTime,threshold.getKey(),value);
-            });
+            result.forEach((threshold,value) -> put(leadTime,threshold.getKey(),value));
             return this;
         }
     }
