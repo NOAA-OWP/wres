@@ -48,7 +48,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                                      metaFac.getOutputMetadata(input.getMetadata().getSampleSize(),
+                                      metaFac.getOutputMetadata(input.size(),
                                                                 metaFac.getDimension(),
                                                                 metaFac.getDimension(),
                                                                 MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,

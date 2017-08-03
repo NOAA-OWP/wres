@@ -39,8 +39,7 @@ public final class DefaultDataFactoryTest
     public void test1MetricFactory()
     {
         final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-        final Metadata m1 = metaFac.getMetadata(1,
-                                                metaFac.getDimension(),
+        final Metadata m1 = metaFac.getMetadata(metaFac.getDimension(),
                                                 metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         final List<VectorOfBooleans> input = new ArrayList<>();
         input.add(metIn.vectorOf(new boolean[]{true, false}));
@@ -49,11 +48,9 @@ public final class DefaultDataFactoryTest
 
         final List<PairOfDoubles> dInput = new ArrayList<>();
         dInput.add(metIn.pairOf(0.0, 1.0));
-        final Metadata m2 = metaFac.getMetadata(dInput.size(),
-                                                metaFac.getDimension(),
+        final Metadata m2 = metaFac.getMetadata(metaFac.getDimension(),
                                                 metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
-        final Metadata m3 = metaFac.getMetadata(dInput.size(),
-                                                metaFac.getDimension(),
+        final Metadata m3 = metaFac.getMetadata(metaFac.getDimension(),
                                                 metaFac.getDatasetIdentifier("DRRC2", "SQIN", "ESP"));
         metIn.ofDiscreteProbabilityPairs(dInput, m2);
         metIn.ofDiscreteProbabilityPairs(dInput, dInput, m2, m3);

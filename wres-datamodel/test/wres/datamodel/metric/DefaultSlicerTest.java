@@ -52,7 +52,7 @@ public final class DefaultSlicerTest
         assertTrue("The left side of the test data does not match the benchmark.",
                    Arrays.equals(slicer.getLeftSide(metIn.ofSingleValuedPairs(values,
                                                                               metIn.getMetadataFactory()
-                                                                                   .getMetadata(6))),
+                                                                                   .getMetadata())),
                                  expected));
     }
 
@@ -74,7 +74,7 @@ public final class DefaultSlicerTest
         double[] expected = new double[]{0, 0, 1, 1, 0, 1};
         assertTrue("The left side of the test data does not match the benchmark.",
                    Arrays.equals(slicer.getLeftSide(metIn.ofEnsemblePairs(values,
-                                                                          metIn.getMetadataFactory().getMetadata(6))),
+                                                                          metIn.getMetadataFactory().getMetadata())),
                                  expected));
     }
 
@@ -97,7 +97,7 @@ public final class DefaultSlicerTest
         assertTrue("The right side of the test data does not match the benchmark.",
                    Arrays.equals(slicer.getRightSide(metIn.ofSingleValuedPairs(values,
                                                                                metIn.getMetadataFactory()
-                                                                                    .getMetadata(6))),
+                                                                                    .getMetadata())),
                                  expected));
     }
 
@@ -118,7 +118,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(1, 1.0 / 5.0));
         double[] expected = new double[]{1, 1, 1};
         Threshold threshold = metIn.getThreshold(0.0, Condition.GREATER);
-        Metadata meta = metIn.getMetadataFactory().getMetadata(6);
+        Metadata meta = metIn.getMetadataFactory().getMetadata();
         SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, values, meta, meta);
         SingleValuedPairs sliced = slicer.sliceByLeft(pairs, threshold);
         //Test with baseline
@@ -163,7 +163,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(1, new double[]{1, 2, 3}));
         double[] expected = new double[]{1, 1, 1};
         Threshold threshold = metIn.getThreshold(0.0, Condition.GREATER);
-        Metadata meta = metIn.getMetadataFactory().getMetadata(6);
+        Metadata meta = metIn.getMetadataFactory().getMetadata();
         EnsemblePairs pairs = metIn.ofEnsemblePairs(values, values, meta, meta);
         EnsemblePairs sliced = slicer.sliceByLeft(pairs, threshold);
         //Test with baseline
@@ -206,7 +206,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(1, new double[]{16, 17, 18, 19, 20}));
         values.add(metIn.pairOf(0, new double[]{21, 22, 23, 24, 25}));
         values.add(metIn.pairOf(1, new double[]{26, 27, 28, 29, 30}));
-        Metadata meta = metIn.getMetadataFactory().getMetadata(6);
+        Metadata meta = metIn.getMetadataFactory().getMetadata();
         EnsemblePairs input = metIn.ofEnsemblePairs(values, values, meta, meta);
         Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper = (in) -> {
             return metIn.pairOf(in.getItemOne(), Arrays.stream(in.getItemTwo()).average().getAsDouble());
@@ -236,7 +236,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(1, 3.0 / 5.0));
         values.add(metIn.pairOf(0, 0.0 / 5.0));
         values.add(metIn.pairOf(1, 1.0 / 5.0));
-        Metadata meta = metIn.getMetadataFactory().getMetadata(6);
+        Metadata meta = metIn.getMetadataFactory().getMetadata();
         Function<PairOfDoubles, PairOfBooleans> mapper = (in) -> {
             return metIn.pairOf(in.getItemOne() > 0, in.getItemTwo() > 0);
         };
@@ -276,7 +276,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(4, new double[]{4, 4, 4, 4, 4}));
         values.add(metIn.pairOf(0, new double[]{1, 2, 3, 4, 5}));
         values.add(metIn.pairOf(5, new double[]{1, 1, 6, 6, 50}));
-        Metadata meta = metIn.getMetadataFactory().getMetadata(6);
+        Metadata meta = metIn.getMetadataFactory().getMetadata();
         Threshold threshold = metIn.getThreshold(3.0, Condition.GREATER);
         BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::transformPair;
         double[] expectedLeft = new double[]{0.0, 0.0, 0.0, 1.0, 0.0, 1.0};

@@ -37,8 +37,7 @@ public final class SafeMulticategoryPairsTest
         {
             values.add(metIn.vectorOf(new boolean[]{true, true}));
         }
-        final Metadata meta = metaFac.getMetadata(values.size(),
-                                                  metaFac.getDimension(),
+        final Metadata meta = metaFac.getMetadata(metaFac.getDimension(),
                                                   metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         MulticategoryPairs p = b.setData(values).setMetadata(meta).build();
 
@@ -58,7 +57,7 @@ public final class SafeMulticategoryPairsTest
         p = b.setDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
         assertTrue("Expected a dataset with a baseline [true," + p.hasBaseline() + "].", p.hasBaseline());
         //Check the metadata
-        final Metadata t = metaFac.getMetadata(10);
+        final Metadata t = metaFac.getMetadata();
         b.setMetadata(t);
         p = b.build();
         assertTrue("Expected non-null metadata.", p.getMetadata().equals(t));

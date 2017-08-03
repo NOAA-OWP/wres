@@ -34,8 +34,7 @@ public class Chart2DTestInput extends TestCase
             values.add(metIn.pairOf(rand.nextGaussian(), rand.nextGaussian()));
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata meta = metFac.getMetadata(values.size(),
-                                                 metFac.getDimension("CMS"),
+        final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
         
@@ -94,8 +93,7 @@ public class Chart2DTestInput extends TestCase
         values.add(metIn.pairOf(12, 12));
         values.add(metIn.pairOf(93, 94));
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata meta = metFac.getMetadata(values.size(),
-                                                 metFac.getDimension("CMS"),
+        final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 

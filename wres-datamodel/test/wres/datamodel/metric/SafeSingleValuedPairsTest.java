@@ -37,7 +37,7 @@ public final class SafeSingleValuedPairsTest
         {
             values.add(metIn.pairOf(1, 1));
         }
-        final Metadata meta = metaFac.getMetadata(values.size());
+        final Metadata meta = metaFac.getMetadata();
         SingleValuedPairs p = b.setData(values).setMetadata(meta).build();
 
         //Check dataset count

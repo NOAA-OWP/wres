@@ -68,5 +68,13 @@ public interface MetricInput<S>
      */
 
     boolean hasBaseline();
+    
+    /**
+     * Returns the number of elements in the input.
+     * 
+     * @return the size of the input
+     */
 
+    int size();
+    
 }

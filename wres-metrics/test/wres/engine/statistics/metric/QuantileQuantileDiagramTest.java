@@ -53,11 +53,11 @@ public final class QuantileQuantileDiagramTest
             values.add(outF.pairOf(left, right));
         }
 
-        final SingleValuedPairs input = outF.ofSingleValuedPairs(values, metaFac.getMetadata(101));
+        final SingleValuedPairs input = outF.ofSingleValuedPairs(values, metaFac.getMetadata());
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                                      metaFac.getOutputMetadata(input.getMetadata().getSampleSize(),
+                                      metaFac.getOutputMetadata(input.size(),
                                                                 metaFac.getDimension(),
                                                                 metaFac.getDimension(),
                                                                 MetricConstants.QUANTILE_QUANTILE_DIAGRAM,

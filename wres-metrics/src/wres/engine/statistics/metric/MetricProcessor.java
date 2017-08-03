@@ -312,7 +312,7 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
     }
 
     /**
-     * Store of metric futures for each output type. Use {@ link #getResults()} to obtain the processed
+     * Store of metric futures for each output type. Use {@ link #getMetricOutput()} to obtain the processed
      * {@link MetricOutputForProjectByThreshold}, which blocks until all results are available.
      */
 

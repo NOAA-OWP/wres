@@ -79,6 +79,12 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         return baselineMeta;
     }
 
+    @Override
+    public int size()
+    {
+        return mainInput.size();
+    }
+    
     /**
      * Returns the number of outcomes or categories in the dataset.
      * 
