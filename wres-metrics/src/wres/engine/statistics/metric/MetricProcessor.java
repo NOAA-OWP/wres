@@ -12,22 +12,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DichotomousPairs;
-import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.EnsemblePairs;
-import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricGroup;
+import wres.datamodel.metric.MetricConstants.MetricInputGroup;
+import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputForProjectByThreshold;
+import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ProbabilityThreshold;
 import wres.datamodel.metric.QuantileThreshold;
 import wres.datamodel.metric.ScalarOutput;
@@ -64,7 +62,7 @@ import wres.datamodel.metric.VectorOutput;
  * Upon calling {@link #apply(Object)} with a concrete {@link MetricInput}, the configured {@link Metric} are computed
  * asynchronously for each {@link Threshold}. These asynchronous tasks are stored in a {@link MetricFutures} whose
  * method, {@link MetricFutures#getMetricOutput()} returns the full suite of results in a
- * {@link MetricOutputForProjectByThreshold}.
+ * {@link MetricOutputForProjectByLeadThreshold}.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
@@ -72,7 +70,7 @@ import wres.datamodel.metric.VectorOutput;
  * @since 0.1
  */
 
-abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, MetricOutputForProjectByThreshold>
+abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputForProjectByLeadThreshold>
 {
 
     /**
@@ -94,10 +92,10 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
     final EnumMap<MetricConstants, List<Threshold>> localThresholds;
 
     /**
-     * List of thresholds that apply to all metrics within a metric group.
+     * List of thresholds that apply to all metrics within a {@link MetricInputGroup}.
      */
 
-    final EnumMap<MetricGroup, List<Threshold>> globalThresholds;
+    final EnumMap<MetricInputGroup, List<Threshold>> globalThresholds;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
@@ -121,88 +119,126 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
     final MetricCollection<SingleValuedPairs, MultiVectorOutput> singleValuedMultiVector;
 
     /**
-     * Returns true if metrics are available for the input {@link MetricGroup}, false otherwise.
-     * 
-     * @param group the {@link MetricGroup}
-     * @return true if metrics are available for the input {@link MetricGroup}, false otherwise
+     * The list of metrics associated with the verification project.
      */
 
-    public abstract boolean hasMetrics(MetricGroup group);
+    final List<MetricConstants> metrics;
 
     /**
-     * Returns true if the project contains metrics that produce {@link ScalarOutput}, false otherwise.
+     * Returns an instance of a metric processor based on {@link ProjectConfig}
      * 
-     * @return true if the project contains metrics that produce {@link ScalarOutput}, false otherwise
+     * @param dataFactory the data factory
+     * @param config the project configuration
      */
 
-    public abstract boolean hasScalarOutput();
-
-    /**
-     * Returns true if the project contains metrics that produce {@link VectorOutput}, false otherwise.
-     * 
-     * @return true if the project contains metrics that produce {@link VectorOutput}, false otherwise
-     */
-
-    public abstract boolean hasVectorOutput();
-
-    /**
-     * Returns true if the project contains metrics that produce {@link MultiVectorOutput}, false otherwise.
-     * 
-     * @return true if the project contains metrics that produce {@link MultiVectorOutput}, false otherwise
-     */
-
-    public abstract boolean hasMultiVectorOutput();
-
-    /**
-     * Returns true if the project contains metrics that produce {@link MatrixOutput}, false otherwise.
-     * 
-     * @return true if the project contains metrics that produce {@link MatrixOutput}, false otherwise
-     */
-
-    public abstract boolean hasMatrixOutput();
-
-    /**
-     * Returns true if the project contains metrics that consume {@link DiscreteProbabilityPairs}, false otherwise.
-     * 
-     * @return true if the project contains metrics that consume {@link DiscreteProbabilityPairs}, false otherwise
-     */
-
-    public abstract boolean hasDiscreteProbabilityInput();
-
-    /**
-     * Returns true if the project contains metrics that consume {@link EnsemblePairs}, false otherwise.
-     * 
-     * @return true if the project contains metrics that consume {@link EnsemblePairs}, false otherwise
-     */
-
-    public abstract boolean hasEnsembleInput();
-
-    /**
-     * Returns true if the project contains metrics that consume {@link DichotomousPairs}, false otherwise.
-     * 
-     * @return true if the project contains metrics that consume {@link DichotomousPairs}, false otherwise
-     */
-
-    public abstract boolean hasDichotomousInput();
-
-    /**
-     * Returns true if the project contains metrics that consume {@link MulticategoryPairs}, false otherwise.
-     * 
-     * @return true if the project contains metrics that consume {@link MulticategoryPairs}, false otherwise
-     */
-
-    public abstract boolean hasMulticategoryInput();
-
-    /**
-     * Returns true if the project contains metrics that consume {@link SingleValuedPairs}, false otherwise.
-     * 
-     * @return true if the project contains metrics that consume {@link SingleValuedPairs}, false otherwise
-     */
-
-    public boolean hasSingleValuedInput()
+    public static MetricProcessor of(DataFactory dataFactory, ProjectConfig config)
     {
-        return Objects.nonNull(singleValuedScalar) || Objects.nonNull(singleValuedVector)
-            || Objects.nonNull(singleValuedMultiVector);
+        switch(getInputType(config))
+        {
+            case SINGLE_VALUED:
+                return new MetricProcessorSingleValuedPairs(dataFactory, config);
+            case ENSEMBLE:
+                return new MetricProcessorEnsemblePairs(dataFactory, config);
+            default:
+                throw new UnsupportedOperationException("Unsupported input type in the project configuration '" + config
+                    + "'");
+        }
+    }
+
+    /**
+     * Returns true if metrics are available for the input {@link MetricInputGroup} and {@link MetricOutputGroup}, false
+     * otherwise.
+     * 
+     * @param inGroup the {@link MetricInputGroup}
+     * @param outGroup the {@link MetricOutputGroup}
+     * @return true if metrics are available for the input {@link MetricInputGroup} and {@link MetricOutputGroup}, false
+     *         otherwise
+     */
+
+    public boolean hasMetrics(MetricInputGroup inGroup, MetricOutputGroup outGroup)
+    {
+        return getSelectedMetrics(metrics, inGroup, outGroup).length > 0;
+    }
+
+    /**
+     * Returns true if metrics are available for the input {@link MetricInputGroup}, false otherwise.
+     * 
+     * @param inGroup the {@link MetricInputGroup}
+     * @return true if metrics are available for the input {@link MetricInputGroup} false otherwise
+     */
+
+    public boolean hasMetrics(MetricInputGroup inGroup)
+    {
+        return metrics.stream().anyMatch(a -> a.isInGroup(inGroup));
+
+    }
+
+    /**
+     * Returns true if metrics are available for the input {@link MetricOutputGroup}, false otherwise.
+     * 
+     * @param outGroup the {@link MetricOutputGroup}
+     * @return true if metrics are available for the input {@link MetricOutputGroup} false otherwise
+     */
+
+    public boolean hasMetrics(MetricOutputGroup outGroup)
+    {
+        return metrics.stream().anyMatch(a -> a.isInGroup(outGroup));
+    }
+
+    /**
+     * Constructor.
+     * 
+     * @param dataFactory the data factory
+     * @param config the project configuration
+     */
+
+    MetricProcessor(final DataFactory dataFactory, final ProjectConfig config)
+    {
+        Objects.requireNonNull(config,
+                               "Specify a non-null project configuration from which to construct the metric processor.");
+        Objects.requireNonNull(dataFactory,
+                               "Specify a non-null data factory from which to construct the metric processor.");
+        this.dataFactory = dataFactory;
+        metrics = getMetricsFromConfig(config);
+        metricFactory = MetricFactory.getInstance(dataFactory);
+        //Construct the metrics that are common to more than one type of input pairs
+        if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR))
+        {
+            singleValuedScalar =
+                               metricFactory.ofSingleValuedScalarCollection(getSelectedMetrics(metrics,
+                                                                                               MetricInputGroup.SINGLE_VALUED,
+                                                                                               MetricOutputGroup.SCALAR));
+        }
+        else
+        {
+            singleValuedScalar = null;
+        }
+        if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR))
+        {
+            singleValuedVector =
+                               metricFactory.ofSingleValuedVectorCollection(getSelectedMetrics(metrics,
+                                                                                               MetricInputGroup.SINGLE_VALUED,
+                                                                                               MetricOutputGroup.VECTOR));
+        }
+        else
+        {
+            singleValuedVector = null;
+        }
+        if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR))
+        {
+            singleValuedMultiVector =
+                                    metricFactory.ofSingleValuedMultiVectorCollection(getSelectedMetrics(metrics,
+                                                                                                         MetricInputGroup.SINGLE_VALUED,
+                                                                                                         MetricOutputGroup.MULTIVECTOR));
+        }
+        else
+        {
+            singleValuedMultiVector = null;
+        }
+        //Obtain the thresholds for each metric and store them
+        localThresholds = new EnumMap<>(MetricConstants.class);
+        globalThresholds = new EnumMap<>(MetricInputGroup.class);
+        setThresholds(dataFactory, config);
     }
 
     /**
@@ -236,12 +272,12 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
         //Metric-specific overrides are currently unsupported
         String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
         //Check and obtain the global thresholds by metric group for iteration
-        if(hasMetrics(MetricGroup.SINGLE_VALUED_SCALAR))
+        if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR))
         {
             //Deal with global thresholds
-            if(hasGlobalThresholds(MetricGroup.SINGLE_VALUED_SCALAR))
+            if(hasGlobalThresholds(MetricInputGroup.SINGLE_VALUED))
             {
-                List<Threshold> global = globalThresholds.get(MetricGroup.SINGLE_VALUED_SCALAR);
+                List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
                 double[] sorted = getSortedLeftSide(input, global);
                 global.forEach(threshold -> processSingleValuedThreshold(threshold,
                                                                          sorted,
@@ -257,12 +293,12 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
             }
         }
         //Check and obtain the global thresholds by metric group for iteration
-        if(hasMetrics(MetricGroup.SINGLE_VALUED_VECTOR))
+        if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR))
         {
             //Deal with global thresholds
-            if(hasGlobalThresholds(MetricGroup.SINGLE_VALUED_VECTOR))
+            if(hasGlobalThresholds(MetricInputGroup.SINGLE_VALUED))
             {
-                List<Threshold> global = globalThresholds.get(MetricGroup.SINGLE_VALUED_VECTOR);
+                List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
                 double[] sorted = getSortedLeftSide(input, global);
                 global.forEach(threshold -> processSingleValuedThreshold(threshold,
                                                                          sorted,
@@ -278,12 +314,12 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
             }
         }
         //Check and obtain the global thresholds by metric group for iteration
-        if(hasMetrics(MetricGroup.SINGLE_VALUED_MULTIVECTOR))
+        if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR))
         {
             //Deal with global thresholds
-            if(hasGlobalThresholds(MetricGroup.SINGLE_VALUED_MULTIVECTOR))
+            if(hasGlobalThresholds(MetricInputGroup.SINGLE_VALUED))
             {
-                List<Threshold> global = globalThresholds.get(MetricGroup.SINGLE_VALUED_MULTIVECTOR);
+                List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
                 double[] sorted = getSortedLeftSide(input, global);
                 global.forEach(threshold -> processSingleValuedThreshold(threshold,
                                                                          sorted,
@@ -301,28 +337,60 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
     }
 
     /**
-     * Returns true if global thresholds are available for a particular {@link MetricGroup}, false otherwise.
+     * Returns true if global thresholds are available for a particular {@link MetricInputGroup}, false otherwise.
      * 
-     * @return true if global thresholds are available for a {@link MetricGroup}, false otherwise
+     * @return true if global thresholds are available for a {@link MetricInputGroup}, false otherwise
      */
 
-    boolean hasGlobalThresholds(MetricGroup group)
+    boolean hasGlobalThresholds(MetricInputGroup group)
     {
         return globalThresholds.containsKey(group);
     }
 
     /**
      * Store of metric futures for each output type. Use {@ link #getMetricOutput()} to obtain the processed
-     * {@link MetricOutputForProjectByThreshold}, which blocks until all results are available.
+     * {@link MetricOutputForProjectByLeadThreshold}, which blocks until all results are available.
      */
 
     class MetricFutures
     {
+
+        /**
+         * The lead time.
+         */
+
+        private final Integer leadTime;
+
+        /**
+         * Construct with a lead time.
+         * 
+         * @param leadTime the lead time
+         */
+
+        MetricFutures(Integer leadTime)
+        {
+            Objects.requireNonNull("Expected a non-null forecast lead time.");
+            this.leadTime = leadTime;
+        }
+
+        /**
+         * Scalar results.
+         */
+
         final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<ScalarOutput>>> scalar = new HashMap<>();
+
+        /**
+         * Vector results.
+         */
+
         final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<VectorOutput>>> vector = new HashMap<>();
+
+        /**
+         * Multivector results.
+         */
+
         final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
                                                                                                         new HashMap<>();
-        final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<MatrixOutput>>> matrix = new HashMap<>();
 
         /**
          * Returns the results associated with the futures. This method is blocking.
@@ -330,38 +398,56 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
          * @return the metric results
          */
 
-        MetricOutputForProjectByThreshold getMetricOutput()
+        MetricOutputForProjectByLeadThreshold getMetricOutput()
         {
-            MetricOutputForProjectByThreshold.Builder builder = dataFactory.ofMetricOutputForProjectByThreshold();
+            MetricOutputForProjectByLeadThreshold.Builder builder = dataFactory.ofMetricOutputForProjectByThreshold();
             if(!scalar.isEmpty())
             {
-                scalar.forEach((threshold, future) -> builder.addScalarOutput(threshold, future.join()));
+                scalar.forEach((threshold, future) -> builder.addScalarOutput(leadTime, threshold, future.join()));
             }
             if(!vector.isEmpty())
             {
-                vector.forEach((threshold, future) -> builder.addVectorOutput(threshold, future.join()));
+                vector.forEach((threshold, future) -> builder.addVectorOutput(leadTime, threshold, future.join()));
             }
             if(!multivector.isEmpty())
             {
-                multivector.forEach((threshold, future) -> builder.addMultiVectorOutput(threshold, future.join()));
-            }
-            if(!matrix.isEmpty())
-            {
-                matrix.forEach((threshold, future) -> builder.addMatrixOutput(threshold, future.join()));
+                multivector.forEach((threshold, future) -> builder.addMultiVectorOutput(leadTime,
+                                                                                        threshold,
+                                                                                        future.join()));
             }
             return builder.build();
         }
     }
 
     /**
-     * Returns a set of {@link MetricConstants} from a {@link ProjectConfig} for a specified {@link MetricGroup} or an
-     * empty array if no metrics exist.
+     * Returns a set of {@link MetricConstants} for a specified {@link MetricInputGroup} and {@link MetricOutputGroup}.
      * 
-     * @param config the project configuration
-     * @return a set of {@link MetricConstants} for a specified {@link MetricGroup} or an empty array
+     * @param input the input constants
+     * @param inGroup the {@link MetricInputGroup}
+     * @param outGroup the {@link MetricOutputGroup}
+     * @return a set of {@link MetricConstants} for a specified {@link MetricInputGroup} and {@link MetricOutputGroup}
+     *         or an empty array
      */
 
-    static MetricConstants[] getMetricsFromConfig(ProjectConfig config, MetricGroup group)
+    MetricConstants[] getSelectedMetrics(List<MetricConstants> input,
+                                         MetricInputGroup inGroup,
+                                         MetricOutputGroup outGroup)
+    {
+        Objects.requireNonNull(input, "Specify a non-null array of metric identifiers from which to select metrics.");
+        //Find the matching metrics 
+        Set<MetricConstants> metrics = MetricConstants.getMetrics(inGroup, outGroup);
+        metrics.removeIf(a -> !input.contains(a));
+        return metrics.toArray(new MetricConstants[metrics.size()]);
+    }
+
+    /**
+     * Returns a set of {@link MetricConstants} from a {@link ProjectConfig}.
+     * 
+     * @param config the project configuration
+     * @return a set of {@link MetricConstants}
+     */
+
+    List<MetricConstants> getMetricsFromConfig(ProjectConfig config)
     {
         Objects.requireNonNull(config, "Specify a non-null project from which to generate metrics.");
         //Obtain the list of metrics
@@ -370,10 +456,9 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
                                                      .stream()
                                                      .map(MetricConfig::getValue)
                                                      .collect(Collectors.toList());
-        //Find the matching metrics 
-        Set<MetricConstants> metrics = group.getMetrics();
-        metrics.removeIf(a -> !metricsConfig.contains(toMetricConfigName(a)));
-        return metrics.toArray(new MetricConstants[metrics.size()]);
+        List<MetricConstants> metrics = new ArrayList<>();
+        metricsConfig.forEach(a -> metrics.add(fromMetricConfigName(a)));
+        return metrics;
     }
 
     /**
@@ -394,31 +479,6 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
             Arrays.sort(sorted);
         }
         return sorted;
-    }
-
-    /**
-     * Constructor.
-     * 
-     * @param dataFactory the data factory
-     * @param config the project configuration
-     */
-
-    MetricProcessor(final DataFactory dataFactory, final ProjectConfig config)
-    {
-        Objects.requireNonNull(config,
-                               "Specify a non-null project configuration from which to construct the metric processor.");
-        Objects.requireNonNull(dataFactory,
-                               "Specify a non-null data factory from which to construct the metric processor.");
-        this.dataFactory = dataFactory;
-        metricFactory = MetricFactory.getInstance(dataFactory);
-        //Construct the metrics that are common to more than one type of input pairs
-        singleValuedScalar = ofSingleValuedScalarCollection(config);
-        singleValuedVector = ofSingleValuedVectorCollection(config);
-        singleValuedMultiVector = ofSingleValuedMultiVectorCollection(config);
-        //Obtain the thresholds for each metric and store them
-        localThresholds = new EnumMap<>(MetricConstants.class);
-        globalThresholds = new EnumMap<>(MetricGroup.class);
-        setThresholds(dataFactory, config);
     }
 
     /**
@@ -451,51 +511,6 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
-     * {@link ScalarOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
-     * 
-     * @param config the project configuration
-     * @return a collection of metrics or null
-     */
-
-    private MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(ProjectConfig config)
-    {
-        //Obtain the list of metrics and find the matching metrics 
-        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.SINGLE_VALUED_SCALAR);
-        return metrics.length == 0 ? null : metricFactory.ofSingleValuedScalarCollection(metrics);
-    }
-
-    /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
-     * {@link VectorOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
-     * 
-     * @param config the project configuration
-     * @return a collection of metrics or null
-     */
-
-    private MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection(ProjectConfig config)
-    {
-        //Obtain the list of metrics and find the matching metrics 
-        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.SINGLE_VALUED_VECTOR);
-        return metrics.length == 0 ? null : metricFactory.ofSingleValuedVectorCollection(metrics);
-    }
-    
-    /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
-     * {@link MultiVectorOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
-     * 
-     * @param config the project configuration
-     * @return a collection of metrics or null
-     */
-
-    private MetricCollection<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVectorCollection(ProjectConfig config)
-    {
-        //Obtain the list of metrics and find the matching metrics 
-        MetricConstants[] metrics = getMetricsFromConfig(config, MetricGroup.SINGLE_VALUED_MULTIVECTOR);
-        return metrics.length == 0 ? null : metricFactory.ofSingleValuedMultiVectorCollection(metrics);
-    }    
-
-    /**
      * Sets the thresholds for each metric in the configuration, including any thresholds that apply globally (to all
      * metrics).
      * 
@@ -507,9 +522,9 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
     {
         EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>(MetricConstants.class);
         config.getOutputs().getMetric().forEach(metric -> {
-            //Obtain conditions here
+            //Obtain metric-local thresholds here
             List<Threshold> thresholds = new ArrayList<>();
-            //TODO: implement this when threshold conditions are available in the configuration
+            //TODO: implement this when metric-local threshold conditions are available in the configuration
             if(!thresholds.isEmpty())
             {
                 localThresholds.put(fromMetricConfigName(metric.getValue()), thresholds);
@@ -519,15 +534,14 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
         {
             this.localThresholds.putAll(localThresholds);
         }
-        //TODO: implement this when threshold conditions are available in the configuration
+        //TODO: implement this when global threshold conditions are available in the configuration
         List<Threshold> globalThresholds = new ArrayList<>();
         //Set a single global threshold representing all data until thresholds are available
         globalThresholds.add(dataFactory.getThreshold(Double.NEGATIVE_INFINITY, Condition.GREATER));
         //Only set the global thresholds if no local ones are available
-        //TODO: determine which metric groups have global thresholds: currently uses same thresholds for all
         if(localThresholds.isEmpty())
         {
-            for(MetricGroup group: MetricGroup.values())
+            for(MetricInputGroup group: MetricInputGroup.values())
             {
                 this.globalThresholds.put(group, globalThresholds);
             }
@@ -535,61 +549,26 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
     }
 
     /**
-     * Maps between metric identifiers in {@link MetricConstants} and those in {@link MetricConfigName}.
+     * Returns the metric data input type from the {@link ProjectConfig}.
      * 
-     * @param translate the input {@link MetricConstants}
-     * @return the corresponding {@link MetricConfigName}.
+     * @param config the {@link ProjectConfig}
+     * @return the {@link MetricInputGroup} based on the {@link ProjectConfig}
      */
 
-    private static MetricConfigName toMetricConfigName(MetricConstants translate)
+    private static MetricInputGroup getInputType(ProjectConfig config)
     {
-        switch(translate)
+        Objects.requireNonNull(config, "Specify a non-null project from which to generate metrics.");
+        DatasourceType type = config.getInputs().getRight().getType();
+        switch(type)
         {
-            case BIAS_FRACTION:
-                return MetricConfigName.BIAS_FRACTION;
-            case BRIER_SCORE:
-                return MetricConfigName.BRIER_SCORE;
-            case BRIER_SKILL_SCORE:
-                return MetricConfigName.BRIER_SKILL_SCORE;
-            case COEFFICIENT_OF_DETERMINATION:
-                return MetricConfigName.COEFFICIENT_OF_DETERMINATION;
-            case CONTINGENCY_TABLE:
-                return MetricConfigName.CONTINGENCY_TABLE;
-            case CORRELATION_PEARSONS:
-                return MetricConfigName.CORRELATION_PEARSONS;
-            case CRITICAL_SUCCESS_INDEX:
-                return MetricConfigName.CRITICAL_SUCCESS_INDEX;
-            case EQUITABLE_THREAT_SCORE:
-                return MetricConfigName.EQUITABLE_THREAT_SCORE;
-            case MEAN_ABSOLUTE_ERROR:
-                return MetricConfigName.MEAN_ABSOLUTE_ERROR;
-            case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
-                return MetricConfigName.MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
-            case MEAN_ERROR:
-                return MetricConfigName.MEAN_ERROR;
-            case MEAN_SQUARE_ERROR:
-                return MetricConfigName.MEAN_SQUARE_ERROR;
-            case MEAN_SQUARE_ERROR_SKILL_SCORE:
-                return MetricConfigName.MEAN_SQUARE_ERROR_SKILL_SCORE;
-            case PEIRCE_SKILL_SCORE:
-                return MetricConfigName.PEIRCE_SKILL_SCORE;
-            case PROBABILITY_OF_DETECTION:
-                return MetricConfigName.PROBABILITY_OF_DETECTION;
-            case PROBABILITY_OF_FALSE_DETECTION:
-                return MetricConfigName.PROBABILITY_OF_FALSE_DETECTION;
-            case QUANTILE_QUANTILE_DIAGRAM:
-                return MetricConfigName.QUANTILE_QUANTILE_DIAGRAM;        
-            case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
-                return MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
-            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
-                return MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC_SCORE;                
-            case RELIABILITY_DIAGRAM:
-                return MetricConfigName.RELIABILITY_DIAGRAM;
-            case ROOT_MEAN_SQUARE_ERROR:
-                return MetricConfigName.ROOT_MEAN_SQUARE_ERROR;
+            case ENSEMBLE_FORECASTS:
+                return MetricInputGroup.ENSEMBLE;
+            case SIMPLE_FORECASTS:
+            case ASSIMILATIONS:
+                return MetricInputGroup.SINGLE_VALUED;
             default:
-                throw new IllegalArgumentException("Failure to map identifier in project configuration, '" + translate
-                    + "', to recognized metric identifier.");
+                throw new UnsupportedOperationException("Unable to interpret the input type '" + type
+                    + "' when attempting to process the metrics ");
         }
     }
 
@@ -638,13 +617,13 @@ abstract class MetricProcessor<S extends MetricInput<?>> implements Function<S, 
             case PROBABILITY_OF_DETECTION:
                 return MetricConstants.PROBABILITY_OF_DETECTION;
             case QUANTILE_QUANTILE_DIAGRAM:
-                return MetricConstants.QUANTILE_QUANTILE_DIAGRAM;    
+                return MetricConstants.QUANTILE_QUANTILE_DIAGRAM;
             case PROBABILITY_OF_FALSE_DETECTION:
                 return MetricConstants.PROBABILITY_OF_FALSE_DETECTION;
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
-                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE;                
+                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE;
             case RELIABILITY_DIAGRAM:
                 return MetricConstants.RELIABILITY_DIAGRAM;
             case ROOT_MEAN_SQUARE_ERROR:

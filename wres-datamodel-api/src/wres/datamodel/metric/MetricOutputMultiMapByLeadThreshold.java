@@ -167,7 +167,17 @@ public interface MetricOutputMultiMapByLeadThreshold<T extends MetricOutput<?>>
             put(key.getFirstKey(), key.getSecondKey(), result);
             return this;
         }
+        
+        /**
+         * Adds a new result to the internal store.
+         * 
+         * @param key the key
+         * @param result the result
+         * @return the builder
+         */
 
+        Builder<T> put(MapBiKey<MetricConstants, MetricConstants> key, MetricOutputMapByLeadThreshold<T> result);                 
+        
         /**
          * Adds a new result for a collection of metrics to the internal store.
          * 
@@ -178,16 +188,6 @@ public interface MetricOutputMultiMapByLeadThreshold<T extends MetricOutput<?>>
          */
 
         Builder<T> put(int leadTime, Threshold threshold, MetricOutputMapByMetric<T> result);
-
-        /**
-         * Adds a new result for a collection of metrics to the internal store.
-         * 
-         * @param leadTime the forecast lead time
-         * @param result the result
-         * @return the builder
-         */
-
-        Builder<T> put(int leadTime, MetricOutputMultiMapByThreshold<T> result);  
 
     }
 

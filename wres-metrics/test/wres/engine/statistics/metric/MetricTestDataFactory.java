@@ -121,7 +121,8 @@ public final class MetricTestDataFactory
 
     /**
      * Returns a moderately-sized test dataset of single-valued pairs without a baseline. The data are partitioned by
-     * observed values of {1,2,3,4,5} with 100-pair chunks and corresponding predicted values of {6,7,8,9,10}.
+     * observed values of {1,2,3,4,5} with 100-pair chunks and corresponding predicted values of {6,7,8,9,10}. The data
+     * are returned with a nominal lead time of 1.
      * 
      * @return single-valued pairs
      */
@@ -140,13 +141,14 @@ public final class MetricTestDataFactory
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
-                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"),
+                                                 1);
         return metIn.ofSingleValuedPairs(values, meta);
     }
 
     /**
      * Returns a moderately-sized test dataset of ensemble pairs without a baseline. Reads the pairs from
-     * testinput/metricTestDataFactory/getEnsemblePairsOne.asc.
+     * testinput/metricTestDataFactory/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours.
      * 
      * @return ensemble pairs
      * @throws IOException if the read fails
@@ -169,7 +171,8 @@ public final class MetricTestDataFactory
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
-                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"),
+                                                 24);
         return metIn.ofEnsemblePairs(values, meta);
     }
 

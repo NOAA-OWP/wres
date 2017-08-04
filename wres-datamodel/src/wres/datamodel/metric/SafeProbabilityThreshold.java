@@ -27,13 +27,10 @@ class SafeProbabilityThreshold extends SafeThreshold implements ProbabilityThres
         {
             throw new IllegalArgumentException("The threshold probability is out of bounds [0,1]: " + threshold);
         }
-        if(Objects.nonNull(thresholdUpper))
+        if(Objects.nonNull(thresholdUpper) && (thresholdUpper < 0.0 || thresholdUpper > 1.0))
         {
-            if(thresholdUpper < 0.0 || thresholdUpper > 1.0)
-            {
-                throw new IllegalArgumentException("The upper threshold probability is out of bounds [0,1]: "
-                    + thresholdUpper);
-            }
+            throw new IllegalArgumentException("The upper threshold probability is out of bounds [0,1]: "
+                + thresholdUpper);
         }
     }
 }
