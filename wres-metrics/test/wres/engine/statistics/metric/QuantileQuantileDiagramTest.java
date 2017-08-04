@@ -13,7 +13,6 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.engine.statistics.metric.QuantileQuantileDiagram.QuantileQuantileDiagramBuilder;
@@ -54,15 +53,6 @@ public final class QuantileQuantileDiagramTest
         }
 
         final SingleValuedPairs input = outF.ofSingleValuedPairs(values, metaFac.getMetadata());
-
-        //Metadata for the output
-        final MetricOutputMetadata m1 =
-                                      metaFac.getOutputMetadata(input.size(),
-                                                                metaFac.getDimension(),
-                                                                metaFac.getDimension(),
-                                                                MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                                                MetricConstants.MAIN,
-                                                                metaFac.getDatasetIdentifier("Tampere", "MAP", "FMI"));
 
         //Check the results       
         final MultiVectorOutput actual = qq.apply(input);

@@ -2,9 +2,11 @@ package wres.datamodel.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
+
 /**
- * A high-level container of {@link MetricOutput} associated with a verification project. The outputs are stored by 
- * threshold in a {@link MetricOutputMultiMapByThreshold}. Retrieve the outputs using the instance methods. If no 
+ * A high-level container of {@link MetricOutput} associated with a verification project. The outputs are stored by
+ * threshold in a {@link MetricOutputMultiMapByThreshold}. Retrieve the outputs using the instance methods. If no
  * outputs exist, the instance methods return null.
  * 
  * @author james.brown@hydrosolved.com
@@ -16,83 +18,117 @@ public interface MetricOutputForProjectByThreshold
 {
 
     /**
+     * Returns true if {@link #getOutput(MetricOutputGroup...)} returns non-null for the input type, false otherwise.
+     * 
+     * @param outGroup the {@link MetricOutputGroup} to test
+     * @return true if {@link #getOutput(MetricOutputGroup...)} returns non-null for the input, false otherwise
+     */
+
+    default boolean hasOutput(MetricOutputGroup outGroup)
+    {
+        return Objects.nonNull(getOutput(outGroup));
+    }
+
+    /**
      * Returns true if {@link #getScalarOutput()} returns non-null, false otherwise.
      * 
      * @return true if {@link #getScalarOutput()} returns non-null, false otherwise
      */
-    
-    default boolean hasScalarOutput() {
+
+    default boolean hasScalarOutput()
+    {
         return Objects.nonNull(getScalarOutput());
     }
-    
+
     /**
      * Returns true if {@link #getVectorOutput()} returns non-null, false otherwise.
      * 
      * @return true if {@link #getVectorOutput()} returns non-null, false otherwise
      */
-    
-    default boolean hasVectorOutput() {
+
+    default boolean hasVectorOutput()
+    {
         return Objects.nonNull(getVectorOutput());
-    }    
+    }
 
     /**
      * Returns true if {@link #getMultiVectorOutput()} returns non-null, false otherwise.
      * 
      * @return true if {@link #getMultiVectorOutput()} returns non-null, false otherwise
      */
-    
-    default boolean hasMultiVectorOutput() {
+
+    default boolean hasMultiVectorOutput()
+    {
         return Objects.nonNull(getMultiVectorOutput());
-    }  
-    
+    }
+
     /**
      * Returns true if {@link #getMatrixOutput()} returns non-null, false otherwise.
      * 
      * @return true if {@link #getMatrixOutput()} returns non-null, false otherwise
      */
-    
-    default boolean hasMatrixOutput() {
+
+    default boolean hasMatrixOutput()
+    {
         return Objects.nonNull(getMatrixOutput());
-    }        
+    }
+
+    /**
+     * Returns a {@link MetricOutputMultiMapByThreshold} for a prescribed array of {@link MetricOutputGroup} or null if
+     * no output exists. To return all available outputs, use {@link #getOutputTypes()} as input to this method.
+     * 
+     * @param outGroup the array of {@link MetricOutputGroup} 
+     * @return the metric output or null
+     */
+
+    MetricOutputMultiMapByThreshold<MetricOutput<?>> getOutput(MetricOutputGroup... outGroup);
+
+    /**
+     * Returns all {@link MetricOutputGroup} for which outputs are available.
+     * 
+     * @return all {@link MetricOutputGroup} for which outputs are available
+     */
+
+    MetricOutputGroup[] getOutputTypes();
 
     /**
      * Returns a {@link MetricOutputMultiMapByThreshold} of {@link ScalarOutput} or null if no output exists.
      * 
      * @return the scalar output or null
      */
-    
+
     MetricOutputMultiMapByThreshold<ScalarOutput> getScalarOutput();
-    
+
     /**
      * Returns a {@link MetricOutputMultiMapByThreshold} of {@link VectorOutput} or null if no output exists.
      * 
      * @return the vector output or null
      */
-    
-    MetricOutputMultiMapByThreshold<VectorOutput> getVectorOutput();    
-    
+
+    MetricOutputMultiMapByThreshold<VectorOutput> getVectorOutput();
+
     /**
      * Returns a {@link MetricOutputMultiMapByThreshold} of {@link MultiVectorOutput} or null if no output exists.
      * 
      * @return the multi-vector output or null
      */
-    
-    MetricOutputMultiMapByThreshold<MultiVectorOutput> getMultiVectorOutput();       
+
+    MetricOutputMultiMapByThreshold<MultiVectorOutput> getMultiVectorOutput();
 
     /**
      * Returns a {@link MetricOutputMultiMapByThreshold} of {@link MatrixOutput} or null if no output exists.
      * 
      * @return the matrix output or null
      */
-    
-    MetricOutputMultiMapByThreshold<MatrixOutput> getMatrixOutput();        
-    
+
+    MetricOutputMultiMapByThreshold<MatrixOutput> getMatrixOutput();
+
     /**
      * Builder.
      */
 
     interface Builder
-    {                                                                                              
+    {
 
         /**
          * Adds a new scalar result for a collection of metrics to the internal store.
@@ -113,7 +149,7 @@ public interface MetricOutputForProjectByThreshold
          */
 
         Builder addVectorOutput(Threshold threshold, MetricOutputMapByMetric<VectorOutput> result);
-        
+
         /**
          * Adds a new multi-vector result for a collection of metrics to the internal store.
          * 
@@ -142,7 +178,6 @@ public interface MetricOutputForProjectByThreshold
 
         MetricOutputForProjectByThreshold build();
 
-    }    
-    
-    
+    }
+
 }

@@ -50,28 +50,9 @@ public class DefaultMetadataFactory implements MetadataFactory
     }
 
     @Override
-    public Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier)
+    public Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier, final Integer leadTime)
     {
-        return new MetadataImpl(dim, identifier);
-    }
-
-    @Override
-    public MetricOutputMetadata getOutputMetadata(final int sampleSize,
-                                                  final Dimension dim,
-                                                  final Dimension inputDim,
-                                                  final MetricConstants metricID)
-    {
-        return getOutputMetadata(sampleSize, dim, inputDim, metricID, MetricConstants.MAIN, null);
-    }
-
-    @Override
-    public MetricOutputMetadata getOutputMetadata(final int sampleSize,
-                                                  final Dimension dim,
-                                                  final Dimension inputDim,
-                                                  final MetricConstants metricID,
-                                                  final MetricConstants componentID)
-    {
-        return getOutputMetadata(sampleSize, dim, inputDim, metricID, componentID, null);
+        return new MetadataImpl(dim, identifier, leadTime);
     }
 
     @Override
@@ -376,11 +357,31 @@ public class DefaultMetadataFactory implements MetadataFactory
     {
         private final Dimension dim;
         private final DatasetIdentifier identifier;
-
+        private final Integer leadTime;
+        private final String dimNull = "Specify a non-null dimension from which to construct the metadata.";
+        
+        private MetadataImpl(final Dimension dim)
+        {
+            Objects.requireNonNull(dim,dimNull);
+            this.dim = dim;
+            this.identifier = null;
+            this.leadTime = null;
+        }
+        
         private MetadataImpl(final Dimension dim, final DatasetIdentifier identifier)
         {
+            Objects.requireNonNull(dim,dimNull);
             this.dim = dim;
             this.identifier = identifier;
+            this.leadTime = null;
+        }
+        
+        private MetadataImpl(final Dimension dim, final DatasetIdentifier identifier, final Integer leadTime)
+        {
+            Objects.requireNonNull(dim,dimNull);
+            this.dim = dim;
+            this.identifier = identifier;
+            this.leadTime = leadTime;
         }
 
         @Override
@@ -396,6 +397,12 @@ public class DefaultMetadataFactory implements MetadataFactory
         }
 
         @Override
+        public Integer getLeadTime()
+        {
+            return leadTime;
+        }
+
+        @Override
         public boolean equals(final Object o)
         {
             if(!(o instanceof Metadata))
@@ -403,10 +410,15 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return false;
             }
             final Metadata p = (Metadata)o;
-            boolean returnMe = p.getDimension().equals(getDimension()) && hasIdentifier() == p.hasIdentifier();
+            boolean returnMe = p.getDimension().equals(getDimension()) && hasIdentifier() == p.hasIdentifier()
+                && hasLeadTime() == hasLeadTime();
             if(hasIdentifier())
             {
                 returnMe = returnMe && identifier.equals(p.getIdentifier());
+            }
+            if(hasLeadTime())
+            {
+                returnMe = returnMe && leadTime.equals(p.getLeadTime());
             }
             return returnMe;
         }
@@ -414,10 +426,15 @@ public class DefaultMetadataFactory implements MetadataFactory
         @Override
         public int hashCode()
         {
-            int returnMe = getDimension().hashCode() + Boolean.hashCode(hasIdentifier());
+            int returnMe = getDimension().hashCode() + Boolean.hashCode(hasIdentifier())
+                + Boolean.hashCode(hasLeadTime());
             if(hasIdentifier())
             {
                 returnMe += identifier.hashCode();
+            }
+            if(hasLeadTime())
+            {
+                returnMe += leadTime.hashCode();
             }
             return returnMe;
         }
@@ -435,6 +452,10 @@ public class DefaultMetadataFactory implements MetadataFactory
             else
             {
                 b.append("[");
+            }
+            if(hasLeadTime())
+            {
+                b.append(leadTime).append(",");
             }
             b.append(dim).append("]");
             return b.toString();
