@@ -12,6 +12,27 @@ import java.util.Objects;
 public interface Metadata
 {
 
+
+    /**
+     * Returns true if {@link #getIdentifier()} returns non-null, false otherwise.
+     * 
+     * @return true if {@link #getIdentifier()} returns non-null, false otherwise.
+     */
+    default boolean hasIdentifier()
+    {
+        return Objects.nonNull(getIdentifier());
+    } 
+    
+    /**
+     * Returns true if {@link #getLeadTime()} returns non-null, false otherwise.
+     * 
+     * @return true if {@link #getLeadTime()} returns non-null, false otherwise.
+     */
+    default boolean hasLeadTime()
+    {
+        return Objects.nonNull(getLeadTime());
+    }      
+    
     /**
      * Returns the dimension associated with the metric.
      * 
@@ -19,7 +40,7 @@ public interface Metadata
      */
 
     Dimension getDimension();
-    
+
     /**
      * Returns an optional dataset identifier or null.
      * 
@@ -27,14 +48,14 @@ public interface Metadata
      */
 
     DatasetIdentifier getIdentifier();
-    
+
     /**
-     * Returns true if {@link #getIdentifier()} returns non-null, false otherwise.
+     * Returns an optional forecast lead time to associate with the metadata or null. For analysis and simulation types,
+     * this might be <code>0</code>.
      * 
-     * @return true if {@link #getIdentifier()} returns non-null, false otherwise.
+     * @return a lead time or null
      */
-    default boolean hasIdentifier() {
-        return Objects.nonNull(getIdentifier());
-    }
+
+    Integer getLeadTime();
 
 }

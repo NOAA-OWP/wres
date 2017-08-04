@@ -31,7 +31,20 @@ public interface MetadataFactory
 
     default Metadata getMetadata(final Dimension dim)
     {
-        return getMetadata(dim, null);
+        return getMetadata(dim, null, null);
+    }
+
+    /**
+     * Build a {@link Metadata} object with a prescribed {@link Dimension} and an optional {@link DatasetIdentifier}.
+     * 
+     * @param dim the dimension
+     * @param identifier an optional dataset identifier (may be null)
+     * @return a {@link Metadata} object
+     */
+
+    default Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier)
+    {
+        return getMetadata(dim, identifier, null);
     }
 
     /**
@@ -44,7 +57,7 @@ public interface MetadataFactory
 
     default Metadata getMetadata(final Metadata input, final Dimension dim)
     {
-        return getMetadata(dim, input.getIdentifier());
+        return getMetadata(dim, input.getIdentifier(), input.getLeadTime());
     }
 
     /**
@@ -70,6 +83,7 @@ public interface MetadataFactory
      * @param baselineScenarioID a scenario identifier for a baseline dataset
      * @return a dataset identifier
      */
+    
     default DatasetIdentifier getDatasetIdentifier(DatasetIdentifier identifier, String baselineScenarioID)
     {
         return getDatasetIdentifier(identifier.getGeospatialID(),
@@ -79,18 +93,8 @@ public interface MetadataFactory
     }
 
     /**
-     * Build a {@link Metadata} object with a prescribed {@link Dimension} and optional identifier.
-     * 
-     * @param dim the dimension
-     * @param identifier an optional dataset identifier (may be null)
-     * @return a {@link Metadata} object
-     */
-
-    Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier);
-
-    /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
-     * and the input, and an identifier for the metric.
+     * and the input, and a {@link MetricConstants} identifier for the metric.
      * 
      * @param sampleSize the sample size
      * @param dim the dimension
@@ -99,14 +103,16 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    MetricOutputMetadata getOutputMetadata(final int sampleSize,
+    default MetricOutputMetadata getOutputMetadata(final int sampleSize,
                                            final Dimension dim,
                                            final Dimension inputDim,
-                                           final MetricConstants metricID);
+                                           final MetricConstants metricID) {
+        return getOutputMetadata(sampleSize, dim, inputDim, metricID, MetricConstants.MAIN, null);
+    }
 
     /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
-     * and the input, and identifiers for the metric and the metric component.
+     * and the input, and {@link MetricConstants} identifiers for the metric and the metric component, respectively.
      * 
      * @param sampleSize the sample size
      * @param dim the output dimension
@@ -116,15 +122,30 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    MetricOutputMetadata getOutputMetadata(final int sampleSize,
+    default MetricOutputMetadata getOutputMetadata(final int sampleSize,
                                            final Dimension dim,
                                            final Dimension inputDim,
                                            final MetricConstants metricID,
-                                           final MetricConstants componentID);
+                                           final MetricConstants componentID) {
+        return getOutputMetadata(sampleSize, dim, inputDim, metricID, componentID, null);
+    }
+    
+    /**
+     * Build a {@link Metadata} object with a prescribed {@link Dimension} and an optional {@link DatasetIdentifier} and
+     * lead time.
+     * 
+     * @param dim the dimension
+     * @param identifier an optional dataset identifier (may be null)
+     * @param leadTime an optional lead time (may be null)
+     * @return a {@link Metadata} object
+     */
 
+    Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier, Integer leadTime);    
+    
     /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
-     * and the input, identifiers for the metric and the metric component, and several optional identifiers.
+     * and the input, {@link MetricConstants} identifiers for the metric and the metric component, respectively, and an
+     * optional {@link DatasetIdentifier} identifier.
      * 
      * @param sampleSize the sample size
      * @param dim the output dimension
