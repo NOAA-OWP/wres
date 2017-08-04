@@ -19,6 +19,7 @@ import wres.datamodel.SafeVectorOfBooleans;
 import wres.datamodel.SafeVectorOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metric.SafeMetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
 import wres.datamodel.metric.Threshold.Condition;
 
 /**
@@ -270,11 +271,11 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public <T extends MetricOutput<?>> MetricOutputMultiMapByThreshold<T> ofMultiMap(final Map<MapKey<Threshold>, MetricOutputMapByMetric<T>> input)
+    public <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold<T> ofMultiMap(final Map<MapBiKey<Integer, Threshold>, MetricOutputMapByMetric<T>> input)
     {
         Objects.requireNonNull(input, "Specify a non-null map of inputs by threshold.");
-        final SafeMetricOutputMultiMapByThreshold.MultiMapBuilder<T> builder =
-                                                                             new SafeMetricOutputMultiMapByThreshold.MultiMapBuilder<>();
+        final MetricOutputMultiMapByLeadThresholdBuilder<T> builder =
+                                                                    new MetricOutputMultiMapByLeadThresholdBuilder<>();
         input.forEach(builder::put);
         return builder.build();
     }
@@ -398,16 +399,17 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public MetricOutputForProjectByThreshold.Builder ofMetricOutputForProjectByThreshold() {
-        return new SafeMetricOutputForProjectByThreshold.MetricOutputForProjectByThresholdBuilder();
+    public MetricOutputForProjectByLeadThreshold.Builder ofMetricOutputForProjectByThreshold()
+    {
+        return new SafeMetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder();
     }
 
     @Override
     public boolean doubleEquals(double first, double second, int digits)
     {
         return Math.abs(first - second) < 1.0 / digits;
-    }    
-    
+    }
+
     /**
      * Returns an immutable list that contains a safe type of the input.
      * 
