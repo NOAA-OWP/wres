@@ -57,11 +57,7 @@ public class Main {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             MainFunctions.shutdown();
-
-            LOGGER.info("The function '");
-            LOGGER.info(operation);
-            LOGGER.info("' took ");
-            LOGGER.info(watch.getFormattedDuration());
+            LOGGER.info("The function '{}' took {}", operation, watch.getFormattedDuration());
         }));
 
         String[] cutArgs = Collections.removeIndexFromArray(args, 0);

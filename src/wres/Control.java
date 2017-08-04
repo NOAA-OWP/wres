@@ -1,61 +1,40 @@
 package wres;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-
-import javax.xml.bind.ValidationEvent;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.sun.xml.bind.Locatable;
-
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
-import wres.config.generated.Conditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.MapBiKey;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMapByMetric;
-import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.Threshold;
+import wres.datamodel.metric.*;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.io.Operations;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.vis.ChartEngineFactory;
+
+import javax.xml.bind.ValidationEvent;
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 /**
  * Another way to execute a project.
@@ -166,19 +145,18 @@ public class Control implements Function<String[], Integer>
             Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> pairs = new TreeMap<>();
 
             // Ask the IO module for pairs
-            try
+            /*try
             {
                 for (Conditions.Feature feature : projectConfig.getConditions().getFeature()) {
-                    // TODO: This will reassign features to the last feature in the list; each iteration, the pairs
-                    //  will need to somehow be passed to their respective metrics and have their output created
-                    pairs = Operations.getPairs(projectConfig, feature);
+                    // TODO: This needs to be adjusted to use the InputGenerator. Please see getPairs in MainFunctions
+                    //pairs = Operations.getPairs(projectConfig, feature);
                 }
             }
             catch (SQLException e)
             {
                 LOGGER.error("While getting results", e);
                 return null;
-            }
+            }*/
 
             List<Future<MetricOutputMapByMetric<ScalarOutput>>> futureMetrics = new ArrayList<>();
 

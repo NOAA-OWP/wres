@@ -3,10 +3,14 @@ package wres.io.concurrency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.config.generated.Conditions;
+import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.Slicer;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetricInput;
 import wres.io.data.caching.UnitConversions;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptGenerator;
@@ -23,7 +27,7 @@ import java.util.List;
  * Created by ctubbs on 7/17/17.
  */
 @Internal(exclusivePackage = "wres.io")
-public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVectorOfDoubles>>
+public final class PairRetriever extends WRESCallable<MetricInput>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PairRetriever.class);
@@ -37,7 +41,7 @@ public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVector
     }
 
     @Override
-    public List<PairOfDoubleAndVectorOfDoubles> execute () throws Exception {
+    public MetricInput execute () throws Exception {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
 
         Connection connection = null;
@@ -66,7 +70,30 @@ public final class PairRetriever extends WRESCallable<List<PairOfDoubleAndVector
             }
         }
 
-        return pairs;
+        return createInput(pairs);
+    }
+
+    private MetricInput createInput(List<PairOfDoubleAndVectorOfDoubles> pairs)
+    {
+        MetricInput input = null;
+
+        DatasourceType dataType = this.projectConfig.getInputs().getRight().getType();
+
+        DataFactory factory = DefaultDataFactory.getInstance();
+        Metadata metadata = factory.getMetadataFactory()
+                                   .getMetadata(factory.getMetadataFactory()
+                                                       .getDimension(projectConfig.getPair().getUnit()));
+
+        if (dataType == DatasourceType.ENSEMBLE_FORECASTS)
+        {
+            input = factory.ofEnsemblePairs(pairs, metadata);
+        }
+        else
+        {
+            input = factory.ofSingleValuedPairs(Slicer.getFlatDoublePairs(pairs), metadata);
+        }
+
+        return input;
     }
 
     private PairOfDoubleAndVectorOfDoubles createPair(ResultSet row) throws SQLException, NotImplementedException
