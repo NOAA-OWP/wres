@@ -1,7 +1,14 @@
 package wres.datamodel.metric;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+
+import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 
 /**
  * An immutable implementation of a high-level container of {@link MetricOutput} associated with a verification project.
@@ -39,6 +46,64 @@ class SafeMetricOutputForProjectByThreshold implements MetricOutputForProjectByT
      */
 
     private final MetricOutputMultiMapByThreshold<MatrixOutput> matrixOutput;
+
+    @Override
+    public MetricOutputMultiMapByThreshold<MetricOutput<?>> getOutput(MetricOutputGroup... outGroup)
+    {
+        Objects.requireNonNull(outGroup, "Specify one or more output types to return.");
+        Map<MapKey<Threshold>, ArrayList<MetricOutput<?>>> map = new TreeMap<>();
+        DataFactory d = DefaultDataFactory.getInstance();
+        //Iterate through the types
+        for(MetricOutputGroup next: outGroup)
+        {
+            if(hasOutput(next))
+            {
+                if(next == MetricOutputGroup.SCALAR)
+                {
+                    addToMap(map, scalarOutput);
+                }
+                if(next == MetricOutputGroup.VECTOR)
+                {
+                    addToMap(map, vectorOutput);
+                }
+                if(next == MetricOutputGroup.MULTIVECTOR)
+                {
+                    addToMap(map, multiVectorOutput);
+                }
+                if(next == MetricOutputGroup.MATRIX)
+                {
+                    addToMap(map, matrixOutput);
+                }
+            }
+        }
+        //Build uber-map
+        Map<MapKey<Threshold>, MetricOutputMapByMetric<MetricOutput<?>>> returnMap = new TreeMap<>();
+        map.forEach((key, value) -> returnMap.put(key, d.ofMap(value)));
+        return d.ofMultiMap(returnMap);
+    }
+
+    @Override
+    public MetricOutputGroup[] getOutputTypes()
+    {
+        List<MetricOutputGroup> returnMe = new ArrayList<>();
+        if(hasScalarOutput())
+        {
+            returnMe.add(MetricOutputGroup.SCALAR);
+        }
+        if(hasVectorOutput())
+        {
+            returnMe.add(MetricOutputGroup.VECTOR);
+        }
+        if(hasMultiVectorOutput())
+        {
+            returnMe.add(MetricOutputGroup.MULTIVECTOR);
+        }
+        if(hasMatrixOutput())
+        {
+            returnMe.add(MetricOutputGroup.MATRIX);
+        }
+        return returnMe.toArray(new MetricOutputGroup[returnMe.size()]);
+    }
 
     @Override
     public MetricOutputMultiMapByThreshold<ScalarOutput> getScalarOutput()
@@ -181,6 +246,28 @@ class SafeMetricOutputForProjectByThreshold implements MetricOutputForProjectByT
         vectorOutput = d.ofMultiMap(builder.vectorInternal);
         multiVectorOutput = d.ofMultiMap(builder.multiVectorInternal);
         matrixOutput = d.ofMultiMap(builder.matrixInternal);
+    }
+
+    /**
+     * Helper that adds an existing output collection to an existing map.
+     * 
+     * @param map the map
+     * @param addMe the metric output collection
+     */
+
+    private void addToMap(Map<MapKey<Threshold>, ArrayList<MetricOutput<?>>> map,
+                          MetricOutputMultiMapByThreshold<?> addMe)
+    {
+        addMe.forEach((key, value) -> {
+            if(map.containsKey(key))
+            {
+                map.get(key).addAll(value.values());
+            }
+            else
+            {
+                map.put(key, new ArrayList<>(value.values()));
+            }
+        });
     }
 
 }

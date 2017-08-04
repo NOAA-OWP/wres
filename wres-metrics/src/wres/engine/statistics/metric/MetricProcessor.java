@@ -487,9 +487,9 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
     {
         EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>(MetricConstants.class);
         config.getOutputs().getMetric().forEach(metric -> {
-            //Obtain conditions here
+            //Obtain metric-local thresholds here
             List<Threshold> thresholds = new ArrayList<>();
-            //TODO: implement this when threshold conditions are available in the configuration
+            //TODO: implement this when metric-local threshold conditions are available in the configuration
             if(!thresholds.isEmpty())
             {
                 localThresholds.put(fromMetricConfigName(metric.getValue()), thresholds);
@@ -499,12 +499,11 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
         {
             this.localThresholds.putAll(localThresholds);
         }
-        //TODO: implement this when threshold conditions are available in the configuration
+        //TODO: implement this when global threshold conditions are available in the configuration
         List<Threshold> globalThresholds = new ArrayList<>();
         //Set a single global threshold representing all data until thresholds are available
         globalThresholds.add(dataFactory.getThreshold(Double.NEGATIVE_INFINITY, Condition.GREATER));
         //Only set the global thresholds if no local ones are available
-        //TODO: determine which metric groups have global thresholds: currently uses same thresholds for all
         if(localThresholds.isEmpty())
         {
             for(MetricInputGroup group: MetricInputGroup.values())
