@@ -11,11 +11,10 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputForProjectByThreshold;
-import wres.datamodel.metric.MetricOutputMapByMetric;
+import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.Threshold.Condition;
 import wres.io.config.ProjectConfigPlus;
 
 /**
@@ -48,23 +47,32 @@ public final class MetricProcessorSingleValuedPairsTest
                                                        (MetricProcessorSingleValuedPairs)MetricProcessor.of(dataFactory,
                                                                                                             config);
             SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
-            MetricOutputForProjectByThreshold results = processor.apply(pairs);
-            MetricOutputMapByMetric<ScalarOutput> testMe = results.getScalarOutput()
-                                                                  .get(dataFactory.getThreshold(Double.NEGATIVE_INFINITY,
-                                                                                                Condition.GREATER));
+            MetricOutputForProjectByLeadThreshold results = processor.apply(pairs);
+            MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.getScalarOutput()
+                                                                       .get(MetricConstants.BIAS_FRACTION);
+            MetricOutputMapByLeadThreshold<ScalarOutput> cod =
+                                                             results.getScalarOutput()
+                                                                    .get(MetricConstants.COEFFICIENT_OF_DETERMINATION);
+            MetricOutputMapByLeadThreshold<ScalarOutput> rho = results.getScalarOutput()
+                                                                      .get(MetricConstants.CORRELATION_PEARSONS);
+            MetricOutputMapByLeadThreshold<ScalarOutput> mae = results.getScalarOutput()
+                                                                      .get(MetricConstants.MEAN_ABSOLUTE_ERROR);
+            MetricOutputMapByLeadThreshold<ScalarOutput> me = results.getScalarOutput().get(MetricConstants.MEAN_ERROR);
+            MetricOutputMapByLeadThreshold<ScalarOutput> rmse = results.getScalarOutput()
+                                                                       .get(MetricConstants.ROOT_MEAN_SQUARE_ERROR);
             //Test contents
             assertTrue("Unexpected difference in " + MetricConstants.BIAS_FRACTION,
-                       testMe.get(MetricConstants.BIAS_FRACTION).getData().equals(-1.6666666666666667));
+                       bias.getValue(0).getData().equals(-1.6666666666666667));
             assertTrue("Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                       testMe.get(MetricConstants.COEFFICIENT_OF_DETERMINATION).getData().equals(1.0));
+                       cod.getValue(0).getData().equals(1.0));
             assertTrue("Unexpected difference in " + MetricConstants.CORRELATION_PEARSONS,
-                       testMe.get(MetricConstants.CORRELATION_PEARSONS).getData().equals(1.0));
+                       rho.getValue(0).getData().equals(1.0));
             assertTrue("Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
-                       testMe.get(MetricConstants.MEAN_ABSOLUTE_ERROR).getData().equals(5.0));
+                       mae.getValue(0).getData().equals(5.0));
             assertTrue("Unexpected difference in " + MetricConstants.MEAN_ERROR,
-                       testMe.get(MetricConstants.MEAN_ERROR).getData().equals(-5.0));
+                       me.getValue(0).getData().equals(-5.0));
             assertTrue("Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
-                       testMe.get(MetricConstants.ROOT_MEAN_SQUARE_ERROR).getData().equals(5.0));
+                       rmse.getValue(0).getData().equals(5.0));
 
         }
         catch(Exception e)

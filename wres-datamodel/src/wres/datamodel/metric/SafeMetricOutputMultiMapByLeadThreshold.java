@@ -121,10 +121,18 @@ implements MetricOutputMultiMapByLeadThreshold<S>
         }
 
         @Override
-        public Builder<S> put(int leadTime, MetricOutputMultiMapByThreshold<S> result)
+        public Builder<S> put(MapBiKey<MetricConstants, MetricConstants> key, MetricOutputMapByLeadThreshold<S> result)
         {
             Objects.requireNonNull(result, "Specify a non-null metric result.");
-            result.forEach((threshold,value) -> put(leadTime,threshold.getKey(),value));
+            //Safe put
+            final SafeMetricOutputMapByLeadThreshold.Builder<S> addMe =
+                                                                      new SafeMetricOutputMapByLeadThreshold.Builder<>();
+            final SafeMetricOutputMapByLeadThreshold.Builder<S> checkMe = internal.putIfAbsent(key, addMe);
+            //Add if already exists 
+            if(!Objects.isNull(checkMe))
+            {
+                result.forEach(checkMe::put);
+            }
             return this;
         }
     }

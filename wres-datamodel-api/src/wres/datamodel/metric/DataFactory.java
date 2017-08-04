@@ -231,8 +231,8 @@ public interface DataFactory
     EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs,
                                   final List<PairOfDoubleAndVectorOfDoubles> basePairs,
                                   final Metadata mainMeta,
-                                  final Metadata baselineMeta);    
-    
+                                  final Metadata baselineMeta);
+
     /**
      * Construct the multicategory input without any pairs for a baseline.
      * 
@@ -264,7 +264,7 @@ public interface DataFactory
                                                         final List<PairOfDoubles> basePairs,
                                                         final Metadata mainMeta,
                                                         final Metadata baselineMeta);
-    
+
     /**
      * Construct the dichotomous input with pairs for a baseline.
      * 
@@ -295,7 +295,7 @@ public interface DataFactory
     DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs,
                                                   final List<PairOfBooleans> basePairs,
                                                   final Metadata mainMeta,
-                                                  final Metadata baselineMeta);    
+                                                  final Metadata baselineMeta);
 
     /**
      * Return a {@link PairOfDoubles} from two double values.
@@ -497,14 +497,14 @@ public interface DataFactory
     <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> ofMap(final Map<MapBiKey<Integer, Threshold>, T> input);
 
     /**
-     * Returns a {@link MetricOutputMultiMapByThreshold} from a map of inputs by {@link Threshold}.
+     * Returns a {@link MetricOutputMultiMapByLeadThreshold} from a map of inputs by lead time and {@link Threshold}.
      * 
      * @param <T> the type of output
-     * @param input the input map of metric outputs by threshold
-     * @return a map of metric outputs by threshold for several metrics
+     * @param input the input map of metric outputs by lead time and threshold
+     * @return a map of metric outputs by lead time and threshold for several metrics
      */
 
-    <T extends MetricOutput<?>> MetricOutputMultiMapByThreshold<T> ofMultiMap(final Map<MapKey<Threshold>, MetricOutputMapByMetric<T>> input);
+    <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold<T> ofMultiMap(final Map<MapBiKey<Integer, Threshold>, MetricOutputMapByMetric<T>> input);
 
     /**
      * Returns a builder for a {@link MetricOutputMultiMapByLeadThreshold} that allows for the incremental addition of
@@ -516,15 +516,15 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold.Builder<T> ofMultiMap();
-    
+
     /**
-     * Returns a builder for a {@link MetricOutputForProjectByThreshold}.
+     * Returns a builder for a {@link MetricOutputForProjectByLeadThreshold}.
      * 
-     * @return a {@link MetricOutputForProjectByThreshold.Builder} for a map of metric outputs by lead time and
+     * @return a {@link MetricOutputForProjectByLeadThreshold.Builder} for a map of metric outputs by lead time and
      *         threshold
      */
 
-    MetricOutputForProjectByThreshold.Builder ofMetricOutputForProjectByThreshold();    
+    MetricOutputForProjectByLeadThreshold.Builder ofMetricOutputForProjectByThreshold();
 
     /**
      * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.
@@ -545,7 +545,7 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> combine(final List<MetricOutputMapByLeadThreshold<T>> input);
-    
+
     /**
      * Helper that checks for the equality of two double values using a prescribed number of significant digits.
      * 
@@ -554,7 +554,7 @@ public interface DataFactory
      * @param digits the number of significant digits
      * @return true if the first and second are equal to the number of significant digits
      */
-    
+
     boolean doubleEquals(double first, double second, int digits);
-    
+
 }

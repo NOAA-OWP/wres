@@ -2,6 +2,7 @@ package wres.engine.statistics.metric;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -14,7 +15,7 @@ import wres.datamodel.metric.MetricConstants.MetricInputGroup;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputForProjectByThreshold;
+import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.ProbabilityThreshold;
 import wres.datamodel.metric.QuantileThreshold;
@@ -44,15 +45,17 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
     private final MetricCollection<DichotomousPairs, ScalarOutput> dichotomousScalar;
 
     @Override
-    public MetricOutputForProjectByThreshold apply(MetricInput<?> t)
+    public MetricOutputForProjectByLeadThreshold apply(MetricInput<?> t)
     {
         if(!(t instanceof SingleValuedPairs))
         {
             throw new MetricCalculationException("Expected single-valued pairs for metric processing.");
         }
+        Objects.requireNonNull(t.getMetadata().getLeadTime(),
+                               "Expected a non-null forecast lead time in the input metadata.");
 
         //Metric futures
-        MetricFutures futures = new MetricFutures();
+        MetricFutures futures = new MetricFutures(t.getMetadata().getLeadTime());
 
         //Process the metrics that consume single-valued pairs
         if(hasMetrics(MetricInputGroup.SINGLE_VALUED))

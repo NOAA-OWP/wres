@@ -3,6 +3,7 @@ package wres.engine.statistics.metric;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -18,7 +19,7 @@ import wres.datamodel.metric.MetricConstants.MetricInputGroup;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputForProjectByThreshold;
+import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.ProbabilityThreshold;
@@ -83,18 +84,20 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
     private final BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> toDiscreteProbabilities;
 
     @Override
-    public MetricOutputForProjectByThreshold apply(MetricInput<?> t)
+    public MetricOutputForProjectByLeadThreshold apply(MetricInput<?> t)
     {
         if(!(t instanceof EnsemblePairs))
         {
             throw new MetricCalculationException("Expected ensemble pairs for metric processing.");
         }
+        Objects.requireNonNull(t.getMetadata().getLeadTime(),
+                               "Expected a non-null forecast lead time in the input metadata.");
 
         //Slicer
         Slicer slicer = dataFactory.getSlicer();
 
         //Metric futures
-        MetricFutures futures = new MetricFutures();
+        MetricFutures futures = new MetricFutures(t.getMetadata().getLeadTime());
 
         //Process the metrics that consume ensemble pairs
         if(hasMetrics(MetricInputGroup.ENSEMBLE))

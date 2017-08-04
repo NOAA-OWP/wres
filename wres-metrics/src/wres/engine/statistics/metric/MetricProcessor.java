@@ -23,7 +23,7 @@ import wres.datamodel.metric.MetricConstants.MetricInputGroup;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputForProjectByThreshold;
+import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.ProbabilityThreshold;
@@ -62,7 +62,7 @@ import wres.datamodel.metric.VectorOutput;
  * Upon calling {@link #apply(Object)} with a concrete {@link MetricInput}, the configured {@link Metric} are computed
  * asynchronously for each {@link Threshold}. These asynchronous tasks are stored in a {@link MetricFutures} whose
  * method, {@link MetricFutures#getMetricOutput()} returns the full suite of results in a
- * {@link MetricOutputForProjectByThreshold}.
+ * {@link MetricOutputForProjectByLeadThreshold}.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
@@ -70,7 +70,7 @@ import wres.datamodel.metric.VectorOutput;
  * @since 0.1
  */
 
-abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputForProjectByThreshold>
+abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputForProjectByLeadThreshold>
 {
 
     /**
@@ -349,13 +349,46 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
 
     /**
      * Store of metric futures for each output type. Use {@ link #getMetricOutput()} to obtain the processed
-     * {@link MetricOutputForProjectByThreshold}, which blocks until all results are available.
+     * {@link MetricOutputForProjectByLeadThreshold}, which blocks until all results are available.
      */
 
     class MetricFutures
     {
+
+        /**
+         * The lead time.
+         */
+
+        private final Integer leadTime;
+
+        /**
+         * Construct with a lead time.
+         * 
+         * @param leadTime the lead time
+         */
+
+        MetricFutures(Integer leadTime)
+        {
+            Objects.requireNonNull("Expected a non-null forecast lead time.");
+            this.leadTime = leadTime;
+        }
+
+        /**
+         * Scalar results.
+         */
+
         final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<ScalarOutput>>> scalar = new HashMap<>();
+
+        /**
+         * Vector results.
+         */
+
         final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<VectorOutput>>> vector = new HashMap<>();
+
+        /**
+         * Multivector results.
+         */
+
         final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
                                                                                                         new HashMap<>();
 
@@ -365,20 +398,22 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
          * @return the metric results
          */
 
-        MetricOutputForProjectByThreshold getMetricOutput()
+        MetricOutputForProjectByLeadThreshold getMetricOutput()
         {
-            MetricOutputForProjectByThreshold.Builder builder = dataFactory.ofMetricOutputForProjectByThreshold();
+            MetricOutputForProjectByLeadThreshold.Builder builder = dataFactory.ofMetricOutputForProjectByThreshold();
             if(!scalar.isEmpty())
             {
-                scalar.forEach((threshold, future) -> builder.addScalarOutput(threshold, future.join()));
+                scalar.forEach((threshold, future) -> builder.addScalarOutput(leadTime, threshold, future.join()));
             }
             if(!vector.isEmpty())
             {
-                vector.forEach((threshold, future) -> builder.addVectorOutput(threshold, future.join()));
+                vector.forEach((threshold, future) -> builder.addVectorOutput(leadTime, threshold, future.join()));
             }
             if(!multivector.isEmpty())
             {
-                multivector.forEach((threshold, future) -> builder.addMultiVectorOutput(threshold, future.join()));
+                multivector.forEach((threshold, future) -> builder.addMultiVectorOutput(leadTime,
+                                                                                        threshold,
+                                                                                        future.join()));
             }
             return builder.build();
         }
