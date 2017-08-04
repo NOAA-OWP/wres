@@ -8,9 +8,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import wres.Control;
 import wres.config.generated.Conditions;
-import wres.config.generated.Coordinate;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.io.Operations;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESRunnable;
@@ -20,6 +18,7 @@ import wres.io.config.SystemSettings;
 import wres.io.reading.ReaderFactory;
 import wres.io.reading.SourceType;
 import wres.io.utilities.Database;
+import wres.io.utilities.InputGenerator;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
@@ -519,40 +518,22 @@ public final class MainFunctions
 
                     final ProjectConfig foundProject = ProjectConfigPlus.from(Paths.get(PROJECT_PATH)).getProjectConfig();
 
-                    final Map<String, Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>>> pairMapping = new TreeMap<>();
-
                     for (Conditions.Feature feature : foundProject.getConditions().getFeature())
                     {
-                        String description = feature.toString();
+                        LinkedList<InputGenerator.Input> inputs = new LinkedList<>();
 
-                        if (feature.getLocation() != null)
-                        {
-                            description = feature.getLocation().getLid();
-                        }
-                        else if (feature.getPoint() != null)
-                        {
-                            description = "(" + String.valueOf(feature.getPoint().getX()) + "," +
-                                    String.valueOf(feature.getPoint().getY()) + ")";
-                        }
-                        else if (feature.getPolygon() != null)
-                        {
-                            description = "[";
+                        InputGenerator inputGenerator = Operations.getInputs(foundProject, feature);
 
-                            for (Coordinate point : feature.getPolygon().getPoint())
-                            {
-                                description += "(" + String.valueOf(point.getX()) + "," +
-                                        String.valueOf(point.getY()) + ")";
-                            }
-
-                            description += "]";
-                        }
-                        else if (feature.getIndex() != null)
+                        while (inputGenerator.next())
                         {
-                            description = "X = " + String.valueOf(feature.getIndex().getX()) +
-                                    ", Y = " + String.valueOf(feature.getIndex().getY());
+                            inputs.add(inputGenerator.getInput());
                         }
 
-                        pairMapping.put(description, Operations.getPairs(foundProject, feature));
+                        while (inputs.peek() != null)
+                        {
+                            InputGenerator.Input head = inputs.poll();
+                            head.getMetricInput();
+                        }
                     }
 
 					result = SUCCESS;

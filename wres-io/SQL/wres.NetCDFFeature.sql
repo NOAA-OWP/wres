@@ -1,5 +1,7 @@
 ﻿-- Table: wres.netcdffeature
 
+CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
+
 DROP INDEX IF EXISTS netcdffeature_idx;
 DROP TABLE IF EXISTS wres.netcdffeature;
 
@@ -18,9 +20,8 @@ ALTER TABLE wres.netcdffeature
 
 -- DROP INDEX wres.netcdffeature_idx;
 
-CREATE INDEX IF NOT EXISTS netcdffeature_idx
+CREATE INDEX netcdffeature_idx
   ON wres.netcdffeature
   USING btree
   (feature_id, position_id);
 ALTER TABLE wres.netcdffeature CLUSTER ON netcdffeature_idx;
-

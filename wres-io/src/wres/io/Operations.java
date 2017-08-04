@@ -3,7 +3,7 @@ package wres.io;
 import org.slf4j.LoggerFactory;
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metric.MetricInput;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.PairRetriever;
 import wres.io.config.ConfigHelper;
@@ -12,6 +12,7 @@ import wres.io.grouping.LabeledScript;
 import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
+import wres.io.utilities.InputGenerator;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -106,7 +107,7 @@ public final class Operations {
      * @return A mapping between the number of a window and and its pairs
      * @throws SQLException Thrown if there was an error when communicating with the database
      */
-    public static Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> getPairs (ProjectConfig projectConfig,
+    public static Map<Integer, Future<MetricInput>> getPairs (ProjectConfig projectConfig,
                                                                          Conditions.Feature feature) throws SQLException
     {
         Integer variableId = ConfigHelper.getVariableID(projectConfig.getInputs().getRight());
@@ -114,20 +115,30 @@ public final class Operations {
         LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(variableId);
 
         Integer finalLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
-        Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> threadResults = new TreeMap<>();
+        Map<Integer, Future<MetricInput>> threadResults = new TreeMap<>();
 
         int step = 1;
 
         while (ConfigHelper.leadIsValid(projectConfig, step, finalLead))
         {
-            PairRetriever pairRetriever = new PairRetriever(projectConfig, feature, step);
-            pairRetriever.setOnRun(ProgressMonitor.onThreadStartHandler());
-            pairRetriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-            threadResults.put(step, Database.submit(pairRetriever));
+            threadResults.put(step, getPairs(projectConfig, feature, step));
             step++;
         }
 
         return threadResults;
+    }
+
+    public static InputGenerator getInputs(ProjectConfig projectConfig, Conditions.Feature feature)
+    {
+        return new InputGenerator(projectConfig, feature);
+    }
+
+    public static Future<MetricInput> getPairs(ProjectConfig projectConfig, Conditions.Feature feature, int windowNumber)
+    {
+        PairRetriever pairRetriever = new PairRetriever(projectConfig, feature, windowNumber);
+        pairRetriever.setOnRun(ProgressMonitor.onThreadStartHandler());
+        pairRetriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+        return Database.submit(pairRetriever);
     }
 
     public static void install()

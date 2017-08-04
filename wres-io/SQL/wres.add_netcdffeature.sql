@@ -16,16 +16,14 @@ BEGIN
 		WHERE comid = new_comid
 	);
 
-	INSERT INTO wres.NetCDFFeature (feature_id, position_id)
-	SELECT feature_id, new_position_id
-	FROM wres.Feature F
-	WHERE F.comid = new_comid
-		AND NOT EXISTS (
-			SELECT 1
-			FROM wres.NetCDFFeature NF
-			WHERE NF.feature_id = F.feature_id
-				AND NF.position_id = new_position_id
-		);
+	INSERT INTO NetCDFComid (comid, position_id)
+	SELECT new_comid, new_position_id
+	WHERE NOT EXISTS (
+		SELECT 1
+		FROM NetCDFComid
+		WHERE comid = new_comid
+			AND position_id = new_position_id
+	);
 END
 $BODY$
   LANGUAGE plpgsql VOLATILE
