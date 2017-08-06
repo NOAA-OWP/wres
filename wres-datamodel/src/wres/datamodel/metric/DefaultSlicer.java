@@ -53,7 +53,7 @@ public class DefaultSlicer implements Slicer
     /**
      * Null input error message.
      */
-    private static final String NULL_INPUT = "Specify a non-null input to slice.";
+    private static final String NULL_INPUT = "Specify a non-null input to transform.";
 
     /**
      * Null mapper function error message.
@@ -160,8 +160,19 @@ public class DefaultSlicer implements Slicer
             return dataFac.ofEnsemblePairs(mainPairsSubset, basePairsSubset, metaTransformed, metaBaseTransformed);
         }
         return dataFac.ofEnsemblePairs(mainPairsSubset, metaTransformed);
+    } 
+    
+    @Override
+    public List<PairOfDoubles> transformPairs(List<PairOfDoubleAndVectorOfDoubles> input,
+                                              Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper)
+    {
+        Objects.requireNonNull(input, NULL_INPUT);
+        Objects.requireNonNull(mapper, NULL_MAPPER);
+        List<PairOfDoubles> transformed = new ArrayList<>();
+        input.stream().map(mapper).forEach(transformed::add);        
+        return transformed;
     }
-
+    
     @Override
     public DichotomousPairs transformPairs(SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper)
     {
@@ -195,17 +206,13 @@ public class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull(input, NULL_INPUT);
         Objects.requireNonNull(mapper, NULL_MAPPER);
-        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
-        List<PairOfDoubles> mainPairsTransformed = new ArrayList<>();
-        mainPairs.stream().map(mapper).forEach(mainPairsTransformed::add);
+        List<PairOfDoubles> mainPairsTransformed = transformPairs(input.getData(), mapper);
         Metadata metaTransformed =
                                  dataFac.getMetadataFactory().getMetadata(input.getMetadata(),
                                                                           dataFac.getMetadataFactory().getDimension());
         if(input.hasBaseline())
         {
-            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getDataForBaseline();
-            List<PairOfDoubles> basePairsTransformed = new ArrayList<>();
-            basePairs.stream().map(mapper).forEach(basePairsTransformed::add);
+            List<PairOfDoubles> basePairsTransformed = transformPairs(input.getDataForBaseline(), mapper);
             Metadata metaBaseTransformed = dataFac.getMetadataFactory()
                                                   .getMetadata(input.getMetadataForBaseline(),
                                                                dataFac.getMetadataFactory().getDimension());
@@ -249,10 +256,19 @@ public class DefaultSlicer implements Slicer
     @Override
     public PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair, Threshold threshold)
     {
+        Objects.requireNonNull(pair, NULL_INPUT);
+        Objects.requireNonNull(threshold, NULL_INPUT);
         double rhs = Arrays.stream(pair.getItemTwo()).map(a -> threshold.test(a) ? 1 : 0).average().getAsDouble();
         return dataFac.pairOf(threshold.test(pair.getItemOne()) ? 1 : 0, rhs);
     }
-
+    
+    @Override
+    public PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair)
+    {
+        Objects.requireNonNull(pair, NULL_INPUT);
+        return dataFac.pairOf(pair.getItemOne(), pair.getItemTwo()[0]);
+    }   
+    
     @Override
     public double getQuantile(double probability, double[] sorted)
     {
