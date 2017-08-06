@@ -3,12 +3,13 @@ package wres.engine.statistics.metric;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -18,6 +19,7 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.EnsemblePairs;
+import wres.datamodel.metric.MapBiKey;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricConstants.MetricInputGroup;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
@@ -125,25 +127,10 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
     final List<MetricConstants> metrics;
 
     /**
-     * Returns an instance of a metric processor based on {@link ProjectConfig}
-     * 
-     * @param dataFactory the data factory
-     * @param config the project configuration
+     * The metric futures.
      */
 
-    public static MetricProcessor of(DataFactory dataFactory, ProjectConfig config)
-    {
-        switch(getInputType(config))
-        {
-            case SINGLE_VALUED:
-                return new MetricProcessorSingleValuedPairs(dataFactory, config);
-            case ENSEMBLE:
-                return new MetricProcessorEnsemblePairs(dataFactory, config);
-            default:
-                throw new UnsupportedOperationException("Unsupported input type in the project configuration '" + config
-                    + "'");
-        }
-    }
+    final MetricFutures futures;
 
     /**
      * Returns true if metrics are available for the input {@link MetricInputGroup} and {@link MetricOutputGroup}, false
@@ -186,13 +173,39 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
     }
 
     /**
+     * Returns the metric data input type from the {@link ProjectConfig}.
+     * 
+     * @param config the {@link ProjectConfig}
+     * @return the {@link MetricInputGroup} based on the {@link ProjectConfig}
+     */
+
+    static MetricInputGroup getInputType(ProjectConfig config)
+    {
+        Objects.requireNonNull(config, "Specify a non-null project from which to generate metrics.");
+        DatasourceType type = config.getInputs().getRight().getType();
+        switch(type)
+        {
+            case ENSEMBLE_FORECASTS:
+                return MetricInputGroup.ENSEMBLE;
+            case SIMPLE_FORECASTS:
+            case ASSIMILATIONS:
+                return MetricInputGroup.SINGLE_VALUED;
+            default:
+                throw new UnsupportedOperationException("Unable to interpret the input type '" + type
+                    + "' when attempting to process the metrics ");
+        }
+    }
+
+    /**
      * Constructor.
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
+     * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
+     *            {@link #apply(MetricInput)}
      */
 
-    MetricProcessor(final DataFactory dataFactory, final ProjectConfig config)
+    MetricProcessor(final DataFactory dataFactory, final ProjectConfig config, final MetricOutputGroup... mergeList)
     {
         Objects.requireNonNull(config,
                                "Specify a non-null project configuration from which to construct the metric processor.");
@@ -239,6 +252,7 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
         localThresholds = new EnumMap<>(MetricConstants.class);
         globalThresholds = new EnumMap<>(MetricInputGroup.class);
         setThresholds(dataFactory, config);
+        futures = new MetricFutures(mergeList);
     }
 
     /**
@@ -262,11 +276,12 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
     /**
      * Processes a set of metric futures for {@link SingleValuedPairs}.
      * 
+     * @param leadTime the lead time
      * @param input the input pairs
      * @param futures the metric futures
      */
 
-    void processSingleValuedPairs(SingleValuedPairs input, MetricFutures futures)
+    void processSingleValuedPairs(Integer leadTime, SingleValuedPairs input, MetricFutures futures)
     {
 
         //Metric-specific overrides are currently unsupported
@@ -279,7 +294,8 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
                 double[] sorted = getSortedLeftSide(input, global);
-                global.forEach(threshold -> processSingleValuedThreshold(threshold,
+                global.forEach(threshold -> processSingleValuedThreshold(leadTime,
+                                                                         threshold,
                                                                          sorted,
                                                                          input,
                                                                          singleValuedScalar,
@@ -300,7 +316,8 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
                 double[] sorted = getSortedLeftSide(input, global);
-                global.forEach(threshold -> processSingleValuedThreshold(threshold,
+                global.forEach(threshold -> processSingleValuedThreshold(leadTime,
+                                                                         threshold,
                                                                          sorted,
                                                                          input,
                                                                          singleValuedVector,
@@ -321,7 +338,8 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
                 double[] sorted = getSortedLeftSide(input, global);
-                global.forEach(threshold -> processSingleValuedThreshold(threshold,
+                global.forEach(threshold -> processSingleValuedThreshold(leadTime,
+                                                                         threshold,
                                                                          sorted,
                                                                          input,
                                                                          singleValuedMultiVector,
@@ -349,48 +367,54 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
 
     /**
      * Store of metric futures for each output type. Use {@ link #getMetricOutput()} to obtain the processed
-     * {@link MetricOutputForProjectByLeadThreshold}, which blocks until all results are available.
+     * {@link MetricOutputForProjectByLeadThreshold}, which blocks until all results are available. Optionally, metric
+     * futures may be retained and merged across specific calls to {@link #getMetricOutput()}.
      */
 
     class MetricFutures
     {
 
         /**
-         * The lead time.
+         * An array of {@link MetricOutputGroup} that should be retained and merged across calls. May be null.
          */
 
-        private final Integer leadTime;
-
-        /**
-         * Construct with a lead time.
-         * 
-         * @param leadTime the lead time
-         */
-
-        MetricFutures(Integer leadTime)
-        {
-            Objects.requireNonNull("Expected a non-null forecast lead time.");
-            this.leadTime = leadTime;
-        }
+        private List<MetricOutputGroup> mergeList = new ArrayList<>();
 
         /**
          * Scalar results.
          */
 
-        final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<ScalarOutput>>> scalar = new HashMap<>();
-
+        final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
+                                                                                                                new ConcurrentHashMap<>();
         /**
          * Vector results.
          */
 
-        final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<VectorOutput>>> vector = new HashMap<>();
+        final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
+                                                                                                                new ConcurrentHashMap<>();
 
         /**
          * Multivector results.
          */
 
-        final Map<Threshold, CompletableFuture<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
-                                                                                                        new HashMap<>();
+        final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
+                                                                                                                          new ConcurrentHashMap<>();
+
+        /**
+         * Construct with a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls
+         * to {@link #getMetricOutput()}.
+         * 
+         * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged
+         */
+
+        private MetricFutures(MetricOutputGroup... mergeList)
+        {
+            Objects.requireNonNull("Expected a non-null forecast lead time.");
+            if(Objects.nonNull(mergeList))
+            {
+                this.mergeList = Arrays.asList(mergeList);
+            }
+        }
 
         /**
          * Returns the results associated with the futures. This method is blocking.
@@ -401,19 +425,22 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
         MetricOutputForProjectByLeadThreshold getMetricOutput()
         {
             MetricOutputForProjectByLeadThreshold.Builder builder = dataFactory.ofMetricOutputForProjectByThreshold();
-            if(!scalar.isEmpty())
+            //Add outputs for current futures
+            scalar.forEach(builder::addScalarOutput);
+            vector.forEach(builder::addVectorOutput);
+            multivector.forEach(builder::addMultiVectorOutput);
+            //Remove any elements that should not be retained for merge on next call
+            if(!mergeList.contains(MetricOutputGroup.SCALAR))
             {
-                scalar.forEach((threshold, future) -> builder.addScalarOutput(leadTime, threshold, future.join()));
+                scalar.clear();
             }
-            if(!vector.isEmpty())
+            if(!mergeList.contains(MetricOutputGroup.VECTOR))
             {
-                vector.forEach((threshold, future) -> builder.addVectorOutput(leadTime, threshold, future.join()));
+                vector.clear();
             }
-            if(!multivector.isEmpty())
+            if(!mergeList.contains(MetricOutputGroup.MULTIVECTOR))
             {
-                multivector.forEach((threshold, future) -> builder.addMultiVectorOutput(leadTime,
-                                                                                        threshold,
-                                                                                        future.join()));
+                multivector.clear();
             }
             return builder.build();
         }
@@ -482,22 +509,25 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
     }
 
     /**
-     * Builds a metric future for a {@link MetricCollection} that consumes {@link SingleValuedPairs} at a specific
-     * {@link Threshold} and appends it to the input map of futures.
+     * Builds a metric future for a {@link MetricCollection} that consumes {@link SingleValuedPairs} at a specific lead
+     * time and {@link Threshold} and appends it to the input map of futures.
      * 
+     * @param leadTime the lead time
      * @param threshold the threshold
      * @param sorted a sorted set of values from which to determine {@link QuantileThreshold} where the input
      *            {@link Threshold} is a {@link ProbabilityThreshold}.
      * @param pairs the pairs
      * @param collection the metric collection
      * @param futures the collection of futures to which the new future will be added
+     * @return true if the future was added successfully
      */
 
-    private <T extends MetricOutput<?>> void processSingleValuedThreshold(Threshold threshold,
-                                                                          double[] sorted,
-                                                                          SingleValuedPairs pairs,
-                                                                          MetricCollection<SingleValuedPairs, T> collection,
-                                                                          Map<Threshold, CompletableFuture<MetricOutputMapByMetric<T>>> futures)
+    private <T extends MetricOutput<?>> boolean processSingleValuedThreshold(Integer leadTime,
+                                                                             Threshold threshold,
+                                                                             double[] sorted,
+                                                                             SingleValuedPairs pairs,
+                                                                             MetricCollection<SingleValuedPairs, T> collection,
+                                                                             ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<T>>> futures)
     {
         Threshold useMe = threshold;
         //Quantile required: need to determine real-value from probability
@@ -507,7 +537,8 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
         }
         //Slice the pairs
         SingleValuedPairs subset = dataFactory.getSlicer().sliceByLeft(pairs, useMe);
-        futures.put(useMe, CompletableFuture.supplyAsync(() -> collection.apply(subset)));
+        return Objects.isNull(futures.putIfAbsent(dataFactory.getMapKey(leadTime, useMe),
+                                                  CompletableFuture.supplyAsync(() -> collection.apply(subset))));
     }
 
     /**
@@ -545,30 +576,6 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
             {
                 this.globalThresholds.put(group, globalThresholds);
             }
-        }
-    }
-
-    /**
-     * Returns the metric data input type from the {@link ProjectConfig}.
-     * 
-     * @param config the {@link ProjectConfig}
-     * @return the {@link MetricInputGroup} based on the {@link ProjectConfig}
-     */
-
-    private static MetricInputGroup getInputType(ProjectConfig config)
-    {
-        Objects.requireNonNull(config, "Specify a non-null project from which to generate metrics.");
-        DatasourceType type = config.getInputs().getRight().getType();
-        switch(type)
-        {
-            case ENSEMBLE_FORECASTS:
-                return MetricInputGroup.ENSEMBLE;
-            case SIMPLE_FORECASTS:
-            case ASSIMILATIONS:
-                return MetricInputGroup.SINGLE_VALUED;
-            default:
-                throw new UnsupportedOperationException("Unable to interpret the input type '" + type
-                    + "' when attempting to process the metrics ");
         }
     }
 

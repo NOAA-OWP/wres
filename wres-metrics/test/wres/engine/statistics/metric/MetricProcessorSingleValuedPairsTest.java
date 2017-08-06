@@ -44,8 +44,8 @@ public final class MetricProcessorSingleValuedPairsTest
         {
             ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
             MetricProcessorSingleValuedPairs processor =
-                                                       (MetricProcessorSingleValuedPairs)MetricProcessor.of(dataFactory,
-                                                                                                            config);
+                                                       (MetricProcessorSingleValuedPairs)MetricFactory.getInstance(dataFactory)
+                                                                                                      .getMetricProcessor(config);
             SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
             MetricOutputForProjectByLeadThreshold results = processor.apply(pairs);
             MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.getScalarOutput()
@@ -69,11 +69,9 @@ public final class MetricProcessorSingleValuedPairsTest
                        rho.getValue(0).getData().equals(1.0));
             assertTrue("Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
                        mae.getValue(0).getData().equals(5.0));
-            assertTrue("Unexpected difference in " + MetricConstants.MEAN_ERROR,
-                       me.getValue(0).getData().equals(-5.0));
+            assertTrue("Unexpected difference in " + MetricConstants.MEAN_ERROR, me.getValue(0).getData().equals(-5.0));
             assertTrue("Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
                        rmse.getValue(0).getData().equals(5.0));
-
         }
         catch(Exception e)
         {

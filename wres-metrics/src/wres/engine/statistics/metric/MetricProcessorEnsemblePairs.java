@@ -2,9 +2,10 @@ package wres.engine.statistics.metric;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -15,6 +16,7 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.EnsemblePairs;
+import wres.datamodel.metric.MapBiKey;
 import wres.datamodel.metric.MetricConstants.MetricInputGroup;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricInput;
@@ -90,31 +92,28 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
         {
             throw new MetricCalculationException("Expected ensemble pairs for metric processing.");
         }
-        Objects.requireNonNull(t.getMetadata().getLeadTime(),
-                               "Expected a non-null forecast lead time in the input metadata.");
+        Integer leadTime = t.getMetadata().getLeadTime();
+        Objects.requireNonNull(leadTime, "Expected a non-null forecast lead time in the input metadata.");
 
         //Slicer
         Slicer slicer = dataFactory.getSlicer();
 
-        //Metric futures
-        MetricFutures futures = new MetricFutures(t.getMetadata().getLeadTime());
-
         //Process the metrics that consume ensemble pairs
         if(hasMetrics(MetricInputGroup.ENSEMBLE))
         {
-            processEnsemblePairs((EnsemblePairs)t, futures);
+            processEnsemblePairs(leadTime, (EnsemblePairs)t, futures);
         }
         //Process the metrics that consume single-valued pairs
         if(hasMetrics(MetricInputGroup.SINGLE_VALUED))
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
             SingleValuedPairs input = slicer.transformPairs((EnsemblePairs)t, toSingleValues);
-            processSingleValuedPairs(input, futures);
+            processSingleValuedPairs(leadTime, input, futures);
         }
         //Process the metrics that consume discrete probability pairs
         if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY))
         {
-            processDiscreteProbabilityPairs((EnsemblePairs)t, futures);
+            processDiscreteProbabilityPairs(leadTime, (EnsemblePairs)t, futures);
         }
 
         //Process and return the result        
@@ -126,11 +125,13 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
+     * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
+     *            {@link #apply(MetricInput)}
      */
 
-    MetricProcessorEnsemblePairs(DataFactory dataFactory, ProjectConfig config)
+    MetricProcessorEnsemblePairs(DataFactory dataFactory, ProjectConfig config, final MetricOutputGroup... mergeList)
     {
-        super(dataFactory, config);
+        super(dataFactory, config, mergeList);
         //Validate the configuration
         if(hasMetrics(MetricInputGroup.DICHOTOMOUS))
         {
@@ -205,11 +206,12 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
      * Processes a set of metric futures that consume {@link EnsemblePairs}, which are mapped from the input pairs,
      * {@link EnsemblePairs}, using a configured mapping function.
      * 
+     * @param leadTime the lead time
      * @param input the input pairs
      * @param futures the metric futures
      */
 
-    void processEnsemblePairs(EnsemblePairs input, MetricFutures futures)
+    private void processEnsemblePairs(Integer leadTime, EnsemblePairs input, MetricFutures futures)
     {
 
         //Metric-specific overrides are currently unsupported
@@ -222,7 +224,8 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.ENSEMBLE);
                 double[] sorted = getSortedLeftSide(input, global);
-                global.forEach(threshold -> processEnsembleThreshold(threshold,
+                global.forEach(threshold -> processEnsembleThreshold(leadTime,
+                                                                     threshold,
                                                                      sorted,
                                                                      input,
                                                                      ensembleVector,
@@ -243,7 +246,8 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.ENSEMBLE);
                 double[] sorted = getSortedLeftSide(input, global);
-                global.forEach(threshold -> processEnsembleThreshold(threshold,
+                global.forEach(threshold -> processEnsembleThreshold(leadTime,
+                                                                     threshold,
                                                                      sorted,
                                                                      input,
                                                                      ensembleMultiVector,
@@ -262,11 +266,12 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
      * Processes a set of metric futures that consume {@link DiscreteProbabilityPairs}, which are mapped from the input
      * pairs, {@link EnsemblePairs}, using a configured mapping function.
      * 
+     * @param leadTime the lead time
      * @param input the input pairs
      * @param futures the metric futures
      */
 
-    void processDiscreteProbabilityPairs(EnsemblePairs input, MetricFutures futures)
+    private void processDiscreteProbabilityPairs(Integer leadTime, EnsemblePairs input, MetricFutures futures)
     {
 
         //Metric-specific overrides are currently unsupported
@@ -279,7 +284,8 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.DISCRETE_PROBABILITY);
                 double[] sorted = getSortedLeftSide(input, global);
-                global.forEach(threshold -> processDiscreteProbabilityThreshold(threshold,
+                global.forEach(threshold -> processDiscreteProbabilityThreshold(leadTime,
+                                                                                threshold,
                                                                                 sorted,
                                                                                 input,
                                                                                 discreteProbabilityVector,
@@ -300,7 +306,8 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.DISCRETE_PROBABILITY);
                 double[] sorted = getSortedLeftSide(input, global);
-                global.forEach(threshold -> processDiscreteProbabilityThreshold(threshold,
+                global.forEach(threshold -> processDiscreteProbabilityThreshold(leadTime,
+                                                                                threshold,
                                                                                 sorted,
                                                                                 input,
                                                                                 discreteProbabilityMultiVector,
@@ -319,19 +326,22 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
      * Builds a metric future for a {@link MetricCollection} that consumes {@link EnsemblePairs} at a specific
      * {@link Threshold} and appends it to the input map of futures.
      * 
+     * @param leadTime the lead time
      * @param threshold the threshold
      * @param sorted a sorted set of values from which to determine {@link QuantileThreshold} where the input
      *            {@link Threshold} is a {@link ProbabilityThreshold}.
      * @param pairs the pairs
      * @param collection the metric collection
      * @param futures the collection of futures to which the new future will be added
+     * @return true if the future was added successfully
      */
 
-    private <T extends MetricOutput<?>> void processDiscreteProbabilityThreshold(Threshold threshold,
-                                                                                 double[] sorted,
-                                                                                 EnsemblePairs pairs,
-                                                                                 MetricCollection<DiscreteProbabilityPairs, T> collection,
-                                                                                 Map<Threshold, CompletableFuture<MetricOutputMapByMetric<T>>> futures)
+    private <T extends MetricOutput<?>> boolean processDiscreteProbabilityThreshold(Integer leadTime,
+                                                                                    Threshold threshold,
+                                                                                    double[] sorted,
+                                                                                    EnsemblePairs pairs,
+                                                                                    MetricCollection<DiscreteProbabilityPairs, T> collection,
+                                                                                    ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<T>>> futures)
     {
         Threshold useMe = threshold;
         //Quantile required: need to determine real-value from probability
@@ -342,26 +352,30 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
         //Slice the pairs
         DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
                                                           .transformPairs(pairs, threshold, toDiscreteProbabilities);
-        futures.put(useMe, CompletableFuture.supplyAsync(() -> collection.apply(transformed)));
+        return Objects.isNull(futures.putIfAbsent(dataFactory.getMapKey(leadTime, useMe),
+                                                  CompletableFuture.supplyAsync(() -> collection.apply(transformed))));
     }
 
     /**
      * Builds a metric future for a {@link MetricCollection} that consumes {@link EnsemblePairs} at a specific
      * {@link Threshold} and appends it to the input map of futures.
      * 
+     * @param leadTime the lead time
      * @param threshold the threshold
      * @param sorted a sorted set of values from which to determine {@link QuantileThreshold} where the input
      *            {@link Threshold} is a {@link ProbabilityThreshold}.
      * @param pairs the pairs
      * @param collection the metric collection
      * @param futures the collection of futures to which the new future will be added
+     * @return true if the future was added successfully
      */
 
-    private <T extends MetricOutput<?>> void processEnsembleThreshold(Threshold threshold,
-                                                                      double[] sorted,
-                                                                      EnsemblePairs pairs,
-                                                                      MetricCollection<EnsemblePairs, T> collection,
-                                                                      Map<Threshold, CompletableFuture<MetricOutputMapByMetric<T>>> futures)
+    private <T extends MetricOutput<?>> boolean processEnsembleThreshold(Integer leadTime,
+                                                                         Threshold threshold,
+                                                                         double[] sorted,
+                                                                         EnsemblePairs pairs,
+                                                                         MetricCollection<EnsemblePairs, T> collection,
+                                                                         ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<T>>> futures)
     {
         Threshold useMe = threshold;
         //Quantile required: need to determine real-value from probability
@@ -371,7 +385,8 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
         }
         //Slice the pairs
         EnsemblePairs subset = dataFactory.getSlicer().sliceByLeft(pairs, useMe);
-        futures.put(useMe, CompletableFuture.supplyAsync(() -> collection.apply(subset)));
+        return Objects.isNull(futures.put(dataFactory.getMapKey(leadTime, useMe),
+                                          CompletableFuture.supplyAsync(() -> collection.apply(subset))));
     }
 
     /**
