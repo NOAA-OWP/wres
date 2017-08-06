@@ -1,6 +1,7 @@
 package wres;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,9 +9,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -20,25 +20,32 @@ import java.util.function.ToDoubleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.Conditions;
+import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
+import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.Threshold;
-import wres.datamodel.metric.Threshold.Condition;
+import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.MetricProcessor;
+import wres.io.Operations;
+import wres.io.config.ProjectConfigPlus;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
+import wres.io.utilities.InputGenerator;
 
 /**
  * Another Main. The reason for creating this class separately from Main is to defer conflict with the existing
@@ -103,99 +110,174 @@ public class ControlTemp
      */
     public static void main(final String[] args)
     {
-        final long start = System.currentTimeMillis(); //Start time
-        final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 1, 0),
-                                                LocalDateTime.of(2010, 12, 31, 23, 59),
-                                                "SQIN",
-                                                "QINE",
-                                                "CFS");
 
-        //Build an immutable collection of metrics, to be computed at each of several forecast lead times
-        final MetricFactory metFac = MetricFactory.getInstance(dataFac);
-        final MetricCollection<SingleValuedPairs, ScalarOutput> useMe =
-                                                                      metFac.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
-                                                                                                            MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                                                            MetricConstants.ROOT_MEAN_SQUARE_ERROR);
-
-        // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
-        final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
-        final int leadTimesCount = 100;
-
-        //Build a thread pool that can be terminated upon exception
-        final ForkJoinPool f = new ForkJoinPool();
-
-        //Sink for the results: the results are added incrementally to an immutable store via a builder
-        final MetricOutputMultiMapByLeadThreshold.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
-        //Iterate
-        for(int i = 0; i < leadTimesCount; i++)
-        {
-            final int lead = i + 1;
-            // Complete all tasks asynchronously:
-            // 1. Get some pairs from the database 
-            // 2. When available, compute the single-valued pairs from them ({observation, ensemble mean})
-            // 3. Compute the metrics
-            // 4. Do something with the verification results (store them)
-            // 5. Monitor progress per lead time
-
-            //Threshold = all data for now
-            final Threshold allData = dataFac.getThreshold(Double.NEGATIVE_INFINITY, Condition.GREATER);
-            final CompletableFuture<Void> c = CompletableFuture
-                                                               .supplyAsync(new PairGetterByLeadTime(config,
-                                                                                                     lead,
-                                                                                                     dataFac),
-                                                                            f)
-                                                               .thenApplyAsync(new SingleValuedPairProcessor(dataFac), f)
-                                                               .thenApplyAsync(useMe, f)
-                                                               .thenAcceptAsync(new ResultProcessor<>(lead,
-                                                                                                      allData,
-                                                                                                      resultsBuilder),
-                                                                                f)
-                                                               .thenAcceptAsync(a -> {
-                                                                   if(LOGGER.isInfoEnabled())
-                                                                   {
-                                                                       LOGGER.info("Completed lead time " + lead);
-                                                                   }
-                                                               }, f);
-            //Add the future to the list
-            listOfFutures.add(c);
-        }
-
-        //Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
-        //Log any exception and append to the error log as the last step
-        Exception logged = null;
+        ProjectConfig config = null;
         try
         {
-            doAllOrException(listOfFutures).join();
+
+            config = ProjectConfigPlus.from(Paths.get("D:/Applications/WRES/Code/wres/nonsrc/config_possibility.xml"))
+                                      .getProjectConfig();
         }
-        catch(final Exception e)
+        catch(Exception e)
         {
-            logged = e;
-        }
-        finally
-        {
-            //Terminate
-            f.shutdownNow(); //or shutdown();
+            e.printStackTrace();
         }
 
-        //Build final results: 
-        MetricOutputMultiMapByLeadThreshold<ScalarOutput> results = resultsBuilder.build();
+        final long start = System.currentTimeMillis(); //Start time
 
-        //Print info to logger
-        if(LOGGER.isInfoEnabled())
+        //Obtain the features
+        List<Conditions.Feature> features = config.getConditions().getFeature();
+
+        //Some output types are processed at the end of the pipeline, others after each input is processed 
+        //Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR      
+        MetricProcessor processor = MetricFactory.getInstance(dataFac).getMetricProcessor(config,
+                                                                                          MetricOutputGroup.SCALAR,
+                                                                                          MetricOutputGroup.VECTOR);
+        //Iterate through the features
+        try
         {
-            results.forEach((key, value) -> {
-                LOGGER.info(NEWLINE + "Results for metric "
-                    + dataFac.getMetadataFactory().getMetricName(key.getFirstKey()) + " (lead time, threshold, score) "
-                    + NEWLINE + value);
-            });
-            final long stop = System.currentTimeMillis(); //End time
-            LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
+            for(Conditions.Feature nextFeature: features)
+            {
+                InputGenerator metricInputs = Operations.getInputs(config, nextFeature);
+                //Iterate through the inputs and compute all metrics for each input
+                while(metricInputs.next())
+                {
+                    MetricOutputForProjectByLeadThreshold nextResult = processor.apply(metricInputs.getInput()
+                                                                                                   .getMetricInput());
+                    //Generate products for intermediate output types
+                    if(nextResult.hasOutput(MetricOutputGroup.MULTIVECTOR))
+                    {
+                        MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> forProducts =
+                                                                                           nextResult.getMultiVectorOutput();
+                        //Call wres-vis factory with intermediate output
+
+                    }
+                    LOGGER.info("Completed lead time " + metricInputs.getInput().getWindowNumber());
+                }
+            }
+            //Process end-of-pipeline outputs
+            MetricOutputForProjectByLeadThreshold store = processor.getStoredMetricOutput();
+//            //Method trace if wres-vis CAN handle MetricOutput<?>
+//            MetricOutputMultiMapByLeadThreshold<MetricOutput<?>> forAllProducts =
+//                                                                                store.getOutput(MetricOutputGroup.SCALAR,
+//                                                                                                MetricOutputGroup.VECTOR);
+//            //Call wres-vis factory with final output
+
+            //Method trace if wres-vis CANNOT handle MetricOutput<?>
+            if(store.hasOutput(MetricOutputGroup.SCALAR))
+            {
+                MetricOutputMultiMapByLeadThreshold<ScalarOutput> forProducts = store.getScalarOutput();
+                //Call wres-vis factory with final output
+
+            }
+            if(store.hasOutput(MetricOutputGroup.VECTOR))
+            {
+                MetricOutputMultiMapByLeadThreshold<VectorOutput> forProducts = store.getVectorOutput();
+                //Call wres-vis factory with final output
+
+            }
         }
-        //Print exception to logger last
-        if(!Objects.isNull(logged))
+        catch(SQLException | InterruptedException | ExecutionException e)
         {
-            LOGGER.error(logged.getMessage(), logged);
+            LOGGER.error(e.getMessage(), e);
         }
+        final long stop = System.currentTimeMillis(); //End time
+        LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
+
+//        final long start = System.currentTimeMillis(); //Start time
+//        final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 1, 0),
+//                                                LocalDateTime.of(2010, 12, 31, 23, 59),
+//                                                "SQIN",
+//                                                "QINE",
+//                                                "CFS");
+//
+//        //Build an immutable collection of metrics, to be computed at each of several forecast lead times
+//        final MetricFactory metFac = MetricFactory.getInstance(dataFac);
+//        final MetricCollection<SingleValuedPairs, ScalarOutput> useMe =
+//                                                                      metFac.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
+//                                                                                                            MetricConstants.MEAN_ABSOLUTE_ERROR,
+//                                                                                                            MetricConstants.ROOT_MEAN_SQUARE_ERROR);
+//
+//        // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
+//        final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
+//        final int leadTimesCount = 100;
+//
+//        //Build a thread pool that can be terminated upon exception
+//        final ForkJoinPool f = new ForkJoinPool();
+//
+//        //Sink for the results: the results are added incrementally to an immutable store via a builder
+//        final MetricOutputMultiMapByLeadThreshold.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
+//        //Iterate
+//        for(int i = 0; i < leadTimesCount; i++)
+//        {
+//            final int lead = i + 1;
+//            // Complete all tasks asynchronously:
+//            // 1. Get some pairs from the database 
+//            // 2. When available, compute the single-valued pairs from them ({observation, ensemble mean})
+//            // 3. Compute the metrics
+//            // 4. Do something with the verification results (store them)
+//            // 5. Monitor progress per lead time
+//
+//            //Threshold = all data for now
+//            final Threshold allData = dataFac.getThreshold(Double.NEGATIVE_INFINITY, Condition.GREATER);
+//            final CompletableFuture<Void> c = CompletableFuture
+//                                                               .supplyAsync(new PairGetterByLeadTime(config,
+//                                                                                                     lead,
+//                                                                                                     dataFac),
+//                                                                            f)
+//                                                               .thenApplyAsync(new SingleValuedPairProcessor(dataFac),
+//                                                                               f)
+//                                                               .thenApplyAsync(useMe, f)
+//                                                               .thenAcceptAsync(new ResultProcessor<>(lead,
+//                                                                                                      allData,
+//                                                                                                      resultsBuilder),
+//                                                                                f)
+//                                                               .thenAcceptAsync(a -> {
+//                                                                   if(LOGGER.isInfoEnabled())
+//                                                                   {
+//                                                                       LOGGER.info("Completed lead time " + lead);
+//                                                                   }
+//                                                               }, f);
+//            //Add the future to the list
+//            listOfFutures.add(c);
+//        }
+//
+//        //Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
+//        //Log any exception and append to the error log as the last step
+//        Exception logged = null;
+//        try
+//        {
+//            doAllOrException(listOfFutures).join();
+//        }
+//        catch(final Exception e)
+//        {
+//            logged = e;
+//        }
+//        finally
+//        {
+//            //Terminate
+//            f.shutdownNow(); //or shutdown();
+//        }
+//
+//        //Build final results: 
+//        MetricOutputMultiMapByLeadThreshold<ScalarOutput> results = resultsBuilder.build();
+//
+//        //Print info to logger
+//        if(LOGGER.isInfoEnabled())
+//        {
+//            results.forEach((key, value) -> {
+//                LOGGER.info(NEWLINE + "Results for metric "
+//                    + dataFac.getMetadataFactory().getMetricName(key.getFirstKey()) + " (lead time, threshold, score) "
+//                    + NEWLINE + value);
+//            });
+//            final long stop = System.currentTimeMillis(); //End time
+//            LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
+//        }
+//        //Print exception to logger last
+//        if(!Objects.isNull(logged))
+//        {
+//            LOGGER.error(logged.getMessage(), logged);
+//        }
     }
 
     /**
