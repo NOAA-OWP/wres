@@ -1,11 +1,13 @@
 package wres.datamodel.metric;
 
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import wres.datamodel.PairOfBooleans;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.VectorOfDoubles;
 
 /**
  * A utility class for slicing/dicing and transforming datasets associated with verification metrics.
@@ -44,7 +46,7 @@ public interface Slicer
      */
 
     double[] getLeftSide(EnsemblePairs input);
-
+  
     /**
      * Returns a subset of pairs where the {@link Threshold} is met on the left side or null for the empty subset.
      * 
@@ -64,13 +66,25 @@ public interface Slicer
      */
 
     EnsemblePairs sliceByLeft(EnsemblePairs input, Threshold threshold);
+  
+    /**
+     * Produces a {@link List} of {@link PairOfDoubles} from a {@link List} of {@link PairOfDoubleAndVectorOfDoubles} 
+     * using a prescribed mapper function.
+     * 
+     * @param input the {@link EnsemblePairs}
+     * @param mapper the function that maps from {@link EnsemblePairs} to {@link SingleValuedPairs}
+     * @return the {@link SingleValuedPairs}
+     */
 
+    List<PairOfDoubles> transformPairs(List<PairOfDoubleAndVectorOfDoubles> input,
+                                     Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper);        
+    
     /**
      * Produces {@link DichotomousPairs} from a {@link SingleValuedPairs} by applying a mapper function to the input.
      * 
      * @param input the {@link SingleValuedPairs} pairs
      * @param mapper the function that maps from {@link SingleValuedPairs} to {@link DichotomousPairs}
-     * @return the dichotomous pairs
+     * @return the {@link DichotomousPairs}
      */
 
     DichotomousPairs transformPairs(SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper);
@@ -80,12 +94,12 @@ public interface Slicer
      * 
      * @param input the {@link EnsemblePairs}
      * @param mapper the function that maps from {@link EnsemblePairs} to {@link SingleValuedPairs} pairs
-     * @return the {@link SingleValuedPairs} pairs
+     * @return the {@link SingleValuedPairs}
      */
 
     SingleValuedPairs transformPairs(EnsemblePairs input,
                                      Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper);
-
+    
     /**
      * Produces {@link DiscreteProbabilityPairs} from a {@link EnsemblePairs} by applying a mapper function to the input
      * using a prescribed {@link Threshold}.
@@ -93,7 +107,7 @@ public interface Slicer
      * @param input the {@link EnsemblePairs}
      * @param threshold the {@link Threshold} used to transform the pairs
      * @param mapper the function that maps from {@link EnsemblePairs} to {@link DiscreteProbabilityPairs}
-     * @return the {@link DiscreteProbabilityPairs} pairs
+     * @return the {@link DiscreteProbabilityPairs}
      */
 
     DiscreteProbabilityPairs transformPairs(EnsemblePairs input,
@@ -111,7 +125,17 @@ public interface Slicer
      */
 
     PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair, Threshold threshold);
+    
+    /**
+     * Converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} by retrieving the first element of
+     * the right hand side from the paired {@link VectorOfDoubles}.
+     * 
+     * @param pair the pair to transform
+     * @return the transformed pair
+     */
 
+    PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair);    
+    
     /**
      * Returns a value from the sorted array that corresponds to the input non-exceedence probability (p). This method
      * produces undefined results if the input array is unsorted. Corresponds to method 4 in the R function,

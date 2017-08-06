@@ -410,16 +410,22 @@ public final class DefaultSlicerTest
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         double[] sorted = new double[]{1.5, 6.3, 4.9, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2};
+        double[] sortedSecond = new double[]{1.5};
         double tA = 0.0;
         double tB = 1.0;
         double tC = 7.0 / 11.0;
         double tD = (8.0 + ((5005.0 - 2009.8) / (7001.4 - 2009.8))) / 11.0;
         double[] tE = new double[]{0.25, 0.5};
+        double tF = 8.0 / 11.0;
+        double tG = 0.01;
+        
         ProbabilityThreshold testA = metIn.getProbabilityThreshold(tA, Condition.GREATER);
         ProbabilityThreshold testB = metIn.getProbabilityThreshold(tB, Condition.GREATER);
         ProbabilityThreshold testC = metIn.getProbabilityThreshold(tC, Condition.GREATER);
         ProbabilityThreshold testD = metIn.getProbabilityThreshold(tD, Condition.GREATER);
         ProbabilityThreshold testE = metIn.getProbabilityThreshold(tE[0], tE[1], Condition.BETWEEN);
+        ProbabilityThreshold testF = metIn.getProbabilityThreshold(tF, Condition.GREATER);
+        ProbabilityThreshold testG = metIn.getProbabilityThreshold(tG, Condition.GREATER);
         QuantileThreshold expectedA = metIn.getQuantileThreshold(1.5, tA, Condition.GREATER);
         QuantileThreshold expectedB = metIn.getQuantileThreshold(17897.2, tB, Condition.GREATER);
         QuantileThreshold expectedC = metIn.getQuantileThreshold(1012.6, tC, Condition.GREATER);
@@ -429,6 +435,9 @@ public final class DefaultSlicerTest
                                                                  tE[0],
                                                                  tE[1],
                                                                  Condition.BETWEEN);
+        QuantileThreshold expectedF = metIn.getQuantileThreshold(1.5, tF, Condition.GREATER);
+        QuantileThreshold expectedG = metIn.getQuantileThreshold(1.5, tG, Condition.GREATER);
+        
         //Test for equality
         assertTrue("The inverse cumulative probability does not match the benchmark",
                    slicer.getQuantileFromProbability(testA, sorted).equals(expectedA));
@@ -440,6 +449,10 @@ public final class DefaultSlicerTest
                    slicer.getQuantileFromProbability(testD, sorted).equals(expectedD));
         assertTrue("The inverse cumulative probability does not match the benchmark",
                    slicer.getQuantileFromProbability(testE, sorted).equals(expectedE));
+        assertTrue("The inverse cumulative probability does not match the benchmark",
+                   slicer.getQuantileFromProbability(testF, sortedSecond).equals(expectedF));
+        assertTrue("The inverse cumulative probability does not match the benchmark",
+                   slicer.getQuantileFromProbability(testG, sorted).equals(expectedG));
         //Test the exception conditions
         try
         {
@@ -465,6 +478,29 @@ public final class DefaultSlicerTest
         catch(Exception e)
         {
         }
+    }
+
+    /**
+     * Tests the {@link Slicer#transformPair(PairOfDoubleAndVectorOfDoubles)}.
+     */
+
+    @Test
+    public void test12TransformPair()
+    {
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        PairOfDoubleAndVectorOfDoubles a = metIn.pairOf(3, new double[]{1, 2, 3, 4, 5});
+        PairOfDoubleAndVectorOfDoubles b = metIn.pairOf(0, new double[]{1, 2, 2, 3, 3});
+        PairOfDoubleAndVectorOfDoubles c = metIn.pairOf(3, new double[]{3, 3, 3, 3, 3});
+        PairOfDoubleAndVectorOfDoubles d = metIn.pairOf(4, new double[]{4, 4, 4, 4, 4});
+        PairOfDoubleAndVectorOfDoubles e = metIn.pairOf(0, new double[]{1, 2, 3, 4, 5});
+        PairOfDoubleAndVectorOfDoubles f = metIn.pairOf(5, new double[]{1, 1, 6, 6, 50});
+        Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper = metIn.getSlicer()::transformPair;
+        assertTrue("The transformed pair does not match the benchmark", mapper.apply(a).equals(metIn.pairOf(3, 1)));
+        assertTrue("The transformed pair does not match the benchmark", mapper.apply(b).equals(metIn.pairOf(0, 1)));
+        assertTrue("The transfored pair does not match the benchmark", mapper.apply(c).equals(metIn.pairOf(3, 3)));
+        assertTrue("The transformed pair does not match the benchmark", mapper.apply(d).equals(metIn.pairOf(4, 4)));
+        assertTrue("The transformed pair does not match the benchmark", mapper.apply(e).equals(metIn.pairOf(0, 1)));
+        assertTrue("The transformed pair does not match the benchmark", mapper.apply(f).equals(metIn.pairOf(5, 1)));
     }
 
 }
