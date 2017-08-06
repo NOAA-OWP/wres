@@ -48,7 +48,7 @@ import wres.datamodel.metric.VectorOutput;
  * <li>That a global set of {@link Threshold} is defined for all {@link Metric} within a {@link MetricCollection}. Using
  * metric-specific thresholds will require additional logic to break-up the {@link MetricCollection}.</li>
  * <li>If the {@link Threshold} are {@link ProbabilityThreshold}, the corresponding {@link QuantileThreshold} are
- * derived from the observations associated with the {@link MetricInput} to {@link #apply(MetricInput)}. When other
+ * derived from the observations associated with the {@link MetricInput} to {@link #apply(Object)}. When other
  * datasets are required to derive the {@link QuantileThreshold} (e.g. all historical observations), they will need to
  * be associated with the {@link MetricInput}.</li>
  * </ol>
@@ -61,6 +61,7 @@ import wres.datamodel.metric.VectorOutput;
  * {@link SingleValuedPairs} may be computed for {@link EnsemblePairs} if an appropriate transformation is configured.
  * Subclasses must define and apply any transformation required.
  * </p>
+ * <p>
  * Upon calling {@link #apply(Object)} with a concrete {@link MetricInput}, the configured {@link Metric} are computed
  * asynchronously for each {@link Threshold}. These asynchronous tasks are stored in a {@link MetricFutures} whose
  * method, {@link MetricFutures#getMetricOutput()} returns the full suite of results in a
@@ -72,7 +73,7 @@ import wres.datamodel.metric.VectorOutput;
  * @since 0.1
  */
 
-abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputForProjectByLeadThreshold>
+public abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputForProjectByLeadThreshold>
 {
 
     /**
@@ -132,6 +133,23 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
 
     final MetricFutures futures;
 
+    /**
+     * Returns a {@link MetricOutputForProjectByLeadThreshold} for the last available results or null. Results are only
+     * available when two conditions are met:
+     * <ol>
+     * <li>The {@link MetricProcessor} has been constructed to merge across sequential calls to {@link #apply(Object)}
+     * for specific {@link MetricOutputGroup}; and</li>
+     * <li>One or more calls were made to {@link #apply(Object)} before this method is called.</li>
+     * </ol>
+     * 
+     * @return a {@link MetricOutputForProjectByLeadThreshold} or null
+     */
+
+    public MetricOutputForProjectByLeadThreshold getStoredMetricOutput() 
+    {
+        return futures.hasMetricOutput() ? futures.getMetricOutput(): null;
+    }
+    
     /**
      * Returns true if metrics are available for the input {@link MetricInputGroup} and {@link MetricOutputGroup}, false
      * otherwise.
@@ -415,9 +433,19 @@ abstract class MetricProcessor implements Function<MetricInput<?>, MetricOutputF
                 this.mergeList = Arrays.asList(mergeList);
             }
         }
-
+        
         /**
-         * Returns the results associated with the futures. This method is blocking.
+         * Returns true if outputs are available, false otherwise.
+         * 
+         * @return true if outputs are available, false otherwise
+         */
+
+        private boolean hasMetricOutput() {
+            return !scalar.isEmpty() || !vector.isEmpty() || !multivector.isEmpty();
+        }
+        
+        /**
+         * Returns the results associated with the futures.
          * 
          * @return the metric results
          */
