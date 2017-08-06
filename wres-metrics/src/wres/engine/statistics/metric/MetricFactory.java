@@ -8,6 +8,7 @@ import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.MulticategoryPairs;
@@ -85,19 +86,32 @@ public class MetricFactory
     @Deprecated
     public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(ProjectConfig config)
     {
-        return MetricProcessorSingleValuedPairs.of(outputFactory, config).singleValuedScalar;
+        return getMetricProcessor(config).singleValuedScalar;
     }
 
     /**
-     * Returns an instance of a {@link MetricProcessor} for processing {@link MetricInput}.
+     * Returns an instance of a {@link MetricProcessor} for processing {@link MetricInput}. Optionally, retain and merge
+     * the results associated with specific {@link MetricOutputGroup} across successive calls to
+     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
+     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
+     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessor}
      */
 
-    public MetricProcessor getMetricProcessor(final ProjectConfig config)
+    public MetricProcessor getMetricProcessor(final ProjectConfig config, MetricOutputGroup... mergeList)
     {
-        return MetricProcessor.of(outputFactory, config);
+        switch(MetricProcessor.getInputType(config))
+        {
+            case SINGLE_VALUED:
+                return new MetricProcessorSingleValuedPairs(outputFactory, config, mergeList);
+            case ENSEMBLE:
+                return new MetricProcessorEnsemblePairs(outputFactory, config, mergeList);
+            default:
+                throw new UnsupportedOperationException("Unsupported input type in the project configuration '" + config
+                    + "'");
+        }
     }
 
     /**
