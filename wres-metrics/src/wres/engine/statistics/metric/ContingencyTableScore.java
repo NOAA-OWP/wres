@@ -3,7 +3,6 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
-import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
@@ -11,6 +10,7 @@ import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
+import wres.engine.statistics.metric.ContingencyTable.ContingencyTableBuilder;
 
 /**
  * A generic implementation of an error score that applies to the components of a {@link ContingencyTable}.
@@ -129,13 +129,15 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the {@link DataFactory}
+     * @param builder the builder
      */
 
-    protected ContingencyTableScore(final DataFactory dataFactory)
+    protected ContingencyTableScore(final MetricBuilder<S, ScalarOutput> builder)
     {
-        super(dataFactory);
-        table = new ContingencyTable<>(dataFactory);
+        super(builder);
+        ContingencyTableBuilder<S> ct = new ContingencyTableBuilder<>();
+        ct.setOutputFactory(builder.dataFactory);
+        table = ct.build();
     }
 
 }

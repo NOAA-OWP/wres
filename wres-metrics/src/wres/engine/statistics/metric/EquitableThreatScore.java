@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
@@ -59,7 +58,7 @@ public final class EquitableThreatScore extends ContingencyTableScore<Dichotomou
         @Override
         protected EquitableThreatScore build()
         {
-            return new EquitableThreatScore(dataFactory);
+            return new EquitableThreatScore(this);
         }
 
     }
@@ -67,12 +66,12 @@ public final class EquitableThreatScore extends ContingencyTableScore<Dichotomou
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the {@link DataFactory}.
+     * @param builder the builder.
      */
 
-    private EquitableThreatScore(final DataFactory dataFactory)
+    private EquitableThreatScore(final EquitableThreatScoreBuilder builder)
     {
-        super(dataFactory);
+        super(builder);
     }
 
 }

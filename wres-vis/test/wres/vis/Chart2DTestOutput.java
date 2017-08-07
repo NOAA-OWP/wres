@@ -198,7 +198,7 @@ public class Chart2DTestOutput extends TestCase
             final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
                                                                             metaFactory.getDimension(),
                                                                             metaFactory.getDimension("CMS"),
-                                                                            MetricConstants.MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                             MetricConstants.MAIN,
                                                                             metaFactory.getDatasetIdentifier("NPTP1",
                                                                                                              "STREAMFLOW",

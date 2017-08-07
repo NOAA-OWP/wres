@@ -52,32 +52,6 @@ public final class CoefficientOfDetermination extends CorrelationPearsons
         return false;
     }
 
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    protected static class CoefficientOfDeterminationBuilder extends CorrelationPearsonsBuilder
-    {
-
-        @Override
-        protected CorrelationPearsons build()
-        {
-            return new CoefficientOfDetermination(this);
-        }
-
-    }
-
-    /**
-     * Hidden constructor.
-     * 
-     * @param b the builder
-     */
-
-    private CoefficientOfDetermination(final CoefficientOfDeterminationBuilder b)
-    {
-        super(b);
-    }
-
     @Override
     public ScalarOutput apply(ScalarOutput output)
     {
@@ -103,4 +77,30 @@ public final class CoefficientOfDetermination extends CorrelationPearsons
         return MetricConstants.CORRELATION_PEARSONS;
     }
 
+    /**
+     * A {@link MetricBuilder} to build the metric.
+     */
+
+    protected static class CoefficientOfDeterminationBuilder extends CorrelationPearsonsBuilder
+    {
+
+        @Override
+        protected CoefficientOfDetermination build()
+        {
+            return new CoefficientOfDetermination(this);
+        }
+
+    }
+
+    /**
+     * Hidden constructor.
+     * 
+     * @param builder the builder
+     */
+
+    private CoefficientOfDetermination(final CoefficientOfDeterminationBuilder builder)
+    {
+        super(builder);
+    }    
+    
 }

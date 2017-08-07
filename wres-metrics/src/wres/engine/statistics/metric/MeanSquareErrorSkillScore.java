@@ -81,12 +81,12 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
     /**
      * Prevent direct construction.
      * 
-     * @param b the builder
+     * @param builder the builder
      */
 
-    protected MeanSquareErrorSkillScore(final MeanSquareErrorSkillScoreBuilder<S> b)
+    protected MeanSquareErrorSkillScore(final MeanSquareErrorSkillScoreBuilder<S> builder)
     {
-        super(b);
+        super(builder);
     }
 
 }

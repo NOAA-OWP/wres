@@ -51,7 +51,7 @@ public final class DataModelTestDataFactory
             final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
                                                                             metaFactory.getDimension(),
                                                                             metaFactory.getDimension("CMS"),
-                                                                            MetricConstants.MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                             MetricConstants.MAIN,
                                                                             metaFactory.getDatasetIdentifier("DRRC2",
                                                                                                              "SQIN",

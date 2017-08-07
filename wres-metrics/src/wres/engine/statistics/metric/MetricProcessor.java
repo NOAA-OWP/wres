@@ -662,7 +662,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             case MEAN_ABSOLUTE_ERROR:
                 return MetricConstants.MEAN_ABSOLUTE_ERROR;
             case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
-                return MetricConstants.MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
+                return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
             case MEAN_ERROR:
                 return MetricConstants.MEAN_ERROR;
             case MEAN_SQUARE_ERROR:

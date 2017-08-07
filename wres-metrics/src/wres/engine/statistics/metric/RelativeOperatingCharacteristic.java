@@ -98,13 +98,13 @@ extends
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the {@link DataFactory}.
+     * @param builder the builder
      */
 
-    RelativeOperatingCharacteristic(final DataFactory dataFactory)
+    RelativeOperatingCharacteristic(final MetricBuilder<DiscreteProbabilityPairs, T> builder)
     {
-        super(dataFactory);
-        roc = MetricFactory.getInstance(dataFactory)
+        super(builder);
+        roc = MetricFactory.getInstance(builder.dataFactory)
                            .ofDichotomousScalarCollection(MetricConstants.PROBABILITY_OF_DETECTION,
                                                           MetricConstants.PROBABILITY_OF_FALSE_DETECTION);
     }

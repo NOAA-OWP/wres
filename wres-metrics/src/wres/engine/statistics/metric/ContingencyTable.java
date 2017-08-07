@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMetadata;
@@ -78,7 +77,7 @@ public final class ContingencyTable<S extends MulticategoryPairs> extends Metric
         @Override
         protected ContingencyTable<S> build()
         {
-            return new ContingencyTable<>(this.dataFactory);
+            return new ContingencyTable<>(this);
         }
 
     }
@@ -86,11 +85,11 @@ public final class ContingencyTable<S extends MulticategoryPairs> extends Metric
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the {@link DataFactory}.
+     * @param builder the builder.
      */
 
-    protected ContingencyTable(final DataFactory dataFactory)
+    protected ContingencyTable(final ContingencyTableBuilder<S> builder)
     {
-        super(dataFactory);
+        super(builder);
     }
 }

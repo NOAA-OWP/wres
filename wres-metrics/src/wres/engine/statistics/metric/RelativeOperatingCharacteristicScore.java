@@ -110,7 +110,7 @@ implements ProbabilityScore
         @Override
         protected RelativeOperatingCharacteristicScore build()
         {
-            return new RelativeOperatingCharacteristicScore(this.dataFactory);
+            return new RelativeOperatingCharacteristicScore(this);
         }
 
     }
@@ -171,12 +171,12 @@ implements ProbabilityScore
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the {@link DataFactory}.
+     * @param builder the builder
      */
 
-    private RelativeOperatingCharacteristicScore(final DataFactory dataFactory)
+    private RelativeOperatingCharacteristicScore(final RelativeOperatingCharacteristicScoreBuilder builder)
     {
-        super(dataFactory);
+        super(builder);
     }
 
 }
