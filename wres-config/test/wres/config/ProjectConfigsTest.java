@@ -54,4 +54,36 @@ public class ProjectConfigsTest
         exception.expect( ProjectConfigException.class );
         ProjectConfigs.parseProbabilities( config );
     }
+
+    @Test
+    public void testInvalidNegativeValueProbabilityList() throws ProjectConfigException
+    {
+        String probabilities = "-5.0";
+        LeftOrRightOrBaseline applyToLeft = LeftOrRightOrBaseline.fromValue( "left" );
+        ThresholdOperator operator = ThresholdOperator.fromValue( "less_than" );
+
+        ProbabilityThresholdConfig config =
+                new ProbabilityThresholdConfig( applyToLeft,
+                        probabilities,
+                        operator );
+
+        exception.expect( ProjectConfigException.class );
+        ProjectConfigs.parseProbabilities( config );
+    }
+
+    @Test
+    public void testInvalidPositiveValueProbabilityList() throws ProjectConfigException
+    {
+        String probabilities = "1.2";
+        LeftOrRightOrBaseline applyToLeft = LeftOrRightOrBaseline.fromValue( "left" );
+        ThresholdOperator operator = ThresholdOperator.fromValue( "less_than" );
+
+        ProbabilityThresholdConfig config =
+                new ProbabilityThresholdConfig( applyToLeft,
+                        probabilities,
+                        operator );
+
+        exception.expect( ProjectConfigException.class );
+        ProjectConfigs.parseProbabilities( config );
+    }
 }
