@@ -204,7 +204,7 @@
 
         <xs:sequence>
             <xs:element name="applyTo" type="leftOrRightOrBaseline" default="left" />
-            <xs:element name="probabilities" type="xs:string" default="0.05,0.1,0.25,0.50,0.75,0.90,0.95" />
+            <xs:element name="commaSeparatedValues" type="xs:string" default="0.05,0.1,0.25,0.50,0.75,0.90,0.95" />
             <xs:element name="operator" type="thresholdOperator" default="less than" />
         </xs:sequence>
     </xs:complexType>
@@ -221,7 +221,7 @@
 
         <xs:sequence>
             <xs:element name="applyTo" type="leftOrRightOrBaseline" default="left" />
-            <xs:element name="values" type="xs:string" />
+            <xs:element name="commaSeparatedValues" type="xs:string" />
             <xs:element name="operator" type="thresholdOperator" default="less than" />
         </xs:sequence>
     </xs:complexType>

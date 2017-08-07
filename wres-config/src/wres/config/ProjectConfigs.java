@@ -35,7 +35,7 @@ public class ProjectConfigs
         List<Double> result = new ArrayList<>();
         try
         {
-            String[] probabilities = p.getProbabilities()
+            String[] probabilities = p.getCommaSeparatedValues()
                                       .split( "," );
 
             for ( String value : probabilities )
@@ -81,7 +81,7 @@ public class ProjectConfigs
 
         try
         {
-            String[] values = v.getValues()
+            String[] values = v.getCommaSeparatedValues()
                                .split( "," );
 
             for ( String value : values )
