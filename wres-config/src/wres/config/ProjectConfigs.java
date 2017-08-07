@@ -1,8 +1,10 @@
 package wres.config;
 
 import wres.config.generated.ProbabilityThresholdConfig;
+import wres.config.generated.ValueThresholdConfig;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -16,6 +18,8 @@ public class ProjectConfigs
         // Prevent construction, this is a static helper class.
     }
 
+    private static final String NON_NULL = "Config element passed must not be null";
+
     /**
      * Parse and validate probabilities from a given ProbabilityThresholdConfig
      * @param p the threshold configuration to parse
@@ -26,7 +30,7 @@ public class ProjectConfigs
     public static List<Double> parseProbabilities( ProbabilityThresholdConfig p )
             throws ProjectConfigException
     {
-        Objects.requireNonNull( p, "Config element passed must not be null" );
+        Objects.requireNonNull( p, NON_NULL );
 
         List<Double> result = new ArrayList<>();
         try
@@ -55,7 +59,46 @@ public class ProjectConfigs
                                               "Failed to parse probabilities.",
                                               s );
         }
-        return result;
+
+        // OK to avoid copy since this scope created result.
+        return Collections.unmodifiableList( result );
     }
+
+    /**
+     * Parse and validate value threshold configuration element.
+     *
+     * @param v the value threshold configuration to parse and validate
+     * @return the list of Doubles found in the tag containing values
+     * @throws ProjectConfigException
+     * @throws NullPointerException when v is null
+     */
+    public static List<Double> parseValues( ValueThresholdConfig v )
+            throws ProjectConfigException
+    {
+        Objects.requireNonNull( v, NON_NULL );
+
+        List<Double> result = new ArrayList<>();
+
+        try
+        {
+            String[] values = v.getValues()
+                               .split( "," );
+
+            for ( String value : values )
+            {
+                Double doubleValue = Double.parseDouble( value );
+
+                result.add( doubleValue );
+            }
+        }
+        catch ( NumberFormatException s )
+        {
+            throw new ProjectConfigException( v, "Failed to parse values.", s );
+        }
+
+        // OK to avoid copying since this scope created result.
+        return Collections.unmodifiableList( result );
+    }
+
 }
 
