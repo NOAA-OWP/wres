@@ -531,7 +531,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         List<MetricConfigName> metricsConfig = config.getOutputs()
                                                      .getMetric()
                                                      .stream()
-                                                     .map(MetricConfig::getValue)
+                                                     .map(MetricConfig::getName)
                                                      .collect(Collectors.toList());
         List<MetricConstants> metrics = new ArrayList<>();
         metricsConfig.forEach(a -> metrics.add(fromMetricConfigName(a)));
@@ -608,7 +608,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             //TODO: implement this when metric-local threshold conditions are available in the configuration
             if(!thresholds.isEmpty())
             {
-                localThresholds.put(fromMetricConfigName(metric.getValue()), thresholds);
+                localThresholds.put(fromMetricConfigName(metric.getName()), thresholds);
             }
         });
         if(!localThresholds.isEmpty())
