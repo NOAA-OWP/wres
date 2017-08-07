@@ -39,33 +39,43 @@ import wres.datamodel.metric.VectorOutput;
 /**
  * <p>
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for all configured
- * {@link Threshold}. Typically, this will represent a single forecast lead time within a processing pipeline.
+ * {@link Threshold}. Typically, this will represent a single forecast lead time within a processing pipeline. The
+ * {@link MetricCollection} are computed by calling {@link #apply(Object)}.
  * </p>
  * <p>
  * The current implementation adopts the following simplifying assumptions:
  * </p>
  * <ol>
- * <li>That a global set of {@link Threshold} is defined for all {@link Metric} within a {@link MetricCollection}. Using
- * metric-specific thresholds will require additional logic to break-up the {@link MetricCollection}.</li>
+ * <li>That a global set of {@link Threshold} is defined for all {@link Metric} within a {@link ProjectConfig} and hence
+ * {@link MetricCollection}. Using metric-specific thresholds will require additional logic to disaggregate a
+ * {@link MetricCollection} into {@link Metric} for which common thresholds are defined.</li>
  * <li>If the {@link Threshold} are {@link ProbabilityThreshold}, the corresponding {@link QuantileThreshold} are
- * derived from the observations associated with the {@link MetricInput} to {@link #apply(Object)}. When other
- * datasets are required to derive the {@link QuantileThreshold} (e.g. all historical observations), they will need to
- * be associated with the {@link MetricInput}.</li>
+ * derived from the observations associated with the {@link MetricInput} at runtime, i.e. upon calling
+ * {@link #apply(Object)}. When other datasets are required to derive the {@link QuantileThreshold} (e.g. all historical
+ * observations), they will need to be associated with the {@link MetricInput}.</li>
  * </ol>
  * <p>
- * Upon construction, the project configuration is validated to ensure that appropriate {@link Metric} are configured
+ * Upon construction, the {@link ProjectConfig} is validated to ensure that appropriate {@link Metric} are configured
  * for the type of {@link MetricInput} consumed. These metrics are stored in a series of {@link MetricCollection} that
  * consume a given {@link MetricInput} and produce a given {@link MetricOutput}. If the type of {@link MetricInput}
- * consumed by any given {@link MetricCollection} differs from the {@link MetricInput} from which the
- * {@link MetricProcessor} is constructed, a transformation must be applied. For example, {@link Metric} that consume
+ * consumed by any given {@link MetricCollection} differs from the {@link MetricInput} for which the
+ * {@link MetricProcessor} is primed, a transformation must be applied. For example, {@link Metric} that consume
  * {@link SingleValuedPairs} may be computed for {@link EnsemblePairs} if an appropriate transformation is configured.
- * Subclasses must define and apply any transformation required.
+ * Subclasses must define and apply any transformation required. If inappropriate {@link MetricInput} are provided to
+ * {@link #apply(Object)} for the {@link MetricCollection} configured, an unchecked exception will be thrown.
  * </p>
  * <p>
  * Upon calling {@link #apply(Object)} with a concrete {@link MetricInput}, the configured {@link Metric} are computed
  * asynchronously for each {@link Threshold}. These asynchronous tasks are stored in a {@link MetricFutures} whose
  * method, {@link MetricFutures#getMetricOutput()} returns the full suite of results in a
  * {@link MetricOutputForProjectByLeadThreshold}.
+ * </p>
+ * <p>
+ * The {@link MetricOutput} are computed and stored by {@link MetricOutputGroup}. For {@link MetricOutput} that are not
+ * consumed until the end of a processing pipeline, the results from sequential calls to {@link #apply(Object)} may be
+ * cached and merged. This is achieved by constructing a {@link MetricProcessor} with a <code>vararg</code> of
+ * {@link MetricOutputGroup} whose results will be cached across successive calls. The merged results are accessible
+ * from the final call to {@link #apply(Object)} or by calling {@link #getStoredMetricOutput()}.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
@@ -145,11 +155,11 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * @return a {@link MetricOutputForProjectByLeadThreshold} or null
      */
 
-    public MetricOutputForProjectByLeadThreshold getStoredMetricOutput() 
+    public MetricOutputForProjectByLeadThreshold getStoredMetricOutput()
     {
-        return futures.hasMetricOutput() ? futures.getMetricOutput(): null;
+        return futures.hasMetricOutput() ? futures.getMetricOutput() : null;
     }
-    
+
     /**
      * Returns true if metrics are available for the input {@link MetricInputGroup} and {@link MetricOutputGroup}, false
      * otherwise.
@@ -433,17 +443,18 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                 this.mergeList = Arrays.asList(mergeList);
             }
         }
-        
+
         /**
          * Returns true if outputs are available, false otherwise.
          * 
          * @return true if outputs are available, false otherwise
          */
 
-        private boolean hasMetricOutput() {
+        private boolean hasMetricOutput()
+        {
             return !scalar.isEmpty() || !vector.isEmpty() || !multivector.isEmpty();
         }
-        
+
         /**
          * Returns the results associated with the futures.
          * 

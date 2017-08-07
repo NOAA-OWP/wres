@@ -138,10 +138,17 @@ public class ControlTemp
         {
             for(Conditions.Feature nextFeature: features)
             {
+                
+                if(LOGGER.isInfoEnabled()) {
+                    LOGGER.info("Processing feature '" + nextFeature.getLocation().getLid()+"'.");
+                }
                 InputGenerator metricInputs = Operations.getInputs(config, nextFeature);
                 //Iterate through the inputs and compute all metrics for each input
                 while(metricInputs.next())
                 {
+                    if(LOGGER.isInfoEnabled()) {
+                        LOGGER.info("Processing lead time '" + metricInputs.getInput().getWindowNumber()+"'.");
+                    }
                     MetricOutputForProjectByLeadThreshold nextResult = processor.apply(metricInputs.getInput()
                                                                                                    .getMetricInput());
                     //Generate products for intermediate output types
@@ -152,7 +159,9 @@ public class ControlTemp
                         //Call wres-vis factory with intermediate output
 
                     }
-                    LOGGER.info("Completed lead time " + metricInputs.getInput().getWindowNumber());
+                    if(LOGGER.isInfoEnabled()) {
+                        LOGGER.info("Completed lead time '" + metricInputs.getInput().getWindowNumber()+"'.");
+                    }
                 }
             }
             //Process end-of-pipeline outputs
@@ -182,7 +191,9 @@ public class ControlTemp
             LOGGER.error(e.getMessage(), e);
         }
         final long stop = System.currentTimeMillis(); //End time
-        LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
+        if(LOGGER.isInfoEnabled()) {
+            LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
+        }
 
 //        final long start = System.currentTimeMillis(); //Start time
 //        final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 1, 0),

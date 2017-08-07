@@ -1,6 +1,21 @@
 package wres.io;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
+import javax.xml.stream.XMLStreamException;
+import javax.xml.transform.TransformerException;
+
 import org.slf4j.LoggerFactory;
+
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.MetricInput;
@@ -16,19 +31,6 @@ import wres.io.utilities.InputGenerator;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-
-import javax.xml.stream.XMLStreamException;
-import javax.xml.transform.TransformerException;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
@@ -107,7 +109,7 @@ public final class Operations {
      * @return A mapping between the number of a window and and its pairs
      * @throws SQLException Thrown if there was an error when communicating with the database
      */
-    public static Map<Integer, Future<MetricInput>> getPairs (ProjectConfig projectConfig,
+    public static Map<Integer, Future<MetricInput<?>>> getPairs (ProjectConfig projectConfig,
                                                                          Conditions.Feature feature) throws SQLException
     {
         Integer variableId = ConfigHelper.getVariableID(projectConfig.getInputs().getRight());
@@ -115,7 +117,7 @@ public final class Operations {
         LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(variableId);
 
         Integer finalLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
-        Map<Integer, Future<MetricInput>> threadResults = new TreeMap<>();
+        Map<Integer, Future<MetricInput<?>>> threadResults = new TreeMap<>();
 
         int step = 1;
 
@@ -133,7 +135,7 @@ public final class Operations {
         return new InputGenerator(projectConfig, feature);
     }
 
-    public static Future<MetricInput> getPairs(ProjectConfig projectConfig, Conditions.Feature feature, int windowNumber)
+    public static Future<MetricInput<?>> getPairs(ProjectConfig projectConfig, Conditions.Feature feature, int windowNumber)
     {
         PairRetriever pairRetriever = new PairRetriever(projectConfig, feature, windowNumber);
         pairRetriever.setOnRun(ProgressMonitor.onThreadStartHandler());

@@ -1,5 +1,11 @@
 package wres.io.utilities;
 
+import java.sql.SQLException;
+import java.util.InvalidPropertiesFormatException;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.MetricInput;
@@ -7,12 +13,6 @@ import wres.io.concurrency.PairRetriever;
 import wres.io.config.ConfigHelper;
 import wres.io.grouping.LabeledScript;
 import wres.util.ProgressMonitor;
-
-import java.sql.SQLException;
-import java.util.InvalidPropertiesFormatException;
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * Interprets a project configuration and spawns asynchronous metric input retrieval operations
@@ -152,7 +152,7 @@ public class InputGenerator {
          * @throws ExecutionException
          * @throws InterruptedException
          */
-        public MetricInput getMetricInput() throws ExecutionException, InterruptedException
+        public MetricInput<?> getMetricInput() throws ExecutionException, InterruptedException
         {
             return this.metricInput.get();
         }
@@ -160,7 +160,7 @@ public class InputGenerator {
         private final ProjectConfig projectConfig;
         private final Conditions.Feature feature;
         private final int windowNumber;
-        private final Future<MetricInput> metricInput;
+        private final Future<MetricInput<?>> metricInput;
 
         @Override
         public boolean equals (final Object obj) {
