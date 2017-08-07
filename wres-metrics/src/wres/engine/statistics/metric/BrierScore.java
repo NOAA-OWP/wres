@@ -77,12 +77,12 @@ public final class BrierScore extends MeanSquareError<DiscreteProbabilityPairs> 
     /**
      * Hidden constructor.
      * 
-     * @param b the builder
+     * @param builder the builder
      */
 
-    private BrierScore(final BrierScoreBuilder b)
+    private BrierScore(final BrierScoreBuilder builder)
     {
-        super(b);
+        super(builder);
     }
 
 }

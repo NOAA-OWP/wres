@@ -29,7 +29,7 @@ public class MeanSquareError<S extends SingleValuedPairs> extends DecomposableDo
             case LBR:
             case CR_AND_LBR:
             default:
-                throw new MetricCalculationException("The Mean Square Error decomposition is not currently "
+                throw new UnsupportedOperationException("The Mean Square Error decomposition is not currently "
                     + "implemented.");
         }
 
@@ -54,17 +54,6 @@ public class MeanSquareError<S extends SingleValuedPairs> extends DecomposableDo
     }
 
     /**
-     * Hidden constructor.
-     * 
-     * @param b the builder
-     */
-
-    protected MeanSquareError(final MeanSquareErrorBuilder<S> b)
-    {
-        super(b);
-    }
-
-    /**
      * A {@link MetricBuilder} to build the metric.
      */
 
@@ -79,6 +68,17 @@ public class MeanSquareError<S extends SingleValuedPairs> extends DecomposableDo
             return new MeanSquareError<>(this);
         }
 
+    }    
+    
+    /**
+     * Hidden constructor.
+     * 
+     * @param builder the builder
+     */
+
+    protected MeanSquareError(final MeanSquareErrorBuilder<S> builder)
+    {
+        super(builder);
     }
 
     /**

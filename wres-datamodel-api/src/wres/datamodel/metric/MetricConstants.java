@@ -40,6 +40,18 @@ public enum MetricConstants
     COEFFICIENT_OF_DETERMINATION(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR),
 
     /**
+     * Identifier for a Mean Continuous Ranked Probability Score
+     */
+
+    CONTINUOUS_RANKED_PROBABILITY_SCORE(MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR),
+
+    /**
+     * Identifier for a Mean Continuous Ranked Probability Skill Score
+     */
+
+    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE(MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR),
+    
+    /**
      * Identifier for a Contingency Table.
      */
 
@@ -68,12 +80,6 @@ public enum MetricConstants
      */
 
     MEAN_ABSOLUTE_ERROR(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR),
-
-    /**
-     * Identified for a Mean Continuous Ranked Probability Skill Score
-     */
-
-    MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
 
     /**
      * Identifier for a Mean Error.

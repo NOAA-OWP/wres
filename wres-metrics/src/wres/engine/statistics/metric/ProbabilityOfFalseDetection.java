@@ -1,6 +1,5 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
@@ -53,7 +52,7 @@ public final class ProbabilityOfFalseDetection extends ContingencyTableScore<Dic
         @Override
         protected ProbabilityOfFalseDetection build()
         {
-            return new ProbabilityOfFalseDetection(dataFactory);
+            return new ProbabilityOfFalseDetection(this);
         }
 
     }
@@ -61,11 +60,11 @@ public final class ProbabilityOfFalseDetection extends ContingencyTableScore<Dic
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the {@link DataFactory}.
+     * @param builder the builder
      */
 
-    private ProbabilityOfFalseDetection(final DataFactory dataFactory)
+    private ProbabilityOfFalseDetection(final ProbabilityOfFalseDetectionBuilder builder)
     {
-        super(dataFactory);
+        super(builder);
     }
 }

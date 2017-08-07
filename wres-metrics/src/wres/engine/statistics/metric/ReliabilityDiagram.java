@@ -8,7 +8,6 @@ import java.util.function.Consumer;
 import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMetadata;
@@ -111,7 +110,7 @@ public final class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, M
         @Override
         protected ReliabilityDiagram build()
         {
-            return new ReliabilityDiagram(this.dataFactory);
+            return new ReliabilityDiagram(this);
         }
 
     }
@@ -119,12 +118,12 @@ public final class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, M
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the {@link DataFactory}.
+     * @param builder the builder
      */
 
-    protected ReliabilityDiagram(final DataFactory dataFactory)
+    protected ReliabilityDiagram(final ReliabilityDiagramBuilder builder)
     {
-        super(dataFactory);
+        super(builder);
         //Set the default bins
         bins = 10;
     }

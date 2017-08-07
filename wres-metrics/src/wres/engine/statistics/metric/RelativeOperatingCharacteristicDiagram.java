@@ -1,6 +1,5 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MultiVectorOutput;
@@ -49,7 +48,7 @@ public final class RelativeOperatingCharacteristicDiagram extends RelativeOperat
         @Override
         protected RelativeOperatingCharacteristicDiagram build()
         {
-            return new RelativeOperatingCharacteristicDiagram(this.dataFactory);
+            return new RelativeOperatingCharacteristicDiagram(this);
         }
 
     }
@@ -57,12 +56,12 @@ public final class RelativeOperatingCharacteristicDiagram extends RelativeOperat
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the {@link DataFactory}.
+     * @param builder the builder
      */
 
-    private RelativeOperatingCharacteristicDiagram(final DataFactory dataFactory)
+    private RelativeOperatingCharacteristicDiagram(final RelativeOperatingCharacteristicBuilder builder)
     {
-        super(dataFactory);
+        super(builder);
         //Set the default points
         points = 10;
     }

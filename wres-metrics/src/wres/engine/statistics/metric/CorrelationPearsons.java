@@ -132,12 +132,12 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     /**
      * Hidden constructor.
      * 
-     * @param b the builder
+     * @param builder the builder
      */
 
-    protected CorrelationPearsons(final CorrelationPearsonsBuilder b)
+    protected CorrelationPearsons(final CorrelationPearsonsBuilder builder)
     {
-        super(b.dataFactory);
+        super(builder);
         correlation = new PearsonsCorrelation();
     }
 

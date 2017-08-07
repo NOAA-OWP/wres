@@ -85,7 +85,7 @@ public final class QuantileQuantileDiagram extends Metric<SingleValuedPairs, Mul
         @Override
         protected QuantileQuantileDiagram build()
         {
-            return new QuantileQuantileDiagram(this.dataFactory);
+            return new QuantileQuantileDiagram(this);
         }
 
     }
@@ -93,12 +93,12 @@ public final class QuantileQuantileDiagram extends Metric<SingleValuedPairs, Mul
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the {@link DataFactory}.
+     * @param builder the builder
      */
 
-    private QuantileQuantileDiagram(final DataFactory dataFactory)
+    private QuantileQuantileDiagram(final QuantileQuantileDiagramBuilder builder)
     {
-        super(dataFactory);
+        super(builder);
         //Set the number of thresholds to 1000
         probCount = 1000;
     }
