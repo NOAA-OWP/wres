@@ -1,7 +1,14 @@
 package wres.io.concurrency;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.config.generated.Conditions;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
@@ -17,17 +24,11 @@ import wres.io.utilities.ScriptGenerator;
 import wres.util.Internal;
 import wres.util.NotImplementedException;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Created by ctubbs on 7/17/17.
  */
 @Internal(exclusivePackage = "wres.io")
-public final class PairRetriever extends WRESCallable<MetricInput>
+public final class PairRetriever extends WRESCallable<MetricInput<?>>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PairRetriever.class);
@@ -41,7 +42,7 @@ public final class PairRetriever extends WRESCallable<MetricInput>
     }
 
     @Override
-    public MetricInput execute () throws Exception {
+    public MetricInput<?> execute () throws Exception {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
 
         Connection connection = null;
@@ -73,9 +74,9 @@ public final class PairRetriever extends WRESCallable<MetricInput>
         return createInput(pairs);
     }
 
-    private MetricInput createInput(List<PairOfDoubleAndVectorOfDoubles> pairs)
+    private MetricInput<?> createInput(List<PairOfDoubleAndVectorOfDoubles> pairs)
     {
-        MetricInput input = null;
+        MetricInput<?> input = null;
 
         DatasourceType dataType = this.projectConfig.getInputs().getRight().getType();
 
