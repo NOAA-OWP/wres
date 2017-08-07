@@ -331,6 +331,8 @@ project(':wres-config')
         // To know about @Location
         compile 'com.sun.xml.bind:jaxb-core:2.2.11'
         runtime 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.6.4'
+
+        testCompile 'junit:junit:4.12'
     }
     // Wiring the generation of jaxb classes into standard compilation task:
     compileJava.dependsOn copyGenerated

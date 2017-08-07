@@ -173,6 +173,42 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <!-- An enum to specify if the left, right, or baseline has been chosen. -->
+    <xs:simpleType name="leftOrRightOrBaseline">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="left" />
+            <xs:enumeration value="right" />
+            <xs:enumeration value="baseline" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Thresholds need to specify an operator suitable for thresholding -->
+    <xs:simpleType name="thresholdOperator">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="less_than" />
+            <xs:enumeration value="less_than_or_equal_to" />
+            <xs:enumeration value="greater_than" />
+            <xs:enumeration value="greater_than_or_equal_to" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Thresholds need to specify probabilities and an operator. -->
+    <xs:complexType name="probabilityThreshold">
+
+        <!-- for class naming using xjc -->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="ProbabilityThresholdConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="applyTo" type="leftOrRightOrBaseline" default="left" />
+            <xs:element name="probabilities" type="xs:string" default="0.05,0.1,0.25,0.50,0.75,0.90,0.95" />
+            <xs:element name="operator" type="thresholdOperator" default="less_than" />
+        </xs:sequence>
+    </xs:complexType>
+
     <!-- There is a mapping between these names and the enum in MetricConstants.
          For now, these two lists must be periodically synchronized manually.-->
     <xs:simpleType name="metricConfigName">
@@ -210,11 +246,12 @@
             </xs:appinfo>
         </xs:annotation>
 
-        <xs:simpleContent>
-            <xs:extension base="metricConfigName">
-                <xs:attribute name="label" type="xs:string" />
-            </xs:extension>
-        </xs:simpleContent>
+        <xs:sequence>
+            <xs:element name="name" type="metricConfigName" />
+            <xs:element name="thresholds" type="probabilityThreshold" minOccurs="0" />
+        </xs:sequence>
+
+        <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
     <xs:simpleType name="destinationType">
@@ -432,6 +469,7 @@
                 <xs:element name="outputs">
                     <xs:complexType>
                         <xs:sequence>
+                            <xs:element name="defaultThresholds" type="probabilityThreshold" minOccurs="0" />
                             <xs:element name="metric" type="metric" minOccurs="0" maxOccurs="unbounded"/>
                             <xs:element name="destination" type="destination" maxOccurs="unbounded"/>
                         </xs:sequence>
