@@ -3,7 +3,6 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
-import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MulticategoryPairs;
@@ -102,7 +101,7 @@ public final class PeirceSkillScore<S extends MulticategoryPairs> extends Contin
         @Override
         public PeirceSkillScore<S> build()
         {
-            return new PeirceSkillScore<>(this.dataFactory);
+            return new PeirceSkillScore<>(this);
         }
 
     }
@@ -110,12 +109,12 @@ public final class PeirceSkillScore<S extends MulticategoryPairs> extends Contin
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the {@link DataFactory}.
+     * @param builder the builder
      */
 
-    private PeirceSkillScore(final DataFactory dataFactory)
+    private PeirceSkillScore(final PeirceSkillScoreBuilder<S> builder)
     {
-        super(dataFactory);
+        super(builder);
     }
 
 }

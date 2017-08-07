@@ -138,16 +138,18 @@ public class ControlTemp
         {
             for(Conditions.Feature nextFeature: features)
             {
-                
-                if(LOGGER.isInfoEnabled()) {
-                    LOGGER.info("Processing feature '" + nextFeature.getLocation().getLid()+"'.");
+
+                if(LOGGER.isInfoEnabled())
+                {
+                    LOGGER.info("Processing feature '" + nextFeature.getLocation().getLid() + "'.");
                 }
                 InputGenerator metricInputs = Operations.getInputs(config, nextFeature);
                 //Iterate through the inputs and compute all metrics for each input
                 while(metricInputs.next())
                 {
-                    if(LOGGER.isInfoEnabled()) {
-                        LOGGER.info("Processing lead time '" + metricInputs.getInput().getWindowNumber()+"'.");
+                    if(LOGGER.isInfoEnabled())
+                    {
+                        LOGGER.info("Processing lead time '" + metricInputs.getInput().getWindowNumber() + "'.");
                     }
                     MetricOutputForProjectByLeadThreshold nextResult = processor.apply(metricInputs.getInput()
                                                                                                    .getMetricInput());
@@ -159,31 +161,35 @@ public class ControlTemp
                         //Call wres-vis factory with intermediate output
 
                     }
-                    if(LOGGER.isInfoEnabled()) {
-                        LOGGER.info("Completed lead time '" + metricInputs.getInput().getWindowNumber()+"'.");
+                    if(LOGGER.isInfoEnabled())
+                    {
+                        LOGGER.info("Completed lead time '" + metricInputs.getInput().getWindowNumber() + "'.");
                     }
                 }
             }
             //Process end-of-pipeline outputs
-            MetricOutputForProjectByLeadThreshold store = processor.getStoredMetricOutput();
+            if(processor.hasStoredMetricOutput())
+            {
+                MetricOutputForProjectByLeadThreshold store = processor.getStoredMetricOutput();
 //            //Method trace if wres-vis CAN handle MetricOutput<?>
 //            MetricOutputMultiMapByLeadThreshold<MetricOutput<?>> forAllProducts =
 //                                                                                store.getOutput(MetricOutputGroup.SCALAR,
 //                                                                                                MetricOutputGroup.VECTOR);
 //            //Call wres-vis factory with final output
 
-            //Method trace if wres-vis CANNOT handle MetricOutput<?>
-            if(store.hasOutput(MetricOutputGroup.SCALAR))
-            {
-                MetricOutputMultiMapByLeadThreshold<ScalarOutput> forProducts = store.getScalarOutput();
-                //Call wres-vis factory with final output
+                //Method trace if wres-vis CANNOT handle MetricOutput<?>
+                if(store.hasOutput(MetricOutputGroup.SCALAR))
+                {
+                    MetricOutputMultiMapByLeadThreshold<ScalarOutput> forProducts = store.getScalarOutput();
+                    //Call wres-vis factory with final output
 
-            }
-            if(store.hasOutput(MetricOutputGroup.VECTOR))
-            {
-                MetricOutputMultiMapByLeadThreshold<VectorOutput> forProducts = store.getVectorOutput();
-                //Call wres-vis factory with final output
+                }
+                if(store.hasOutput(MetricOutputGroup.VECTOR))
+                {
+                    MetricOutputMultiMapByLeadThreshold<VectorOutput> forProducts = store.getVectorOutput();
+                    //Call wres-vis factory with final output
 
+                }
             }
         }
         catch(SQLException | InterruptedException | ExecutionException e)
@@ -191,7 +197,8 @@ public class ControlTemp
             LOGGER.error(e.getMessage(), e);
         }
         final long stop = System.currentTimeMillis(); //End time
-        if(LOGGER.isInfoEnabled()) {
+        if(LOGGER.isInfoEnabled())
+        {
             LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
         }
 

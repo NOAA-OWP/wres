@@ -73,12 +73,12 @@ implements ProbabilityScore
     /**
      * Hidden constructor.
      * 
-     * @param b the builder
+     * @param builder the builder
      */
 
-    private BrierSkillScore(final BrierSkillScoreBuilder b)
+    private BrierSkillScore(final BrierSkillScoreBuilder builder)
     {
-        super(b);
+        super(builder);
     }
 
 }

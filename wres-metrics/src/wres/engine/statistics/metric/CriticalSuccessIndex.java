@@ -1,6 +1,5 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
@@ -57,7 +56,7 @@ public final class CriticalSuccessIndex extends ContingencyTableScore<Dichotomou
         @Override
         protected CriticalSuccessIndex build()
         {
-            return new CriticalSuccessIndex(dataFactory);
+            return new CriticalSuccessIndex(this);
         }
 
     }
@@ -65,12 +64,12 @@ public final class CriticalSuccessIndex extends ContingencyTableScore<Dichotomou
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the {@link DataFactory}.
+     * @param builder the {@link builder}.
      */
 
-    private CriticalSuccessIndex(final DataFactory dataFactory)
+    private CriticalSuccessIndex(final CriticalSuccessIndexBuilder builder)
     {
-        super(dataFactory);
+        super(builder);
     }
 
 }

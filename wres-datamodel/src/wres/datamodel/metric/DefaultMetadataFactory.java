@@ -239,7 +239,7 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "EQUITABLE THREAT SCORE";
             case MEAN_ABSOLUTE_ERROR:
                 return "MEAN ABSOLUTE ERROR";
-            case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
+            case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
                 return "MEAN CONTINUOUS RANKED PROBABILITY SKILL SCORE";
             case MEAN_ERROR:
                 return "MEAN ERROR";
@@ -292,7 +292,7 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "ETS";
             case MEAN_ABSOLUTE_ERROR:
                 return "MAE";
-            case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
+            case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
                 return "MEAN CRPSS";
             case MEAN_ERROR:
                 return "MEAN ERROR";
