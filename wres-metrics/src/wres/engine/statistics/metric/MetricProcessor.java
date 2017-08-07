@@ -144,20 +144,31 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     final MetricFutures futures;
 
     /**
-     * Returns a {@link MetricOutputForProjectByLeadThreshold} for the last available results or null. Results are only
-     * available when two conditions are met:
-     * <ol>
-     * <li>The {@link MetricProcessor} has been constructed to merge across sequential calls to {@link #apply(Object)}
-     * for specific {@link MetricOutputGroup}; and</li>
-     * <li>One or more calls were made to {@link #apply(Object)} before this method is called.</li>
-     * </ol>
+     * Returns a {@link MetricOutputForProjectByLeadThreshold} for the last available results or null if
+     * {@link #hasStoredMetricOutput()} returns false.
      * 
      * @return a {@link MetricOutputForProjectByLeadThreshold} or null
      */
 
     public MetricOutputForProjectByLeadThreshold getStoredMetricOutput()
     {
-        return futures.hasMetricOutput() ? futures.getMetricOutput() : null;
+        return hasStoredMetricOutput() ? futures.getMetricOutput() : null;
+    }
+
+    /**
+     * Returns true when stored results are available, false otherwise. Stored results are only available when two
+     * conditions are met:
+     * <ol>
+     * <li>The {@link MetricProcessor} has been constructed to merge across sequential calls to {@link #apply(Object)}
+     * for specific {@link MetricOutputGroup}; and</li>
+     * <li>One or more calls were made to {@link #apply(Object)} before this method is called.</li>
+     * </ol>
+     * 
+     * @return true if stored results are available, false otherwise
+     */
+    
+    public boolean hasStoredMetricOutput() {
+        return futures.hasMetricOutput();
     }
 
     /**

@@ -10,7 +10,10 @@ import org.junit.Test;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
+import wres.datamodel.metric.Metadata;
+import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.ScalarOutput;
@@ -72,6 +75,51 @@ public final class MetricProcessorSingleValuedPairsTest
             assertTrue("Unexpected difference in " + MetricConstants.MEAN_ERROR, me.getValue(0).getData().equals(-5.0));
             assertTrue("Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
                        rmse.getValue(0).getData().equals(5.0));
+
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            fail("Unexpected exception on processing project configuration '" + configPath + "'.");
+        }
+    }
+
+    /**
+     * Tests the construction of a {@link MetricProcessorSingleValuedPairs} and application of
+     * {@link MetricProcessorSingleValuedPairs#apply(wres.datamodel.metric.SingleValuedPairs)} to configuration obtained
+     * from testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml and pairs obtained from
+     * {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple calls with separate
+     * forecast lead times.
+     */
+
+    @Test
+    public void test2ApplyNoThresholds()
+    {
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        String configPath = "testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
+            MetricProcessorSingleValuedPairs processor =
+                                                       (MetricProcessorSingleValuedPairs)MetricFactory.getInstance(metIn)
+                                                                                                      .getMetricProcessor(config,
+                                                                                                                          MetricOutputGroup.SCALAR);
+            SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
+            final MetadataFactory metFac = metIn.getMetadataFactory();
+            //Generate results for 10 nominal lead times
+            for(int i = 1; i < 11; i++)
+            {
+
+                final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
+                                                         metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"),
+                                                         i);
+                SingleValuedPairs next = metIn.ofSingleValuedPairs(pairs.getData(), meta);
+                processor.apply(next);
+            }
+            processor.getStoredMetricOutput().getScalarOutput().forEach((key, value) -> {
+                assertTrue("Expected results at ten forecast lead times for the " + key.getFirstKey(),
+                           value.size() == 10);
+            });
         }
         catch(Exception e)
         {
