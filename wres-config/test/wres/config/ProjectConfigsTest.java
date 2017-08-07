@@ -22,7 +22,7 @@ public class ProjectConfigsTest
         String probabilities = "0.2, 0.5,0.8";
 
         LeftOrRightOrBaseline applyToLeft = LeftOrRightOrBaseline.fromValue( "left" );
-        ThresholdOperator operator = ThresholdOperator.fromValue( "less_than" );
+        ThresholdOperator operator = ThresholdOperator.fromValue( "less than" );
         ProbabilityThresholdConfig config =
                 new ProbabilityThresholdConfig( applyToLeft,
                                                 probabilities,
@@ -44,7 +44,7 @@ public class ProjectConfigsTest
     {
         String probabilities = "boogaflickle";
         LeftOrRightOrBaseline applyToLeft = LeftOrRightOrBaseline.fromValue( "left" );
-        ThresholdOperator operator = ThresholdOperator.fromValue( "less_than" );
+        ThresholdOperator operator = ThresholdOperator.fromValue( "less than" );
 
         ProbabilityThresholdConfig config =
                 new ProbabilityThresholdConfig( applyToLeft,
@@ -60,7 +60,7 @@ public class ProjectConfigsTest
     {
         String probabilities = "-5.0";
         LeftOrRightOrBaseline applyToLeft = LeftOrRightOrBaseline.fromValue( "left" );
-        ThresholdOperator operator = ThresholdOperator.fromValue( "less_than" );
+        ThresholdOperator operator = ThresholdOperator.fromValue( "less than" );
 
         ProbabilityThresholdConfig config =
                 new ProbabilityThresholdConfig( applyToLeft,
@@ -76,7 +76,7 @@ public class ProjectConfigsTest
     {
         String probabilities = "1.2";
         LeftOrRightOrBaseline applyToLeft = LeftOrRightOrBaseline.fromValue( "left" );
-        ThresholdOperator operator = ThresholdOperator.fromValue( "less_than" );
+        ThresholdOperator operator = ThresholdOperator.fromValue( "less than" );
 
         ProbabilityThresholdConfig config =
                 new ProbabilityThresholdConfig( applyToLeft,

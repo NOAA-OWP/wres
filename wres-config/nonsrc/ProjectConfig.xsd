@@ -185,10 +185,10 @@
     <!-- Thresholds need to specify an operator suitable for thresholding -->
     <xs:simpleType name="thresholdOperator">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="less_than" />
-            <xs:enumeration value="less_than_or_equal_to" />
-            <xs:enumeration value="greater_than" />
-            <xs:enumeration value="greater_than_or_equal_to" />
+            <xs:enumeration value="less than" />
+            <xs:enumeration value="less than or equal to" />
+            <xs:enumeration value="greater than" />
+            <xs:enumeration value="greater than or equal to" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -205,7 +205,7 @@
         <xs:sequence>
             <xs:element name="applyTo" type="leftOrRightOrBaseline" default="left" />
             <xs:element name="probabilities" type="xs:string" default="0.05,0.1,0.25,0.50,0.75,0.90,0.95" />
-            <xs:element name="operator" type="thresholdOperator" default="less_than" />
+            <xs:element name="operator" type="thresholdOperator" default="less than" />
         </xs:sequence>
     </xs:complexType>
 
@@ -213,27 +213,27 @@
          For now, these two lists must be periodically synchronized manually.-->
     <xs:simpleType name="metricConfigName">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="BIAS_FRACTION" />
-            <xs:enumeration value="BRIER_SCORE" />
-            <xs:enumeration value="BRIER_SKILL_SCORE" />
-            <xs:enumeration value="COEFFICIENT_OF_DETERMINATION" />
-            <xs:enumeration value="CONTINGENCY_TABLE" />
-            <xs:enumeration value="CORRELATION_PEARSONS" />
-            <xs:enumeration value="CRITICAL_SUCCESS_INDEX" />
-            <xs:enumeration value="EQUITABLE_THREAT_SCORE" />
-            <xs:enumeration value="MEAN_ABSOLUTE_ERROR" />
-            <xs:enumeration value="MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE" />
-            <xs:enumeration value="MEAN_ERROR" />
-            <xs:enumeration value="MEAN_SQUARE_ERROR" />
-            <xs:enumeration value="MEAN_SQUARE_ERROR_SKILL_SCORE" />
-            <xs:enumeration value="PEIRCE_SKILL_SCORE" />
-            <xs:enumeration value="PROBABILITY_OF_DETECTION" />
-            <xs:enumeration value="PROBABILITY_OF_FALSE_DETECTION" />
-            <xs:enumeration value="QUANTILE_QUANTILE_DIAGRAM" />
-            <xs:enumeration value="RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM" />
-            <xs:enumeration value="RELATIVE_OPERATING_CHARACTERISTIC_SCORE" />
-            <xs:enumeration value="RELIABILITY_DIAGRAM" />
-            <xs:enumeration value="ROOT_MEAN_SQUARE_ERROR" />
+            <xs:enumeration value="bias fraction" />
+            <xs:enumeration value="brier score" />
+            <xs:enumeration value="brier skill score" />
+            <xs:enumeration value="coefficient of determination" />
+            <xs:enumeration value="contingency table" />
+            <xs:enumeration value="correlation pearsons" />
+            <xs:enumeration value="critical success index" />
+            <xs:enumeration value="equitable threat score" />
+            <xs:enumeration value="mean absolute error" />
+            <xs:enumeration value="mean continuous ranked probability skill score" />
+            <xs:enumeration value="mean error" />
+            <xs:enumeration value="mean square error" />
+            <xs:enumeration value="mean square error skill score" />
+            <xs:enumeration value="peirce skill score" />
+            <xs:enumeration value="probability of detection" />
+            <xs:enumeration value="probability of false detection" />
+            <xs:enumeration value="quantile quantile diagram" />
+            <xs:enumeration value="relative operating characteristic diagram" />
+            <xs:enumeration value="relative operating characteristic score" />
+            <xs:enumeration value="reliability diagram" />
+            <xs:enumeration value="root mean square error" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -264,9 +264,9 @@
     <!-- Possibilities for the graphical plotType element. -->
     <xs:simpleType name="plotTypeSelection">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="LEAD_THRESHOLD" />
-            <xs:enumeration value="THRESHOLD_LEAD" />
-            <xs:enumeration value="SINGLE_VALUED_PAIRS" />
+            <xs:enumeration value="lead threshold" />
+            <xs:enumeration value="threshold lead" />
+            <xs:enumeration value="single valued pairs" />
         </xs:restriction>
     </xs:simpleType>
     
