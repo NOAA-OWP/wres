@@ -62,12 +62,12 @@ public final class MeanError extends DoubleErrorScore<SingleValuedPairs>
     /**
      * Hidden constructor.
      * 
-     * @param b the builder
+     * @param builder the builder
      */
 
-    private MeanError(final MeanErrorBuilder b)
+    private MeanError(final MeanErrorBuilder builder)
     {
-        super(b.setErrorFunction(FunctionFactory.error()));
+        super(builder.setErrorFunction(FunctionFactory.error()));
     }
 
 }

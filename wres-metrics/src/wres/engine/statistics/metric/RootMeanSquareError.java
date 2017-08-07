@@ -71,12 +71,12 @@ public final class RootMeanSquareError extends DoubleErrorScore<SingleValuedPair
     /**
      * Hidden constructor.
      * 
-     * @param b the builder
+     * @param builder the builder
      */
 
-    private RootMeanSquareError(final RootMeanSquareErrorBuilder b)
+    private RootMeanSquareError(final RootMeanSquareErrorBuilder builder)
     {
-        super(b.setErrorFunction(FunctionFactory.squareError()));
+        super(builder.setErrorFunction(FunctionFactory.squareError()));
     }
 
 }

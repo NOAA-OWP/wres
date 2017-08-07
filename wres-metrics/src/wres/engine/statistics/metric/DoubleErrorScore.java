@@ -71,14 +71,14 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metr
     /**
      * Hidden constructor.
      * 
-     * @param b the builder
+     * @param builder the builder
      */
 
-    protected DoubleErrorScore(final DoubleErrorScoreBuilder<S> b)
+    protected DoubleErrorScore(final DoubleErrorScoreBuilder<S> builder)
     {
-        super(b.dataFactory);
-        Objects.requireNonNull(b.f, "Specify a non-null function from which to construct the metric.");
-        this.f = b.f;
+        super(builder);
+        Objects.requireNonNull(builder.f, "Specify a non-null function from which to construct the metric.");
+        this.f = builder.f;
     }
 
 }

@@ -212,18 +212,22 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
     }
 
     /**
-     * Construct a {@link Metric} with a {@link DataFactory}.
+     * Construct a {@link Metric} with a {@link MetricBuilder}.
      * 
-     * @param dataFactory the {@link DataFactory}.
+     * @param builder the builder
      */
 
-    protected Metric(final DataFactory dataFactory)
+    protected Metric(final MetricBuilder<S,T> builder)
     {
-        if(Objects.isNull(dataFactory))
+        if(Objects.isNull(builder))
         {
-            throw new UnsupportedOperationException("Cannot construct the metric without a data factory.");
+            throw new UnsupportedOperationException("Cannot construct the metric without a null builder.");
         }
-        this.dataFactory = dataFactory;
+        if(Objects.isNull(builder.dataFactory))
+        {
+            throw new UnsupportedOperationException("Specify a data factory with which to build the metric.");
+        }        
+        this.dataFactory = builder.dataFactory;
     }
 
 }

@@ -160,8 +160,16 @@ public class DefaultSlicer implements Slicer
             return dataFac.ofEnsemblePairs(mainPairsSubset, basePairsSubset, metaTransformed, metaBaseTransformed);
         }
         return dataFac.ofEnsemblePairs(mainPairsSubset, metaTransformed);
-    } 
-    
+    }
+
+    @Override
+    public List<EnsemblePairs> sliceByRight(EnsemblePairs input)
+    {
+        Objects.requireNonNull(input, NULL_INPUT);
+        
+        return null;
+    }
+
     @Override
     public List<PairOfDoubles> transformPairs(List<PairOfDoubleAndVectorOfDoubles> input,
                                               Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper)
@@ -169,10 +177,10 @@ public class DefaultSlicer implements Slicer
         Objects.requireNonNull(input, NULL_INPUT);
         Objects.requireNonNull(mapper, NULL_MAPPER);
         List<PairOfDoubles> transformed = new ArrayList<>();
-        input.stream().map(mapper).forEach(transformed::add);        
+        input.stream().map(mapper).forEach(transformed::add);
         return transformed;
     }
-    
+
     @Override
     public DichotomousPairs transformPairs(SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper)
     {
@@ -261,14 +269,14 @@ public class DefaultSlicer implements Slicer
         double rhs = Arrays.stream(pair.getItemTwo()).map(a -> threshold.test(a) ? 1 : 0).average().getAsDouble();
         return dataFac.pairOf(threshold.test(pair.getItemOne()) ? 1 : 0, rhs);
     }
-    
+
     @Override
     public PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair)
     {
         Objects.requireNonNull(pair, NULL_INPUT);
         return dataFac.pairOf(pair.getItemOne(), pair.getItemTwo()[0]);
-    }   
-    
+    }
+
     @Override
     public double getQuantile(double probability, double[] sorted)
     {
@@ -281,7 +289,7 @@ public class DefaultSlicer implements Slicer
             throw new IllegalArgumentException("Cannot compute the inverse cumulative probability from empty input.");
         }
         //Single item
-        if(sorted.length == 1) 
+        if(sorted.length == 1)
         {
             return sorted[0];
         }
@@ -297,7 +305,7 @@ public class DefaultSlicer implements Slicer
         }
 
         //Find the low index, zero-based
-        double lowIndex = probability * sorted.length -1;
+        double lowIndex = probability * sorted.length - 1;
         //If the probability maps below the first sample, return the first sample as the lower bound is undefined
         if(lowIndex < 0.0)
         {

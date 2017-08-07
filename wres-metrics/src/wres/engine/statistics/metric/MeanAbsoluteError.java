@@ -62,12 +62,12 @@ public final class MeanAbsoluteError extends DoubleErrorScore<SingleValuedPairs>
     /**
      * Hidden constructor.
      * 
-     * @param b the builder
+     * @param builder the builder
      */
 
-    private MeanAbsoluteError(final MeanAbsoluteErrorBuilder b)
+    private MeanAbsoluteError(final MeanAbsoluteErrorBuilder builder)
     {
-        super(b.setErrorFunction(FunctionFactory.absError()));
+        super(builder.setErrorFunction(FunctionFactory.absError()));
     }
 
 }

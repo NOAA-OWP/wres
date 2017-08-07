@@ -65,17 +65,17 @@ implements Score
     /**
      * Hidden constructor.
      * 
-     * @param b the builder
+     * @param builder the builder
      */
 
-    protected DecomposableDoubleErrorScore(final DecomposableDoubleErrorScoreBuilder<S> b)
+    protected DecomposableDoubleErrorScore(final DecomposableDoubleErrorScoreBuilder<S> builder)
     {
-        super(b.dataFactory);
-        if(!Score.isSupportedDecompositionID(b.decompositionID))
+        super(builder);
+        if(!Score.isSupportedDecompositionID(builder.decompositionID))
         {
-            throw new IllegalStateException("Unrecognized decomposition identifier: " + b.decompositionID);
+            throw new IllegalStateException("Unsupported decomposition identifier: " + builder.decompositionID);
         }
-        this.decompositionID = b.decompositionID;
+        this.decompositionID = builder.decompositionID;
     }
 
 }

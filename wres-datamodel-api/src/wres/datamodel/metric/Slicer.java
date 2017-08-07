@@ -46,7 +46,7 @@ public interface Slicer
      */
 
     double[] getLeftSide(EnsemblePairs input);
-  
+
     /**
      * Returns a subset of pairs where the {@link Threshold} is met on the left side or null for the empty subset.
      * 
@@ -66,9 +66,20 @@ public interface Slicer
      */
 
     EnsemblePairs sliceByLeft(EnsemblePairs input, Threshold threshold);
-  
+
     /**
-     * Produces a {@link List} of {@link PairOfDoubles} from a {@link List} of {@link PairOfDoubleAndVectorOfDoubles} 
+     * Returns as many {@link EnsemblePairs} as groups of atomic pairs in the input with an equal number of ensemble
+     * members. i.e. each {@link EnsemblePairs} in the returned list has an equal number of ensemble members,
+     * internally, and a different number of ensemble members than all other subsets of pairs in the returned list.
+     * 
+     * @param input the {@link EnsemblePairs} to slice
+     * @return as many subsets of {@link EnsemblePairs} as groups of atomic pairs in the input of equal size
+     */
+
+    List<EnsemblePairs> sliceByRight(EnsemblePairs input);
+
+    /**
+     * Produces a {@link List} of {@link PairOfDoubles} from a {@link List} of {@link PairOfDoubleAndVectorOfDoubles}
      * using a prescribed mapper function.
      * 
      * @param input the {@link EnsemblePairs}
@@ -77,8 +88,8 @@ public interface Slicer
      */
 
     List<PairOfDoubles> transformPairs(List<PairOfDoubleAndVectorOfDoubles> input,
-                                     Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper);        
-    
+                                       Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper);
+
     /**
      * Produces {@link DichotomousPairs} from a {@link SingleValuedPairs} by applying a mapper function to the input.
      * 
@@ -99,7 +110,7 @@ public interface Slicer
 
     SingleValuedPairs transformPairs(EnsemblePairs input,
                                      Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper);
-    
+
     /**
      * Produces {@link DiscreteProbabilityPairs} from a {@link EnsemblePairs} by applying a mapper function to the input
      * using a prescribed {@link Threshold}.
@@ -125,7 +136,7 @@ public interface Slicer
      */
 
     PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair, Threshold threshold);
-    
+
     /**
      * Converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} by retrieving the first element of
      * the right hand side from the paired {@link VectorOfDoubles}.
@@ -134,8 +145,8 @@ public interface Slicer
      * @return the transformed pair
      */
 
-    PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair);    
-    
+    PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair);
+
     /**
      * Returns a value from the sorted array that corresponds to the input non-exceedence probability (p). This method
      * produces undefined results if the input array is unsorted. Corresponds to method 4 in the R function,

@@ -78,12 +78,12 @@ public final class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> 
     /**
      * Hidden constructor.
      * 
-     * @param b the builder
+     * @param builder the builder
      */
 
-    private BiasFraction(final BiasFractionBuilder b)
+    private BiasFraction(final BiasFractionBuilder builder)
     {
-        super(b.dataFactory);
+        super(builder);
     }
 
 }

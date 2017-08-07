@@ -109,7 +109,6 @@ public final class MetricProcessorSingleValuedPairsTest
             //Generate results for 10 nominal lead times
             for(int i = 1; i < 11; i++)
             {
-
                 final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
                                                          metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"),
                                                          i);
