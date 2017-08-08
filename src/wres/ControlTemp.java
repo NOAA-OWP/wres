@@ -1,42 +1,14 @@
 package wres;
 
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.function.ToDoubleFunction;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
+import wres.datamodel.metric.*;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMapByMetric;
-import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
-import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.Threshold;
-import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -47,6 +19,24 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.io.utilities.InputGenerator;
+import wres.util.Strings;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.function.ToDoubleFunction;
 
 /**
  * Another Main. The reason for creating this class separately from Main is to defer conflict with the existing
@@ -137,66 +127,92 @@ public class ControlTemp
             MetricProcessor processor = MetricFactory.getInstance(dataFac).getMetricProcessor(config,
                                                                                               MetricOutputGroup.SCALAR,
                                                                                               MetricOutputGroup.VECTOR);
+
+            Map<Conditions.Feature, List<Future<MetricInput<?>>>> featureMetricInputs = new HashMap<>();
+
+            // Job dispatch per feature per lead occurs first to ensure that there are as many jobs as possible running
+            // while generating new retrieval jobs
             for(Conditions.Feature nextFeature: features)
+            {
+                if(LOGGER.isInfoEnabled())
+                {
+                    LOGGER.info("Gathering pairs for '" + nextFeature.getLocation().getLid() + "'.");
+                }
+
+                featureMetricInputs.put(nextFeature, new LinkedList<>());
+                InputGenerator metricInputs = Operations.getInputs(config, nextFeature);
+                metricInputs.forEach(featureMetricInputs.get(nextFeature)::add);
+            }
+
+            // Once all pair retrieval jobs have been dispatched, cycle through, obtain the pairs, and pass them through
+            // the metric processors.
+            for (Map.Entry<Conditions.Feature, List<Future<MetricInput<?>>>> featureMetricInput : featureMetricInputs.entrySet())
             {
 
                 if(LOGGER.isInfoEnabled())
                 {
-                    LOGGER.info("Processing feature '" + nextFeature.getLocation().getLid() + "'.");
+                    LOGGER.info("Processing feature '" + featureMetricInput.getKey().getLocation().getLid() + "'.");
                 }
-                InputGenerator metricInputs = Operations.getInputs(config, nextFeature);
+
                 //Iterate through the inputs and compute all metrics for each input
-                while(metricInputs.next())
+                int window = 1;
+
+                for (Future<MetricInput<?>> input : featureMetricInput.getValue())
                 {
                     if(LOGGER.isInfoEnabled())
                     {
-                        LOGGER.info("Processing lead time '" + metricInputs.getInput().getWindowNumber() + "'.");
+                        LOGGER.info("Processing lead time '" + String.valueOf(window) + "'.");
                     }
-                    MetricOutputForProjectByLeadThreshold nextResult = processor.apply(metricInputs.getInput()
-                                                                                                   .getMetricInput());
-                    //Generate products for intermediate output types
-                    if(nextResult.hasOutput(MetricOutputGroup.MULTIVECTOR))
-                    {
-                        MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> forProducts =
-                                                                                           nextResult.getMultiVectorOutput();
-                        //Call wres-vis factory with intermediate output
 
+                    MetricOutputForProjectByLeadThreshold nextResult = null;
+                    try {
+                        processor.apply(input.get());
+                    }
+                    catch (InterruptedException e) {
+                        LOGGER.error("MetricInput generation was interupted.");
+                        LOGGER.error(Strings.getStackTrace(e));
+                        continue;
+                    }
+                    catch (ExecutionException e)
+                    {
+                        LOGGER.error("MetricInput generation was aborted by throwing an exception.");
+                        LOGGER.error(Strings.getStackTrace(e));
+                        continue;
+                    }
+
+                    if (nextResult.hasOutput(MetricOutputGroup.MULTIVECTOR))
+                    {
+                        try {
+                            MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> forProducts =
+                                    nextResult.getMultiVectorOutput();
+
+                            //Call wres-vis factory with intermediate output
+                        }
+                        catch (InterruptedException e) {
+                            LOGGER.error("Multivector metric output generation was interupted.");
+                            LOGGER.error(Strings.getStackTrace(e));
+                            continue;
+                        }
+                        catch (ExecutionException e) {
+                            LOGGER.error("Multivector metric output generation was aborted by throwing an exception.");
+                            LOGGER.error(Strings.getStackTrace(e));
+                            continue;
+                        }
                     }
                     if(LOGGER.isInfoEnabled())
                     {
-                        LOGGER.info("Completed lead time '" + metricInputs.getInput().getWindowNumber() + "'.");
+                        LOGGER.info("Completed lead time '" + String.valueOf(window) + "'.");
                     }
-                }
-            }
-            //Process end-of-pipeline outputs
-            if(processor.hasStoredMetricOutput())
-            {
-                MetricOutputForProjectByLeadThreshold store = processor.getStoredMetricOutput();
-//            //Method trace if wres-vis CAN handle MetricOutput<?>
-//            MetricOutputMultiMapByLeadThreshold<MetricOutput<?>> forAllProducts =
-//                                                                                store.getOutput(MetricOutputGroup.SCALAR,
-//                                                                                                MetricOutputGroup.VECTOR);
-//            //Call wres-vis factory with final output
 
-                //Method trace if wres-vis CANNOT handle MetricOutput<?>
-                if(store.hasOutput(MetricOutputGroup.SCALAR))
-                {
-                    MetricOutputMultiMapByLeadThreshold<ScalarOutput> forProducts = store.getScalarOutput();
-                    //Call wres-vis factory with final output
-
-                }
-                if(store.hasOutput(MetricOutputGroup.VECTOR))
-                {
-                    MetricOutputMultiMapByLeadThreshold<VectorOutput> forProducts = store.getVectorOutput();
-                    //Call wres-vis factory with final output
-
+                    window++;
                 }
             }
         }
-        catch(SQLException | InterruptedException | ExecutionException | MetricConfigurationException e)
+        catch(MetricConfigurationException e)
         {
             LOGGER.error(e.getMessage(), e);
         }
+
         final long stop = System.currentTimeMillis(); //End time
         if(LOGGER.isInfoEnabled())
         {
