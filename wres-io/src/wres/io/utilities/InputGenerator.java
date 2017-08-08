@@ -62,6 +62,13 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             {
                 LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(this.getVariableID());
                 this.lastWindowNumber = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
+
+                // If the last window number could not be determined from the database, set it to a number that should
+                // always yield false on validity checks
+                if (this.lastWindowNumber == null)
+                {
+                    this.lastWindowNumber = -1;
+                }
             }
             return this.lastWindowNumber;
         }
