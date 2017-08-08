@@ -77,11 +77,12 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
      * @param config the project configuration
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(MetricInput)}
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
     MetricProcessorSingleValuedPairs(DataFactory dataFactory,
                                      ProjectConfig config,
-                                     final MetricOutputGroup... mergeList)
+                                     final MetricOutputGroup... mergeList) throws MetricConfigurationException
     {
         super(dataFactory, config, mergeList);
         //Construct the metrics
@@ -100,11 +101,13 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
 
     /**
      * Processes a set of metric futures that consume {@link DichotomousPairs}, which are mapped from the input pairs,
-     * {@link SingleValuedPairs}, using a configured mapping function.
+     * {@link SingleValuedPairs}, using a configured mapping function. Skips any thresholds for which
+     * {@link Double#isFinite(double)} returns <code>false</code> on the threshold value(s).
      * 
      * @param leadTime the lead time
      * @param input the input pairs
      * @param futures the metric futures
+     * @throws MetricCalculationException if the metrics cannot be computed
      */
 
     private void processDichotomousPairs(Integer leadTime, SingleValuedPairs input, MetricFutures futures)
@@ -131,14 +134,15 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
             else
             {
                 //Hook for future logic
-                throw new UnsupportedOperationException(unsupportedException);
+                throw new MetricCalculationException(unsupportedException);
             }
         }
     }
 
     /**
      * Builds a metric future for a {@link MetricCollection} that consumes {@link DichotomousPairs} at a specific lead
-     * time and {@link Threshold} and appends it to the input map of futures.
+     * time and {@link Threshold} and appends it to the input map of futures. Skips any thresholds for which
+     * {@link Double#isFinite(double)} returns <code>false</code> on the threshold value(s).
      * 
      * @param leadTime the lead time
      * @param threshold the threshold
@@ -158,6 +162,12 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
                                                                             ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<T>>> futures)
     {
         Threshold useMe = threshold;
+        //Skip non-finite thresholds
+        if(!useMe.isFinite()) 
+        {
+            return false;
+        }
+
         //Quantile required: need to determine real-value from probability
         if(threshold instanceof ProbabilityThreshold)
         {

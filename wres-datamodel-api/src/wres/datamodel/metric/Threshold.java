@@ -92,6 +92,14 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      */
 
     boolean hasBetweenCondition();
+    
+    /**
+     * Returns true if {@link Double#isFinite(double)} returns true for all threshold values, false otherwise.
+     * 
+     * @return true if the threshold is finite, false otherwise
+     */
+    
+    boolean isFinite();
 
     /**
      * Returns a string representation of the threshold.

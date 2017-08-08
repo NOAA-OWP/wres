@@ -38,6 +38,7 @@ import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.Threshold;
 import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
 import wres.io.Operations;
@@ -128,14 +129,14 @@ public class ControlTemp
         //Obtain the features
         List<Conditions.Feature> features = config.getConditions().getFeature();
 
-        //Some output types are processed at the end of the pipeline, others after each input is processed 
-        //Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR      
-        MetricProcessor processor = MetricFactory.getInstance(dataFac).getMetricProcessor(config,
-                                                                                          MetricOutputGroup.SCALAR,
-                                                                                          MetricOutputGroup.VECTOR);
         //Iterate through the features
         try
         {
+            //Some output types are processed at the end of the pipeline, others after each input is processed 
+            //Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR      
+            MetricProcessor processor = MetricFactory.getInstance(dataFac).getMetricProcessor(config,
+                                                                                              MetricOutputGroup.SCALAR,
+                                                                                              MetricOutputGroup.VECTOR);
             for(Conditions.Feature nextFeature: features)
             {
 
@@ -192,7 +193,7 @@ public class ControlTemp
                 }
             }
         }
-        catch(SQLException | InterruptedException | ExecutionException e)
+        catch(SQLException | InterruptedException | ExecutionException | MetricConfigurationException e)
         {
             LOGGER.error(e.getMessage(), e);
         }

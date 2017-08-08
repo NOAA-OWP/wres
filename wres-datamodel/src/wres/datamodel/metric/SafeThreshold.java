@@ -203,4 +203,14 @@ class SafeThreshold implements Threshold
         }
     }
 
+    @Override
+    public boolean isFinite()
+    {
+        boolean returnMe = Double.isFinite(threshold);
+        if(hasBetweenCondition()) {
+            returnMe = returnMe && Double.isFinite(thresholdUpper);
+        }
+        return returnMe;
+    }
+
 }

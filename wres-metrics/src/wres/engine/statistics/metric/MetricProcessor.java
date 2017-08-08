@@ -13,10 +13,13 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigs;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.EnsemblePairs;
 import wres.datamodel.metric.MapBiKey;
@@ -62,7 +65,8 @@ import wres.datamodel.metric.VectorOutput;
  * {@link MetricProcessor} is primed, a transformation must be applied. For example, {@link Metric} that consume
  * {@link SingleValuedPairs} may be computed for {@link EnsemblePairs} if an appropriate transformation is configured.
  * Subclasses must define and apply any transformation required. If inappropriate {@link MetricInput} are provided to
- * {@link #apply(Object)} for the {@link MetricCollection} configured, an unchecked exception will be thrown.
+ * {@link #apply(Object)} for the {@link MetricCollection} configured, an unchecked {@link MetricCalculationException}
+ * will be thrown. If metrics are configured incorrectly, a checked {@link MetricConfigurationException} will be thrown.
  * </p>
  * <p>
  * Upon calling {@link #apply(Object)} with a concrete {@link MetricInput}, the configured {@link Metric} are computed
@@ -166,8 +170,9 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * 
      * @return true if stored results are available, false otherwise
      */
-    
-    public boolean hasStoredMetricOutput() {
+
+    public boolean hasStoredMetricOutput()
+    {
         return futures.hasMetricOutput();
     }
 
@@ -216,9 +221,10 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * 
      * @param config the {@link ProjectConfig}
      * @return the {@link MetricInputGroup} based on the {@link ProjectConfig}
+     * @throws MetricConfigurationException if the input type is not recognized
      */
 
-    static MetricInputGroup getInputType(ProjectConfig config)
+    static MetricInputGroup getInputType(ProjectConfig config) throws MetricConfigurationException
     {
         Objects.requireNonNull(config, "Specify a non-null project from which to generate metrics.");
         DatasourceType type = config.getInputs().getRight().getType();
@@ -230,7 +236,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             case ASSIMILATIONS:
                 return MetricInputGroup.SINGLE_VALUED;
             default:
-                throw new UnsupportedOperationException("Unable to interpret the input type '" + type
+                throw new MetricConfigurationException("Unable to interpret the input type '" + type
                     + "' when attempting to process the metrics ");
         }
     }
@@ -242,9 +248,12 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * @param config the project configuration
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(MetricInput)}
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessor(final DataFactory dataFactory, final ProjectConfig config, final MetricOutputGroup... mergeList)
+    MetricProcessor(final DataFactory dataFactory,
+                    final ProjectConfig config,
+                    final MetricOutputGroup... mergeList) throws MetricConfigurationException
     {
         Objects.requireNonNull(config,
                                "Specify a non-null project configuration from which to construct the metric processor.");
@@ -318,6 +327,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * @param leadTime the lead time
      * @param input the input pairs
      * @param futures the metric futures
+     * @throws MetricCalculationException if the metrics cannot be computed
      */
 
     void processSingleValuedPairs(Integer leadTime, SingleValuedPairs input, MetricFutures futures)
@@ -344,7 +354,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             else
             {
                 //Hook for future logic
-                throw new UnsupportedOperationException(unsupportedException);
+                throw new MetricCalculationException(unsupportedException);
             }
         }
         //Check and obtain the global thresholds by metric group for iteration
@@ -366,7 +376,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             else
             {
                 //Hook for future logic
-                throw new UnsupportedOperationException(unsupportedException);
+                throw new MetricCalculationException(unsupportedException);
             }
         }
         //Check and obtain the global thresholds by metric group for iteration
@@ -388,7 +398,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             else
             {
                 //Hook for future logic
-                throw new UnsupportedOperationException(unsupportedException);
+                throw new MetricCalculationException(unsupportedException);
             }
         }
     }
@@ -522,9 +532,10 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * 
      * @param config the project configuration
      * @return a set of {@link MetricConstants}
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    List<MetricConstants> getMetricsFromConfig(ProjectConfig config)
+    List<MetricConstants> getMetricsFromConfig(ProjectConfig config) throws MetricConfigurationException
     {
         Objects.requireNonNull(config, "Specify a non-null project from which to generate metrics.");
         //Obtain the list of metrics
@@ -534,7 +545,10 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                                                      .map(MetricConfig::getName)
                                                      .collect(Collectors.toList());
         List<MetricConstants> metrics = new ArrayList<>();
-        metricsConfig.forEach(a -> metrics.add(fromMetricConfigName(a)));
+        for(MetricConfigName metric: metricsConfig)
+        {
+            metrics.add(fromMetricConfigName(metric));
+        }
         return metrics;
     }
 
@@ -597,28 +611,76 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * 
      * @param dataFactory a data factory
      * @param config the project configuration
+     * @throws MetricConfigurationException if thresholds are configured incorrectly
      */
 
-    private void setThresholds(DataFactory dataFactory, ProjectConfig config)
+    private void setThresholds(DataFactory dataFactory, ProjectConfig config) throws MetricConfigurationException
     {
+        //Throw an exception if no thresholds are configured alongside metrics that require thresholds
+        Outputs outputs = config.getOutputs();
+        if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY) || hasMetrics(MetricInputGroup.DICHOTOMOUS)
+            || hasMetrics(MetricInputGroup.MULTICATEGORY))
+        {
+            if(Objects.isNull(outputs.getProbabilityThresholds()) && Objects.isNull(outputs.getValueThresholds()))
+            {
+                throw new MetricConfigurationException("Thresholds are required by one or more of the configured "
+                    + "metrics.");
+            }
+        }
+        //Check for metric-local thresholds and throw an exception if they are defined, as they are currently not supported
         EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>(MetricConstants.class);
-        config.getOutputs().getMetric().forEach(metric -> {
+        for(MetricConfig metric: outputs.getMetric())
+        {
             //Obtain metric-local thresholds here
             List<Threshold> thresholds = new ArrayList<>();
+            MetricConstants name = fromMetricConfigName(metric.getName());
+            if(Objects.nonNull(metric.getProbabilityThresholds()) || Objects.nonNull(metric.getValueThresholds()))
+            {
+                throw new MetricConfigurationException("Found metric-local thresholds for '" + name
+                    + "', which are not " + "currently supported.");
+            }
             //TODO: implement this when metric-local threshold conditions are available in the configuration
             if(!thresholds.isEmpty())
             {
-                localThresholds.put(fromMetricConfigName(metric.getName()), thresholds);
+                localThresholds.put(name, thresholds);
             }
-        });
+        }
+        ;
         if(!localThresholds.isEmpty())
         {
             this.localThresholds.putAll(localThresholds);
         }
-        //TODO: implement this when global threshold conditions are available in the configuration
+        //Pool together all probability thresholds and real-valued thresholds in the context of the 
+        //outputs configuration. 
         List<Threshold> globalThresholds = new ArrayList<>();
-        //Set a single global threshold representing all data until thresholds are available
+        //Add a threshold for "all data" by default
         globalThresholds.add(dataFactory.getThreshold(Double.NEGATIVE_INFINITY, Condition.GREATER));
+        List<Double> addMe = new ArrayList<>();
+        //Add probability thresholds
+        if(!Objects.isNull(outputs.getProbabilityThresholds()))
+        {
+            try
+            {
+                addMe.addAll(ProjectConfigs.parseProbabilities(outputs.getProbabilityThresholds()));
+            }
+            catch(ProjectConfigException e)
+            {
+                throw new MetricConfigurationException("Error parsing probability thresholds: " + e.getMessage());
+            }
+        }
+        //Add real-valued thresholds
+        if(!Objects.isNull(outputs.getValueThresholds()))
+        {
+            try
+            {
+                addMe.addAll(ProjectConfigs.parseValues(outputs.getValueThresholds()));
+            }
+            catch(ProjectConfigException e)
+            {
+                throw new MetricConfigurationException("Error parsing value thresholds: " + e.getMessage());
+            }
+        }
+
         //Only set the global thresholds if no local ones are available
         if(localThresholds.isEmpty())
         {
@@ -634,9 +696,10 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * 
      * @param translate the input {@link MetricConfigName}
      * @return the corresponding {@link MetricConstants}.
+     * @throws MetricConfigurationException if the input name is unrecognized
      */
 
-    private static MetricConstants fromMetricConfigName(MetricConfigName translate)
+    private static MetricConstants fromMetricConfigName(MetricConfigName translate) throws MetricConfigurationException
     {
         Objects.requireNonNull(translate,
                                "One or more metric identifiers in the project configuration could not be mapped "
@@ -686,7 +749,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             case ROOT_MEAN_SQUARE_ERROR:
                 return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
             default:
-                throw new IllegalArgumentException("Unrecognized metric identifier in project configuration '"
+                throw new MetricConfigurationException("Unrecognized metric identifier in project configuration '"
                     + translate + "'.");
         }
     }

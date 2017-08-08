@@ -81,10 +81,11 @@ public class MetricFactory
      * @param config the project configuration
      * @return a collection of metrics or null
      * @deprecated
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
     @Deprecated
-    public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(ProjectConfig config)
+    public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(ProjectConfig config) throws MetricConfigurationException
     {
         return getMetricProcessor(config).singleValuedScalar;
     }
@@ -98,9 +99,11 @@ public class MetricFactory
      * @param config the project configuration
      * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessor}
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public MetricProcessor getMetricProcessor(final ProjectConfig config, MetricOutputGroup... mergeList)
+    public MetricProcessor getMetricProcessor(final ProjectConfig config,
+                                              MetricOutputGroup... mergeList) throws MetricConfigurationException
     {
         switch(MetricProcessor.getInputType(config))
         {
