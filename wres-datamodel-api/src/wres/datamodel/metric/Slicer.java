@@ -1,6 +1,7 @@
 package wres.datamodel.metric;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -68,15 +69,16 @@ public interface Slicer
     EnsemblePairs sliceByLeft(EnsemblePairs input, Threshold threshold);
 
     /**
-     * Returns as many {@link EnsemblePairs} as groups of atomic pairs in the input with an equal number of ensemble
-     * members. i.e. each {@link EnsemblePairs} in the returned list has an equal number of ensemble members,
-     * internally, and a different number of ensemble members than all other subsets of pairs in the returned list.
+     * Returns as many lists of {@link PairOfDoubleAndVectorOfDoubles} as groups of atomic pairs in the input with an
+     * equal number of elements. i.e. each list of {@link PairOfDoubleAndVectorOfDoubles} in the returned result has an
+     * equal number of elements, internally, and a different number of elements than all other subsets of pairs. The
+     * subsets are returned in a map, indexed by the number of elements on the right side.
      * 
-     * @param input the {@link EnsemblePairs} to slice
-     * @return as many subsets of {@link EnsemblePairs} as groups of atomic pairs in the input of equal size
+     * @param input a list of {@link PairOfDoubleAndVectorOfDoubles} to slice
+     * @return as many subsets of {@link PairOfDoubleAndVectorOfDoubles} as groups of pairs in the input of equal size
      */
 
-    List<EnsemblePairs> sliceByRight(EnsemblePairs input);
+    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliceByRight(List<PairOfDoubleAndVectorOfDoubles> input);
 
     /**
      * Produces a {@link List} of {@link PairOfDoubles} from a {@link List} of {@link PairOfDoubleAndVectorOfDoubles}

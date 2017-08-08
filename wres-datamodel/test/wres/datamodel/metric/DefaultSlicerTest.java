@@ -6,6 +6,7 @@ import static org.junit.Assert.fail;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -502,5 +503,35 @@ public final class DefaultSlicerTest
         assertTrue("The transformed pair does not match the benchmark", mapper.apply(e).equals(metIn.pairOf(0, 1)));
         assertTrue("The transformed pair does not match the benchmark", mapper.apply(f).equals(metIn.pairOf(5, 1)));
     }
+    
+    /**
+     * Tests the {@link Slicer#sliceByRight(List)}.
+     */
+
+    @Test
+    public void test13SliceByRight()
+    {
+        List<PairOfDoubleAndVectorOfDoubles> input = new ArrayList<>();
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        input.add(metIn.pairOf(1, new double[]{1, 2, 3}));
+        input.add(metIn.pairOf(1, new double[]{1, 2, 3}));
+        input.add(metIn.pairOf(1, new double[]{1, 2, 3}));
+        input.add(metIn.pairOf(2, new double[]{1, 2, 3, 4, 5}));
+        input.add(metIn.pairOf(2, new double[]{1, 2, 3, 4, 5}));
+        input.add(metIn.pairOf(2, new double[]{1, 2, 3, 4, 5}));
+        input.add(metIn.pairOf(2, new double[]{1, 2, 3, 4, 5}));
+        input.add(metIn.pairOf(2, new double[]{1, 2, 3, 4, 5}));
+        input.add(metIn.pairOf(3, new double[]{1, 2, 3, 4, 5, 6}));
+        input.add(metIn.pairOf(3, new double[]{1, 2, 3, 4, 5, 6}));
+        input.add(metIn.pairOf(3, new double[]{1, 2, 3, 4, 5, 6}));
+        input.add(metIn.pairOf(3, new double[]{1, 2, 3, 4, 5, 6}));
+        //Slice
+        Map<Integer,List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.sliceByRight(input);
+        //Check the results
+        assertTrue("Expected three subsets of sliced data.", sliced.size()==3);
+        assertTrue("Expected the first slice to contain three pairs.", sliced.get(3).size()==3);
+        assertTrue("Expected the second slice to contain five pairs.", sliced.get(5).size()==5);
+        assertTrue("Expected the third slice to contain four pairs.", sliced.get(6).size()==4);
+    }    
 
 }

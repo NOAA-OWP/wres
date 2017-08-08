@@ -127,20 +127,23 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
      * @param config the project configuration
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(MetricInput)}
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorEnsemblePairs(DataFactory dataFactory, ProjectConfig config, final MetricOutputGroup... mergeList)
+    MetricProcessorEnsemblePairs(DataFactory dataFactory,
+                                 ProjectConfig config,
+                                 final MetricOutputGroup... mergeList) throws MetricConfigurationException
     {
         super(dataFactory, config, mergeList);
         //Validate the configuration
         if(hasMetrics(MetricInputGroup.DICHOTOMOUS))
         {
-            throw new IllegalArgumentException("Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
+            throw new MetricConfigurationException("Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
                 + config.getLabel() + "'.");
         }
         if(hasMetrics(MetricInputGroup.MULTICATEGORY))
         {
-            throw new IllegalArgumentException("Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
+            throw new MetricConfigurationException("Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
                 + config.getLabel() + "'.");
         }
         //Construct the metrics
@@ -209,6 +212,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
      * @param leadTime the lead time
      * @param input the input pairs
      * @param futures the metric futures
+     * @throws MetricCalculationException if the metrics cannot be computed
      */
 
     private void processEnsemblePairs(Integer leadTime, EnsemblePairs input, MetricFutures futures)
@@ -235,7 +239,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             else
             {
                 //Hook for future logic
-                throw new UnsupportedOperationException(unsupportedException);
+                throw new MetricCalculationException(unsupportedException);
             }
         }
         //Check and obtain the global thresholds by metric group for iteration
@@ -257,18 +261,20 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             else
             {
                 //Hook for future logic
-                throw new UnsupportedOperationException(unsupportedException);
+                throw new MetricCalculationException(unsupportedException);
             }
         }
     }
 
     /**
      * Processes a set of metric futures that consume {@link DiscreteProbabilityPairs}, which are mapped from the input
-     * pairs, {@link EnsemblePairs}, using a configured mapping function.
+     * pairs, {@link EnsemblePairs}, using a configured mapping function. Skips any thresholds for which
+     * {@link Double#isFinite(double)} returns <code>false</code> on the threshold value(s).
      * 
      * @param leadTime the lead time
      * @param input the input pairs
      * @param futures the metric futures
+     * @throws MetricCalculationException if the metrics cannot be computed
      */
 
     private void processDiscreteProbabilityPairs(Integer leadTime, EnsemblePairs input, MetricFutures futures)
@@ -295,7 +301,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             else
             {
                 //Hook for future logic
-                throw new UnsupportedOperationException(unsupportedException);
+                throw new MetricCalculationException(unsupportedException);
             }
         }
         //Check and obtain the global thresholds by metric group for iteration
@@ -317,14 +323,15 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             else
             {
                 //Hook for future logic
-                throw new UnsupportedOperationException(unsupportedException);
+                throw new MetricCalculationException(unsupportedException);
             }
         }
     }
 
     /**
      * Builds a metric future for a {@link MetricCollection} that consumes {@link EnsemblePairs} at a specific
-     * {@link Threshold} and appends it to the input map of futures.
+     * {@link Threshold} and appends it to the input map of futures. Skips any thresholds for which
+     * {@link Double#isFinite(double)} returns <code>false</code> on the threshold value(s).
      * 
      * @param leadTime the lead time
      * @param threshold the threshold
@@ -344,6 +351,11 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
                                                                                     ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<T>>> futures)
     {
         Threshold useMe = threshold;
+        //Skip non-finite thresholds
+        if(!useMe.isFinite()) 
+        {
+            return false;
+        }
         //Quantile required: need to determine real-value from probability
         if(threshold instanceof ProbabilityThreshold)
         {

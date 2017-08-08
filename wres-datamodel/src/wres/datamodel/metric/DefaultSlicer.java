@@ -3,9 +3,11 @@ package wres.datamodel.metric;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import wres.datamodel.PairOfBooleans;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -163,11 +165,10 @@ public class DefaultSlicer implements Slicer
     }
 
     @Override
-    public List<EnsemblePairs> sliceByRight(EnsemblePairs input)
+    public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliceByRight(List<PairOfDoubleAndVectorOfDoubles> input)
     {
         Objects.requireNonNull(input, NULL_INPUT);
-        
-        return null;
+        return input.stream().collect(Collectors.groupingBy(pair -> pair.getItemTwo().length));
     }
 
     @Override
