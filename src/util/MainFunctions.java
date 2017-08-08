@@ -9,6 +9,7 @@ import ucar.nc2.Variable;
 import wres.Control;
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.metric.MetricInput;
 import wres.io.Operations;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESRunnable;
@@ -517,22 +518,35 @@ public final class MainFunctions
                     LOGGER.info("The project is from: {}", PROJECT_PATH);
 
                     final ProjectConfig foundProject = ProjectConfigPlus.from(Paths.get(PROJECT_PATH)).getProjectConfig();
+                    Map<Conditions.Feature, List<Future<MetricInput<?>>>> featureInputs = new HashMap<>();
 
                     for (Conditions.Feature feature : foundProject.getConditions().getFeature())
                     {
-                        LinkedList<InputGenerator.Input> inputs = new LinkedList<>();
+                        List<Future<MetricInput<?>>> inputs = new ArrayList<>();
 
                         InputGenerator inputGenerator = Operations.getInputs(foundProject, feature);
 
-                        while (inputGenerator.next())
-                        {
-                            inputs.add(inputGenerator.getInput());
-                        }
+                        inputGenerator.forEach(inputs::add);
 
-                        while (inputs.peek() != null)
+                        featureInputs.put(feature, inputs);
+                    }
+
+                    for (Map.Entry<Conditions.Feature, List<Future<MetricInput<?>>>> featureInput : featureInputs.entrySet())
+                    {
+                        for (Future<MetricInput<?>> input : featureInput.getValue())
                         {
-                            InputGenerator.Input head = inputs.poll();
-                            head.getMetricInput();
+                            try
+                            {
+                                input.get();
+                            }
+                            catch (InterruptedException e) {
+                                LOGGER.error("MetricInput generation was interupted.");
+                                LOGGER.error(Strings.getStackTrace(e));
+                            }
+                            catch (ExecutionException e) {
+                                LOGGER.error("MetricInput generation was aborted due to a thrown error.");
+                                LOGGER.error(Strings.getStackTrace(e));
+                            }
                         }
                     }
 
