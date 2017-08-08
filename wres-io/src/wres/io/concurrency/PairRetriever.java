@@ -1,28 +1,24 @@
 package wres.io.concurrency;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import wres.config.generated.Conditions;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.*;
 import wres.io.data.caching.UnitConversions;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.Internal;
 import wres.util.NotImplementedException;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -50,7 +46,7 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
         final String script = ScriptGenerator.generateGetPairData(this.projectConfig, this.feature, this.progress);
         try
         {
-            connection = Database.getConnection();
+            connection = Database.getHighPriorityConnection();
             resultingPairs = Database.getResults(connection, script);
 
             while (resultingPairs.next())
@@ -67,7 +63,7 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
 
             if (connection != null)
             {
-                connection.close();
+                Database.returnHighPriorityConnection(connection);
             }
         }
 
@@ -81,9 +77,11 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
         DatasourceType dataType = this.projectConfig.getInputs().getRight().getType();
 
         DataFactory factory = DefaultDataFactory.getInstance();
-        Metadata metadata = factory.getMetadataFactory()
-                                   .getMetadata(factory.getMetadataFactory()
-                                                       .getDimension(projectConfig.getPair().getUnit()));
+        MetadataFactory metadataFactory = factory.getMetadataFactory();
+
+        Metadata metadata = metadataFactory.getMetadata(metadataFactory.getDimension(projectConfig.getPair().getUnit()),
+                                                        metadataFactory.getDatasetIdentifier("", "", ""),
+                                                        this.progress);
 
         if (dataType == DatasourceType.ENSEMBLE_FORECASTS)
         {
