@@ -518,11 +518,11 @@ public final class MainFunctions
                     LOGGER.info("The project is from: {}", PROJECT_PATH);
 
                     final ProjectConfig foundProject = ProjectConfigPlus.from(Paths.get(PROJECT_PATH)).getProjectConfig();
-                    Map<Conditions.Feature, List<Future<MetricInput<?>>>> featureInputs = new HashMap<>();
+                    Map<Conditions.Feature, LinkedList<Future<MetricInput<?>>>> featureInputs = new HashMap<>();
 
                     for (Conditions.Feature feature : foundProject.getConditions().getFeature())
                     {
-                        List<Future<MetricInput<?>>> inputs = new ArrayList<>();
+                        LinkedList<Future<MetricInput<?>>> inputs = new LinkedList<>();
 
                         InputGenerator inputGenerator = Operations.getInputs(foundProject, feature);
 
@@ -531,9 +531,11 @@ public final class MainFunctions
                         featureInputs.put(feature, inputs);
                     }
 
-                    for (Map.Entry<Conditions.Feature, List<Future<MetricInput<?>>>> featureInput : featureInputs.entrySet())
+                    for (Map.Entry<Conditions.Feature, LinkedList<Future<MetricInput<?>>>> featureInput : featureInputs.entrySet())
                     {
-                        for (Future<MetricInput<?>> input : featureInput.getValue())
+                        Future<MetricInput<?>> input;
+
+                        while ((input = featureInput.getValue().poll()) != null)
                         {
                             try
                             {

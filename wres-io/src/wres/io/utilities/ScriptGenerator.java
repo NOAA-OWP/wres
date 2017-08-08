@@ -29,7 +29,8 @@ public final class ScriptGenerator
     
     private static final String NEWLINE = System.lineSeparator();
 
-    public static LabeledScript generateFindLastLead(int variableID) {
+    public static LabeledScript generateFindLastLead(int variableID)
+    {
         final String label = "last_lead";
         String script = "";
 

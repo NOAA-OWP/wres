@@ -128,7 +128,7 @@ public class ControlTemp
                                                                                               MetricOutputGroup.SCALAR,
                                                                                               MetricOutputGroup.VECTOR);
 
-            Map<Conditions.Feature, List<Future<MetricInput<?>>>> featureMetricInputs = new HashMap<>();
+            Map<Conditions.Feature, LinkedList<Future<MetricInput<?>>>> featureMetricInputs = new HashMap<>();
 
             // Job dispatch per feature per lead occurs first to ensure that there are as many jobs as possible running
             // while generating new retrieval jobs
@@ -146,7 +146,7 @@ public class ControlTemp
 
             // Once all pair retrieval jobs have been dispatched, cycle through, obtain the pairs, and pass them through
             // the metric processors.
-            for (Map.Entry<Conditions.Feature, List<Future<MetricInput<?>>>> featureMetricInput : featureMetricInputs.entrySet())
+            for (Map.Entry<Conditions.Feature, LinkedList<Future<MetricInput<?>>>> featureMetricInput : featureMetricInputs.entrySet())
             {
 
                 if(LOGGER.isInfoEnabled())
@@ -157,7 +157,10 @@ public class ControlTemp
                 //Iterate through the inputs and compute all metrics for each input
                 int window = 1;
 
-                for (Future<MetricInput<?>> input : featureMetricInput.getValue())
+                Future<MetricInput<?>> input;
+
+                // Remove the inputs as they are read to lessen the load on memory
+                while((input = featureMetricInput.getValue().poll()) != null)
                 {
                     if(LOGGER.isInfoEnabled())
                     {
@@ -205,6 +208,7 @@ public class ControlTemp
                     }
 
                     window++;
+                    input = null;
                 }
             }
         }
