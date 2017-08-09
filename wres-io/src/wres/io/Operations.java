@@ -1,21 +1,6 @@
 package wres.io;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
-import javax.xml.stream.XMLStreamException;
-import javax.xml.transform.TransformerException;
-
 import org.slf4j.LoggerFactory;
-
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.MetricInput;
@@ -31,6 +16,19 @@ import wres.io.utilities.InputGenerator;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
+
+import javax.xml.stream.XMLStreamException;
+import javax.xml.transform.TransformerException;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
@@ -53,7 +51,7 @@ public final class Operations {
 
         SourceLoader loader = new SourceLoader(projectConfig);
         try {
-            Database.suspendAllIndices();
+            //Database.suspendAllIndices();
 
             List<Future> ingestions = loader.load();
 

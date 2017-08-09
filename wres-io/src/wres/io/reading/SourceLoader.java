@@ -144,6 +144,12 @@ public class SourceLoader
 
         if (shouldIngest(absolutePath, source, dataSourceConfig))
         {
+            if (!alreadySuspendedIndexes)
+            {
+                Database.suspendAllIndices();
+                alreadySuspendedIndexes = true;
+            }
+
             if (ConfigHelper.isForecast(dataSourceConfig)) {
                 LOGGER.trace("Loading {} as forecast data...", absolutePath);
                 task = Executor.execute(new ForecastSaver(absolutePath, dataSourceConfig, this.getSpecifiedFeatures()));
@@ -267,4 +273,5 @@ public class SourceLoader
     }
 
     private final ProjectConfig projectConfig;
+    private boolean alreadySuspendedIndexes;
 }
