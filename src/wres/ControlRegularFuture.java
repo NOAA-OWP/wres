@@ -60,12 +60,14 @@ import wres.vis.ChartEngineFactory;
 public class ControlRegularFuture implements Function<String[], Integer>
 {
 
+    public static void main(String[] args) {
+        new ControlRegularFuture().apply(new String[]{"C:/Users/HSL/Desktop/WRES_TEST/wres_config_test.xml"});
+    }
+    
     /**
-     * Processes *existing* pairs non-lazily (lacking specification for ingest). Creates two execution queues for pair
-     * processing. The first queue is responsible for retrieving data from the data store. The second queue is
-     * responsible for doing something with retrieved data.
+     * Processes one or more projects whose paths are provided in the input arguments.
      *
-     * @param args
+     * @param args the paths to one or more project configurations
      */
     public Integer apply(final String[] args)
     {
@@ -312,21 +314,12 @@ public class ControlRegularFuture implements Function<String[], Integer>
             // Queue up processing of fetched pairs.
             for(Future<MetricInput<?>> nextInput: metricInputs)
             {
-                PairsByLeadProcessor processTask = null;
-                try
-                {
-                    processTask = new PairsByLeadProcessor(processor, nextInput.get());
-                }
-                catch(InterruptedException | ExecutionException e)
-                {
-                    LOGGER.error("While preparing metrics", e);
-                    return false;
-                }
-               
+                PairsByLeadProcessor processTask = new PairsByLeadProcessor(processor, nextInput);
+
                 // TODO: Add consumer to pipeline here for intermediate results
                 processPairExecutor.submit(processTask);
                 //Future<MetricOutputForProjectByLeadThreshold> intermediate = processPairExecutor.submit(processTask);
-                // processMultiVectorCharts(projectConfigPlus, processor.getStoredMetricOutput().getMultiVectorOutput());
+                //processMultiVectorCharts(projectConfigPlus, processor.getStoredMetricOutput().getMultiVectorOutput());
             }
 
             if(LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
@@ -339,7 +332,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
             //  Complete the end-of-pipeline processing
             processCachedCharts(projectConfigPlus, processor, MetricOutputGroup.SCALAR);
             //  TODO: support processing of vector output in wres-vis and here
-            //  processCharts(projectConfigPlus, processor, MetricOutputGroup.VECTOR);
+            //processCharts(projectConfigPlus, processor, MetricOutputGroup.VECTOR);
 
         }
         return true;
@@ -370,10 +363,10 @@ public class ControlRegularFuture implements Function<String[], Integer>
                 case SCALAR:
                     return processScalarCharts(projectConfigPlus, processor.getStoredMetricOutput().getScalarOutput());
                 case VECTOR:
-                case MULTIVECTOR:    
+                case MULTIVECTOR:
                 case MATRIX:
                 default:
-                    throw new UnsupportedOperationException("Unsupported chart type '" + outGroup);
+                    throw new UnsupportedOperationException();
             }
         }
         catch(InterruptedException e)
@@ -385,6 +378,11 @@ public class ControlRegularFuture implements Function<String[], Integer>
         catch(ExecutionException e)
         {
             LOGGER.error("While acquiring metric results", e);
+            return false;
+        }
+        catch(UnsupportedOperationException e)
+        {
+            LOGGER.error("Unsupported chart type {}", outGroup, e);
             return false;
         }
     }
@@ -507,18 +505,20 @@ public class ControlRegularFuture implements Function<String[], Integer>
     private static class PairsByLeadProcessor implements Callable<MetricOutputForProjectByLeadThreshold>
     {
         private final MetricProcessor processor;
-        private final MetricInput<?> input;
+        private final Future<MetricInput<?>> input;
 
-        private PairsByLeadProcessor(final MetricProcessor processor, final MetricInput<?> input)
+        private PairsByLeadProcessor(final MetricProcessor processor, final Future<MetricInput<?>> input)
         {
             this.processor = processor;
             this.input = input;
         }
 
         @Override
-        public MetricOutputForProjectByLeadThreshold call() throws MetricConfigurationException
+        public MetricOutputForProjectByLeadThreshold call() throws MetricConfigurationException,
+                                                            InterruptedException,
+                                                            ExecutionException
         {
-            return processor.apply(input);
+            return processor.apply(input.get());
         }
     }
 
@@ -570,17 +570,17 @@ public class ControlRegularFuture implements Function<String[], Integer>
             LOGGER.info("Abandoned {} pair fetch tasks, abandoned {} processing tasks.", processingSkipped);
         }
     }
-    
+
     /**
      * Default logger.
      */
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ControlRegularFuture.class);
-    
+
     /**
      * Log interval.
      */
-    
+
     public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
 
     /**
@@ -589,25 +589,24 @@ public class ControlRegularFuture implements Function<String[], Integer>
 
     private static final DataFactory DATA_FACTORY = DefaultDataFactory.getInstance();
 
-    /** 
-     * System property used to retrieve max thread count, passed as -D 
-     * 
+    /**
+     * System property used to retrieve max thread count, passed as -D
      */
-    
+
     public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
 
     /**
      * Line separator.
      */
-    
-    private static final String NEWLINE = System.lineSeparator();    
+
+    private static final String NEWLINE = System.lineSeparator();
 
     /**
      * Maximum threads.
      */
-    
+
     public static final int MAX_THREADS;
-    
+
     // Figure out the max threads from property or by default rule.
     // Ideally priority order would be: -D, SystemSettings, default rule.
     static

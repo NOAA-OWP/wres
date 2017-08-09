@@ -48,7 +48,7 @@
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->
     <graphical width="1920" height="1080">
-      <plotType>LEAD_THRESHOLD</plotType>
+      <plotType>lead threshold</plotType>
       </graphical>
     </destination>
   </outputs>
