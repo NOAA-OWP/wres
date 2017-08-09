@@ -1,5 +1,30 @@
 package wres;
 
+import com.sun.xml.bind.Locatable;
+import ohd.hseb.charter.ChartEngine;
+import ohd.hseb.charter.ChartEngineException;
+import ohd.hseb.charter.ChartTools;
+import ohd.hseb.charter.datasource.XYChartDataSourceException;
+import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import wres.config.generated.Conditions.Feature;
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.ProjectConfig;
+import wres.datamodel.metric.*;
+import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
+import wres.engine.statistics.metric.MetricConfigurationException;
+import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.MetricProcessor;
+import wres.io.Operations;
+import wres.io.concurrency.WRESCallable;
+import wres.io.config.ProjectConfigPlus;
+import wres.io.config.SystemSettings;
+import wres.io.utilities.InputGenerator;
+import wres.util.ProgressMonitor;
+import wres.vis.ChartEngineFactory;
+
+import javax.xml.bind.ValidationEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -7,47 +32,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 import java.util.function.Function;
-
-import javax.xml.bind.ValidationEvent;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.sun.xml.bind.Locatable;
-
-import ohd.hseb.charter.ChartEngine;
-import ohd.hseb.charter.ChartEngineException;
-import ohd.hseb.charter.ChartTools;
-import ohd.hseb.charter.datasource.XYChartDataSourceException;
-import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
-import wres.config.generated.Conditions.Feature;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.MapBiKey;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
-import wres.datamodel.metric.ScalarOutput;
-import wres.engine.statistics.metric.MetricConfigurationException;
-import wres.engine.statistics.metric.MetricFactory;
-import wres.engine.statistics.metric.MetricProcessor;
-import wres.io.Operations;
-import wres.io.config.ProjectConfigPlus;
-import wres.io.config.SystemSettings;
-import wres.io.utilities.InputGenerator;
-import wres.vis.ChartEngineFactory;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
@@ -315,6 +301,8 @@ public class ControlRegularFuture implements Function<String[], Integer>
             for(Future<MetricInput<?>> nextInput: metricInputs)
             {
                 PairsByLeadProcessor processTask = new PairsByLeadProcessor(processor, nextInput);
+                processTask.setOnRun(ProgressMonitor.onThreadStartHandler());
+                processTask.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 
                 // TODO: Add consumer to pipeline here for intermediate results
                 processPairExecutor.submit(processTask);
@@ -343,7 +331,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
      * 
      * @param projectConfigPlus the project configuration
      * @param processor the {@link MetricProcessor} that contains the results for all chart types
-     * @param the {@link MetricOutputGroup} for which charts are required
+     * @param outGroup the {@link MetricOutputGroup} for which charts are required
      * @return true it the processing completed successfully, false otherwise
      */
 
@@ -502,8 +490,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
     /**
      * Task whose job is to wait for pairs to arrive, then run metrics on them.
      */
-    private static class PairsByLeadProcessor implements Callable<MetricOutputForProjectByLeadThreshold>
-    {
+    private static class PairsByLeadProcessor extends WRESCallable<MetricOutputForProjectByLeadThreshold> {
         private final MetricProcessor processor;
         private final Future<MetricInput<?>> input;
 
@@ -514,11 +501,18 @@ public class ControlRegularFuture implements Function<String[], Integer>
         }
 
         @Override
-        public MetricOutputForProjectByLeadThreshold call() throws MetricConfigurationException,
-                                                            InterruptedException,
-                                                            ExecutionException
-        {
+        protected MetricOutputForProjectByLeadThreshold execute () throws Exception {
             return processor.apply(input.get());
+        }
+
+        @Override
+        protected String getTaskName () {
+            return "Process Metrics for Pairs by Lead time";
+        }
+
+        @Override
+        protected Logger getLogger () {
+            return LOGGER;
         }
     }
 
