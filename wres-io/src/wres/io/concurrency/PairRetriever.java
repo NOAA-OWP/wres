@@ -46,7 +46,7 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
         final String script = ScriptGenerator.generateGetPairData(this.projectConfig, this.feature, this.progress);
         try
         {
-            connection = Database.getHighPriorityConnection();
+            connection = Database.getConnection();
             resultingPairs = Database.getResults(connection, script);
 
             while (resultingPairs.next())
@@ -63,7 +63,7 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
 
             if (connection != null)
             {
-                Database.returnHighPriorityConnection(connection);
+                Database.returnConnection(connection);
             }
         }
 
