@@ -161,11 +161,12 @@ class SafeThreshold implements Threshold
     public int compareTo(final Threshold o)
     {
         Objects.requireNonNull(o, "Specify a non-null threshold for comparison");
-        if(o.getCondition() != condition)
+        int returnMe = o.getCondition().compareTo(condition);
+        if(returnMe != 0)
         {
-            return -1;
+            return returnMe;
         }
-        int returnMe = Double.compare(o.getThreshold(), threshold);
+        returnMe = Double.compare(o.getThreshold(), threshold);
         if(returnMe != 0)
         {
             return returnMe;
