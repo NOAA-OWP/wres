@@ -1,16 +1,15 @@
-package util;
+package wres;
 
-import concurrency.Downloader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
-import wres.ControlRegularFuture;
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.MetricInput;
 import wres.io.Operations;
+import wres.io.concurrency.Downloader;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
@@ -20,7 +19,6 @@ import wres.io.reading.ReaderFactory;
 import wres.io.reading.SourceType;
 import wres.io.utilities.Database;
 import wres.io.utilities.InputGenerator;
-import wres.io.utilities.ScriptGenerator;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -46,7 +44,7 @@ import java.util.function.Function;
  * @author ctubbs
  *
  */
-public final class MainFunctions
+final class MainFunctions
 {
 	public static final Integer FAILURE = -1;
 	public static final Integer SUCCESS = 0;
@@ -127,9 +125,7 @@ public final class MainFunctions
 	private static Map<String, Function<String[], Integer>> createMap () {
 		final Map<String, Function<String[], Integer>> prototypes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-		prototypes.put("describenetcdf", describeNetCDF());
 		prototypes.put("connecttodb", connectToDB());
-		prototypes.put("querynetcdf", queryNetCDF());
 		prototypes.put("commands", printCommands());
 		prototypes.put("--help", printCommands());
 		prototypes.put("-h", printCommands());
@@ -141,7 +137,6 @@ public final class MainFunctions
 		prototypes.put("loadcoordinates", loadCoordinates());
 		prototypes.put("install", install());
 		prototypes.put("ingest", ingest());
-		prototypes.put("generatepairscript", generatePairScript());
 		prototypes.put("loadfeatures", loadFeatures());
 
 		return prototypes;
@@ -178,76 +173,6 @@ public final class MainFunctions
                 result = SUCCESS;
             }
             return result;
-		};
-	}
-
-	/**
-	 * Creates the "describeNetCDF" method
-	 *
-	 * @return A method that will read a NetCDF file from the given path and output details about global attributes,
-	 * variable details, variable attributes, and sample data.
-	 */
-	private static Function<String[], Integer> describeNetCDF()
-	{
-		return (final String[] args) -> {
-			Integer result = FAILURE;
-			if (args.length > 0)
-			{
-			    try {
-                    final NetCDFReader reader = new NetCDFReader(args[0]);
-                    reader.output_variables();
-                    result = SUCCESS;
-                }
-                catch (final RuntimeException e)
-                {
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-			}
-			else
-			{
-				LOGGER.error("A path is needed to describe the data. Please pass that in as the first argument.");
-                LOGGER.error("The current directory is:\t");
-                LOGGER.error(System.getProperty("user.dir"));
-			}
-			return result;
-		};
-	}
-
-	/**
-	 * Creates the "queryNetCDF" method
-	 *
-	 * @return A method that will accept a filename, a variable name, and optional positional details. Using those parameters,
-	 * the given NetCDF file will be opened and the a value from the optional position for the given variable will be printed to
-	 * the screen.
-	 */
-	private static Function<String[], Integer> queryNetCDF()
-	{
-		return (final String[] args) -> {
-			Integer result = FAILURE;
-			if (args.length > 1)
-			{
-			    try {
-                    final String filename = args[0];
-                    final String variable_name = args[1];
-                    final int[] variable_args = new int[args.length - 2];
-                    for (int index = 2; index < args.length; ++index) {
-                        variable_args[index - 2] = Integer.parseInt(args[index]);
-                    }
-                    final NetCDFReader reader = new NetCDFReader(filename);
-                    reader.printQuery(variable_name, variable_args);
-                    result = SUCCESS;
-                }
-                catch (final RuntimeException e)
-                {
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-			}
-			else
-			{
-                LOGGER.error("There are not enough parameters to query the netcdf.");
-                LOGGER.error("usage: queryNetCDF <filename> <variable> [index0, index1,...indexN]");
-			}
-			return result;
 		};
 	}
 
@@ -568,41 +493,6 @@ public final class MainFunctions
 	        return result;
 	    };
 	}
-
-	private static Function<String[], Integer> generatePairScript()
-    {
-        return (String[] args) ->
-        {
-            int result = SUCCESS;
-
-            if (args.length > 0)
-            {
-                PROJECT_PATH = args[0];
-
-                try {
-                    ProjectConfig config = ConfigHelper.read(PROJECT_PATH);
-
-                    Conditions.Feature firstFeature = config.getConditions().getFeature().get(0);
-
-                    String script = ScriptGenerator.generateGetPairData(config, firstFeature, 1);
-
-                    LOGGER.info(script);
-                }
-                catch (Exception error) {
-                    LOGGER.error(Strings.getStackTrace(error));
-                    result = FAILURE;
-                }
-            }
-            else
-            {
-                LOGGER.error("Not enough parameters were entered to generate a pair script");
-                LOGGER.info("usage: generatePairScript <path to project>");
-                result = FAILURE;
-            }
-
-            return result;
-        };
-    }
 
     private static Function<String[], Integer> ingest ()
     {

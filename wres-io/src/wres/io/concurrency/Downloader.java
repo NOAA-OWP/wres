@@ -1,8 +1,8 @@
-package concurrency;
+package wres.io.concurrency;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import wres.io.concurrency.WRESRunnable;
+import wres.util.Strings;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -17,11 +17,17 @@ import java.nio.file.StandardCopyOption;
 public final class Downloader extends WRESRunnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Downloader.class);
+    private boolean displayOutput;
 
     public Downloader(Path targetPath, String address)
     {
         this.targetPath = targetPath;
         this.address = address;
+    }
+
+    public void setDisplayOutput(boolean displayOutput)
+    {
+        this.displayOutput = displayOutput;
     }
 
     @Override
@@ -32,11 +38,11 @@ public final class Downloader extends WRESRunnable {
             final URL fileURL = new URL(address);
             HttpURLConnection connection = (HttpURLConnection) fileURL.openConnection();
 
-            if (connection.getResponseCode() >= 400)
+            if (displayOutput && connection.getResponseCode() >= 400)
             {
                 message += "Cannot be accessed\t|\t";
             }
-            else
+            else if (displayOutput)
             {
                 message += "Exists\t\t\t|\t";
             }
@@ -55,10 +61,13 @@ public final class Downloader extends WRESRunnable {
 
         } catch (java.io.IOException e) {
             this.getLogger().error("The address: '" + this.address + "' is not a valid url.");
-            e.printStackTrace();
+            this.getLogger().error(Strings.getStackTrace(e));
         }
 
-        this.getLogger().info(message);
+        if (displayOutput) {
+            this.getLogger().info(message);
+        }
+
         this.executeOnComplete();
     }
 
