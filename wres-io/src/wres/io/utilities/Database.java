@@ -630,13 +630,13 @@ public final class Database {
 
             while (results.next())
             {
-				script.append(results.getString("reidx")).append(NEWLINE);
+				//script.append(results.getString("reidx")).append(NEWLINE);
                 script.append(results.getString("alyze")).append(NEWLINE);
             }
 
-            script.append("REINDEX TABLE wres.Forecast;").append(NEWLINE);
+            //script.append("REINDEX TABLE wres.Forecast;").append(NEWLINE);
 			script.append("ANALYZE wres.Forecast;").append(NEWLINE);
-			script.append("REINDEX TABLE wres.Observation;").append(NEWLINE);
+			//script.append("REINDEX TABLE wres.Observation;").append(NEWLINE);
             script.append("ANALYZE wres.Observation;").append(NEWLINE);
 
             LOGGER.info("Now refreshing the statistics within the database.");
