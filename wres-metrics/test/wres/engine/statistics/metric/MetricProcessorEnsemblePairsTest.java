@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.nio.file.Paths;
+import java.util.TreeSet;
 
 import org.junit.Test;
 
@@ -17,6 +18,7 @@ import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
 import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.Threshold;
 import wres.io.config.ProjectConfigPlus;
 
 /**
@@ -221,6 +223,14 @@ public final class MetricProcessorEnsemblePairsTest
             //Obtain the results
             MetricOutputMultiMapByLeadThreshold<ScalarOutput> results = processor.getStoredMetricOutput()
                                                                                  .getScalarOutput();
+            
+            
+            TreeSet<Threshold> s = new TreeSet<>();
+            
+            results.get(MetricConstants.BIAS_FRACTION).keySetByThreshold().forEach(res -> s.add(res));;
+            
+            System.out.println(s);
+            
 
             //Validate bias
             MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.get(MetricConstants.BIAS_FRACTION);
