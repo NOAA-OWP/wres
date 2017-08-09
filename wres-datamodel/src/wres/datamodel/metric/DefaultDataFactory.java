@@ -350,12 +350,12 @@ public class DefaultDataFactory implements DataFactory
             {
                 //Compare the keys
                 Objects.requireNonNull(o, "Specify a non-null map key for comparison.");
-                final int returnMe = firstKey.compareTo(o.getFirstKey());
+                final int returnMe = getFirstKey().compareTo(o.getFirstKey());
                 if(returnMe != 0)
                 {
                     return returnMe;
                 }
-                return o.getSecondKey().compareTo(getSecondKey());
+                return getSecondKey().compareTo(o.getSecondKey());
             }
 
             @Override
