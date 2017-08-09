@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<chartDrawingParameters>
+
+	<plotTitle>
+		<text>Reliability Diagram for Various Event Thresholds (Upper) and Sample Counts (lower)
+@locationName@.@variableName@.@primaryScenario@ at lead hour @leadHour@
+		</text>
+	</plotTitle>
+
+	<datasourceDrawingParameters sourceIndex="0">
+		<plotter>LineAndScatter</plotter>
+		<subPlot>0</subPlot>
+		<yAxis>left</yAxis>
+
+		<!-- The colors defined through a palette. For this test, four colors for 
+			four series. -->
+		<lineColorPalette>
+			<color alpha="255" blue="0" green="0" red="0" />
+			<color alpha="255" blue="255" green="0" red="0" />
+			<color alpha="255" blue="51" green="204" red="51" />
+			<color alpha="255" blue="0" green="0" red="255" />
+		</lineColorPalette>
+	</datasourceDrawingParameters>
+	<datasourceDrawingParameters sourceIndex="1">
+		<plotter>LineAndScatter</plotter>
+		<subPlot>1</subPlot>
+		<yAxis>left</yAxis>
+
+		<!-- The colors defined through a palette. For this test, four colors for 
+			four series. -->
+		<lineColorPalette>
+			<color alpha="255" blue="0" green="0" red="0" />
+			<color alpha="255" blue="255" green="0" red="0" />
+			<color alpha="255" blue="51" green="204" red="51" />
+			<color alpha="255" blue="0" green="0" red="255" />
+		</lineColorPalette>
+
+		<seriesDrawingParameters
+			createdIndexOfSeriesToModify="-1">
+			<nameInLegend></nameInLegend>
+			<showInLegend>false</showInLegend>
+		</seriesDrawingParameters>
+	</datasourceDrawingParameters>
+
+	<subPlot subPlotIndex="0" weight="3">
+
+		<leftRangeAxis>
+			<numericAxis>
+				<lowerBound>0.0</lowerBound>
+				<upperBound>1.0</upperBound>
+				<autoRange>false</autoRange>
+			</numericAxis>
+		</leftRangeAxis>
+	</subPlot>
+	<subPlot subPlotIndex="1" weight="1" />
+
+	<domainAxis inverted="false" visible="true">
+		<numericAxis>
+			<lowerBound>0.0</lowerBound>
+			<upperBound>1.0</upperBound>
+			<autoRange>false</autoRange>
+		</numericAxis>
+	</domainAxis>
+	
+    <legend visible="true">
+        <position>RIGHT</position>
+    </legend>
+
+</chartDrawingParameters>

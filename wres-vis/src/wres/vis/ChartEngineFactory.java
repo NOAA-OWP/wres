@@ -19,6 +19,7 @@ import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 
@@ -58,8 +59,76 @@ public abstract class ChartEngineFactory
      */
     public static enum VisualizationPlotType
     {
-        LEAD_THRESHOLD, THRESHOLD_LEAD, SINGLE_VALUED_PAIRS
+        LEAD_THRESHOLD, THRESHOLD_LEAD, SINGLE_VALUED_PAIRS, RELIABILITY_DIAGRAM
     };
+
+
+    public static ChartEngine buildMultiVectorOutputChartEngine(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                                                 final MetadataFactory factory,
+                                                                 final VisualizationPlotType plotType,
+                                                                 final String templateResourceName,
+                                                                 final String overrideParametersStr) throws ChartEngineException,
+                                                                                                     GenericXMLReadingHandlerException
+    {
+        //Build the sources.
+        XYChartDataSource reliabilitySource = null;
+        XYChartDataSource sampleSizeSource = null;
+        if(plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM))
+        {
+            reliabilitySource = new ReliabilityDiagramXYChartDataSource(0, input);
+            sampleSizeSource = new ReliabilityDiagramSampleSizeXYChartDataSource(1, input);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Plot type of " + plotType + " is not valid for a reliability diagram.");
+        }
+
+        //Setup the arguments.
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
+
+        final MetricOutputMetadata meta = input.getMetadata();
+        final DatasetIdentifier identifier = meta.getIdentifier();
+
+        //Setup fixed arguments.
+        arguments.addArgument("locationName", identifier.getGeospatialID());
+        arguments.addArgument("variableName", identifier.getVariableID());
+        arguments.addArgument("primaryScenario", identifier.getScenarioID());
+        arguments.addArgument("metricName", factory.getMetricName(meta.getMetricID()));
+        arguments.addArgument("metricShortName", factory.getMetricShortName(meta.getMetricID()));
+        arguments.addArgument("outputUnitsText", " [" + meta.getDimension() + "]");
+        arguments.addArgument("inputUnitsText", " [" + meta.getInputDimension() + "]");
+        
+        //Specific to this plot.
+        arguments.addArgument("leadHour", input.getKey(0).getFirstKey().toString());
+
+        //Setup conditional arguments
+        String baselineText = "";
+        if(!Objects.isNull(identifier.getScenarioIDForBaseline()))
+        {
+            baselineText = " against predictions from " + identifier.getScenarioIDForBaseline();
+        }
+        arguments.addArgument("baselineText", baselineText);
+
+        //Process override parameters.
+        ChartDrawingParameters override = null;
+        if(overrideParametersStr != null)//TRIM ONLY IF NOT NULL!
+        {
+            final String usedStr = overrideParametersStr.trim();
+            if(!usedStr.isEmpty())
+            {
+                override = new ChartDrawingParameters();
+                XMLTools.readXMLFromString(usedStr, override);
+            }
+        }
+
+        //Build the ChartEngine instance.
+        final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(reliabilitySource, sampleSizeSource),
+                                                               arguments,
+                                                               templateResourceName,
+                                                               override);
+
+        return engine;
+    }
 
     /**
      * @param input The metric output to plot.
@@ -91,6 +160,11 @@ public abstract class ChartEngineFactory
         else if(plotType.equals(VisualizationPlotType.THRESHOLD_LEAD))
         {
             source = new ScalarOutputByThresholdLeadXYChartDataSource(0, input);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Plot type of " + plotType
+                + " is not valid for a generic scalar output plot by lead/threshold.");
         }
 
         //Setup the arguments.
