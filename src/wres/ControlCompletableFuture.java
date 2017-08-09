@@ -47,9 +47,9 @@ import wres.io.utilities.Database;
  * request/response is created, a separate Main seemed needed. Has (too many?) private static classes that will need to
  * be split out if they are deemed useful.
  */
-public class ControlTemp
+public class ControlCompletableFuture
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ControlTemp.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ControlCompletableFuture.class);
     public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
     private static final AtomicLong lastMessageTime = new AtomicLong();
     private static final DataFactory dataFac = DefaultDataFactory.getInstance();
@@ -523,9 +523,9 @@ public class ControlTemp
             startTime = System.currentTimeMillis();
         }
 
-        final int targetUnitID = ControlTemp.getMeasurementUnitID(config.getTargetUnit());
-        final int observationVariableID = ControlTemp.getVariableID(config.getObservationVariable(), targetUnitID);
-        final int forecastVariableID = ControlTemp.getVariableID(config.getForecastVariable(), targetUnitID);
+        final int targetUnitID = ControlCompletableFuture.getMeasurementUnitID(config.getTargetUnit());
+        final int observationVariableID = ControlCompletableFuture.getVariableID(config.getObservationVariable(), targetUnitID);
+        final int forecastVariableID = ControlCompletableFuture.getVariableID(config.getForecastVariable(), targetUnitID);
 
         if(LOGGER.isDebugEnabled())
         {
