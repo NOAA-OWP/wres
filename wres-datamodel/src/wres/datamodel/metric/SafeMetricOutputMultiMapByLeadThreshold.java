@@ -87,10 +87,11 @@ implements MetricOutputMultiMapByLeadThreshold<S>
         StringBuilder b = new StringBuilder();
         store.forEach((key,value) -> {
             b.append(key.getFirstKey());
-            b.append(", ");
+            b.append(": ");
             b.append(key.getSecondKey());
             b.append(newLine);
             b.append(value);
+            b.append(newLine);
         });
         return b.toString();
     }
