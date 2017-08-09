@@ -46,10 +46,11 @@ import java.util.function.Function;
 public class ControlRegularFuture implements Function<String[], Integer>
 {
 
-    public static void main(String[] args) {
+    public static void main(String[] args)
+    {
         new ControlRegularFuture().apply(new String[]{"C:/Users/HSL/Desktop/WRES_TEST/wres_config_test.xml"});
     }
-    
+
     /**
      * Processes one or more projects whose paths are provided in the input arguments.
      *
@@ -57,27 +58,27 @@ public class ControlRegularFuture implements Function<String[], Integer>
      */
     public Integer apply(final String[] args)
     {
-        //Validate the configurations
+        // Validate the configurations
         List<ProjectConfigPlus> projectConfiggies = getProjects(args);
         boolean validated = validateProjects(projectConfiggies);
-
         if(!validated)
         {
             return null;
         }
 
-        // Create a queue of work: displaying or processing fetched pairs.
-        int maxProcessThreads = ControlRegularFuture.MAX_THREADS;
+        // Create a thread pool
+        int maxProcessThreads = MAX_THREADS;
         ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
 
+        // Iterate through the configurations
         for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
         {
+            // Process the next configuration
             boolean processed = processProjectConfig(projectConfigPlus, processPairExecutor);
             if(!processed)
             {
                 return null;
             }
-
         }
         shutDownGracefully(processPairExecutor);
         return 0;
@@ -91,6 +92,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
      * @param projectConfigPlus
      * @return true if no issues were detected, false otherwise
      */
+
     public static boolean isProjectValid(ProjectConfigPlus projectConfigPlus)
     {
         // Assume valid until demonstrated otherwise
@@ -102,7 +104,8 @@ public class ControlRegularFuture implements Function<String[], Integer>
             {
                 if(ve.getLocator() != null)
                 {
-                    LOGGER.warn("In file {}, near line {} and column {}, WRES found a small issue with project configuration. The parser said:",
+                    LOGGER.warn("In file {}, near line {} and column {}, WRES found an issue with the project "
+                        + "configuration. The parser said:",
                                 projectConfigPlus.getPath(),
                                 ve.getLocator().getLineNumber(),
                                 ve.getLocator().getColumnNumber(),
@@ -110,7 +113,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
                 }
                 else
                 {
-                    LOGGER.warn("In file {}, WRES found a small issue with project configuration. The parser said:",
+                    LOGGER.warn("In file {}, WRES found an issue with the project configuration. The parser said:",
                                 projectConfigPlus.getPath(),
                                 ve.getLinkedException());
                 }
@@ -119,7 +122,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
             result = false;
         }
 
-        // validate graphics portion
+        // Validate graphics portion
         result = result && isGraphicsPortionOfProjectValid(projectConfigPlus);
 
         return result;
@@ -131,6 +134,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
      * @param projectConfigPlus
      * @return
      */
+    
     public static boolean isGraphicsPortionOfProjectValid(ProjectConfigPlus projectConfigPlus)
     {
         final String BEGIN_TAG = "<chartDrawingParameters>";
@@ -178,39 +182,6 @@ public class ControlRegularFuture implements Function<String[], Integer>
     }
 
     /**
-     * Checks a trimmed string in the graphics configuration.
-     * 
-     * @param trimmedCustomString the trimmed string
-     * @param tag the tag
-     * @param comment the comment
-     * @param nearbyTag a nearby tag
-     * @param projectConfigPlus the configuration
-     * @return true if the tag is valid, false otherwise
-     */
-
-    private static boolean checkTrimmedString(String trimmedCustomString,
-                                              String tag,
-                                              String comment,
-                                              Locatable nearbyTag,
-                                              ProjectConfigPlus projectConfigPlus)
-    {
-        if(!trimmedCustomString.endsWith(tag) && !trimmedCustomString.endsWith(comment))
-        {
-            String msg = "In file {}, near line {} and column {}, " + "WRES found an issue with the project "
-                + " configuration in the area of custom " + "graphics configuration. If customization is "
-                + "provided, please end it with " + tag;
-
-            LOGGER.warn(msg,
-                        projectConfigPlus.getPath(),
-                        nearbyTag.sourceLocation().getLineNumber(),
-                        nearbyTag.sourceLocation().getColumnNumber());
-
-            return false;
-        }
-        return true;
-    }
-
-    /**
      * Validates a list of {@link ProjectConfigPlus}. Returns true if the projects validate successfully, false
      * otherwise.
      * 
@@ -232,7 +203,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
 
         boolean validationsPassed = true;
 
-        // Validate all projects, not stopping until after getting through all.
+        // Validate all projects, not stopping until all are done
         for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
         {
             if(!isProjectValid(projectConfigPlus))
@@ -250,7 +221,11 @@ public class ControlRegularFuture implements Function<String[], Integer>
     }
 
     /**
-     * Processes a {@link ProjectConfig}
+     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService}
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param processPairExecutor the {@link ExecutorService}
+     * @return true if the project processed successfully, false otherwise
      */
 
     private boolean processProjectConfig(ProjectConfigPlus projectConfigPlus, ExecutorService processPairExecutor)
@@ -515,6 +490,39 @@ public class ControlRegularFuture implements Function<String[], Integer>
             return LOGGER;
         }
     }
+    
+    /**
+     * Checks a trimmed string in the graphics configuration.
+     * 
+     * @param trimmedCustomString the trimmed string
+     * @param tag the tag
+     * @param comment the comment
+     * @param nearbyTag a nearby tag
+     * @param projectConfigPlus the configuration
+     * @return true if the tag is valid, false otherwise
+     */
+
+    private static boolean checkTrimmedString(String trimmedCustomString,
+                                              String tag,
+                                              String comment,
+                                              Locatable nearbyTag,
+                                              ProjectConfigPlus projectConfigPlus)
+    {
+        if(!trimmedCustomString.endsWith(tag) && !trimmedCustomString.endsWith(comment))
+        {
+            String msg = "In file {}, near line {} and column {}, " + "WRES found an issue with the project "
+                + " configuration in the area of custom " + "graphics configuration. If customization is "
+                + "provided, please end it with " + tag;
+
+            LOGGER.warn(msg,
+                        projectConfigPlus.getPath(),
+                        nearbyTag.sourceLocation().getLineNumber(),
+                        nearbyTag.sourceLocation().getColumnNumber());
+
+            return false;
+        }
+        return true;
+    }    
 
     /**
      * Kill off the executors passed in even if there are remaining tasks.

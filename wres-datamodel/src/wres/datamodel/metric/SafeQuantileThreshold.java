@@ -116,14 +116,14 @@ final class SafeQuantileThreshold extends SafeThreshold implements QuantileThres
         if(o instanceof SafeQuantileThreshold)
         {
             final SafeQuantileThreshold q = (SafeQuantileThreshold)o;
-            returnMe = Double.compare(q.getThresholdProbability(),probability);
+            returnMe = Double.compare(probability,q.getThresholdProbability());
             if(returnMe != 0)
             {
                 return returnMe;
             }
             if(hasBetweenCondition())
             {
-                returnMe = Double.compare(q.getThresholdUpperProbability(),probabilityUpper);
+                returnMe = Double.compare(probabilityUpper,q.getThresholdUpperProbability());
                 if(returnMe != 0)
                 {
                     return returnMe;
