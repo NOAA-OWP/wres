@@ -3,7 +3,6 @@ package wres;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-import util.MainFunctions;
 import wres.io.Operations;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
