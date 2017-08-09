@@ -2,6 +2,7 @@ package wres.vis;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
@@ -109,6 +110,51 @@ public class Chart2DTestOutput extends TestCase
                                                                                               factory,
                                                                                               ChartEngineFactory.VisualizationPlotType.THRESHOLD_LEAD,
                                                                                               "scalarOutputTemplate.xml",
+                                                                                              null);
+
+            //Generate the output file.
+            ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
+
+            //Compare against OS specific image benchmark.
+            FileComparisonUtilities.assertImageFileSimilarToBenchmark(outputImageFile,
+                                                                      new File("testinput/chart2DTest/benchmark."
+                                                                          + scenarioName + "_output.png"),
+                                                                      8,
+                                                                      true,
+                                                                      false);
+        }
+        catch(final Throwable t)
+        {
+            t.printStackTrace();
+            fail("Unexpected exception: " + t.getMessage());
+        }
+    }
+    
+    public void test4ReliabilityDiagram()
+    {
+        final String scenarioName = "test4";
+        final File outputImageFile = new File("testoutput/chart2DTest/" + scenarioName + "_output.png");
+        outputImageFile.delete();
+
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getReliabilityDiagramByLeadThreshold();
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results42 = results.sliceByLead(42);
+        results42.forEach((key,result)-> {
+            System.out.println(key.getSecondKey());
+            System.out.println(Arrays.toString(result.get(MetricConstants.FORECAST_PROBABILITY).getDoubles()));  //This array forms the domain
+            System.out.println(Arrays.toString(result.get(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY).getDoubles()));  //This array forms the range for reliability diagram subplot
+            System.out.println(Arrays.toString(result.get(MetricConstants.SAMPLE_SIZE).getDoubles())); //This array forms the range for the sample size subplot
+        });
+
+        try
+        {
+            //Get an implementation of the metadata factory to use for testing.
+            final MetadataFactory factory = DefaultMetadataFactory.getInstance();
+
+            //Call the factory.
+            final ChartEngine engine = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
+                                                                                              factory,
+                                                                                              ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM,
+                                                                                              "reliabilityDiagramTemplate.xml",
                                                                                               null);
 
             //Generate the output file.
@@ -303,7 +349,7 @@ public class Chart2DTestOutput extends TestCase
                         //Build the result
                         final MetricResult result = t.getResult(f);
                         final double[][] res = ((DoubleMatrix2DResult)result).getResult().toArray();
-                        Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
+                        final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
                         output.put(MetricConstants.FORECAST_PROBABILITY, res[0]); //Forecast probabilities
                         output.put(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY, res[1]); //Observed | forecast probabilities
                         output.put(MetricConstants.SAMPLE_SIZE, res[2]); //Observed | forecast probabilities
