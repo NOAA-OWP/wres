@@ -28,7 +28,7 @@ class SafeThreshold implements Threshold
      * The threshold condition.
      */
 
-    protected final Condition condition;
+    protected final Operator condition;
 
     /**
      * Construct the threshold.
@@ -38,12 +38,12 @@ class SafeThreshold implements Threshold
      * @param condition the condition
      */
 
-    protected SafeThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
+    protected SafeThreshold(final Double threshold, final Double thresholdUpper, final Operator condition)
     {
         //Bounds checks
         Objects.requireNonNull(threshold, "Specify a non-null threshold.");
         Objects.requireNonNull(condition, "Specify a non-null condition.");
-        if(condition.equals(Condition.BETWEEN))
+        if(condition.equals(Operator.BETWEEN))
         {
             Objects.requireNonNull(thresholdUpper, "Specify a non-null upper threshold.");
             if(thresholdUpper <= threshold)
@@ -72,7 +72,7 @@ class SafeThreshold implements Threshold
     }
 
     @Override
-    public Condition getCondition()
+    public Operator getCondition()
     {
         return condition;
     }
@@ -86,7 +86,7 @@ class SafeThreshold implements Threshold
     @Override
     public boolean hasBetweenCondition()
     {
-        return condition.equals(Condition.BETWEEN);
+        return condition.equals(Operator.BETWEEN);
     }
 
     @Override
@@ -132,7 +132,7 @@ class SafeThreshold implements Threshold
     }
 
     /**
-     * Returns a string representation of the elementary condition (e.g. one part of a {@link Condition#BETWEEN}
+     * Returns a string representation of the elementary condition (e.g. one part of a {@link Operator#BETWEEN}
      * condition).
      * 
      * @return a string for the elementary condition

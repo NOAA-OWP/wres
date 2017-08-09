@@ -2,7 +2,7 @@ package wres.datamodel.metric;
 
 /**
  * A threshold that represents a quantile of a probability distribution for which a corresponding probability must be
- * provided. For thresholds that comprise a {@link Condition#BETWEEN} condition, specify a probability for each of the
+ * provided. For thresholds that comprise a {@link Operator#BETWEEN} condition, specify a probability for each of the
  * lower and upper bounds.
  * 
  * @author james.brown@hydrosolved.com
@@ -15,7 +15,7 @@ public interface QuantileThreshold extends Threshold
 
     /**
      * Returns the probability associated with the {@link #getThreshold()}, which may comprise the lower bound of a
-     * {@link Condition#BETWEEN}
+     * {@link Operator#BETWEEN}
      * 
      * @return a probability
      */

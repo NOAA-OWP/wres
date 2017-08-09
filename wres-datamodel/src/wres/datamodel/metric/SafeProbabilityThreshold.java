@@ -19,7 +19,7 @@ class SafeProbabilityThreshold extends SafeThreshold implements ProbabilityThres
      * @param condition the condition
      */
 
-    protected SafeProbabilityThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
+    protected SafeProbabilityThreshold(final Double threshold, final Double thresholdUpper, final Operator condition)
     {
         super(threshold, thresholdUpper, condition);
         //Check inputs are within bounds

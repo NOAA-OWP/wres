@@ -218,7 +218,7 @@ public class Control implements Function<String[], Integer>
                     MetricOutputMapByMetric<ScalarOutput> metrics = futureMetrics.get(i).get();
 
                     int leadTime = i + 1;
-                    Threshold fakeThreshold = dataFac.getThreshold(Double.NEGATIVE_INFINITY, Threshold.Condition.GREATER);
+                    Threshold fakeThreshold = dataFac.getThreshold(Double.NEGATIVE_INFINITY, Threshold.Operator.GREATER);
                     resultsBuilder.put(leadTime, fakeThreshold, metrics);
 
                     if (LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)

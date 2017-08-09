@@ -34,7 +34,7 @@ import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.QuantileThreshold;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.Threshold;
-import wres.datamodel.metric.Threshold.Condition;
+import wres.datamodel.metric.Threshold.Operator;
 
 /**
  * Tests the construction of a 3D chart of metric outputs.
@@ -146,7 +146,7 @@ public class Chart2DTestOutput extends TestCase
             {0.95, 13685.0}, {0.99, 26648.0}};
         for(final double[] next: allow)
         {
-            combine.add(full.sliceByThreshold(outputFactory.getQuantileThreshold(next[1], next[0], Condition.GREATER)));
+            combine.add(full.sliceByThreshold(outputFactory.getQuantileThreshold(next[1], next[0], Operator.GREATER)));
         }
         return outputFactory.combine(combine);
     }
@@ -219,7 +219,7 @@ public class Chart2DTestOutput extends TestCase
                     final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0], probConstants[0], Condition.GREATER);
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0], probConstants[0], Operator.GREATER);
                     final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, q);
 
                     //Build the scalar result
@@ -260,7 +260,7 @@ public class Chart2DTestOutput extends TestCase
         final double[][] allow = new double[][]{{0.1, 858.04}, {0.5, 2707.5}, {0.9, 9647.0}, {0.95, 13685.0}};
         for(final double[] next: allow)
         {
-            allowed.add(outputFactory.getQuantileThreshold(next[1], next[0], Condition.GREATER));
+            allowed.add(outputFactory.getQuantileThreshold(next[1], next[0], Operator.GREATER));
         }
         try
         {
@@ -294,7 +294,7 @@ public class Chart2DTestOutput extends TestCase
                     final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0], probConstants[0], Condition.GREATER);
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0], probConstants[0], Operator.GREATER);
                     //Read only selected quantiles
                     if(allowed.contains(q))
                     {
