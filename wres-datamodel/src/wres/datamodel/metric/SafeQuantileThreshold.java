@@ -40,7 +40,7 @@ final class SafeQuantileThreshold extends SafeThreshold implements QuantileThres
                           final Double thresholdUpper,
                           final Double probability,
                           final Double probabilityUpper,
-                          final Condition condition)
+                          final Operator condition)
     {
         super(threshold, thresholdUpper, condition);
         //Bounds checks
@@ -50,7 +50,7 @@ final class SafeQuantileThreshold extends SafeThreshold implements QuantileThres
         {
             throw new IllegalArgumentException("The threshold probability is out of bounds [0,1]: " + probability);
         }
-        if(condition.equals(Condition.BETWEEN))
+        if(condition.equals(Operator.BETWEEN))
         {
             Objects.requireNonNull(probabilityUpper, "Specify a non-null upper threshold probability for the map key.");
             if(!probability.equals(Double.NEGATIVE_INFINITY) && (probabilityUpper < 0.0 || probabilityUpper > 1.0))

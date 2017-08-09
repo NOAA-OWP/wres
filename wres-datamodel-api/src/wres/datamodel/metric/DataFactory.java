@@ -10,7 +10,7 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metric.Threshold.Condition;
+import wres.datamodel.metric.Threshold.Operator;
 
 /**
  * A factory class for producing datasets associated with verification metrics.
@@ -35,7 +35,7 @@ public interface DataFactory
 
     default MapBiKey<Integer, Threshold> getMapKeyByLeadThreshold(final Integer leadTime,
                                                                   final Double threshold,
-                                                                  final Condition condition)
+                                                                  final Operator condition)
     {
         return getMapKey(leadTime, getThreshold(threshold, condition));
     }
@@ -45,8 +45,8 @@ public interface DataFactory
      * {@link Threshold}.
      * 
      * @param leadTime the forecast lead time
-     * @param threshold the threshold value or lower bound of a {@link Condition#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Condition#BETWEEN} or null
+     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
+     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
      * @param condition the threshold condition
      * @return a map key
      */
@@ -54,7 +54,7 @@ public interface DataFactory
     default MapBiKey<Integer, Threshold> getMapKeyByLeadThreshold(final Integer leadTime,
                                                                   final Double threshold,
                                                                   final Double thresholdUpper,
-                                                                  final Condition condition)
+                                                                  final Operator condition)
     {
         return getMapKey(leadTime, getThreshold(threshold, thresholdUpper, condition));
     }
@@ -67,7 +67,7 @@ public interface DataFactory
      * @return a threshold
      */
 
-    default Threshold getThreshold(final Double threshold, final Condition condition)
+    default Threshold getThreshold(final Double threshold, final Operator condition)
     {
         return getThreshold(threshold, null, condition);
     }
@@ -80,7 +80,7 @@ public interface DataFactory
      * @return a threshold
      */
 
-    default ProbabilityThreshold getProbabilityThreshold(final Double threshold, final Condition condition)
+    default ProbabilityThreshold getProbabilityThreshold(final Double threshold, final Operator condition)
     {
         return getProbabilityThreshold(threshold, null, condition);
     }
@@ -96,7 +96,7 @@ public interface DataFactory
 
     default QuantileThreshold getQuantileThreshold(final Double threshold,
                                                    final Double probability,
-                                                   final Condition condition)
+                                                   final Operator condition)
     {
         return getQuantileThreshold(threshold, null, probability, null, condition);
     }
@@ -448,32 +448,32 @@ public interface DataFactory
     /**
      * Returns {@link Threshold} from the specified input.
      * 
-     * @param threshold the threshold value or lower bound of a {@link Condition#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Condition#BETWEEN} or null
+     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
+     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
      * @param condition the threshold condition
      * @return a threshold
      */
 
-    Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition);
+    Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Operator condition);
 
     /**
      * Returns {@link ProbabilityThreshold} from the specified input. Both inputs must be in the unit interval, [0,1].
      * 
-     * @param threshold the threshold value or lower bound of a {@link Condition#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Condition#BETWEEN} or null
+     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
+     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
      * @param condition the threshold condition
      * @return a threshold
      */
 
     ProbabilityThreshold getProbabilityThreshold(final Double threshold,
                                                  final Double thresholdUpper,
-                                                 final Condition condition);
+                                                 final Operator condition);
 
     /**
      * Returns a {@link QuantileThreshold} from the specified input
      * 
-     * @param threshold the threshold value or lower bound of a {@link Condition#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Condition#BETWEEN} or null
+     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
+     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
      * @param probability the probability associated with the threshold
      * @param probabilityUpper the probability associated with the upper threshold or null
      * @param condition the threshold condition
@@ -484,7 +484,7 @@ public interface DataFactory
                                            final Double thresholdUpper,
                                            Double probability,
                                            Double probabilityUpper,
-                                           final Condition condition);
+                                           final Operator condition);
 
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} from the raw map of inputs.

@@ -4,9 +4,9 @@ import java.util.function.Predicate;
 
 /**
  * Stores a threshold value and associated logical condition. A threshold may comprise one or two threshold values. If
- * the threshold comprises two values, {@link #getCondition()} must return {@link Condition#BETWEEN} and
+ * the threshold comprises two values, {@link #getCondition()} must return {@link Operator#BETWEEN} and
  * {@link #getThresholdUpper()} must return a non-null value. The reverse is also true, i.e. if the condition is
- * {@link Condition#BETWEEN}, {@link #getThresholdUpper()} must return null.
+ * {@link Operator#BETWEEN}, {@link #getThresholdUpper()} must return null.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -17,10 +17,10 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
 {
 
     /**
-     * Logical conditions associated with a {@link Threshold}.
+     * Operators associated with a {@link Threshold}.
      */
 
-    public enum Condition
+    public enum Operator
     {
 
         /**
@@ -61,7 +61,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     }
 
     /**
-     * Returns the threshold value, which may comprise the lower bound of a {@link Condition#BETWEEN}
+     * Returns the threshold value, which may comprise the lower bound of a {@link Operator#BETWEEN}
      * 
      * @return the threshold value
      */
@@ -74,10 +74,10 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      * @return the logical condition associated with the threshold
      */
 
-    Condition getCondition();
+    Operator getCondition();
 
     /**
-     * Returns the upper bound of a {@link Condition#BETWEEN} condition or null.
+     * Returns the upper bound of a {@link Operator#BETWEEN} condition or null.
      * 
      * @return the upper threshold value or null
      */
@@ -85,10 +85,10 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     Double getThresholdUpper();
 
     /**
-     * Returns true if the threshold condition corresponds to a {@link Condition#BETWEEN} condition and, hence, that
+     * Returns true if the threshold condition corresponds to a {@link Operator#BETWEEN} condition and, hence, that
      * {@link #getThresholdUpper()} returns a non-null threshold value.
      * 
-     * @return true if the condition is a {@link Condition#BETWEEN} condition, false otherwise.
+     * @return true if the condition is a {@link Operator#BETWEEN} condition, false otherwise.
      */
 
     boolean hasBetweenCondition();

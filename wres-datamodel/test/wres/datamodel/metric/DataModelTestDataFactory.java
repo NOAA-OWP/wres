@@ -13,7 +13,7 @@ import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
 import wres.datamodel.metric.SafeMetricOutputMapByLeadThreshold.Builder;
-import wres.datamodel.metric.Threshold.Condition;
+import wres.datamodel.metric.Threshold.Operator;
 
 /**
  * Factory class for generating test datasets for metric calculations.
@@ -72,7 +72,7 @@ public final class DataModelTestDataFactory
                     final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0], probConstants[0], Condition.GREATER);
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0], probConstants[0], Operator.GREATER);
                     final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, q);
 
                     //Build the scalar result

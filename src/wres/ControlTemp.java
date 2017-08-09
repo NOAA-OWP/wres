@@ -1,27 +1,6 @@
 package wres;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.config.generated.Conditions;
-import wres.config.generated.ProjectConfig;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metric.*;
-import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricConfigurationException;
-import wres.engine.statistics.metric.MetricFactory;
-import wres.engine.statistics.metric.MetricProcessor;
-import wres.io.Operations;
-import wres.io.config.ProjectConfigPlus;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Variables;
-import wres.io.utilities.Database;
-import wres.io.utilities.InputGenerator;
-
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,14 +8,37 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.PairOfDoubles;
+import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
+import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.metric.MetricOutputMapByMetric;
+import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.Threshold;
+import wres.datamodel.metric.Threshold.Operator;
+import wres.engine.statistics.metric.FunctionFactory;
+import wres.engine.statistics.metric.MetricCollection;
+import wres.engine.statistics.metric.MetricFactory;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
+import wres.io.utilities.Database;
 
 /**
  * Another Main. The reason for creating this class separately from Main is to defer conflict with the existing
@@ -102,192 +104,192 @@ public class ControlTemp
     public static void main(final String[] args)
     {
 
-        ProjectConfig config = null;
-        try
-        {
-
-            config = ProjectConfigPlus.from(Paths.get("D:/Applications/WRES/Code/wres/nonsrc/config_possibility.xml"))
-                                      .getProjectConfig();
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-        }
+//        ProjectConfig config = null;
+//        try
+//        {
+//
+//            config = ProjectConfigPlus.from(Paths.get("D:/Applications/WRES/Code/wres/nonsrc/config_possibility.xml"))
+//                                      .getProjectConfig();
+//        }
+//        catch(Exception e)
+//        {
+//            e.printStackTrace();
+//        }
+//
+//        final long start = System.currentTimeMillis(); //Start time
+//
+//        //Obtain the features
+//        List<Conditions.Feature> features = config.getConditions().getFeature();
+//
+//        //Iterate through the features
+//        try
+//        {
+//            //Some output types are processed at the end of the pipeline, others after each input is processed
+//            //Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR
+//            MetricProcessor processor = MetricFactory.getInstance(dataFac).getMetricProcessor(config,
+//                                                                                              MetricOutputGroup.SCALAR,
+//                                                                                              MetricOutputGroup.VECTOR);
+//            for(Conditions.Feature nextFeature: features)
+//            {
+//                if(LOGGER.isInfoEnabled())
+//                {
+//                    LOGGER.info("Processing feature '" + nextFeature.getLocation().getLid() + "'.");
+//                }
+//                InputGenerator metricInputs = Operations.getInputs(config, nextFeature);
+//                int window = 1;
+//
+//                //Iterate through the inputs and compute all metrics for each input
+//                for (Future<MetricInput<?>> input : metricInputs)
+//                {
+//                    if(LOGGER.isInfoEnabled())
+//                    {
+//                        LOGGER.info("Processing lead time '" + window + "'.");
+//                    }
+//                    MetricOutputForProjectByLeadThreshold nextResult = processor.apply(input.get());
+//                    //Generate products for intermediate output types
+//                    if(nextResult.hasOutput(MetricOutputGroup.MULTIVECTOR))
+//                    {
+//                        MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> forProducts =
+//                                nextResult.getMultiVectorOutput();
+//                        //Call wres-vis factory with intermediate output
+//
+//                    }
+//                    if(LOGGER.isInfoEnabled())
+//                    {
+//                        LOGGER.info("Completed lead time '" + window + "'.");
+//                    }
+//                    window++;
+//                }
+//            }
+//            //Process end-of-pipeline outputs
+//            if(processor.hasStoredMetricOutput())
+//            {
+//                MetricOutputForProjectByLeadThreshold store = processor.getStoredMetricOutput();
+//                //            //Method trace if wres-vis CAN handle MetricOutput<?>
+//                //            MetricOutputMultiMapByLeadThreshold<MetricOutput<?>> forAllProducts =
+//                //                                                                                store.getOutput(MetricOutputGroup.SCALAR,
+//                //                                                                                                MetricOutputGroup.VECTOR);
+//                //            //Call wres-vis factory with final output
+//
+//                //Method trace if wres-vis CANNOT handle MetricOutput<?>
+//                if(store.hasOutput(MetricOutputGroup.SCALAR))
+//                {
+//                    MetricOutputMultiMapByLeadThreshold<ScalarOutput> forProducts = store.getScalarOutput();
+//                    //Call wres-vis factory with final output
+//
+//                }
+//                if(store.hasOutput(MetricOutputGroup.VECTOR))
+//                {
+//                    MetricOutputMultiMapByLeadThreshold<VectorOutput> forProducts = store.getVectorOutput();
+//                    //Call wres-vis factory with final output
+//
+//                }
+//            }
+//        }
+//        catch(InterruptedException | ExecutionException | MetricConfigurationException e)
+//        {
+//            LOGGER.error(e.getMessage(), e);
+//        }
+//        final long stop = System.currentTimeMillis(); //End time
+//        if(LOGGER.isInfoEnabled())
+//        {
+//            LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
+//        }
 
         final long start = System.currentTimeMillis(); //Start time
+        final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 1, 0),
+                                                LocalDateTime.of(2010, 12, 31, 23, 59),
+                                                "SQIN",
+                                                "QINE",
+                                                "CFS");
 
-        //Obtain the features
-        List<Conditions.Feature> features = config.getConditions().getFeature();
+        //Build an immutable collection of metrics, to be computed at each of several forecast lead times
+        final MetricFactory metFac = MetricFactory.getInstance(dataFac);
+        final MetricCollection<SingleValuedPairs, ScalarOutput> useMe =
+                                                                      metFac.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
+                                                                                                            MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                                                            MetricConstants.ROOT_MEAN_SQUARE_ERROR);
 
-        //Iterate through the features
+        // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
+        final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
+        final int leadTimesCount = 100;
+
+        //Build a thread pool that can be terminated upon exception
+        final ForkJoinPool f = new ForkJoinPool();
+
+        //Sink for the results: the results are added incrementally to an immutable store via a builder
+        final MetricOutputMultiMapByLeadThreshold.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
+        //Iterate
+        for(int i = 0; i < leadTimesCount; i++)
+        {
+            final int lead = i + 1;
+            // Complete all tasks asynchronously:
+            // 1. Get some pairs from the database
+            // 2. When available, compute the single-valued pairs from them ({observation, ensemble mean})
+            // 3. Compute the metrics
+            // 4. Do something with the verification results (store them)
+            // 5. Monitor progress per lead time
+
+            //Threshold = all data for now
+            final Threshold allData = dataFac.getThreshold(Double.NEGATIVE_INFINITY, Operator.GREATER);
+            final CompletableFuture<Void> c = CompletableFuture
+                                                               .supplyAsync(new PairGetterByLeadTime(config,
+                                                                                                     lead,
+                                                                                                     dataFac),
+                                                                            f)
+                                                               .thenApplyAsync(new SingleValuedPairProcessor(dataFac),
+                                                                               f)
+                                                               .thenApplyAsync(useMe, f)
+                                                               .thenAcceptAsync(new ResultProcessor<>(lead,
+                                                                                                      allData,
+                                                                                                      resultsBuilder),
+                                                                                f)
+                                                               .thenAcceptAsync(a -> {
+                                                                   if(LOGGER.isInfoEnabled())
+                                                                   {
+                                                                       LOGGER.info("Completed lead time " + lead);
+                                                                   }
+                                                               }, f);
+            //Add the future to the list
+            listOfFutures.add(c);
+        }
+
+        //Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
+        //Log any exception and append to the error log as the last step
+        Exception logged = null;
         try
         {
-            //Some output types are processed at the end of the pipeline, others after each input is processed
-            //Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR
-            MetricProcessor processor = MetricFactory.getInstance(dataFac).getMetricProcessor(config,
-                                                                                              MetricOutputGroup.SCALAR,
-                                                                                              MetricOutputGroup.VECTOR);
-            for(Conditions.Feature nextFeature: features)
-            {
-                if(LOGGER.isInfoEnabled())
-                {
-                    LOGGER.info("Processing feature '" + nextFeature.getLocation().getLid() + "'.");
-                }
-                InputGenerator metricInputs = Operations.getInputs(config, nextFeature);
-                int window = 1;
-
-                //Iterate through the inputs and compute all metrics for each input
-                for (Future<MetricInput<?>> input : metricInputs)
-                {
-                    if(LOGGER.isInfoEnabled())
-                    {
-                        LOGGER.info("Processing lead time '" + window + "'.");
-                    }
-                    MetricOutputForProjectByLeadThreshold nextResult = processor.apply(input.get());
-                    //Generate products for intermediate output types
-                    if(nextResult.hasOutput(MetricOutputGroup.MULTIVECTOR))
-                    {
-                        MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> forProducts =
-                                nextResult.getMultiVectorOutput();
-                        //Call wres-vis factory with intermediate output
-
-                    }
-                    if(LOGGER.isInfoEnabled())
-                    {
-                        LOGGER.info("Completed lead time '" + window + "'.");
-                    }
-                    window++;
-                }
-            }
-            //Process end-of-pipeline outputs
-            if(processor.hasStoredMetricOutput())
-            {
-                MetricOutputForProjectByLeadThreshold store = processor.getStoredMetricOutput();
-                //            //Method trace if wres-vis CAN handle MetricOutput<?>
-                //            MetricOutputMultiMapByLeadThreshold<MetricOutput<?>> forAllProducts =
-                //                                                                                store.getOutput(MetricOutputGroup.SCALAR,
-                //                                                                                                MetricOutputGroup.VECTOR);
-                //            //Call wres-vis factory with final output
-
-                //Method trace if wres-vis CANNOT handle MetricOutput<?>
-                if(store.hasOutput(MetricOutputGroup.SCALAR))
-                {
-                    MetricOutputMultiMapByLeadThreshold<ScalarOutput> forProducts = store.getScalarOutput();
-                    //Call wres-vis factory with final output
-
-                }
-                if(store.hasOutput(MetricOutputGroup.VECTOR))
-                {
-                    MetricOutputMultiMapByLeadThreshold<VectorOutput> forProducts = store.getVectorOutput();
-                    //Call wres-vis factory with final output
-
-                }
-            }
+            doAllOrException(listOfFutures).join();
         }
-        catch(InterruptedException | ExecutionException | MetricConfigurationException e)
+        catch(final Exception e)
         {
-            LOGGER.error(e.getMessage(), e);
+            logged = e;
         }
-        final long stop = System.currentTimeMillis(); //End time
+        finally
+        {
+            //Terminate
+            f.shutdownNow(); //or shutdown();
+        }
+
+        //Build final results:
+        MetricOutputMultiMapByLeadThreshold<ScalarOutput> results = resultsBuilder.build();
+
+        //Print info to logger
         if(LOGGER.isInfoEnabled())
         {
+            results.forEach((key, value) -> {
+                LOGGER.info(NEWLINE + "Results for metric "
+                    + dataFac.getMetadataFactory().getMetricName(key.getFirstKey()) + " (lead time, threshold, score) "
+                    + NEWLINE + value);
+            });
+            final long stop = System.currentTimeMillis(); //End time
             LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
         }
-
-        //        final long start = System.currentTimeMillis(); //Start time
-        //        final PairConfig config = PairConfig.of(LocalDateTime.of(1980, 1, 1, 1, 0),
-        //                                                LocalDateTime.of(2010, 12, 31, 23, 59),
-        //                                                "SQIN",
-        //                                                "QINE",
-        //                                                "CFS");
-        //
-        //        //Build an immutable collection of metrics, to be computed at each of several forecast lead times
-        //        final MetricFactory metFac = MetricFactory.getInstance(dataFac);
-        //        final MetricCollection<SingleValuedPairs, ScalarOutput> useMe =
-        //                                                                      metFac.ofSingleValuedScalarCollection(MetricConstants.MEAN_ERROR,
-        //                                                                                                            MetricConstants.MEAN_ABSOLUTE_ERROR,
-        //                                                                                                            MetricConstants.ROOT_MEAN_SQUARE_ERROR);
-        //
-        //        // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
-        //        final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
-        //        final int leadTimesCount = 100;
-        //
-        //        //Build a thread pool that can be terminated upon exception
-        //        final ForkJoinPool f = new ForkJoinPool();
-        //
-        //        //Sink for the results: the results are added incrementally to an immutable store via a builder
-        //        final MetricOutputMultiMapByLeadThreshold.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
-        //        //Iterate
-        //        for(int i = 0; i < leadTimesCount; i++)
-        //        {
-        //            final int lead = i + 1;
-        //            // Complete all tasks asynchronously:
-        //            // 1. Get some pairs from the database
-        //            // 2. When available, compute the single-valued pairs from them ({observation, ensemble mean})
-        //            // 3. Compute the metrics
-        //            // 4. Do something with the verification results (store them)
-        //            // 5. Monitor progress per lead time
-        //
-        //            //Threshold = all data for now
-        //            final Threshold allData = dataFac.getThreshold(Double.NEGATIVE_INFINITY, Condition.GREATER);
-        //            final CompletableFuture<Void> c = CompletableFuture
-        //                                                               .supplyAsync(new PairGetterByLeadTime(config,
-        //                                                                                                     lead,
-        //                                                                                                     dataFac),
-        //                                                                            f)
-        //                                                               .thenApplyAsync(new SingleValuedPairProcessor(dataFac),
-        //                                                                               f)
-        //                                                               .thenApplyAsync(useMe, f)
-        //                                                               .thenAcceptAsync(new ResultProcessor<>(lead,
-        //                                                                                                      allData,
-        //                                                                                                      resultsBuilder),
-        //                                                                                f)
-        //                                                               .thenAcceptAsync(a -> {
-        //                                                                   if(LOGGER.isInfoEnabled())
-        //                                                                   {
-        //                                                                       LOGGER.info("Completed lead time " + lead);
-        //                                                                   }
-        //                                                               }, f);
-        //            //Add the future to the list
-        //            listOfFutures.add(c);
-        //        }
-        //
-        //        //Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
-        //        //Log any exception and append to the error log as the last step
-        //        Exception logged = null;
-        //        try
-        //        {
-        //            doAllOrException(listOfFutures).join();
-        //        }
-        //        catch(final Exception e)
-        //        {
-        //            logged = e;
-        //        }
-        //        finally
-        //        {
-        //            //Terminate
-        //            f.shutdownNow(); //or shutdown();
-        //        }
-        //
-        //        //Build final results:
-        //        MetricOutputMultiMapByLeadThreshold<ScalarOutput> results = resultsBuilder.build();
-        //
-        //        //Print info to logger
-        //        if(LOGGER.isInfoEnabled())
-        //        {
-        //            results.forEach((key, value) -> {
-        //                LOGGER.info(NEWLINE + "Results for metric "
-        //                    + dataFac.getMetadataFactory().getMetricName(key.getFirstKey()) + " (lead time, threshold, score) "
-        //                    + NEWLINE + value);
-        //            });
-        //            final long stop = System.currentTimeMillis(); //End time
-        //            LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
-        //        }
-        //        //Print exception to logger last
-        //        if(!Objects.isNull(logged))
-        //        {
-        //            LOGGER.error(logged.getMessage(), logged);
-        //        }
+        //Print exception to logger last
+        if(!Objects.isNull(logged))
+        {
+            LOGGER.error(logged.getMessage(), logged);
+        }
     }
 
     /**
@@ -304,7 +306,7 @@ public class ControlTemp
     {
         //Complete when all futures are completed
         final CompletableFuture<?> allDone =
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+                                           CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
         //Complete when any of the underlying futures completes exceptionally
         final CompletableFuture<?> oneExceptional = new CompletableFuture<>();
         //Link the two
@@ -325,7 +327,7 @@ public class ControlTemp
      */
 
     private static class SingleValuedPairProcessor
-            implements Function<List<PairOfDoubleAndVectorOfDoubles>, SingleValuedPairs>
+    implements Function<List<PairOfDoubleAndVectorOfDoubles>, SingleValuedPairs>
     {
 
         private final DataFactory metIn;
@@ -510,7 +512,7 @@ public class ControlTemp
     private static String getPairSqlFromConfigForLead(final PairConfig config, final int lead) throws IOException
     {
         if(config.getForecastVariable() == null || config.getObservationVariable() == null
-                || config.getTargetUnit() == null)
+            || config.getTargetUnit() == null)
         {
             throw new IllegalArgumentException("Forecast and obs variables as well as target unit must be specified");
         }
@@ -536,7 +538,7 @@ public class ControlTemp
         Integer forecastVariablePositionID;
 
         final String obsVarPosSql = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = "
-                + observationVariableID + ";";
+            + observationVariableID + ";";
         try
         {
             observationVariablePositionID = Database.getResult(obsVarPosSql, "variableposition_id");
@@ -544,7 +546,7 @@ public class ControlTemp
         catch(final SQLException se)
         {
             final String message = "Couldn't retrieve variableposition_id for observation variable "
-                    + config.getObservationVariable() + " with obs id " + observationVariableID;
+                + config.getObservationVariable() + " with obs id " + observationVariableID;
             throw new IOException(message, se);
         }
 
@@ -556,7 +558,7 @@ public class ControlTemp
         }
 
         final String fcVarPosSql = "SELECT variableposition_id FROM wres.VariablePosition WHERE variable_id = "
-                + forecastVariableID + ";";
+            + forecastVariableID + ";";
         try
         {
             forecastVariablePositionID = Database.getResult(fcVarPosSql, "variableposition_id");
@@ -564,7 +566,7 @@ public class ControlTemp
         catch(final SQLException se)
         {
             final String message = "Couldn't retrieve variableposition_id for forecast variable "
-                    + config.getForecastVariable() + " with fc id " + forecastVariableID;
+                + config.getForecastVariable() + " with fc id " + forecastVariableID;
             throw new IOException(message, se);
         }
 
@@ -576,26 +578,26 @@ public class ControlTemp
 
         final String innerWhere = getPairInnerWhereClauseFromConfig(config);
         final String partA = "WITH forecast_measurements AS (" + NEWLINE
-                + "    SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + NEWLINE
-                + "        array_agg(FV.forecasted_value * UC.factor) AS forecasts" + NEWLINE + "    FROM wres.Forecast F"
-                + NEWLINE + "    INNER JOIN wres.ForecastEnsemble FE" + NEWLINE
-                + "        ON F.forecast_id = FE.forecast_id" + NEWLINE + "    INNER JOIN wres.ForecastValue FV" + NEWLINE
-                + "        ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE
-                + "    INNER JOIN wres.UnitConversion UC" + NEWLINE + "        ON UC.from_unit = FE.measurementunit_id"
-                + NEWLINE + "    WHERE lead = " + lead + NEWLINE + "        AND FE.variableposition_id = "
-                + forecastVariablePositionID + NEWLINE + "        AND UC.to_unit = " + targetUnitID + NEWLINE;
+            + "    SELECT F.forecast_date + INTERVAL '1 hour' * lead AS forecasted_date," + NEWLINE
+            + "        array_agg(FV.forecasted_value * UC.factor) AS forecasts" + NEWLINE + "    FROM wres.Forecast F"
+            + NEWLINE + "    INNER JOIN wres.ForecastEnsemble FE" + NEWLINE
+            + "        ON F.forecast_id = FE.forecast_id" + NEWLINE + "    INNER JOIN wres.ForecastValue FV" + NEWLINE
+            + "        ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE
+            + "    INNER JOIN wres.UnitConversion UC" + NEWLINE + "        ON UC.from_unit = FE.measurementunit_id"
+            + NEWLINE + "    WHERE lead = " + lead + NEWLINE + "        AND FE.variableposition_id = "
+            + forecastVariablePositionID + NEWLINE + "        AND UC.to_unit = " + targetUnitID + NEWLINE;
         String partB = "";
         if(innerWhere.length() > 0)
         {
             partB += "        AND " + innerWhere + NEWLINE;
         }
         partB += "    GROUP BY forecasted_date" + NEWLINE + ")" + NEWLINE
-                + "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + NEWLINE
-                + "FROM forecast_measurements FM" + NEWLINE + "INNER JOIN wres.Observation O" + NEWLINE
-                + "    ON O.observation_time = FM.forecasted_date" + NEWLINE + "INNER JOIN wres.UnitConversion UC" + NEWLINE
-                + "    ON UC.from_unit = O.measurementunit_id" + NEWLINE + "WHERE O.variableposition_id = "
-                + observationVariablePositionID + NEWLINE + "    AND UC.to_unit = " + targetUnitID + NEWLINE
-                + "ORDER BY FM.forecasted_date;";
+            + "SELECT O.observed_value * UC.factor AS observation, FM.forecasts" + NEWLINE
+            + "FROM forecast_measurements FM" + NEWLINE + "INNER JOIN wres.Observation O" + NEWLINE
+            + "    ON O.observation_time = FM.forecasted_date" + NEWLINE + "INNER JOIN wres.UnitConversion UC" + NEWLINE
+            + "    ON UC.from_unit = O.measurementunit_id" + NEWLINE + "WHERE O.variableposition_id = "
+            + observationVariablePositionID + NEWLINE + "    AND UC.to_unit = " + targetUnitID + NEWLINE
+            + "ORDER BY FM.forecasted_date;";
 
         return partA + partB;
     }
@@ -674,13 +676,13 @@ public class ControlTemp
         else if(config.getToTime() == null)
         {
             return "(F.forecast_date + INTERVAL '1 hour' * lead) >= '" + config.getFromTime().format(SQL_FORMATTER)
-                    + "'";
+                + "'";
         }
         else
         {
             return "((F.forecast_date + INTERVAL '1 hour' * lead) >= '" + config.getFromTime().format(SQL_FORMATTER)
-                    + "'" + NEWLINE + "             AND (F.forecast_date + INTERVAL '1 hour' * lead) <= '"
-                    + config.getToTime().format(SQL_FORMATTER) + "')";
+                + "'" + NEWLINE + "             AND (F.forecast_date + INTERVAL '1 hour' * lead) <= '"
+                + config.getToTime().format(SQL_FORMATTER) + "')";
         }
     }
 

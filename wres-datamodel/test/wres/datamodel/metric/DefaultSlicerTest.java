@@ -16,7 +16,7 @@ import wres.datamodel.PairOfBooleans;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.SafeVectorOfBooleans;
-import wres.datamodel.metric.Threshold.Condition;
+import wres.datamodel.metric.Threshold.Operator;
 
 /**
  * Tests the {@link DefaultSlicer}.
@@ -118,7 +118,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(0, 0.0 / 5.0));
         values.add(metIn.pairOf(1, 1.0 / 5.0));
         double[] expected = new double[]{1, 1, 1};
-        Threshold threshold = metIn.getThreshold(0.0, Condition.GREATER);
+        Threshold threshold = metIn.getThreshold(0.0, Operator.GREATER);
         Metadata meta = metIn.getMetadataFactory().getMetadata();
         SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, values, meta, meta);
         SingleValuedPairs sliced = slicer.sliceByLeft(pairs, threshold);
@@ -131,7 +131,7 @@ public final class DefaultSlicerTest
         assertTrue("The left side of the test data does not match the benchmark.",
                    Arrays.equals(slicer.getLeftSide(slicedNoBase), expected));
         //Test null return
-        SingleValuedPairs slicedNull = slicer.sliceByLeft(pairs, metIn.getThreshold(1.0, Condition.GREATER));
+        SingleValuedPairs slicedNull = slicer.sliceByLeft(pairs, metIn.getThreshold(1.0, Operator.GREATER));
         assertTrue("Expected a null return from the slice operation.", slicedNull == null);
         //Test null return on baseline
         final List<PairOfDoubles> nullValuesBase = new ArrayList<>();
@@ -163,7 +163,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
         values.add(metIn.pairOf(1, new double[]{1, 2, 3}));
         double[] expected = new double[]{1, 1, 1};
-        Threshold threshold = metIn.getThreshold(0.0, Condition.GREATER);
+        Threshold threshold = metIn.getThreshold(0.0, Operator.GREATER);
         Metadata meta = metIn.getMetadataFactory().getMetadata();
         EnsemblePairs pairs = metIn.ofEnsemblePairs(values, values, meta, meta);
         EnsemblePairs sliced = slicer.sliceByLeft(pairs, threshold);
@@ -176,7 +176,7 @@ public final class DefaultSlicerTest
         assertTrue("The left side of the test data does not match the benchmark.",
                    Arrays.equals(slicer.getLeftSide(slicedNoBase), expected));
         //Test null return
-        EnsemblePairs slicedNull = slicer.sliceByLeft(pairs, metIn.getThreshold(1.0, Condition.GREATER));
+        EnsemblePairs slicedNull = slicer.sliceByLeft(pairs, metIn.getThreshold(1.0, Operator.GREATER));
         assertTrue("Expected a null return from the slice operation.", slicedNull == null);
         //Test null return on baseline
         final List<PairOfDoubleAndVectorOfDoubles> nullValuesBase = new ArrayList<>();
@@ -278,7 +278,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(0, new double[]{1, 2, 3, 4, 5}));
         values.add(metIn.pairOf(5, new double[]{1, 1, 6, 6, 50}));
         Metadata meta = metIn.getMetadataFactory().getMetadata();
-        Threshold threshold = metIn.getThreshold(3.0, Condition.GREATER);
+        Threshold threshold = metIn.getThreshold(3.0, Operator.GREATER);
         BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::transformPair;
         double[] expectedLeft = new double[]{0.0, 0.0, 0.0, 1.0, 0.0, 1.0};
         double[] expectedRight = new double[]{2.0 / 5.0, 0.0 / 5.0, 0.0 / 5.0, 5.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0};
@@ -332,7 +332,7 @@ public final class DefaultSlicerTest
         PairOfDoubleAndVectorOfDoubles d = metIn.pairOf(4, new double[]{4, 4, 4, 4, 4});
         PairOfDoubleAndVectorOfDoubles e = metIn.pairOf(0, new double[]{1, 2, 3, 4, 5});
         PairOfDoubleAndVectorOfDoubles f = metIn.pairOf(5, new double[]{1, 1, 6, 6, 50});
-        Threshold threshold = metIn.getThreshold(3.0, Condition.GREATER);
+        Threshold threshold = metIn.getThreshold(3.0, Operator.GREATER);
         BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::transformPair;
         assertTrue("The transformed pair does not match the benchmark",
                    mapper.apply(a, threshold).equals(metIn.pairOf(0.0, 2.0 / 5.0)));
@@ -420,24 +420,24 @@ public final class DefaultSlicerTest
         double tF = 8.0 / 11.0;
         double tG = 0.01;
         
-        ProbabilityThreshold testA = metIn.getProbabilityThreshold(tA, Condition.GREATER);
-        ProbabilityThreshold testB = metIn.getProbabilityThreshold(tB, Condition.GREATER);
-        ProbabilityThreshold testC = metIn.getProbabilityThreshold(tC, Condition.GREATER);
-        ProbabilityThreshold testD = metIn.getProbabilityThreshold(tD, Condition.GREATER);
-        ProbabilityThreshold testE = metIn.getProbabilityThreshold(tE[0], tE[1], Condition.BETWEEN);
-        ProbabilityThreshold testF = metIn.getProbabilityThreshold(tF, Condition.GREATER);
-        ProbabilityThreshold testG = metIn.getProbabilityThreshold(tG, Condition.GREATER);
-        QuantileThreshold expectedA = metIn.getQuantileThreshold(1.5, tA, Condition.GREATER);
-        QuantileThreshold expectedB = metIn.getQuantileThreshold(17897.2, tB, Condition.GREATER);
-        QuantileThreshold expectedC = metIn.getQuantileThreshold(1012.6, tC, Condition.GREATER);
-        QuantileThreshold expectedD = metIn.getQuantileThreshold(5005.000000000002, tD, Condition.GREATER);
+        ProbabilityThreshold testA = metIn.getProbabilityThreshold(tA, Operator.GREATER);
+        ProbabilityThreshold testB = metIn.getProbabilityThreshold(tB, Operator.GREATER);
+        ProbabilityThreshold testC = metIn.getProbabilityThreshold(tC, Operator.GREATER);
+        ProbabilityThreshold testD = metIn.getProbabilityThreshold(tD, Operator.GREATER);
+        ProbabilityThreshold testE = metIn.getProbabilityThreshold(tE[0], tE[1], Operator.BETWEEN);
+        ProbabilityThreshold testF = metIn.getProbabilityThreshold(tF, Operator.GREATER);
+        ProbabilityThreshold testG = metIn.getProbabilityThreshold(tG, Operator.GREATER);
+        QuantileThreshold expectedA = metIn.getQuantileThreshold(1.5, tA, Operator.GREATER);
+        QuantileThreshold expectedB = metIn.getQuantileThreshold(17897.2, tB, Operator.GREATER);
+        QuantileThreshold expectedC = metIn.getQuantileThreshold(1012.6, tC, Operator.GREATER);
+        QuantileThreshold expectedD = metIn.getQuantileThreshold(5005.000000000002, tD, Operator.GREATER);
         QuantileThreshold expectedE = metIn.getQuantileThreshold(5.25,
                                                                  238.59999999999997,
                                                                  tE[0],
                                                                  tE[1],
-                                                                 Condition.BETWEEN);
-        QuantileThreshold expectedF = metIn.getQuantileThreshold(1.5, tF, Condition.GREATER);
-        QuantileThreshold expectedG = metIn.getQuantileThreshold(1.5, tG, Condition.GREATER);
+                                                                 Operator.BETWEEN);
+        QuantileThreshold expectedF = metIn.getQuantileThreshold(1.5, tF, Operator.GREATER);
+        QuantileThreshold expectedG = metIn.getQuantileThreshold(1.5, tG, Operator.GREATER);
         
         //Test for equality
         assertTrue("The inverse cumulative probability does not match the benchmark",

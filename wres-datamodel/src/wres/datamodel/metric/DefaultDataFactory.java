@@ -20,7 +20,7 @@ import wres.datamodel.SafeVectorOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.SafeMetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
-import wres.datamodel.metric.Threshold.Condition;
+import wres.datamodel.metric.Threshold.Operator;
 
 /**
  * A default factory class for producing metric inputs.
@@ -369,13 +369,18 @@ public class DefaultDataFactory implements DataFactory
             {
                 return secondKey;
             }
-
+            
+            @Override
+            public String toString() {
+                return "["+getFirstKey().toString()+", "+getSecondKey().toString()+"]";
+            }
+            
         }
         return new DefaultMapBiKey();
     }
 
     @Override
-    public Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Condition condition)
+    public Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Operator condition)
     {
         return new SafeThreshold(threshold, thresholdUpper, condition);
     }
@@ -383,7 +388,7 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public ProbabilityThreshold getProbabilityThreshold(final Double threshold,
                                                         final Double thresholdUpper,
-                                                        final Condition condition)
+                                                        final Operator condition)
     {
         return new SafeProbabilityThreshold(threshold, thresholdUpper, condition);
     }
@@ -393,7 +398,7 @@ public class DefaultDataFactory implements DataFactory
                                                   final Double thresholdUpper,
                                                   final Double probability,
                                                   final Double probabilityUpper,
-                                                  final Condition condition)
+                                                  final Operator condition)
     {
         return new SafeQuantileThreshold(threshold, thresholdUpper, probability, probabilityUpper, condition);
     }

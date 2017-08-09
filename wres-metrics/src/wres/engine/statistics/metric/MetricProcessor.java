@@ -13,13 +13,12 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import wres.config.ProjectConfigException;
-import wres.config.ProjectConfigs;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
+import wres.config.generated.ThresholdOperator;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.EnsemblePairs;
 import wres.datamodel.metric.MapBiKey;
@@ -36,7 +35,7 @@ import wres.datamodel.metric.QuantileThreshold;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.Threshold;
-import wres.datamodel.metric.Threshold.Condition;
+import wres.datamodel.metric.Threshold.Operator;
 import wres.datamodel.metric.VectorOutput;
 
 /**
@@ -214,6 +213,26 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     public boolean hasMetrics(MetricOutputGroup outGroup)
     {
         return metrics.stream().anyMatch(a -> a.isInGroup(outGroup));
+    }
+
+    /**
+     * <p>
+     * Returns true if metrics are available that require {@link Threshold}, in order to define a discrete event from a
+     * continuous variable, false otherwise. The metrics that require {@link Threshold} belong to one of:
+     * </p>
+     * <ol>
+     * <li>{@link MetricInputGroup#DISCRETE_PROBABILITY}</li>
+     * <li>{@link MetricInputGroup#DICHOTOMOUS}</li>
+     * <li>{@link MetricInputGroup#MULTICATEGORY}</li>
+     * </ol>
+     * 
+     * @return true if metrics are available that require {@link Threshold}, false otherwise
+     */
+
+    public boolean hasThresholdMetrics()
+    {
+        return hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY) || hasMetrics(MetricInputGroup.DICHOTOMOUS)
+            || hasMetrics(MetricInputGroup.MULTICATEGORY);
     }
 
     /**
@@ -618,14 +637,11 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     {
         //Throw an exception if no thresholds are configured alongside metrics that require thresholds
         Outputs outputs = config.getOutputs();
-        if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY) || hasMetrics(MetricInputGroup.DICHOTOMOUS)
-            || hasMetrics(MetricInputGroup.MULTICATEGORY))
+        if(hasThresholdMetrics() && Objects.isNull(outputs.getProbabilityThresholds())
+            && Objects.isNull(outputs.getValueThresholds()))
         {
-            if(Objects.isNull(outputs.getProbabilityThresholds()) && Objects.isNull(outputs.getValueThresholds()))
-            {
-                throw new MetricConfigurationException("Thresholds are required by one or more of the configured "
-                    + "metrics.");
-            }
+            throw new MetricConfigurationException("Thresholds are required by one or more of the configured "
+                + "metrics.");
         }
         //Check for metric-local thresholds and throw an exception if they are defined, as they are currently not supported
         EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>(MetricConstants.class);
@@ -654,31 +670,20 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         //outputs configuration. 
         List<Threshold> globalThresholds = new ArrayList<>();
         //Add a threshold for "all data" by default
-        globalThresholds.add(dataFactory.getThreshold(Double.NEGATIVE_INFINITY, Condition.GREATER));
-        List<Double> addMe = new ArrayList<>();
+        globalThresholds.add(dataFactory.getThreshold(Double.NEGATIVE_INFINITY, Operator.GREATER));
         //Add probability thresholds
         if(!Objects.isNull(outputs.getProbabilityThresholds()))
         {
-            try
-            {
-                addMe.addAll(ProjectConfigs.parseProbabilities(outputs.getProbabilityThresholds()));
-            }
-            catch(ProjectConfigException e)
-            {
-                throw new MetricConfigurationException("Error parsing probability thresholds: " + e.getMessage());
-            }
+            Operator oper = fromThresholdOperator(outputs.getProbabilityThresholds().getOperator());
+            String values = outputs.getProbabilityThresholds().getCommaSeparatedValues();
+            globalThresholds.addAll(getThresholdsFromCommaSeparatedValues(values, oper, true));
         }
         //Add real-valued thresholds
         if(!Objects.isNull(outputs.getValueThresholds()))
         {
-            try
-            {
-                addMe.addAll(ProjectConfigs.parseValues(outputs.getValueThresholds()));
-            }
-            catch(ProjectConfigException e)
-            {
-                throw new MetricConfigurationException("Error parsing value thresholds: " + e.getMessage());
-            }
+            Operator oper = fromThresholdOperator(outputs.getValueThresholds().getOperator());
+            String values = outputs.getValueThresholds().getCommaSeparatedValues();
+            globalThresholds.addAll(getThresholdsFromCommaSeparatedValues(values, oper, false));
         }
 
         //Only set the global thresholds if no local ones are available
@@ -689,6 +694,59 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                 this.globalThresholds.put(group, globalThresholds);
             }
         }
+    }
+
+    /**
+     * Returns a list of {@link Threshold} from a comma-separated string. Specify the type of {@link Threshold}
+     * required.
+     * 
+     * @param inputString the comma-separated input string
+     * @param oper the operator
+     * @param areProbs is true to generate {@link ProbabilityThreshold}, false for {@link Threshold}
+     * @throws MetricConfigurationException if the thresholds are configured incorrectly
+     */
+
+    private List<Threshold> getThresholdsFromCommaSeparatedValues(String inputString,
+                                                                  Operator oper,
+                                                                  boolean areProbs) throws MetricConfigurationException
+    {
+        //Parse the double values
+        List<Double> addMe =
+                           Arrays.stream(inputString.split(",")).map(Double::parseDouble).collect(Collectors.toList());
+        List<Threshold> returnMe = new ArrayList<>();
+        //Between operator
+        if(oper == Operator.BETWEEN)
+        {
+            if(addMe.size() < 2)
+            {
+                throw new MetricConfigurationException("At least two values are required to compose a "
+                    + "threshold that operates between a lower and an upper bound.");
+            }
+            for(int i = 0; i < addMe.size() - 1; i++)
+            {
+                if(areProbs)
+                {
+                    returnMe.add(dataFactory.getProbabilityThreshold(addMe.get(i), addMe.get(i + 1), oper));
+                }
+                else
+                {
+                    returnMe.add(dataFactory.getThreshold(addMe.get(i), addMe.get(i + 1), oper));
+                }
+            }
+        }
+        //Other operators
+        else
+        {
+            if(areProbs)
+            {
+                addMe.forEach(threshold -> returnMe.add(dataFactory.getProbabilityThreshold(threshold, oper)));
+            }
+            else
+            {
+                addMe.forEach(threshold -> returnMe.add(dataFactory.getThreshold(threshold, oper)));
+            }
+        }
+        return returnMe;
     }
 
     /**
@@ -750,6 +808,35 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                 return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
             default:
                 throw new MetricConfigurationException("Unrecognized metric identifier in project configuration '"
+                    + translate + "'.");
+        }
+    }
+
+    /**
+     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
+     * 
+     * @param translate the input {@link ThresholdOperator}
+     * @return the corresponding {@link Operator}.
+     * @throws MetricConfigurationException if the operator name is unrecognized
+     */
+
+    private static Operator fromThresholdOperator(ThresholdOperator translate) throws MetricConfigurationException
+    {
+        Objects.requireNonNull(translate,
+                               "One or more metric identifiers in the project configuration could not be mapped "
+                                   + "to a supported metric identifier.");
+        switch(translate)
+        {
+            case LESS_THAN:
+                return Operator.LESS;
+            case GREATER_THAN:
+                return Operator.GREATER;
+            case LESS_THAN_OR_EQUAL_TO:
+                return Operator.LESS_EQUAL;
+            case GREATER_THAN_OR_EQUAL_TO:
+                return Operator.GREATER_EQUAL;
+            default:
+                throw new MetricConfigurationException("Unrecognized threshold operator in project configuration '"
                     + translate + "'.");
         }
     }
