@@ -63,12 +63,11 @@ public class ControlRegularFuture implements Function<String[], Integer>
         boolean validated = validateProjects(projectConfiggies);
         if(!validated)
         {
-            return null;
+            return -1;
         }
 
-        // Create a thread pool
-        int maxProcessThreads = MAX_THREADS;
-        ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
+        ThreadFactory factory = runnable -> new Thread(runnable, "ControlRegularFuture Thread: ");
+        ExecutorService processPairExecutor = Executors.newFixedThreadPool(MAX_THREADS, factory);
 
         // Iterate through the configurations
         for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
@@ -77,7 +76,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
             boolean processed = processProjectConfig(projectConfigPlus, processPairExecutor);
             if(!processed)
             {
-                return null;
+                return -1;
             }
         }
         shutDownGracefully(processPairExecutor);

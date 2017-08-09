@@ -88,7 +88,6 @@ public final class Operations {
         finally
         {
             Database.restoreAllIndices();
-            Database.refreshStatistics();
         }
 
         return completedSmoothly;

@@ -202,27 +202,7 @@ public final class Database {
 		}
 
 		SAVED_INDEXES.clear();
-
-		if (updatedTables.size() > 0)
-		{
-			builder = new StringBuilder();
-
-			for (String tableName : updatedTables)
-			{
-				builder.append("ANALYZE " + tableName + ";").append(NEWLINE);
-			}
-
-			try {
-				LOGGER.trace("Statistics for indexed tables are being refreshed...");
-				execute(builder.toString());
-				LOGGER.trace("The statistics have been refreshed.");
-			}
-			catch (SQLException e) {
-			    LOGGER.error("Statistics for restored indices could not be refreshed.");
-                LOGGER.error(NEWLINE + builder.toString() + NEWLINE);
-				LOGGER.error(Strings.getStackTrace(e));
-			}
-		}
+        Database.refreshStatistics();
 	}
 
 	public static void saveIndex(String tableName, String indexName, String indexDefinition)
@@ -607,7 +587,7 @@ public final class Database {
 
 	public static void refreshStatistics()
 	{
-		Connection connection;
+		Connection connection = null;
 		ResultSet results;
 
         try {
@@ -615,8 +595,7 @@ public final class Database {
 
             StringBuilder script = new StringBuilder();
 
-            script.append("SELECT 'ANALYZE '||n.nspname ||'.'|| c.relname||';' AS alyze,").append(NEWLINE);
-            script.append("     'REINDEX TABLE '||n.nspname ||'.'|| c.relname||';' AS reidx").append(NEWLINE);
+            script.append("SELECT 'ANALYZE '||n.nspname ||'.'|| c.relname||';' AS alyze").append(NEWLINE);
             script.append("FROM pg_catalog.pg_class c").append(NEWLINE);
             script.append("INNER JOIN pg_catalog.pg_namespace n").append(NEWLINE);
             script.append("     ON N.oid = C.relnamespace").append(NEWLINE);
@@ -630,13 +609,10 @@ public final class Database {
 
             while (results.next())
             {
-				//script.append(results.getString("reidx")).append(NEWLINE);
                 script.append(results.getString("alyze")).append(NEWLINE);
             }
 
-            //script.append("REINDEX TABLE wres.Forecast;").append(NEWLINE);
 			script.append("ANALYZE wres.Forecast;").append(NEWLINE);
-			//script.append("REINDEX TABLE wres.Observation;").append(NEWLINE);
             script.append("ANALYZE wres.Observation;").append(NEWLINE);
 
             LOGGER.info("Now refreshing the statistics within the database.");
@@ -646,7 +622,10 @@ public final class Database {
         catch (SQLException e) {
             e.printStackTrace();
         }
-    }
+        finally {
+        	Database.returnConnection(connection);
+		}
+	}
     
     /**
      * Creates set of results from the given query through the given connection
