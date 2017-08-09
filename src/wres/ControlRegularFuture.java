@@ -59,47 +59,6 @@ import wres.vis.ChartEngineFactory;
  */
 public class ControlRegularFuture implements Function<String[], Integer>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ControlRegularFuture.class);
-    public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
-
-    /**
-     * Default data factory.
-     */
-
-    private static final DataFactory DATA_FACTORY = DefaultDataFactory.getInstance();
-
-    /** System property used to retrieve max thread count, passed as -D */
-    public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
-
-    public static final int MAX_THREADS;
-    // Figure out the max threads from property or by default rule.
-    // Ideally priority order would be: -D, SystemSettings, default rule.
-    static
-    {
-        String maxThreadsStr = System.getProperty(MAX_THREADS_PROP_NAME);
-        int maxThreads;
-        try
-        {
-            maxThreads = Integer.parseInt(maxThreadsStr);
-        }
-        catch(final NumberFormatException nfe)
-        {
-            maxThreads = SystemSettings.maximumThreadCount();
-        }
-
-        if(maxThreads >= 1)
-        {
-            MAX_THREADS = maxThreads;
-        }
-        else
-        {
-            //LOGGER.warn("Java -D property {} was likely less than 1, setting Control.MAX_THREADS to 1",
-            //            MAX_THREADS_PROP_NAME);
-            MAX_THREADS = 1;
-        }
-    }
-
-    private static final String NEWLINE = System.lineSeparator();
 
     /**
      * Processes *existing* pairs non-lazily (lacking specification for ingest). Creates two execution queues for pair
@@ -609,6 +568,70 @@ public class ControlRegularFuture implements Function<String[], Integer>
         if(processingSkipped > 0)
         {
             LOGGER.info("Abandoned {} pair fetch tasks, abandoned {} processing tasks.", processingSkipped);
+        }
+    }
+    
+    /**
+     * Default logger.
+     */
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(ControlRegularFuture.class);
+    
+    /**
+     * Log interval.
+     */
+    
+    public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
+
+    /**
+     * Default data factory.
+     */
+
+    private static final DataFactory DATA_FACTORY = DefaultDataFactory.getInstance();
+
+    /** 
+     * System property used to retrieve max thread count, passed as -D 
+     * 
+     */
+    
+    public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
+
+    /**
+     * Line separator.
+     */
+    
+    private static final String NEWLINE = System.lineSeparator();    
+
+    /**
+     * Maximum threads.
+     */
+    
+    public static final int MAX_THREADS;
+    
+    // Figure out the max threads from property or by default rule.
+    // Ideally priority order would be: -D, SystemSettings, default rule.
+    static
+    {
+        String maxThreadsStr = System.getProperty(MAX_THREADS_PROP_NAME);
+        int maxThreads;
+        try
+        {
+            maxThreads = Integer.parseInt(maxThreadsStr);
+        }
+        catch(final NumberFormatException nfe)
+        {
+            maxThreads = SystemSettings.maximumThreadCount();
+        }
+
+        if(maxThreads >= 1)
+        {
+            MAX_THREADS = maxThreads;
+        }
+        else
+        {
+            //LOGGER.warn("Java -D property {} was likely less than 1, setting Control.MAX_THREADS to 1",
+            //            MAX_THREADS_PROP_NAME);
+            MAX_THREADS = 1;
         }
     }
 
