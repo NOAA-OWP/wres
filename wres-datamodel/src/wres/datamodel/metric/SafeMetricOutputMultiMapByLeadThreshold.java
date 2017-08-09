@@ -81,6 +81,20 @@ implements MetricOutputMultiMapByLeadThreshold<S>
         return Collections.unmodifiableSet(store.entrySet());
     }
 
+    @Override
+    public String toString() {
+        String newLine = System.getProperty("line.separator");
+        StringBuilder b = new StringBuilder();
+        store.forEach((key,value) -> {
+            b.append(key.getFirstKey());
+            b.append(", ");
+            b.append(key.getSecondKey());
+            b.append(newLine);
+            b.append(value);
+        });
+        return b.toString();
+    }
+
     protected static class MetricOutputMultiMapByLeadThresholdBuilder<S extends MetricOutput<?>> implements Builder<S>
     {
 
