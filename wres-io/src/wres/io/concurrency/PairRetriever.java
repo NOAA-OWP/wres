@@ -6,7 +6,6 @@ import wres.config.generated.Conditions;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.Slicer;
 import wres.datamodel.metric.*;
 import wres.io.data.caching.UnitConversions;
 import wres.io.utilities.Database;
@@ -89,7 +88,9 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
         }
         else
         {
-            input = factory.ofSingleValuedPairs(Slicer.getFlatDoublePairs(pairs), metadata);
+            input = factory.ofSingleValuedPairs(factory.getSlicer().transformPairs(pairs,
+                                                                                   factory.getSlicer()::transformPair),
+                                                metadata);
         }
 
         return input;
