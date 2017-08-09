@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
-import wres.Control;
+import wres.ControlRegularFuture;
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.MetricInput;
@@ -33,6 +33,7 @@ import java.nio.file.Paths;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
@@ -134,7 +135,7 @@ public final class MainFunctions
 		prototypes.put("-h", printCommands());
 		prototypes.put("cleandatabase", cleanDatabase());
 		prototypes.put("getpairs", getPairs());
-		prototypes.put("execute", new Control());
+		prototypes.put("execute", new ControlRegularFuture());
 		prototypes.put("downloadtestdata", refreshTestData());
 		prototypes.put("refreshdatabase", refreshDatabase());
 		prototypes.put("loadcoordinates", loadCoordinates());
@@ -530,7 +531,7 @@ public final class MainFunctions
 
                         featureInputs.put(feature, inputs);
                     }
-
+                    LOGGER.info("All pair jobs have been dispatched ({}).", OffsetDateTime.now());
                     for (Map.Entry<Conditions.Feature, LinkedList<Future<MetricInput<?>>>> featureInput : featureInputs.entrySet())
                     {
                         Future<MetricInput<?>> input;
