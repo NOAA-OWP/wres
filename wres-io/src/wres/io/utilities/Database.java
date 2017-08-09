@@ -171,9 +171,11 @@ public final class Database {
 		StringBuilder builder;
 
 		Set<String> updatedTables = new HashSet<>();
+		boolean shouldRefresh = false;
 
 		for (String tableName : SAVED_INDEXES.keySet())
 		{
+		    shouldRefresh = true;
 			Object[] indexNames = SAVED_INDEXES.get(tableName).keySet().toArray();
 
 			for (int nameIndex = 0; nameIndex < indexNames.length; ++nameIndex)
@@ -202,7 +204,11 @@ public final class Database {
 		}
 
 		SAVED_INDEXES.clear();
-        Database.refreshStatistics();
+
+		if (shouldRefresh)
+        {
+            Database.refreshStatistics();
+        }
 	}
 
 	public static void saveIndex(String tableName, String indexName, String indexDefinition)
