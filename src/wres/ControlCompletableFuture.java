@@ -277,11 +277,7 @@ public class ControlCompletableFuture
         //Print info to logger
         if(LOGGER.isInfoEnabled())
         {
-            results.forEach((key, value) -> {
-                LOGGER.info(NEWLINE + "Results for metric "
-                    + dataFac.getMetadataFactory().getMetricName(key.getFirstKey()) + " (lead time, threshold, score) "
-                    + NEWLINE + value);
-            });
+            LOGGER.info(results.toString());
             final long stop = System.currentTimeMillis(); //End time
             LOGGER.info("Completed verification in " + ((stop - start) / 1000.0) + " seconds.");
         }
