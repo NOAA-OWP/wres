@@ -63,6 +63,8 @@ public abstract class ChartEngineFactory
     };
 
 
+    //TODO Java doc this.  Also, have it look through the input lead time keys and slice based on it.  For each key, generate a ChartEngine.
+    //The only difference between chart engines will be the leadHour argument.  This can be done in a simple map.
     public static ChartEngine buildMultiVectorOutputChartEngine(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
                                                                  final MetadataFactory factory,
                                                                  final VisualizationPlotType plotType,
