@@ -1,18 +1,46 @@
 package wres;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Function;
+
+import javax.xml.bind.ValidationEvent;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.sun.xml.bind.Locatable;
+
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.*;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
+import wres.datamodel.metric.MapBiKey;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
+import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
+import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
+import wres.datamodel.metric.ScalarOutput;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
@@ -23,17 +51,6 @@ import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
 import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
-
-import javax.xml.bind.ValidationEvent;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
-import java.util.function.Function;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
@@ -59,6 +76,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
     public Integer apply(final String[] args)
     {
         // Validate the configurations
+
         List<ProjectConfigPlus> projectConfiggies = getProjects(args);
         boolean validated = validateProjects(projectConfiggies);
         if(!validated)
@@ -66,21 +84,28 @@ public class ControlRegularFuture implements Function<String[], Integer>
             return -1;
         }
 
-        ThreadFactory factory = runnable -> new Thread(runnable, "ControlRegularFuture Thread: ");
-        ExecutorService processPairExecutor = Executors.newFixedThreadPool(MAX_THREADS, factory);
-
-        // Iterate through the configurations
-        for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
+        ExecutorService processPairExecutor = null;
+        try
         {
-            // Process the next configuration
-            boolean processed = processProjectConfig(projectConfigPlus, processPairExecutor);
-            if(!processed)
+            ThreadFactory factory = runnable -> new Thread(runnable, "ControlRegularFuture Thread: ");
+            processPairExecutor = Executors.newFixedThreadPool(MAX_THREADS, factory);
+
+            // Iterate through the configurations
+            for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
             {
-                return -1;
+                // Process the next configuration
+                boolean processed = processProjectConfig(projectConfigPlus, processPairExecutor);
+                if(!processed)
+                {
+                    return -1;
+                }
             }
+            return 0;
         }
-        shutDownGracefully(processPairExecutor);
-        return 0;
+        finally
+        {
+            shutDownGracefully(processPairExecutor);
+        }
     }
 
     /**
@@ -133,7 +158,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
      * @param projectConfigPlus
      * @return
      */
-    
+
     public static boolean isGraphicsPortionOfProjectValid(ProjectConfigPlus projectConfigPlus)
     {
         final String BEGIN_TAG = "<chartDrawingParameters>";
@@ -249,7 +274,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
         {
             if(LOGGER.isInfoEnabled())
             {
-                LOGGER.info("Processing feature '" + nextFeature.getLocation().getLid() + "'.");
+                LOGGER.info("Processing feature '{}'.", nextFeature.getLocation().getLid());
             }
 
             // Sink for the results: the results are added incrementally to an immutable store via a builder
@@ -284,18 +309,18 @@ public class ControlRegularFuture implements Function<String[], Integer>
                 //processMultiVectorCharts(projectConfigPlus, processor.getStoredMetricOutput().getMultiVectorOutput());
             }
 
-            if(LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
-            {
-                ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor)processPairExecutor;
-                LOGGER.info("Total of around {} pairs processed for feature '" + nextFeature + "'. Done.",
-                            tpeProcess.getCompletedTaskCount());
-            }
-
             //  Complete the end-of-pipeline processing
-            processCachedCharts(projectConfigPlus, processor, MetricOutputGroup.SCALAR);
-            //  TODO: support processing of vector output in wres-vis and here
-            //processCharts(projectConfigPlus, processor, MetricOutputGroup.VECTOR);
+            if(processor.hasStoredMetricOutput())
+            {
+                processCachedCharts(projectConfigPlus, processor, MetricOutputGroup.SCALAR);
+                //  TODO: support processing of vector output in wres-vis and here
+                //processCharts(projectConfigPlus, processor, MetricOutputGroup.VECTOR);
 
+                if(LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
+                {
+                    LOGGER.info("Completed processing of feature '{}'.", nextFeature.getLocation().getLid());
+                }
+            }
         }
         return true;
     }
@@ -313,11 +338,13 @@ public class ControlRegularFuture implements Function<String[], Integer>
                                         MetricProcessor processor,
                                         MetricOutputGroup outGroup)
     {
-        if(!processor.hasMetrics(outGroup))
+        if(!processor.hasStoredMetricOutput() || !processor.getStoredMetricOutput().hasOutput(outGroup))
         {
-            LOGGER.error("While building charts for the metrics. Metric outputs are not available for {}", outGroup);
+            LOGGER.error("Error while building charts for the metrics. Metric outputs are not available for output type {}.",
+                         outGroup);
             return false;
         }
+
         try
         {
             switch(outGroup)
@@ -328,7 +355,8 @@ public class ControlRegularFuture implements Function<String[], Integer>
                 case MULTIVECTOR:
                 case MATRIX:
                 default:
-                    throw new UnsupportedOperationException();
+                    LOGGER.error("Unsupported chart type {}", outGroup);
+                    return false;
             }
         }
         catch(InterruptedException e)
@@ -340,11 +368,6 @@ public class ControlRegularFuture implements Function<String[], Integer>
         catch(ExecutionException e)
         {
             LOGGER.error("While acquiring metric results", e);
-            return false;
-        }
-        catch(UnsupportedOperationException e)
-        {
-            LOGGER.error("Unsupported chart type {}", outGroup, e);
             return false;
         }
     }
@@ -362,7 +385,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
                                         MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarResults)
     {
 
-        // Make charts! Currently, wres-vis can only handle MetricOutputGroup.SCALAR
+        // Build charts
         try
         {
             for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> e: scalarResults.entrySet())
@@ -401,12 +424,8 @@ public class ControlRegularFuture implements Function<String[], Integer>
 
                 if(LOGGER.isInfoEnabled())
                 {
-                    scalarResults.forEach((key,
-                                           value) -> LOGGER.info(NEWLINE + "Results for metric "
-                                               + DATA_FACTORY.getMetadataFactory().getMetricName(key.getFirstKey())
-                                               + " (lead time, threshold, score) " + NEWLINE + value));
+                    LOGGER.info(scalarResults.toString());
                 }
-
             }
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
@@ -464,7 +483,8 @@ public class ControlRegularFuture implements Function<String[], Integer>
     /**
      * Task whose job is to wait for pairs to arrive, then run metrics on them.
      */
-    private static class PairsByLeadProcessor extends WRESCallable<MetricOutputForProjectByLeadThreshold> {
+    private static class PairsByLeadProcessor extends WRESCallable<MetricOutputForProjectByLeadThreshold>
+    {
         private final MetricProcessor processor;
         private final Future<MetricInput<?>> input;
 
@@ -475,21 +495,39 @@ public class ControlRegularFuture implements Function<String[], Integer>
         }
 
         @Override
-        protected MetricOutputForProjectByLeadThreshold execute () throws Exception {
-            return processor.apply(input.get());
+        protected MetricOutputForProjectByLeadThreshold execute() throws Exception
+        {
+            try
+            {
+                MetricInput<?> nextInput = input.get();
+                if(LOGGER.isInfoEnabled())
+                {
+                    LOGGER.info("Completed processing of pairs for feature '{}' at lead time {}.",
+                                nextInput.getMetadata().getIdentifier().getGeospatialID(),
+                                nextInput.getMetadata().getLeadTime());
+                }
+                return processor.apply(nextInput);
+            }
+            catch(Exception e)
+            {
+                LOGGER.error("While processing pairs",e);
+                throw e;
+            }
         }
 
         @Override
-        protected String getTaskName () {
-            return "Process Metrics for Pairs by Lead time";
+        protected String getTaskName()
+        {
+            return "Process Metrics for Pairs by Lead Time";
         }
 
         @Override
-        protected Logger getLogger () {
+        protected Logger getLogger()
+        {
             return LOGGER;
         }
     }
-    
+
     /**
      * Checks a trimmed string in the graphics configuration.
      * 
@@ -521,7 +559,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
             return false;
         }
         return true;
-    }    
+    }
 
     /**
      * Kill off the executors passed in even if there are remaining tasks.
@@ -530,6 +568,10 @@ public class ControlRegularFuture implements Function<String[], Integer>
      */
     private static void shutDownGracefully(ExecutorService processPairExecutor)
     {
+        if(Objects.isNull(processPairExecutor))
+        {
+            return;
+        }
         // (There are probably better ways to do this, e.g. awaitTermination)
         int processingSkipped = 0;
         int i = 0;
@@ -568,8 +610,11 @@ public class ControlRegularFuture implements Function<String[], Integer>
 
         if(processingSkipped > 0)
         {
-            LOGGER.info("Abandoned {} pair fetch tasks, abandoned {} processing tasks.", processingSkipped);
+            LOGGER.info("Abandoned {} processing tasks.", processingSkipped);
         }
+
+        //Kill I/O
+        Operations.shutdown();
     }
 
     /**
@@ -595,12 +640,6 @@ public class ControlRegularFuture implements Function<String[], Integer>
      */
 
     public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
-
-    /**
-     * Line separator.
-     */
-
-    private static final String NEWLINE = System.lineSeparator();
 
     /**
      * Maximum threads.
