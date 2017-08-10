@@ -4,54 +4,45 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jfree.data.xy.AbstractXYDataset;
+import org.jfree.data.xy.XYDataset;
 
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.MultiVectorOutput;
 
+/**
+ * The {@link XYDataset} for use in building the reliability diagram portion of the reliability diagram plot (the other
+ * being the sample size portion).
+ * 
+ * @author Hank.Herr
+ */
 public class ReliabilityDiagramXYDataset extends AbstractXYDataset
 {
-
-
-    /**
-     * Legend items.
-     */
-
-    private final List<String> legendNames = new ArrayList<>();
-
-
-    /**
-     * Data sliced by series, i.e. one threshold per slice, where each slice contains all lead times for one score.
-     */
-
     private final transient MetricOutputMapByLeadThreshold<MultiVectorOutput> data;
 
-    /**
-     * 
-     * @param input The input must already be sliced for a single lead time!
-     */
+    private final List<String> legendNames = new ArrayList<>();
+    
     public ReliabilityDiagramXYDataset(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input)
     {
-        //Slice the input data by threshold and store locally.  The result of this is that each item in the 
-        //data list has a single key entry, so that the value of that kay provides the series values to plot.
+        if (input.keySetByFirstKey().size() != 1)
+        {
+            System.err.println("####>> " + input.keySetByFirstKey().size());
+            throw new IllegalArgumentException("MetricOutputMapByLeadThreshold map provided has more than one key, which is not allowed.");
+        }
         data = input;
-        input.keySetByThreshold().forEach(key -> {
-            legendNames.add(key.toString());
-        });
+        
+        //Populate the legend names.
+        for (int i = 0; i < getSeriesCount(); i ++)
+        {
+            legendNames.add(null);
+        }
     }
 
-    /**
-     * Set the legend name.
-     * 
-     * @param series the series index
-     * @param name the name
-     */
-    
-    public void setLegendName(final int series, final String name)
+    public void setLegendName(final int index, final String name)
     {
-        legendNames.set(series, name);
+        legendNames.set(index, name);
     }
-
+    
     @Override
     public int getItemCount(final int series)
     {
@@ -73,13 +64,17 @@ public class ReliabilityDiagramXYDataset extends AbstractXYDataset
     @Override
     public int getSeriesCount()
     {
-        return legendNames.size();
+        return data.keySet().size();
     }
 
     @Override
     public Comparable<String> getSeriesKey(final int series)
     {
-        return legendNames.get(series);
+        if (legendNames.get(series) != null)
+        {
+            return legendNames.get(series);
+        }
+        return data.getKey(series).getSecondKey().toString();
     }
 
 }
