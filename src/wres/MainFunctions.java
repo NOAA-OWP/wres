@@ -138,9 +138,36 @@ final class MainFunctions
 		prototypes.put("install", install());
 		prototypes.put("ingest", ingest());
 		prototypes.put("loadfeatures", loadFeatures());
+		prototypes.put("killconnections", killWRESConnections());
 
 		return prototypes;
 	}
+
+	private static Function<String[], Integer> killWRESConnections()
+    {
+        return (final String[] args) -> {
+            Integer result = FAILURE;
+            final String NEWLINE = System.lineSeparator();
+
+            try
+            {
+                StringBuilder script = new StringBuilder();
+                script.append("SELECT pg_cancel_backend(pid)").append(NEWLINE);
+                script.append("FROM pg_stat_activity").append(NEWLINE);
+                script.append("WHERE client_port != -1").append(NEWLINE);
+                script.append("     AND application_name = 'PostgreSQL JDBC Driver'").append(NEWLINE);
+                script.append("     AND state = 'idle';");
+                Database.execute(script.toString());
+                result = SUCCESS;
+            }
+            catch (SQLException e) {
+                LOGGER.error("Orphaned WRES connections to the WRES database could not be canceled.");
+                LOGGER.error(Strings.getStackTrace(e));
+            }
+
+            return result;
+        };
+    }
 
 	/**
 	 * Creates the "print_commands" method

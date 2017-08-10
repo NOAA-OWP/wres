@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.utilities.Database;
 import wres.util.Internal;
+import wres.util.Strings;
 
 import java.sql.SQLException;
 
@@ -28,10 +29,11 @@ public class SQLExecutor extends WRESRunnable
 
 	@Override
     public void execute() {
-		try {
+		try
+		{
 			Database.execute(this.script);
 		} catch (SQLException e) {
-		    // Error Information is handled by the database module
+		    LOGGER.error(Strings.getStackTrace(e));
 		}
 	}
 
