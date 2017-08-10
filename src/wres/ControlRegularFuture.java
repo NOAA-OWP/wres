@@ -497,15 +497,22 @@ public class ControlRegularFuture implements Function<String[], Integer>
         @Override
         protected MetricOutputForProjectByLeadThreshold execute() throws Exception
         {
-            MetricInput<?> nextInput = input.get();
-
-            if(LOGGER.isInfoEnabled())
+            try
             {
-                LOGGER.info("Completed processing of pairs for feature '{}' at lead time {}.",
-                            nextInput.getMetadata().getIdentifier().getGeospatialID(),
-                            nextInput.getMetadata().getLeadTime());
+                MetricInput<?> nextInput = input.get();
+                if(LOGGER.isInfoEnabled())
+                {
+                    LOGGER.info("Completed processing of pairs for feature '{}' at lead time {}.",
+                                nextInput.getMetadata().getIdentifier().getGeospatialID(),
+                                nextInput.getMetadata().getLeadTime());
+                }
+                return processor.apply(nextInput);
             }
-            return processor.apply(nextInput);
+            catch(Exception e)
+            {
+                LOGGER.error("While processing pairs",e);
+                throw e;
+            }
         }
 
         @Override
@@ -561,7 +568,8 @@ public class ControlRegularFuture implements Function<String[], Integer>
      */
     private static void shutDownGracefully(ExecutorService processPairExecutor)
     {
-        if(Objects.isNull(processPairExecutor)) {
+        if(Objects.isNull(processPairExecutor))
+        {
             return;
         }
         // (There are probably better ways to do this, e.g. awaitTermination)
