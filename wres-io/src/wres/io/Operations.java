@@ -51,8 +51,6 @@ public final class Operations {
 
         SourceLoader loader = new SourceLoader(projectConfig);
         try {
-            //Database.suspendAllIndices();
-
             List<Future> ingestions = loader.load();
 
             for (Future task : ingestions)
@@ -166,10 +164,7 @@ public final class Operations {
             LOGGER.error("Could not connect to database because:");
             LOGGER.error(Strings.getStackTrace(e));
         }
-        catch (final RuntimeException exception)
-        {
-            LOGGER.error(Strings.getStackTrace(exception));
-        }
+
         return result;
     }
 

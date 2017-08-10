@@ -28,14 +28,14 @@ public abstract class WRESTask
 
     protected void executeOnComplete() {
         if (this.onComplete != null) {
-            this.onComplete.accept(null);
+            this.onComplete.accept(this);
         }
     }
     
     protected void executeOnRun() {
         this.setThreadName();
         if (this.onRun != null) {
-            this.onRun.accept(null);
+            this.onRun.accept(this);
         }
     }
 
