@@ -12,32 +12,22 @@ import wres.datamodel.metric.MultiVectorOutput;
  * 
  * @author Hank.Herr
  */
-public class ReliabilityDiagramSampleSizeXYDataset extends WRESAbstractXYDataset
+public class ReliabilityDiagramSampleSizeXYDataset extends WRESAbstractXYDataset<MetricOutputMapByLeadThreshold<MultiVectorOutput>,MetricOutputMapByLeadThreshold<MultiVectorOutput>>
 {
     public ReliabilityDiagramSampleSizeXYDataset(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input)
     {
         super(input);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    protected void preparePlotData(final Object rawData)
+    protected void preparePlotData(final MetricOutputMapByLeadThreshold<MultiVectorOutput> rawData)
     {
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> input =
-                                                                      (MetricOutputMapByLeadThreshold<MultiVectorOutput>)rawData;
-        if(input.keySetByFirstKey().size() != 1)
+        if(rawData.keySetByFirstKey().size() != 1)
         {
             throw new IllegalArgumentException("MetricOutputMapByLeadThreshold map provided has "
-                + input.keySetByFirstKey().size() + " keys, when it must be one key, only.");
+                + rawData.keySetByFirstKey().size() + " keys, when it must be one key, only.");
         }
-        setPlotData(input);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public MetricOutputMapByLeadThreshold<MultiVectorOutput> getPlotData()
-    {
-        return (MetricOutputMapByLeadThreshold<MultiVectorOutput>)getPlotDataAsObject();
+        setPlotData(rawData);
     }
     
     @Override

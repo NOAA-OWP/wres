@@ -50,27 +50,41 @@ public abstract class ChartEngineFactory
                                                     "scalarOutputTemplate.xml"));
         plotTypeInfoMap.put(VisualizationPlotType.SINGLE_VALUED_PAIRS,
                             new PlotTypeInformation(SingleValuedPairs.class, null, "singleValuedPairsTemplate.xml"));
+        plotTypeInfoMap.put(VisualizationPlotType.RELIABILITY_DIAGRAM,
+                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                    MultiVectorOutput.class,
+                                                    "reliabiityDiagramTemplate.xml"));
     }
 
     /**
-     * Presently valid variables includes only lead time and threshold.
-     * 
-     * @author Hank.Herr
+     * Defines the valid visualization plot types.
      */
     public static enum VisualizationPlotType
     {
         LEAD_THRESHOLD, THRESHOLD_LEAD, SINGLE_VALUED_PAIRS, RELIABILITY_DIAGRAM
     };
 
-
-    //TODO Java doc this.  Also, have it look through the input lead time keys and slice based on it.  For each key, generate a ChartEngine.
-    //The only difference between chart engines will be the leadHour argument.  This can be done in a simple map.
+    /**
+     * @param input The metric output to plot.
+     * @param factory The metadata from which arguments will be identified.
+     * @param plotType The plot type to generate. For this chart, the plot type must be
+     *            {@link VisualizationPlotType#RELIABILITY_DIAGRAM}.
+     * @param templateResourceName Name of the resource to load which provides the default template for chart
+     *            construction.
+     * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
+     *            overrides for the appearance of chart.
+     * @return A {@link ChartEngine} that can be used to build the {@link JFreeChart} and output the image. This can be
+     *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
+     *         construct the image file.
+     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
+     */
     public static ChartEngine buildMultiVectorOutputChartEngine(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
-                                                                 final MetadataFactory factory,
-                                                                 final VisualizationPlotType plotType,
-                                                                 final String templateResourceName,
-                                                                 final String overrideParametersStr) throws ChartEngineException,
-                                                                                                     GenericXMLReadingHandlerException
+                                                                final MetadataFactory factory,
+                                                                final VisualizationPlotType plotType,
+                                                                final String templateResourceName,
+                                                                final String overrideParametersStr) throws ChartEngineException,
+                                                                                                    GenericXMLReadingHandlerException
     {
         //Build the sources.
         XYChartDataSource reliabilitySource = null;
@@ -99,7 +113,7 @@ public abstract class ChartEngineFactory
         arguments.addArgument("metricShortName", factory.getMetricShortName(meta.getMetricID()));
         arguments.addArgument("outputUnitsText", " [" + meta.getDimension() + "]");
         arguments.addArgument("inputUnitsText", " [" + meta.getInputDimension() + "]");
-        
+
         //Specific to this plot.
         arguments.addArgument("leadHour", input.getKey(0).getFirstKey().toString());
 
@@ -134,8 +148,9 @@ public abstract class ChartEngineFactory
 
     /**
      * @param input The metric output to plot.
-     * @param plotType The {@link VisualizationPlotType} to generate. For this chart, the plot type must be one of
-     *            either {@link VisualizationPlotType#LEAD_THRESHOLD} or {@link VisualizationPlotType#THRESHOLD_LEAD}.
+     * @param factory The metadata from which arguments will be identified.
+     * @param plotType The plot type to generate. For this chart, the plot type must be either
+     *            {@link VisualizationPlotType#LEAD_THRESHOLD} or {@link VisualizationPlotType#THRESHOLD_LEAD}.
      * @param templateResourceName Name of the resource to load which provides the default template for chart
      *            construction.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
@@ -277,12 +292,12 @@ public abstract class ChartEngineFactory
      */
     public static class PlotTypeInformation
     {
-        private final Class expectedPlotDataClass;
-        private final Class dataGenericType;
+        private final Class<?> expectedPlotDataClass;
+        private final Class<?> dataGenericType;
         private final String defaultTemplateName;
 
-        public PlotTypeInformation(final Class expectedPlotDataClass,
-                                   final Class dataGenericType,
+        public PlotTypeInformation(final Class<?> expectedPlotDataClass,
+                                   final Class<?> dataGenericType,
                                    final String defaultTemplateName)
         {
             this.expectedPlotDataClass = expectedPlotDataClass;
@@ -290,12 +305,12 @@ public abstract class ChartEngineFactory
             this.defaultTemplateName = defaultTemplateName;
         }
 
-        public Class getExpectedPlotDataClass()
+        public Class<?> getExpectedPlotDataClass()
         {
             return expectedPlotDataClass;
         }
 
-        public Class getDataGenericType()
+        public Class<?> getDataGenericType()
         {
             return dataGenericType;
         }
