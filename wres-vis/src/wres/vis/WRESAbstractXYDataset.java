@@ -11,7 +11,7 @@ import org.jfree.data.xy.XYDataset;
  * acquiring default legend names which {@link JFreeChart} acquires via the data set.<br>
  * <br>
  * Override instructions:<br>
- * 1. Define the generic type appropriately.  This will determine the return value of {@link #getPlotData()}.<br>
+ * 1. Define the generic types appropriately; see parameter descriptions.<br>
  * <br>
  * 2. Override {@link #preparePlotData(Object)} in order to prepare the plot data. In the simplest case, this should
  * pass through its argument to {@link #setPlotData(Object)}. In more complicated cases, this may need to prepare a data

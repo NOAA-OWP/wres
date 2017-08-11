@@ -9,7 +9,7 @@ import wres.datamodel.metric.SingleValuedPairs;
  * 
  * @author Hank.Herr
  */
-public class SingleValuedPairsXYChartDataSource extends WRESXYChartDataSource
+public class SingleValuedPairsXYChartDataSource extends WRESXYChartDataSource<SingleValuedPairs>
 {
     /**
      * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
@@ -35,11 +35,5 @@ public class SingleValuedPairsXYChartDataSource extends WRESXYChartDataSource
     protected SingleValuedPairsXYDataset instantiateXYDataset()
     {
         return new SingleValuedPairsXYDataset(getInput());
-    }
-
-    @Override
-    protected SingleValuedPairs getInput()
-    {
-        return (SingleValuedPairs)getInputAsObject();
     }
 }
