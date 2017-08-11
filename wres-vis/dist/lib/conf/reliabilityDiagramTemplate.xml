@@ -8,6 +8,7 @@
 		</text>
 	</plotTitle>
 
+    <!-- Color the series of the first data source. -->
 	<datasourceDrawingParameters sourceIndex="0">
 		<plotter>LineAndScatter</plotter>
 		<subPlot>0</subPlot>
@@ -22,6 +23,8 @@
 			<color alpha="255" blue="0" green="0" red="255" />
 		</lineColorPalette>
 	</datasourceDrawingParameters>
+	
+	<!-- Color the series of the second data source to match and ensure the items do not show in the legend. -->
 	<datasourceDrawingParameters sourceIndex="1">
 		<plotter>LineAndScatter</plotter>
 		<subPlot>1</subPlot>
@@ -43,8 +46,8 @@
 		</seriesDrawingParameters>
 	</datasourceDrawingParameters>
 
+    <!-- Fix the bounds to 0 and 1. -->
 	<subPlot subPlotIndex="0" weight="3">
-
 		<leftRangeAxis>
 			<numericAxis>
 				<lowerBound>0.0</lowerBound>
@@ -55,6 +58,7 @@
 	</subPlot>
 	<subPlot subPlotIndex="1" weight="1" />
 
+    <!-- Fix the bounds to 0 and 1. -->
 	<domainAxis inverted="false" visible="true">
 		<numericAxis>
 			<lowerBound>0.0</lowerBound>
@@ -63,6 +67,7 @@
 		</numericAxis>
 	</domainAxis>
 	
+	<!-- Put the legend on the right hand side. -->
     <legend visible="true">
         <position>RIGHT</position>
     </legend>
