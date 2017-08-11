@@ -187,7 +187,7 @@ public class Chart2DTestOutput extends TestCase
                     + "h." + outputImageFileSuffix),
                                                                           new File("testinput/chart2DTest/benchmark."
                                                                               + lead + "h." + outputImageFileSuffix),
-                                                                          8,
+                                                                          4,
                                                                           true,
                                                                           false);
             }
@@ -386,6 +386,19 @@ public class Chart2DTestOutput extends TestCase
                         //Build the result
                         final MetricResult result = t.getResult(f);
                         final double[][] res = ((DoubleMatrix2DResult)result).getResult().toArray();
+                        
+                        //Ensure missings are NaN by brute force.
+                        for (int i = 0; i < res.length; i ++)
+                        {
+                            for (int j = 0; j < res[i].length; j ++)
+                            {
+                                if (res[i][j] == -999D)
+                                {
+                                    res[i][j] = Double.NaN;
+                                }
+                            }
+                        }
+                        
                         final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
                         output.put(MetricConstants.FORECAST_PROBABILITY, res[0]); //Forecast probabilities
                         output.put(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY, res[1]); //Observed | forecast probabilities
