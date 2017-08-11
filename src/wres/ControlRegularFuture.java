@@ -1,46 +1,18 @@
 package wres;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.function.Function;
-
-import javax.xml.bind.ValidationEvent;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.sun.xml.bind.Locatable;
-
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.MapBiKey;
-import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.*;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
-import wres.datamodel.metric.ScalarOutput;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
@@ -51,6 +23,18 @@ import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
 import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
+
+import javax.xml.bind.ValidationEvent;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.*;
+import java.util.function.Function;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
@@ -455,6 +439,12 @@ public class ControlRegularFuture implements Function<String[], Integer>
                 if(path.toFile().exists())
                 {
                     existingProjectFiles.add(path);
+
+                    // TODO: Needs to be temporary; used to log execution information
+                    if (path.toFile().isFile())
+                    {
+                        MainFunctions.setProjectPath(path.toAbsolutePath().toString());
+                    }
                 }
                 else
                 {
@@ -612,9 +602,6 @@ public class ControlRegularFuture implements Function<String[], Integer>
         {
             LOGGER.info("Abandoned {} processing tasks.", processingSkipped);
         }
-
-        //Kill I/O
-        Operations.shutdown();
     }
 
     /**

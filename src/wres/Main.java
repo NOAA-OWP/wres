@@ -41,10 +41,10 @@ public class Main {
 
         final String operation = ((Supplier<String>) () -> {
             String op = "-h";
-            if (args.length > 0) {
+            if (args.length > 0 && MainFunctions.hasOperation(args[0])) {
                 op = args[0];
             }
-            else if (!MainFunctions.hasOperation(args[0])) {
+            else if (args.length > 0) {
                 LOGGER.info(String.format("Running \"%s\" is not currently supported.", args[0]));
                 LOGGER.info("Custom handling needs to be added to prototyping.Prototype.main ");
                 LOGGER.info("to test the indicated prototype.");

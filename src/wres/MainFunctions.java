@@ -28,8 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -51,7 +51,17 @@ final class MainFunctions
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFunctions.class);
 
     // TODO: This is a dumb location/process for storing the path to a project. This needs to be refactored.
-    private static String PROJECT_PATH = null;
+    private static String PROJECT_PATH = "";
+
+    // TODO: Again, a dumb way of handling this; we need a solution for storing the project config as a string to send
+    // to the execution log.
+    public static void setProjectPath(String projectPath)
+    {
+        synchronized (PROJECT_PATH)
+        {
+            MainFunctions.PROJECT_PATH = projectPath;
+        }
+    }
 
     @Deprecated
     public static String getRawProject()
@@ -103,7 +113,8 @@ final class MainFunctions
 	 * @param operation The desired operation to perform
 	 * @return True if there is a method mapped to the operation name
 	 */
-	public static boolean hasOperation (final String operation) {
+	public static boolean hasOperation (final String operation)
+    {
 		return FUNCTIONS.containsKey(operation.toLowerCase());
 	}
 
@@ -114,8 +125,14 @@ final class MainFunctions
 	 * @param args      The desired arguments to use when calling the method
 	 */
 	public static Integer call (String operation, final String[] args) {
+	    Integer result = FAILURE;
 		operation = operation.toLowerCase();
-		final Integer result = FUNCTIONS.get(operation).apply(args);
+
+		if (MainFunctions.hasOperation(operation))
+		{
+            result = FUNCTIONS.get(operation).apply(args);
+        }
+
 		return result;
 	}
 
@@ -237,6 +254,7 @@ final class MainFunctions
                     cutoff = Integer.parseInt(args[2]);
                 }
 
+                final String forecastDataType = "channel_rt";
 
 				if (!Arrays.asList("analysis_assim",
 								   "fe_analysis_assim",
@@ -360,7 +378,7 @@ final class MainFunctions
                         }
 
                         if (!isForcing) {
-                            filename += ".land";
+                            filename += "." + forecastDataType;
                         }
 
                         if (isLong) {
@@ -615,7 +633,7 @@ final class MainFunctions
 										   append(",").
 										   append(yValues.getDouble(currentYIndex)).
 										   append("), ").
-										   append(customSRID).append("), 4326)::point")
+										   append(customSRID).append("), 4269)::point")
 								   .append(", ");
 							builder.append(tempResolution).append(")");
 
@@ -686,13 +704,17 @@ final class MainFunctions
                         throw new IOException("The NetCDF file at: '" + filePath + "' lacks a proper feature variable (feature_id)");
                     }
 
+                    String getComidScript = "SELECT comid FROM wres.Feature WHERE comid != -999;";
+                    Collection<Integer> comids = new HashSet<>();
+                    comids = Database.populateCollection(comids, Integer.class, getComidScript, "comid");
+
                     Variable var = NetCDF.getVariable(file, "feature_id");
                     List<int[]> parameters = new ArrayList<>();;
                     Array features = var.read();
 
                     Function<List<int[]>, WRESRunnable> createThread = (List<int[]> params) ->
                     {
-                        return new WRESRunnable() {
+                        WRESRunnable runnable = new WRESRunnable() {
                             @Override
                             protected void execute () {
                                 if (this.parameters == null || this.parameters.size() == 0)
@@ -701,11 +723,13 @@ final class MainFunctions
                                 }
 
                                 Connection connection = null;
-                                CallableStatement statement = null;
+                                PreparedStatement statement = null;
+                                LinkedList<Future<?>> updates = new LinkedList<>();
+                                final String script = "UPDATE wres.Feature SET nwm_index = ? WHERE comid = ?;";
                                 try
                                 {
                                     connection = Database.getConnection();
-                                    statement = connection.prepareCall("{call wres.add_netcdffeature(?, ?)}");
+                                    statement = connection.prepareStatement(script);
 
                                     for (int[] parameter : this.parameters)
                                     {
@@ -713,6 +737,7 @@ final class MainFunctions
                                         statement.setInt(2, parameter[1]);
                                         statement.addBatch();
                                     }
+
                                     statement.executeBatch();
                                 }
                                 catch (SQLException e) {
@@ -757,6 +782,11 @@ final class MainFunctions
 
                             private List<int[]> parameters;
                         }.init(params);
+
+                        runnable.setOnRun(ProgressMonitor.onThreadStartHandler());
+                        runnable.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+
+                        return runnable;
                     };
 
                     for (Integer featureIndex = 0; featureIndex < features.getSize(); ++featureIndex)
@@ -769,7 +799,10 @@ final class MainFunctions
                             parameters = new ArrayList<>();
                         }
 
-                        parameters.add(new int[]{featureIndex, features.getInt(featureIndex)});
+                        if (comids.contains(features.getInt(featureIndex)))
+                        {
+                            parameters.add(new int[]{featureIndex, features.getInt(featureIndex)});
+                        }
                     }
 
                     WRESRunnable runnable = createThread.apply(parameters);
@@ -779,6 +812,9 @@ final class MainFunctions
 
                 }
                 catch (IOException e) {
+                    e.printStackTrace();
+                }
+                catch (SQLException e) {
                     e.printStackTrace();
                 }
             }
