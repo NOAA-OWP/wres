@@ -2,21 +2,18 @@ package wres;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.Callable;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import javax.xml.bind.ValidationEvent;
@@ -31,310 +28,749 @@ import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
+import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.Slicer;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MapBiKey;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
+import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
+import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.Threshold;
-import wres.engine.statistics.metric.MetricCollection;
+import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.MetricProcessor;
 import wres.io.Operations;
+import wres.io.concurrency.WRESCallable;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
+import wres.io.utilities.InputGenerator;
+import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Another way to execute a project.
+ * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
+ * 
+ * @author jesse
+ * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
  */
 public class Control implements Function<String[], Integer>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
-    public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
-    private static final AtomicLong lastMessageTime = new AtomicLong();
-
-    /** System property used to retrieve max thread count, passed as -D */
-    public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
-
-    public static final int MAX_THREADS;
-    // Figure out the max threads from property or by default rule.
-    // Ideally priority order would be: -D, SystemSettings, default rule.
-    static
-    {
-        String maxThreadsStr = System.getProperty(MAX_THREADS_PROP_NAME);
-        int maxThreads;
-        try
-        {
-            maxThreads = Integer.parseInt(maxThreadsStr);
-        }
-        catch(final NumberFormatException nfe)
-        {
-            maxThreads =  SystemSettings.maximumThreadCount();
-        }
-
-        if (maxThreads >= 1)
-        {
-            MAX_THREADS = maxThreads;
-        }
-        else
-        {
-            //LOGGER.warn("Java -D property {} was likely less than 1, setting Control.MAX_THREADS to 1",
-            //            MAX_THREADS_PROP_NAME);
-            MAX_THREADS = 1;
-        }
-    }
-
-    private static final String NEWLINE = System.lineSeparator();
 
     /**
-     * Processes *existing* pairs non-lazily (lacking specification for ingest). Creates two execution queues for pair
-     * processing. The first queue is responsible for retrieving data from the data store. The second queue is
-     * responsible for doing something with retrieved data.
+     * Processes one or more projects whose paths are provided in the input arguments.
      *
-     * @param args
+     * @param args the paths to one or more project configurations
      */
     public Integer apply(final String[] args)
     {
+        // Validate the configurations
         List<ProjectConfigPlus> projectConfiggies = getProjects(args);
-
-        if (projectConfiggies.isEmpty())
+        boolean validated = validateProjects(projectConfiggies);
+        if(!validated)
         {
-            LOGGER.error("Please correct project configuration files (see above) and pass them in the command line like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml");
-            return null;
+            return -1;
+        }
+        // Process the configurations in parallel
+        ExecutorService processPairExecutor = null;
+        try
+        {
+            // Build a processing pipeline
+            ThreadFactory factory = runnable -> new Thread(runnable, "ControlRegularFuture Thread: ");
+            processPairExecutor = Executors.newFixedThreadPool(MAX_THREADS, factory);
+
+            // Iterate through the configurations
+            for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
+            {
+                // Process the next configuration
+                boolean processed = processProjectConfig(projectConfigPlus, processPairExecutor);
+                if(!processed)
+                {
+                    return -1;
+                }
+            }
+            return 0;
+        }
+        // Shutdown
+        finally
+        {
+            shutDownGracefully(processPairExecutor);
+        }
+    }
+
+    /**
+     * Quick validation of the project configuration, will return detailed information to the user regarding issues
+     * about the configuration. Strict for now, i.e. return false even on minor xml problems. Does not return on first
+     * issue, tries to inform the user of all issues before returning.
+     *
+     * @param projectConfigPlus the project configuration
+     * @return true if no issues were detected, false otherwise
+     */
+
+    public static boolean isProjectValid(ProjectConfigPlus projectConfigPlus)
+    {
+        // Assume valid until demonstrated otherwise
+        boolean result = true;
+
+        for(ValidationEvent ve: projectConfigPlus.getValidationEvents())
+        {
+            if(LOGGER.isWarnEnabled())
+            {
+                if(ve.getLocator() != null)
+                {
+                    LOGGER.warn("In file {}, near line {} and column {}, WRES found an issue with the project "
+                        + "configuration. The parser said:",
+                                projectConfigPlus.getPath(),
+                                ve.getLocator().getLineNumber(),
+                                ve.getLocator().getColumnNumber(),
+                                ve.getLinkedException());
+                }
+                else
+                {
+                    LOGGER.warn("In file {}, WRES found an issue with the project configuration. The parser said:",
+                                projectConfigPlus.getPath(),
+                                ve.getLinkedException());
+                }
+            }
+            // Any validation event means we fail.
+            result = false;
+        }
+
+        // Validate graphics portion
+        result = result && isGraphicsPortionOfProjectValid(projectConfigPlus);
+
+        return result;
+    }
+
+    /**
+     * Validates graphics portion, similar to isProjectValid, but targeted.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @return true if the graphics configuration is valid, false otherwise
+     */
+
+    public static boolean isGraphicsPortionOfProjectValid(ProjectConfigPlus projectConfigPlus)
+    {
+        final String BEGIN_TAG = "<chartDrawingParameters>";
+        final String END_TAG = "</chartDrawingParameters>";
+        final String BEGIN_COMMENT = "<!--";
+        final String END_COMMENT = "-->";
+
+        boolean result = true;
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        for(DestinationConfig d: projectConfig.getOutputs().getDestination())
+        {
+            String customString = projectConfigPlus.getGraphicsStrings().get(d);
+            if(customString != null)
+            {
+                // For to give a helpful message, find closeby tag without NPE
+                Locatable nearbyTag;
+                if(d.getGraphical() != null && d.getGraphical().getConfig() != null)
+                {
+                    // Best case
+                    nearbyTag = d.getGraphical().getConfig();
+                }
+                else if(d.getGraphical() != null)
+                {
+                    // Not as targeted but close
+                    nearbyTag = d.getGraphical();
+                }
+                else
+                {
+                    // Destination tag.
+                    nearbyTag = d;
+                }
+
+                // If a custom vis config was provided, make sure string either
+                // starts with the correct tag or starts with a comment.
+                String trimmedCustomString = customString.trim();
+                result = result
+                    && checkTrimmedString(trimmedCustomString, BEGIN_TAG, BEGIN_COMMENT, nearbyTag, projectConfigPlus);
+                result = result
+                    && checkTrimmedString(trimmedCustomString, END_TAG, END_COMMENT, nearbyTag, projectConfigPlus);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Validates a list of {@link ProjectConfigPlus}. Returns true if the projects validate successfully, false
+     * otherwise.
+     * 
+     * @param projectConfiggies a list of project configurations to validate
+     * @return true if the projects validate successfully, false otherwise
+     */
+
+    private boolean validateProjects(List<ProjectConfigPlus> projectConfiggies)
+    {
+        if(projectConfiggies.isEmpty())
+        {
+            LOGGER.error("Please correct project configuration files (see above) and pass them in the command line "
+                + "like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml");
         }
         else
         {
-            LOGGER.info("Successfully unmarshalled {} project configuration(s), validating further...", projectConfiggies.size());
+            LOGGER.info("Successfully unmarshalled {} project configuration(s), validating further...",
+                        projectConfiggies.size());
         }
 
         boolean validationsPassed = true;
 
-        // Validate all projects, not stopping until after getting through all.
-        for (ProjectConfigPlus projectConfigPlus : projectConfiggies)
+        // Validate all projects, not stopping until all are done
+        for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
         {
-            if (!isProjectValid(projectConfigPlus))
+            if(!isProjectValid(projectConfigPlus))
             {
                 validationsPassed = false;
             }
         }
 
-        if (!validationsPassed)
+        if(validationsPassed)
         {
-            return null;
+            LOGGER.info("Successfully read and validated {} project configuration(s). Beginning execution...",
+                        projectConfiggies.size());
+        }
+        return validationsPassed;
+    }
+
+    /**
+     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService}.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param processPairExecutor the {@link ExecutorService}
+     * @return true if the project processed successfully, false otherwise
+     */
+
+    private boolean processProjectConfig(ProjectConfigPlus projectConfigPlus, ExecutorService processPairExecutor)
+    {
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        // Need to ingest first
+        boolean ingestResult = Operations.ingest(projectConfig);
+
+        if(!ingestResult)
+        {
+            LOGGER.error("Error while attempting to ingest data.");
+            return false;
         }
 
-        LOGGER.info("Successfully read and validated {} project configuration(s). Beginning execution...",
-                    projectConfiggies.size());
+        // Obtain the features
+        List<Feature> features = projectConfig.getConditions().getFeature();
 
-        // Create a queue of work: displaying or processing fetched pairs.
-        int maxProcessThreads = Control.MAX_THREADS;
-        ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
-
-        DataFactory dataFac = DefaultDataFactory.getInstance();
-
-        //Sink for the results: the results are added incrementally to an immutable store via a builder
-        MetricOutputMultiMapByLeadThreshold.Builder<ScalarOutput> resultsBuilder = dataFac.ofMultiMap();
-
-
-        for (ProjectConfigPlus projectConfigPlus : projectConfiggies)
+        // Iterate through the features and process them
+        for(Feature nextFeature: features)
         {
-
-            ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-
-            // Need to ingest first.
-            boolean ingestResult = Operations.ingest(projectConfig);
-
-            if (!ingestResult)
+            if(!processFeature(nextFeature, projectConfigPlus, processPairExecutor))
             {
-                LOGGER.warn("Ingest did not complete smoothly. Aborting.");
-                return null;
+                return false;
             }
+        }
+        return true;
+    }
 
-            Map<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> pairs = new TreeMap<>();
+    /**
+     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService}.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param processPairExecutor the {@link ExecutorService}
+     * @return true if the project processed successfully, false otherwise
+     */
 
-            // Ask the IO module for pairs
-            /*try
+    private boolean processFeature(Feature nextFeature,
+                                   ProjectConfigPlus projectConfigPlus,
+                                   ExecutorService processPairExecutor)
+    {
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        if(LOGGER.isInfoEnabled())
+        {
+            LOGGER.info("Processing feature '{}'.", nextFeature.getLocation().getLid());
+        }
+
+        // Sink for the results: the results are added incrementally to an immutable store via a builder
+        // Some output types are processed at the end of the pipeline, others after each input is processed
+        // Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR
+        MetricProcessor processor = null;
+        try
+        {
+            processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessor(projectConfig,
+                                                                                   MetricOutputGroup.SCALAR,
+                                                                                   MetricOutputGroup.VECTOR);
+        }
+        catch(MetricConfigurationException e)
+        {
+            LOGGER.error("While processing the metric configuration:", e);
+            return false;
+        }
+
+        // Build an InputGenerator for the next feature
+        InputGenerator metricInputs = Operations.getInputs(projectConfig, nextFeature);
+
+        // Queue up processing of fetched pairs.            
+        List<PairsByLeadProcessor> tasks = new ArrayList<>();
+        for(Future<MetricInput<?>> nextInput: metricInputs)
+        {
+            PairsByLeadProcessor processTask = new PairsByLeadProcessor(projectConfigPlus, processor, nextInput);
+            processTask.setOnRun(ProgressMonitor.onThreadStartHandler());
+            processTask.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+            tasks.add(processTask);
+        }
+        //Invoke all tasks and process within-pipeline products
+        try
+        {
+            processPairExecutor.invokeAll(tasks);
+        }
+        catch(InterruptedException e)
+        {
+            LOGGER.error("Interrupted while processing metrics for feature {}.", nextFeature.getLocation().getLid(), e);
+            Thread.currentThread().interrupt();
+            return false;
+        }
+
+        //  Complete the end-of-pipeline processing
+        if(processor.willCacheMetricOutput())
+        {
+            processCachedCharts(projectConfigPlus, processor, MetricOutputGroup.SCALAR, MetricOutputGroup.VECTOR);
+            if(LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
             {
-                for (Conditions.Feature feature : projectConfig.getConditions().getFeature()) {
-                    // TODO: This needs to be adjusted to use the InputGenerator. Please see getPairs in MainFunctions
-                    //pairs = Operations.getPairs(projectConfig, feature);
-                }
+                LOGGER.info("Completed processing of feature '{}'.", nextFeature.getLocation().getLid());
             }
-            catch (SQLException e)
+        }
+        return true;
+    }
+
+    /**
+     * Processes all charts for which metric outputs were cached across successive calls to a {@link MetricProcessor}.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param processor the {@link MetricProcessor} that contains the results for all chart types
+     * @param outGroup the {@link MetricOutputGroup} for which charts are required
+     * @return true it the processing completed successfully, false otherwise
+     */
+
+    private boolean processCachedCharts(ProjectConfigPlus projectConfigPlus,
+                                        MetricProcessor processor,
+                                        MetricOutputGroup... outGroup)
+    {
+        //True until failed
+        boolean returnMe = true;
+        try
+        {
+            for(MetricOutputGroup nextGroup: outGroup)
             {
-                LOGGER.error("While getting results", e);
-                return null;
-            }*/
-
-            List<Future<MetricOutputMapByMetric<ScalarOutput>>> futureMetrics = new ArrayList<>();
-
-            // Queue up processing of fetched pairs.
-            for (Map.Entry<Integer, Future<List<PairOfDoubleAndVectorOfDoubles>>> pair : pairs.entrySet())
-            {
-                // Here, using index in list to communicate the lead time.
-                // Another structure might be appropriate, for example,
-                // see getPairs in
-                // wres.io.config.specification.MetricSpecification
-                // which uses a Map.
-                int leadTime = pair.getKey();
-                PairsByLeadProcessor processTask = null;
-                try {
-                    processTask = new PairsByLeadProcessor(pair.getValue().get(),
-                                                           projectConfig,
-                                                           leadTime);
-                }
-                catch (InterruptedException | ExecutionException e) {
-                    LOGGER.error("While preparing metrics", e);
-                    return null;
-                }
-
-                Future<MetricOutputMapByMetric<ScalarOutput>> futureMetric =
-                        processPairExecutor.submit(processTask);
-                futureMetrics.add(futureMetric);
-            }
-
-            // use resultsBuilder instead of finalResults
-            // Map<Integer, MetricOutputMapByMetric<ScalarOutput>> finalResults = new HashMap<>();
-
-            // Retrieve metric results from processing queue.
-            try
-            {
-                // counting on communication of data with index for this example
-                for (int i = 0; i < futureMetrics.size(); i++)
+                switch(nextGroup)
                 {
-                    // get each result
-                    MetricOutputMapByMetric<ScalarOutput> metrics = futureMetrics.get(i).get();
+                    case SCALAR:
+                        returnMe = returnMe && processScalarCharts(projectConfigPlus,
+                                                                   processor.getStoredMetricOutput().getScalarOutput());
+                        break;
+                    case VECTOR:
+                        returnMe = returnMe && processVectorCharts(projectConfigPlus,
+                                                                   processor.getStoredMetricOutput().getVectorOutput());
+                        break;
+                    case MULTIVECTOR:
+                        returnMe = returnMe
+                            && processMultiVectorCharts(projectConfigPlus,
+                                                        processor.getStoredMetricOutput().getMultiVectorOutput());
+                        break;
+                    default:
+                        LOGGER.error("Unsupported chart type {}.", nextGroup);
+                        returnMe = false;
+                }
+            }
+        }
+        catch(InterruptedException e)
+        {
+            LOGGER.error("Interrupted while processing charts.", e);
+            Thread.currentThread().interrupt();
+            returnMe = false;
+        }
+        catch(ExecutionException e)
+        {
+            LOGGER.error("While processing charts:", e);
+            returnMe = false;
+        }
+        return returnMe;
+    }
 
-                    int leadTime = i + 1;
-                    Threshold fakeThreshold = dataFac.getThreshold(Double.NEGATIVE_INFINITY, Threshold.Operator.GREATER);
-                    resultsBuilder.put(leadTime, fakeThreshold, metrics);
+    /**
+     * Processes a set of charts associated with {@link ScalarOutput} across multiple metrics, forecast lead times, and
+     * thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param scalarResults the scalar outputs
+     * @return true it the processing completed successfully, false otherwise
+     */
 
-                    if (LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
+    private static boolean processScalarCharts(ProjectConfigPlus projectConfigPlus,
+                                               MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarResults)
+    {
+
+        // Build charts
+        try
+        {
+            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> e: scalarResults.entrySet())
+            {
+                DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
+                String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+
+                ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
+                                                                                            DATA_FACTORY.getMetadataFactory(),
+                                                                                            ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
+                                                                                            "scalarOutputTemplate.xml",
+                                                                                            graphicsString);
+
+                Path outputImage = Paths.get(dest.getPath() + e.getKey().getFirstKey() + "_output.png");
+
+                if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
+                {
+                    LOGGER.warn("File {} already existed and is being overwritten.", outputImage);
+                }
+
+                File outputImageFile = outputImage.toFile();
+
+                int width = SystemSettings.getDefaultChartWidth();
+                int height = SystemSettings.getDefaultChartHeight();
+
+                if(dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
+                {
+                    width = dest.getGraphical().getWidth();
+                }
+                if(dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
+                {
+                    height = dest.getGraphical().getHeight();
+                }
+
+                ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
+            }
+            //Log output
+            if(LOGGER.isInfoEnabled())
+            {
+                LOGGER.info(scalarResults.toString());
+            }
+        }
+        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+        {
+            LOGGER.error("While generating plots:", e);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Processes a set of charts associated with {@link VectorOutput} across multiple metrics, forecast lead times, and
+     * thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. TODO: implement when wres-vis can handle
+     * these.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param vectorResults the scalar outputs
+     * @return true it the processing completed successfully, false otherwise
+     */
+
+    private static boolean processVectorCharts(ProjectConfigPlus projectConfigPlus,
+                                               MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorResults)
+    {
+//        // Build charts
+//        try
+//        {
+//            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
+//            {
+//                DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
+//                String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+//
+//                
+//
+//                
+//              ChartEngine engine = null;
+//
+//                Path outputImage = Paths.get(dest.getPath() + e.getKey().getFirstKey() + "_output.png");
+//
+//                if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
+//                {
+//                    LOGGER.warn("File {} already existed and is being overwritten.", outputImage);
+//                }
+//
+//                File outputImageFile = outputImage.toFile();
+//
+//                int width = SystemSettings.getDefaultChartWidth();
+//                int height = SystemSettings.getDefaultChartHeight();
+//
+//                if(dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
+//                {
+//                    width = dest.getGraphical().getWidth();
+//                }
+//                if(dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
+//                {
+//                    height = dest.getGraphical().getHeight();
+//                }
+//
+//                ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
+//            }
+//            //Log output        
+//            if(LOGGER.isInfoEnabled())
+//            {
+//                LOGGER.info(vectorResults.toString());
+//            }
+//        }
+//        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+//        {
+//            LOGGER.error("While generating plots:", e);
+//            return false;
+//        }
+        return true;
+    }
+
+    /**
+     * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, forecast lead times,
+     * and thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. TODO: implement when wres-vis can handle
+     * these.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param multiVectorResults the scalar outputs
+     * @return true it the processing completed successfully, false otherwise
+     */
+
+    private static boolean processMultiVectorCharts(ProjectConfigPlus projectConfigPlus,
+                                                    MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> multiVectorResults)
+    {
+//        // Build charts
+//        try
+//        {
+//            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
+//            {
+//                DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
+//                String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+//
+//                
+//
+//                
+//              ChartEngine engine = null;
+//
+//                Path outputImage = Paths.get(dest.getPath() + e.getKey().getFirstKey() + "_output.png");
+//
+//                if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
+//                {
+//                    LOGGER.warn("File {} already existed and is being overwritten.", outputImage);
+//                }
+//
+//                File outputImageFile = outputImage.toFile();
+//
+//                int width = SystemSettings.getDefaultChartWidth();
+//                int height = SystemSettings.getDefaultChartHeight();
+//
+//                if(dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
+//                {
+//                    width = dest.getGraphical().getWidth();
+//                }
+//                if(dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
+//                {
+//                    height = dest.getGraphical().getHeight();
+//                }
+//
+//                ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
+//            }
+//            //Log output        
+//            if(LOGGER.isInfoEnabled())
+//            {
+//                LOGGER.info(vectorResults.toString());
+//            }        
+//        }
+//        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+//        {
+//            LOGGER.error("While generating plots:", e);
+//            return false;
+//        }
+        return true;
+    }
+
+    /**
+     * Get project configurations from command line file args. If there are no command line args, look in System
+     * Settings for directory to scan for configurations.
+     *
+     * @param args the paths to the projects
+     * @return the successfully found, read, unmarshalled project configs
+     */
+    private List<ProjectConfigPlus> getProjects(String[] args)
+    {
+        List<Path> existingProjectFiles = new ArrayList<>();
+
+        if(args.length > 0)
+        {
+            for(String arg: args)
+            {
+                Path path = Paths.get(arg);
+                if(path.toFile().exists())
+                {
+                    existingProjectFiles.add(path);
+
+                    // TODO: Needs to be temporary; used to log execution information
+                    if(path.toFile().isFile())
                     {
-                        long curTime = System.currentTimeMillis();
-                        long lastTime = lastMessageTime.get();
-                        if (curTime - lastTime > LOG_PROGRESS_INTERVAL_MILLIS && lastMessageTime
-                                .compareAndSet(lastTime, curTime))
-                        {
-                            ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor) processPairExecutor;
-                            LOGGER.info(
-                                    "Around {} fetched pairs processed. Around {} in processing queue.",
-                                    tpeProcess.getCompletedTaskCount(),
-                                    tpeProcess.getQueue().size());
-                        }
+                        MainFunctions.setProjectPath(path.toAbsolutePath().toString());
                     }
                 }
+                else
+                {
+                    LOGGER.warn("Project configuration file {} does not exist!", path);
+                }
             }
-            catch (InterruptedException ie)
+        }
+
+        List<ProjectConfigPlus> projectConfiggies = new ArrayList<>();
+
+        for(Path path: existingProjectFiles)
+        {
+            try
             {
-                LOGGER.error("Interrupted while getting results", ie);
+                ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from(path);
+                projectConfiggies.add(projectConfigPlus);
+            }
+            catch(IOException ioe)
+            {
+                LOGGER.error("Could not read project configuration: ", ioe);
+            }
+        }
+        return projectConfiggies;
+    }
+
+    /**
+     * Task that waits for pairs to arrive, computes metrics from them, and then produces any intermediate
+     * (within-pipeline) products.
+     */
+    private static class PairsByLeadProcessor extends WRESCallable<MetricOutputForProjectByLeadThreshold>
+    {
+        /**
+         * The metric processor.
+         */
+        private final MetricProcessor processor;
+
+        /**
+         * The future metric input.
+         */
+        private final Future<MetricInput<?>> input;
+
+        /**
+         * The project configuration.
+         */
+
+        private final ProjectConfigPlus projectConfigPlus;
+
+        /**
+         * Construct.
+         * 
+         * @param projectConfigPlus the project configuration
+         * @param processor the metric processor
+         * @param input the future metric input
+         */
+
+        private PairsByLeadProcessor(ProjectConfigPlus projectConfigPlus,
+                                     final MetricProcessor processor,
+                                     final Future<MetricInput<?>> input)
+        {
+            this.projectConfigPlus = projectConfigPlus;
+            this.processor = processor;
+            this.input = input;
+        }
+
+        @Override
+        protected MetricOutputForProjectByLeadThreshold execute() throws Exception
+        {
+            try
+            {
+                MetricInput<?> nextInput = input.get();
+                MetricOutputForProjectByLeadThreshold results = processor.apply(nextInput);
+                //Process the within-pipeline products
+                processMultiVectorCharts(projectConfigPlus, results.getMultiVectorOutput());
+                if(LOGGER.isInfoEnabled())
+                {
+                    LOGGER.info("Completed processing of metrics for feature '{}' at lead time {}.",
+                                nextInput.getMetadata().getIdentifier().getGeospatialID(),
+                                nextInput.getMetadata().getLeadTime());
+                }
+                return results;
+            }
+            catch(InterruptedException e)
+            {
+                LOGGER.error("Interrupted while processing pairs.", e);
                 Thread.currentThread().interrupt();
-                break;
+                throw e;
             }
-            catch (ExecutionException ee)
+            catch(Exception e)
             {
-                LOGGER.error("While getting results", ee);
-                break;
-            }
-            finally
-            {
-                processPairExecutor.shutdown();
-            }
-
-            if (LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
-            {
-                ThreadPoolExecutor tpeProcess = (ThreadPoolExecutor) processPairExecutor;
-                LOGGER.info("Total of around {} pairs processed. Done.",
-                            tpeProcess.getCompletedTaskCount());
-            }
-
-            //Build final results:
-            MetricOutputMultiMapByLeadThreshold<ScalarOutput> results = resultsBuilder.build();
-
-            // Make charts!
-            try
-            {
-                for (Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> e : results
-                        .entrySet())
-                {
-                    DestinationConfig dest = projectConfig.getOutputs().getDestination().get(1);
-                    String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-
-                    ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(
-                            e.getValue(),
-                            dataFac.getMetadataFactory(),
-                            ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
-                            "scalarOutputTemplate.xml",
-                            graphicsString);
-
-                    Path outputImage = Paths.get(dest.getPath() + e.getKey().getFirstKey() + "_output.png");
-
-                    if (LOGGER.isWarnEnabled() && Files.exists(outputImage))
-                    {
-                        LOGGER.warn("File {} already existed and is being overwritten.",
-                                    outputImage);
-                    }
-
-                    File outputImageFile = outputImage.toFile();
-
-                    int width = SystemSettings.getDefaultChartWidth();
-                    int height = SystemSettings.getDefaultChartHeight();
-
-                    if (dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
-                    {
-                        width = dest.getGraphical().getWidth();
-                    }
-                    if (dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
-                    {
-                        height = dest.getGraphical().getHeight();
-                    }
-
-                    ChartTools.generateOutputImageFile(outputImageFile,
-                                                       engine.buildChart(),
-                                                       width,
-                                                       height);
-                }
-            }
-            catch (ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
-            {
-                LOGGER.error("Could not generate plots:", e);
-                return null;
-            }
-
-            if (LOGGER.isInfoEnabled())
-            {
-                results.forEach((key, value) -> {
-                    LOGGER.info(NEWLINE + "Results for metric "
-                            + dataFac.getMetadataFactory().getMetricName(key.getFirstKey()) + " (lead time, threshold, score) "
-                            + NEWLINE + value);
-                });
+                LOGGER.error("While processing pairs:", e);
+                throw e;
             }
         }
 
-        shutDownGracefully(processPairExecutor);
+        @Override
+        protected String getTaskName()
+        {
+            return "Process Metrics for Pairs by Lead Time";
+        }
 
-        return 0;
+        @Override
+        protected Logger getLogger()
+        {
+            return LOGGER;
+        }
+    }
+
+    /**
+     * Checks a trimmed string in the graphics configuration.
+     * 
+     * @param trimmedCustomString the trimmed string
+     * @param tag the tag
+     * @param comment the comment
+     * @param nearbyTag a nearby tag
+     * @param projectConfigPlus the configuration
+     * @return true if the tag is valid, false otherwise
+     */
+
+    private static boolean checkTrimmedString(String trimmedCustomString,
+                                              String tag,
+                                              String comment,
+                                              Locatable nearbyTag,
+                                              ProjectConfigPlus projectConfigPlus)
+    {
+        if(!trimmedCustomString.endsWith(tag) && !trimmedCustomString.endsWith(comment))
+        {
+            String msg = "In file {}, near line {} and column {}, " + "WRES found an issue with the project "
+                + " configuration in the area of custom " + "graphics configuration. If customization is "
+                + "provided, please end it with " + tag;
+
+            LOGGER.warn(msg,
+                        projectConfigPlus.getPath(),
+                        nearbyTag.sourceLocation().getLineNumber(),
+                        nearbyTag.sourceLocation().getColumnNumber());
+
+            return false;
+        }
+        return true;
     }
 
     /**
      * Kill off the executors passed in even if there are remaining tasks.
      *
-     * @param processPairExecutor
+     * @param processPairExecutor the executor to shutdown
      */
     private static void shutDownGracefully(ExecutorService processPairExecutor)
     {
+        if(Objects.isNull(processPairExecutor))
+        {
+            return;
+        }
         // (There are probably better ways to do this, e.g. awaitTermination)
         int processingSkipped = 0;
         int i = 0;
@@ -373,240 +809,65 @@ public class Control implements Function<String[], Integer>
 
         if(processingSkipped > 0)
         {
-            LOGGER.info("Abandoned {} pair fetch tasks, abandoned {} processing tasks.",
-                        processingSkipped);
+            LOGGER.info("Abandoned {} processing tasks.", processingSkipped);
         }
     }
 
     /**
-     * Get project configurations from command line file args.
-     *
-     * If there are no command line args, look in System Settings for directory
-     * to scan for configurations.
-     *
-     * @param args
-     * @return the successfully found, read, unmarshalled project configs
+     * Default logger.
      */
-    private List<ProjectConfigPlus> getProjects(String[] args)
-    {
-        List<Path> existingProjectFiles = new ArrayList<>();
 
-        if (args.length > 0)
-        {
-            for (String arg : args)
-            {
-                Path path = Paths.get(arg);
-                if (Files.exists(path))
-                {
-                    existingProjectFiles.add(path);
-                }
-                else
-                {
-                    LOGGER.warn("Project configuration file {} does not exist!",
-                            path);
-                }
-            }
-        }
-
-        List<ProjectConfigPlus> projectConfiggies = new ArrayList<>();
-
-        for (Path path : existingProjectFiles)
-        {
-            try
-            {
-                ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from(path);
-                projectConfiggies.add(projectConfigPlus);
-            }
-            catch (IOException ioe)
-            {
-                LOGGER.error("Could not read project configuration: ", ioe);
-            }
-        }
-        return projectConfiggies;
-    }
+    private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
 
     /**
-     * Task whose job is to wait for pairs to arrive, then run metrics on them.
+     * Log interval.
      */
-    private static class PairsByLeadProcessor implements Callable<MetricOutputMapByMetric<ScalarOutput>>
-    {
-        private final List<PairOfDoubleAndVectorOfDoubles> pairs;
-        private final ProjectConfig projectConfig;
-        private final int leadTime;
 
-        private PairsByLeadProcessor(final List<PairOfDoubleAndVectorOfDoubles> pairs,
-                                     final ProjectConfig projectConfig,
-                                     final int leadTime)
-        {
-            this.pairs = pairs;
-            this.projectConfig = projectConfig;
-            this.leadTime = leadTime;
-        }
-
-        @Override
-        public MetricOutputMapByMetric<ScalarOutput> call()
-                throws ProcessingException, ChartEngineException,
-                GenericXMLReadingHandlerException, XYChartDataSourceException,
-                IOException, URISyntaxException, MetricConfigurationException
-        {
-            // Grow a List of PairOfDoubleAndVectorOfDoubles into a simpler
-            // List of PairOfDouble for metric calculation.
-            List<PairOfDoubles> simplePairs = Slicer.getFlatDoublePairs(pairs);
-
-            // What follows for the rest of call() was originally from MetricCollectionTest.
-
-            // Convert pairs into metric input
-            DataFactory dataFactory = DefaultDataFactory.getInstance();
-            MetadataFactory metFac = dataFactory.getMetadataFactory();
-            Metadata meta = metFac.getMetadata(metFac.getDimension(projectConfig.getPair().getUnit()),
-                                               metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
-            SingleValuedPairs input = dataFactory.ofSingleValuedPairs(simplePairs, meta);
-
-            // Create an immutable collection of metrics that consume single-valued pairs
-            // and produce a scalar output
-            //Build an immutable collection of metrics, to be computed at each of several forecast lead times
-            MetricFactory metricFactory = MetricFactory.getInstance(dataFactory);
-            MetricCollection<SingleValuedPairs, ScalarOutput> collection =
-                    metricFactory.ofSingleValuedScalarCollection(projectConfig);
-            //Compute sequentially (i.e. not in parallel)
-            return collection.apply(input);
-        }
-    }
+    public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
 
     /**
-     * A label for our own checked exception distinct from ExecutionException which can be thrown by an executor while
-     * getting a task. Might help distinguish exceptions in Q1 from exceptions in Q2
+     * Default data factory.
      */
-    private static class ProcessingException extends Exception
-    {
-        public ProcessingException(final String s, final Throwable t)
-        {
-            super(s, t);
-        }
-    }
+
+    private static final DataFactory DATA_FACTORY = DefaultDataFactory.getInstance();
 
     /**
-     * Quick validation of the project configuration, will emit detailed
-     * information to the user regarding issues about the configuration.
-     *
-     * Strict for now, i.e. return false even on minor xml problems.
-     *
-     * Does not return on first issue, tries to inform the user of all issues
-     * before returning.
-     *
-     * @param projectConfigPlus
-     * @return true if no issues were detected, false otherwise
+     * System property used to retrieve max thread count, passed as -D
      */
-    public static boolean isProjectValid(ProjectConfigPlus projectConfigPlus)
-    {
-        // Assume valid until demonstrated otherwise
-        boolean result = true;
 
-        for (ValidationEvent ve : projectConfigPlus.getValidationEvents())
-        {
-            if (LOGGER.isWarnEnabled())
-            {
-                if (ve.getLocator() != null)
-                {
-                    LOGGER.warn(
-                            "In file {}, near line {} and column {}, WRES found a small issue with project configuration. The parser said:",
-                            projectConfigPlus.getPath(),
-                            ve.getLocator().getLineNumber(),
-                            ve.getLocator().getColumnNumber(),
-                            ve.getLinkedException());
-                }
-                else
-                {
-                    LOGGER.warn("In file {}, WRES found a small issue with project configuration. The parser said:",
-                            projectConfigPlus.getPath(),
-                            ve.getLinkedException());
-                }
-            }
-            // Any validation event means we fail.
-            result = false;
-        }
-
-        // validate graphics portion
-        result = result && isGraphicsPortionOfProjectValid(projectConfigPlus);
-
-        return result;
-    }
+    public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
 
     /**
-     * Validates graphics portion, similar to isProjectValid, but targeted.
-     * @param projectConfigPlus
-     * @return
+     * Maximum threads.
      */
-    public static boolean isGraphicsPortionOfProjectValid(ProjectConfigPlus projectConfigPlus)
+
+    public static final int MAX_THREADS;
+
+    // Figure out the max threads from property or by default rule.
+    // Ideally priority order would be: -D, SystemSettings, default rule.
+    static
     {
-        final String BEGIN_TAG = "<chartDrawingParameters>";
-        final String END_TAG = "</chartDrawingParameters>";
-        final String BEGIN_COMMENT = "<!--";
-        final String END_COMMENT = "-->";
-
-        boolean result = true;
-
-        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-
-        for (DestinationConfig d : projectConfig.getOutputs().getDestination())
+        String maxThreadsStr = System.getProperty(MAX_THREADS_PROP_NAME);
+        int maxThreads;
+        try
         {
-            String customString = projectConfigPlus.getGraphicsStrings().get(d);
-            if (customString != null)
-            {
-                // For to give a helpful message, find closeby tag without NPE
-                Locatable nearbyTag;
-                if (d.getGraphical() != null && d.getGraphical().getConfig() != null)
-                {
-                    // best case
-                    nearbyTag = d.getGraphical().getConfig();
-                }
-                else if (d.getGraphical() != null)
-                {
-                    // not as targeted but close
-                    nearbyTag = d.getGraphical();
-                }
-                else
-                {
-                    // destination tag.
-                    nearbyTag = d;
-                }
-
-                // If a custom vis config was provided, make sure string either
-                // starts with the correct tag or starts with a comment.
-                String trimmedCustomString = customString.trim();
-                if (!trimmedCustomString.startsWith(BEGIN_TAG)
-                    && !trimmedCustomString.startsWith(BEGIN_COMMENT))
-                {
-                    String msg = "In file {}, near line {} and column {}, "
-                            + "WRES found an issue with the project "
-                            + " configuration in the area of custom "
-                            + "graphics configuration. If customization is "
-                            + "provided, please start it with " + BEGIN_TAG;
-
-                    LOGGER.warn(msg, projectConfigPlus.getPath(),
-                            nearbyTag.sourceLocation().getLineNumber(),
-                            nearbyTag.sourceLocation().getColumnNumber());
-
-                    result = false;
-                }
-
-                if (!trimmedCustomString.endsWith(END_TAG)
-                    && !trimmedCustomString.endsWith(END_COMMENT))
-                {
-                    String msg = "In file {}, near line {} and column {}, "
-                            + "WRES found an issue with the project "
-                            + " configuration in the area of custom "
-                            + "graphics configuration. If customization is "
-                            + "provided, please end it with " + END_TAG;
-
-                    LOGGER.warn(msg, projectConfigPlus.getPath(),
-                            nearbyTag.sourceLocation().getLineNumber(),
-                            nearbyTag.sourceLocation().getColumnNumber());
-
-                    result = false;
-                }
-            }
+            maxThreads = Integer.parseInt(maxThreadsStr);
         }
-        return result;
+        catch(final NumberFormatException nfe)
+        {
+            maxThreads = SystemSettings.maximumThreadCount();
+        }
+
+        if(maxThreads >= 1)
+        {
+            MAX_THREADS = maxThreads;
+        }
+        else
+        {
+            //LOGGER.warn("Java -D property {} was likely less than 1, setting Control.MAX_THREADS to 1",
+            //            MAX_THREADS_PROP_NAME);
+            MAX_THREADS = 1;
+        }
     }
+
 }
