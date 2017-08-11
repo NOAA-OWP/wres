@@ -2,7 +2,6 @@ package wres.vis;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
@@ -44,10 +43,14 @@ import wres.datamodel.metric.Threshold.Operator;
  */
 public class Chart2DTestOutput extends TestCase
 {
+    //TODO Note that test1 is within the Chart2DTestInput.java unit tests.  The two unit tests need to either be completely separate
+    //(different testoutput, testinput directories) or merged.  
+    //
+    //do the following: Keep the unit tests separate; modify scenario names (inputTest1 and outputTest1) and update the file names.
+    //That way the tests can be separate but generate output and using input from same directories.
     /**
      * Generate a plot by lead time on the domain axis.
      */
-
     public void test2ScalarOutput()
     {
         final String scenarioName = "test2";
@@ -138,12 +141,14 @@ public class Chart2DTestOutput extends TestCase
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getReliabilityDiagramByLeadThreshold();
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results42 = results.sliceByLead(42);
-        results42.forEach((key,result)-> {
-            System.out.println(key.getSecondKey());
-            System.out.println(Arrays.toString(result.get(MetricConstants.FORECAST_PROBABILITY).getDoubles()));  //This array forms the domain
-            System.out.println(Arrays.toString(result.get(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY).getDoubles()));  //This array forms the range for reliability diagram subplot
-            System.out.println(Arrays.toString(result.get(MetricConstants.SAMPLE_SIZE).getDoubles())); //This array forms the range for the sample size subplot
-        });
+
+//DEBUG OUTPUT:
+//        results42.forEach((key,result)-> {
+//            System.out.println(key.getSecondKey());
+//            System.out.println(Arrays.toString(result.get(MetricConstants.FORECAST_PROBABILITY).getDoubles()));  //This array forms the domain
+//            System.out.println(Arrays.toString(result.get(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY).getDoubles()));  //This array forms the range for reliability diagram subplot
+//            System.out.println(Arrays.toString(result.get(MetricConstants.SAMPLE_SIZE).getDoubles())); //This array forms the range for the sample size subplot
+//        });
 
         try
         {
@@ -151,7 +156,7 @@ public class Chart2DTestOutput extends TestCase
             final MetadataFactory factory = DefaultMetadataFactory.getInstance();
 
             //Call the factory.
-            final ChartEngine engine = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
+            final ChartEngine engine = ChartEngineFactory.buildMultiVectorOutputChartEngine(results42,
                                                                                               factory,
                                                                                               ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM,
                                                                                               "reliabilityDiagramTemplate.xml",
