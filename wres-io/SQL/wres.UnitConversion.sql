@@ -36,7 +36,7 @@ WHERE NOT EXISTS (
 		AND UC.from_unit = UC.to_unit
 );
 
--- VOLUME
+-- Flow
 INSERT INTO wres.UnitConversion (from_unit, to_unit, factor)
 SELECT  F.measurementunit_id,
 	T.measurementunit_id,
@@ -65,6 +65,23 @@ WHERE F.unit_name = 'CFS'
 		FROM wres.UnitConversion
 		WHERE from_unit = F.measurementunit_id
 			AND to_unit = T.measurementunit_id
+	);
+
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+SELECT F.measurementunit_id,
+	UC.to_unit,
+	factor
+FROM wres.MeasurementUnit F
+CROSS JOIN wres.UnitConversion UC
+INNER JOIN wres.MeasurementUnit T
+	ON T.measurementunit_id = UC.from_unit
+WHERE F.unit_name = 'm3 s-1'
+	AND T.unit_name = 'CMS'
+	AND NOT EXISTS (
+		SELECT 1
+		FROM wres.UnitConversion PC
+		WHERE PC.from_unit = F.measurementunit_id
+			AND PC.to_unit = UC.to_unit
 	);
 
 -- DISTANCE
