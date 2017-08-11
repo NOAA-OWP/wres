@@ -148,7 +148,7 @@ final class MainFunctions
 		prototypes.put("-h", printCommands());
 		prototypes.put("cleandatabase", cleanDatabase());
 		prototypes.put("getpairs", getPairs());
-		prototypes.put("execute", new ControlRegularFuture());
+		prototypes.put("execute", new Control());
 		prototypes.put("downloadtestdata", refreshTestData());
 		prototypes.put("refreshdatabase", refreshDatabase());
 		prototypes.put("loadcoordinates", loadCoordinates());

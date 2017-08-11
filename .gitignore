@@ -36,3 +36,4 @@ out
 /*.xml
 /resources
 /testinput/sharedinput/*
+/src/wres/MainLocal.java
