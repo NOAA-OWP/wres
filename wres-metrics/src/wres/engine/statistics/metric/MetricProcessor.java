@@ -148,31 +148,26 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
     /**
      * Returns a {@link MetricOutputForProjectByLeadThreshold} for the last available results or null if
-     * {@link #hasStoredMetricOutput()} returns false.
+     * {@link #willCacheMetricOutput()} returns false.
      * 
      * @return a {@link MetricOutputForProjectByLeadThreshold} or null
      */
 
     public MetricOutputForProjectByLeadThreshold getStoredMetricOutput()
     {
-        return hasStoredMetricOutput() ? futures.getMetricOutput() : null;
+        return willCacheMetricOutput() ? futures.getMetricOutput() : null;
     }
 
     /**
-     * Returns true when stored results are available, false otherwise. Stored results are only available when two
-     * conditions are met:
-     * <ol>
-     * <li>The {@link MetricProcessor} has been constructed to merge across sequential calls to {@link #apply(Object)}
-     * for specific {@link MetricOutputGroup}; and</li>
-     * <li>One or more calls were made to {@link #apply(Object)} before this method is called.</li>
-     * </ol>
+     * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)}, 
+     * false otherwise.
      * 
-     * @return true if stored results are available, false otherwise
+     * @return true if results will be cached, false otherwise
      */
 
-    public boolean hasStoredMetricOutput()
+    public boolean willCacheMetricOutput()
     {
-        return futures.hasMetricOutput();
+        return futures.willCacheOutputs();
     }
 
     /**
@@ -482,6 +477,16 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             {
                 this.mergeList = Arrays.asList(mergeList);
             }
+        }
+
+        /**
+         * Returns true if one or more outputs will be cached, false otherwise.
+         * 
+         * @return true if one or more outputs will be cached, false otherwise
+         */
+        
+        private boolean willCacheOutputs() {
+            return !mergeList.isEmpty();
         }
 
         /**
