@@ -1,9 +1,5 @@
 package wres.vis;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.jfree.data.xy.AbstractXYDataset;
 import org.jfree.data.xy.XYDataset;
 
 import wres.datamodel.metric.MetricConstants;
@@ -16,65 +12,65 @@ import wres.datamodel.metric.MultiVectorOutput;
  * 
  * @author Hank.Herr
  */
-public class ReliabilityDiagramXYDataset extends AbstractXYDataset
+public class ReliabilityDiagramXYDataset extends WRESAbstractXYDataset<MetricOutputMapByLeadThreshold<MultiVectorOutput>,MetricOutputMapByLeadThreshold<MultiVectorOutput>>
 {
-    private final transient MetricOutputMapByLeadThreshold<MultiVectorOutput> data;
-
-    private final List<String> legendNames = new ArrayList<>();
-    
     public ReliabilityDiagramXYDataset(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input)
     {
-        if (input.keySetByFirstKey().size() != 1)
-        {
-            System.err.println("####>> " + input.keySetByFirstKey().size());
-            throw new IllegalArgumentException("MetricOutputMapByLeadThreshold map provided has more than one key, which is not allowed.");
-        }
-        data = input;
-        
-        //Populate the legend names.
-        for (int i = 0; i < getSeriesCount(); i ++)
-        {
-            legendNames.add(null);
-        }
+        super(input);
     }
 
-    public void setLegendName(final int index, final String name)
+    @Override
+    protected void preparePlotData(final MetricOutputMapByLeadThreshold<MultiVectorOutput> rawData)
     {
-        legendNames.set(index, name);
+        if(rawData.keySetByFirstKey().size() != 1)
+        {
+            throw new IllegalArgumentException("MetricOutputMapByLeadThreshold map provided has "
+                + rawData.keySetByFirstKey().size() + " keys, when it must be one key, only.");
+        }
+        setPlotData(rawData);
     }
-    
+
     @Override
     public int getItemCount(final int series)
     {
-        return data.get(data.getKey(series)).getData().get(MetricConstants.FORECAST_PROBABILITY).getDoubles().length;
+        return getPlotData().get(getPlotData().getKey(series))
+                            .getData()
+                            .get(MetricConstants.FORECAST_PROBABILITY)
+                            .getDoubles().length;
     }
 
     @Override
     public Number getX(final int series, final int item)
     {
-        return data.get(data.getKey(series)).getData().get(MetricConstants.FORECAST_PROBABILITY).getDoubles()[item];
+        return getPlotData().get(getPlotData().getKey(series))
+                            .getData()
+                            .get(MetricConstants.FORECAST_PROBABILITY)
+                            .getDoubles()[item];
     }
 
     @Override
     public Number getY(final int series, final int item)
     {
-        return data.get(data.getKey(series)).getData().get(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY).getDoubles()[item];
+        return getPlotData().get(getPlotData().getKey(series))
+                            .getData()
+                            .get(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY)
+                            .getDoubles()[item];
     }
 
     @Override
     public int getSeriesCount()
     {
-        return data.keySet().size();
+        return getPlotData().keySet().size();
     }
 
     @Override
     public Comparable<String> getSeriesKey(final int series)
     {
-        if (legendNames.get(series) != null)
+        if(isLegendNameOverridden(series))
         {
-            return legendNames.get(series);
+            return getOverrideLegendName(series);
         }
-        return data.getKey(series).getSecondKey().toString();
+        return getPlotData().getKey(series).getSecondKey().toString();
     }
 
 }

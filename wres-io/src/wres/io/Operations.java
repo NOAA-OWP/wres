@@ -183,7 +183,7 @@ public final class Operations {
 
     public static boolean refreshDatabase()
     {
-        Database.refreshStatistics();
+        Database.refreshStatistics(true);
         return SUCCESS;
     }
 

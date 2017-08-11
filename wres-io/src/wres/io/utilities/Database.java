@@ -20,10 +20,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.*;
 
 public final class Database {
@@ -207,7 +204,7 @@ public final class Database {
 
 		if (shouldRefresh)
         {
-            Database.refreshStatistics();
+            Database.refreshStatistics(false);
         }
 	}
 
@@ -591,7 +588,46 @@ public final class Database {
 		return result;
 	}
 
-	public static void refreshStatistics()
+	public static <U> Collection<U> populateCollection(final Collection<U> collection,
+                                                       final Class<U> collectionDataType,
+                                                       final String query,
+                                                       final String fieldLabel) throws SQLException
+	{
+		Connection connection = null;
+		ResultSet results = null;
+
+		if (collection == null)
+        {
+            throw new NullPointerException("The collection passed into 'populateCollection' was null.");
+        }
+
+		try
+		{
+            connection = Database.getConnection();
+            results = Database.getResults(connection, query);
+
+            while (results.next())
+            {
+                collection.add(results.getObject(fieldLabel, collectionDataType));
+            }
+		}
+		finally
+		{
+			if (results != null)
+			{
+				results.close();
+			}
+
+			if (connection != null)
+			{
+				Database.returnConnection(connection);
+			}
+		}
+
+		return collection;
+	}
+
+	public static void refreshStatistics(boolean vacuum)
 	{
 		Connection connection = null;
 		ResultSet results;
@@ -615,10 +651,23 @@ public final class Database {
 
             while (results.next())
             {
+                if (vacuum)
+                {
+                    script.append("VACUUM ");
+                }
                 script.append(results.getString("alyze")).append(NEWLINE);
             }
 
+            if (vacuum)
+            {
+                script.append("VACUUM ");
+            }
 			script.append("ANALYZE wres.Forecast;").append(NEWLINE);
+
+            if (vacuum)
+            {
+                script.append("VACUUM ");
+            }
             script.append("ANALYZE wres.Observation;").append(NEWLINE);
 
             LOGGER.info("Now refreshing the statistics within the database.");

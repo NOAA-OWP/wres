@@ -7,91 +7,81 @@ import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.Threshold;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link MetricOutputMapByLeadThreshold} which contains a set of
- * {@link ScalarOutput} for a single verification metric, indexed by forecast lead time and threshold. Slices the
- * data by threshold to form plots by lead time on the domain axis.
+ * {@link ScalarOutput} for a single verification metric, indexed by forecast lead time and threshold. Slices the data
+ * by threshold to form plots by lead time on the domain axis.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-public class ScalarOutputByLeadThresholdXYDataset extends AbstractXYDataset
+public class ScalarOutputByLeadThresholdXYDataset extends WRESAbstractXYDataset<List<MetricOutputMapByLeadThreshold<ScalarOutput>>, MetricOutputMapByLeadThreshold<ScalarOutput>>
 {
-
-    /**
-     * Serial identifier.
-     */
     private static final long serialVersionUID = 2251263309545763140L;
-
-    /**
-     * Legend items.
-     */
-
-    private final List<String> legendNames = new ArrayList<>();
-
-    /**
-     * Data sliced by series, i.e. one threshold per slice, where each slice contains all lead times for one score.
-     */
-
-    private final transient List<MetricOutputMapByLeadThreshold<ScalarOutput>> data = new ArrayList<>();
-
-    /**
-     * Construct.
-     * 
-     * @param input the input data containing multiple thresholds and lead times
-     */
 
     public ScalarOutputByLeadThresholdXYDataset(final MetricOutputMapByLeadThreshold<ScalarOutput> input)
     {
-        //Slice the input data by threshold and store locally
-        input.keySetByThreshold().forEach(key -> {
-            data.add(input.sliceByThreshold(key));
-            legendNames.add(key.toString());
-        });
+        super(input);
+
+        //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
+        //The data is processed into a list based on the key that must appear in the legend.
+        int seriesIndex = 0;
+        for(final Threshold key: input.keySetByThreshold())
+        {
+            setOverrideLegendName(seriesIndex, key.toString());
+            seriesIndex++;
+        }
     }
 
     /**
-     * Set the legend name.
+     * The legend names are handled here with calls to {@link #setOverrideLegendName(int, String)} because the first
+     * keys (the thresholds) will otherwise be lost when the data is populated.
      * 
-     * @param series the series index
-     * @param name the name
+     * @param rawData the input data must be of type {@link MetricOutputMapByLeadThreshold} with generic
+     *            {@link ScalarOutput}.
      */
-    
-    public void setLegendName(final int series, final String name)
+    @Override
+    protected void preparePlotData(final MetricOutputMapByLeadThreshold<ScalarOutput> rawData)
     {
-        legendNames.set(series, name);
+        final List<MetricOutputMapByLeadThreshold<ScalarOutput>> data = new ArrayList<>();
+        for(final Threshold key: rawData.keySetByThreshold())
+        {
+            data.add(rawData.sliceByThreshold(key));
+        }
+        setPlotData(data);
     }
 
     @Override
     public int getItemCount(final int series)
     {
-        return data.get(series).size();
+        return getPlotData().get(series).size();
     }
 
     @Override
     public Number getX(final int series, final int item)
     {
-        return data.get(series).getKey(item).getFirstKey();
+        return getPlotData().get(series).getKey(item).getFirstKey();
     }
 
     @Override
     public Number getY(final int series, final int item)
     {
-        return data.get(series).getValue(item).getData();
+        return getPlotData().get(series).getValue(item).getData();
     }
 
     @Override
     public int getSeriesCount()
     {
-        return data.size();
+        return getPlotData().size();
     }
 
     @Override
     public Comparable<String> getSeriesKey(final int series)
     {
-        return legendNames.get(series);
+        return getOverrideLegendName(series);
     }
 }
