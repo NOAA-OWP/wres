@@ -37,7 +37,7 @@ public class ScalarOutputByThresholdLeadXYDataset extends WRESAbstractXYDataset
 
     /**
      * The legend names are handled here with calls to {@link #setOverrideLegendName(int, String)} because the first
-     * keys (the thresholds) will otherwise be lost when the {@link #data} attribute is populated.
+     * keys (the thresholds) will otherwise be lost when the data is populated.
      * 
      * @param rawData the input data must be of type {@link MetricOutputMapByLeadThreshold} with generic
      *            {@link ScalarOutput}.
