@@ -1,6 +1,7 @@
 package wres.vis;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Objects;
 
 import org.jfree.chart.JFreeChart;
@@ -79,71 +80,81 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
      */
-    public static ChartEngine buildMultiVectorOutputChartEngine(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
-                                                                final MetadataFactory factory,
-                                                                final VisualizationPlotType plotType,
-                                                                final String templateResourceName,
-                                                                final String overrideParametersStr) throws ChartEngineException,
-                                                                                                    GenericXMLReadingHandlerException
+    public static LinkedHashMap<Integer, ChartEngine> buildMultiVectorOutputChartEngineByLead(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                                                                              final MetadataFactory factory,
+                                                                                              final VisualizationPlotType plotType,
+                                                                                              final String templateResourceName,
+                                                                                              final String overrideParametersStr) throws ChartEngineException,
+                                                                                                                                  GenericXMLReadingHandlerException
     {
-        //Build the sources.
-        XYChartDataSource reliabilitySource = null;
-        XYChartDataSource sampleSizeSource = null;
-        if(plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM))
+        final LinkedHashMap<Integer, ChartEngine> results = new LinkedHashMap<>();
+
+        for(final Integer lead: input.keySetByLead())
         {
-            reliabilitySource = new ReliabilityDiagramXYChartDataSource(0, input);
-            sampleSizeSource = new ReliabilityDiagramSampleSizeXYChartDataSource(1, input);
-        }
-        else
-        {
-            throw new IllegalArgumentException("Plot type of " + plotType + " is not valid for a reliability diagram.");
-        }
+            final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice = input.sliceByLead(lead);
 
-        //Setup the arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
-
-        final MetricOutputMetadata meta = input.getMetadata();
-        final DatasetIdentifier identifier = meta.getIdentifier();
-
-        //Setup fixed arguments.
-        arguments.addArgument("locationName", identifier.getGeospatialID());
-        arguments.addArgument("variableName", identifier.getVariableID());
-        arguments.addArgument("primaryScenario", identifier.getScenarioID());
-        arguments.addArgument("metricName", factory.getMetricName(meta.getMetricID()));
-        arguments.addArgument("metricShortName", factory.getMetricShortName(meta.getMetricID()));
-        arguments.addArgument("outputUnitsText", " [" + meta.getDimension() + "]");
-        arguments.addArgument("inputUnitsText", " [" + meta.getInputDimension() + "]");
-
-        //Specific to this plot.
-        arguments.addArgument("leadHour", input.getKey(0).getFirstKey().toString());
-
-        //Setup conditional arguments
-        String baselineText = "";
-        if(!Objects.isNull(identifier.getScenarioIDForBaseline()))
-        {
-            baselineText = " against predictions from " + identifier.getScenarioIDForBaseline();
-        }
-        arguments.addArgument("baselineText", baselineText);
-
-        //Process override parameters.
-        ChartDrawingParameters override = null;
-        if(overrideParametersStr != null)//TRIM ONLY IF NOT NULL!
-        {
-            final String usedStr = overrideParametersStr.trim();
-            if(!usedStr.isEmpty())
+            //Build the sources.
+            XYChartDataSource reliabilitySource = null;
+            XYChartDataSource sampleSizeSource = null;
+            if(plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM))
             {
-                override = new ChartDrawingParameters();
-                XMLTools.readXMLFromString(usedStr, override);
+                reliabilitySource = new ReliabilityDiagramXYChartDataSource(0, inputSlice);
+                sampleSizeSource = new ReliabilityDiagramSampleSizeXYChartDataSource(1, inputSlice);
             }
+            else
+            {
+                throw new IllegalArgumentException("Plot type of " + plotType
+                    + " is not valid for a reliability diagram.");
+            }
+
+            //Setup the arguments.
+            final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
+
+            final MetricOutputMetadata meta = inputSlice.getMetadata();
+            final DatasetIdentifier identifier = meta.getIdentifier();
+
+            //Setup fixed arguments.
+            arguments.addArgument("locationName", identifier.getGeospatialID());
+            arguments.addArgument("variableName", identifier.getVariableID());
+            arguments.addArgument("primaryScenario", identifier.getScenarioID());
+            arguments.addArgument("metricName", factory.getMetricName(meta.getMetricID()));
+            arguments.addArgument("metricShortName", factory.getMetricShortName(meta.getMetricID()));
+            arguments.addArgument("outputUnitsText", " [" + meta.getDimension() + "]");
+            arguments.addArgument("inputUnitsText", " [" + meta.getInputDimension() + "]");
+
+            //Specific to this plot.
+            arguments.addArgument("leadHour", inputSlice.getKey(0).getFirstKey().toString());
+
+            //Setup conditional arguments
+            String baselineText = "";
+            if(!Objects.isNull(identifier.getScenarioIDForBaseline()))
+            {
+                baselineText = " against predictions from " + identifier.getScenarioIDForBaseline();
+            }
+            arguments.addArgument("baselineText", baselineText);
+
+            //Process override parameters.
+            ChartDrawingParameters override = null;
+            if(overrideParametersStr != null)//TRIM ONLY IF NOT NULL!
+            {
+                final String usedStr = overrideParametersStr.trim();
+                if(!usedStr.isEmpty())
+                {
+                    override = new ChartDrawingParameters();
+                    XMLTools.readXMLFromString(usedStr, override);
+                }
+            }
+
+            //Build the ChartEngine instance.
+            final ChartEngine engine = ChartTools.buildChartEngine(
+                                                                   Lists.newArrayList(reliabilitySource,
+                                                                                      sampleSizeSource),
+                                                                   arguments,
+                                                                   templateResourceName,
+                                                                   override);
+            results.put(lead, engine);
         }
-
-        //Build the ChartEngine instance.
-        final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(reliabilitySource, sampleSizeSource),
-                                                               arguments,
-                                                               templateResourceName,
-                                                               override);
-
-        return engine;
+        return results;
     }
 
     /**
