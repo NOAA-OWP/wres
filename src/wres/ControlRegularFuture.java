@@ -42,6 +42,7 @@ import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
 import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
@@ -77,17 +78,17 @@ public class ControlRegularFuture implements Function<String[], Integer>
     public Integer apply(final String[] args)
     {
         // Validate the configurations
-
         List<ProjectConfigPlus> projectConfiggies = getProjects(args);
         boolean validated = validateProjects(projectConfiggies);
         if(!validated)
         {
             return -1;
         }
-
+        // Process the configurations in parallel
         ExecutorService processPairExecutor = null;
         try
         {
+            // Build a processing pipeline
             ThreadFactory factory = runnable -> new Thread(runnable, "ControlRegularFuture Thread: ");
             processPairExecutor = Executors.newFixedThreadPool(MAX_THREADS, factory);
 
@@ -103,6 +104,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
             }
             return 0;
         }
+        // Shutdown
         finally
         {
             shutDownGracefully(processPairExecutor);
@@ -110,11 +112,11 @@ public class ControlRegularFuture implements Function<String[], Integer>
     }
 
     /**
-     * Quick validation of the project configuration, will emit detailed information to the user regarding issues about
-     * the configuration. Strict for now, i.e. return false even on minor xml problems. Does not return on first issue,
-     * tries to inform the user of all issues before returning.
+     * Quick validation of the project configuration, will return detailed information to the user regarding issues
+     * about the configuration. Strict for now, i.e. return false even on minor xml problems. Does not return on first
+     * issue, tries to inform the user of all issues before returning.
      *
-     * @param projectConfigPlus
+     * @param projectConfigPlus the project configuration
      * @return true if no issues were detected, false otherwise
      */
 
@@ -157,7 +159,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
      * Validates graphics portion, similar to isProjectValid, but targeted.
      * 
      * @param projectConfigPlus
-     * @return
+     * @return true if the graphics configuration is valid, false otherwise
      */
 
     public static boolean isGraphicsPortionOfProjectValid(ProjectConfigPlus projectConfigPlus)
@@ -180,17 +182,17 @@ public class ControlRegularFuture implements Function<String[], Integer>
                 Locatable nearbyTag;
                 if(d.getGraphical() != null && d.getGraphical().getConfig() != null)
                 {
-                    // best case
+                    // Best case
                     nearbyTag = d.getGraphical().getConfig();
                 }
                 else if(d.getGraphical() != null)
                 {
-                    // not as targeted but close
+                    // Not as targeted but close
                     nearbyTag = d.getGraphical();
                 }
                 else
                 {
-                    // destination tag.
+                    // Destination tag.
                     nearbyTag = d;
                 }
 
@@ -210,6 +212,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
      * Validates a list of {@link ProjectConfigPlus}. Returns true if the projects validate successfully, false
      * otherwise.
      * 
+     * @param projectConfiggies a list of project configurations to validate
      * @return true if the projects validate successfully, false otherwise
      */
 
@@ -246,7 +249,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
     }
 
     /**
-     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService}
+     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService}.
      * 
      * @param projectConfigPlus the project configuration
      * @param processPairExecutor the {@link ExecutorService}
@@ -258,7 +261,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
 
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
-        // Need to ingest first.
+        // Need to ingest first
         boolean ingestResult = Operations.ingest(projectConfig);
 
         if(!ingestResult)
@@ -270,67 +273,84 @@ public class ControlRegularFuture implements Function<String[], Integer>
         // Obtain the features
         List<Feature> features = projectConfig.getConditions().getFeature();
 
-        // Iterate through the features
+        // Iterate through the features and process them
         for(Feature nextFeature: features)
         {
-            if(LOGGER.isInfoEnabled())
+            if(!processFeature(nextFeature, projectConfigPlus, processPairExecutor))
             {
-                LOGGER.info("Processing feature '{}'.", nextFeature.getLocation().getLid());
-            }
-
-            // Sink for the results: the results are added incrementally to an immutable store via a builder
-            // Some output types are processed at the end of the pipeline, others after each input is processed
-            // Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR
-            MetricProcessor processor = null;
-            try
-            {
-                processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessor(projectConfig,
-                                                                                       MetricOutputGroup.SCALAR,
-                                                                                       MetricOutputGroup.VECTOR);
-            }
-            catch(MetricConfigurationException e)
-            {
-                LOGGER.error("While processing the metric configuration:", e);
                 return false;
             }
+        }
+        return true;
+    }
 
-            // Build an InputGenerator for the next feature
-            InputGenerator metricInputs = Operations.getInputs(projectConfig, nextFeature);
+    /**
+     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService}.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param processPairExecutor the {@link ExecutorService}
+     * @return true if the project processed successfully, false otherwise
+     */
 
-            // Queue up processing of fetched pairs.            
-            List<PairsByLeadProcessor> tasks = new ArrayList<>();
-            for(Future<MetricInput<?>> nextInput: metricInputs)
-            {
-                PairsByLeadProcessor processTask = new PairsByLeadProcessor(projectConfigPlus, processor, nextInput);
-                processTask.setOnRun(ProgressMonitor.onThreadStartHandler());
-                processTask.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                tasks.add(processTask);
-            }
-            //Invoke all tasks and process within-pipeline products
-            try
-            {
-                processPairExecutor.invokeAll(tasks);
-            }
-            catch(InterruptedException e)
-            {
-                LOGGER.error("Interrupted while processing metrics for feature {}.",
-                             nextFeature.getLocation().getLid(),
-                             e);
-                Thread.currentThread().interrupt();
-                return false;
-            }
+    private boolean processFeature(Feature nextFeature,
+                                   ProjectConfigPlus projectConfigPlus,
+                                   ExecutorService processPairExecutor)
+    {
 
-            //  Complete the end-of-pipeline processing
-            if(processor.willCacheMetricOutput())
-            {
-                processCachedCharts(projectConfigPlus, processor, MetricOutputGroup.SCALAR);
-                //  TODO: support processing of vector output in wres-vis and here
-                //processCharts(projectConfigPlus, processor, MetricOutputGroup.VECTOR);
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
-                if(LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
-                {
-                    LOGGER.info("Completed processing of feature '{}'.", nextFeature.getLocation().getLid());
-                }
+        if(LOGGER.isInfoEnabled())
+        {
+            LOGGER.info("Processing feature '{}'.", nextFeature.getLocation().getLid());
+        }
+
+        // Sink for the results: the results are added incrementally to an immutable store via a builder
+        // Some output types are processed at the end of the pipeline, others after each input is processed
+        // Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR
+        MetricProcessor processor = null;
+        try
+        {
+            processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessor(projectConfig,
+                                                                                   MetricOutputGroup.SCALAR,
+                                                                                   MetricOutputGroup.VECTOR);
+        }
+        catch(MetricConfigurationException e)
+        {
+            LOGGER.error("While processing the metric configuration:", e);
+            return false;
+        }
+
+        // Build an InputGenerator for the next feature
+        InputGenerator metricInputs = Operations.getInputs(projectConfig, nextFeature);
+
+        // Queue up processing of fetched pairs.            
+        List<PairsByLeadProcessor> tasks = new ArrayList<>();
+        for(Future<MetricInput<?>> nextInput: metricInputs)
+        {
+            PairsByLeadProcessor processTask = new PairsByLeadProcessor(projectConfigPlus, processor, nextInput);
+            processTask.setOnRun(ProgressMonitor.onThreadStartHandler());
+            processTask.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+            tasks.add(processTask);
+        }
+        //Invoke all tasks and process within-pipeline products
+        try
+        {
+            processPairExecutor.invokeAll(tasks);
+        }
+        catch(InterruptedException e)
+        {
+            LOGGER.error("Interrupted while processing metrics for feature {}.", nextFeature.getLocation().getLid(), e);
+            Thread.currentThread().interrupt();
+            return false;
+        }
+
+        //  Complete the end-of-pipeline processing
+        if(processor.willCacheMetricOutput())
+        {
+            processCachedCharts(projectConfigPlus, processor, MetricOutputGroup.SCALAR, MetricOutputGroup.VECTOR);
+            if(LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
+            {
+                LOGGER.info("Completed processing of feature '{}'.", nextFeature.getLocation().getLid());
             }
         }
         return true;
@@ -347,33 +367,47 @@ public class ControlRegularFuture implements Function<String[], Integer>
 
     private boolean processCachedCharts(ProjectConfigPlus projectConfigPlus,
                                         MetricProcessor processor,
-                                        MetricOutputGroup outGroup)
+                                        MetricOutputGroup... outGroup)
     {
+        //True until failed
+        boolean returnMe = true;
         try
         {
-            switch(outGroup)
+            for(MetricOutputGroup nextGroup: outGroup)
             {
-                case SCALAR:
-                    return processScalarCharts(projectConfigPlus, processor.getStoredMetricOutput().getScalarOutput());
-                case VECTOR:
-                case MULTIVECTOR:
-                case MATRIX:
-                default:
-                    LOGGER.error("Unsupported chart type {}.", outGroup);
-                    return false;
+                switch(nextGroup)
+                {
+                    case SCALAR:
+                        returnMe = returnMe && processScalarCharts(projectConfigPlus,
+                                                                   processor.getStoredMetricOutput().getScalarOutput());
+                        break;
+                    case VECTOR:
+                        returnMe = returnMe && processVectorCharts(projectConfigPlus,
+                                                                   processor.getStoredMetricOutput().getVectorOutput());
+                        break;
+                    case MULTIVECTOR:
+                        returnMe = returnMe
+                            && processMultiVectorCharts(projectConfigPlus,
+                                                        processor.getStoredMetricOutput().getMultiVectorOutput());
+                        break;
+                    default:
+                        LOGGER.error("Unsupported chart type {}.", nextGroup);
+                        returnMe = false;
+                }
             }
         }
         catch(InterruptedException e)
         {
             LOGGER.error("Interrupted while processing charts.", e);
             Thread.currentThread().interrupt();
-            return false;
+            returnMe = false;
         }
         catch(ExecutionException e)
         {
             LOGGER.error("While processing charts:", e);
-            return false;
+            returnMe = false;
         }
+        return returnMe;
     }
 
     /**
@@ -382,7 +416,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
      * 
      * @param projectConfigPlus the project configuration
      * @param scalarResults the scalar outputs
-     * @return true it the processing completed succesfully, false otherwise
+     * @return true it the processing completed successfully, false otherwise
      */
 
     private static boolean processScalarCharts(ProjectConfigPlus projectConfigPlus,
@@ -425,11 +459,11 @@ public class ControlRegularFuture implements Function<String[], Integer>
                 }
 
                 ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
-
-                if(LOGGER.isInfoEnabled())
-                {
-                    LOGGER.info(scalarResults.toString());
-                }
+            }
+            //Log output
+            if(LOGGER.isInfoEnabled())
+            {
+                LOGGER.info(scalarResults.toString());
             }
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
@@ -441,12 +475,76 @@ public class ControlRegularFuture implements Function<String[], Integer>
     }
 
     /**
+     * Processes a set of charts associated with {@link VectorOutput} across multiple metrics, forecast lead times, and
+     * thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. TODO: implement when wres-vis can handle
+     * these.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param vectorResults the scalar outputs
+     * @return true it the processing completed successfully, false otherwise
+     */
+
+    private static boolean processVectorCharts(ProjectConfigPlus projectConfigPlus,
+                                               MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorResults)
+    {
+//        // Build charts
+//        try
+//        {
+//            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
+//            {
+//                DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
+//                String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+//
+//                
+//
+//                
+//              ChartEngine engine = null;
+//
+//                Path outputImage = Paths.get(dest.getPath() + e.getKey().getFirstKey() + "_output.png");
+//
+//                if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
+//                {
+//                    LOGGER.warn("File {} already existed and is being overwritten.", outputImage);
+//                }
+//
+//                File outputImageFile = outputImage.toFile();
+//
+//                int width = SystemSettings.getDefaultChartWidth();
+//                int height = SystemSettings.getDefaultChartHeight();
+//
+//                if(dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
+//                {
+//                    width = dest.getGraphical().getWidth();
+//                }
+//                if(dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
+//                {
+//                    height = dest.getGraphical().getHeight();
+//                }
+//
+//                ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
+//            }
+//            //Log output        
+//            if(LOGGER.isInfoEnabled())
+//            {
+//                LOGGER.info(vectorResults.toString());
+//            }
+//        }
+//        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+//        {
+//            LOGGER.error("While generating plots:", e);
+//            return false;
+//        }
+        return true;
+    }
+
+    /**
      * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, forecast lead times,
-     * and thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}.
+     * and thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. TODO: implement when wres-vis can handle
+     * these.
      * 
      * @param projectConfigPlus the project configuration
      * @param multiVectorResults the scalar outputs
-     * @return true it the processing completed succesfully, false otherwise
+     * @return true it the processing completed successfully, false otherwise
      */
 
     private static boolean processMultiVectorCharts(ProjectConfigPlus projectConfigPlus,
@@ -487,12 +585,12 @@ public class ControlRegularFuture implements Function<String[], Integer>
 //                }
 //
 //                ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
-//
-//                if(LOGGER.isInfoEnabled())
-//                {
-//                    LOGGER.info(multiVectorResults.toString());
-//                }
 //            }
+//            //Log output        
+//            if(LOGGER.isInfoEnabled())
+//            {
+//                LOGGER.info(vectorResults.toString());
+//            }        
 //        }
 //        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
 //        {
@@ -506,7 +604,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
      * Get project configurations from command line file args. If there are no command line args, look in System
      * Settings for directory to scan for configurations.
      *
-     * @param args
+     * @param args the paths to the projects
      * @return the successfully found, read, unmarshalled project configs
      */
     private List<ProjectConfigPlus> getProjects(String[] args)
@@ -523,7 +621,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
                     existingProjectFiles.add(path);
 
                     // TODO: Needs to be temporary; used to log execution information
-                    if (path.toFile().isFile())
+                    if(path.toFile().isFile())
                     {
                         MainFunctions.setProjectPath(path.toAbsolutePath().toString());
                     }
@@ -553,14 +651,34 @@ public class ControlRegularFuture implements Function<String[], Integer>
     }
 
     /**
-     * Task whose job is to wait for pairs to arrive, run metrics on them, and then produce any intermediate
+     * Task that waits for pairs to arrive, computes metrics from them, and then produces any intermediate
      * (within-pipeline) products.
      */
     private static class PairsByLeadProcessor extends WRESCallable<MetricOutputForProjectByLeadThreshold>
     {
+        /**
+         * The metric processor.
+         */
         private final MetricProcessor processor;
+
+        /**
+         * The future metric input.
+         */
         private final Future<MetricInput<?>> input;
+
+        /**
+         * The project configuration.
+         */
+
         private final ProjectConfigPlus projectConfigPlus;
+
+        /**
+         * Construct.
+         * 
+         * @param projectConfigPlus the project configuration
+         * @param processor the metric processor
+         * @param input the future metric input
+         */
 
         private PairsByLeadProcessor(ProjectConfigPlus projectConfigPlus,
                                      final MetricProcessor processor,
@@ -650,7 +768,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
     /**
      * Kill off the executors passed in even if there are remaining tasks.
      *
-     * @param processPairExecutor
+     * @param processPairExecutor the executor to shutdown
      */
     private static void shutDownGracefully(ExecutorService processPairExecutor)
     {
