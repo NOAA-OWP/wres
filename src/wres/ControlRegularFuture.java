@@ -289,7 +289,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
             }
             catch(MetricConfigurationException e)
             {
-                LOGGER.error("While processing the metric configuration", e);
+                LOGGER.error("While processing the metric configuration:", e);
                 return false;
             }
 
@@ -355,19 +355,19 @@ public class ControlRegularFuture implements Function<String[], Integer>
                 case MULTIVECTOR:
                 case MATRIX:
                 default:
-                    LOGGER.error("Unsupported chart type {}", outGroup);
+                    LOGGER.error("Unsupported chart type {}.", outGroup);
                     return false;
             }
         }
         catch(InterruptedException e)
         {
-            LOGGER.error("Interrupted while preparing acquiring metric results", e);
+            LOGGER.error("Interrupted while preparing acquiring metric results.", e);
             Thread.currentThread().interrupt();
             return false;
         }
         catch(ExecutionException e)
         {
-            LOGGER.error("While acquiring metric results", e);
+            LOGGER.error("While acquiring metric results:", e);
             return false;
         }
     }
@@ -510,7 +510,7 @@ public class ControlRegularFuture implements Function<String[], Integer>
             }
             catch(Exception e)
             {
-                LOGGER.error("While processing pairs",e);
+                LOGGER.error("While processing pairs:",e);
                 throw e;
             }
         }
