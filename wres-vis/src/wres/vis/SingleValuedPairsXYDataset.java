@@ -12,7 +12,7 @@ import wres.datamodel.metric.SingleValuedPairs;
 //TODO Note that this needs further work whenever we let wres-vis build scatter plots for display.
 //Specifically, we need to think about what the legend entry should look like (see below for a first attempt)
 //as well as how to handle multiple sereis being plotted (i.e., how to store the data.).
-public class SingleValuedPairsXYDataset extends WRESAbstractXYDataset //implements DomainInfo, XisSymbolic, RangeInfo
+public class SingleValuedPairsXYDataset extends WRESAbstractXYDataset<SingleValuedPairs, SingleValuedPairs> //implements DomainInfo, XisSymbolic, RangeInfo
 {
     public SingleValuedPairsXYDataset(final SingleValuedPairs input)
     {
@@ -20,18 +20,9 @@ public class SingleValuedPairsXYDataset extends WRESAbstractXYDataset //implemen
     }
 
     @Override
-    protected void preparePlotData(final Object rawData)
+    protected void preparePlotData(final SingleValuedPairs rawData)
     {
         setPlotData(rawData);
-    }
-
-    /**
-     * Data sliced by series, i.e. one lead time per slice, where each slice contains all thresholds for one score.
-     */
-    @Override
-    public SingleValuedPairs getPlotData()
-    {
-        return (SingleValuedPairs)getPlotDataAsObject();
     }
 
     @Override

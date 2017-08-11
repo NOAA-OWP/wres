@@ -19,7 +19,7 @@ import wres.datamodel.metric.Threshold;
  * @since 0.1
  */
 
-public class ScalarOutputByLeadThresholdXYDataset extends WRESAbstractXYDataset
+public class ScalarOutputByLeadThresholdXYDataset extends WRESAbstractXYDataset<List<MetricOutputMapByLeadThreshold<ScalarOutput>>, MetricOutputMapByLeadThreshold<ScalarOutput>>
 {
     private static final long serialVersionUID = 2251263309545763140L;
 
@@ -44,29 +44,15 @@ public class ScalarOutputByLeadThresholdXYDataset extends WRESAbstractXYDataset
      * @param rawData the input data must be of type {@link MetricOutputMapByLeadThreshold} with generic
      *            {@link ScalarOutput}.
      */
-    @SuppressWarnings("unchecked")
     @Override
-    protected void preparePlotData(final Object rawData)
+    protected void preparePlotData(final MetricOutputMapByLeadThreshold<ScalarOutput> rawData)
     {
-        final MetricOutputMapByLeadThreshold<ScalarOutput> input =
-                                                                 (MetricOutputMapByLeadThreshold<ScalarOutput>)rawData;
         final List<MetricOutputMapByLeadThreshold<ScalarOutput>> data = new ArrayList<>();
-        for(final Threshold key: input.keySetByThreshold())
+        for(final Threshold key: rawData.keySetByThreshold())
         {
-            data.add(input.sliceByThreshold(key));
+            data.add(rawData.sliceByThreshold(key));
         }
         setPlotData(data);
-    }
-
-    /**
-     * @return Data sliced by series, i.e. one threshold per slice, where each slice contains all lead times for one
-     *         score.
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public List<MetricOutputMapByLeadThreshold<ScalarOutput>> getPlotData()
-    {
-        return (List<MetricOutputMapByLeadThreshold<ScalarOutput>>)getPlotDataAsObject();
     }
 
     @Override
