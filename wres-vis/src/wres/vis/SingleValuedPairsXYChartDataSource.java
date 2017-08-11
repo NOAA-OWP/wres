@@ -1,13 +1,6 @@
 package wres.vis;
 
-import org.jfree.data.xy.XYDataset;
-
-import ohd.hseb.charter.ChartConstants;
-import ohd.hseb.charter.datasource.DefaultXYChartDataSource;
 import ohd.hseb.charter.datasource.XYChartDataSource;
-import ohd.hseb.charter.datasource.XYChartDataSourceException;
-import ohd.hseb.charter.parameters.DataSourceDrawingParameters;
-import ohd.hseb.charter.parameters.SeriesDrawingParameters;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.SingleValuedPairs;
 
@@ -16,77 +9,37 @@ import wres.datamodel.metric.SingleValuedPairs;
  * 
  * @author Hank.Herr
  */
-public class SingleValuedPairsXYChartDataSource extends DefaultXYChartDataSource
+public class SingleValuedPairsXYChartDataSource extends WRESXYChartDataSource
 {
-    private final SingleValuedPairs metricInput;
-
     /**
-     * @param orderIndex The data source order index within the plotted chart.
-     * @param input The {@link MetricInput} for which to display a chart.
+     * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
+     *            such as the rendering order, legend order, and so forth.
+     * @param input The data for which to display a chart.
      */
     public SingleValuedPairsXYChartDataSource(final int orderIndex, final SingleValuedPairs input)
     {
-        metricInput = input;
-        buildInitialParameters(orderIndex);
+        super(orderIndex, input, 1);
 
-        //TODO This stuff needs to come from meta data for MetricInput!!!
-        this.setXAxisType(ChartConstants.AXIS_IS_NUMERICAL);
-        this.setComputedDataType(ChartConstants.AXIS_IS_NUMERICAL);
-    }
-
-    /**
-     * Called in the constructor, it calls {@link #constructAllSeriesDrawingParameters(int)} and initializes the data
-     * source drawing parameters.
-     */
-    private void buildInitialParameters(final int dataSourceOrderIndex)
-    {
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setDataSourceOrderIndex(dataSourceOrderIndex);
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setPlotterName("LineAndScatter");
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(0);
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setYAxisIndex(0);
-
+        //TODO Need to ensure that these arguments are available here.  How best to do so?
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("@domainAxisLabelPrefix@@inputUnitsText@");
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("@rangeAxisLabelPrefix@@inputUnitsText@");
-
-        constructAllSeriesDrawingParameters(1);
-        final SeriesDrawingParameters seriesParms = this.getDefaultFullySpecifiedDataSourceDrawingParameters()
-                                                        .getSeriesDrawingParametersForSeriesIndex(0);
-        seriesParms.setupDefaultParameters();
-
-        seriesParms.setNameInLegend("Series");
     }
 
     @Override
-    public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
+    protected SingleValuedPairsXYChartDataSource instantiateCopyOfDataSource()
     {
-        final SingleValuedPairsXYChartDataSource copy = new SingleValuedPairsXYChartDataSource(getDataSourceOrderIndex(),
-                                                                                   metricInput);
-
-        copy.copyTheseParametersIntoDataSource(this);
-        return copy;
+        return new SingleValuedPairsXYChartDataSource(getDataSourceOrderIndex(), getInput());
     }
 
     @Override
-    protected XYDataset buildXYDataset(final DataSourceDrawingParameters parameters) throws XYChartDataSourceException
+    protected SingleValuedPairsXYDataset instantiateXYDataset()
     {
-        SingleValuedPairsXYDataset dataSet;
+        return new SingleValuedPairsXYDataset(getInput());
+    }
 
-        //Depending on answer to the question at the top of SingleValuedPairs, we may just call 
-        //metricInput.buildXYDataset() to acquire the data set and then set the legend names below.
-        //Then we wouldn't need this cheezy instanceof if-clause.
-        dataSet = new SingleValuedPairsXYDataset(metricInput);
-
-        //Set the legend names based on the passed in parameters.
-        //Legend names are set in the dataSet itself, which is why this must be done when the dataSet is created.
-        //I know... I don't like it either.
-        for(int i = 0; i < dataSet.getSeriesCount(); i++)
-        {
-            dataSet.setLegendName(i,
-                                  parameters.getArguments()
-                                            .replaceArgumentsInString(parameters.getSeriesDrawingParametersForSeriesIndex(i)
-                                                                                .getArgumentReplacedNameInLegend()));
-        }
-
-        return dataSet;
+    @Override
+    protected SingleValuedPairs getInput()
+    {
+        return (SingleValuedPairs)getInputAsObject();
     }
 }
