@@ -187,7 +187,7 @@ public class Chart2DTestOutput extends TestCase
                     + "h." + outputImageFileSuffix),
                                                                           new File("testinput/chart2DTest/benchmark."
                                                                               + lead + "h." + outputImageFileSuffix),
-                                                                          4,
+                                                                          8,
                                                                           true,
                                                                           false);
             }
