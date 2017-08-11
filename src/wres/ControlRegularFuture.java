@@ -65,11 +65,6 @@ import wres.vis.ChartEngineFactory;
 public class ControlRegularFuture implements Function<String[], Integer>
 {
 
-    public static void main(String[] args)
-    {
-        new ControlRegularFuture().apply(new String[]{"C:/Users/HSL/Desktop/WRES_TEST/wres_config_test.xml"});
-    }
-
     /**
      * Processes one or more projects whose paths are provided in the input arguments.
      *
