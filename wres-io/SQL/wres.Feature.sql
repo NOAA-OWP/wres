@@ -14,7 +14,9 @@ CREATE TABLE IF NOT EXISTS wres.Feature
   st text,
   st_code text,
   huc text,
-  feature_name text
+  feature_name text,
+  latitude REAL,
+  longitude REAL
 )
 WITH (
   OIDS=FALSE
@@ -35,3 +37,8 @@ CREATE INDEX IF NOT EXISTS feature_lid_idx
   ON wres.Feature
   USING btree
   (lid);
+
+DROP INDEX IF EXISTS wres.feature_coordinates_idx;
+
+CREATE INDEX IF NOT EXISTS feature_coordinates_idx
+  ON wres.Feature (latitude, longitude);
