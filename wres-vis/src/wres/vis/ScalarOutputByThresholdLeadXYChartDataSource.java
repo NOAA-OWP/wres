@@ -10,7 +10,7 @@ import wres.datamodel.metric.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-public class ScalarOutputByThresholdLeadXYChartDataSource extends WRESXYChartDataSource
+public class ScalarOutputByThresholdLeadXYChartDataSource extends WRESXYChartDataSource<MetricOutputMapByLeadThreshold<ScalarOutput>>
 {
     /**
      * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
@@ -37,12 +37,5 @@ public class ScalarOutputByThresholdLeadXYChartDataSource extends WRESXYChartDat
     protected ScalarOutputByThresholdLeadXYDataset instantiateXYDataset()
     {
         return new ScalarOutputByThresholdLeadXYDataset(getInput());
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    protected MetricOutputMapByLeadThreshold<ScalarOutput> getInput()
-    {
-        return (MetricOutputMapByLeadThreshold<ScalarOutput>)getInputAsObject();
     }
 }
