@@ -521,6 +521,12 @@ public class ControlRegularFuture implements Function<String[], Integer>
                 if(path.toFile().exists())
                 {
                     existingProjectFiles.add(path);
+
+                    // TODO: Needs to be temporary; used to log execution information
+                    if (path.toFile().isFile())
+                    {
+                        MainFunctions.setProjectPath(path.toAbsolutePath().toString());
+                    }
                 }
                 else
                 {
@@ -692,9 +698,6 @@ public class ControlRegularFuture implements Function<String[], Integer>
         {
             LOGGER.info("Abandoned {} processing tasks.", processingSkipped);
         }
-
-        //Kill I/O
-        Operations.shutdown();
     }
 
     /**

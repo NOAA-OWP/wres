@@ -1,0 +1,87 @@
+package wres.vis;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.xy.AbstractXYDataset;
+import org.jfree.data.xy.XYDataset;
+/**
+ * Base class for all {@link XYDataset} subclasses implemented for wres-vis. It provides a mechanism for specifying and
+ * acquiring default legend names which {@link JFreeChart} acquires via the data set.<br>
+ * <br>
+ * Override instructions:<br>
+ * 1. Define the generic type appropriately.  This will determine the return value of {@link #getPlotData()}.<br>
+ * <br>
+ * 2. Override {@link #preparePlotData(Object)} in order to prepare the plot data. In the simplest case, this should
+ * pass through its argument to {@link #setPlotData(Object)}. In more complicated cases, this may need to prepare a data
+ * storage container and pass that data storage container to {@link #setPlotData(Object)}.<br>
+ * <br>
+ * 3. Define the constructor to accept an instance of the appropriate raw input data (metric output data) and pass it to
+ * the abstract constructor herein. Perform any actions required afterward, such as, in the case for
+ * {@link ScalarOutputByLeadThresholdXYDataset}, setting override legend names.<br>
+ * <br>
+ * 4. Implement the other {@link AbstractXYDataset} required methods appropriately. Note that the implementation of
+ * method {@link #getSeriesKey(int)} should return the value of {@link #getOverrideLegendName(int)} if the method
+ * {@link #isLegendNameOverridden(int)} returns true.
+ * 
+ * @author Hank.Herr
+ * @param <T> The data type of the plot data which is stored internally within {@link #plotData}, referred to vie {@link #getPlotData()}, and referred to as needed in subclasses.
+ * @param <U> The raw data from which the plot data will be prepared and which is passed into the constructor method, {@link WRESAbstractXYDataset#WRESAbstractXYDataset(Object)}.
+ * Most often, this will be identical to the plot data generic type.
+ */
+public abstract class WRESAbstractXYDataset<T, U> extends AbstractXYDataset
+{
+    /**
+     * Generic storage container for the data.
+     */
+    private T plotData;
+
+    /**
+     * Records overrides for the default legend entries for the different series to plot. This is what allows the
+     * {@link ChartEngineFactory} to pass through user overrides of the legend entries.
+     */
+    private final List<String> overrideLegendNames = new ArrayList<>();
+
+    protected WRESAbstractXYDataset(final U rawData)
+    {
+        preparePlotData(rawData);
+        for(int i = 0; i < getSeriesCount(); i++)
+        {
+            overrideLegendNames.add(null);
+        }
+    }
+
+    protected void setPlotData(final T plotData)
+    {
+        this.plotData = plotData;
+    }
+
+    public T getPlotData()
+    {
+        return plotData;
+    }
+
+    /**
+     * Called during construction, this must prepare the plot data (from the point of view of the subclass and its
+     * corresponding {@link WRESAbstractXYDataset}) from the raw data, stored as an {@link Object}, that is passed into
+     * the constructor of this abstract class. It must then call {@link #setPlotData(Object)} so that it is stored
+     * herein.
+     */
+    protected abstract void preparePlotData(U rawData);
+
+    public void setOverrideLegendName(final int seriesIndex, final String name)
+    {
+        overrideLegendNames.set(seriesIndex, name);
+    }
+
+    public String getOverrideLegendName(final int seriesIndex)
+    {
+        return overrideLegendNames.get(seriesIndex);
+    }
+
+    public boolean isLegendNameOverridden(final int seriesIndex)
+    {
+        return overrideLegendNames.get(seriesIndex) != null;
+    }
+}

@@ -55,9 +55,13 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 	 * @return The ID of the unit of measurement
 	 * @throws SQLException
 	 */
-	public static Integer getMeasurementUnitID(String unit) throws SQLException
-	{
-		return getCache().getID(unit.toLowerCase());
+	public static Integer getMeasurementUnitID(String unit) throws SQLException {
+        Integer ID = null;
+        if (unit != null && !unit.trim().isEmpty())
+        {
+            ID = getCache().getID(unit.toLowerCase());
+        }
+	    return ID;
 	}
 	
 	/**
