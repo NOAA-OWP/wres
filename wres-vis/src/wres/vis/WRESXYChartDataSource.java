@@ -24,14 +24,14 @@ import ohd.hseb.charter.parameters.SeriesDrawingParameters;
  * <br>
  * 1. Define the generic types appropriately; see parameter descriptions.<br>
  * <br>
- * 2. Override the method {@link #instantiateCopyOfDataSource()} to have that appropriate return type and initialize a
- * new instance of that return type appropriately; see the method.<br>
+ * 2. Override the method {@link #instantiateCopyOfDataSource()} to initialize a new instance data source; see the
+ * method.<br>
  * <br>
  * 3. Override the method {@link #instantiateXYDataset()} to instantiate an instance of the
- * {@link WRESAbstractXYDataset} using the return value of {@link #getInput()} as the data for that data set.<br>
+ * {@link WRESAbstractXYDataset}.<br>
  * <br>
  * 4. Create a constructor that calls {@link WRESXYChartDataSource#WRESXYChartDataSource(int, Object, int)} and then
- * overrides any parameters withing {@link #getDefaultFullySpecifiedDataSourceDrawingParameters()} appropriately.
+ * overrides any parameters within {@link #getDefaultFullySpecifiedDataSourceDrawingParameters()} appropriately.
  * 
  * @author Hank.Herr
  * @param <T> The generic type of the {@link #input} specifying the data to plot.
@@ -48,9 +48,9 @@ public abstract class WRESXYChartDataSource<T> extends DefaultXYChartDataSource
      * (though it shouldn't be).
      * 
      * @param orderIndex The data source order index.
-     * @param input The input providing data to plot, which is only known as an {@link Object} to this abstract class.
+     * @param input The input providing data to plot.
      * @param numberOfSeries The number of series that will be plotted. A subclass should determine this from the input
-     *            {@link Object} argument when calling.
+     *            argument when calling.
      */
     protected WRESXYChartDataSource(final int orderIndex, final T input, final int numberOfSeries)
     {
