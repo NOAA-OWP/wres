@@ -47,24 +47,32 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
     private final MetricCollection<DichotomousPairs, ScalarOutput> dichotomousScalar;
 
     @Override
-    public MetricOutputForProjectByLeadThreshold apply(MetricInput<?> t)
+    public MetricOutputForProjectByLeadThreshold apply(MetricInput<?> input)
     {
-        if(!(t instanceof SingleValuedPairs))
+        if(!(input instanceof SingleValuedPairs))
         {
             throw new MetricCalculationException("Expected single-valued pairs for metric processing.");
         }
-        Integer leadTime = t.getMetadata().getLeadTime();
+        Integer leadTime = input.getMetadata().getLeadTime();
         Objects.requireNonNull(leadTime, "Expected a non-null forecast lead time in the input metadata.");
 
         //Process the metrics that consume single-valued pairs
         if(hasMetrics(MetricInputGroup.SINGLE_VALUED))
         {
-            processSingleValuedPairs(leadTime, (SingleValuedPairs)t, futures);
+            processSingleValuedPairs(leadTime, (SingleValuedPairs)input, futures);
         }
         if(hasMetrics(MetricInputGroup.DICHOTOMOUS))
         {
-            processDichotomousPairs(leadTime, (SingleValuedPairs)t, futures);
+            processDichotomousPairs(leadTime, (SingleValuedPairs)input, futures);
         }
+        
+        // Log
+        if(LOGGER.isInfoEnabled())
+        {
+            LOGGER.info("Completed processing of metrics for feature '{}' at lead time {}.",
+                        input.getMetadata().getIdentifier().getGeospatialID(),
+                        input.getMetadata().getLeadTime());
+        }        
 
         //Process and return the result        
         return futures.getMetricOutput();
