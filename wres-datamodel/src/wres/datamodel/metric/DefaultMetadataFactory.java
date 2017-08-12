@@ -232,7 +232,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             case CONTINGENCY_TABLE:
                 return "CONTINGENCY TABLE";
             case CORRELATION_PEARSONS:
-                return "CORRELATION PEARSONS";
+                return "PEARSON CORRELATION COEFFICIENT";
             case CRITICAL_SUCCESS_INDEX:
                 return "CRITICAL SUCCESS INDEX";
             case EQUITABLE_THREAT_SCORE:
@@ -285,7 +285,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             case CONTINGENCY_TABLE:
                 return "CONTINGENCY TABLE";
             case CORRELATION_PEARSONS:
-                return "CORRELATION PEARSONS";
+                return "CORRELATION";
             case CRITICAL_SUCCESS_INDEX:
                 return "CSI";
             case EQUITABLE_THREAT_SCORE:

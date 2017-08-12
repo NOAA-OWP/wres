@@ -13,6 +13,9 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
@@ -145,6 +148,12 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      */
 
     final MetricFutures futures;
+    
+    /**
+     * Default logger.
+     */
+
+    static final Logger LOGGER = LoggerFactory.getLogger(MetricProcessor.class);       
 
     /**
      * Returns a {@link MetricOutputForProjectByLeadThreshold} for the last available results or null if
