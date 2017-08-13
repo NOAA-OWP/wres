@@ -61,14 +61,15 @@ public class DefaultMetadataFactory implements MetadataFactory
                                                   final Dimension inputDim,
                                                   final MetricConstants metricID,
                                                   final MetricConstants componentID,
-                                                  final DatasetIdentifier identifier)
+                                                  final DatasetIdentifier identifier,
+                                                  final Integer leadTime)
     {
         class MetricOutputMetadataImpl extends MetadataImpl implements MetricOutputMetadata
         {
 
             private MetricOutputMetadataImpl()
             {
-                super(dim, identifier);
+                super(dim, identifier, leadTime);
             }
 
             @Override

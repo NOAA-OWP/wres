@@ -1,8 +1,9 @@
 package wres.vis;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.jfree.chart.JFreeChart;
 
@@ -18,6 +19,7 @@ import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.datamodel.metric.DatasetIdentifier;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MultiVectorOutput;
@@ -54,7 +56,7 @@ public abstract class ChartEngineFactory
         plotTypeInfoMap.put(VisualizationPlotType.RELIABILITY_DIAGRAM,
                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
                                                     MultiVectorOutput.class,
-                                                    "reliabiityDiagramTemplate.xml"));
+                                                    "reliabilityDiagramTemplate.xml"));
     }
 
     /**
@@ -68,8 +70,8 @@ public abstract class ChartEngineFactory
     /**
      * @param input The metric output to plot.
      * @param factory The metadata from which arguments will be identified.
-     * @param plotType The plot type to generate. For this chart, the plot type must be
-     *            {@link VisualizationPlotType#RELIABILITY_DIAGRAM}.
+     * @param plotType An optional plot type to generate, where multiple plot types are supported for the input. 
+     *            May be null.
      * @param templateResourceName Name of the resource to load which provides the default template for chart
      *            construction.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
@@ -80,14 +82,14 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
      */
-    public static LinkedHashMap<Integer, ChartEngine> buildMultiVectorOutputChartEngineByLead(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+    public static ConcurrentMap<Integer, ChartEngine> buildMultiVectorOutputChartEngineByLead(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
                                                                                               final MetadataFactory factory,
                                                                                               final VisualizationPlotType plotType,
                                                                                               final String templateResourceName,
                                                                                               final String overrideParametersStr) throws ChartEngineException,
                                                                                                                                   GenericXMLReadingHandlerException
     {
-        final LinkedHashMap<Integer, ChartEngine> results = new LinkedHashMap<>();
+        final ConcurrentMap<Integer, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         for(final Integer lead: input.keySetByLead())
         {
@@ -96,7 +98,10 @@ public abstract class ChartEngineFactory
             //Build the sources.
             XYChartDataSource reliabilitySource = null;
             XYChartDataSource sampleSizeSource = null;
-            if(plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM))
+            
+            // JB @ 13 August 2017: plotType should be an optional parameter where multiple types are supported
+            // for a given metric. Otherwise, obtain the metric identifier from the metadata
+            if(input.getMetadata().getMetricID()==MetricConstants.RELIABILITY_DIAGRAM)
             {
                 reliabilitySource = new ReliabilityDiagramXYChartDataSource(0, inputSlice);
                 sampleSizeSource = new ReliabilityDiagramSampleSizeXYChartDataSource(1, inputSlice);
@@ -214,7 +219,7 @@ public abstract class ChartEngineFactory
         String baselineText = "";
         if(!Objects.isNull(identifier.getScenarioIDForBaseline()))
         {
-            baselineText = " against predictions from " + identifier.getScenarioIDForBaseline();
+            baselineText = " Against Predictions From " + identifier.getScenarioIDForBaseline();
         }
         arguments.addArgument("baselineText", baselineText);
 

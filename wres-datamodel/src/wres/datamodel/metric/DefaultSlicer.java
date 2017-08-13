@@ -100,9 +100,6 @@ public class DefaultSlicer implements Slicer
         {
             return null;
         }
-        Metadata metaTransformed =
-                                 dataFac.getMetadataFactory().getMetadata(input.getMetadata(),
-                                                                          dataFac.getMetadataFactory().getDimension());
         if(input.hasBaseline())
         {
             List<PairOfDoubles> basePairs = input.getDataForBaseline();
@@ -111,17 +108,18 @@ public class DefaultSlicer implements Slicer
                 if(threshold.test(a.getItemOne()))
                     basePairsSubset.add(a);
             });
-            Metadata metaBaseTransformed = dataFac.getMetadataFactory()
-                                                  .getMetadata(input.getMetadataForBaseline(),
-                                                               dataFac.getMetadataFactory().getDimension());
+
             //No pairs in the subset
             if(basePairsSubset.isEmpty())
             {
                 return null;
             }
-            return dataFac.ofSingleValuedPairs(mainPairsSubset, basePairsSubset, metaTransformed, metaBaseTransformed);
+            return dataFac.ofSingleValuedPairs(mainPairsSubset,
+                                               basePairsSubset,
+                                               input.getMetadata(),
+                                               input.getMetadataForBaseline());
         }
-        return dataFac.ofSingleValuedPairs(mainPairsSubset, metaTransformed);
+        return dataFac.ofSingleValuedPairs(mainPairsSubset, input.getMetadata());
     }
 
     @Override
@@ -140,9 +138,6 @@ public class DefaultSlicer implements Slicer
         {
             return null;
         }
-        Metadata metaTransformed =
-                                 dataFac.getMetadataFactory().getMetadata(input.getMetadata(),
-                                                                          dataFac.getMetadataFactory().getDimension());
         if(input.hasBaseline())
         {
             List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getDataForBaseline();
@@ -151,17 +146,17 @@ public class DefaultSlicer implements Slicer
                 if(threshold.test(a.getItemOne()))
                     basePairsSubset.add(a);
             });
-            Metadata metaBaseTransformed = dataFac.getMetadataFactory()
-                                                  .getMetadata(input.getMetadataForBaseline(),
-                                                               dataFac.getMetadataFactory().getDimension());
             //No pairs in the subset
             if(basePairsSubset.isEmpty())
             {
                 return null;
             }
-            return dataFac.ofEnsemblePairs(mainPairsSubset, basePairsSubset, metaTransformed, metaBaseTransformed);
+            return dataFac.ofEnsemblePairs(mainPairsSubset,
+                                           basePairsSubset,
+                                           input.getMetadata(),
+                                           input.getMetadataForBaseline());
         }
-        return dataFac.ofEnsemblePairs(mainPairsSubset, metaTransformed);
+        return dataFac.ofEnsemblePairs(mainPairsSubset, input.getMetadata());
     }
 
     @Override
@@ -216,21 +211,15 @@ public class DefaultSlicer implements Slicer
         Objects.requireNonNull(input, NULL_INPUT);
         Objects.requireNonNull(mapper, NULL_MAPPER);
         List<PairOfDoubles> mainPairsTransformed = transformPairs(input.getData(), mapper);
-        Metadata metaTransformed =
-                                 dataFac.getMetadataFactory().getMetadata(input.getMetadata(),
-                                                                          dataFac.getMetadataFactory().getDimension());
         if(input.hasBaseline())
         {
             List<PairOfDoubles> basePairsTransformed = transformPairs(input.getDataForBaseline(), mapper);
-            Metadata metaBaseTransformed = dataFac.getMetadataFactory()
-                                                  .getMetadata(input.getMetadataForBaseline(),
-                                                               dataFac.getMetadataFactory().getDimension());
             return dataFac.ofSingleValuedPairs(mainPairsTransformed,
                                                basePairsTransformed,
-                                               metaTransformed,
-                                               metaBaseTransformed);
+                                               input.getMetadata(),
+                                               input.getMetadataForBaseline());
         }
-        return dataFac.ofSingleValuedPairs(mainPairsTransformed, metaTransformed);
+        return dataFac.ofSingleValuedPairs(mainPairsTransformed, input.getMetadata());
     }
 
     @Override
@@ -243,23 +232,17 @@ public class DefaultSlicer implements Slicer
         List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
         List<PairOfDoubles> mainPairsTransformed = new ArrayList<>();
         mainPairs.forEach(pair -> mainPairsTransformed.add(mapper.apply(pair, threshold)));
-        Metadata metaTransformed =
-                                 dataFac.getMetadataFactory().getMetadata(input.getMetadata(),
-                                                                          dataFac.getMetadataFactory().getDimension());
         if(input.hasBaseline())
         {
             List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getDataForBaseline();
             List<PairOfDoubles> basePairsTransformed = new ArrayList<>();
             basePairs.forEach(pair -> basePairsTransformed.add(mapper.apply(pair, threshold)));
-            Metadata metaBaseTransformed = dataFac.getMetadataFactory()
-                                                  .getMetadata(input.getMetadataForBaseline(),
-                                                               dataFac.getMetadataFactory().getDimension());
             return dataFac.ofDiscreteProbabilityPairs(mainPairsTransformed,
                                                       basePairsTransformed,
-                                                      metaTransformed,
-                                                      metaBaseTransformed);
+                                                      input.getMetadata(),
+                                                      input.getMetadataForBaseline());
         }
-        return dataFac.ofDiscreteProbabilityPairs(mainPairsTransformed, metaTransformed);
+        return dataFac.ofDiscreteProbabilityPairs(mainPairsTransformed, input.getMetadata());
     }
 
     @Override

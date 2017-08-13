@@ -214,7 +214,7 @@ public class ControlNonBlocking implements Function<String[], Integer>
      * @return true if the projects validate successfully, false otherwise
      */
 
-    private boolean validateProjects(List<ProjectConfigPlus> projectConfiggies)
+    private static boolean validateProjects(List<ProjectConfigPlus> projectConfiggies)
     {
         if(projectConfiggies.isEmpty())
         {
@@ -331,12 +331,13 @@ public class ControlNonBlocking implements Function<String[], Integer>
             // 1. Get some pairs from the database
             // 2. Compute the metrics
             // 3. Process any intermediate verification results
-            final CompletableFuture<Void> c = CompletableFuture
-                                                               .supplyAsync(new PairsByLeadProcessor(nextInput),
-                                                                            processPairExecutor)
-                                                               .thenApplyAsync(processor, processPairExecutor)
-                                                               .thenAcceptAsync(new IntermediateResultProcessor(projectConfigPlus),
-                                                                                processPairExecutor);
+            final CompletableFuture<Void> c =
+                                            CompletableFuture.supplyAsync(new PairsByLeadProcessor(nextInput),
+                                                                          processPairExecutor)
+                                                             .thenApplyAsync(processor, processPairExecutor)
+                                                             .thenAcceptAsync(new IntermediateResultProcessor(nextFeature,
+                                                                                                              projectConfigPlus),
+                                                                              processPairExecutor);
 
             //Add the future to the list
             listOfFutures.add(c);
@@ -356,7 +357,11 @@ public class ControlNonBlocking implements Function<String[], Integer>
         //  Complete the end-of-pipeline processing
         if(processor.willCacheMetricOutput())
         {
-            processCachedCharts(projectConfigPlus, processor, MetricOutputGroup.SCALAR, MetricOutputGroup.VECTOR);
+            processCachedCharts(nextFeature,
+                                projectConfigPlus,
+                                processor,
+                                MetricOutputGroup.SCALAR,
+                                MetricOutputGroup.VECTOR);
             if(LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
             {
                 LOGGER.info("Completed processing of feature '{}'.", nextFeature.getLocation().getLid());
@@ -368,13 +373,15 @@ public class ControlNonBlocking implements Function<String[], Integer>
     /**
      * Processes all charts for which metric outputs were cached across successive calls to a {@link MetricProcessor}.
      * 
+     * @param feature the feature for which the charts are defined
      * @param projectConfigPlus the project configuration
      * @param processor the {@link MetricProcessor} that contains the results for all chart types
      * @param outGroup the {@link MetricOutputGroup} for which charts are required
      * @return true it the processing completed successfully, false otherwise
      */
 
-    private boolean processCachedCharts(ProjectConfigPlus projectConfigPlus,
+    private static boolean processCachedCharts(Feature feature,
+                                        ProjectConfigPlus projectConfigPlus,
                                         MetricProcessor processor,
                                         MetricOutputGroup... outGroup)
     {
@@ -387,16 +394,19 @@ public class ControlNonBlocking implements Function<String[], Integer>
                 switch(nextGroup)
                 {
                     case SCALAR:
-                        returnMe = returnMe && processScalarCharts(projectConfigPlus,
+                        returnMe = returnMe && processScalarCharts(feature,
+                                                                   projectConfigPlus,
                                                                    processor.getStoredMetricOutput().getScalarOutput());
                         break;
                     case VECTOR:
-                        returnMe = returnMe && processVectorCharts(projectConfigPlus,
+                        returnMe = returnMe && processVectorCharts(feature,
+                                                                   projectConfigPlus,
                                                                    processor.getStoredMetricOutput().getVectorOutput());
                         break;
                     case MULTIVECTOR:
                         returnMe = returnMe
-                            && processMultiVectorCharts(projectConfigPlus,
+                            && processMultiVectorCharts(feature,
+                                                        projectConfigPlus,
                                                         processor.getStoredMetricOutput().getMultiVectorOutput());
                         break;
                     default:
@@ -423,12 +433,14 @@ public class ControlNonBlocking implements Function<String[], Integer>
      * Processes a set of charts associated with {@link ScalarOutput} across multiple metrics, forecast lead times, and
      * thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}.
      * 
+     * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
      * @param scalarResults the scalar outputs
      * @return true it the processing completed successfully, false otherwise
      */
 
-    private static boolean processScalarCharts(ProjectConfigPlus projectConfigPlus,
+    private static boolean processScalarCharts(Feature feature,
+                                               ProjectConfigPlus projectConfigPlus,
                                                MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarResults)
     {
 
@@ -445,34 +457,19 @@ public class ControlNonBlocking implements Function<String[], Integer>
                                                                                             ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
                                                                                             "scalarOutputTemplate.xml",
                                                                                             graphicsString);
-
-                Path outputImage = Paths.get(dest.getPath() + e.getKey().getFirstKey() + "_output.png");
-
-                if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
-                {
-                    LOGGER.warn("File {} already existed and is being overwritten.", outputImage);
-                }
-
-                File outputImageFile = outputImage.toFile();
-
-                int width = SystemSettings.getDefaultChartWidth();
-                int height = SystemSettings.getDefaultChartHeight();
-
-                if(dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
-                {
-                    width = dest.getGraphical().getWidth();
-                }
-                if(dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
-                {
-                    height = dest.getGraphical().getHeight();
-                }
-
-                ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
-            }
-            //Log output
-            if(LOGGER.isInfoEnabled())
-            {
-                LOGGER.info(scalarResults.toString());
+                //Build the output file name
+                StringBuilder pathBuilder = new StringBuilder();
+                pathBuilder.append(dest.getPath())
+                           .append(feature.getLocation().getLid())
+                           .append("_")
+                           .append(e.getKey().getFirstKey())
+                           .append("_")
+                           .append(e.getKey().getSecondKey())
+                           .append("_")
+                           .append(projectConfigPlus.getProjectConfig().getInputs().getRight().getVariable().getValue())
+                           .append(".png");
+                Path outputImage = Paths.get(pathBuilder.toString());
+                writeChart(outputImage, engine, dest);
             }
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
@@ -488,12 +485,14 @@ public class ControlNonBlocking implements Function<String[], Integer>
      * thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. TODO: implement when wres-vis can handle
      * these.
      * 
+     * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
      * @param vectorResults the scalar outputs
      * @return true it the processing completed successfully, false otherwise
      */
 
-    private static boolean processVectorCharts(ProjectConfigPlus projectConfigPlus,
+    private static boolean processVectorCharts(Feature feature,
+                                               ProjectConfigPlus projectConfigPlus,
                                                MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorResults)
     {
 //        // Build charts
@@ -504,38 +503,21 @@ public class ControlNonBlocking implements Function<String[], Integer>
 //                DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
 //                String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
 //
-//                
+//                ChartEngine engine = null;
 //
-//                
-//              ChartEngine engine = null;
-//
-//                Path outputImage = Paths.get(dest.getPath() + e.getKey().getFirstKey() + "_output.png");
-//
-//                if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
-//                {
-//                    LOGGER.warn("File {} already existed and is being overwritten.", outputImage);
-//                }
-//
-//                File outputImageFile = outputImage.toFile();
-//
-//                int width = SystemSettings.getDefaultChartWidth();
-//                int height = SystemSettings.getDefaultChartHeight();
-//
-//                if(dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
-//                {
-//                    width = dest.getGraphical().getWidth();
-//                }
-//                if(dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
-//                {
-//                    height = dest.getGraphical().getHeight();
-//                }
-//
-//                ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
-//            }
-//            //Log output        
-//            if(LOGGER.isInfoEnabled())
-//            {
-//                LOGGER.info(vectorResults.toString());
+//                //Build the output file name
+//                StringBuilder pathBuilder = new StringBuilder();
+//                pathBuilder.append(dest.getPath())
+//                           .append(feature.getLocation().getLid())
+//                           .append("_")
+//                           .append(e.getKey().getFirstKey())
+//                           .append("_")
+//                           .append(e.getKey().getSecondKey())
+//                           .append("_")
+//                           .append(projectConfigPlus.getProjectConfig().getInputs().getRight().getVariable().getValue())
+//                           .append(".png");
+//                Path outputImage = Paths.get(pathBuilder.toString());
+//                writeChart(outputImage, engine, dest);
 //            }
 //        }
 //        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
@@ -548,65 +530,104 @@ public class ControlNonBlocking implements Function<String[], Integer>
 
     /**
      * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, forecast lead times,
-     * and thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. TODO: implement when wres-vis can handle
-     * these.
+     * and thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}.
      * 
+     * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
      * @param multiVectorResults the scalar outputs
      * @return true it the processing completed successfully, false otherwise
      */
 
-    private static boolean processMultiVectorCharts(ProjectConfigPlus projectConfigPlus,
+    private static boolean processMultiVectorCharts(Feature feature,
+                                                    ProjectConfigPlus projectConfigPlus,
                                                     MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> multiVectorResults)
     {
-//        // Build charts
-//        try
-//        {
-//            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
-//            {
-//                DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
-//                String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-//
-//                
-//
-//                
-//              ChartEngine engine = null;
-//
-//                Path outputImage = Paths.get(dest.getPath() + e.getKey().getFirstKey() + "_output.png");
-//
-//                if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
-//                {
-//                    LOGGER.warn("File {} already existed and is being overwritten.", outputImage);
-//                }
-//
-//                File outputImageFile = outputImage.toFile();
-//
-//                int width = SystemSettings.getDefaultChartWidth();
-//                int height = SystemSettings.getDefaultChartHeight();
-//
-//                if(dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
-//                {
-//                    width = dest.getGraphical().getWidth();
-//                }
-//                if(dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
-//                {
-//                    height = dest.getGraphical().getHeight();
-//                }
-//
-//                ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
-//            }
-//            //Log output        
-//            if(LOGGER.isInfoEnabled())
-//            {
-//                LOGGER.info(vectorResults.toString());
-//            }        
-//        }
-//        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
-//        {
-//            LOGGER.error("While generating plots:", e);
-//            return false;
-//        }
+        // Build charts
+        try
+        {
+            // Build the charts for each metric
+            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
+            {
+                DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
+                String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+                // TODO: make this template call to "reliabilityDiagramTemplate" generic across metrics. 
+                // Is it even needed? The Metadata contains the chart type and this is linked to the PlotType?
+                Map<Integer, ChartEngine> engines =
+                                                  ChartEngineFactory.buildMultiVectorOutputChartEngineByLead(e.getValue(),
+                                                                                                             DATA_FACTORY.getMetadataFactory(),
+                                                                                                             null,
+                                                                                                             "reliabilityDiagramTemplate.xml",
+                                                                                                             graphicsString);
+                // Build one chart per lead time
+                for(Map.Entry<Integer, ChartEngine> nextEntry: engines.entrySet())
+                {
+                    // Build the output file name
+                    StringBuilder pathBuilder = new StringBuilder();
+                    pathBuilder.append(dest.getPath())
+                               .append(feature.getLocation().getLid())
+                               .append("_")
+                               .append(e.getKey().getFirstKey())
+                               .append("_")
+                               .append(e.getKey().getSecondKey())
+                               .append("_")
+                               .append(projectConfigPlus.getProjectConfig()
+                                                        .getInputs()
+                                                        .getRight()
+                                                        .getVariable()
+                                                        .getValue())
+                               .append("_")
+                               .append(nextEntry.getKey())
+                               .append("h")
+                               .append(".png");
+                    Path outputImage = Paths.get(pathBuilder.toString());
+                    writeChart(outputImage, nextEntry.getValue(), dest);
+                }
+            }
+        }
+        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+        {
+            LOGGER.error("While generating plots:", e);
+            return false;
+        }
         return true;
+    }
+
+    /**
+     * Writes an output chart to a specified path.
+     * 
+     * @param outputImage the path to the output image
+     * @param engine the chart engine
+     * @param dest the destination configuration
+     * @throws XYChartDataSourceException
+     * @throws ChartEngineException
+     * @throws IOException
+     */
+
+    private static void writeChart(Path outputImage,
+                                   ChartEngine engine,
+                                   DestinationConfig dest) throws IOException,
+                                                           ChartEngineException,
+                                                           XYChartDataSourceException
+    {
+        if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
+        {
+            LOGGER.warn("File {} already existed and is being overwritten.", outputImage);
+        }
+
+        File outputImageFile = outputImage.toFile();
+
+        int width = SystemSettings.getDefaultChartWidth();
+        int height = SystemSettings.getDefaultChartHeight();
+
+        if(dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
+        {
+            width = dest.getGraphical().getWidth();
+        }
+        if(dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
+        {
+            height = dest.getGraphical().getHeight();
+        }
+        ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
     }
 
     /**
@@ -616,7 +637,7 @@ public class ControlNonBlocking implements Function<String[], Integer>
      * @param args the paths to the projects
      * @return the successfully found, read, unmarshalled project configs
      */
-    private List<ProjectConfigPlus> getProjects(String[] args)
+    private static List<ProjectConfigPlus> getProjects(String[] args)
     {
         List<Path> existingProjectFiles = new ArrayList<>();
 
@@ -724,14 +745,21 @@ public class ControlNonBlocking implements Function<String[], Integer>
         private final ProjectConfigPlus projectConfigPlus;
 
         /**
+         * The feature.
+         */
+
+        private final Feature feature;
+
+        /**
          * Construct.
          * 
          * @param projectConfigPlus the project configuration
          */
 
-        private IntermediateResultProcessor(ProjectConfigPlus projectConfigPlus)
+        private IntermediateResultProcessor(Feature feature, ProjectConfigPlus projectConfigPlus)
         {
             this.projectConfigPlus = projectConfigPlus;
+            this.feature = feature;
         }
 
         @Override
@@ -742,7 +770,7 @@ public class ControlNonBlocking implements Function<String[], Integer>
             {
                 if(input.hasOutput(MetricOutputGroup.MULTIVECTOR))
                 {
-                    processMultiVectorCharts(projectConfigPlus, input.getMultiVectorOutput());
+                    processMultiVectorCharts(feature, projectConfigPlus, input.getMultiVectorOutput());
                     meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
                     if(LOGGER.isInfoEnabled())
                     {
