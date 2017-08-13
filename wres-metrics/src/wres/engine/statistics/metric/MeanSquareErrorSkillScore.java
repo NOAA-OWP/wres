@@ -2,8 +2,10 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.PairOfDoubles;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DatasetIdentifier;
 import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
@@ -23,23 +25,33 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
     public VectorOutput apply(final SingleValuedPairs s)
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
-        if(!s.hasBaseline())
-        {
-            throw new MetricInputException("Specify a non-null baseline for the '" + toString() + "'.");
-        }
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
         //template as the componentID in the metadata
+        DatasetIdentifier baselineIdentifier = null;
+        double numerator = getSumOfSquareError(s);
+        double denominator = 0.0;
+        if(s.hasBaseline())
+        {
+            denominator = getSumOfSquareError(s.getBaselineData());
+            baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
+        }
+        else 
+        {
+            DataFactory d = getDataFactory();
+            double meanRight = FunctionFactory.mean().applyAsDouble(d.vectorOf(d.getSlicer().getRightSide(s)));
+            for(PairOfDoubles next : s.getData()) {
+                denominator+=next.getItemOne()-meanRight;
+            }
+        }
+        final double[] result = new double[]{
+            FunctionFactory.skill().applyAsDouble(numerator,
+                                                  denominator)};
         //Metadata
         final MetricOutputMetadata metOut =
                                           getMetadata(s,
                                                       s.getData().size(),
                                                       MetricConstants.MAIN,
-                                                      s.getMetadataForBaseline().getIdentifier());
-        final VectorOutput numerator = super.apply(s);
-        final VectorOutput denominator = super.apply(s.getBaselineData());
-        final double[] result = new double[]{
-            FunctionFactory.skill().applyAsDouble(numerator.getData().getDoubles()[0],
-                                                  denominator.getData().getDoubles()[0])};
+                                                      baselineIdentifier);        
         return getDataFactory().ofVectorOutput(result, metOut);
     }
 

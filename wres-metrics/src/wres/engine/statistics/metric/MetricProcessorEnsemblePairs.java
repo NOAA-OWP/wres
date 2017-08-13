@@ -95,6 +95,9 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
         Integer leadTime = input.getMetadata().getLeadTime();
         Objects.requireNonNull(leadTime, "Expected a non-null forecast lead time in the input metadata.");
 
+        //Metric futures 
+        MetricFutures.Builder futures = new MetricFutures.Builder().addDataFactory(dataFactory);
+
         //Slicer
         Slicer slicer = dataFactory.getSlicer();
 
@@ -124,8 +127,11 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
                         input.getMetadata().getLeadTime());
         }
 
-        //Process and return the result        
-        return futures.getMetricOutput();
+        //Process and return the result       
+        MetricFutures futureResults = futures.build();
+        //Merge with existing futures, if required
+        mergeFutures(futureResults);
+        return futureResults.getMetricOutput();
     }
 
     /**
@@ -223,7 +229,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processEnsemblePairs(Integer leadTime, EnsemblePairs input, MetricFutures futures)
+    private void processEnsemblePairs(Integer leadTime, EnsemblePairs input, MetricFutures.Builder futures)
     {
 
         //Metric-specific overrides are currently unsupported
@@ -285,7 +291,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDiscreteProbabilityPairs(Integer leadTime, EnsemblePairs input, MetricFutures futures)
+    private void processDiscreteProbabilityPairs(Integer leadTime, EnsemblePairs input, MetricFutures.Builder futures)
     {
 
         //Metric-specific overrides are currently unsupported

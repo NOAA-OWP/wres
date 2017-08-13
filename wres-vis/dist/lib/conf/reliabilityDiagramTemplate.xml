@@ -3,8 +3,8 @@
 <chartDrawingParameters>
 
 	<plotTitle>
-		<text>Reliability Diagram for Various Event Thresholds (Upper) and Sample Counts (lower)
-@locationName@.@variableName@.@primaryScenario@ at lead hour @leadHour@
+		<text>Reliability Diagram for Various Event Thresholds (Upper) and Sample Counts (Lower)
+@locationName@.@variableName@.@primaryScenario@ At Lead Hour @leadHour@
 		</text>
 	</plotTitle>
 
