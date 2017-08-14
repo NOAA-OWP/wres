@@ -9,6 +9,7 @@ import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.VectorOutput;
@@ -35,26 +36,23 @@ public final class BrierScoreTest
         //Generate some data
         final MetricInput<?> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
-        
-        
         //Build the metric
         final BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         b.setOutputFactory(outF);
-        b.setDecompositionID(MetricConstants.NONE);
+        b.setDecompositionID(MetricDecompositionGroup.NONE);
 
         final BrierScore bs = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.BRIER_SCORE,
-                                                                  MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("DRRC2",
-                                                                                               "SQIN",
-                                                                                               "HEFS"));
+        final MetricOutputMetadata m1 =
+                                      metaFac.getOutputMetadata(input.size(),
+                                                                metaFac.getDimension(),
+                                                                metaFac.getDimension(),
+                                                                MetricConstants.BRIER_SCORE,
+                                                                MetricConstants.MAIN,
+                                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
 
         //Check the results       
         final VectorOutput actual = bs.apply((DiscreteProbabilityPairs)input);
@@ -66,7 +64,8 @@ public final class BrierScoreTest
                    bs.getName().equals(metaFac.getMetricName(MetricConstants.BRIER_SCORE)));
         assertTrue("The Brier Score is decomposable.", bs.isDecomposable());
         assertTrue("The Brier Score is not a skill score.", !bs.isSkillScore());
-        assertTrue("Expected no decomposition for the Brier Score.", bs.getDecompositionID() == MetricConstants.NONE);
+        assertTrue("Expected no decomposition for the Brier Score.",
+                   bs.getDecompositionID() == MetricDecompositionGroup.NONE);
         assertTrue("The Brier Score is proper.", bs.isProper());
         assertTrue("The Brier Score is strictly proper.", bs.isStrictlyProper());
 

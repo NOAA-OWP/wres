@@ -14,6 +14,7 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -65,7 +66,8 @@ public final class CorrelationPearsonsTest
                    rho.getName().equals(metaFac.getMetricName(MetricConstants.CORRELATION_PEARSONS)));
         assertTrue("Pearson's correlation is not decomposable.", !rho.isDecomposable());
         assertTrue("Pearson's correlation is not a skill score.", !rho.isSkillScore());
-        assertTrue("Pearson's correlation cannot be decomposed.", rho.getDecompositionID() == MetricConstants.NONE);
+        assertTrue("Pearson's correlation cannot be decomposed.",
+                   rho.getDecompositionID() == MetricDecompositionGroup.NONE);
         assertTrue("Pearson's correlation does not have real units", !rho.hasRealUnits());
 
         //Check exceptions

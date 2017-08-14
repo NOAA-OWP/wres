@@ -71,7 +71,7 @@ public final class MetricFactoryTest
         metF.ofSingleValuedScalar(MetricConstants.CORRELATION_PEARSONS);
         metF.ofSingleValuedScalar(MetricConstants.COEFFICIENT_OF_DETERMINATION);
         try {
-            metF.ofSingleValuedScalar(MetricConstants.NONE);
+            metF.ofSingleValuedScalar(MetricConstants.MAIN);
             fail("Expected a checked exception on attempting to construct a metric with an incorrect identifier.");
         } catch(IllegalArgumentException e) {          
         }
@@ -86,7 +86,7 @@ public final class MetricFactoryTest
         metF.ofSingleValuedVector(MetricConstants.MEAN_SQUARE_ERROR);
         metF.ofSingleValuedVector(MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE);
         try {
-            metF.ofSingleValuedVector(MetricConstants.NONE);
+            metF.ofSingleValuedVector(MetricConstants.MAIN);
             fail("Expected a checked exception on attempting to construct a metric with an incorrect identifier.");
         } catch(IllegalArgumentException e) {          
         }
@@ -101,7 +101,7 @@ public final class MetricFactoryTest
         metF.ofDiscreteProbabilityVector(MetricConstants.BRIER_SCORE);
         metF.ofDiscreteProbabilityVector(MetricConstants.BRIER_SKILL_SCORE);
         try {
-            metF.ofDiscreteProbabilityVector(MetricConstants.NONE);
+            metF.ofDiscreteProbabilityVector(MetricConstants.MAIN);
             fail("Expected a checked exception on attempting to construct a metric with an incorrect identifier.");
         } catch(IllegalArgumentException e) {         
         }
@@ -119,7 +119,7 @@ public final class MetricFactoryTest
         metF.ofDichotomousScalar(MetricConstants.PROBABILITY_OF_DETECTION);
         metF.ofDichotomousScalar(MetricConstants.PROBABILITY_OF_FALSE_DETECTION);
         try {
-            metF.ofDichotomousScalar(MetricConstants.NONE);
+            metF.ofDichotomousScalar(MetricConstants.MAIN);
             fail("Expected a checked exception on attempting to construct a metric with an incorrect identifier.");
         } catch(IllegalArgumentException e) {            
         }
@@ -133,7 +133,7 @@ public final class MetricFactoryTest
     {
         metF.ofMulticategoryScalar(MetricConstants.PEIRCE_SKILL_SCORE);
         try {
-            metF.ofMulticategoryScalar(MetricConstants.NONE);
+            metF.ofMulticategoryScalar(MetricConstants.MAIN);
             fail("Expected a checked exception on attempting to construct a metric with an incorrect identifier.");
         } catch(IllegalArgumentException e) {            
         }
@@ -147,7 +147,7 @@ public final class MetricFactoryTest
     {
         metF.ofMulticategoryMatrix(MetricConstants.CONTINGENCY_TABLE);
         try {
-            metF.ofMulticategoryMatrix(MetricConstants.NONE);
+            metF.ofMulticategoryMatrix(MetricConstants.MAIN);
             fail("Expected a checked exception on attempting to construct a metric with an incorrect identifier.");
         } catch(IllegalArgumentException e) {            
         }

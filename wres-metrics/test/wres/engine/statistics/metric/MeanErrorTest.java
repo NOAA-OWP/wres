@@ -8,6 +8,7 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -39,12 +40,11 @@ public final class MeanErrorTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 =
-                                      metaFac.getOutputMetadata(input.getData().size(),
-                                                          metaFac.getDimension(),
-                                                          metaFac.getDimension(),
-                                                          MetricConstants.MEAN_ERROR,
-                                                          MetricConstants.MAIN);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension(),
+                                                                  MetricConstants.MEAN_ERROR,
+                                                                  MetricConstants.MAIN);
         //Build the metric
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
         b.setOutputFactory(outF);
@@ -61,7 +61,7 @@ public final class MeanErrorTest
                    me.getName().equals(metaFac.getMetricName(MetricConstants.MEAN_ERROR)));
         assertTrue("The Mean Error is not decomposable.", !me.isDecomposable());
         assertTrue("The Mean Error is not a skill score.", !me.isSkillScore());
-        assertTrue("The Mean Error cannot be decomposed.", me.getDecompositionID() == MetricConstants.NONE);
+        assertTrue("The Mean Error cannot be decomposed.", me.getDecompositionID() == MetricDecompositionGroup.NONE);
     }
 
 }

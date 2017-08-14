@@ -8,6 +8,7 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -84,9 +85,9 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     }
 
     @Override
-    public MetricConstants getDecompositionID()
+    public MetricDecompositionGroup getDecompositionID()
     {
-        return MetricConstants.NONE;
+        return MetricDecompositionGroup.NONE;
     }
 
     @Override

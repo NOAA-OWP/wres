@@ -10,6 +10,7 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.Threshold.Operator;
 
 /**
@@ -185,6 +186,19 @@ public interface DataFactory
         return ofEnsemblePairs(pairs, null, meta, null);
     }
 
+    /**
+     * Return a {@link VectorOutput} with a default decomposition template of {@link MetricDecompositionGroup#NONE}.
+     * 
+     * @param output the output data
+     * @param meta the metadata
+     * @return a {@link VectorOutput}
+     */
+
+    default VectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta)
+    {
+        return ofVectorOutput(output, MetricDecompositionGroup.NONE, meta);
+    }    
+    
     /**
      * Returns a {@link MetadataFactory} for building {@link Metadata}.
      * 
@@ -394,14 +408,18 @@ public interface DataFactory
     ScalarOutput ofScalarOutput(final double output, final MetricOutputMetadata meta);
 
     /**
-     * Return a {@link VectorOutput}.
+     * Return a {@link VectorOutput} with a prescribed decomposition template {@link MetricDecompositionGroup}, which
+     * maps the output to specific components in a specific order.
      * 
      * @param output the output data
+     * @param template the template for the output
      * @param meta the metadata
      * @return a {@link VectorOutput}
      */
 
-    VectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta);
+    VectorOutput ofVectorOutput(final double[] output,
+                                final MetricDecompositionGroup template,
+                                final MetricOutputMetadata meta);
 
     /**
      * Return a {@link MultiVectorOutput}.

@@ -8,6 +8,7 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -40,10 +41,10 @@ public final class MeanAbsoluteErrorTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                            metaFac.getDimension(),
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                            MetricConstants.MAIN);
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension(),
+                                                                  MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                  MetricConstants.MAIN);
 
         //Build the metric
         final MeanAbsoluteErrorBuilder b = new MeanAbsoluteError.MeanAbsoluteErrorBuilder();
@@ -60,7 +61,8 @@ public final class MeanAbsoluteErrorTest
                    mae.getName().equals(metaFac.getMetricName(MetricConstants.MEAN_ABSOLUTE_ERROR)));
         assertTrue("The Mean Absolute Error is not decomposable.", !mae.isDecomposable());
         assertTrue("The Mean Absolute Error is not a skill score.", !mae.isSkillScore());
-        assertTrue("The Mean Absolute Error cannot be decomposed.", mae.getDecompositionID() == MetricConstants.NONE);
+        assertTrue("The Mean Absolute Error cannot be decomposed.",
+                   mae.getDecompositionID() == MetricDecompositionGroup.NONE);
     }
 
 }

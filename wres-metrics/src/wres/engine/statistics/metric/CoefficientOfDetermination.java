@@ -23,33 +23,9 @@ public final class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public MetricConstants getID()
     {
         return MetricConstants.COEFFICIENT_OF_DETERMINATION;
-    }
-
-    @Override
-    public boolean isDecomposable()
-    {
-        return false;
-    }
-
-    @Override
-    public MetricConstants getDecompositionID()
-    {
-        return MetricConstants.NONE;
-    }
-
-    @Override
-    public boolean hasRealUnits()
-    {
-        return false;
     }
 
     @Override

@@ -2,6 +2,7 @@ package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 
 /**
  * <p>
@@ -66,7 +67,7 @@ public final class BrierScore extends MeanSquareError<DiscreteProbabilityPairs> 
         }
 
         @Override
-        protected BrierScoreBuilder setDecompositionID(final MetricConstants decompositionID)
+        protected BrierScoreBuilder setDecompositionID(final MetricDecompositionGroup decompositionID)
         {
             super.setDecompositionID(decompositionID);
             return this;

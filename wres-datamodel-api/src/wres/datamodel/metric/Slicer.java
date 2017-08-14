@@ -81,6 +81,16 @@ public interface Slicer
     Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliceByRight(List<PairOfDoubleAndVectorOfDoubles> input);
 
     /**
+     * Returns a map of {@link ScalarOutput} for each component in the input map of {@link VectorOutput}. The slices are
+     * mapped to their {@link MetricConstants} component identifier.
+     * 
+     * @param input the input map
+     * @return the input map sliced by component identifier
+     */
+
+    Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> sliceByMetricComponent(MetricOutputMapByLeadThreshold<VectorOutput> input);
+
+    /**
      * Produces a {@link List} of {@link PairOfDoubles} from a {@link List} of {@link PairOfDoubleAndVectorOfDoubles}
      * using a prescribed mapper function.
      * 

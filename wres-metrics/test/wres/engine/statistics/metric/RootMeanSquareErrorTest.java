@@ -8,6 +8,7 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -61,7 +62,7 @@ public final class RootMeanSquareErrorTest
         assertTrue("The Root Mean Square Error is not decomposable.", !mse.isDecomposable());
         assertTrue("The Root Mean Square Error is not a skill score.", !mse.isSkillScore());
         assertTrue("Expected no decomposition for the Root Mean Square Error.",
-                   mse.getDecompositionID() == MetricConstants.NONE);
+                   mse.getDecompositionID() == MetricDecompositionGroup.NONE);
 
     }
 

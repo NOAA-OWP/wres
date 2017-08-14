@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 
 /**
  * Identifies a scoring rule. A score may be an absolute or relative measure. An absolute score is dimensioned, whereas
@@ -15,37 +15,6 @@ import wres.datamodel.metric.MetricConstants;
 
 public interface Score
 {
-
-    /**
-     * <p>
-     * Returns true if the input is a supported decomposition identifier, false otherwise. The supported decomposition
-     * identifiers are:
-     * </p>
-     * <ol>
-     * <li>{@link MetricConstants#NONE}, indicating no decomposition</li>
-     * <li>{@link MetricConstants#CR}, indicating the calibration-refinement decomposition</li>
-     * <li>{@link MetricConstants#LBR}, indicating the likelihood base-rate decomposition</li>
-     * <li>{@link MetricConstants#CR_AND_LBR}, indicating both the calibration-refinement and likelihood-base-rate
-     * decompositions</li>
-     * </ol>
-     * 
-     * @param decompositionID the decomposition identifier to test
-     * @return true if the decomposition identifier is valid, false otherwise
-     */
-
-    static boolean isSupportedDecompositionID(final MetricConstants decompositionID)
-    {
-        switch(decompositionID)
-        {
-            case NONE:
-            case CR:
-            case LBR:
-            case CR_AND_LBR:
-                return true;
-            default:
-                return false;
-        }
-    }
 
     /**
      * Returns true if the score is a relative measure or skill score, false for an absolute measure.
@@ -64,23 +33,12 @@ public interface Score
     boolean isDecomposable();
 
     /**
-     * <p>
-     * Returns the identifier associated with the decomposition. One of:
-     * </p>
-     * <ol>
-     * <li>{@link MetricConstants#NONE}, indicating no decomposition</li>
-     * <li>{@link MetricConstants#CR}, indicating the calibration-refinement decomposition</li>
-     * <li>{@link MetricConstants#LBR}, indicating the likelihood base-rate decomposition</li>
-     * <li>{@link MetricConstants#CR_AND_LBR}, indicating both the calibration-refinement and likelihood-base-rate
-     * decompositions</li>
-     * </ol>
-     * <p>
-     * Must return {@link MetricConstants#NONE} when {@link #isDecomposable()} returns false.
-     * </p>
+     * Returns the template associated with the decomposition. Must return {@link MetricDecompositionGroup#NONE} when 
+     * {@link #isDecomposable()} returns false.
      * 
      * @return the type of score decomposition
      */
 
-    MetricConstants getDecompositionID();
+    MetricDecompositionGroup getDecompositionID();
 
 }

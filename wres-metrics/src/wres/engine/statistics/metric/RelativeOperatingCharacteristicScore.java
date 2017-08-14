@@ -10,6 +10,7 @@ import wres.datamodel.PairOfDoubles;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.VectorOutput;
 
@@ -93,9 +94,9 @@ implements ProbabilityScore
     }    
 
     @Override
-    public MetricConstants getDecompositionID()
+    public MetricDecompositionGroup getDecompositionID()
     {
-        return MetricConstants.NONE;
+        return MetricDecompositionGroup.NONE;
     }
 
     /**

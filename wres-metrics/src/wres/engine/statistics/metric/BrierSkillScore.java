@@ -5,6 +5,7 @@ import java.util.Objects;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
@@ -92,7 +93,7 @@ implements ProbabilityScore
         }
 
         @Override
-        protected BrierSkillScoreBuilder setDecompositionID(final MetricConstants decompositionID)
+        protected BrierSkillScoreBuilder setDecompositionID(final MetricDecompositionGroup decompositionID)
         {
             super.setDecompositionID(decompositionID);
             return this;

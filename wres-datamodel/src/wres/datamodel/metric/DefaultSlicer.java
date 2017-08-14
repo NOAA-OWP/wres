@@ -2,6 +2,7 @@ package wres.datamodel.metric;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -164,6 +165,16 @@ public class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull(input, NULL_INPUT);
         return input.stream().collect(Collectors.groupingBy(pair -> pair.getItemTwo().length));
+    }
+
+    @Override
+    public Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> sliceByMetricComponent(MetricOutputMapByLeadThreshold<VectorOutput> input)
+    {
+        Objects.requireNonNull(input, NULL_INPUT);
+        Map<MetricConstants, Map<MapBiKey<Integer, Threshold>, ScalarOutput>> sourceMap =
+                                                                                        new EnumMap<>(MetricConstants.class);
+        return null;
+
     }
 
     @Override

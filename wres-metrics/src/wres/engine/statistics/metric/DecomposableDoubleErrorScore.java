@@ -1,6 +1,9 @@
 package wres.engine.statistics.metric;
 
+import java.util.Objects;
+
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
 
@@ -20,7 +23,7 @@ implements Score
      * The decomposition identifier. See {@link MetricConstants#getDecompositionID()}.
      */
 
-    private final MetricConstants decompositionID;
+    private final MetricDecompositionGroup decompositionID;
 
     @Override
     public boolean isDecomposable()
@@ -29,7 +32,7 @@ implements Score
     }
 
     @Override
-    public MetricConstants getDecompositionID()
+    public MetricDecompositionGroup getDecompositionID()
     {
         return decompositionID;
     }
@@ -46,7 +49,7 @@ implements Score
          * The type of metric decomposition. See {@link MetricConstants#getDecompositionID()}.
          */
 
-        private MetricConstants decompositionID = MetricConstants.NONE;
+        private MetricDecompositionGroup decompositionID = MetricDecompositionGroup.NONE;
 
         /**
          * Sets the decomposition identifier.
@@ -55,7 +58,7 @@ implements Score
          * @return the builder
          */
 
-        protected DecomposableDoubleErrorScoreBuilder<S> setDecompositionID(final MetricConstants decompositionID)
+        protected DecomposableDoubleErrorScoreBuilder<S> setDecompositionID(final MetricDecompositionGroup decompositionID)
         {
             this.decompositionID = decompositionID;
             return this;
@@ -71,10 +74,7 @@ implements Score
     protected DecomposableDoubleErrorScore(final DecomposableDoubleErrorScoreBuilder<S> builder)
     {
         super(builder);
-        if(!Score.isSupportedDecompositionID(builder.decompositionID))
-        {
-            throw new IllegalStateException("Unsupported decomposition identifier: " + builder.decompositionID);
-        }
+        Objects.requireNonNull(builder.decompositionID, "Specify a non-null decomposition identifier.");
         this.decompositionID = builder.decompositionID;
     }
 
