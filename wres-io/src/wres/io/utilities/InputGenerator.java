@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.MetricInput;
-import wres.io.concurrency.PairRetriever;
+import wres.io.concurrency.InputRetriever;
 import wres.io.config.ConfigHelper;
 import wres.io.grouping.LabeledScript;
 import wres.util.ProgressMonitor;
@@ -110,7 +110,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             if (ConfigHelper.leadIsValid(this.projectConfig, this.windowNumber + 1, this.lastWindowNumber))
             {
                 this.windowNumber++;
-                PairRetriever retriever = new PairRetriever(this.projectConfig, this.feature, this.windowNumber);
+                InputRetriever retriever = new InputRetriever(this.projectConfig, this.feature, this.windowNumber);
                 retriever.setOnRun(ProgressMonitor.onThreadStartHandler());
                 retriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                 nextInput = Database.submit(retriever);

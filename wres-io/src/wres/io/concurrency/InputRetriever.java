@@ -25,13 +25,13 @@ import java.util.Objects;
  * Created by ctubbs on 7/17/17.
  */
 @Internal(exclusivePackage = "wres.io")
-public final class PairRetriever extends WRESCallable<MetricInput<?>>
+public final class InputRetriever extends WRESCallable<MetricInput<?>>
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PairRetriever.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
     @Internal(exclusivePackage = "wres.io")
-    public PairRetriever(ProjectConfig projectConfig, Conditions.Feature feature, int progress)
+    public InputRetriever (ProjectConfig projectConfig, Conditions.Feature feature, int progress)
     {
         this.projectConfig = projectConfig;
         this.feature = feature;
@@ -162,12 +162,12 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
     @Override
     protected String getTaskName()
     {
-        return "PairRetriever: Step " + String.valueOf(this.progress);
+        return "InputRetriever: Step " + String.valueOf(this.progress);
     }
 
     @Override
     protected Logger getLogger()
     {
-        return PairRetriever.LOGGER;
+        return InputRetriever.LOGGER;
     }
 }
