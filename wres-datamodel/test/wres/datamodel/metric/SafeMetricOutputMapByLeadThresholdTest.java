@@ -58,6 +58,8 @@ public final class SafeMetricOutputMapByLeadThresholdTest
         assertTrue("Unexpected output from data slice [" + actualTwo + "," + expectedTwo + "].",
                    Double.compare(actualTwo, expectedTwo) == 0);
         assertTrue("Unexpected output size from data slice [" + subMap2.size() + "," + 29 + "].", subMap2.size() == 29);
+        assertTrue("Expected quantile thresholds in store.", subMap.hasQuantileThresholds());
+        
     }
 
 }
