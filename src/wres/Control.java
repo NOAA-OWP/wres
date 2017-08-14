@@ -356,7 +356,7 @@ public class Control implements Function<String[], Integer>
         }
 
         // Complete the end-of-pipeline processing
-        if(processor.willCacheMetricOutput())
+        if(processor.willStoreMetricOutput())
         {
             processCachedCharts(feature,
                                 projectConfigPlus,
@@ -395,20 +395,22 @@ public class Control implements Function<String[], Integer>
                 switch(nextGroup)
                 {
                     case SCALAR:
-                        returnMe = returnMe && processScalarCharts(feature,
-                                                                   projectConfigPlus,
-                                                                   processor.getStoredMetricOutput().getScalarOutput());
+                        returnMe = returnMe && processor.hasStoredMetricOutput() && processScalarCharts(feature,
+                                                                                                        projectConfigPlus,
+                                                                                                        processor.getStoredMetricOutput()
+                                                                                                                 .getScalarOutput());
                         break;
                     case VECTOR:
-                        returnMe = returnMe && processVectorCharts(feature,
-                                                                   projectConfigPlus,
-                                                                   processor.getStoredMetricOutput().getVectorOutput());
+                        returnMe = returnMe && processor.hasStoredMetricOutput() && processVectorCharts(feature,
+                                                                                                        projectConfigPlus,
+                                                                                                        processor.getStoredMetricOutput()
+                                                                                                                 .getVectorOutput());
                         break;
                     case MULTIVECTOR:
-                        returnMe = returnMe
-                            && processMultiVectorCharts(feature,
-                                                        projectConfigPlus,
-                                                        processor.getStoredMetricOutput().getMultiVectorOutput());
+                        returnMe = returnMe && processor.hasStoredMetricOutput() && processMultiVectorCharts(feature,
+                                                                                                             projectConfigPlus,
+                                                                                                             processor.getStoredMetricOutput()
+                                                                                                                      .getMultiVectorOutput());
                         break;
                     default:
                         LOGGER.error("Unsupported chart type {}.", nextGroup);
@@ -444,6 +446,13 @@ public class Control implements Function<String[], Integer>
                                                ProjectConfigPlus projectConfigPlus,
                                                MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarResults)
     {
+
+        //Check for results
+        if(Objects.isNull(scalarResults))
+        {
+            LOGGER.error("No scalar outputs from which to generate charts.");
+            return false;
+        }
 
         // Build charts
         try
@@ -496,6 +505,13 @@ public class Control implements Function<String[], Integer>
                                                ProjectConfigPlus projectConfigPlus,
                                                MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorResults)
     {
+//        //Check for results
+//        if(Objects.isNull(vectorResults))
+//        {
+//            LOGGER.error("No vector outputs from which to generate charts.");
+//            return false;
+//        }
+//        
 //        // Build charts
 //        try
 //        {
@@ -543,6 +559,13 @@ public class Control implements Function<String[], Integer>
                                                     ProjectConfigPlus projectConfigPlus,
                                                     MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> multiVectorResults)
     {
+        //Check for results
+        if(Objects.isNull(multiVectorResults))
+        {
+            LOGGER.error("No multivector outputs from which to generate charts.");
+            return false;
+        }
+
         // Build charts
         try
         {
