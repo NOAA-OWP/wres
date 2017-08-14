@@ -1,7 +1,11 @@
 package wres.util;
 
+import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
+
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Created by ctubbs on 7/7/17.
@@ -55,5 +59,63 @@ public final class NetCDF {
         }
 
         return foundVariable;
+    }
+
+    public static long getLeadTime(NetcdfFile file)
+    {
+        String initializationTime = getInitializedTime(file);
+        String validTime = getValidTime(file);
+
+        if (initializationTime == null || initializationTime.isEmpty())
+        {
+            throw new IllegalArgumentException("The passed in NetCDF File does not have a valid Initialization time.");
+        }
+        else if (validTime == null || validTime.isEmpty())
+        {
+            throw new IllegalArgumentException("The passed in NetCDF File does not have a valid valid time.");
+        }
+
+        OffsetDateTime initializedOn = Time.convertStringToDate(initializationTime);
+        OffsetDateTime validOn = Time.convertStringToDate(validTime);
+
+        return initializedOn.until(validOn, ChronoUnit.HOURS);
+    }
+
+    public static String getInitializedTime(NetcdfFile file)
+    {
+        String initializationTime = null;
+
+        Attribute initializationAttribute = getGlobalAttribute(file, "model_initialization_time");
+        if (initializationAttribute != null)
+        {
+            initializationTime = initializationAttribute.getStringValue().replace("_", " ").trim();
+        }
+
+        return initializationTime;
+    }
+
+    public static String getValidTime(NetcdfFile file)
+    {
+        String validTime = null;
+        Attribute validTimeAttribute = getGlobalAttribute(file, "model_output_valid_time");
+        if (validTimeAttribute != null)
+        {
+            validTime = validTimeAttribute.getStringValue().replace("_", " ").trim();
+        }
+        return validTime;
+    }
+
+    public static Attribute getGlobalAttribute(NetcdfFile file, String attributeName)
+    {
+        return Collections.find(file.getGlobalAttributes(), (Attribute attribute) -> {
+            return attribute.getShortName().equalsIgnoreCase(attributeName);
+        });
+    }
+
+    public static  Attribute getVariableAttribute(Variable variable, String attributeName)
+    {
+        return Collections.find(variable.getAttributes(), (Attribute attribute) -> {
+            return attribute.getShortName().equalsIgnoreCase(attributeName);
+        });
     }
 }

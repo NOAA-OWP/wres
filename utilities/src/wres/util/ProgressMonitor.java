@@ -289,7 +289,8 @@ public class ProgressMonitor
 
     private void shutdown()
     {
-        this.ASYNC_UPDATER.shutdownNow();
+        this.ASYNC_UPDATER.shutdown();
+        while (!this.ASYNC_UPDATER.isTerminated()){}
     }
 
     public void setOuputFunction (Consumer<ProgressMonitor> outputFunction)
