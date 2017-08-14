@@ -18,7 +18,7 @@ import wres.datamodel.metric.ScalarOutput;
  * @since 0.1
  */
 
-public class ScalarOutputByThresholdLeadXYDataset extends WRESAbstractXYDataset
+public class ScalarOutputByThresholdLeadXYDataset extends WRESAbstractXYDataset<List<MetricOutputMapByLeadThreshold<ScalarOutput>>, MetricOutputMapByLeadThreshold<ScalarOutput>>
 {
     private static final long serialVersionUID = 1598160458133121056L;
 
@@ -37,34 +37,21 @@ public class ScalarOutputByThresholdLeadXYDataset extends WRESAbstractXYDataset
 
     /**
      * The legend names are handled here with calls to {@link #setOverrideLegendName(int, String)} because the first
-     * keys (the thresholds) will otherwise be lost when the {@link #data} attribute is populated.
+     * keys (the thresholds) will otherwise be lost when the data is populated.
      * 
      * @param rawData the input data must be of type {@link MetricOutputMapByLeadThreshold} with generic
      *            {@link ScalarOutput}.
      */
-    @SuppressWarnings("unchecked")
     @Override
-    protected void preparePlotData(final Object rawData)
+    protected void preparePlotData(final MetricOutputMapByLeadThreshold<ScalarOutput> rawData)
     {
         //Cast the raw data input and check the size.
-        final MetricOutputMapByLeadThreshold<ScalarOutput> input =
-                                                                 (MetricOutputMapByLeadThreshold<ScalarOutput>)rawData;
         final List<MetricOutputMapByLeadThreshold<ScalarOutput>> data = new ArrayList<>();
-        for(final Integer lead: input.keySetByLead())
+        for(final Integer lead: rawData.keySetByLead())
         {
-            data.add(input.sliceByLead(lead));
+            data.add(rawData.sliceByLead(lead));
         }
         setPlotData(data);
-    }
-
-    /**
-     * Data sliced by series, i.e. one lead time per slice, where each slice contains all thresholds for one score.
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public List<MetricOutputMapByLeadThreshold<ScalarOutput>> getPlotData()
-    {
-        return (List<MetricOutputMapByLeadThreshold<ScalarOutput>>)getPlotDataAsObject();
     }
 
     @Override

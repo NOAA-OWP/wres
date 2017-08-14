@@ -22,23 +22,24 @@ import ohd.hseb.charter.parameters.SeriesDrawingParameters;
  * Instructions for implementing a subclass of {@link WRESXYChartDataSource} are as follows (recommend using another
  * subclass as a starting point and modifying it as needed):<br>
  * <br>
- * 1. Override the method {@link #getInput()} setting the return class appropriately.<br>
+ * 1. Define the generic types appropriately; see parameter descriptions.<br>
  * <br>
- * 2. Override the method {@link #instantiateCopyOfDataSource()} to have that appropriate return type and initialize a
- * new instance of that return type appropriately; see the method.<br>
+ * 2. Override the method {@link #instantiateCopyOfDataSource()} to initialize a new instance data source; see the
+ * method.<br>
  * <br>
  * 3. Override the method {@link #instantiateXYDataset()} to instantiate an instance of the
- * {@link WRESAbstractXYDataset} using the return value of {@link #getInput()} as the data for that data set.<br>
+ * {@link WRESAbstractXYDataset}.<br>
  * <br>
  * 4. Create a constructor that calls {@link WRESXYChartDataSource#WRESXYChartDataSource(int, Object, int)} and then
- * overrides any parameters withing {@link #getDefaultFullySpecifiedDataSourceDrawingParameters()} appropriately.
+ * overrides any parameters within {@link #getDefaultFullySpecifiedDataSourceDrawingParameters()} appropriately.
  * 
  * @author Hank.Herr
+ * @param <T> The generic type of the {@link #input} specifying the data to plot.
  */
-public abstract class WRESXYChartDataSource extends DefaultXYChartDataSource
+public abstract class WRESXYChartDataSource<T> extends DefaultXYChartDataSource
 {
 
-    private final Object input;
+    private final T input;
 
     /**
      * See javadoc of {@link #buildInitialParameters(int, int)}. This will call that method to initialize parameters. Be
@@ -47,11 +48,11 @@ public abstract class WRESXYChartDataSource extends DefaultXYChartDataSource
      * (though it shouldn't be).
      * 
      * @param orderIndex The data source order index.
-     * @param input The input providing data to plot, which is only known as an {@link Object} to this abstract class.
+     * @param input The input providing data to plot.
      * @param numberOfSeries The number of series that will be plotted. A subclass should determine this from the input
-     *            {@link Object} argument when calling.
+     *            argument when calling.
      */
-    protected WRESXYChartDataSource(final int orderIndex, final Object input, final int numberOfSeries)
+    protected WRESXYChartDataSource(final int orderIndex, final T input, final int numberOfSeries)
     {
         Objects.requireNonNull(input, "Specify a non-null input dataset for building the chart data source.");
         this.input = input;
@@ -89,12 +90,10 @@ public abstract class WRESXYChartDataSource extends DefaultXYChartDataSource
         }
     }
 
-    protected Object getInputAsObject()
+    protected T getInput()
     {
         return input;
     }
-
-    protected abstract Object getInput();
 
     /**
      * @return A new instance of this {@link WRESXYChartDataSource} subclass. Note that
@@ -103,17 +102,17 @@ public abstract class WRESXYChartDataSource extends DefaultXYChartDataSource
      *         Hence, the subclass does not need to worry about calling that method to copy over other parts of the data
      *         source.
      */
-    protected abstract WRESXYChartDataSource instantiateCopyOfDataSource();
+    protected abstract WRESXYChartDataSource<T> instantiateCopyOfDataSource();
 
     /**
      * @return An instance of {@link WRESAbstractXYDataset} to use in building the {@link JFreeChart}.
      */
-    protected abstract WRESAbstractXYDataset instantiateXYDataset();
+    protected abstract WRESAbstractXYDataset<?, ?> instantiateXYDataset();
 
     @Override
     public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
     {
-        final WRESXYChartDataSource copy = instantiateCopyOfDataSource();
+        final WRESXYChartDataSource<T> copy = instantiateCopyOfDataSource();
         copy.copyTheseParametersIntoDataSource(this);
         return copy;
     }
@@ -121,7 +120,7 @@ public abstract class WRESXYChartDataSource extends DefaultXYChartDataSource
     @Override
     protected XYDataset buildXYDataset(final DataSourceDrawingParameters parameters) throws XYChartDataSourceException
     {
-        final WRESAbstractXYDataset dataSet = instantiateXYDataset();
+        final WRESAbstractXYDataset<?, ?> dataSet = instantiateXYDataset();
 
         //Set the legend names based on the passed in parameters, which are fully processed.
         //Legend names are set in the dataSet itself, which is why this must be done when the dataSet is created.

@@ -14,7 +14,7 @@ import wres.datamodel.metric.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public class MeanSquareError<S extends SingleValuedPairs> extends DecomposableDoubleErrorScore<S>
+public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
 {
 
     @Override
@@ -85,12 +85,12 @@ public class MeanSquareError<S extends SingleValuedPairs> extends DecomposableDo
      * Returns the Mean Square Error without any decomposition.
      * 
      * @param s the pairs
-     * @return the mean square error without decomposition.
+     * @return the mean square error without decomposition
      */
 
     private VectorOutput getMSENoDecomp(final SingleValuedPairs s)
     {
-        double mse = s.getData().stream().mapToDouble(FunctionFactory.squareError()).average().getAsDouble();
+        double mse = getSumOfSquareError(s)/s.size();
         //Metadata
         final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
         return getDataFactory().ofVectorOutput(new double[]{mse}, metOut);

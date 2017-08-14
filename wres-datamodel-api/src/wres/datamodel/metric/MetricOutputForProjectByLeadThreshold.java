@@ -45,7 +45,8 @@ public interface MetricOutputForProjectByLeadThreshold
      * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
      */
 
-    MetricOutputMultiMapByLeadThreshold<MetricOutput<?>> getOutput(MetricOutputGroup... outGroup) throws InterruptedException, ExecutionException;
+    MetricOutputMultiMapByLeadThreshold<MetricOutput<?>> getOutput(MetricOutputGroup... outGroup) throws InterruptedException,
+                                                                                                  ExecutionException;
 
     /**
      * Returns all {@link MetricOutputGroup} for which outputs are available.
@@ -83,7 +84,8 @@ public interface MetricOutputForProjectByLeadThreshold
      * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
      */
 
-    MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> getMultiVectorOutput() throws InterruptedException, ExecutionException;
+    MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> getMultiVectorOutput() throws InterruptedException,
+                                                                                  ExecutionException;
 
     /**
      * Returns a {@link MetricOutputMultiMapByLeadThreshold} of {@link MatrixOutput} or null if no output exists.

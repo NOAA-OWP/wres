@@ -197,7 +197,6 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
         }
         DatasetIdentifier identifier = metIn.getIdentifier();
         //Add the scenario ID associated with the baseline input
-        //This is *not* the baseline ID of the baseline input
         if(Objects.nonNull(baselineID))
         {
             identifier = dataFactory.getMetadataFactory().getDatasetIdentifier(identifier, baselineID.getScenarioID());
@@ -208,7 +207,8 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
                                              metIn.getDimension(),
                                              getID(),
                                              componentID,
-                                             identifier);
+                                             identifier,
+                                             metIn.getLeadTime());
     }
 
     /**

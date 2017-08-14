@@ -13,6 +13,9 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
@@ -141,38 +144,45 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     final List<MetricConstants> metrics;
 
     /**
-     * The metric futures.
+     * An array of {@link MetricOutputGroup} that should be retained and merged across calls. May be null.
      */
 
-    final MetricFutures futures;
+    final MetricOutputGroup[] mergeList;
+
+    /**
+     * The metric futures from previous calls.
+     */
+
+    MetricFutures futures = null;
+
+    /**
+     * Default logger.
+     */
+
+    static final Logger LOGGER = LoggerFactory.getLogger(MetricProcessor.class);
 
     /**
      * Returns a {@link MetricOutputForProjectByLeadThreshold} for the last available results or null if
-     * {@link #hasStoredMetricOutput()} returns false.
+     * {@link #willCacheMetricOutput()} returns false.
      * 
      * @return a {@link MetricOutputForProjectByLeadThreshold} or null
      */
 
     public MetricOutputForProjectByLeadThreshold getStoredMetricOutput()
     {
-        return hasStoredMetricOutput() ? futures.getMetricOutput() : null;
+        return willCacheMetricOutput() ? futures.getMetricOutput() : null;
     }
 
     /**
-     * Returns true when stored results are available, false otherwise. Stored results are only available when two
-     * conditions are met:
-     * <ol>
-     * <li>The {@link MetricProcessor} has been constructed to merge across sequential calls to {@link #apply(Object)}
-     * for specific {@link MetricOutputGroup}; and</li>
-     * <li>One or more calls were made to {@link #apply(Object)} before this method is called.</li>
-     * </ol>
+     * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
+     * false otherwise.
      * 
-     * @return true if stored results are available, false otherwise
+     * @return true if results will be cached, false otherwise
      */
 
-    public boolean hasStoredMetricOutput()
+    public boolean willCacheMetricOutput()
     {
-        return futures.hasMetricOutput();
+        return mergeList.length > 0;
     }
 
     /**
@@ -319,7 +329,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         localThresholds = new EnumMap<>(MetricConstants.class);
         globalThresholds = new EnumMap<>(MetricInputGroup.class);
         setThresholds(dataFactory, config);
-        futures = new MetricFutures(mergeList);
+        this.mergeList = mergeList;
     }
 
     /**
@@ -341,6 +351,34 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     }
 
     /**
+     * Merges the input {@link MetricFutures} with any existing {@link MetricFutures} defined for this processor.
+     * 
+     * @param mergeFuture the futures to merge
+     * @throws MetricConfigurationException if the input futures contain unsupported output types
+     */
+
+    void mergeFutures(MetricFutures mergeFutures)
+    {
+        Objects.requireNonNull(mergeFutures,"Specify non-null futures for merging.");
+        //Merge futures if cached outputs identified
+        if(willCacheMetricOutput())
+        {
+            MetricFutures.Builder builder = new MetricFutures.Builder();
+            if(Objects.nonNull(futures))
+            {
+                futures = builder.addDataFactory(dataFactory)
+                                 .addFutures(futures, mergeList)
+                                 .addFutures(mergeFutures, mergeList)
+                                 .build();
+            }
+            else
+            {
+                futures = builder.addDataFactory(dataFactory).addFutures(mergeFutures, mergeList).build();
+            }
+        }
+    }
+
+    /**
      * Processes a set of metric futures for {@link SingleValuedPairs}.
      * 
      * @param leadTime the lead time
@@ -349,7 +387,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    void processSingleValuedPairs(Integer leadTime, SingleValuedPairs input, MetricFutures futures)
+    void processSingleValuedPairs(Integer leadTime, SingleValuedPairs input, MetricFutures.Builder futures)
     {
 
         //Metric-specific overrides are currently unsupported
@@ -435,65 +473,36 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
     /**
      * Store of metric futures for each output type. Use {@ link #getMetricOutput()} to obtain the processed
-     * {@link MetricOutputForProjectByLeadThreshold}, which blocks until all results are available. Optionally, metric
-     * futures may be retained and merged across specific calls to {@link #getMetricOutput()}.
+     * {@link MetricOutputForProjectByLeadThreshold}.
      */
 
-    class MetricFutures
+    static class MetricFutures
     {
-
-        /**
-         * An array of {@link MetricOutputGroup} that should be retained and merged across calls. May be null.
-         */
-
-        private List<MetricOutputGroup> mergeList = new ArrayList<>();
 
         /**
          * Scalar results.
          */
 
-        final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
-                                                                                                                new ConcurrentHashMap<>();
+        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
+                                                                                                                        new ConcurrentHashMap<>();
         /**
          * Vector results.
          */
 
-        final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
-                                                                                                                new ConcurrentHashMap<>();
-
+        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
+                                                                                                                        new ConcurrentHashMap<>();
         /**
          * Multivector results.
          */
 
-        final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
-                                                                                                                          new ConcurrentHashMap<>();
+        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
+                                                                                                                                  new ConcurrentHashMap<>();
 
         /**
-         * Construct with a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls
-         * to {@link #getMetricOutput()}.
-         * 
-         * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged
+         * Instance of a {@link DataFactory}
          */
 
-        private MetricFutures(MetricOutputGroup... mergeList)
-        {
-            Objects.requireNonNull("Expected a non-null forecast lead time.");
-            if(Objects.nonNull(mergeList))
-            {
-                this.mergeList = Arrays.asList(mergeList);
-            }
-        }
-
-        /**
-         * Returns true if outputs are available, false otherwise.
-         * 
-         * @return true if outputs are available, false otherwise
-         */
-
-        private boolean hasMetricOutput()
-        {
-            return !scalar.isEmpty() || !vector.isEmpty() || !multivector.isEmpty();
-        }
+        private final DataFactory dataFactory;
 
         /**
          * Returns the results associated with the futures.
@@ -508,21 +517,114 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             scalar.forEach(builder::addScalarOutput);
             vector.forEach(builder::addVectorOutput);
             multivector.forEach(builder::addMultiVectorOutput);
-            //Remove any elements that should not be retained for merge on next call
-            if(!mergeList.contains(MetricOutputGroup.SCALAR))
-            {
-                scalar.clear();
-            }
-            if(!mergeList.contains(MetricOutputGroup.VECTOR))
-            {
-                vector.clear();
-            }
-            if(!mergeList.contains(MetricOutputGroup.MULTIVECTOR))
-            {
-                multivector.clear();
-            }
             return builder.build();
         }
+
+        /**
+         * A builder for the metric futures.
+         */
+
+        static class Builder
+        {
+            /**
+             * Scalar results.
+             */
+
+            final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
+                                                                                                                    new ConcurrentHashMap<>();
+            /**
+             * Vector results.
+             */
+
+            final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
+                                                                                                                    new ConcurrentHashMap<>();
+            /**
+             * Multivector results.
+             */
+
+            final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
+                                                                                                                              new ConcurrentHashMap<>();
+            /**
+             * Instance of a {@link DataFactory}
+             */
+
+            private DataFactory dataFactory;
+
+            /**
+             * Adds a data factory.
+             * 
+             * @param dataFactory the data factory
+             */
+
+            Builder addDataFactory(DataFactory dataFactory)
+            {
+                this.dataFactory = dataFactory;
+                return this;
+            }
+
+            /**
+             * Adds the outputs from an existing {@link MetricFutures} for the outputs that are included in the merge
+             * list.
+             * 
+             * @param futures the input futures
+             * @param mergeList the merge list
+             * @throws MetricConfigurationException
+             */
+
+            Builder addFutures(MetricFutures futures, MetricOutputGroup[] mergeList)
+            {
+                if(Objects.nonNull(mergeList))
+                {
+                    for(MetricOutputGroup nextGroup: mergeList)
+                    {
+                        switch(nextGroup)
+                        {
+                            case SCALAR:
+                                scalar.putAll(futures.scalar);
+                                break;
+                            case VECTOR:
+                                vector.putAll(futures.vector);
+                                break;
+                            case MULTIVECTOR:
+                                multivector.putAll(futures.multivector);
+                                break;
+                            default:
+                                LOGGER.error("Unsupported metric group '{}'.", nextGroup);
+                        }
+                    }
+                }
+                return this;
+            }
+
+            /**
+             * Build the metric futures.
+             * 
+             * @return the metric futures
+             */
+
+            MetricFutures build()
+            {
+                return new MetricFutures(this);
+            }
+
+        }
+
+        /**
+         * Hidden constructor.
+         * 
+         * @param builder the builder
+         */
+
+        private MetricFutures(Builder builder)
+        {
+            Objects.requireNonNull(builder.dataFactory,
+                                   "Specify a non-null data factory from which to construct the metric futures.");
+            scalar.putAll(builder.scalar);
+            vector.putAll(builder.vector);
+            multivector.putAll(builder.multivector);
+            dataFactory = builder.dataFactory;
+        }
+
     }
 
     /**

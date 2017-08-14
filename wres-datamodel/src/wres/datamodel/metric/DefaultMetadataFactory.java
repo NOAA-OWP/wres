@@ -61,14 +61,15 @@ public class DefaultMetadataFactory implements MetadataFactory
                                                   final Dimension inputDim,
                                                   final MetricConstants metricID,
                                                   final MetricConstants componentID,
-                                                  final DatasetIdentifier identifier)
+                                                  final DatasetIdentifier identifier,
+                                                  final Integer leadTime)
     {
         class MetricOutputMetadataImpl extends MetadataImpl implements MetricOutputMetadata
         {
 
             private MetricOutputMetadataImpl()
             {
-                super(dim, identifier);
+                super(dim, identifier, leadTime);
             }
 
             @Override
@@ -232,7 +233,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             case CONTINGENCY_TABLE:
                 return "CONTINGENCY TABLE";
             case CORRELATION_PEARSONS:
-                return "CORRELATION PEARSONS";
+                return "PEARSON CORRELATION COEFFICIENT";
             case CRITICAL_SUCCESS_INDEX:
                 return "CRITICAL SUCCESS INDEX";
             case EQUITABLE_THREAT_SCORE:
@@ -285,7 +286,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             case CONTINGENCY_TABLE:
                 return "CONTINGENCY TABLE";
             case CORRELATION_PEARSONS:
-                return "CORRELATION PEARSONS";
+                return "CORRELATION";
             case CRITICAL_SUCCESS_INDEX:
                 return "CSI";
             case EQUITABLE_THREAT_SCORE:

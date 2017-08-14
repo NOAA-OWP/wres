@@ -2,6 +2,8 @@ package wres.vis;
 
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.jfree.chart.JFreeChart;
 
@@ -17,6 +19,7 @@ import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.datamodel.metric.DatasetIdentifier;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MultiVectorOutput;
@@ -50,92 +53,120 @@ public abstract class ChartEngineFactory
                                                     "scalarOutputTemplate.xml"));
         plotTypeInfoMap.put(VisualizationPlotType.SINGLE_VALUED_PAIRS,
                             new PlotTypeInformation(SingleValuedPairs.class, null, "singleValuedPairsTemplate.xml"));
+        plotTypeInfoMap.put(VisualizationPlotType.RELIABILITY_DIAGRAM,
+                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                    MultiVectorOutput.class,
+                                                    "reliabilityDiagramTemplate.xml"));
     }
 
     /**
-     * Presently valid variables includes only lead time and threshold.
-     * 
-     * @author Hank.Herr
+     * Defines the valid visualization plot types.
      */
     public static enum VisualizationPlotType
     {
         LEAD_THRESHOLD, THRESHOLD_LEAD, SINGLE_VALUED_PAIRS, RELIABILITY_DIAGRAM
     };
 
-
-    //TODO Java doc this.  Also, have it look through the input lead time keys and slice based on it.  For each key, generate a ChartEngine.
-    //The only difference between chart engines will be the leadHour argument.  This can be done in a simple map.
-    public static ChartEngine buildMultiVectorOutputChartEngine(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
-                                                                 final MetadataFactory factory,
-                                                                 final VisualizationPlotType plotType,
-                                                                 final String templateResourceName,
-                                                                 final String overrideParametersStr) throws ChartEngineException,
-                                                                                                     GenericXMLReadingHandlerException
+    /**
+     * @param input The metric output to plot.
+     * @param factory The metadata from which arguments will be identified.
+     * @param plotType An optional plot type to generate, where multiple plot types are supported for the input. 
+     *            May be null.
+     * @param templateResourceName Name of the resource to load which provides the default template for chart
+     *            construction.
+     * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
+     *            overrides for the appearance of chart.
+     * @return A {@link ChartEngine} that can be used to build the {@link JFreeChart} and output the image. This can be
+     *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
+     *         construct the image file.
+     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
+     */
+    public static ConcurrentMap<Integer, ChartEngine> buildMultiVectorOutputChartEngineByLead(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                                                                              final MetadataFactory factory,
+                                                                                              final VisualizationPlotType plotType,
+                                                                                              final String templateResourceName,
+                                                                                              final String overrideParametersStr) throws ChartEngineException,
+                                                                                                                                  GenericXMLReadingHandlerException
     {
-        //Build the sources.
-        XYChartDataSource reliabilitySource = null;
-        XYChartDataSource sampleSizeSource = null;
-        if(plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM))
+        final ConcurrentMap<Integer, ChartEngine> results = new ConcurrentSkipListMap<>();
+
+        for(final Integer lead: input.keySetByLead())
         {
-            reliabilitySource = new ReliabilityDiagramXYChartDataSource(0, input);
-            sampleSizeSource = new ReliabilityDiagramSampleSizeXYChartDataSource(1, input);
-        }
-        else
-        {
-            throw new IllegalArgumentException("Plot type of " + plotType + " is not valid for a reliability diagram.");
-        }
+            final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice = input.sliceByLead(lead);
 
-        //Setup the arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
-
-        final MetricOutputMetadata meta = input.getMetadata();
-        final DatasetIdentifier identifier = meta.getIdentifier();
-
-        //Setup fixed arguments.
-        arguments.addArgument("locationName", identifier.getGeospatialID());
-        arguments.addArgument("variableName", identifier.getVariableID());
-        arguments.addArgument("primaryScenario", identifier.getScenarioID());
-        arguments.addArgument("metricName", factory.getMetricName(meta.getMetricID()));
-        arguments.addArgument("metricShortName", factory.getMetricShortName(meta.getMetricID()));
-        arguments.addArgument("outputUnitsText", " [" + meta.getDimension() + "]");
-        arguments.addArgument("inputUnitsText", " [" + meta.getInputDimension() + "]");
-        
-        //Specific to this plot.
-        arguments.addArgument("leadHour", input.getKey(0).getFirstKey().toString());
-
-        //Setup conditional arguments
-        String baselineText = "";
-        if(!Objects.isNull(identifier.getScenarioIDForBaseline()))
-        {
-            baselineText = " against predictions from " + identifier.getScenarioIDForBaseline();
-        }
-        arguments.addArgument("baselineText", baselineText);
-
-        //Process override parameters.
-        ChartDrawingParameters override = null;
-        if(overrideParametersStr != null)//TRIM ONLY IF NOT NULL!
-        {
-            final String usedStr = overrideParametersStr.trim();
-            if(!usedStr.isEmpty())
+            //Build the sources.
+            XYChartDataSource reliabilitySource = null;
+            XYChartDataSource sampleSizeSource = null;
+            
+            // JB @ 13 August 2017: plotType should be an optional parameter where multiple types are supported
+            // for a given metric. Otherwise, obtain the metric identifier from the metadata
+            if(input.getMetadata().getMetricID()==MetricConstants.RELIABILITY_DIAGRAM)
             {
-                override = new ChartDrawingParameters();
-                XMLTools.readXMLFromString(usedStr, override);
+                reliabilitySource = new ReliabilityDiagramXYChartDataSource(0, inputSlice);
+                sampleSizeSource = new ReliabilityDiagramSampleSizeXYChartDataSource(1, inputSlice);
             }
+            else
+            {
+                throw new IllegalArgumentException("Plot type of " + plotType
+                    + " is not valid for a reliability diagram.");
+            }
+
+            //Setup the arguments.
+            final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
+
+            final MetricOutputMetadata meta = inputSlice.getMetadata();
+            final DatasetIdentifier identifier = meta.getIdentifier();
+
+            //Setup fixed arguments.
+            arguments.addArgument("locationName", identifier.getGeospatialID());
+            arguments.addArgument("variableName", identifier.getVariableID());
+            arguments.addArgument("primaryScenario", identifier.getScenarioID());
+            arguments.addArgument("metricName", factory.getMetricName(meta.getMetricID()));
+            arguments.addArgument("metricShortName", factory.getMetricShortName(meta.getMetricID()));
+            arguments.addArgument("outputUnitsText", " [" + meta.getDimension() + "]");
+            arguments.addArgument("inputUnitsText", " [" + meta.getInputDimension() + "]");
+
+            //Specific to this plot.
+            arguments.addArgument("leadHour", inputSlice.getKey(0).getFirstKey().toString());
+
+            //Setup conditional arguments
+            String baselineText = "";
+            if(!Objects.isNull(identifier.getScenarioIDForBaseline()))
+            {
+                baselineText = " against predictions from " + identifier.getScenarioIDForBaseline();
+            }
+            arguments.addArgument("baselineText", baselineText);
+
+            //Process override parameters.
+            ChartDrawingParameters override = null;
+            if(overrideParametersStr != null)//TRIM ONLY IF NOT NULL!
+            {
+                final String usedStr = overrideParametersStr.trim();
+                if(!usedStr.isEmpty())
+                {
+                    override = new ChartDrawingParameters();
+                    XMLTools.readXMLFromString(usedStr, override);
+                }
+            }
+
+            //Build the ChartEngine instance.
+            final ChartEngine engine = ChartTools.buildChartEngine(
+                                                                   Lists.newArrayList(reliabilitySource,
+                                                                                      sampleSizeSource),
+                                                                   arguments,
+                                                                   templateResourceName,
+                                                                   override);
+            results.put(lead, engine);
         }
-
-        //Build the ChartEngine instance.
-        final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(reliabilitySource, sampleSizeSource),
-                                                               arguments,
-                                                               templateResourceName,
-                                                               override);
-
-        return engine;
+        return results;
     }
 
     /**
      * @param input The metric output to plot.
-     * @param plotType The {@link VisualizationPlotType} to generate. For this chart, the plot type must be one of
-     *            either {@link VisualizationPlotType#LEAD_THRESHOLD} or {@link VisualizationPlotType#THRESHOLD_LEAD}.
+     * @param factory The metadata from which arguments will be identified.
+     * @param plotType The plot type to generate. For this chart, the plot type must be either
+     *            {@link VisualizationPlotType#LEAD_THRESHOLD} or {@link VisualizationPlotType#THRESHOLD_LEAD}.
      * @param templateResourceName Name of the resource to load which provides the default template for chart
      *            construction.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
@@ -188,7 +219,7 @@ public abstract class ChartEngineFactory
         String baselineText = "";
         if(!Objects.isNull(identifier.getScenarioIDForBaseline()))
         {
-            baselineText = " against predictions from " + identifier.getScenarioIDForBaseline();
+            baselineText = " Against Predictions From " + identifier.getScenarioIDForBaseline();
         }
         arguments.addArgument("baselineText", baselineText);
 
@@ -277,12 +308,12 @@ public abstract class ChartEngineFactory
      */
     public static class PlotTypeInformation
     {
-        private final Class expectedPlotDataClass;
-        private final Class dataGenericType;
+        private final Class<?> expectedPlotDataClass;
+        private final Class<?> dataGenericType;
         private final String defaultTemplateName;
 
-        public PlotTypeInformation(final Class expectedPlotDataClass,
-                                   final Class dataGenericType,
+        public PlotTypeInformation(final Class<?> expectedPlotDataClass,
+                                   final Class<?> dataGenericType,
                                    final String defaultTemplateName)
         {
             this.expectedPlotDataClass = expectedPlotDataClass;
@@ -290,12 +321,12 @@ public abstract class ChartEngineFactory
             this.defaultTemplateName = defaultTemplateName;
         }
 
-        public Class getExpectedPlotDataClass()
+        public Class<?> getExpectedPlotDataClass()
         {
             return expectedPlotDataClass;
         }
 
-        public Class getDataGenericType()
+        public Class<?> getDataGenericType()
         {
             return dataGenericType;
         }

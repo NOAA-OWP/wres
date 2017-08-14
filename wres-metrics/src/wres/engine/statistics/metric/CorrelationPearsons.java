@@ -49,8 +49,8 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
             Metadata in = s.getMetadata();
             //Set the metadata explicitly since this class implements Collectable and getID() may be overridden
             MetricOutputMetadata meta = mF.getOutputMetadata(s.size(),
-                                                             in.getDimension(),
                                                              mF.getDimension(),
+                                                             in.getDimension(),
                                                              MetricConstants.CORRELATION_PEARSONS,
                                                              MetricConstants.MAIN,
                                                              in.getIdentifier());

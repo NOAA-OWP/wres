@@ -3,7 +3,7 @@ package wres.vis;
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.MultiVectorOutput;
 
-public class ReliabilityDiagramSampleSizeXYChartDataSource extends WRESXYChartDataSource
+public class ReliabilityDiagramSampleSizeXYChartDataSource extends WRESXYChartDataSource<MetricOutputMapByLeadThreshold<MultiVectorOutput>>
 {
     /**
      * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
@@ -30,13 +30,6 @@ public class ReliabilityDiagramSampleSizeXYChartDataSource extends WRESXYChartDa
     protected ReliabilityDiagramSampleSizeXYDataset instantiateXYDataset()
     {
         return new ReliabilityDiagramSampleSizeXYDataset(getInput());
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    protected MetricOutputMapByLeadThreshold<MultiVectorOutput> getInput()
-    {
-        return (MetricOutputMapByLeadThreshold<MultiVectorOutput>)getInputAsObject();
     }
 
 }

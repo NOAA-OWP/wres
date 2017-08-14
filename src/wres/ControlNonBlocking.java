@@ -8,13 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.xml.bind.ValidationEvent;
 
@@ -39,6 +41,7 @@ import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
+import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
 import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.ScalarOutput;
@@ -47,22 +50,23 @@ import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
 import wres.io.Operations;
-import wres.io.concurrency.WRESCallable;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
-import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
 
 /**
- * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
+ * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}. The processing
+ * pipeline is constructed with a {@link ForkJoinPool} and uses {@link CompletableFuture} to chain together tasks
+ * asynchronously. This allows for work-stealing from I/O tasks that are waiting, and allows for consumers to continue
+ * operating as pairs become available, thereby avoiding deadlock and OutOfMemoryException with large datasets.
  * 
- * @author jesse
  * @author james.brown@hydrosolved.com
+ * @author jesse
  * @version 0.1
  * @since 0.1
  */
-public class Control implements Function<String[], Integer>
+public class ControlNonBlocking implements Function<String[], Integer>
 {
 
     /**
@@ -79,21 +83,12 @@ public class Control implements Function<String[], Integer>
         {
             return -1;
         }
-        // Process the configurations in parallel
-        ExecutorService processPairExecutor = null;
+        // Process the configurations with a ForkJoinPool
+        ForkJoinPool processPairExecutor = null;
         try
         {
-            // Build a processing pipeline.           
-            // Currently, this uses a fixed thread pool with an unbounded queue. Since the WRES is typically I/O bound, 
-            // I/O threads will block and cause an OutOfMemoryException at some point, unless all data fits into RAM, 
-            // which is highly unlikely for many practical problems, given the design of the Data Storage Model. 
-            // This will probably require a bounded queue/executor (see JCIP by Goetz: http://jcip.net/). However, a 
-            // bounded queue is difficult to calibrate effectively. Instead, consider the approach demonstrated in 
-            // ControlNonBlocking.java, which uses a ForkJoinPool together with CompletableFuture. This allows for 
-            // work-stealing from I/O tasks that are waiting, and allows for consumers to continue operating as pairs 
-            // become available, thereby avoiding deadlock and OutOfMemoryException with large datasets
-            ThreadFactory factory = runnable -> new Thread(runnable, "Control Thread: ");
-            processPairExecutor = Executors.newFixedThreadPool(MAX_THREADS, factory);
+            // Build a processing pipeline
+            processPairExecutor = new ForkJoinPool();
 
             // Iterate through the configurations
             for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
@@ -327,27 +322,36 @@ public class Control implements Function<String[], Integer>
         // Build an InputGenerator for the next feature
         InputGenerator metricInputs = Operations.getInputs(projectConfig, feature);
 
-        // Queue up processing of fetched pairs.            
-        List<PairsByLeadProcessor> tasks = new ArrayList<>();
+        // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
+        final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
+
+        //Iterate
         for(Future<MetricInput<?>> nextInput: metricInputs)
         {
-            PairsByLeadProcessor processTask = new PairsByLeadProcessor(feature,
-                                                                        projectConfigPlus,
-                                                                        processor,
-                                                                        nextInput);
-            processTask.setOnRun(ProgressMonitor.onThreadStartHandler());
-            processTask.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-            tasks.add(processTask);
+            // Complete all tasks asynchronously:
+            // 1. Get some pairs from the database
+            // 2. Compute the metrics
+            // 3. Process any intermediate verification results
+            final CompletableFuture<Void> c =
+                                            CompletableFuture.supplyAsync(new PairsByLeadProcessor(nextInput),
+                                                                          processPairExecutor)
+                                                             .thenApplyAsync(processor, processPairExecutor)
+                                                             .thenAcceptAsync(new IntermediateResultProcessor(feature,
+                                                                                                              projectConfigPlus),
+                                                                              processPairExecutor);
+
+            //Add the future to the list
+            listOfFutures.add(c);
         }
-        //Invoke all tasks and process within-pipeline products
+
+        //Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
         try
         {
-            processPairExecutor.invokeAll(tasks);
+            doAllOrException(listOfFutures).join();
         }
-        catch(InterruptedException e)
+        catch(final Exception e)
         {
-            LOGGER.error("Interrupted while processing metrics for feature {}.", feature.getLocation().getLid(), e);
-            Thread.currentThread().interrupt();
+            LOGGER.error("While processing feature '{}'.", feature.getLocation().getLid(), e);
             return false;
         }
 
@@ -370,7 +374,7 @@ public class Control implements Function<String[], Integer>
     /**
      * Processes all charts for which metric outputs were cached across successive calls to a {@link MetricProcessor}.
      * 
-     * @param feature the feature
+     * @param feature the feature for which the charts are defined
      * @param projectConfigPlus the project configuration
      * @param processor the {@link MetricProcessor} that contains the results for all chart types
      * @param outGroup the {@link MetricOutputGroup} for which charts are required
@@ -378,9 +382,9 @@ public class Control implements Function<String[], Integer>
      */
 
     private static boolean processCachedCharts(Feature feature,
-                                        ProjectConfigPlus projectConfigPlus,
-                                        MetricProcessor processor,
-                                        MetricOutputGroup... outGroup)
+                                               ProjectConfigPlus projectConfigPlus,
+                                               MetricProcessor processor,
+                                               MetricOutputGroup... outGroup)
     {
         //True until failed
         boolean returnMe = true;
@@ -527,7 +531,7 @@ public class Control implements Function<String[], Integer>
 
     /**
      * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, forecast lead times,
-     * and thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. 
+     * and thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}.
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
@@ -558,7 +562,7 @@ public class Control implements Function<String[], Integer>
                 // Build one chart per lead time
                 for(Map.Entry<Integer, ChartEngine> nextEntry: engines.entrySet())
                 {
-                    //Build the output file name
+                    // Build the output file name
                     StringBuilder pathBuilder = new StringBuilder();
                     pathBuilder.append(dest.getPath())
                                .append(feature.getLocation().getLid())
@@ -624,7 +628,6 @@ public class Control implements Function<String[], Integer>
         {
             height = dest.getGraphical().getHeight();
         }
-
         ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
     }
 
@@ -682,17 +685,59 @@ public class Control implements Function<String[], Integer>
      * Task that waits for pairs to arrive, computes metrics from them, and then produces any intermediate
      * (within-pipeline) products.
      */
-    private static class PairsByLeadProcessor extends WRESCallable<MetricOutputForProjectByLeadThreshold>
+    private static class PairsByLeadProcessor implements Supplier<MetricInput<?>>
     {
-        /**
-         * The metric processor.
-         */
-        private final MetricProcessor processor;
-
         /**
          * The future metric input.
          */
         private final Future<MetricInput<?>> input;
+
+        /**
+         * Construct.
+         * 
+         * @param projectConfigPlus the project configuration
+         * @param processor the metric processor
+         * @param input the future metric input
+         */
+
+        private PairsByLeadProcessor(final Future<MetricInput<?>> input)
+        {
+            this.input = input;
+        }
+
+        @Override
+        public MetricInput<?> get()
+        {
+            MetricInput<?> nextInput = null;
+            try
+            {
+                nextInput = input.get();
+                if(LOGGER.isInfoEnabled())
+                {
+                    LOGGER.info("Completed processing of pairs for feature '{}' at lead time {}.",
+                                nextInput.getMetadata().getIdentifier().getGeospatialID(),
+                                nextInput.getMetadata().getLeadTime());
+                }
+            }
+            catch(InterruptedException e)
+            {
+                LOGGER.error("Interrupted while processing pairs.", e);
+                Thread.currentThread().interrupt();
+            }
+            catch(Exception e)
+            {
+                LOGGER.error("While processing pairs:", e);
+            }
+            return nextInput;
+        }
+    }
+
+    /**
+     * A function that does something with a set of results (in this case, prints to a logger).
+     */
+
+    private static class IntermediateResultProcessor implements Consumer<MetricOutputForProjectByLeadThreshold>
+    {
 
         /**
          * The project configuration.
@@ -704,73 +749,42 @@ public class Control implements Function<String[], Integer>
          * The feature.
          */
 
-        private Feature feature;
+        private final Feature feature;
 
         /**
          * Construct.
          * 
          * @param projectConfigPlus the project configuration
-         * @param processor the metric processor
-         * @param input the future metric input
          */
 
-        private PairsByLeadProcessor(Feature feature,
-                                     ProjectConfigPlus projectConfigPlus,
-                                     MetricProcessor processor,
-                                     Future<MetricInput<?>> input)
+        private IntermediateResultProcessor(Feature feature, ProjectConfigPlus projectConfigPlus)
         {
-            this.feature = feature;
             this.projectConfigPlus = projectConfigPlus;
-            this.processor = processor;
-            this.input = input;
+            this.feature = feature;
         }
 
         @Override
-        protected MetricOutputForProjectByLeadThreshold execute() throws Exception
+        public void accept(final MetricOutputForProjectByLeadThreshold input)
         {
+            MetricOutputMetadata meta = null;
             try
             {
-                MetricInput<?> nextInput = input.get();
-                if(LOGGER.isInfoEnabled())
+                if(input.hasOutput(MetricOutputGroup.MULTIVECTOR))
                 {
-                    LOGGER.info("Completed processing of pairs for feature '{}' at lead time {}.",
-                                nextInput.getMetadata().getIdentifier().getGeospatialID(),
-                                nextInput.getMetadata().getLeadTime());
+                    processMultiVectorCharts(feature, projectConfigPlus, input.getMultiVectorOutput());
+                    meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
+                    if(LOGGER.isInfoEnabled())
+                    {
+                        LOGGER.info("Completed processing of intermediate metrics results for feature '{}' at lead time {}.",
+                                    meta.getIdentifier().getGeospatialID(),
+                                    meta.getLeadTime());
+                    }
                 }
-                MetricOutputForProjectByLeadThreshold results = processor.apply(nextInput);
-                //Process the within-pipeline products
-                processMultiVectorCharts(feature, projectConfigPlus, results.getMultiVectorOutput());
-                if(LOGGER.isInfoEnabled())
-                {
-                    LOGGER.info("Completed processing of intermediate metrics results for feature '{}' at lead time {}.",
-                                nextInput.getMetadata().getIdentifier().getGeospatialID(),
-                                nextInput.getMetadata().getLeadTime());
-                }
-                return results;
-            }
-            catch(InterruptedException e)
-            {
-                LOGGER.error("Interrupted while processing pairs.", e);
-                Thread.currentThread().interrupt();
-                throw e;
             }
             catch(Exception e)
             {
-                LOGGER.error("While processing pairs:", e);
-                throw e;
+                LOGGER.error("While processing intermediate results:", e);
             }
-        }
-
-        @Override
-        protected String getTaskName()
-        {
-            return "Process Metrics for Pairs by Lead Time";
-        }
-
-        @Override
-        protected Logger getLogger()
-        {
-            return LOGGER;
         }
     }
 
@@ -805,6 +819,36 @@ public class Control implements Function<String[], Integer>
             return false;
         }
         return true;
+    }
+
+    /**
+     * Composes a list of {@link CompletableFuture} so that execution completes when all futures are completed normally
+     * or any one future completes exceptionally. None of the {@link CompletableFuture} passed to this utility method
+     * should already handle exceptions otherwise the exceptions will not be caught here (i.e. all futures will process
+     * to completion).
+     *
+     * @param futures the futures to compose
+     * @return the composed futures
+     */
+
+    private static CompletableFuture<?> doAllOrException(final List<CompletableFuture<?>> futures)
+    {
+        //Complete when all futures are completed
+        final CompletableFuture<?> allDone =
+                                           CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+        //Complete when any of the underlying futures completes exceptionally
+        final CompletableFuture<?> oneExceptional = new CompletableFuture<>();
+        //Link the two
+        for(final CompletableFuture<?> completableFuture: futures)
+        {
+            //When one completes exceptionally, propagate
+            completableFuture.exceptionally(exception -> {
+                oneExceptional.completeExceptionally(exception);
+                return null;
+            });
+        }
+        //Either all done OR one completes exceptionally
+        return CompletableFuture.anyOf(allDone, oneExceptional);
     }
 
     /**
@@ -864,7 +908,7 @@ public class Control implements Function<String[], Integer>
      * Default logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ControlNonBlocking.class);
 
     /**
      * Log interval.

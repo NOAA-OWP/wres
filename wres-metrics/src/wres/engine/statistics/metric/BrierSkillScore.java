@@ -1,7 +1,13 @@
 package wres.engine.statistics.metric;
 
+import java.util.Objects;
+
+import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.VectorOutput;
 
 /**
  * <p>
@@ -17,6 +23,30 @@ import wres.datamodel.metric.MetricConstants;
 public final class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs>
 implements ProbabilityScore
 {
+
+    @Override
+    public VectorOutput apply(final DiscreteProbabilityPairs s)
+    {
+        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        //Explicit baseline
+        if(s.hasBaseline())
+        {
+            SingleValuedPairs input = s;
+            return super.apply(input);
+        }
+        //Climatological baseline
+        else
+        {
+            DataFactory d = getDataFactory();
+            //Bernoulli R.V. with probability p 
+            double p = FunctionFactory.mean().applyAsDouble(d.vectorOf(d.getSlicer().getLeftSide(s)));
+            final double[] result = new double[]{
+                FunctionFactory.skill().applyAsDouble(getSumOfSquareError(s) / s.size(), p * (1.0 - p))};
+            //Metadata
+            final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
+            return getDataFactory().ofVectorOutput(result, metOut);
+        }
+    }
 
     @Override
     public MetricConstants getID()

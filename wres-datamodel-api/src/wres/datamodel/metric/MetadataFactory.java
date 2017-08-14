@@ -1,5 +1,7 @@
 package wres.datamodel.metric;
 
+import java.util.Objects;
+
 /**
  * A factory class for producing metadata.
  * 
@@ -65,6 +67,19 @@ public interface MetadataFactory
      * 
      * @param geospatialID an optional geospatial identifier (may be null)
      * @param variableID an optional variable identifier (may be null)
+     * @return a dataset identifier
+     */
+
+    default DatasetIdentifier getDatasetIdentifier(final String geospatialID, final String variableID)
+    {
+        return getDatasetIdentifier(geospatialID, variableID, null, null);
+    }
+
+    /**
+     * Returns a dataset identifier.
+     * 
+     * @param geospatialID an optional geospatial identifier (may be null)
+     * @param variableID an optional variable identifier (may be null)
      * @param scenarioID an optional scenario identifier (may be null)
      * @return a dataset identifier
      */
@@ -83,7 +98,7 @@ public interface MetadataFactory
      * @param baselineScenarioID a scenario identifier for a baseline dataset
      * @return a dataset identifier
      */
-    
+
     default DatasetIdentifier getDatasetIdentifier(DatasetIdentifier identifier, String baselineScenarioID)
     {
         return getDatasetIdentifier(identifier.getGeospatialID(),
@@ -104,10 +119,11 @@ public interface MetadataFactory
      */
 
     default MetricOutputMetadata getOutputMetadata(final int sampleSize,
-                                           final Dimension dim,
-                                           final Dimension inputDim,
-                                           final MetricConstants metricID) {
-        return getOutputMetadata(sampleSize, dim, inputDim, metricID, MetricConstants.MAIN, null);
+                                                   final Dimension dim,
+                                                   final Dimension inputDim,
+                                                   final MetricConstants metricID)
+    {
+        return getOutputMetadata(sampleSize, dim, inputDim, metricID, MetricConstants.MAIN, null, null);
     }
 
     /**
@@ -123,25 +139,44 @@ public interface MetadataFactory
      */
 
     default MetricOutputMetadata getOutputMetadata(final int sampleSize,
-                                           final Dimension dim,
-                                           final Dimension inputDim,
-                                           final MetricConstants metricID,
-                                           final MetricConstants componentID) {
-        return getOutputMetadata(sampleSize, dim, inputDim, metricID, componentID, null);
+                                                   final Dimension dim,
+                                                   final Dimension inputDim,
+                                                   final MetricConstants metricID,
+                                                   final MetricConstants componentID)
+    {
+        return getOutputMetadata(sampleSize, dim, inputDim, metricID, componentID, null, null);
     }
-    
+
     /**
-     * Build a {@link Metadata} object with a prescribed {@link Dimension} and an optional {@link DatasetIdentifier} and
-     * lead time.
+     * Builds a default {@link MetricOutputMetadata} with a prescribed source of {@link Metadata} whose parameters are
+     * copied, together with a sample size, a {@link Dimension} for the output, and {@link MetricConstants} identifiers
+     * for the metric and the metric component, respectively.
      * 
-     * @param dim the dimension
-     * @param identifier an optional dataset identifier (may be null)
-     * @param leadTime an optional lead time (may be null)
-     * @return a {@link Metadata} object
+     * @param sampleSize the sample size
+     * @param dim the output dimension
+     * @param metadata the source metadata
+     * @param metricID the metric identifier
+     * @param componentID the metric component identifier or decomposition template
+     * @return a {@link MetricOutputMetadata} object
      */
 
-    Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier, Integer leadTime);    
-    
+    default MetricOutputMetadata getOutputMetadata(final int sampleSize,
+                                                   final Dimension dim,
+                                                   final Metadata metadata,
+                                                   final MetricConstants metricID,
+                                                   final MetricConstants componentID)
+    {
+        Objects.requireNonNull(metadata,
+                               "Specify a non-null source of input metadata from which to build the output metadata.");
+        return getOutputMetadata(sampleSize,
+                                 dim,
+                                 metadata.getDimension(),
+                                 metricID,
+                                 componentID,
+                                 metadata.getIdentifier(),
+                                 metadata.getLeadTime());
+    }
+
     /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
      * and the input, {@link MetricConstants} identifiers for the metric and the metric component, respectively, and an
@@ -156,12 +191,50 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
+    default MetricOutputMetadata getOutputMetadata(final int sampleSize,
+                                                   final Dimension dim,
+                                                   final Dimension inputDim,
+                                                   final MetricConstants metricID,
+                                                   final MetricConstants componentID,
+                                                   final DatasetIdentifier identifier)
+    {
+        return getOutputMetadata(sampleSize, dim, inputDim, metricID, componentID, identifier, null);
+    }
+
+    /**
+     * Build a {@link Metadata} object with a prescribed {@link Dimension} and an optional {@link DatasetIdentifier} and
+     * lead time.
+     * 
+     * @param dim the dimension
+     * @param identifier an optional dataset identifier (may be null)
+     * @param leadTime an optional lead time (may be null)
+     * @return a {@link Metadata} object
+     */
+
+    Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier, Integer leadTime);
+
+    /**
+     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
+     * and the input, {@link MetricConstants} identifiers for the metric and the metric component, respectively, and an
+     * optional {@link DatasetIdentifier} identifier and lead time.
+     * 
+     * @param sampleSize the sample size
+     * @param dim the output dimension
+     * @param inputDim the input dimension
+     * @param metricID the metric identifier
+     * @param componentID the metric component identifier or decomposition template
+     * @param identifier an optional dataset identifier (may be null)
+     * @param leadTime an optional lead time
+     * @return a {@link MetricOutputMetadata} object
+     */
+
     MetricOutputMetadata getOutputMetadata(final int sampleSize,
                                            final Dimension dim,
                                            final Dimension inputDim,
                                            final MetricConstants metricID,
                                            final MetricConstants componentID,
-                                           final DatasetIdentifier identifier);
+                                           final DatasetIdentifier identifier,
+                                           final Integer leadTime);
 
     /**
      * Returns a dataset identifier.
