@@ -3,18 +3,12 @@ package wres.io;
 import org.slf4j.LoggerFactory;
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.MetricInput;
 import wres.io.concurrency.Executor;
-import wres.io.concurrency.PairRetriever;
-import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
-import wres.io.grouping.LabeledScript;
 import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
 import wres.io.utilities.InputGenerator;
-import wres.io.utilities.ScriptGenerator;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 import javax.xml.stream.XMLStreamException;
@@ -25,8 +19,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -91,51 +83,9 @@ public final class Operations {
         return completedSmoothly;
     }
 
-    /**
-     * Creates a mapping between a window number and the pairs that belong to it for a given location
-     *
-     * <p>
-     *     A description for a window number may be determined by calling
-     *     {@link wres.io.config.ConfigHelper#getLeadQualifier(ProjectConfig, int)
-     *     ConfigHelper.getLeadQualifier(projectConfig, windowNumber)}
-     * </p>
-     * @param projectConfig The project configuration that determines what sort of pairs to bring back
-     * @param feature The configured location of the data that needs to be retrieved
-     * @return A mapping between the number of a window and and its pairs
-     * @throws SQLException Thrown if there was an error when communicating with the database
-     */
-    public static Map<Integer, Future<MetricInput<?>>> getPairs (ProjectConfig projectConfig,
-                                                                         Conditions.Feature feature) throws SQLException
-    {
-        Integer variableId = ConfigHelper.getVariableID(projectConfig.getInputs().getRight());
-
-        LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(variableId);
-
-        Integer finalLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
-        Map<Integer, Future<MetricInput<?>>> threadResults = new TreeMap<>();
-
-        int step = 1;
-
-        while (ConfigHelper.leadIsValid(projectConfig, step, finalLead))
-        {
-            threadResults.put(step, getPairs(projectConfig, feature, step));
-            step++;
-        }
-
-        return threadResults;
-    }
-
     public static InputGenerator getInputs(ProjectConfig projectConfig, Conditions.Feature feature)
     {
         return new InputGenerator(projectConfig, feature);
-    }
-
-    public static Future<MetricInput<?>> getPairs(ProjectConfig projectConfig, Conditions.Feature feature, int windowNumber)
-    {
-        PairRetriever pairRetriever = new PairRetriever(projectConfig, feature, windowNumber);
-        pairRetriever.setOnRun(ProgressMonitor.onThreadStartHandler());
-        pairRetriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-        return Database.submit(pairRetriever);
     }
 
     public static void install()
