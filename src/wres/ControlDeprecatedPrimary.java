@@ -61,8 +61,10 @@ import wres.vis.ChartEngineFactory;
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
+ * @deprecated
  */
-public class Control implements Function<String[], Integer>
+@Deprecated
+public class ControlDeprecatedPrimary implements Function<String[], Integer>
 {
 
     /**
@@ -864,7 +866,7 @@ public class Control implements Function<String[], Integer>
      * Default logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ControlDeprecatedPrimary.class);
 
     /**
      * Log interval.
