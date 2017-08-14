@@ -67,15 +67,21 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
     @Override
     public boolean hasOutput(MetricOutputGroup outGroup)
     {
-        switch(outGroup) {
-            case SCALAR: return !scalar.isEmpty();
-            case VECTOR: return !vector.isEmpty();
-            case MULTIVECTOR: return !multiVector.isEmpty();
-            case MATRIX: return !matrix.isEmpty();
-            default: return false;
+        switch(outGroup)
+        {
+            case SCALAR:
+                return !scalar.isEmpty();
+            case VECTOR:
+                return !vector.isEmpty();
+            case MULTIVECTOR:
+                return !multiVector.isEmpty();
+            case MATRIX:
+                return !matrix.isEmpty();
+            default:
+                return false;
         }
-    }    
-    
+    }
+
     @Override
     public MetricOutputMultiMapByLeadThreshold<MetricOutput<?>> getOutput(MetricOutputGroup... outGroup) throws InterruptedException,
                                                                                                          ExecutionException
@@ -300,7 +306,11 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
             }
             catch(InterruptedException | ExecutionException e)
             {
-                LOGGER.error("While retrieving the results for group '" + outGroup + "'", e);
+                LOGGER.error("While retrieving the results for group {} at lead time {} and threshold {}.",
+                             outGroup,
+                             next.getKey().getFirstKey(),
+                             next.getKey().getSecondKey(),
+                             e);
                 throw e;
             }
         }

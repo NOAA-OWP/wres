@@ -39,7 +39,8 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
     }
 
     @Override
-    public MetricInput<?> execute () throws Exception {
+    public MetricInput<?> execute() throws Exception
+    {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
 
         Connection connection = null;
@@ -50,19 +51,19 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
             connection = Database.getConnection();
             resultingPairs = Database.getResults(connection, script);
 
-            while (resultingPairs.next())
+            while(resultingPairs.next())
             {
                 pairs.add(createPair(resultingPairs));
             }
         }
         finally
         {
-            if (resultingPairs != null)
+            if(resultingPairs != null)
             {
                 resultingPairs.close();
             }
 
-            if (connection != null)
+            if(connection != null)
             {
                 Database.returnConnection(connection);
             }
@@ -140,7 +141,7 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
         String desiredMeasurementUnit = this.projectConfig.getPair().getUnit();
 
 
-        for (int measurementIndex = 0; measurementIndex < measurements.length; ++measurementIndex)
+        for(int measurementIndex = 0; measurementIndex < measurements.length; ++measurementIndex)
         {
             convertedMeasurements[measurementIndex] = UnitConversions.convert(measurements[measurementIndex],
                                                                               sourceTwoUnitID,
@@ -153,17 +154,20 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
 
         return dataFactory.pairOf(convertedSourceOne, convertedMeasurements);
     }
+
     private final int progress;
     private final ProjectConfig projectConfig;
     private final Conditions.Feature feature;
 
     @Override
-    protected String getTaskName () {
+    protected String getTaskName()
+    {
         return "PairRetriever: Step " + String.valueOf(this.progress);
     }
 
     @Override
-    protected Logger getLogger () {
+    protected Logger getLogger()
+    {
         return PairRetriever.LOGGER;
     }
 }

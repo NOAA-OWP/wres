@@ -6,13 +6,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.MetricConstants;
@@ -41,6 +43,10 @@ import wres.datamodel.metric.MetricOutputMapByMetric;
  * {@link Callable}. In order for {@link Callable#call()} to complete successfully, the {@link MetricCollection} must be
  * constructed with an {@link ExecutorService} and a {@link MetricInput} wrapped in a {@link Future}.
  * </p>
+ * <p>
+ * A {@link MetricCollection} is not fail-fast. All exceptions thrown by the individual {@link Metric} are logged, but
+ * all {@link Metric} will be computed and any successful results returned.
+ * </p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -51,6 +57,12 @@ public final class MetricCollection<S extends MetricInput<?>, T extends MetricOu
 implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMetric<T>>
 {
 
+    /**
+     * Default logger.
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetricCollection.class);    
+    
     /**
      * Instance of a {@link DataFactory} for constructing a {@link MetricOutput}.
      */
@@ -76,7 +88,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
     private final ExecutorService metricPool;
 
     @Override
-    public MetricOutputMapByMetric<T> call() throws MetricCalculationException, InterruptedException, ExecutionException
+    public MetricOutputMapByMetric<T> call() throws InterruptedException
     {
         return callInternal();
     }
@@ -203,7 +215,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
      * Default method for computing the metric results and returning them in a collection with a prescribed type.
      * Collects instances of {@link Collectable} by {@link Collectable#getCollectionOf()} and computes their common
      * (intermediate) input once. Computes the metrics in parallel using the supplied {@link #metricPool} or, where not
-     * supplied, the {@link ForkJoinPool#commonPool()}
+     * supplied, the {@link ForkJoinPool#commonPool()}.
      * 
      * @param s the metric input
      * @return the output for each metric, contained in a collection
@@ -245,8 +257,19 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         metrics.stream()
                .filter(p -> !(p instanceof Collectable)) //Only work with non-collectable metrics here
                .forEach(y -> metricFutures.add(CompletableFuture.supplyAsync(() -> y.apply(s), metricPool)));
-        final CompletableFuture<List<T>> results = sequence(metricFutures);
-        return dataFactory.ofMap(results.join()); //This is blocking
+        List<T> returnMe = new ArrayList<>();
+        for(CompletableFuture<T> nextResult: metricFutures)
+        {
+            try
+            {
+                returnMe.add(nextResult.get()); //This is blocking
+            }
+            catch(Exception e)
+            {
+                LOGGER.error("While processing metric:", e);
+            }
+        }
+        return dataFactory.ofMap(returnMe);
     }
 
     /**
@@ -258,9 +281,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
      * @throws InterruptedException
      */
 
-    private MetricOutputMapByMetric<T> callInternal() throws MetricCalculationException,
-                                                      InterruptedException,
-                                                      ExecutionException
+    private MetricOutputMapByMetric<T> callInternal() throws InterruptedException
     {
         if(Objects.isNull(input))
         {
@@ -291,7 +312,14 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         final List<Future<T>> results = metricPool.invokeAll(tasks);
         for(final Future<T> next: results)
         {
-            m.add(next.get());
+            try
+            {
+                m.add(next.get());
+            }
+            catch(Exception e)
+            {
+                LOGGER.error("While processing metric:", e);
+            }
         }
         return dataFactory.ofMap(m);
     }
@@ -344,23 +372,6 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
                 return metric.getCollectionInput(input.get());
             }
         };
-    }
-
-    /**
-     * Utility method that waits for the completion of a collection of futures and, once complete, returns them in a
-     * future collection.
-     * 
-     * @param futures the list of futures
-     * @return the completed list
-     */
-
-    private static <T> CompletableFuture<List<T>> sequence(final List<CompletableFuture<T>> futures)
-    {
-        final CompletableFuture<Void> allDoneFuture =
-                                                    CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
-        return allDoneFuture.thenApply(v -> futures.stream()
-                                                   .map(CompletableFuture::join)
-                                                   .collect(Collectors.<T>toList()));
     }
 
 }

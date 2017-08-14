@@ -86,14 +86,17 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
     private final BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> toDiscreteProbabilities;
 
     @Override
-    public MetricOutputForProjectByLeadThreshold apply(MetricInput<?> t)
+    public MetricOutputForProjectByLeadThreshold apply(MetricInput<?> input)
     {
-        if(!(t instanceof EnsemblePairs))
+        if(!(input instanceof EnsemblePairs))
         {
             throw new MetricCalculationException("Expected ensemble pairs for metric processing.");
         }
-        Integer leadTime = t.getMetadata().getLeadTime();
+        Integer leadTime = input.getMetadata().getLeadTime();
         Objects.requireNonNull(leadTime, "Expected a non-null forecast lead time in the input metadata.");
+
+        //Metric futures 
+        MetricFutures.Builder futures = new MetricFutures.Builder().addDataFactory(dataFactory);
 
         //Slicer
         Slicer slicer = dataFactory.getSlicer();
@@ -101,23 +104,34 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
         //Process the metrics that consume ensemble pairs
         if(hasMetrics(MetricInputGroup.ENSEMBLE))
         {
-            processEnsemblePairs(leadTime, (EnsemblePairs)t, futures);
+            processEnsemblePairs(leadTime, (EnsemblePairs)input, futures);
         }
         //Process the metrics that consume single-valued pairs
         if(hasMetrics(MetricInputGroup.SINGLE_VALUED))
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
-            SingleValuedPairs input = slicer.transformPairs((EnsemblePairs)t, toSingleValues);
-            processSingleValuedPairs(leadTime, input, futures);
+            SingleValuedPairs singleValued = slicer.transformPairs((EnsemblePairs)input, toSingleValues);
+            processSingleValuedPairs(leadTime, singleValued, futures);
         }
         //Process the metrics that consume discrete probability pairs
         if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY))
         {
-            processDiscreteProbabilityPairs(leadTime, (EnsemblePairs)t, futures);
+            processDiscreteProbabilityPairs(leadTime, (EnsemblePairs)input, futures);
         }
 
-        //Process and return the result        
-        return futures.getMetricOutput();
+        // Log
+        if(LOGGER.isInfoEnabled())
+        {
+            LOGGER.info("Completed processing of metrics for feature '{}' at lead time {}.",
+                        input.getMetadata().getIdentifier().getGeospatialID(),
+                        input.getMetadata().getLeadTime());
+        }
+
+        //Process and return the result       
+        MetricFutures futureResults = futures.build();
+        //Merge with existing futures, if required
+        mergeFutures(futureResults);
+        return futureResults.getMetricOutput();
     }
 
     /**
@@ -215,7 +229,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processEnsemblePairs(Integer leadTime, EnsemblePairs input, MetricFutures futures)
+    private void processEnsemblePairs(Integer leadTime, EnsemblePairs input, MetricFutures.Builder futures)
     {
 
         //Metric-specific overrides are currently unsupported
@@ -277,7 +291,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDiscreteProbabilityPairs(Integer leadTime, EnsemblePairs input, MetricFutures futures)
+    private void processDiscreteProbabilityPairs(Integer leadTime, EnsemblePairs input, MetricFutures.Builder futures)
     {
 
         //Metric-specific overrides are currently unsupported
@@ -352,7 +366,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
     {
         Threshold useMe = threshold;
         //Skip non-finite thresholds
-        if(!useMe.isFinite()) 
+        if(!useMe.isFinite())
         {
             return false;
         }

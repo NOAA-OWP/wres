@@ -10,7 +10,7 @@ import wres.datamodel.metric.MultiVectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public class ReliabilityDiagramXYChartDataSource extends WRESXYChartDataSource
+public class ReliabilityDiagramXYChartDataSource extends WRESXYChartDataSource<MetricOutputMapByLeadThreshold<MultiVectorOutput>>
 {
     /**
      * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
@@ -36,12 +36,5 @@ public class ReliabilityDiagramXYChartDataSource extends WRESXYChartDataSource
     protected ReliabilityDiagramXYDataset instantiateXYDataset()
     {
         return new ReliabilityDiagramXYDataset(getInput());
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    protected MetricOutputMapByLeadThreshold<MultiVectorOutput> getInput()
-    {
-        return (MetricOutputMapByLeadThreshold<MultiVectorOutput>)getInputAsObject();
     }
 }

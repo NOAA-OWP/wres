@@ -87,15 +87,6 @@ public final class MeanSquareErrorSkillScoreTest
         catch(final Exception e)
         {
         }
-        try
-        {
-            //No baseline
-            b.setDecompositionID(MetricConstants.NONE).build().apply(MetricTestDataFactory.getSingleValuedPairsOne());
-            fail("Expected a missing baseline.");
-        }
-        catch(final Exception e)
-        {
-        }
 
     }
 

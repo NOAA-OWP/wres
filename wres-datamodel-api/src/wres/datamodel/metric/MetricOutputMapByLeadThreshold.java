@@ -62,6 +62,17 @@ extends MetricOutputMapWithBiKey<Integer, Threshold, T>
     }
 
     /**
+     * Returns true if the map contains one or more {@link QuantileThreshold}, false otherwise.
+     * 
+     * @return true if the store contains one or more {@link QuantileThreshold}, false otherwise
+     */
+
+    default boolean hasQuantileThresholds()
+    {
+        return keySetByThreshold().stream().anyMatch(QuantileThreshold.class::isInstance);
+    }
+
+    /**
      * Returns the {@link MetricOutputMetadata} associated with all {@link MetricOutput} in the store. This may contain
      * more (optional) information than the (required) metadata associated with the individual outputs. However, all
      * required elements must match, in keeping with {@link MetricOutputMetadata#minimumEquals(MetricOutputMetadata)}.
