@@ -202,6 +202,25 @@ public interface MetadataFactory
     }
 
     /**
+     * Builds a {@link MetricOutputMetadata} with an input source and an override for the metric component identifier.
+     * 
+     * @param source the input source
+     * @param componentID the metric component identifier or decomposition template
+     * @return a {@link MetricOutputMetadata} object
+     */
+
+    default MetricOutputMetadata getOutputMetadata(final MetricOutputMetadata source, final MetricConstants componentID)
+    {
+        return getOutputMetadata(source.getSampleSize(),
+                                 source.getDimension(),
+                                 source.getInputDimension(),
+                                 source.getMetricID(),
+                                 componentID,
+                                 source.getIdentifier(),
+                                 source.getLeadTime());
+    }
+
+    /**
      * Build a {@link Metadata} object with a prescribed {@link Dimension} and an optional {@link DatasetIdentifier} and
      * lead time.
      * 

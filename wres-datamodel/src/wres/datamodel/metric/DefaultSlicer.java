@@ -3,6 +3,7 @@ package wres.datamodel.metric;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -173,8 +174,31 @@ public class DefaultSlicer implements Slicer
         Objects.requireNonNull(input, NULL_INPUT);
         Map<MetricConstants, Map<MapBiKey<Integer, Threshold>, ScalarOutput>> sourceMap =
                                                                                         new EnumMap<>(MetricConstants.class);
-        return null;
-
+        MetadataFactory metaFac = dataFac.getMetadataFactory();
+        input.forEach((key, value) -> {
+            List<MetricConstants> components = value.getOutputTemplate().getMetricComponents();
+            for(MetricConstants next: components)
+            {
+                Map<MapBiKey<Integer, Threshold>, ScalarOutput> nextMap = null;
+                if(sourceMap.containsKey(next))
+                {
+                    nextMap = sourceMap.get(next);
+                }
+                else
+                {
+                    nextMap = new HashMap<>();
+                    sourceMap.put(next, nextMap);
+                }
+                //Add the output
+                MetricOutputMetadata meta = metaFac.getOutputMetadata(value.getMetadata(), next);
+                nextMap.put(key, dataFac.ofScalarOutput(value.getValue(next), meta));
+            }
+        });
+        //Build the scalar results
+        Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> returnMe =
+                                                                                    new EnumMap<>(MetricConstants.class);
+        sourceMap.forEach((key, value) -> returnMe.put(key, dataFac.ofMap(value)));
+        return returnMe;
     }
 
     @Override

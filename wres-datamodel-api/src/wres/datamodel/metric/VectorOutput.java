@@ -24,4 +24,13 @@ public interface VectorOutput extends MetricOutput<VectorOfDoubles>
     
     MetricDecompositionGroup getOutputTemplate();
     
+    /**
+     * Returns the value associated with a prescribed {@link MetricConstants} in the input.
+     * 
+     * @param component the component required
+     * @return the scalar value associated with the component
+     * @throws ArrayIndexOutOfBoundsException if the result is not available
+     */
+    
+    double getValue(MetricConstants component);
 }

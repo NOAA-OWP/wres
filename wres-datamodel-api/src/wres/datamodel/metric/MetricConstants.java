@@ -1,7 +1,9 @@
 package wres.datamodel.metric;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -514,9 +516,9 @@ public enum MetricConstants
          * @return the {@link MetricConstants} associated with the current {@link MetricDecompositionGroup}
          */
 
-        public Set<MetricConstants> getMetricComponents()
+        public List<MetricConstants> getMetricComponents()
         {
-            Set<MetricConstants> all = EnumSet.allOf(MetricConstants.class);
+            List<MetricConstants> all = new ArrayList<>(EnumSet.allOf(MetricConstants.class));
             all.removeIf(a -> Objects.isNull(a.decGroup) || !Arrays.asList(a.decGroup).contains(this));
             return all;
         }
@@ -535,16 +537,6 @@ public enum MetricConstants
             return getMetricComponents().contains(input);
         }
 
-    }
-
-    public static void main(String[] args)
-    {
-
-        System.out.println(MetricDecompositionGroup.NONE.getMetricComponents());
-        System.out.println(MetricDecompositionGroup.CR.getMetricComponents());
-        System.out.println(MetricDecompositionGroup.CR_POT.getMetricComponents());
-        System.out.println(MetricDecompositionGroup.LBR.getMetricComponents());
-        System.out.println(MetricDecompositionGroup.CR_AND_LBR.getMetricComponents());
     }
 
 }
