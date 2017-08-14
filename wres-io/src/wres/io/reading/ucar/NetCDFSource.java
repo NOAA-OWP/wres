@@ -6,7 +6,7 @@ import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import wres.io.concurrency.Executor;
-import wres.io.concurrency.NetCDFValueSaver;
+import wres.io.concurrency.GriddedNetCDFValueSaver;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
@@ -66,10 +66,10 @@ public class NetCDFSource extends BasicSource {
                 //Integer variableId = Variables.addVariable(details, this.xLength, this.yLength);
                 Integer variableId = Variables.getVariableID(details);
 
-                NetCDFValueSaver saver = new NetCDFValueSaver(getFilename(),
-                                                              this.variableName,
-                                                              variableId,
-                                                              getMissingValue());
+                GriddedNetCDFValueSaver saver = new GriddedNetCDFValueSaver(getFilename(),
+																			this.variableName,
+																			variableId,
+																			getMissingValue());
                 saver.setOnRun(ProgressMonitor.onThreadStartHandler());
                 saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 

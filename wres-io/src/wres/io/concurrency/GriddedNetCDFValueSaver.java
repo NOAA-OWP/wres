@@ -25,10 +25,10 @@ import java.util.concurrent.Future;
  * @author Christopher Tubbs
  */
 @Internal(exclusivePackage = "wres.io")
-public class NetCDFValueSaver extends WRESRunnable
+public class GriddedNetCDFValueSaver extends WRESRunnable
 {
 	private final static String DELIMITER = ",";
-    private static final Logger LOGGER = LoggerFactory.getLogger(NetCDFValueSaver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GriddedNetCDFValueSaver.class);
 
     private int sourceID = Integer.MIN_VALUE;
     private final String variableName;
@@ -46,7 +46,7 @@ public class NetCDFValueSaver extends WRESRunnable
     private final Stack<Future<?>> operations = new Stack<>();
 
     @Internal(exclusivePackage = "wres.io")
-	public NetCDFValueSaver(String fileName, String variableName, int variableID, Double invalidValue)
+	public GriddedNetCDFValueSaver (String fileName, String variableName, int variableID, Double invalidValue)
 	{
 		this.fileName = fileName;
 		this.variableName = variableName;
@@ -440,7 +440,7 @@ public class NetCDFValueSaver extends WRESRunnable
 
     @Override
     protected String getTaskName () {
-	    StringBuilder name = new StringBuilder("NetCDFValueSaver: ");
+	    StringBuilder name = new StringBuilder("GriddedNetCDFValueSaver: ");
 	    name.append(this.variableName);
 	    name.append(" inside ");
 	    name.append(this.fileName);
@@ -450,6 +450,6 @@ public class NetCDFValueSaver extends WRESRunnable
 
     @Override
     protected Logger getLogger () {
-        return NetCDFValueSaver.LOGGER;
+        return GriddedNetCDFValueSaver.LOGGER;
     }
 }

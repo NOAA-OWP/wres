@@ -16,10 +16,7 @@ import java.io.PushbackReader;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -51,7 +48,8 @@ public final class Database {
 
 	private static final LinkedBlockingQueue<Future> storedIngestTasks = new LinkedBlockingQueue<>();
 
-	public static Future getStoredIngestTask() throws InterruptedException {
+	public static Future getStoredIngestTask()
+    {
 		return storedIngestTasks.poll();
 	}
 
@@ -276,7 +274,8 @@ public final class Database {
 			}
 		}
 		catch (InterruptedException e) {
-			e.printStackTrace();
+		    LOGGER.error("Ingest task completion was interrupted.");
+			LOGGER.error(Strings.getStackTrace(e));
 		}
 	}
 	
@@ -626,6 +625,56 @@ public final class Database {
 
 		return collection;
 	}
+
+	public static <K,V> Map<K, V> populateMap(Map<K, V> map,
+                                              String script,
+                                              String keyName,
+                                              String valueName) throws SQLException
+    {
+        Connection connection = null;
+        ResultSet results = null;
+
+        try
+        {
+            connection = Database.getConnection();
+            results = Database.getResults(connection, script);
+
+            while (results.next())
+            {
+                map.put((K)results.getObject(keyName), (V)results.getObject(valueName));
+            }
+        }
+        catch (ClassCastException e)
+        {
+            LOGGER.error("The results from the SQL script could not be adequetely cast to the map.");
+            LOGGER.error(Strings.getStackTrace(e));
+            throw e;
+        }
+        catch (SQLException e) {
+            LOGGER.error(Strings.getStackTrace(e));
+            throw e;
+        }
+        finally {
+            if (results != null)
+            {
+                try
+                {
+                    results.close();
+                }
+                catch (SQLException e) {
+                    LOGGER.error("Could not close result set.");
+                    LOGGER.error(Strings.getStackTrace(e));
+                }
+            }
+
+            if (connection != null)
+            {
+                Database.returnConnection(connection);
+            }
+        }
+
+        return map;
+    }
 
 	public static void refreshStatistics(boolean vacuum)
 	{
