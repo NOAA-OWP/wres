@@ -66,7 +66,7 @@ import wres.vis.ChartEngineFactory;
  * @version 0.1
  * @since 0.1
  */
-public class ControlNonBlocking implements Function<String[], Integer>
+public class Control implements Function<String[], Integer>
 {
 
     /**
@@ -908,7 +908,7 @@ public class ControlNonBlocking implements Function<String[], Integer>
      * Default logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ControlNonBlocking.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
 
     /**
      * Log interval.
