@@ -108,7 +108,7 @@ public abstract class WRESXYChartDataSource<T> extends DefaultXYChartDataSource
      * @return An instance of {@link WRESAbstractXYDataset} to use in building the {@link JFreeChart}.
      */
     protected abstract WRESAbstractXYDataset<?, ?> instantiateXYDataset();
-
+    
     @Override
     public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
     {
