@@ -62,9 +62,9 @@ import wres.vis.ChartEngineFactory;
  * @deprecated
  */
 @Deprecated
-public class ControlDeprecated implements Function<String[], Integer>
+public class ControlDeprecatedSecondary implements Function<String[], Integer>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ControlDeprecated.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ControlDeprecatedSecondary.class);
     public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
     private static final AtomicLong lastMessageTime = new AtomicLong();
 
@@ -142,7 +142,7 @@ public class ControlDeprecated implements Function<String[], Integer>
                     projectConfiggies.size());
 
         // Create a queue of work: displaying or processing fetched pairs.
-        int maxProcessThreads = ControlDeprecated.MAX_THREADS;
+        int maxProcessThreads = ControlDeprecatedSecondary.MAX_THREADS;
         ExecutorService processPairExecutor = Executors.newFixedThreadPool(maxProcessThreads);
 
         DataFactory dataFac = DefaultDataFactory.getInstance();
