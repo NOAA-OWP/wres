@@ -2,6 +2,7 @@ package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.EnsemblePairs;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.VectorOutput;
 
@@ -10,7 +11,7 @@ import wres.datamodel.metric.VectorOutput;
  * The Continuous Ranked Probability Score (CRPS) is the square difference between the empirical distribution function
  * of an ensemble forecast and the step function associated with a single-valued observation, integrated over the unit
  * interval. By convention, the CRPS is then averaged over each pair of ensemble forecasts and observations. Optionally,
- * the CRPS may be factored into a three-component decomposition, {@link MetricConstants#CR}.
+ * the CRPS may be factored into a three-component decomposition, {@link MetricDecompositionGroup#CR}.
  * </p>
  * <p>
  * Uses the procedure outlined in Hersbach, H. (2000) Decomposition of the Continuous Ranked Probability Score for
@@ -28,10 +29,10 @@ implements ProbabilityScore
 {
 
     /**
-     * The decomposition identifier. See {@link MetricConstants#getDecompositionID()}.
+     * The decomposition identifier.
      */
 
-    private final MetricConstants decompositionID;
+    private final MetricDecompositionGroup decompositionID;
 
     @Override
     public VectorOutput apply(EnsemblePairs s)
@@ -55,7 +56,7 @@ implements ProbabilityScore
     }
 
     @Override
-    public MetricConstants getDecompositionID()
+    public MetricDecompositionGroup getDecompositionID()
     {
         return decompositionID;
     }
@@ -97,10 +98,10 @@ implements ProbabilityScore
     protected static class CRPSBuilder extends MetricBuilder<EnsemblePairs, VectorOutput>
     {
         /**
-         * The type of metric decomposition. See {@link MetricConstants#getDecompositionID()}.
+         * The type of metric decomposition.
          */
 
-        private MetricConstants decompositionID = MetricConstants.NONE;
+        private MetricDecompositionGroup decompositionID = MetricDecompositionGroup.NONE;
 
         @Override
         protected ContinuousRankedProbabilityScore build()
@@ -115,7 +116,7 @@ implements ProbabilityScore
          * @return the builder
          */
 
-        protected CRPSBuilder setDecompositionID(final MetricConstants decompositionID)
+        protected CRPSBuilder setDecompositionID(final MetricDecompositionGroup decompositionID)
         {
             this.decompositionID = decompositionID;
             return this;
@@ -132,9 +133,9 @@ implements ProbabilityScore
     private ContinuousRankedProbabilityScore(final CRPSBuilder builder)
     {
         super(builder);
-        if(builder.decompositionID != MetricConstants.CR)
+        if(builder.decompositionID != MetricDecompositionGroup.CR)
         {
-            throw new IllegalStateException("Unsupported decomposition identifier: " + builder.decompositionID);
+            throw new IllegalArgumentException("Unsupported decomposition identifier: " + builder.decompositionID);
         }
         this.decompositionID = builder.decompositionID;
     }

@@ -1,6 +1,8 @@
 package wres.datamodel.metric;
 
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -50,7 +52,7 @@ public enum MetricConstants
      */
 
     CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE(MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR),
-    
+
     /**
      * Identifier for a Contingency Table.
      */
@@ -148,82 +150,53 @@ public enum MetricConstants
     ROOT_MEAN_SQUARE_ERROR(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR),
 
     /**
-     * Indicator for no decomposition.
-     */
-
-    NONE,
-
-    /**
-     * Identifier for a Calibration-Refinement (CR) factorization into reliability - resolution + uncertainty,
-     * comprising the overall score followed by the three components in that order.
-     */
-
-    CR,
-
-    /**
-     * Identifier for a decomposition into Type-II conditional bias - discrimination + sharpness, comprising the overall
-     * score followed by the three components in that order.
-     */
-
-    LBR,
-
-    /**
-     * Identifier for the score and components of both the CR and LBR factorizations, as well as several mixed
-     * components: The overall score Reliability Resolution Uncertainty Type-II conditional bias Discrimination
-     * Sharpness And further components: Score | Observed to occur Score | Observed to not occur And further components:
-     * Type-II conditional bias | Observed to occur Type-II conditional bias | Observed to not occur Discrimination |
-     * Observed to occur Discrimination | Observed to not occur
-     */
-
-    CR_AND_LBR,
-
-    /**
      * Identifier for the main component of a metric, such as the overall score in a score decomposition.
      */
 
-    MAIN,
+    MAIN(MetricDecompositionGroup.NONE, MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, 
+         MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR),
 
     /**
      * Identifier for the reliability component of a score decomposition.
      */
 
-    RELIABILITY,
+    RELIABILITY(MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR),
 
     /**
      * Identifier for the resolution component of a score decomposition.
      */
 
-    RESOLUTION,
+    RESOLUTION(MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR),
 
     /**
      * Identifier for the uncertainty component of a score decomposition.
      */
 
-    UNCERTAINTY,
+    UNCERTAINTY(MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR),
 
     /**
      * Identifier for the potential score value (perfect reliability).
      */
 
-    POTENTIAL,
+    POTENTIAL(MetricDecompositionGroup.CR_POT),
 
     /**
      * Identifier for the Type-II conditional bias component of a score decomposition.
      */
 
-    TYPE_II_BIAS,
+    TYPE_II_BIAS(MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR),
 
     /**
      * Identifier for the discrimination component of a score decomposition.
      */
 
-    DISCRIMINATION,
+    DISCRIMINATION(MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR),
 
     /**
      * Identifier for the sharpness component of a score decomposition.
      */
 
-    SHARPNESS,
+    SHARPNESS(MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR),
 
     /**
      * Identifier for the sample size component of a metric.
@@ -256,16 +229,23 @@ public enum MetricConstants
     OBSERVED_QUANTILES;
 
     /**
-     * The {@link MetricInputGroup} or null if the {@link MetricConstant} does not belong to a group.
+     * The {@link MetricInputGroup} or null if the {@link MetricConstants} does not belong to a group.
      */
 
     private final MetricInputGroup inGroup;
 
     /**
-     * The {@link MetricOutputGroup} or null if the {@link MetricConstant} does not belong to a group.
+     * The {@link MetricOutputGroup} or null if the {@link MetricConstants} does not belong to a group.
      */
 
     private final MetricOutputGroup outGroup;
+
+    /**
+     * The {@link MetricDecompositionGroup} to which this {@link MetricConstants} belongs or null if the
+     * {@link MetricConstants} does not belong to a {@link MetricDecompositionGroup}.
+     */
+
+    private final MetricDecompositionGroup[] decGroup;
 
     /**
      * Default constructor
@@ -275,10 +255,11 @@ public enum MetricConstants
     {
         inGroup = null;
         outGroup = null;
+        decGroup = null;
     }
 
     /**
-     * Construct with a {@link MetricGroup}.
+     * Construct with a {@link MetricInputGroup} and a {@link MetricOutputGroup}.
      * 
      * @param inputGroup the input group
      * @param outputGroup the output group
@@ -288,6 +269,20 @@ public enum MetricConstants
     {
         this.inGroup = inGroup;
         this.outGroup = outGroup;
+        decGroup = null;
+    }
+
+    /**
+     * Construct with a varargs of {@link MetricDecompositionGroup}.
+     * 
+     * @param decGroup the decomposition groups to which the {@link MetricConstants} belongs
+     */
+
+    private MetricConstants(MetricDecompositionGroup... decGroup)
+    {
+        this.decGroup = decGroup;
+        inGroup = null;
+        outGroup = null;
     }
 
     /**
@@ -364,7 +359,7 @@ public enum MetricConstants
          */
 
         DISCRETE_PROBABILITY,
-        
+
         /**
          * Metrics that consume dichotomous inputs.
          */
@@ -466,6 +461,90 @@ public enum MetricConstants
             return getMetrics().contains(input);
         }
 
+    }
+
+    /**
+     * Type of metric decomposition.
+     */
+
+    public enum MetricDecompositionGroup
+    {
+
+        /**
+         * Indicator for no decomposition.
+         */
+
+        NONE,
+
+        /**
+         * Identifier for a Calibration-Refinement (CR) factorization into reliability - resolution + uncertainty,
+         * comprising the overall score followed by the three components in that order.
+         */
+
+        CR,
+
+        /**
+         * Identifier for a Calibration-Refinement (CR) factorization into reliability - resolution + uncertainty,
+         * comprising the overall score followed by the three components in that order, together with an additional
+         * potential score component, where potential = actual score - reliability.
+         */
+
+        CR_POT,
+
+        /**
+         * Identifier for a decomposition into Type-II conditional bias - discrimination + sharpness, comprising the
+         * overall score followed by the three components in that order.
+         */
+
+        LBR,
+
+        /**
+         * Identifier for the score and components of both the CR and LBR factorizations, as well as several mixed
+         * components: The overall score Reliability Resolution Uncertainty Type-II conditional bias Discrimination
+         * Sharpness And further components: Score | Observed to occur Score | Observed to not occur And further
+         * components: Type-II conditional bias | Observed to occur Type-II conditional bias | Observed to not occur
+         * Discrimination | Observed to occur Discrimination | Observed to not occur
+         */
+
+        CR_AND_LBR;
+
+        /**
+         * Returns all {@link MetricConstants} associated with the current {@link MetricDecompositionGroup}.
+         * 
+         * @return the {@link MetricConstants} associated with the current {@link MetricDecompositionGroup}
+         */
+
+        public Set<MetricConstants> getMetricComponents()
+        {
+            Set<MetricConstants> all = EnumSet.allOf(MetricConstants.class);
+            all.removeIf(a -> Objects.isNull(a.decGroup) || !Arrays.asList(a.decGroup).contains(this));
+            return all;
+        }
+
+        /**
+         * Returns true if this {@link MetricDecompositionGroup} contains the input {@link MetricConstants}, false
+         * otherwise.
+         * 
+         * @param input the {@link MetricConstants} to test
+         * @return true if this {@link MetricDecompositionGroup} contains the input {@link MetricConstants}, false
+         *         otherwise
+         */
+
+        public boolean contains(MetricConstants input)
+        {
+            return getMetricComponents().contains(input);
+        }
+
+    }
+
+    public static void main(String[] args)
+    {
+
+        System.out.println(MetricDecompositionGroup.NONE.getMetricComponents());
+        System.out.println(MetricDecompositionGroup.CR.getMetricComponents());
+        System.out.println(MetricDecompositionGroup.CR_POT.getMetricComponents());
+        System.out.println(MetricDecompositionGroup.LBR.getMetricComponents());
+        System.out.println(MetricDecompositionGroup.CR_AND_LBR.getMetricComponents());
     }
 
 }

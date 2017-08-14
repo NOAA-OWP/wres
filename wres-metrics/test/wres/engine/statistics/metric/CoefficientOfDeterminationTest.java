@@ -13,6 +13,7 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -44,7 +45,7 @@ public final class CoefficientOfDeterminationTest
         //Build the metric
         final CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
         b.setOutputFactory(dataF);
-        final CoefficientOfDetermination cod = (CoefficientOfDetermination)b.build();
+        final CoefficientOfDetermination cod = b.build();
 
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
                                                                   metaFac.getDimension(),
@@ -64,7 +65,7 @@ public final class CoefficientOfDeterminationTest
         assertTrue("Coefficient of determination is not decomposable.", !cod.isDecomposable());
         assertTrue("Coefficient of determination is not a skill score.", !cod.isSkillScore());
         assertTrue("Coefficient of determination cannot be decomposed.",
-                   cod.getDecompositionID() == MetricConstants.NONE);
+                   cod.getDecompositionID() == MetricDecompositionGroup.NONE);
         assertTrue("Coefficient of determination does not have real units", !cod.hasRealUnits());
        
         //Check exceptions

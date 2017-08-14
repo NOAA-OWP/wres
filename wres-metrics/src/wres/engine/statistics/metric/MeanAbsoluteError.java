@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.SingleValuedPairs;
 
 /**
@@ -39,9 +40,9 @@ public final class MeanAbsoluteError extends DoubleErrorScore<SingleValuedPairs>
     }
 
     @Override
-    public MetricConstants getDecompositionID()
+    public MetricDecompositionGroup getDecompositionID()
     {
-        return MetricConstants.NONE;
+        return MetricDecompositionGroup.NONE;
     }
 
     /**

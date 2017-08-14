@@ -9,6 +9,7 @@ import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.engine.statistics.metric.CriticalSuccessIndex.CriticalSuccessIndexBuilder;
@@ -66,7 +67,7 @@ public final class CriticalSuccessIndexTest
         assertTrue("The Critical Success Index is not decomposable.", !csi.isDecomposable());
         assertTrue("The Critical Success Index is not a skill score.", !csi.isSkillScore());
         assertTrue("The Critical Success Index cannot be decomposed.",
-                   csi.getDecompositionID() == MetricConstants.NONE);
+                   csi.getDecompositionID() == MetricDecompositionGroup.NONE);
         final String expName = metF.ofContingencyTable().getName();
         final String actName = metaFac.getMetricName(csi.getCollectionOf());
         assertTrue("The Critical Success Index should be a collection of '" + expName

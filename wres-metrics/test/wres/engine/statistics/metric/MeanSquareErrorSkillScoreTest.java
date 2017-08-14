@@ -9,6 +9,7 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
@@ -68,20 +69,12 @@ public final class MeanSquareErrorSkillScoreTest
         assertTrue("The Mean Square Error is decomposable.", mse.isDecomposable());
         assertTrue("The Mean Square Error is a skill score.", mse.isSkillScore());
         assertTrue("Expected no decomposition for the Mean Square Error Skill Score.",
-                   mse.getDecompositionID() == MetricConstants.NONE);
+                   mse.getDecompositionID() == MetricDecompositionGroup.NONE);
 
         //Check the exceptions
         try
         {
-            b.setDecompositionID(MetricConstants.BRIER_SCORE).build();
-            fail("Expected an invalid decomposition identifier.");
-        }
-        catch(final Exception e)
-        {
-        }
-        try
-        {
-            b.setDecompositionID(MetricConstants.BRIER_SCORE).build().apply(input);
+            b.setDecompositionID(null).build();
             fail("Expected an invalid decomposition identifier.");
         }
         catch(final Exception e)

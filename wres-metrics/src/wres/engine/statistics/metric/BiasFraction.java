@@ -3,6 +3,7 @@ package wres.engine.statistics.metric;
 import java.util.concurrent.atomic.DoubleAdder;
 
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -49,9 +50,9 @@ public final class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> 
     }
 
     @Override
-    public MetricConstants getDecompositionID()
+    public MetricDecompositionGroup getDecompositionID()
     {
-        return MetricConstants.NONE;
+        return MetricDecompositionGroup.NONE;
     }
 
     @Override

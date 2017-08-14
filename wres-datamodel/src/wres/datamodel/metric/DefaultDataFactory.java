@@ -19,6 +19,7 @@ import wres.datamodel.SafeVectorOfBooleans;
 import wres.datamodel.SafeVectorOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.SafeMetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
 import wres.datamodel.metric.Threshold.Operator;
 
@@ -227,9 +228,11 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public VectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta)
+    public VectorOutput ofVectorOutput(final double[] output,
+                                       final MetricDecompositionGroup template,
+                                       final MetricOutputMetadata meta)
     {
-        return new SafeVectorOutput(vectorOf(output), meta);
+        return new SafeVectorOutput(vectorOf(output), template, meta);
     }
 
     @Override
@@ -369,12 +372,13 @@ public class DefaultDataFactory implements DataFactory
             {
                 return secondKey;
             }
-            
+
             @Override
-            public String toString() {
-                return "["+getFirstKey().toString()+", "+getSecondKey().toString()+"]";
+            public String toString()
+            {
+                return "[" + getFirstKey().toString() + ", " + getSecondKey().toString() + "]";
             }
-            
+
         }
         return new DefaultMapBiKey();
     }

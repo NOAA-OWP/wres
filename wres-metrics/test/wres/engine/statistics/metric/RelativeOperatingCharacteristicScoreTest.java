@@ -14,6 +14,7 @@ import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder;
@@ -82,7 +83,8 @@ public final class RelativeOperatingCharacteristicScoreTest
                        .equals(metaFac.getMetricName(MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE)));
         assertTrue("The ROC Score is not decomposable.", !rocs.isDecomposable());
         assertTrue("The ROC Score is a skill score.", rocs.isSkillScore());
-        assertTrue("Expected no decomposition for the ROC Score.", rocs.getDecompositionID() == MetricConstants.NONE);
+        assertTrue("Expected no decomposition for the ROC Score.",
+                   rocs.getDecompositionID() == MetricDecompositionGroup.NONE);
         assertTrue("The ROC Score is not proper.", !rocs.isProper());
         assertTrue("The ROC Score is not strictly proper.", !rocs.isStrictlyProper());
     }
