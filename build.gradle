@@ -445,25 +445,7 @@ dependencies
 
     compile 'org.slf4j:slf4j-api:1.7.25'
 
-    compile('edu.ucar:cdm:4.6.8')
-    {
-        // because we are getting a later version from diff group:
-        exclude group: 'c3p0', module: 'c3p0'
-        // because these shouldn't be on compile classpath:
-        exclude group: 'ch.qos.logback', module: 'logback-classic'
-        exclude group: 'ch.qos.logback', module: 'logback-core'
-    }
-
-    // to use native postgres copy, need this on compile, otherwise runtime
-    compile 'org.postgresql:postgresql:42.0.0'
-
-    // connection pooling:
-    compile 'com.mchange:c3p0:0.9.5.2'
-
     runtime 'ch.qos.logback:logback-classic:1.2.3'
-
-    //JB @ 02/16/17
-    testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
 }
 
 sourceSets
