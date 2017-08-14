@@ -98,4 +98,10 @@ class SafeVectorOutput implements VectorOutput
         this.template = template;
     }
 
+    @Override
+    public double getValue(MetricConstants component)
+    {
+        return output.getDoubles()[template.getMetricComponents().indexOf(component)];
+    }
+
 }

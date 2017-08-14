@@ -325,7 +325,7 @@ public class Control implements Function<String[], Integer>
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
 
-        //Iterate
+        // Iterate
         for(Future<MetricInput<?>> nextInput: metricInputs)
         {
             // Complete all tasks asynchronously:
@@ -344,7 +344,7 @@ public class Control implements Function<String[], Integer>
             listOfFutures.add(c);
         }
 
-        //Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
+        // Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
         try
         {
             doAllOrException(listOfFutures).join();
@@ -355,7 +355,7 @@ public class Control implements Function<String[], Integer>
             return false;
         }
 
-        //  Complete the end-of-pipeline processing
+        // Complete the end-of-pipeline processing
         if(processor.willCacheMetricOutput())
         {
             processCachedCharts(feature,
@@ -386,7 +386,7 @@ public class Control implements Function<String[], Integer>
                                                MetricProcessor processor,
                                                MetricOutputGroup... outGroup)
     {
-        //True until failed
+        // True until failed
         boolean returnMe = true;
         try
         {
