@@ -3,6 +3,7 @@ package wres.io.concurrency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.config.generated.Conditions;
+import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -18,6 +19,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -76,12 +78,11 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
         DatasourceType dataType = this.projectConfig.getInputs().getRight().getType();
 
         DataFactory factory = DefaultDataFactory.getInstance();
-        MetadataFactory metadataFactory = factory.getMetadataFactory();
 
-        Metadata metadata = metadataFactory.getMetadata(metadataFactory.getDimension(projectConfig.getPair().getUnit()),
-                                                        metadataFactory.getDatasetIdentifier("", "", ""),
-                                                        this.progress);
+        Metadata metadata = this.buildMetadata(factory);
 
+        // TODO: Handle baseline pairs
+        // TODO: Handle addition of climatology for probability thresholds on pair construction
         if (dataType == DatasourceType.ENSEMBLE_FORECASTS)
         {
             input = factory.ofEnsemblePairs(pairs, metadata);
@@ -94,6 +95,38 @@ public final class PairRetriever extends WRESCallable<MetricInput<?>>
         }
 
         return input;
+    }
+
+    private Metadata buildMetadata(DataFactory dataFactory)
+    {
+        MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
+        Dimension dim = metadataFactory.getDimension(String.valueOf(this.projectConfig.getPair().getUnit()));
+
+        // TODO: Build ConfigHelper method to get the identifier, but doesn't rely on having a location
+        String geospatialIdentifier = this.feature.getLocation().getLid();
+        String variableIdentifier = this.projectConfig.getInputs().getRight().getVariable().getValue();
+
+        // TODO: need to add scenario IDs for the main data and any baseline. Also need to use a general identifier for
+        // the left/right variable rather than projectConfig.getInputs().getRight().getVariable().getValue()
+        // To be replaced by non-generic ID from the Project Configuration
+        String scenarioIdentifier = "model"; //this.projectConfig.getInputs().getRight().getLabel();
+
+        // TO be replaced by non-generic ID from the Project Configuration
+        String baselineScenarioID = null;
+
+        DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
+
+        if (Objects.nonNull(baseline) && !baseline.getSource().isEmpty())
+        {
+            baselineScenarioID = "baseline model";
+        }
+
+        DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
+                                                                                   variableIdentifier,
+                                                                                   scenarioIdentifier,
+                                                                                   baselineScenarioID);
+
+        return metadataFactory.getMetadata(dim, datasetIdentifier, this.progress);
     }
 
     private PairOfDoubleAndVectorOfDoubles createPair(ResultSet row) throws SQLException, NotImplementedException
