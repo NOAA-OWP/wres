@@ -288,14 +288,15 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
-     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService}.
+     * Processes a {@link ProjectConfigPlus} for a specific {@link Feature} using a prescribed {@link ExecutorService}.
      * 
+     * @param feature the feature to process
      * @param projectConfigPlus the project configuration
      * @param processPairExecutor the {@link ExecutorService}
      * @return true if the project processed successfully, false otherwise
      */
 
-    private boolean processFeature(Feature nextFeature,
+    private boolean processFeature(Feature feature,
                                    ProjectConfigPlus projectConfigPlus,
                                    ExecutorService processPairExecutor)
     {
@@ -304,7 +305,7 @@ public class Control implements Function<String[], Integer>
 
         if(LOGGER.isInfoEnabled())
         {
-            LOGGER.info("Processing feature '{}'.", nextFeature.getLocation().getLid());
+            LOGGER.info("Processing feature '{}'.", feature.getLocation().getLid());
         }
 
         // Sink for the results: the results are added incrementally to an immutable store via a builder
@@ -324,13 +325,13 @@ public class Control implements Function<String[], Integer>
         }
 
         // Build an InputGenerator for the next feature
-        InputGenerator metricInputs = Operations.getInputs(projectConfig, nextFeature);
+        InputGenerator metricInputs = Operations.getInputs(projectConfig, feature);
 
         // Queue up processing of fetched pairs.            
         List<PairsByLeadProcessor> tasks = new ArrayList<>();
         for(Future<MetricInput<?>> nextInput: metricInputs)
         {
-            PairsByLeadProcessor processTask = new PairsByLeadProcessor(nextFeature,
+            PairsByLeadProcessor processTask = new PairsByLeadProcessor(feature,
                                                                         projectConfigPlus,
                                                                         processor,
                                                                         nextInput);
@@ -345,7 +346,7 @@ public class Control implements Function<String[], Integer>
         }
         catch(InterruptedException e)
         {
-            LOGGER.error("Interrupted while processing metrics for feature {}.", nextFeature.getLocation().getLid(), e);
+            LOGGER.error("Interrupted while processing metrics for feature {}.", feature.getLocation().getLid(), e);
             Thread.currentThread().interrupt();
             return false;
         }
@@ -353,14 +354,14 @@ public class Control implements Function<String[], Integer>
         //  Complete the end-of-pipeline processing
         if(processor.willCacheMetricOutput())
         {
-            processCachedCharts(nextFeature,
+            processCachedCharts(feature,
                                 projectConfigPlus,
                                 processor,
                                 MetricOutputGroup.SCALAR,
                                 MetricOutputGroup.VECTOR);
             if(LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
             {
-                LOGGER.info("Completed processing of feature '{}'.", nextFeature.getLocation().getLid());
+                LOGGER.info("Completed processing of feature '{}'.", feature.getLocation().getLid());
             }
         }
         return true;

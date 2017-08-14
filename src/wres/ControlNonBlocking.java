@@ -283,14 +283,15 @@ public class ControlNonBlocking implements Function<String[], Integer>
     }
 
     /**
-     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService}.
+     * Processes a {@link ProjectConfigPlus} for a specific {@link Feature} using a prescribed {@link ExecutorService}.
      * 
+     * @param feature the feature to process
      * @param projectConfigPlus the project configuration
      * @param processPairExecutor the {@link ExecutorService}
      * @return true if the project processed successfully, false otherwise
      */
 
-    private boolean processFeature(Feature nextFeature,
+    private boolean processFeature(Feature feature,
                                    ProjectConfigPlus projectConfigPlus,
                                    ExecutorService processPairExecutor)
     {
@@ -299,7 +300,7 @@ public class ControlNonBlocking implements Function<String[], Integer>
 
         if(LOGGER.isInfoEnabled())
         {
-            LOGGER.info("Processing feature '{}'.", nextFeature.getLocation().getLid());
+            LOGGER.info("Processing feature '{}'.", feature.getLocation().getLid());
         }
 
         // Sink for the results: the results are added incrementally to an immutable store via a builder
@@ -319,7 +320,7 @@ public class ControlNonBlocking implements Function<String[], Integer>
         }
 
         // Build an InputGenerator for the next feature
-        InputGenerator metricInputs = Operations.getInputs(projectConfig, nextFeature);
+        InputGenerator metricInputs = Operations.getInputs(projectConfig, feature);
 
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
@@ -335,7 +336,7 @@ public class ControlNonBlocking implements Function<String[], Integer>
                                             CompletableFuture.supplyAsync(new PairsByLeadProcessor(nextInput),
                                                                           processPairExecutor)
                                                              .thenApplyAsync(processor, processPairExecutor)
-                                                             .thenAcceptAsync(new IntermediateResultProcessor(nextFeature,
+                                                             .thenAcceptAsync(new IntermediateResultProcessor(feature,
                                                                                                               projectConfigPlus),
                                                                               processPairExecutor);
 
@@ -350,21 +351,21 @@ public class ControlNonBlocking implements Function<String[], Integer>
         }
         catch(final Exception e)
         {
-            LOGGER.error("While processing feature '{}'.", nextFeature.getLocation().getLid(), e);
+            LOGGER.error("While processing feature '{}'.", feature.getLocation().getLid(), e);
             return false;
         }
 
         //  Complete the end-of-pipeline processing
         if(processor.willCacheMetricOutput())
         {
-            processCachedCharts(nextFeature,
+            processCachedCharts(feature,
                                 projectConfigPlus,
                                 processor,
                                 MetricOutputGroup.SCALAR,
                                 MetricOutputGroup.VECTOR);
             if(LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
             {
-                LOGGER.info("Completed processing of feature '{}'.", nextFeature.getLocation().getLid());
+                LOGGER.info("Completed processing of feature '{}'.", feature.getLocation().getLid());
             }
         }
         return true;
@@ -381,9 +382,9 @@ public class ControlNonBlocking implements Function<String[], Integer>
      */
 
     private static boolean processCachedCharts(Feature feature,
-                                        ProjectConfigPlus projectConfigPlus,
-                                        MetricProcessor processor,
-                                        MetricOutputGroup... outGroup)
+                                               ProjectConfigPlus projectConfigPlus,
+                                               MetricProcessor processor,
+                                               MetricOutputGroup... outGroup)
     {
         //True until failed
         boolean returnMe = true;
