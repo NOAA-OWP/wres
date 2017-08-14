@@ -40,17 +40,6 @@
 		</leftRangeAxis>
 	</subPlot>
 
-	<domainAxis>
-		<numericAxis>
-			<lowerBound>0.0</lowerBound>
-			<upperBound>4.0</upperBound>
-			<tickSpacing>auto</tickSpacing>
-			<tickFormat>0</tickFormat>
-			<rangeIncludesZero>false</rangeIncludesZero>
-			<autoRange>false</autoRange>
-		</numericAxis>
-	</domainAxis>
-
 	<!-- Horizontal line at zero, black with a stroke width of two. Because 
 		there is not default, all parameters must be specified. I should change that 
 		requirement in the future, because only the location, color, and thickness 
