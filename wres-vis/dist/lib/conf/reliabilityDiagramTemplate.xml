@@ -46,6 +46,21 @@
 		</seriesDrawingParameters>
 	</datasourceDrawingParameters>
 
+    <!-- The diagonal line series. -->
+	<datasourceDrawingParameters sourceIndex="2">
+		<plotter>LineAndScatter</plotter>
+		<subPlot>0</subPlot>
+		<yAxis>left</yAxis>
+		<seriesDrawingParameters
+			createdIndexOfSeriesToModify="-1">
+            <lineColor alpha="255" blue="128" green="128" red="128"/>
+			<nameInLegend>Perfect</nameInLegend>
+			<showInLegend>true</showInLegend>
+            <shape>none</shape>
+            <lineWidth>2.0</lineWidth>
+		</seriesDrawingParameters>
+	</datasourceDrawingParameters>
+
     <!-- Fix the bounds to 0 and 1. -->
 	<subPlot subPlotIndex="0" weight="3">
 		<leftRangeAxis>
@@ -70,6 +85,11 @@
 	<!-- Put the legend on the right hand side. -->
     <legend visible="true">
         <position>RIGHT</position>
+        <title>
+            <font family="Dialog" size="12" style="1"/>
+            <text>@legendTitle@@legendUnitsText@</text>
+        </title>
+        <borderLineWidth>0.0</borderLineWidth>
     </legend>
 
 </chartDrawingParameters>

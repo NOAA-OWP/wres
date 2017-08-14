@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.jfree.chart.JFreeChart;
 import org.junit.Assert;
 
 import evs.io.xml.ProductFileIO;
@@ -75,6 +76,7 @@ public class Chart2DTestOutput extends TestCase
                                                                                               null);
 
             //Generate the output file.
+            final JFreeChart jfreeChart = engine.buildChart();
             ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
 
             //Compare against OS specific image benchmark.
@@ -168,7 +170,7 @@ public class Chart2DTestOutput extends TestCase
             final Map<Integer, ChartEngine> engineMap =
                                                       ChartEngineFactory.buildMultiVectorOutputChartEngineByLead(results,
                                                                                                                  factory,
-                                                                                                                 ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM,
+                                                                                                                 ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
                                                                                                                  "reliabilityDiagramTemplate.xml",
                                                                                                                  null);
 
