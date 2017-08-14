@@ -1,5 +1,5 @@
 <configuration>
-    <!-- some prefer timestamps, thread name, level, class name, etc. -->
+    <!-- Some prefer timestamps, thread name, level, class name, etc. -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <!-- Store in a consistent location relative to user.
              Odds are the user has write access to user.home, also avoids
@@ -7,13 +7,13 @@
              Does not prevent multiple instances of wres from interleaving. -->
         <file>${user.home}/wres_logs/wres.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-          <!-- roll over when a new day starts -->
+          <!-- Roll over when a new day starts. -->
           <fileNamePattern>${user.home}/wres_logs/wres.%d{YYYY-MM-dd}.log</fileNamePattern>
           <!-- Keep at most 10 years of rolled files (see next comment) -->
           <maxHistory>3653</maxHistory>
           <!-- When size of all rolled files exceeds 256MB, delete oldest files,
-               requires the maxHistory to be set to work. Idea is that
-               totalSizeCap will be hit more requently than maxHistory -->
+               requires the maxHistory to be set to work. The idea is that
+               totalSizeCap will be hit more frequently than maxHistory. -->
           <totalSizeCap>256MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
@@ -36,7 +36,8 @@
         <level value="warn" />
     </logger>
 
-    <root level="info">
+    <!-- Allow -DlogLevel to set logging level, otherwise info. -->
+    <root level="${logLevel:-info}">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />
     </root>
