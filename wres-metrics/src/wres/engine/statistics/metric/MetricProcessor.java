@@ -163,16 +163,27 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
     /**
      * Returns a {@link MetricOutputForProjectByLeadThreshold} for the last available results or null if
-     * {@link #willCacheMetricOutput()} returns false.
+     * {@link #hasStoredMetricOutput()} returns false.
      * 
      * @return a {@link MetricOutputForProjectByLeadThreshold} or null
      */
 
     public MetricOutputForProjectByLeadThreshold getStoredMetricOutput()
     {
-        return willCacheMetricOutput() ? futures.getMetricOutput() : null;
+        return hasStoredMetricOutput() ? futures.getMetricOutput() : null;
     }
+    
+    /**
+     * Returns true if stored metric outputs are available, false otherwise.
+     * 
+     * @return true if stored results are available, false otherwise
+     */
 
+    public boolean hasStoredMetricOutput()
+    {
+        return willStoreMetricOutput() && Objects.nonNull(futures);
+    }
+    
     /**
      * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
      * false otherwise.
@@ -180,7 +191,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * @return true if results will be cached, false otherwise
      */
 
-    public boolean willCacheMetricOutput()
+    public boolean willStoreMetricOutput()
     {
         return mergeList.length > 0;
     }
@@ -361,7 +372,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     {
         Objects.requireNonNull(mergeFutures,"Specify non-null futures for merging.");
         //Merge futures if cached outputs identified
-        if(willCacheMetricOutput())
+        if(willStoreMetricOutput())
         {
             MetricFutures.Builder builder = new MetricFutures.Builder();
             if(Objects.nonNull(futures))
