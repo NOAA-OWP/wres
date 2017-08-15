@@ -336,7 +336,7 @@
             <xs:element name="graphical" type="graphicalType" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
 
-        <xs:attribute name="type" type="destinationType" />
+        <xs:attribute name="type" type="destinationType" default="numeric" />
     </xs:complexType>
 
     <xs:simpleType name="timeAggregationFunction">
