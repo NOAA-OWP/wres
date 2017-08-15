@@ -1,13 +1,10 @@
 package wres;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -31,20 +28,10 @@ import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.MapBiKey;
-import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.*;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
-import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
@@ -372,6 +359,23 @@ public class Control implements Function<String[], Integer>
                                 processor,
                                 MetricOutputGroup.SCALAR,
                                 MetricOutputGroup.VECTOR);
+
+            try
+            {
+                writeOutputFiles( projectConfig, feature,
+                        processor.getStoredMetricOutput() );
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn("Interrupted while writing output files.");
+                Thread.currentThread().interrupt();
+            }
+            catch ( ExecutionException|IOException e )
+            {
+                LOGGER.error("While writing output files: ", e );
+                return false;
+            }
+
             if(LOGGER.isInfoEnabled())
             {
                 LOGGER.info("Completed processing of feature '{}'.", feature.getLocation().getLid());
@@ -385,6 +389,74 @@ public class Control implements Function<String[], Integer>
             }
         }
         return true;
+    }
+
+    private boolean writeOutputFiles( ProjectConfig projectConfig,
+                                      Feature feature,
+                                      MetricOutputForProjectByLeadThreshold storedMetricOutput )
+            throws InterruptedException, ExecutionException, IOException
+    {
+        boolean result = true;
+        if ( projectConfig.getOutputs() == null
+             || projectConfig.getOutputs().getDestination() == null )
+        {
+            LOGGER.info("No numeric output files specified for project.");
+            return false;
+        }
+
+        for ( DestinationConfig d : projectConfig.getOutputs().getDestination() )
+        {
+            Map<Integer,StringJoiner> rows = new TreeMap<>();
+            StringJoiner headerRow = new StringJoiner( "," );
+            headerRow.add("LEAD_TIME");
+
+            if ( d.getType() == DestinationType.NUMERIC )
+            {
+                for ( Map.Entry<MapBiKey<MetricConstants,MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> m
+                        : storedMetricOutput.getScalarOutput().entrySet() )
+                {
+                    String name = m.getKey().getFirstKey().name();
+                    String secondName = m.getKey().getSecondKey().name();
+
+                    for ( Threshold t : m.getValue().keySetByThreshold() )
+                    {
+                        String column = name + "_" + secondName + "_" + t;
+                        headerRow.add( column );
+
+                        for ( MapBiKey<Integer, Threshold> key : m.getValue().sliceByThreshold( t ).keySet() )
+                        {
+
+                            if ( rows.get( key.getFirstKey() ) == null )
+                            {
+                                StringJoiner row = new StringJoiner( "," );
+                                row.add( Integer.toString( key.getFirstKey() ) );
+                                rows.put( key.getFirstKey(), row );
+                            }
+
+                            StringJoiner row = rows.get( key.getFirstKey() );
+
+                            row.add( m.getValue().get( key ).toString() );
+                        }
+                    }
+                }
+            }
+
+            Path outputPath = Paths.get( d.getPath() );
+            try (BufferedWriter w =
+                    Files.newBufferedWriter( outputPath,
+                                             StandardCharsets.UTF_8,
+                                             StandardOpenOption.CREATE))
+            {
+                w.write( headerRow.toString() );
+                w.write( System.lineSeparator() );
+                for ( StringJoiner row : rows.values() )
+                {
+                    w.write( row.toString() );
+                    w.write( System.lineSeparator() );
+                }
+            }
+        }
+        return result;
     }
 
     /**
