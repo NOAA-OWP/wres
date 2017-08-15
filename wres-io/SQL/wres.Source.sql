@@ -1,4 +1,4 @@
--- Table: wres.Source
+﻿-- Table: wres.Source
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
@@ -13,21 +13,21 @@ CREATE TABLE IF NOT EXISTS wres.Source
   lead smallint,
   CONSTRAINT source_pk PRIMARY KEY (source_id)
 )
--- only needed for postgres <= 8.0, after that, OIDS are not created, by default.
--- WITH (
---  OIDS=FALSE
---)
-;
-GRANT SELECT, INSERT, UPDATE, DELETE ON wres.Source TO wres;
+WITH (
+ OIDS=FALSE
+);
+ALTER TABLE wres.Source 
+  OWNER TO wres;
+
+DROP INDEX IF EXISTS wres.source_output_time_idx;
 
 CREATE INDEX IF NOT EXISTS source_output_time_idx
   ON wres.Source
--- default for postgres is btree, h2 doesn't have this option
---  USING btree
   (output_time);
 
--- h2 (in-memory?) can't do an index on text. TODO: restore this index if needed
---CREATE INDEX IF NOT EXISTS source_path_idx
---  ON wres.Source
---  USING btree
---  (path);
+DROP INDEX IF EXISTS wres.source_path_idx;
+
+CREATE INDEX IF NOT EXISTS source_path_idx
+  ON wres.Source
+  USING btree
+  (path);
