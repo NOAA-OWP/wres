@@ -731,8 +731,6 @@ public class Control implements Function<String[], Integer>
         /**
          * Construct.
          * 
-         * @param projectConfigPlus the project configuration
-         * @param processor the metric processor
          * @param input the future metric input
          */
 
