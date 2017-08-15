@@ -251,4 +251,21 @@ public final class Time
         OffsetDateTime absoluteDate = Time.convertStringToDate(date);
         return Time.convertDateToString(absoluteDate);
     }
+    
+    /**
+     * Converts a string representation of a date and time from time zone to offset in hours
+     * @param timeZone The string representation of a time zone
+     * @return A Long representation of offset in UTC
+     */
+    public static Long zoneOffsetHours(final String timeZone)
+    {
+    	Long offsetHr = null;
+    	
+    	 if (TIMEZONE_OFFSET.containsKey(timeZone))
+    	 {
+    		 offsetHr = TIMEZONE_OFFSET.get(timeZone);
+    	 }
+    	 
+    	 return offsetHr;
+    }
 }
