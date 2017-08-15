@@ -267,6 +267,8 @@
             <xs:element name="name" type="metricConfigName" />
             <xs:element name="probabilityThresholds" type="probabilityThreshold" minOccurs="0" maxOccurs="1"/>
             <xs:element name="valueThresholds" type="probabilityThreshold" minOccurs="0" maxOccurs="1" />
+            <xs:element name="plotType" type="plotTypeSelection" minOccurs="0" />
+            <xs:element name="templateResourceName" type="xs:anyURI" minOccurs="0" />
         </xs:sequence>
 
         <xs:attribute name="label" type="xs:string" />
