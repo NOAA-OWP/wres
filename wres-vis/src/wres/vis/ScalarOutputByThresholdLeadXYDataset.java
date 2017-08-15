@@ -30,7 +30,7 @@ public class ScalarOutputByThresholdLeadXYDataset extends WRESAbstractXYDataset<
         int seriesIndex = 0;
         for(final Integer lead: input.keySetByLead())
         {
-            setOverrideLegendName(seriesIndex, lead.toString() + "h");
+            setOverrideLegendName(seriesIndex, lead.toString());
             seriesIndex++;
         }
     }

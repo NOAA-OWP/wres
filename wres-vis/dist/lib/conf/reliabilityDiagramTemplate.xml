@@ -3,6 +3,7 @@
 <chartDrawingParameters>
 
 	<plotTitle>
+        <font family="Dialog" size="12" style="1"/>
 		<text>Reliability Diagram for Various Event Thresholds (Upper) and Sample Counts (Lower)
 @locationName@.@variableName@.@primaryScenario@ At Lead Hour @leadHour@
 		</text>
@@ -84,7 +85,7 @@
 	
 	<!-- Put the legend on the right hand side. -->
     <legend visible="true">
-        <position>RIGHT</position>
+        <position>BOTTOM</position>
         <title>
             <font family="Dialog" size="12" style="1"/>
             <text>@legendTitle@@legendUnitsText@</text>

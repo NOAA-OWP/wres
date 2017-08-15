@@ -112,19 +112,7 @@ public abstract class ChartEngineFactory
             if(input.getMetadata().getMetricID() == MetricConstants.RELIABILITY_DIAGRAM)
             {
                 //Plots for thresholds are not yet generated.
-                if(plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD))
-                {
-                    throw new IllegalArgumentException("Reliability diagrms for a threshold (across all lead times) are not yet support.");
-                }
-                //Check for a bad plot type.
-                else if(!plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD))
-                {
-                    throw new IllegalArgumentException("Plot type " + plotType
-                        + " is invalid for a reliability diagram.");
-                }
-                //Default reliability diagram will be VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD.
-                //This will prepare the (1) template name; (2) arguments; and (3) data sources.  
-                else
+                if ((plotType == null) || (plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD)))
                 {
                     templateName = determineTemplateResourceName(templateResourceName, plotType, VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD);
                     final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice = input.sliceByLead(lead);
@@ -142,11 +130,11 @@ public abstract class ChartEngineFactory
                     String legendUnitsText = "";
                     if(input.hasQuantileThresholds())
                     {
-                        legendUnitsText += " (" + meta.getInputDimension() + " [probability])";
+                        legendUnitsText += " [" + meta.getInputDimension() + "]";
                     }
                     else if(input.keySetByThreshold().size() > 1)
                     {
-                        legendUnitsText += " (" + meta.getInputDimension() + ")";
+                        legendUnitsText += " [" + meta.getInputDimension() + "]";
                     }
                     arguments.addArgument("legendTitle", legendTitle);
                     arguments.addArgument("legendUnitsText", legendUnitsText);
@@ -158,11 +146,20 @@ public abstract class ChartEngineFactory
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
                 }
+                else if(plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD))
+                {
+                    throw new IllegalArgumentException("Reliability diagrms for a threshold (across all lead times) are not yet support.");
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Plot type " + plotType
+                        + " is invalid for a reliability diagram.");
+                }
             }
             else
             {
-                throw new IllegalArgumentException("Plot type of " + plotType
-                    + " is not valid for a reliability diagram.");
+                throw new IllegalArgumentException("Unrecognized plot type of " + input.getMetadata().getMetricID()
+                    + " specified in the metric information.");
             }
 
             //Process override parameters.
@@ -239,11 +236,11 @@ public abstract class ChartEngineFactory
             String legendUnitsText = "";
             if(input.hasQuantileThresholds())
             {
-                legendUnitsText += " (" + meta.getInputDimension() + " [probability])";
+                legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
             else if(input.keySetByThreshold().size() > 1)
             {
-                legendUnitsText += " (" + meta.getInputDimension() + ")";
+                legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
             arguments.addArgument("legendTitle", legendTitle);
             arguments.addArgument("legendUnitsText", legendUnitsText);
@@ -256,7 +253,7 @@ public abstract class ChartEngineFactory
 
             //Legend title.
             arguments.addArgument("legendTitle", "Lead Time");
-            arguments.addArgument("legendUnitsText", "");
+            arguments.addArgument("legendUnitsText", " [hours]");
         }
         else
         {
