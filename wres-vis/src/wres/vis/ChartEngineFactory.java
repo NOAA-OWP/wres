@@ -98,6 +98,13 @@ public abstract class ChartEngineFactory
                                                                                               final String overrideParametersStr) throws ChartEngineException,
                                                                                                                                   GenericXMLReadingHandlerException
     {
+        //TODO In this method and the scalar output method...
+        //If the templateResourceName is null, then get it from plotTypeInfoMap.  Implement it.  
+        //Next, create two versions of the template, one for lead time on the domain-axis, one for threshold.  Get rid of the old template.  This should cause
+        //things to break.  Fix them.  
+        //For colors... THINK!
+        
+        
         final ConcurrentMap<Integer, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         for(final Integer lead: input.keySetByLead())
