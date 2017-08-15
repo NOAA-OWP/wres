@@ -18,7 +18,6 @@
 		<!-- The colors defined through a palette. For this test, four colors for 
 			four series. -->
 		<lineColorPalette>
-			<color alpha="255" blue="0" green="0" red="0" />
 			<color alpha="255" blue="255" green="0" red="0" />
 			<color alpha="255" blue="51" green="204" red="51" />
 			<color alpha="255" blue="0" green="0" red="255" />
@@ -34,7 +33,6 @@
 		<!-- The colors defined through a palette. For this test, four colors for 
 			four series. -->
 		<lineColorPalette>
-			<color alpha="255" blue="0" green="0" red="0" />
 			<color alpha="255" blue="255" green="0" red="0" />
 			<color alpha="255" blue="51" green="204" red="51" />
 			<color alpha="255" blue="0" green="0" red="255" />
@@ -88,7 +86,7 @@
         <position>BOTTOM</position>
         <title>
             <font family="Dialog" size="12" style="1"/>
-            <text>@legendTitle@@legendUnitsText@</text>
+            <text>@legendTitle@@legendUnitsText@:</text>
         </title>
         <borderLineWidth>0.0</borderLineWidth>
     </legend>
