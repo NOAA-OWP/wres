@@ -44,7 +44,7 @@
     <metric label="">
       <name>correlation pearsons</name>
     </metric>
-    <destination type="numeric"><path>/home/jesse/text_output.csv</path></destination>
+    <destination type="numeric"><path>/home/jesse/</path></destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->
     <graphical width="1920" height="1080">

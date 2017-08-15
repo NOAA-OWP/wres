@@ -71,11 +71,11 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
         }
 
         // Log
-        if(LOGGER.isInfoEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            LOGGER.info("Completed processing of metrics for feature '{}' at lead time {}.",
-                        input.getMetadata().getIdentifier().getGeospatialID(),
-                        input.getMetadata().getLeadTime());
+            LOGGER.debug("Completed processing of metrics for feature '{}' at lead time {}.",
+                         input.getMetadata().getIdentifier().getGeospatialID(),
+                         input.getMetadata().getLeadTime());
         }
 
         //Process and return the result       

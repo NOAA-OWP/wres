@@ -365,15 +365,20 @@ public class Control implements Function<String[], Integer>
 
             try
             {
-                writeOutputFiles( projectConfig, feature,
-                        processor.getStoredMetricOutput() );
+                boolean filesWritten = writeOutputFiles( projectConfig,
+                                                         feature,
+                                                         processor.getStoredMetricOutput() );
+                if (!filesWritten)
+                {
+                    return false;
+                }
             }
             catch ( InterruptedException ie )
             {
                 LOGGER.warn("Interrupted while writing output files.");
                 Thread.currentThread().interrupt();
             }
-            catch ( ExecutionException|IOException e )
+            catch ( ExecutionException e )
             {
                 LOGGER.error("While writing output files: ", e );
                 return false;
@@ -397,7 +402,7 @@ public class Control implements Function<String[], Integer>
     private boolean writeOutputFiles( ProjectConfig projectConfig,
                                       Feature feature,
                                       MetricOutputForProjectByLeadThreshold storedMetricOutput )
-            throws InterruptedException, ExecutionException, IOException
+            throws InterruptedException, ExecutionException
     {
         boolean result = true;
         if ( projectConfig.getOutputs() == null
@@ -444,7 +449,7 @@ public class Control implements Function<String[], Integer>
                 }
             }
 
-            Path outputPath = Paths.get( d.getPath() );
+            Path outputPath = Paths.get( d.getPath() + feature.getLocation().getLid() + ".csv" );
             try (BufferedWriter w =
                     Files.newBufferedWriter( outputPath,
                                              StandardCharsets.UTF_8,
@@ -458,7 +463,13 @@ public class Control implements Function<String[], Integer>
                     w.write( System.lineSeparator() );
                 }
             }
+            catch ( IOException ioe )
+            {
+                LOGGER.error("Failed to write to {}", outputPath, ioe);
+                result = false;
+            }
         }
+
         return result;
     }
 
@@ -828,11 +839,11 @@ public class Control implements Function<String[], Integer>
             try
             {
                 nextInput = input.get();
-                if(LOGGER.isInfoEnabled())
+                if(LOGGER.isDebugEnabled())
                 {
-                    LOGGER.info("Completed processing of pairs for feature '{}' at lead time {}.",
-                                nextInput.getMetadata().getIdentifier().getGeospatialID(),
-                                nextInput.getMetadata().getLeadTime());
+                    LOGGER.debug("Completed processing of pairs for feature '{}' at lead time {}.",
+                                 nextInput.getMetadata().getIdentifier().getGeospatialID(),
+                                 nextInput.getMetadata().getLeadTime());
                 }
             }
             catch(InterruptedException e)
@@ -889,11 +900,11 @@ public class Control implements Function<String[], Integer>
                 {
                     processMultiVectorCharts(feature, projectConfigPlus, input.getMultiVectorOutput());
                     meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
-                    if(LOGGER.isInfoEnabled())
+                    if(LOGGER.isDebugEnabled())
                     {
-                        LOGGER.info("Completed processing of intermediate metrics results for feature '{}' at lead time {}.",
-                                    meta.getIdentifier().getGeospatialID(),
-                                    meta.getLeadTime());
+                        LOGGER.debug("Completed processing of intermediate metrics results for feature '{}' at lead time {}.",
+                                     meta.getIdentifier().getGeospatialID(),
+                                     meta.getLeadTime());
                     }
                 }
             }
