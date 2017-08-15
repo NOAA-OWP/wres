@@ -216,10 +216,13 @@ public class Control implements Function<String[], Integer>
 
     private static boolean validateProjects(List<ProjectConfigPlus> projectConfiggies)
     {
+        boolean validationsPassed = true;
+
         if(projectConfiggies.isEmpty())
         {
-            LOGGER.error("Please correct project configuration files (see above) and pass them in the command line "
+            LOGGER.error("Please correct project configuration files and pass them in the command line "
                 + "like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml");
+            return false;
         }
         else
         {
@@ -227,7 +230,6 @@ public class Control implements Function<String[], Integer>
                         projectConfiggies.size());
         }
 
-        boolean validationsPassed = true;
 
         // Validate all projects, not stopping until all are done
         for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
@@ -729,8 +731,6 @@ public class Control implements Function<String[], Integer>
         /**
          * Construct.
          * 
-         * @param projectConfigPlus the project configuration
-         * @param processor the metric processor
          * @param input the future metric input
          */
 
