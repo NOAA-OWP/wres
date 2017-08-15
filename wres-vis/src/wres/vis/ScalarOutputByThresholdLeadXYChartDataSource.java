@@ -25,6 +25,7 @@ public class ScalarOutputByThresholdLeadXYChartDataSource extends WRESXYChartDat
         //TODO Need to ensure that the arguments used below are standard arguments created in the factory that generates images!
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("THRESHOLD VALUE@inputUnitsText@");
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("@metricShortName@@outputUnitsText@");
+        WRESTools.applyDefaultJFreeChartColorSequence(getDefaultFullySpecifiedDataSourceDrawingParameters());
     }
 
     @Override
