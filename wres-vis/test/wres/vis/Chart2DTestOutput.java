@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.jfree.chart.JFreeChart;
 import org.junit.Assert;
 
 import evs.io.xml.ProductFileIO;
@@ -76,7 +75,6 @@ public class Chart2DTestOutput extends TestCase
                                                                                               null);
 
             //Generate the output file.
-            final JFreeChart jfreeChart = engine.buildChart();
             ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
 
             //Compare against OS specific image benchmark.
@@ -370,6 +368,8 @@ public class Chart2DTestOutput extends TestCase
                 final double leadTime = (Double)d.next().getKey();
                 final MetricResultByThreshold t = (MetricResultByThreshold)data.getResult(leadTime);
                 final Iterator<MetricResultKey> e = t.getIterator();
+                boolean firstOne = true; //Used to track if this is the first time through the e loop.  See HDH comment below.
+                
                 //Iterate through the thresholds
                 while(e.hasNext())
                 {
@@ -397,6 +397,13 @@ public class Chart2DTestOutput extends TestCase
                                 if (res[i][j] == -999D)
                                 {
                                     res[i][j] = Double.NaN;
+                                }
+                                
+                                //HDH (8/15/17): Forcing a NaN in the first time series within the reliability diagram at index 2.
+                                if (firstOne && (i == 0) && (j == 2))
+                                {
+                                    res[i][j] = Double.NaN;
+                                    firstOne = false;
                                 }
                             }
                         }
