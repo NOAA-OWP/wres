@@ -4,13 +4,13 @@
     <left label="My Desired Name For Graphics" type="observation">
       <type>observations</type>
       <source recursive="true" all="true" format="PI-XML">/media/sf_userprofile/hefs_data/resources/DRRC2SQIN.xml</source>
-      <source recursive="false" format="netCDF">https://my.observations.com/bar/some.nc</source>
+      <!-- web unsupported as of 2017-08-15 <source recursive="false" format="netCDF">https://my.observations.com/bar/some.nc</source> -->
       <variable>QINE</variable>
     </left>
     <right label="My Name I want to see on charts">
       <type>ensemble forecasts</type>
       <source format="PI-XML">/media/sf_userprofile/hefs_data/resources/forecasts/</source>
-      <source recursive="false">https://my.data.com/foo</source>
+      <!-- web unsupported as of 2017-08-15 <source recursive="false">https://my.data.com/foo</source> -->
       <variable>SQIN</variable>
       <rollingTimeAggregation>
         <function>sum</function>
