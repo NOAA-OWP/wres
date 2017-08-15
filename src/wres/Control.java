@@ -84,13 +84,15 @@ public class Control implements Function<String[], Integer>
             return -1;
         }
         // Process the configurations with a ForkJoinPool
-        ForkJoinPool processPairExecutor = null;
-        ForkJoinPool metricExecutor = null;
+        ExecutorService processPairExecutor = null;
+        ExecutorService metricExecutor = null;
         try
         {
             // Build a processing pipeline
             processPairExecutor = new ForkJoinPool();
-            // metricExecutor = null;
+            
+            // If null, uses ForkJoinPool.commonPool()
+            //metricExecutor = null;
 
             // Iterate through the configurations
             for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
@@ -108,6 +110,7 @@ public class Control implements Function<String[], Integer>
         finally
         {
             shutDownGracefully(processPairExecutor);
+            shutDownGracefully(metricExecutor);
         }
     }
 
@@ -895,11 +898,11 @@ public class Control implements Function<String[], Integer>
     /**
      * Kill off the executors passed in even if there are remaining tasks.
      *
-     * @param processPairExecutor the executor to shutdown
+     * @param executor the executor to shutdown
      */
-    private static void shutDownGracefully(ExecutorService processPairExecutor)
+    private static void shutDownGracefully(ExecutorService executor)
     {
-        if(Objects.isNull(processPairExecutor))
+        if(Objects.isNull(executor))
         {
             return;
         }
@@ -907,7 +910,7 @@ public class Control implements Function<String[], Integer>
         int processingSkipped = 0;
         int i = 0;
         boolean deathTime = false;
-        while(!processPairExecutor.isTerminated())
+        while(!executor.isTerminated())
         {
             if(i == 0)
             {
@@ -933,7 +936,7 @@ public class Control implements Function<String[], Integer>
                 if(deathTime)
                 {
                     LOGGER.info("Forcing shutdown.");
-                    processingSkipped += processPairExecutor.shutdownNow().size();
+                    processingSkipped += executor.shutdownNow().size();
                 }
             }
             i++;
