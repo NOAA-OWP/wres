@@ -25,6 +25,7 @@ public class ScalarOutputByLeadThresholdXYChartDataSource extends WRESXYChartDat
         //TODO Must make use of arguments that are provided by default.  How can I best ensure this?
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("FORECAST LEAD TIME [HOUR]");
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("@metricShortName@@outputUnitsText@");
+        WRESTools.applyDefaultJFreeChartColorSequence(getDefaultFullySpecifiedDataSourceDrawingParameters());
     }
 
     @Override
