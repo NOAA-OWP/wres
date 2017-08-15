@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
@@ -89,21 +90,24 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
+     * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(MetricInput)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorSingleValuedPairs(DataFactory dataFactory,
-                                     ProjectConfig config,
+    MetricProcessorSingleValuedPairs(final DataFactory dataFactory,
+                                     final ProjectConfig config,
+                                     final ExecutorService executor,
                                      final MetricOutputGroup... mergeList) throws MetricConfigurationException
     {
-        super(dataFactory, config, mergeList);
+        super(dataFactory, config, executor, mergeList);
         //Construct the metrics
         if(hasMetrics(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR))
         {
             dichotomousScalar =
-                              metricFactory.ofDichotomousScalarCollection(getSelectedMetrics(metrics,
+                              metricFactory.ofDichotomousScalarCollection(executor,
+                                                                          getSelectedMetrics(metrics,
                                                                                              MetricInputGroup.DICHOTOMOUS,
                                                                                              MetricOutputGroup.SCALAR));
         }
