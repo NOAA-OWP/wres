@@ -37,6 +37,7 @@ import wres.datamodel.metric.QuantileThreshold;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.Threshold;
 import wres.datamodel.metric.Threshold.Operator;
+import wres.datamodel.metric.VectorOutput;
 
 /**
  * Tests the construction of a 3D chart of metric outputs.
@@ -201,7 +202,7 @@ public class Chart2DTestOutput extends TestCase
 
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
-     * thresholds and forecast lead times. Reads the input data from {@link #getMetricOutputMapByLeadThreshold()} and
+     * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()} and
      * slices.
      * 
      * @return an output map of verification scores
@@ -210,7 +211,7 @@ public class Chart2DTestOutput extends TestCase
     public static MetricOutputMapByLeadThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdOne()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
-        final MetricOutputMapByLeadThreshold<ScalarOutput> full = getMetricOutputMapByLeadThreshold();
+        final MetricOutputMapByLeadThreshold<ScalarOutput> full = getScalarMetricOutputMapByLeadThreshold();
         final List<MetricOutputMapByLeadThreshold<ScalarOutput>> combine = new ArrayList<>();
         final double[][] allow = new double[][]{{Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY}, {0.5, 2707.5},
             {0.95, 13685.0}, {0.99, 26648.0}};
@@ -223,7 +224,7 @@ public class Chart2DTestOutput extends TestCase
 
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
-     * thresholds and forecast lead times. Reads the input data from {@link #getMetricOutputMapByLeadThreshold()} and
+     * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()} and
      * slices.
      * 
      * @return an output map of verification scores
@@ -232,7 +233,7 @@ public class Chart2DTestOutput extends TestCase
     public static MetricOutputMapByLeadThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdTwo()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
-        final MetricOutputMapByLeadThreshold<ScalarOutput> full = getMetricOutputMapByLeadThreshold();
+        final MetricOutputMapByLeadThreshold<ScalarOutput> full = getScalarMetricOutputMapByLeadThreshold();
         final List<MetricOutputMapByLeadThreshold<ScalarOutput>> combine = new ArrayList<>();
         final int[] allow = new int[]{42, 258, 474, 690};
         for(final int next: allow)
@@ -250,7 +251,7 @@ public class Chart2DTestOutput extends TestCase
      * @return an output map of verification scores
      */
 
-    private static MetricOutputMapByLeadThreshold<ScalarOutput> getMetricOutputMapByLeadThreshold()
+    private static MetricOutputMapByLeadThreshold<ScalarOutput> getScalarMetricOutputMapByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
@@ -313,6 +314,77 @@ public class Chart2DTestOutput extends TestCase
         return outputFactory.ofMap(rawData);
     }
 
+    /**
+     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link VectorOutput} comprising the CRPSS for various
+     * thresholds and forecast lead times. Reads the input data from
+     * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
+     * 
+     * @return an output map of verification scores
+     */
+
+    private static MetricOutputMapByLeadThreshold<VectorOutput> getVectorMetricOutputMapByLeadThreshold()
+    {
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
+        final Map<MapBiKey<Integer, Threshold>, VectorOutput> rawData = new TreeMap<>();
+
+        try
+        {
+            //Create the input file
+            final File resultFile = new File("testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml");
+            final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
+
+            final Iterator<MetricResultKey> d = data.getIterator();
+
+            //Metric output metadata: add fake sample sizes as these are not available in the test input file
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
+                                                                            metaFactory.getDimension(),
+                                                                            metaFactory.getDimension("CMS"),
+                                                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                            MetricConstants.MAIN,
+                                                                            metaFactory.getDatasetIdentifier("NPTP1",
+                                                                                                             "STREAMFLOW",
+                                                                                                             "HEFS",
+                                                                                                             "ESP"));
+
+            //Iterate through the lead times
+            while(d.hasNext())
+            {
+                //Set the lead time
+                final double leadTime = (Double)d.next().getKey();
+                final MetricResultByThreshold t = (MetricResultByThreshold)data.getResult(leadTime);
+                final Iterator<MetricResultKey> e = t.getIterator();
+                //Iterate through the thresholds
+                while(e.hasNext())
+                {
+                    //Build the quantile
+                    final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
+                    final double[] constants = f.getParValReal().getConstants();
+                    final double[] probConstants = f.getParVal().getConstants();
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0],
+                                                                                   probConstants[0],
+                                                                                   Operator.GREATER);
+                    final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, q);
+
+                    //Build the scalar result
+                    final MetricResult result = t.getResult(f);
+                    final double[] res = ((DoubleMatrix1DResult)result).getResult().toArray();
+                    final VectorOutput value = outputFactory.ofVectorOutput(res, meta);
+
+                    //Append result
+                    rawData.put(key, value);
+                }
+            }
+
+        }
+        catch(final Exception e)
+        {
+            e.printStackTrace();
+            Assert.fail("Test failed : " + e.getMessage());
+        }
+        return outputFactory.ofMap(rawData);
+    }    
+    
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
      * reliability diagram (forecast probabilities, observed given forecast probabilities, and sample sizes) for various
