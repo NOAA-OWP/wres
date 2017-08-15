@@ -476,7 +476,7 @@ public class Control implements Function<String[], Integer>
                 ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
                                                                                             DATA_FACTORY.getMetadataFactory(),
                                                                                             ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
-                                                                                            "scalarOutputTemplate.xml",
+                                                                                            null,
                                                                                             graphicsString);
                 //Build the output file name
                 StringBuilder pathBuilder = new StringBuilder();
@@ -591,7 +591,7 @@ public class Control implements Function<String[], Integer>
                                                   ChartEngineFactory.buildMultiVectorOutputChartEngineByLead(e.getValue(),
                                                                                                              DATA_FACTORY.getMetadataFactory(),
                                                                                                              VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
-                                                                                                             "reliabilityDiagramTemplate.xml",
+                                                                                                             null,
                                                                                                              graphicsString);
                 // Build one chart per lead time
                 for(Map.Entry<Integer, ChartEngine> nextEntry: engines.entrySet())
