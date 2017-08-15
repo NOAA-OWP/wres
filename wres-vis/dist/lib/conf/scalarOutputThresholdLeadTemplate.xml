@@ -3,6 +3,7 @@
 <chartDrawingParameters>
 
 	<plotTitle>
+        <font family="Dialog" size="12" style="1"/>
 		<text>@metricName@ for @primaryScenario@ predictions of @variableName@
 			at @locationName@@baselineText@
 		</text>
