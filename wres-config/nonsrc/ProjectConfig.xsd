@@ -293,7 +293,7 @@
 
         <xs:sequence>
             <!-- Specifies the type of the plot.  Is required. -->
-            <xs:element name="plotType" type="plotTypeSelection" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="plotType" type="plotTypeSelection" minOccurs="0" maxOccurs="1"/>
             
             <!-- Specifies the override chart drawing parameters.  Will be processed as a String and passed to 
             charting tool so it can parse it.  Hence, the reason it is skipped. -->

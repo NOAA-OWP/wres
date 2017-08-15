@@ -51,11 +51,11 @@ public abstract class ChartEngineFactory
         plotTypeInfoMap.put(VisualizationPlotType.LEAD_THRESHOLD,
                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
                                                     ScalarOutput.class,
-                                                    "scalarOutputTemplate.xml"));
+                                                    "scalarOutputLeadThresholdTemplate.xml"));
         plotTypeInfoMap.put(VisualizationPlotType.THRESHOLD_LEAD,
                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
                                                     ScalarOutput.class,
-                                                    "scalarOutputTemplate.xml"));
+                                                    "scalarOutputThresholdLeadTemplate.xml"));
         plotTypeInfoMap.put(VisualizationPlotType.SINGLE_VALUED_PAIRS,
                             new PlotTypeInformation(SingleValuedPairs.class, null, "singleValuedPairsTemplate.xml"));
         plotTypeInfoMap.put(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
@@ -98,15 +98,11 @@ public abstract class ChartEngineFactory
                                                                                               final String overrideParametersStr) throws ChartEngineException,
                                                                                                                                   GenericXMLReadingHandlerException
     {
-        //TODO In this method and the scalar output method...
-        //If the templateResourceName is null, then get it from plotTypeInfoMap.  Implement it.  
-        //Next, create two versions of the template, one for lead time on the domain-axis, one for threshold.  Get rid of the old template.  This should cause
-        //things to break.  Fix them.  
-        //For colors... THINK!
-        
-        
+        String templateName = null;
         final ConcurrentMap<Integer, ChartEngine> results = new ConcurrentSkipListMap<>();
 
+        //For each lead time, do the following....
+        //TODO This should be able to loop through EITHER key.  When we make that work, the name of this method should change.
         for(final Integer lead: input.keySetByLead())
         {
             final List<XYChartDataSource> dataSources = new ArrayList<>();
@@ -127,8 +123,10 @@ public abstract class ChartEngineFactory
                         + " is invalid for a reliability diagram.");
                 }
                 //Default reliability diagram will be VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD.
+                //This will prepare the (1) template name; (2) arguments; and (3) data sources.  
                 else
                 {
+                    templateName = determineTemplateResourceName(templateResourceName, plotType, VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD);
                     final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice = input.sliceByLead(lead);
 
                     //Setup the default arguments.
@@ -182,20 +180,21 @@ public abstract class ChartEngineFactory
             //Build the ChartEngine instance.
             final ChartEngine engine = ChartTools.buildChartEngine(dataSources,
                                                                    arguments,
-                                                                   templateResourceName,
+                                                                   templateName,
                                                                    override);
             results.put(lead, engine);
         }
         return results;
     }
+   
 
     /**
      * @param input The metric output to plot.
      * @param factory The metadata from which arguments will be identified.
-     * @param plotType The plot type to generate. For this chart, the plot type must be either
+     * @param userSpecifiedPlotType The plot type to generate. For this chart, the plot type must be either
      *            {@link VisualizationPlotType#LEAD_THRESHOLD} or {@link VisualizationPlotType#THRESHOLD_LEAD}. May be
      *            null and, if so, defaults to {@link VisualizationPlotType#LEAD_THRESHOLD}.
-     * @param templateResourceName Name of the resource to load which provides the default template for chart
+     * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for chart
      *            construction.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
@@ -207,8 +206,8 @@ public abstract class ChartEngineFactory
      */
     public static ChartEngine buildGenericScalarOutputChartEngine(final MetricOutputMapByLeadThreshold<ScalarOutput> input,
                                                                   final MetadataFactory factory,
-                                                                  final VisualizationPlotType plotType,
-                                                                  final String templateResourceName,
+                                                                  final VisualizationPlotType userSpecifiedPlotType,
+                                                                  final String userSpecifiedTemplateResourceName,
                                                                   final String overrideParametersStr) throws ChartEngineException,
                                                                                                       GenericXMLReadingHandlerException
     {
@@ -227,10 +226,12 @@ public abstract class ChartEngineFactory
 
         //Build the source.
         XYChartDataSource source = null;
+        String templateName = null;
 
-        //Lead-threshold is the default.
-        if(plotType == null || plotType.equals(VisualizationPlotType.LEAD_THRESHOLD))
+        //Lead-threshold is the default.  This is for plots with the lead time on the domain axis and threshold in the legend.
+        if(userSpecifiedPlotType == null || userSpecifiedPlotType.equals(VisualizationPlotType.LEAD_THRESHOLD))
         {
+            templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName, userSpecifiedPlotType, VisualizationPlotType.LEAD_THRESHOLD);
             source = new ScalarOutputByLeadThresholdXYChartDataSource(0, input);
 
             //Legend title.
@@ -247,8 +248,10 @@ public abstract class ChartEngineFactory
             arguments.addArgument("legendTitle", legendTitle);
             arguments.addArgument("legendUnitsText", legendUnitsText);
         }
-        else if(plotType.equals(VisualizationPlotType.THRESHOLD_LEAD))
+        //This is for plots with the threshold on the domain axis and lead time in the legend.
+        else if(userSpecifiedPlotType.equals(VisualizationPlotType.THRESHOLD_LEAD))
         {
+            templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName, userSpecifiedPlotType, VisualizationPlotType.LEAD_THRESHOLD);
             source = new ScalarOutputByThresholdLeadXYChartDataSource(0, input);
 
             //Legend title.
@@ -257,7 +260,7 @@ public abstract class ChartEngineFactory
         }
         else
         {
-            throw new IllegalArgumentException("Plot type of " + plotType
+            throw new IllegalArgumentException("Plot type of " + userSpecifiedPlotType
                 + " is not valid for a generic scalar output plot by lead/threshold.");
         }
 
@@ -276,7 +279,7 @@ public abstract class ChartEngineFactory
         //Build the ChartEngine instance.
         final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
                                                                arguments,
-                                                               templateResourceName,
+                                                               templateName,
                                                                override);
 
         return engine;
@@ -284,7 +287,7 @@ public abstract class ChartEngineFactory
 
     /**
      * @param input The pairs to plot.
-     * @param templateResourceName Name of the resource to load which provides the default template for chart
+     * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for chart
      *            construction.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
@@ -295,10 +298,13 @@ public abstract class ChartEngineFactory
      * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
      */
     public static ChartEngine buildSingleValuedPairsChartEngine(final SingleValuedPairs input,
-                                                                final String templateResourceName,
+                                                                final String userSpecifiedTemplateResourceName,
                                                                 final String overrideParametersStr) throws ChartEngineException,
                                                                                                     GenericXMLReadingHandlerException
     {
+
+        final String templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName, null, VisualizationPlotType.SINGLE_VALUED_PAIRS); 
+        
         //Build the source.
         final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource(0, input);
 
@@ -333,7 +339,7 @@ public abstract class ChartEngineFactory
         //Build the ChartEngine instance.
         final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
                                                                arguments,
-                                                               templateResourceName,
+                                                               templateName,
                                                                override);
 
         return engine;
@@ -392,6 +398,40 @@ public abstract class ChartEngineFactory
         arguments.addArgument("inputUnitsText", " [" + meta.getInputDimension() + "]");
 
         return arguments;
+    }
+
+    /**
+     * @param userSpecifiedName The user specified template name, which is always used if not null.
+     * @param userSpecifiedPlotType The user specified plot type, which is used to access {@link #plotTypeInfoMap} to
+     *            acquire the default template resource name, but only if it is not null.
+     * @param defaultPlotType The fall back if neither of the other two are specified. If an entry in the
+     *            {@link #plotTypeInfoMap} cannot be found, then an {@link IllegalStateException} will be thrown, since
+     *            this reflects a run-time, coding error.
+     * @return The template resource name, which may be either the name of something on the class path or a file name on
+     *         the file system.
+     */
+    private static String determineTemplateResourceName(final String userSpecifiedName,
+                                                        final VisualizationPlotType userSpecifiedPlotType,
+                                                        final VisualizationPlotType defaultPlotType)
+    {
+        if(userSpecifiedName != null)
+        {
+            return userSpecifiedName;
+        }
+        if(userSpecifiedPlotType != null)
+        {
+            final PlotTypeInformation info = plotTypeInfoMap.get(userSpecifiedPlotType);
+            if(info != null)
+            {
+                return info.getDefaultTemplateName();
+            }
+        }
+        final PlotTypeInformation info = plotTypeInfoMap.get(defaultPlotType);
+        if(info == null)
+        {
+            throw new IllegalStateException("The default plot type is being used to acquire plot type information, but it is not defined in the plotTypeInfoMap.");
+        }
+        return info.getDefaultTemplateName();
     }
 
     /**
