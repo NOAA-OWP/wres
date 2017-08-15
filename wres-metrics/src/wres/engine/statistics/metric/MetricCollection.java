@@ -180,7 +180,6 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
 
         protected MetricCollectionBuilder<S, T> setExecutorService(final ExecutorService metricPool)
         {
-            Objects.requireNonNull(metricPool, "Add a non-null executor service to the collection.");
             this.metricPool = metricPool;
             return this;
         }

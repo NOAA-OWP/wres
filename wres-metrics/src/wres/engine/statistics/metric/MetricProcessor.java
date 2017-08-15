@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -172,7 +173,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     {
         return hasStoredMetricOutput() ? futures.getMetricOutput() : null;
     }
-    
+
     /**
      * Returns true if a prior call led to the caching of metric outputs.
      * 
@@ -183,7 +184,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     {
         return Objects.nonNull(futures) && futures.hasFutureOutputs();
     }
-    
+
     /**
      * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
      * false otherwise.
@@ -286,6 +287,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
+     * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(MetricInput)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
@@ -293,6 +295,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
     MetricProcessor(final DataFactory dataFactory,
                     final ProjectConfig config,
+                    final ExecutorService executor,
                     final MetricOutputGroup... mergeList) throws MetricConfigurationException
     {
         Objects.requireNonNull(config,
@@ -305,10 +308,10 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         //Construct the metrics that are common to more than one type of input pairs
         if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR))
         {
-            singleValuedScalar =
-                               metricFactory.ofSingleValuedScalarCollection(getSelectedMetrics(metrics,
-                                                                                               MetricInputGroup.SINGLE_VALUED,
-                                                                                               MetricOutputGroup.SCALAR));
+            singleValuedScalar = metricFactory.ofSingleValuedScalarCollection(executor,
+                                                                              getSelectedMetrics(metrics,
+                                                                                                 MetricInputGroup.SINGLE_VALUED,
+                                                                                                 MetricOutputGroup.SCALAR));
         }
         else
         {
@@ -316,10 +319,10 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         }
         if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR))
         {
-            singleValuedVector =
-                               metricFactory.ofSingleValuedVectorCollection(getSelectedMetrics(metrics,
-                                                                                               MetricInputGroup.SINGLE_VALUED,
-                                                                                               MetricOutputGroup.VECTOR));
+            singleValuedVector = metricFactory.ofSingleValuedVectorCollection(executor,
+                                                                              getSelectedMetrics(metrics,
+                                                                                                 MetricInputGroup.SINGLE_VALUED,
+                                                                                                 MetricOutputGroup.VECTOR));
         }
         else
         {
@@ -327,10 +330,10 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         }
         if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR))
         {
-            singleValuedMultiVector =
-                                    metricFactory.ofSingleValuedMultiVectorCollection(getSelectedMetrics(metrics,
-                                                                                                         MetricInputGroup.SINGLE_VALUED,
-                                                                                                         MetricOutputGroup.MULTIVECTOR));
+            singleValuedMultiVector = metricFactory.ofSingleValuedMultiVectorCollection(executor,
+                                                                                        getSelectedMetrics(metrics,
+                                                                                                           MetricInputGroup.SINGLE_VALUED,
+                                                                                                           MetricOutputGroup.MULTIVECTOR));
         }
         else
         {
@@ -370,7 +373,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
     void mergeFutures(MetricFutures mergeFutures)
     {
-        Objects.requireNonNull(mergeFutures,"Specify non-null futures for merging.");
+        Objects.requireNonNull(mergeFutures, "Specify non-null futures for merging.");
         //Merge futures if cached outputs identified
         if(willStoreMetricOutput())
         {
@@ -530,16 +533,16 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             multivector.forEach(builder::addMultiVectorOutput);
             return builder.build();
         }
-        
+
         /**
          * Returns true if one or more future outputs is available, false otherwise.
          * 
          * @return true if one or more future outputs is available, false otherwise
          */
-        
-        boolean hasFutureOutputs() 
+
+        boolean hasFutureOutputs()
         {
-            return !(scalar.isEmpty()&&vector.isEmpty()&&multivector.isEmpty());
+            return !(scalar.isEmpty() && vector.isEmpty() && multivector.isEmpty());
         }
 
         /**

@@ -85,16 +85,18 @@ public class Control implements Function<String[], Integer>
         }
         // Process the configurations with a ForkJoinPool
         ForkJoinPool processPairExecutor = null;
+        ForkJoinPool metricExecutor = null;
         try
         {
             // Build a processing pipeline
             processPairExecutor = new ForkJoinPool();
+            // metricExecutor = null;
 
             // Iterate through the configurations
             for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
             {
                 // Process the next configuration
-                boolean processed = processProjectConfig(projectConfigPlus, processPairExecutor);
+                boolean processed = processProjectConfig(projectConfigPlus, processPairExecutor, metricExecutor);
                 if(!processed)
                 {
                     return -1;
@@ -230,7 +232,6 @@ public class Control implements Function<String[], Integer>
                         projectConfiggies.size());
         }
 
-
         // Validate all projects, not stopping until all are done
         for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
         {
@@ -253,10 +254,13 @@ public class Control implements Function<String[], Integer>
      * 
      * @param projectConfigPlus the project configuration
      * @param processPairExecutor the {@link ExecutorService}
+     * @param metricExecutor an optional {@link ExecutorService} for processing metrics
      * @return true if the project processed successfully, false otherwise
      */
 
-    private boolean processProjectConfig(ProjectConfigPlus projectConfigPlus, ExecutorService processPairExecutor)
+    private boolean processProjectConfig(ProjectConfigPlus projectConfigPlus,
+                                         ExecutorService processPairExecutor,
+                                         ExecutorService metricExecutor)
     {
 
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -276,7 +280,7 @@ public class Control implements Function<String[], Integer>
         // Iterate through the features and process them
         for(Feature nextFeature: features)
         {
-            if(!processFeature(nextFeature, projectConfigPlus, processPairExecutor))
+            if(!processFeature(nextFeature, projectConfigPlus, processPairExecutor, metricExecutor))
             {
                 return false;
             }
@@ -290,12 +294,14 @@ public class Control implements Function<String[], Integer>
      * @param feature the feature to process
      * @param projectConfigPlus the project configuration
      * @param processPairExecutor the {@link ExecutorService}
+     * @param metricExecutor an optional {@link ExecutorService} for processing metrics
      * @return true if the project processed successfully, false otherwise
      */
 
     private boolean processFeature(Feature feature,
                                    ProjectConfigPlus projectConfigPlus,
-                                   ExecutorService processPairExecutor)
+                                   ExecutorService processPairExecutor,
+                                   ExecutorService metricExecutor)
     {
 
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -312,6 +318,7 @@ public class Control implements Function<String[], Integer>
         try
         {
             processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessor(projectConfig,
+                                                                                   metricExecutor,
                                                                                    MetricOutputGroup.SCALAR,
                                                                                    MetricOutputGroup.VECTOR);
         }

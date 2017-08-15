@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -139,16 +140,18 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
+     * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(MetricInput)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorEnsemblePairs(DataFactory dataFactory,
-                                 ProjectConfig config,
+    MetricProcessorEnsemblePairs(final DataFactory dataFactory,
+                                 final ProjectConfig config,
+                                 final ExecutorService executor,
                                  final MetricOutputGroup... mergeList) throws MetricConfigurationException
     {
-        super(dataFactory, config, mergeList);
+        super(dataFactory, config, executor, mergeList);
         //Validate the configuration
         if(hasMetrics(MetricInputGroup.DICHOTOMOUS))
         {
@@ -164,7 +167,8 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
         if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR))
         {
             discreteProbabilityVector =
-                                      metricFactory.ofDiscreteProbabilityVectorCollection(getSelectedMetrics(metrics,
+                                      metricFactory.ofDiscreteProbabilityVectorCollection(executor,
+                                                                                          getSelectedMetrics(metrics,
                                                                                                              MetricInputGroup.DISCRETE_PROBABILITY,
                                                                                                              MetricOutputGroup.VECTOR));
         }
@@ -175,7 +179,8 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
         if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR))
         {
             discreteProbabilityMultiVector =
-                                           metricFactory.ofDiscreteProbabilityMultiVectorCollection(getSelectedMetrics(metrics,
+                                           metricFactory.ofDiscreteProbabilityMultiVectorCollection(executor,
+                                                                                                    getSelectedMetrics(metrics,
                                                                                                                        MetricInputGroup.DISCRETE_PROBABILITY,
                                                                                                                        MetricOutputGroup.MULTIVECTOR));
         }
@@ -193,7 +198,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
 //            ensembleVector =
 //                              metricFactory.ofEnsembleVectorCollection(getSelectedMetrics(metrics,
 //                                                                                             MetricInputGroup.ENSEMBLE,
-//                                                                                             MetricOutputGroup.VECTOR));
+//                                                                                             MetricOutputGroup.VECTOR),executor);
 //        }
 //        else
 //        {
@@ -204,7 +209,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
 //            ensembleMultiVector =
 //                                metricFactory.ofEnsembleMultiVectorCollection(getSelectedMetrics(metrics,
 //                                                                                                 MetricInputGroup.ENSEMBLE,
-//                                                                                                 MetricOutputGroup.MULTIVECTOR));
+//                                                                                                 MetricOutputGroup.MULTIVECTOR),executor);
 //        }
 //        else
 //        {
