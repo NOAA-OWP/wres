@@ -24,6 +24,7 @@ public class ReliabilityDiagramXYChartDataSource extends WRESXYChartDataSource<M
 
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("Forecast Probability");
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("Observed Probability Given Forecast Probability");
+        WRESTools.applyDefaultJFreeChartColorSequence(getDefaultFullySpecifiedDataSourceDrawingParameters());
     }
 
     @Override
