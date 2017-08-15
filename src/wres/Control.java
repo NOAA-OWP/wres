@@ -13,7 +13,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -54,6 +53,7 @@ import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
 import wres.vis.ChartEngineFactory;
+import wres.vis.ChartEngineFactory.VisualizationPlotType;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}. The processing
@@ -356,16 +356,23 @@ public class Control implements Function<String[], Integer>
         }
 
         // Complete the end-of-pipeline processing
-        if(processor.willStoreMetricOutput())
+        if(processor.hasStoredMetricOutput())
         {
             processCachedCharts(feature,
                                 projectConfigPlus,
                                 processor,
                                 MetricOutputGroup.SCALAR,
                                 MetricOutputGroup.VECTOR);
-            if(LOGGER.isInfoEnabled() && processPairExecutor instanceof ThreadPoolExecutor)
+            if(LOGGER.isInfoEnabled())
             {
                 LOGGER.info("Completed processing of feature '{}'.", feature.getLocation().getLid());
+            }
+        }
+        else
+        {
+            if(LOGGER.isInfoEnabled())
+            {
+                LOGGER.info("No cached outputs to generate for feature '{}'.", feature.getLocation().getLid());
             }
         }
         return true;
@@ -386,6 +393,12 @@ public class Control implements Function<String[], Integer>
                                                MetricProcessor processor,
                                                MetricOutputGroup... outGroup)
     {
+        if(!processor.hasStoredMetricOutput())
+        {
+            LOGGER.error("No cached outputs to process.");
+            return false;
+        }
+
         // True until failed
         boolean returnMe = true;
         try
@@ -395,22 +408,20 @@ public class Control implements Function<String[], Integer>
                 switch(nextGroup)
                 {
                     case SCALAR:
-                        returnMe = returnMe && processor.hasStoredMetricOutput() && processScalarCharts(feature,
-                                                                                                        projectConfigPlus,
-                                                                                                        processor.getStoredMetricOutput()
-                                                                                                                 .getScalarOutput());
+                        returnMe = returnMe && processScalarCharts(feature,
+                                                                   projectConfigPlus,
+                                                                   processor.getStoredMetricOutput().getScalarOutput());
                         break;
                     case VECTOR:
-                        returnMe = returnMe && processor.hasStoredMetricOutput() && processVectorCharts(feature,
-                                                                                                        projectConfigPlus,
-                                                                                                        processor.getStoredMetricOutput()
-                                                                                                                 .getVectorOutput());
+                        returnMe = returnMe && processVectorCharts(feature,
+                                                                   projectConfigPlus,
+                                                                   processor.getStoredMetricOutput().getVectorOutput());
                         break;
                     case MULTIVECTOR:
-                        returnMe = returnMe && processor.hasStoredMetricOutput() && processMultiVectorCharts(feature,
-                                                                                                             projectConfigPlus,
-                                                                                                             processor.getStoredMetricOutput()
-                                                                                                                      .getMultiVectorOutput());
+                        returnMe = returnMe
+                            && processMultiVectorCharts(feature,
+                                                        projectConfigPlus,
+                                                        processor.getStoredMetricOutput().getMultiVectorOutput());
                         break;
                     default:
                         LOGGER.error("Unsupported chart type {}.", nextGroup);
@@ -579,7 +590,7 @@ public class Control implements Function<String[], Integer>
                 Map<Integer, ChartEngine> engines =
                                                   ChartEngineFactory.buildMultiVectorOutputChartEngineByLead(e.getValue(),
                                                                                                              DATA_FACTORY.getMetadataFactory(),
-                                                                                                             null,
+                                                                                                             VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
                                                                                                              "reliabilityDiagramTemplate.xml",
                                                                                                              graphicsString);
                 // Build one chart per lead time

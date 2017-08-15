@@ -82,10 +82,11 @@ implements MetricOutputMultiMapByLeadThreshold<S>
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         String newLine = System.getProperty("line.separator");
         StringBuilder b = new StringBuilder();
-        store.forEach((key,value) -> {
+        store.forEach((key, value) -> {
             b.append(key.getFirstKey());
             b.append(": ");
             b.append(key.getSecondKey());
@@ -153,12 +154,17 @@ implements MetricOutputMultiMapByLeadThreshold<S>
     }
 
     /**
-     * Main constructor.
+     * Hidden constructor.
      * 
      * @param builder the builder
      */
     private SafeMetricOutputMultiMapByLeadThreshold(final MetricOutputMultiMapByLeadThresholdBuilder<S> builder)
     {
+        //Bounds checks
+        if(builder.internal.isEmpty())
+        {
+            throw new UnsupportedOperationException("Specify one or more <key,value> mappings to build the map.");
+        }
         //Bounds checks
         builder.internal.forEach((key, value) -> {
             if(Objects.isNull(key))
