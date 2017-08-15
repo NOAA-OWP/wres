@@ -72,7 +72,7 @@ public class Chart2DTestOutput extends TestCase
             final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
                                                                                               factory,
                                                                                               ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
-                                                                                              "scalarOutputTemplate.xml",
+                                                                                              null,
                                                                                               null);
 
             //Generate the output file.
@@ -116,7 +116,7 @@ public class Chart2DTestOutput extends TestCase
             final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
                                                                                               factory,
                                                                                               ChartEngineFactory.VisualizationPlotType.THRESHOLD_LEAD,
-                                                                                              "scalarOutputTemplate.xml",
+                                                                                              null,
                                                                                               null);
 
             //Generate the output file.
@@ -171,7 +171,7 @@ public class Chart2DTestOutput extends TestCase
                                                       ChartEngineFactory.buildMultiVectorOutputChartEngineByLead(results,
                                                                                                                  factory,
                                                                                                                  ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
-                                                                                                                 "reliabilityDiagramTemplate.xml",
+                                                                                                                 null,
                                                                                                                  null);
 
             //Generate the output file.
