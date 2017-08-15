@@ -17,7 +17,6 @@
 		<!-- The colors defined through a palette. For this test, four colors for 
 			four series. -->
 		<lineColorPalette>
-			<color alpha="255" blue="0" green="0" red="0" />
 			<color alpha="255" blue="255" green="0" red="0" />
 			<color alpha="255" blue="51" green="204" red="51" />
 			<color alpha="255" blue="0" green="0" red="255" />
