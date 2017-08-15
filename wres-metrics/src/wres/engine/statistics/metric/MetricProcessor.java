@@ -174,14 +174,14 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     }
     
     /**
-     * Returns true if stored metric outputs are available, false otherwise.
+     * Returns true if a prior call led to the caching of metric outputs.
      * 
      * @return true if stored results are available, false otherwise
      */
 
     public boolean hasStoredMetricOutput()
     {
-        return willStoreMetricOutput() && Objects.nonNull(futures);
+        return Objects.nonNull(futures) && futures.hasFutureOutputs();
     }
     
     /**
@@ -529,6 +529,17 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             vector.forEach(builder::addVectorOutput);
             multivector.forEach(builder::addMultiVectorOutput);
             return builder.build();
+        }
+        
+        /**
+         * Returns true if one or more future outputs is available, false otherwise.
+         * 
+         * @return true if one or more future outputs is available, false otherwise
+         */
+        
+        boolean hasFutureOutputs() 
+        {
+            return !(scalar.isEmpty()&&vector.isEmpty()&&multivector.isEmpty());
         }
 
         /**
