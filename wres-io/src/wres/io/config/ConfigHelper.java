@@ -93,6 +93,11 @@ public class ConfigHelper
                                        dataSourceConfig.getVariable().getUnit());
     }
 
+    public static Boolean hasBaseline(ProjectConfig projectConfig)
+    {
+        return projectConfig.getInputs().getBaseline() != null &&
+                !projectConfig.getInputs().getBaseline().getSource().isEmpty();
+    }
 
     /**
      *

@@ -3,16 +3,25 @@ package wres.io.utilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.config.generated.Conditions;
+import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetricInput;
 import wres.io.concurrency.InputRetriever;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.UnitConversions;
 import wres.io.grouping.LabeledScript;
+import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Iterator;
+import java.util.*;
 import java.util.concurrent.Future;
 
 /**
@@ -20,6 +29,7 @@ import java.util.concurrent.Future;
  */
 public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
+    private static final String NEWLINE = System.lineSeparator();
     private static final Logger LOGGER = LoggerFactory.getLogger(InputGenerator.class);
     /**
      * Constructor
@@ -36,9 +46,18 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
     private final Conditions.Feature feature;
 
     @Override
-    public Iterator<Future<MetricInput<?>>> iterator ()
+    public Iterator<Future<MetricInput<?>>> iterator()
     {
-        return new MetricInputIterator(this.projectConfig, this.feature);
+        MetricInputIterator iterator = null;
+        try {
+            iterator =  new MetricInputIterator(this.projectConfig, this.feature);
+        }
+        catch (SQLException | NotImplementedException e) {
+            LOGGER.error("A MetricInputIterator could not be created.");
+            LOGGER.error(Strings.getStackTrace(e));
+        }
+
+        return iterator;
     }
 
     private static final class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
@@ -49,11 +68,124 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
         private final Conditions.Feature feature;
         private final ProjectConfig projectConfig;
+        private Map<String, Double> leftHandMap;
+        private VectorOfDoubles leftHandValues;
 
-        public MetricInputIterator(ProjectConfig projectConfig, Conditions.Feature feature)
+        private void createLeftHandCache() throws SQLException, NotImplementedException {
+            Map<String, Double> values = new HashMap<>();
+            List<Double> futureVector = new ArrayList<>();
+
+            String desiredMeasurementUnit = this.projectConfig.getPair().getUnit();
+            Integer desiredMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(desiredMeasurementUnit);
+            DataSourceConfig left = this.projectConfig.getInputs().getLeft();
+
+            StringBuilder script = new StringBuilder();
+            Integer leftVariableID = ConfigHelper.getVariableID(left);
+
+            Integer timeShift = null;
+
+            String variablepositionClause = ConfigHelper.getVariablePositionClause(this.feature, leftVariableID);
+
+            if (left.getTimeShift() != null && left.getTimeShift().getWidth() != 0)
+            {
+                timeShift = left.getTimeShift().getWidth();
+            }
+
+            if (ConfigHelper.isForecast(left))
+            {
+                // TODO: This will be a mess if we don't have the ability to select "Assim data" rather than all
+                script.append("SELECT ").append(left.getRollingTimeAggregation().getFunction())
+                      .append("(FV.forecasted_value) AS left_value,")
+                      .append(NEWLINE);
+                script.append("     FE.measurementunit_id,").append(NEWLINE);
+                script.append("     (F.forecast_date + INTERVAL '1 hour' * FV.lead");
+
+                if (timeShift != null)
+                {
+                    script.append(" + INTERVAL '1 hour' * ").append(timeShift);
+                }
+
+                script.append(")::text AS left_date").append(NEWLINE);
+
+                script.append("FROM wres.Forecast F").append(NEWLINE);
+                script.append("INNER JOIN wres.ForecastEnsemble FE").append(NEWLINE);
+                script.append("     ON FE.forecast_id = F.forecast_id").append(NEWLINE);
+                script.append("INNER JOIN wres.ForecastValue FV" ).append(NEWLINE);
+                script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(NEWLINE);
+                script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
+                script.append("GROUP BY F.forecast_date + INTERVAL '1 hour' * FV.lead");
+
+                if (timeShift != null)
+                {
+                    script.append(" + INTERVAL '1 hour' * ").append(timeShift);
+                }
+
+                script.append(", FE.measurementunit_id");
+            }
+            else
+            {
+                script.append("SELECT (O.observation_time");
+
+                if (timeShift != null)
+                {
+                    script.append(" + INTERVAL '1 hour' * ").append(timeShift);
+                }
+
+                script.append(")::text AS left_date,").append(NEWLINE);
+                script.append("     O.observed_value AS left_value,").append(NEWLINE);
+                script.append("     O.measurementunit_id").append(NEWLINE);
+                script.append("FROM wres.Observation O").append(NEWLINE);
+                script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
+            }
+
+            script.append(";");
+
+            Connection connection = null;
+            ResultSet resultSet = null;
+
+            try
+            {
+                connection = Database.getHighPriorityConnection();
+                resultSet = Database.getResults(connection, script.toString());
+
+                while(resultSet.next())
+                {
+                    String date = resultSet.getString("left_date");
+                    Double value = resultSet.getDouble("left_value");
+                    int unitID = resultSet.getInt("measurementunit_id");
+
+                    if (unitID != desiredMeasurementUnitID)
+                    {
+                        value = UnitConversions.convert(value, unitID, desiredMeasurementUnit);
+                    }
+
+                    values.put(date, value);
+                    futureVector.add(value);
+                }
+            }
+            finally
+            {
+                if (resultSet != null)
+                {
+                    resultSet.close();
+                }
+
+                if (connection != null)
+                {
+                    Database.returnHighPriorityConnection(connection);
+                }
+            }
+            this.leftHandMap = values;
+
+            DataFactory factory = DefaultDataFactory.getInstance();
+            this.leftHandValues = factory.vectorOf(futureVector.toArray(new Double[futureVector.size()]));
+        }
+
+        public MetricInputIterator(ProjectConfig projectConfig, Conditions.Feature feature) throws SQLException, NotImplementedException
         {
             this.projectConfig = projectConfig;
             this.feature = feature;
+            this.createLeftHandCache();
         }
 
         private Integer getLastWindowNumber() throws SQLException
@@ -110,7 +242,13 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             if (ConfigHelper.leadIsValid(this.projectConfig, this.windowNumber + 1, this.lastWindowNumber))
             {
                 this.windowNumber++;
-                InputRetriever retriever = new InputRetriever(this.projectConfig, this.feature, this.windowNumber);
+                InputRetriever retriever = new InputRetriever(this.projectConfig,
+                                                              this.feature,
+                                                              this.windowNumber,
+                                                              (String date) -> {
+                                                                    return this.leftHandMap.getOrDefault(date,null);
+                                                                    }
+                                                                );
                 retriever.setOnRun(ProgressMonitor.onThreadStartHandler());
                 retriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                 nextInput = Database.submit(retriever);

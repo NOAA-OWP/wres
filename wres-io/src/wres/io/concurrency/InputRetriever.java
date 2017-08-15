@@ -7,7 +7,9 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.PairOfDoubles;
 import wres.datamodel.metric.*;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptGenerator;
@@ -18,8 +20,9 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.InvalidPropertiesFormatException;
 import java.util.List;
-import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -31,133 +34,163 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
     @Internal(exclusivePackage = "wres.io")
-    public InputRetriever (ProjectConfig projectConfig, Conditions.Feature feature, int progress)
+    public InputRetriever (ProjectConfig projectConfig, Conditions.Feature feature, int progress, Function<String, Double> getLeftValue)
     {
         this.projectConfig = projectConfig;
         this.feature = feature;
         this.progress = progress;
+        this.getLeftValue = getLeftValue;
     }
 
     @Override
     public MetricInput<?> execute() throws Exception
     {
-        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        this.primaryPairs = this.createPairs(this.projectConfig.getInputs().getRight());
 
-        Connection connection = null;
-        ResultSet resultingPairs = null;
-        final String script = ScriptGenerator.generateGetPairData(this.projectConfig, this.feature, this.progress);
-        try
-        {
-            connection = Database.getConnection();
-            resultingPairs = Database.getResults(connection, script);
-
-            while(resultingPairs.next())
-            {
-                pairs.add(createPair(resultingPairs));
-            }
-        }
-        finally
-        {
-            if(resultingPairs != null)
-            {
-                resultingPairs.close();
-            }
-
-            if(connection != null)
-            {
-                Database.returnConnection(connection);
-            }
+        if (ConfigHelper.hasBaseline(this.projectConfig)) {
+            this.baselinePairs = this.createPairs(this.projectConfig.getInputs().getBaseline());
         }
 
-        return createInput(pairs);
+        return createInput();
     }
 
-    private MetricInput<?> createInput(List<PairOfDoubleAndVectorOfDoubles> pairs)
+    private MetricInput<?> createInput()
     {
-        MetricInput<?> input = null;
+        MetricInput<?> input;
 
         DatasourceType dataType = this.projectConfig.getInputs().getRight().getType();
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
-        Metadata metadata = this.buildMetadata(factory);
+        Metadata metadata = this.buildMetadata(factory, this.projectConfig.getInputs().getRight());
+        Metadata baselineMetadata = null;
+
+        if (this.baselineExists())
+        {
+            baselineMetadata = this.buildMetadata(factory, this.projectConfig.getInputs().getBaseline());
+        }
 
         // TODO: Handle baseline pairs
         // TODO: Handle addition of climatology for probability thresholds on pair construction
         if (dataType == DatasourceType.ENSEMBLE_FORECASTS)
         {
-            input = factory.ofEnsemblePairs(pairs, metadata);
+            input = factory.ofEnsemblePairs(this.primaryPairs, this.baselinePairs, metadata, baselineMetadata);
         }
         else
         {
-            input = factory.ofSingleValuedPairs(factory.getSlicer().transformPairs(pairs,
-                                                                                   factory.getSlicer()::transformPair),
-                                                metadata);
+            List<PairOfDoubles> primary = factory.getSlicer().transformPairs(this.primaryPairs, factory.getSlicer()::transformPair);
+            List<PairOfDoubles> baseline = null;
+
+            if (this.baselinePairs != null)
+            {
+                baseline = factory.getSlicer().transformPairs(this.baselinePairs, factory.getSlicer()::transformPair);
+            }
+
+            input = factory.ofSingleValuedPairs(primary,
+                                                baseline,
+                                                metadata,
+                                                baselineMetadata);
         }
 
+        this.primaryPairs = null;
+        this.baselinePairs = null;
         return input;
     }
 
-    private Metadata buildMetadata(DataFactory dataFactory)
+    private List<PairOfDoubleAndVectorOfDoubles> createPairs(DataSourceConfig dataSourceConfig)
+            throws InvalidPropertiesFormatException, NotImplementedException, SQLException
+    {
+        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        String loadScript = ScriptGenerator.generateLoadDatasourceScript(this.projectConfig,
+                                                                         dataSourceConfig,
+                                                                         this.feature,
+                                                                         this.progress);
+
+        Connection connection = null;
+        ResultSet resultSet = null;
+
+        DataFactory factory = DefaultDataFactory.getInstance();
+
+        try
+        {
+            connection = Database.getConnection();
+            resultSet = Database.getResults(connection, loadScript);
+
+            while(resultSet.next())
+            {
+                String date = resultSet.getString("value_date");
+                Double leftValue = this.getLeftValue.apply(date);
+
+                // TODO: This is where we'd handle missing values; for now, we're skipping it
+                if (leftValue == null)
+                {
+                    continue;
+                }
+
+                Double[] measurements = (Double[])resultSet.getArray("measurements").getArray();
+
+                for (int measurementIndex = 0; measurementIndex < measurements.length; ++measurementIndex)
+                {
+                    measurements[measurementIndex] = UnitConversions.convert(measurements[measurementIndex],
+                                                                             resultSet.getInt("measurementunit_id"),
+                                                                             this.projectConfig.getPair().getUnit());
+                }
+
+                pairs.add(factory.pairOf(leftValue, measurements));
+            }
+        }
+        finally
+        {
+            if (resultSet != null)
+            {
+                resultSet.close();
+            }
+
+            if (connection != null)
+            {
+                Database.returnConnection(connection);
+            }
+        }
+
+        return pairs;
+    }
+
+    private Metadata buildMetadata (DataFactory dataFactory, DataSourceConfig sourceConfig)
     {
         MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
         Dimension dim = metadataFactory.getDimension(String.valueOf(this.projectConfig.getPair().getUnit()));
 
         // TODO: Build ConfigHelper method to get the identifier, but doesn't rely on having a location
         String geospatialIdentifier = this.feature.getLocation().getLid();
-        String variableIdentifier = this.projectConfig.getInputs().getRight().getVariable().getValue();
+        String variableIdentifier = sourceConfig.getVariable().getValue();
 
         // TODO: need to add scenario IDs for the main data and any baseline. Also need to use a general identifier for
         // the left/right variable rather than projectConfig.getInputs().getRight().getVariable().getValue()
         // To be replaced by non-generic ID from the Project Configuration
-        String scenarioIdentifier = "model"; //this.projectConfig.getInputs().getRight().getLabel();
-
-        // TO be replaced by non-generic ID from the Project Configuration
-        String baselineScenarioID = null;
-
-        DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
-
-        if (Objects.nonNull(baseline) && !baseline.getSource().isEmpty())
-        {
-            baselineScenarioID = "baseline model";
-        }
-
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
                                                                                    variableIdentifier,
-                                                                                   scenarioIdentifier,
-                                                                                   baselineScenarioID);
+                                                                                   sourceConfig.getLabel());
 
         return metadataFactory.getMetadata(dim, datasetIdentifier, this.progress);
-    }
-
-    private PairOfDoubleAndVectorOfDoubles createPair(ResultSet row) throws SQLException, NotImplementedException
-    {
-        final DataFactory dataFactory = DefaultDataFactory.getInstance();
-        Double[] measurements = (Double[])row.getArray("measurements").getArray();
-        double[] convertedMeasurements = new double[measurements.length];
-
-        int sourceOneUnitID = row.getInt("sourceOneMeasurementUnitID");
-        int sourceTwoUnitID = row.getInt("sourceTwoMeasurementUnitID");
-        String desiredMeasurementUnit = this.projectConfig.getPair().getUnit();
-
-
-        for(int measurementIndex = 0; measurementIndex < measurements.length; ++measurementIndex)
-        {
-            convertedMeasurements[measurementIndex] = UnitConversions.convert(measurements[measurementIndex],
-                                                                              sourceTwoUnitID,
-                                                                              desiredMeasurementUnit);
-        }
-
-        double convertedSourceOne = UnitConversions.convert(row.getDouble("sourceOneValue"),
-                                                            sourceOneUnitID,
-                                                            desiredMeasurementUnit);
-
-        return dataFactory.pairOf(convertedSourceOne, convertedMeasurements);
     }
 
     private final int progress;
     private final ProjectConfig projectConfig;
     private final Conditions.Feature feature;
+    private final Function<String, Double> getLeftValue;
+    private List<PairOfDoubleAndVectorOfDoubles> primaryPairs;
+    private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;
+    private Boolean hasBaseline;
+
+    private Boolean baselineExists()
+    {
+        if (this.hasBaseline == null)
+        {
+            this.hasBaseline = ConfigHelper.hasBaseline(projectConfig);
+        }
+
+        return this.hasBaseline;
+    }
 
     @Override
     protected String getTaskName()
