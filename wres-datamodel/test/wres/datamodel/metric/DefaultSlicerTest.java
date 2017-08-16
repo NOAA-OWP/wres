@@ -548,7 +548,8 @@ public final class DefaultSlicerTest
                                                                                   slicer.sliceByMetricComponent(toSlice);
 
         //Check the results
-        assertTrue("Expected five slices of data.", sliced.size() == 5);
+        assertTrue("Expected five slices of data.",
+                   sliced.size() == toSlice.getMetadata().getMetricComponentID().getMetricComponents().size());
         sliced.forEach((key, value) -> assertTrue("Expected 638 elements in each slice.", value.size() == 638));
     }
 

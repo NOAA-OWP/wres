@@ -124,7 +124,7 @@ public final class DataModelTestDataFactory
                                                                             metaFactory.getDimension(),
                                                                             metaFactory.getDimension("CFS"),
                                                                             MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                            MetricConstants.MAIN,
+                                                                            MetricConstants.CR_POT,
                                                                             metaFactory.getDatasetIdentifier("NPTP1",
                                                                                                              "SQIN",
                                                                                                              "HEFS",

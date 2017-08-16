@@ -590,7 +590,7 @@ public class Control implements Function<String[], Integer>
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
 
                 final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
-                                                                                            DATA_FACTORY.getMetadataFactory(),
+                                                                                            DATA_FACTORY,
                                                                                             ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
                                                                                             null,
                                                                                             graphicsString);
@@ -705,7 +705,7 @@ public class Control implements Function<String[], Integer>
                 // Is it even needed? The Metadata contains the chart type and this is linked to the PlotType?
                 final Map<Object, ChartEngine> engines =
                                                   ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
-                                                                                                             DATA_FACTORY.getMetadataFactory(),
+                                                                                                             DATA_FACTORY,
                                                                                                              VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
                                                                                                              null,
                                                                                                              graphicsString);
