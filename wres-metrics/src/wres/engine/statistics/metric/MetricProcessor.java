@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
@@ -151,10 +152,10 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     final MetricOutputGroup[] mergeList;
 
     /**
-     * The metric futures from previous calls.
+     * The metric futures from previous calls, indexed by lead time.
      */
 
-    MetricFutures futures = null;
+    ConcurrentMap<Integer, MetricFutures> futures = new ConcurrentSkipListMap<>();
 
     /**
      * Default logger.
@@ -171,7 +172,17 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
     public MetricOutputForProjectByLeadThreshold getStoredMetricOutput()
     {
-        return hasStoredMetricOutput() ? futures.getMetricOutput() : null;
+        MetricOutputForProjectByLeadThreshold returnMe = null;
+        if(hasStoredMetricOutput())
+        {
+            MetricFutures.Builder builder = new MetricFutures.Builder().addDataFactory(dataFactory);
+            for(MetricFutures future: futures.values())
+            {
+                builder.addFutures(future, mergeList);
+            }
+            returnMe = builder.build().getMetricOutput();
+        }
+        return returnMe;
     }
 
     /**
@@ -182,7 +193,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
     public boolean hasStoredMetricOutput()
     {
-        return Objects.nonNull(futures) && futures.hasFutureOutputs();
+        return futures.values().stream().anyMatch(MetricFutures::hasFutureOutputs);
     }
 
     /**
@@ -368,30 +379,20 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     }
 
     /**
-     * Merges the input {@link MetricFutures} with any existing {@link MetricFutures} defined for this processor.
+     * Adds the input {@link MetricFutures} to the internal store of existing {@link MetricFutures} defined for this
+     * processor.
      * 
-     * @param mergeFuture the futures to merge
-     * @throws MetricConfigurationException if the input futures contain unsupported output types
+     * @param leadTime the lead time
+     * @param mergeFuture the futures to add
      */
 
-    void mergeFutures(MetricFutures mergeFutures)
+    void addToMergeMap(Integer leadTime, MetricFutures mergeFutures)
     {
         Objects.requireNonNull(mergeFutures, "Specify non-null futures for merging.");
         //Merge futures if cached outputs identified
         if(willStoreMetricOutput())
         {
-            MetricFutures.Builder builder = new MetricFutures.Builder();
-            if(Objects.nonNull(futures))
-            {
-                futures = builder.addDataFactory(dataFactory)
-                                 .addFutures(futures, mergeList)
-                                 .addFutures(mergeFutures, mergeList)
-                                 .build();
-            }
-            else
-            {
-                futures = builder.addDataFactory(dataFactory).addFutures(mergeFutures, mergeList).build();
-            }
+            futures.put(leadTime, mergeFutures);
         }
     }
 
@@ -601,7 +602,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             Builder addScalarOutput(MapBiKey<Integer, Threshold> key,
                                     Future<MetricOutputMapByMetric<ScalarOutput>> value)
             {
-                scalar.putIfAbsent(key, value);
+                scalar.put(key, value);
                 return this;
             }
 
@@ -616,7 +617,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             Builder addVectorOutput(MapBiKey<Integer, Threshold> key,
                                     Future<MetricOutputMapByMetric<VectorOutput>> value)
             {
-                vector.putIfAbsent(key, value);
+                vector.put(key, value);
                 return this;
             }
 
@@ -631,7 +632,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             Builder addMultiVectorOutput(MapBiKey<Integer, Threshold> key,
                                          Future<MetricOutputMapByMetric<MultiVectorOutput>> value)
             {
-                multivector.putIfAbsent(key, value);
+                multivector.put(key, value);
                 return this;
             }
 
@@ -645,7 +646,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             {
                 return new MetricFutures(this);
             }
-            
+
             /**
              * Adds the outputs from an existing {@link MetricFutures} for the outputs that are included in the merge
              * list.
@@ -678,7 +679,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                     }
                 }
                 return this;
-            }            
+            }
 
         }
 
