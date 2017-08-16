@@ -703,14 +703,14 @@ public class Control implements Function<String[], Integer>
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // TODO: make this template call to "reliabilityDiagramTemplate" generic across metrics. 
                 // Is it even needed? The Metadata contains the chart type and this is linked to the PlotType?
-                final Map<Integer, ChartEngine> engines =
-                                                  ChartEngineFactory.buildMultiVectorOutputChartEngine(Integer.class,e.getValue(),
+                final Map<Object, ChartEngine> engines =
+                                                  ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
                                                                                                              DATA_FACTORY.getMetadataFactory(),
                                                                                                              VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
                                                                                                              null,
                                                                                                              graphicsString);
                 // Build one chart per lead time
-                for(final Map.Entry<Integer, ChartEngine> nextEntry: engines.entrySet())
+                for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
                 {
                     // Build the output file name
                     final StringBuilder pathBuilder = new StringBuilder();

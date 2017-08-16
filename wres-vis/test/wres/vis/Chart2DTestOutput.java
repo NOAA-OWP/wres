@@ -51,7 +51,7 @@ public class Chart2DTestOutput extends TestCase
     //
     //do the following: Keep the unit tests separate; modify scenario names (inputTest1 and outputTest1) and update the file names.
     //That way the tests can be separate but generate output and using input from same directories.
-    
+
     /**
      * Generate a plot by lead time on the domain axis.
      */
@@ -169,16 +169,14 @@ public class Chart2DTestOutput extends TestCase
             final MetadataFactory factory = DefaultMetadataFactory.getInstance();
 
             //Call the factory.
-            final Map<Integer, ChartEngine> engineMap =
-                                                      ChartEngineFactory.buildMultiVectorOutputChartEngine(Integer.class,
-                                                                                                                 results,
-                                                                                                                 factory,
-                                                                                                                 ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
-                                                                                                                 null,
-                                                                                                                 null);
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
+                                                                                                            factory,
+                                                                                                            ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
+                                                                                                            null,
+                                                                                                            null);
 
             //Generate the output file.
-            for(final Integer lead: engineMap.keySet())
+            for(final Object lead: engineMap.keySet())
             {
                 ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + lead + "h."
                     + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
@@ -186,7 +184,7 @@ public class Chart2DTestOutput extends TestCase
             }
 
             //Compare against OS specific image benchmark.
-            for(final Integer lead: engineMap.keySet())
+            for(final Object lead: engineMap.keySet())
             {
                 FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + lead
                     + "h." + outputImageFileSuffix),
@@ -228,29 +226,28 @@ public class Chart2DTestOutput extends TestCase
             final MetadataFactory factory = DefaultMetadataFactory.getInstance();
 
             //Call the factory.
-            final Map<Threshold, ChartEngine> engineMap =
-                                                      ChartEngineFactory.buildMultiVectorOutputChartEngine(Threshold.class,
-                                                                                                                 results,
-                                                                                                                 factory,
-                                                                                                                 ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD,
-                                                                                                                 null,
-                                                                                                                 null);
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
+                                                                                                            factory,
+                                                                                                            ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD,
+                                                                                                            null,
+                                                                                                            null);
 
             //Generate the output file.
-            for(final Threshold thresh: engineMap.keySet())
+            for(final Object thresh: engineMap.keySet())
             {
-                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + thresh.getThreshold() + "."
+                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + ((Threshold)thresh).getThreshold() + "."
                     + outputImageFileSuffix), engineMap.get(thresh).buildChart(), 800, 600);
 
             }
 
             //Compare against OS specific image benchmark.
-            for(final Threshold thresh: engineMap.keySet())
+            for(final Object thresh: engineMap.keySet())
             {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + thresh.getThreshold()
-                    + "." + outputImageFileSuffix),
+                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/"
+                    + ((Threshold)thresh).getThreshold() + "." + outputImageFileSuffix),
                                                                           new File("testinput/chart2DTest/benchmark."
-                                                                              + thresh.getThreshold() + "." + outputImageFileSuffix),
+                                                                              + ((Threshold)thresh).getThreshold() + "."
+                                                                              + outputImageFileSuffix),
                                                                           8,
                                                                           true,
                                                                           false);
@@ -262,7 +259,7 @@ public class Chart2DTestOutput extends TestCase
             fail("Unexpected exception: " + t.getMessage());
         }
     }
-    
+
     /**
      * Generates multiple plots, one for each vector index, by calling the scalar plots repeatedly.
      */
@@ -273,8 +270,8 @@ public class Chart2DTestOutput extends TestCase
 
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
-     * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()} and
-     * slices.
+     * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
+     * and slices.
      * 
      * @return an output map of verification scores
      */
@@ -295,8 +292,8 @@ public class Chart2DTestOutput extends TestCase
 
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
-     * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()} and
-     * slices.
+     * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
+     * and slices.
      * 
      * @return an output map of verification scores
      */
@@ -451,8 +448,8 @@ public class Chart2DTestOutput extends TestCase
             Assert.fail("Test failed : " + e.getMessage());
         }
         return outputFactory.ofMap(rawData);
-    }    
-    
+    }
+
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
      * reliability diagram (forecast probabilities, observed given forecast probabilities, and sample sizes) for various
@@ -508,7 +505,7 @@ public class Chart2DTestOutput extends TestCase
                 final MetricResultByThreshold t = (MetricResultByThreshold)data.getResult(leadTime);
                 final Iterator<MetricResultKey> e = t.getIterator();
                 boolean firstOne = true; //Used to track if this is the first time through the e loop.  See HDH comment below.
-                
+
                 //Iterate through the thresholds
                 while(e.hasNext())
                 {
@@ -527,26 +524,26 @@ public class Chart2DTestOutput extends TestCase
                         //Build the result
                         final MetricResult result = t.getResult(f);
                         final double[][] res = ((DoubleMatrix2DResult)result).getResult().toArray();
-                        
+
                         //Ensure missings are NaN by brute force.
-                        for (int i = 0; i < res.length; i ++)
+                        for(int i = 0; i < res.length; i++)
                         {
-                            for (int j = 0; j < res[i].length; j ++)
+                            for(int j = 0; j < res[i].length; j++)
                             {
-                                if (res[i][j] == -999D)
+                                if(res[i][j] == -999D)
                                 {
                                     res[i][j] = Double.NaN;
                                 }
-                                
+
                                 //HDH (8/15/17): Forcing a NaN in the first time series within the reliability diagram at index 2.
-                                if (firstOne && (i == 0) && (j == 2))
+                                if(firstOne && (i == 0) && (j == 2))
                                 {
                                     res[i][j] = Double.NaN;
                                     firstOne = false;
                                 }
                             }
                         }
-                        
+
                         final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
                         output.put(MetricConstants.FORECAST_PROBABILITY, res[0]); //Forecast probabilities
                         output.put(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY, res[1]); //Observed | forecast probabilities
