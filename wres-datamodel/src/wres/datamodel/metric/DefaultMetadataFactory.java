@@ -329,7 +329,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         switch(identifier)
         {
             case MAIN:
-                return "MAIN OUTPUT";
+                return "MAIN";
             case RELIABILITY:
                 return "RELIABILITY";
             case RESOLUTION:
@@ -343,7 +343,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             case SHARPNESS:
                 return "SHARPNESS";
             case SAMPLE_SIZE:
-                return "SAMPLE_SIZE";
+                return "SAMPLE SIZE";
             default:
                 throw new IllegalArgumentException("Unable to determine the metric component name from the "
                     + "prescribed identifier '" + identifier + "'.");
