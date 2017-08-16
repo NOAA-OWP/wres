@@ -40,7 +40,6 @@ import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.MetricConfig;
-import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
@@ -64,7 +63,6 @@ import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
 import wres.vis.ChartEngineFactory;
-import wres.vis.ChartEngineFactory.VisualizationPlotType;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}. The processing
@@ -600,7 +598,7 @@ public class Control implements Function<String[], Integer>
                 final DestinationConfig dest = config.getOutputs().getDestination().get(1);
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
-                MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
                 if(Objects.isNull(nextConfig))
                 {
                     LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
@@ -608,7 +606,7 @@ public class Control implements Function<String[], Integer>
                 }
                 final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
                                                                                                   DATA_FACTORY,
-                                                                                                  fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                  ChartEngineFactory.fromMetricConfigName(nextConfig.getPlotType()),
                                                                                                   nextConfig.getTemplateResourceName(),
                                                                                                   graphicsString);
                 //Build the output
@@ -658,13 +656,13 @@ public class Control implements Function<String[], Integer>
         // Build charts
         try
         {
-            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
+            for(final Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
             {
                 final ProjectConfig config = projectConfigPlus.getProjectConfig();
                 final DestinationConfig dest = config.getOutputs().getDestination().get(1);
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
-                MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
                 if(Objects.isNull(nextConfig))
                 {
                     LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
@@ -673,7 +671,7 @@ public class Control implements Function<String[], Integer>
                 final Map<Object, ChartEngine> engines =
                                                        ChartEngineFactory.buildVectorOutputChartEngine(e.getValue(),
                                                                                                        DATA_FACTORY,
-                                                                                                       fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                       ChartEngineFactory.fromMetricConfigName(nextConfig.getPlotType()),
                                                                                                        nextConfig.getTemplateResourceName(),
                                                                                                        graphicsString);
                 // Build the outputs
@@ -740,7 +738,7 @@ public class Control implements Function<String[], Integer>
                 final DestinationConfig dest = config.getOutputs().getDestination().get(1);
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
-                MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
                 if(Objects.isNull(nextConfig))
                 {
                     LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
@@ -749,7 +747,7 @@ public class Control implements Function<String[], Integer>
                 final Map<Object, ChartEngine> engines =
                                                        ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
                                                                                                             DATA_FACTORY,
-                                                                                                            fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                            ChartEngineFactory.fromMetricConfigName(nextConfig.getPlotType()),
                                                                                                             nextConfig.getTemplateResourceName(),
                                                                                                             graphicsString);
                 // Build the outputs
@@ -1103,48 +1101,21 @@ public class Control implements Function<String[], Integer>
      * @return the metric configuration or null
      */
 
-    private static MetricConfig getMetricConfiguration(MetricConstants metric, ProjectConfig config)
+    private static MetricConfig getMetricConfiguration(final MetricConstants metric, final ProjectConfig config)
     {
         // Find the corresponding configuration
-        Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter(a -> {
+        final Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter(a -> {
             try
             {
                 return metric.equals(MetricProcessor.fromMetricConfigName(a.getName()));
             }
-            catch(MetricConfigurationException e)
+            catch(final MetricConfigurationException e)
             {
                 LOGGER.error("Could not map metric name '{}' to metric configuration.", metric, e);
                 return false;
             }
         }).findFirst();
         return returnMe.isPresent() ? returnMe.get() : null;
-    }
-
-    /**
-     * TODO: relocate this to the {@link ChartEngineFactory}. Maps between a {@link PlotTypeSelection} and a
-     * {@link VisualizationPlotType}.
-     * 
-     * @param plotType the {@link ChartEngineFactory}
-     * @return a {@link VisualizationPlotType} or null if the input is null
-     */
-
-    private static VisualizationPlotType fromMetricConfigName(PlotTypeSelection plotType) throws ChartEngineException
-    {
-        if(Objects.isNull(plotType))
-        {
-            return null;
-        }
-        switch(plotType)
-        {
-            case LEAD_THRESHOLD:
-                return VisualizationPlotType.LEAD_THRESHOLD;
-            case THRESHOLD_LEAD:
-                return VisualizationPlotType.THRESHOLD_LEAD;
-            case SINGLE_VALUED_PAIRS:
-                return VisualizationPlotType.SINGLE_VALUED_PAIRS;
-            default:
-                throw new ChartEngineException("Unable to map the input plot type '" + plotType + "'.");
-        }
     }
 
     /**
