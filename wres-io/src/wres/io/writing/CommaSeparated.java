@@ -1,7 +1,5 @@
 package wres.io.writing;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.Conditions;
 import wres.config.generated.DestinationConfig;
@@ -26,8 +24,6 @@ import java.util.concurrent.ExecutionException;
  */
 public class CommaSeparated
 {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparated.class );
 
 
     /**
