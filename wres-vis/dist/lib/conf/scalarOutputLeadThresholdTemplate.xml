@@ -7,23 +7,11 @@
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
 		<text>@metricName@ for @primaryScenario@ predictions of @variableName@
-			at @locationName@@baselineText@
+at @locationName@@baselineText@
 		</text>
 	</plotTitle>
 
 	<datasourceDrawingParameters sourceIndex="0">
-		<plotter>LineAndScatter</plotter>
-		<subPlot>0</subPlot>
-		<yAxis>left</yAxis>
-
-		<!-- The colors defined through a palette. For this test, four colors for 
-			four series. -->
-		<lineColorPalette>
-			<color alpha="255" blue="255" green="0" red="0" />
-			<color alpha="255" blue="51" green="204" red="51" />
-			<color alpha="255" blue="0" green="0" red="255" />
-		</lineColorPalette>
-
 		<!-- The only parameter to set for all series is the series name, which 
 			must be empty. The XYChartDatasource will know this means to use the defaults 
 			supplied by the data to plot. -->

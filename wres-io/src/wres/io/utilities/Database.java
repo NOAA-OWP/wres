@@ -560,15 +560,8 @@ public final class Database {
                 result = (T) results.getObject(label);
             }
         } catch (SQLException error) {
-            System.err.println("The following SQL call failed:");
-            if (query.length() > 1000) {
-                System.err.println(query.substring(0, 1000));
-            } else {
-                System.err.println(query);
-            }
-            System.err.println();
-
-            error.printStackTrace();
+            LOGGER.error("The following SQL call failed:");
+            LOGGER.error(formatQueryForOutput(query));
             throw error;
         } finally {
             if (results != null) {
@@ -609,6 +602,12 @@ public final class Database {
             {
                 collection.add(results.getObject(fieldLabel, collectionDataType));
             }
+		}
+		catch (SQLException error)
+		{
+			LOGGER.error("The following query failed:");
+			LOGGER.error(formatQueryForOutput(query));
+			throw error;
 		}
 		finally
 		{
@@ -651,6 +650,8 @@ public final class Database {
             throw e;
         }
         catch (SQLException e) {
+        	LOGGER.error("A map could not be generated from the database:");
+        	LOGGER.error(formatQueryForOutput(script));
             LOGGER.error(Strings.getStackTrace(e));
             throw e;
         }
@@ -747,7 +748,18 @@ public final class Database {
         // not closed. We count on c3p0 to magically take care of closing any
         // open resources when it should?
 		statement.setFetchSize(SystemSettings.fetchSize());
-		results = statement.executeQuery(query);
+
+		try
+		{
+			results = statement.executeQuery(query);
+		}
+		catch (SQLException error)
+		{
+			LOGGER.error("The following SQL query failed:");
+			LOGGER.error(formatQueryForOutput(query));
+			LOGGER.error(Strings.getStackTrace(error));
+			throw error;
+		}
         return results; 
     }
 
@@ -816,6 +828,14 @@ public final class Database {
 			LOGGER.error(Strings.getStackTrace(e));
 			throw e;
 		}
+	}
+
+	private static String formatQueryForOutput(String query)
+	{
+		if (query.length() > 1000) {
+			query = query.substring(0, 1000) + " (...)";
+		}
+		return query;
 	}
 
     public static ComboPooledDataSource getPool()

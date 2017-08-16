@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
@@ -75,22 +76,6 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
-     * {@link ScalarOutput} or null if no such metrics exist within the input {@link ProjectConfig}.
-     * 
-     * @param config the project configuration
-     * @return a collection of metrics or null
-     * @deprecated
-     * @throws MetricConfigurationException if the metrics are configured incorrectly
-     */
-
-    @Deprecated
-    public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(ProjectConfig config) throws MetricConfigurationException
-    {
-        return getMetricProcessor(config).singleValuedScalar;
-    }
-
-    /**
      * Returns an instance of a {@link MetricProcessor} for processing {@link MetricInput}. Optionally, retain and merge
      * the results associated with specific {@link MetricOutputGroup} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
@@ -103,14 +88,34 @@ public class MetricFactory
      */
 
     public MetricProcessor getMetricProcessor(final ProjectConfig config,
-                                              MetricOutputGroup... mergeList) throws MetricConfigurationException
+                                              final MetricOutputGroup... mergeList) throws MetricConfigurationException
+    {
+        return getMetricProcessor(config, null, mergeList);
+    }
+
+    /**
+     * Returns an instance of a {@link MetricProcessor} for processing {@link MetricInput}. Optionally, retain and merge
+     * the results associated with specific {@link MetricOutputGroup} across successive calls to
+     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
+     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
+     * 
+     * @param config the project configuration
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @return the {@link MetricProcessor}
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
+     */
+
+    public MetricProcessor getMetricProcessor(final ProjectConfig config,
+                                              final ExecutorService executor,
+                                              final MetricOutputGroup... mergeList) throws MetricConfigurationException
     {
         switch(MetricProcessor.getInputType(config))
         {
             case SINGLE_VALUED:
-                return new MetricProcessorSingleValuedPairs(outputFactory, config, mergeList);
+                return new MetricProcessorSingleValuedPairs(outputFactory, config, executor, mergeList);
             case ENSEMBLE:
-                return new MetricProcessorEnsemblePairs(outputFactory, config, mergeList);
+                return new MetricProcessorEnsemblePairs(outputFactory, config, executor, mergeList);
             default:
                 throw new UnsupportedOperationException("Unsupported input type in the project configuration '" + config
                     + "'");
@@ -127,13 +132,7 @@ public class MetricFactory
 
     public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(MetricConstants... metric)
     {
-        final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
-        {
-            builder.add(ofSingleValuedScalar(next));
-        }
-        builder.setOutputFactory(outputFactory);
-        return builder.build();
+        return ofSingleValuedScalarCollection(null, metric);
     }
 
     /**
@@ -146,13 +145,7 @@ public class MetricFactory
 
     public MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection(MetricConstants... metric)
     {
-        final MetricCollectionBuilder<SingleValuedPairs, VectorOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
-        {
-            builder.add(ofSingleValuedVector(next));
-        }
-        builder.setOutputFactory(outputFactory);
-        return builder.build();
+        return ofSingleValuedVectorCollection(null, metric);
     }
 
     /**
@@ -165,13 +158,7 @@ public class MetricFactory
 
     public MetricCollection<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVectorCollection(MetricConstants... metric)
     {
-        final MetricCollectionBuilder<SingleValuedPairs, MultiVectorOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
-        {
-            builder.add(ofSingleValuedMultiVector(next));
-        }
-        builder.setOutputFactory(outputFactory);
-        return builder.build();
+        return ofSingleValuedMultiVectorCollection(null, metric);
     }
 
     /**
@@ -184,13 +171,7 @@ public class MetricFactory
 
     public MetricCollection<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVectorCollection(MetricConstants... metric)
     {
-        final MetricCollectionBuilder<DiscreteProbabilityPairs, VectorOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
-        {
-            builder.add(ofDiscreteProbabilityVector(next));
-        }
-        builder.setOutputFactory(outputFactory);
-        return builder.build();
+        return ofDiscreteProbabilityVectorCollection(null, metric);
     }
 
     /**
@@ -203,13 +184,7 @@ public class MetricFactory
 
     public MetricCollection<DichotomousPairs, ScalarOutput> ofDichotomousScalarCollection(MetricConstants... metric)
     {
-        final MetricCollectionBuilder<DichotomousPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
-        {
-            builder.add(ofDichotomousScalar(next));
-        }
-        builder.setOutputFactory(outputFactory);
-        return builder.build();
+        return ofDichotomousScalarCollection(null, metric);
     }
 
     /**
@@ -222,14 +197,7 @@ public class MetricFactory
 
     public MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput> ofDiscreteProbabilityMultiVectorCollection(MetricConstants... metric)
     {
-        final MetricCollectionBuilder<DiscreteProbabilityPairs, MultiVectorOutput> builder =
-                                                                                           MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
-        {
-            builder.add(ofDiscreteProbabilityMultiVector(next));
-        }
-        builder.setOutputFactory(outputFactory);
-        return builder.build();
+        return ofDiscreteProbabilityMultiVectorCollection(null, metric);
     }
 
     /**
@@ -242,12 +210,154 @@ public class MetricFactory
 
     public MetricCollection<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrixCollection(MetricConstants... metric)
     {
+        return ofMulticategoryMatrixCollection(null, metric);
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
+     * {@link ScalarOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(ExecutorService executor,
+                                                                                            MetricConstants... metric)
+    {
+        final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
+        for(MetricConstants next: metric)
+        {
+            builder.add(ofSingleValuedScalar(next));
+        }
+        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
+     * {@link VectorOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection(ExecutorService executor,
+                                                                                            MetricConstants... metric)
+    {
+        final MetricCollectionBuilder<SingleValuedPairs, VectorOutput> builder = MetricCollectionBuilder.of();
+        for(MetricConstants next: metric)
+        {
+            builder.add(ofSingleValuedVector(next));
+        }
+        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
+     * {@link MultiVectorOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVectorCollection(ExecutorService executor,
+                                                                                                      MetricConstants... metric)
+    {
+        final MetricCollectionBuilder<SingleValuedPairs, MultiVectorOutput> builder = MetricCollectionBuilder.of();
+        for(MetricConstants next: metric)
+        {
+            builder.add(ofSingleValuedMultiVector(next));
+        }
+        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
+     * {@link VectorOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVectorCollection(ExecutorService executor,
+                                                                                                          MetricConstants... metric)
+    {
+        final MetricCollectionBuilder<DiscreteProbabilityPairs, VectorOutput> builder = MetricCollectionBuilder.of();
+        for(MetricConstants next: metric)
+        {
+            builder.add(ofDiscreteProbabilityVector(next));
+        }
+        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
+     * {@link ScalarOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<DichotomousPairs, ScalarOutput> ofDichotomousScalarCollection(ExecutorService executor,
+                                                                                          MetricConstants... metric)
+    {
+        final MetricCollectionBuilder<DichotomousPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
+        for(MetricConstants next: metric)
+        {
+            builder.add(ofDichotomousScalar(next));
+        }
+        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
+     * {@link MultiVectorOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput> ofDiscreteProbabilityMultiVectorCollection(ExecutorService executor,
+                                                                                                                    MetricConstants... metric)
+    {
+        final MetricCollectionBuilder<DiscreteProbabilityPairs, MultiVectorOutput> builder =
+                                                                                           MetricCollectionBuilder.of();
+        for(MetricConstants next: metric)
+        {
+            builder.add(ofDiscreteProbabilityMultiVector(next));
+        }
+        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link MulticategoryPairs} and produce
+     * {@link MatrixOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrixCollection(ExecutorService executor,
+                                                                                              MetricConstants... metric)
+    {
         final MetricCollectionBuilder<MulticategoryPairs, MatrixOutput> builder = MetricCollectionBuilder.of();
         for(MetricConstants next: metric)
         {
             builder.add(ofMulticategoryMatrix(next));
         }
-        builder.setOutputFactory(outputFactory);
+        builder.setOutputFactory(outputFactory).setExecutorService(executor);
         return builder.build();
     }
 
