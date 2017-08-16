@@ -20,7 +20,7 @@ public class ReliabilityDiagramXYChartDataSource extends WRESXYChartDataSource<M
     public ReliabilityDiagramXYChartDataSource(final int orderIndex,
                                                final MetricOutputMapByLeadThreshold<MultiVectorOutput> input)
     {
-        super(orderIndex, input, input.keySetByThreshold().size());
+        super(orderIndex, input, input.keySet().size());
 
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("Forecast Probability");
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("Observed Probability Given Forecast Probability");

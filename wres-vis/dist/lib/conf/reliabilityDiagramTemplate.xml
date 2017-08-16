@@ -5,7 +5,7 @@
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
 		<text>Reliability Diagram for Various Event Thresholds (Upper) and Sample Counts (Lower)
-@locationName@.@variableName@.@primaryScenario@ At Lead Hour @leadHour@
+@locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
 		</text>
 	</plotTitle>
 	

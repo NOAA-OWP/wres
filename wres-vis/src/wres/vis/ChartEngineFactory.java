@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -32,6 +33,7 @@ import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.metric.Threshold;
 
 /**
  * Factory to use in order to construct a wres-vis chart.
@@ -91,42 +93,62 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
      */
-    public static ConcurrentMap<Integer, ChartEngine> buildMultiVectorOutputChartEngineByLead(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
-                                                                                              final MetadataFactory factory,
-                                                                                              final VisualizationPlotType plotType,
-                                                                                              final String templateResourceName,
-                                                                                              final String overrideParametersStr) throws ChartEngineException,
-                                                                                                                                  GenericXMLReadingHandlerException
+    @SuppressWarnings("unchecked")  //I do an unchecked cast below and I'd really rather not check it!
+    public static <T> ConcurrentMap<T, ChartEngine> buildMultiVectorOutputChartEngineByLead(final Class<T> genericTypeClass,
+                                                                                            final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                                                                            final MetadataFactory factory,
+                                                                                            final VisualizationPlotType plotType,
+                                                                                            final String templateResourceName,
+                                                                                            final String overrideParametersStr) throws ChartEngineException,
+                                                                                                                                GenericXMLReadingHandlerException
     {
         String templateName = null;
-        final ConcurrentMap<Integer, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final ConcurrentMap<T, ChartEngine> results = new ConcurrentSkipListMap<>();
+
+        //Prepare the set through which we are going to loop.
+        @SuppressWarnings("rawtypes")
+        Set keySetValues = input.keySetByLead(); //I'm doing this by design.
+        if(genericTypeClass.isAssignableFrom(Threshold.class))
+        {
+            keySetValues = input.keySetBySecondKey();
+        }
 
         //For each lead time, do the following....
-        //TODO This should be able to loop through EITHER key.  When we make that work, the name of this method should change.
-        for(final Integer lead: input.keySetByLead())
+        for(final Object keyInstance: keySetValues)
         {
             final List<XYChartDataSource> dataSources = new ArrayList<>();
             WRESArgumentProcessor arguments = null;
 
-            //For a reliability diagram, as specified by the metric id in the meta data...
+            //=====================
+            //RELIABILITY DIAGRAM
+            //=====================
             if(input.getMetadata().getMetricID() == MetricConstants.RELIABILITY_DIAGRAM)
             {
-                //Plots for thresholds are not yet generated.
-                if ((plotType == null) || (plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD)))
+                //-----------------------------------------------------------------
+                //Reliability diagram for each lead time, thresholds in the legend.
+                //-----------------------------------------------------------------
+                if((plotType == null) || (plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD)))
                 {
-                    templateName = determineTemplateResourceName(templateResourceName, plotType, VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD);
-                    final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice = input.sliceByLead(lead);
+                    templateName = determineTemplateResourceName(templateResourceName,
+                                                                 plotType,
+                                                                 VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD);
+                    final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
+                    if(genericTypeClass.isAssignableFrom(Threshold.class))
+                    {
+                        inputSlice = input.sliceByThreshold((Threshold)keyInstance);
+                    }
+                    else
+                    {
+                        inputSlice = input.sliceByLead((Integer)keyInstance);
+                    }
+                                                                                       
 
                     //Setup the default arguments.
                     final MetricOutputMetadata meta = inputSlice.getMetadata();
                     arguments = buildDefaultMetricOutputPlotArgumentsProcessor(factory, meta);
 
                     //Legend title and lead time argument are specific to the plot.
-                    //XXX Note that the code below is very specific to the input attribute AND whether this is against threshold or lead time.
-                    //In other words, this chuck of code is completely specific to this method and cannot be used in the scalar output method
-                    //which need to use other code.  At this point, there is no need to pull it out and place it in another method because 
-                    //there are no other metrics in this method that need it.
-                    final String legendTitle = "Thresholds";
+                    final String legendTitle = "Threshold";
                     String legendUnitsText = "";
                     if(input.hasQuantileThresholds())
                     {
@@ -138,7 +160,8 @@ public abstract class ChartEngineFactory
                     }
                     arguments.addArgument("legendTitle", legendTitle);
                     arguments.addArgument("legendUnitsText", legendUnitsText);
-                    arguments.addArgument("leadHour", inputSlice.getKey(0).getFirstKey().toString());
+                    arguments.addArgument("diagramInstanceDescription",
+                                          "at Lead Hour " + inputSlice.getKey(0).getFirstKey().toString());
 
                     dataSources.add(new ReliabilityDiagramXYChartDataSource(0, inputSlice));
                     dataSources.add(new ReliabilityDiagramSampleSizeXYChartDataSource(1, inputSlice));
@@ -146,16 +169,47 @@ public abstract class ChartEngineFactory
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
                 }
+
+                //-----------------------------------------------------------------
+                //Reliability diagram for each treshold, lead times in the legend.
+                //-----------------------------------------------------------------
                 else if(plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD))
                 {
-                    throw new IllegalArgumentException("Reliability diagrms for a threshold (across all lead times) are not yet support.");
+                    templateName =
+                                 determineTemplateResourceName(templateResourceName,
+                                                               plotType,
+                                                               VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD);
+                    final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice =
+                                                                                       input.sliceByThreshold((Threshold)keyInstance);
+
+                    //Setup the default arguments.
+                    final MetricOutputMetadata meta = inputSlice.getMetadata();
+                    arguments = buildDefaultMetricOutputPlotArgumentsProcessor(factory, meta);
+
+                    //Legend title and lead time argument are specific to the plot.
+                    arguments.addArgument("legendTitle", "Lead Time");
+                    arguments.addArgument("legendUnitsText", " [hours]");
+                    arguments.addArgument("leadHour", inputSlice.getKey(0).getFirstKey().toString());
+                    arguments.addArgument("diagramInstanceDescription",
+                                          "for Threshold " + inputSlice.getKey(0).getSecondKey().toString() + " ("
+                                              + meta.getInputDimension() + ")");
+
+                    dataSources.add(new ReliabilityDiagramXYChartDataSource(0, inputSlice));
+                    dataSources.add(new ReliabilityDiagramSampleSizeXYChartDataSource(1, inputSlice));
+                    dataSources.add(constructConnectedPointsDataSource(2,
+                                                                       new Point2D.Double(0.0, 0.0),
+                                                                       new Point2D.Double(1.0, 1.0)));
                 }
+                
+                //This is an error, since there are only two allowable types of reliability diagrams.
                 else
                 {
                     throw new IllegalArgumentException("Plot type " + plotType
                         + " is invalid for a reliability diagram.");
                 }
             }
+            
+            //This is an error since only the reliability diagrams can be processed.
             else
             {
                 throw new IllegalArgumentException("Unrecognized plot type of " + input.getMetadata().getMetricID()
@@ -175,15 +229,11 @@ public abstract class ChartEngineFactory
             }
 
             //Build the ChartEngine instance.
-            final ChartEngine engine = ChartTools.buildChartEngine(dataSources,
-                                                                   arguments,
-                                                                   templateName,
-                                                                   override);
-            results.put(lead, engine);
+            final ChartEngine engine = ChartTools.buildChartEngine(dataSources, arguments, templateName, override);
+            results.put((T)keyInstance, engine);
         }
         return results;
     }
-   
 
     /**
      * @param input The metric output to plot.
@@ -191,8 +241,8 @@ public abstract class ChartEngineFactory
      * @param userSpecifiedPlotType The plot type to generate. For this chart, the plot type must be either
      *            {@link VisualizationPlotType#LEAD_THRESHOLD} or {@link VisualizationPlotType#THRESHOLD_LEAD}. May be
      *            null and, if so, defaults to {@link VisualizationPlotType#LEAD_THRESHOLD}.
-     * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for chart
-     *            construction.
+     * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
+     *            chart construction.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
      * @return A {@link ChartEngine} that can be used to build the {@link JFreeChart} and output the image. This can be
@@ -228,7 +278,9 @@ public abstract class ChartEngineFactory
         //Lead-threshold is the default.  This is for plots with the lead time on the domain axis and threshold in the legend.
         if(userSpecifiedPlotType == null || userSpecifiedPlotType.equals(VisualizationPlotType.LEAD_THRESHOLD))
         {
-            templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName, userSpecifiedPlotType, VisualizationPlotType.LEAD_THRESHOLD);
+            templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName,
+                                                         userSpecifiedPlotType,
+                                                         VisualizationPlotType.LEAD_THRESHOLD);
             source = new ScalarOutputByLeadThresholdXYChartDataSource(0, input);
 
             //Legend title.
@@ -248,7 +300,9 @@ public abstract class ChartEngineFactory
         //This is for plots with the threshold on the domain axis and lead time in the legend.
         else if(userSpecifiedPlotType.equals(VisualizationPlotType.THRESHOLD_LEAD))
         {
-            templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName, userSpecifiedPlotType, VisualizationPlotType.LEAD_THRESHOLD);
+            templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName,
+                                                         userSpecifiedPlotType,
+                                                         VisualizationPlotType.LEAD_THRESHOLD);
             source = new ScalarOutputByThresholdLeadXYChartDataSource(0, input);
 
             //Legend title.
@@ -284,8 +338,8 @@ public abstract class ChartEngineFactory
 
     /**
      * @param input The pairs to plot.
-     * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for chart
-     *            construction.
+     * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
+     *            chart construction.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
      * @return A {@link ChartEngine} that can be used to build the {@link JFreeChart} and output the image. This can be
@@ -300,8 +354,10 @@ public abstract class ChartEngineFactory
                                                                                                     GenericXMLReadingHandlerException
     {
 
-        final String templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName, null, VisualizationPlotType.SINGLE_VALUED_PAIRS); 
-        
+        final String templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName,
+                                                                  null,
+                                                                  VisualizationPlotType.SINGLE_VALUED_PAIRS);
+
         //Build the source.
         final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource(0, input);
 
