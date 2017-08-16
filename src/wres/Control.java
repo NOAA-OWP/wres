@@ -109,16 +109,14 @@ public class Control implements Function<String[], Integer>
         }
 
         // Process the configurations with a ForkJoinPool
-        ExecutorService processPairExecutor = null;
-        final ExecutorService metricExecutor = null;
+
+        // Build a processing pipeline
+
+        ExecutorService processPairExecutor = new ForkJoinPool( MAX_THREADS );
+        ExecutorService metricExecutor = new ForkJoinPool( MAX_THREADS );
+
         try
         {
-            // Build a processing pipeline
-            processPairExecutor = new ForkJoinPool();
-
-            // If null, uses ForkJoinPool.commonPool()
-            //metricExecutor = null;
-
             // Iterate through the configurations
             for(final ProjectConfigPlus projectConfigPlus: projectConfiggies)
             {
@@ -938,15 +936,19 @@ public class Control implements Function<String[], Integer>
             maxThreads = SystemSettings.maximumThreadCount();
         }
 
-        if(maxThreads >= 1)
+        // Since ForkJoinPool goes ape when this is 2 or less...
+        if ( maxThreads >= 3 )
         {
             MAX_THREADS = maxThreads;
         }
         else
         {
-            //LOGGER.warn("Java -D property {} was likely less than 1, setting Control.MAX_THREADS to 1",
-            //            MAX_THREADS_PROP_NAME);
-            MAX_THREADS = 1;
+            LOGGER.warn( "Java -D property {} or SystemSettings "
+                         + "maximumThreadCount was likely less than 1, setting "
+                         + " Control.MAX_THREADS to 3",
+                         MAX_THREADS_PROP_NAME );
+
+            MAX_THREADS = 3;
         }
     }
 
