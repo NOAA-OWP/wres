@@ -12,8 +12,9 @@ import wres.datamodel.metric.MultiVectorOutput;
  * 
  * @author Hank.Herr
  */
-public class ReliabilityDiagramXYDataset extends WRESAbstractXYDataset<MetricOutputMapByLeadThreshold<MultiVectorOutput>,MetricOutputMapByLeadThreshold<MultiVectorOutput>>
+public class ReliabilityDiagramXYDataset extends WRESAbstractXYDataset<MetricOutputMapByLeadThreshold<MultiVectorOutput>, MetricOutputMapByLeadThreshold<MultiVectorOutput>>
 {
+
     public ReliabilityDiagramXYDataset(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input)
     {
         super(input);
@@ -22,11 +23,12 @@ public class ReliabilityDiagramXYDataset extends WRESAbstractXYDataset<MetricOut
     @Override
     protected void preparePlotData(final MetricOutputMapByLeadThreshold<MultiVectorOutput> rawData)
     {
-        if(rawData.keySetByFirstKey().size() != 1)
+        //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
+        if((rawData.keySetByFirstKey().size() == 0) || (rawData.keySetBySecondKey().size() == 0))
         {
-            throw new IllegalArgumentException("MetricOutputMapByLeadThreshold map provided has "
-                + rawData.keySetByFirstKey().size() + " keys, when it must be one key, only.");
+            throw new IllegalStateException("Somehow, one of the key sets, either first or second, is empty.  How did that happen?");
         }
+        
         setPlotData(rawData);
     }
 
@@ -66,11 +68,22 @@ public class ReliabilityDiagramXYDataset extends WRESAbstractXYDataset<MetricOut
     @Override
     public Comparable<String> getSeriesKey(final int series)
     {
-        if(isLegendNameOverridden(series))
+        if (isLegendNameOverridden(series))
         {
             return getOverrideLegendName(series);
         }
-        return getPlotData().getKey(series).getSecondKey().toString();
+        
+        if((getPlotData().keySetByFirstKey().size() == 1) && (getPlotData().keySetBySecondKey().size() == 1))
+        {
+            return getPlotData().getKey(series).getFirstKey().toString() + "h, " + getPlotData().getKey(series).getSecondKey().toString();
+        }
+        else if((getPlotData().keySetByFirstKey().size() >= 1) && (getPlotData().keySetBySecondKey().size() == 1))
+        {
+            return getPlotData().getKey(series).getFirstKey().toString();
+        } 
+        else
+        {
+            return getPlotData().getKey(series).getSecondKey().toString();
+        } 
     }
-
 }

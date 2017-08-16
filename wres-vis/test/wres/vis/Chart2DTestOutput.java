@@ -51,6 +51,7 @@ public class Chart2DTestOutput extends TestCase
     //
     //do the following: Keep the unit tests separate; modify scenario names (inputTest1 and outputTest1) and update the file names.
     //That way the tests can be separate but generate output and using input from same directories.
+    
     /**
      * Generate a plot by lead time on the domain axis.
      */
@@ -96,7 +97,6 @@ public class Chart2DTestOutput extends TestCase
     /**
      * Generate a plot by threshold on the domain axis.
      */
-
     public void test3ScalarOutput()
     {
         final String scenarioName = "test3";
@@ -136,7 +136,10 @@ public class Chart2DTestOutput extends TestCase
         }
     }
 
-    public void test4ReliabilityDiagram()
+    /**
+     * Generates multiple reliability diagrams, one for each lead time.
+     */
+    public void test4ReliabilityDiagramByLeadTime()
     {
         final String scenarioName = "test4";
         final String outputImageFileSuffix = scenarioName + "_output.png";
@@ -167,7 +170,8 @@ public class Chart2DTestOutput extends TestCase
 
             //Call the factory.
             final Map<Integer, ChartEngine> engineMap =
-                                                      ChartEngineFactory.buildMultiVectorOutputChartEngineByLead(results,
+                                                      ChartEngineFactory.buildMultiVectorOutputChartEngineByLead(Integer.class,
+                                                                                                                 results,
                                                                                                                  factory,
                                                                                                                  ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
                                                                                                                  null,
@@ -201,6 +205,73 @@ public class Chart2DTestOutput extends TestCase
     }
 
     /**
+     * Generates multiple reliability diagrams, one for each threshold.
+     */
+    public void test5ReliabilityDiagramByThreshold()
+    {
+        final String scenarioName = "test5";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+        try
+        {
+            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+        }
+        catch(final IOException e)
+        {
+            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+        }
+
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getReliabilityDiagramByLeadThreshold();
+
+        try
+        {
+            //Get an implementation of the metadata factory to use for testing.
+            final MetadataFactory factory = DefaultMetadataFactory.getInstance();
+
+            //Call the factory.
+            final Map<Threshold, ChartEngine> engineMap =
+                                                      ChartEngineFactory.buildMultiVectorOutputChartEngineByLead(Threshold.class,
+                                                                                                                 results,
+                                                                                                                 factory,
+                                                                                                                 ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD,
+                                                                                                                 null,
+                                                                                                                 null);
+
+            //Generate the output file.
+            for(final Threshold thresh: engineMap.keySet())
+            {
+                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + thresh.getThreshold() + "."
+                    + outputImageFileSuffix), engineMap.get(thresh).buildChart(), 800, 600);
+
+            }
+
+            //Compare against OS specific image benchmark.
+            for(final Threshold thresh: engineMap.keySet())
+            {
+                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + thresh.getThreshold()
+                    + "." + outputImageFileSuffix),
+                                                                          new File("testinput/chart2DTest/benchmark."
+                                                                              + thresh.getThreshold() + "." + outputImageFileSuffix),
+                                                                          8,
+                                                                          true,
+                                                                          false);
+            }
+        }
+        catch(final Throwable t)
+        {
+            t.printStackTrace();
+            fail("Unexpected exception: " + t.getMessage());
+        }
+    }
+    
+    /**
+     * Generates multiple plots, one for each vector index, by calling the scalar plots repeatedly.
+     */
+    public void test6VectorMetricOutput()
+    {
+        final MetricOutputMapByLeadThreshold<VectorOutput> results = getVectorMetricOutputMapByLeadThreshold();
+    }
+
+    /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
      * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()} and
      * slices.
@@ -229,7 +300,6 @@ public class Chart2DTestOutput extends TestCase
      * 
      * @return an output map of verification scores
      */
-
     public static MetricOutputMapByLeadThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdTwo()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
@@ -250,7 +320,6 @@ public class Chart2DTestOutput extends TestCase
      * 
      * @return an output map of verification scores
      */
-
     private static MetricOutputMapByLeadThreshold<ScalarOutput> getScalarMetricOutputMapByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
@@ -321,7 +390,6 @@ public class Chart2DTestOutput extends TestCase
      * 
      * @return an output map of verification scores
      */
-
     private static MetricOutputMapByLeadThreshold<VectorOutput> getVectorMetricOutputMapByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
@@ -393,7 +461,6 @@ public class Chart2DTestOutput extends TestCase
      * 
      * @return an output map of verification scores
      */
-
     private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getReliabilityDiagramByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
