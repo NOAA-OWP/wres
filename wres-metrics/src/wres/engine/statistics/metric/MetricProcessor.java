@@ -164,6 +164,98 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     static final Logger LOGGER = LoggerFactory.getLogger(MetricProcessor.class);
 
     /**
+     * Maps between metric identifiers in {@link MetricConfigName} and those in {@link MetricConstants}.
+     * 
+     * @param translate the input {@link MetricConfigName}
+     * @return the corresponding {@link MetricConstants}.
+     * @throws MetricConfigurationException if the input name is unrecognized
+     */
+
+    public static MetricConstants fromMetricConfigName(MetricConfigName translate) throws MetricConfigurationException
+    {
+        Objects.requireNonNull(translate,
+                               "One or more metric identifiers in the project configuration could not be mapped "
+                                   + "to a supported metric identifier.");
+        switch(translate)
+        {
+            case BIAS_FRACTION:
+                return MetricConstants.BIAS_FRACTION;
+            case BRIER_SCORE:
+                return MetricConstants.BRIER_SCORE;
+            case BRIER_SKILL_SCORE:
+                return MetricConstants.BRIER_SKILL_SCORE;
+            case COEFFICIENT_OF_DETERMINATION:
+                return MetricConstants.COEFFICIENT_OF_DETERMINATION;
+            case CONTINGENCY_TABLE:
+                return MetricConstants.CONTINGENCY_TABLE;
+            case CORRELATION_PEARSONS:
+                return MetricConstants.CORRELATION_PEARSONS;
+            case CRITICAL_SUCCESS_INDEX:
+                return MetricConstants.CRITICAL_SUCCESS_INDEX;
+            case EQUITABLE_THREAT_SCORE:
+                return MetricConstants.EQUITABLE_THREAT_SCORE;
+            case MEAN_ABSOLUTE_ERROR:
+                return MetricConstants.MEAN_ABSOLUTE_ERROR;
+            case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
+                return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
+            case MEAN_ERROR:
+                return MetricConstants.MEAN_ERROR;
+            case MEAN_SQUARE_ERROR:
+                return MetricConstants.MEAN_SQUARE_ERROR;
+            case MEAN_SQUARE_ERROR_SKILL_SCORE:
+                return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE;
+            case PEIRCE_SKILL_SCORE:
+                return MetricConstants.PEIRCE_SKILL_SCORE;
+            case PROBABILITY_OF_DETECTION:
+                return MetricConstants.PROBABILITY_OF_DETECTION;
+            case QUANTILE_QUANTILE_DIAGRAM:
+                return MetricConstants.QUANTILE_QUANTILE_DIAGRAM;
+            case PROBABILITY_OF_FALSE_DETECTION:
+                return MetricConstants.PROBABILITY_OF_FALSE_DETECTION;
+            case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
+                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
+            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
+                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE;
+            case RELIABILITY_DIAGRAM:
+                return MetricConstants.RELIABILITY_DIAGRAM;
+            case ROOT_MEAN_SQUARE_ERROR:
+                return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
+            default:
+                throw new MetricConfigurationException("Unrecognized metric identifier in project configuration '"
+                    + translate + "'.");
+        }
+    }
+
+    /**
+     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
+     * 
+     * @param translate the input {@link ThresholdOperator}
+     * @return the corresponding {@link Operator}.
+     * @throws MetricConfigurationException if the operator name is unrecognized
+     */
+
+    public static Operator fromThresholdOperator(ThresholdOperator translate) throws MetricConfigurationException
+    {
+        Objects.requireNonNull(translate,
+                               "One or more metric identifiers in the project configuration could not be mapped "
+                                   + "to a supported metric identifier.");
+        switch(translate)
+        {
+            case LESS_THAN:
+                return Operator.LESS;
+            case GREATER_THAN:
+                return Operator.GREATER;
+            case LESS_THAN_OR_EQUAL_TO:
+                return Operator.LESS_EQUAL;
+            case GREATER_THAN_OR_EQUAL_TO:
+                return Operator.GREATER_EQUAL;
+            default:
+                throw new MetricConfigurationException("Unrecognized threshold operator in project configuration '"
+                    + translate + "'.");
+        }
+    }    
+    
+    /**
      * Returns a {@link MetricOutputForProjectByLeadThreshold} for the last available results or null if
      * {@link #hasStoredMetricOutput()} returns false.
      * 
@@ -933,98 +1025,6 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             }
         }
         return returnMe;
-    }
-
-    /**
-     * Maps between metric identifiers in {@link MetricConfigName} and those in {@link MetricConstants}.
-     * 
-     * @param translate the input {@link MetricConfigName}
-     * @return the corresponding {@link MetricConstants}.
-     * @throws MetricConfigurationException if the input name is unrecognized
-     */
-
-    private static MetricConstants fromMetricConfigName(MetricConfigName translate) throws MetricConfigurationException
-    {
-        Objects.requireNonNull(translate,
-                               "One or more metric identifiers in the project configuration could not be mapped "
-                                   + "to a supported metric identifier.");
-        switch(translate)
-        {
-            case BIAS_FRACTION:
-                return MetricConstants.BIAS_FRACTION;
-            case BRIER_SCORE:
-                return MetricConstants.BRIER_SCORE;
-            case BRIER_SKILL_SCORE:
-                return MetricConstants.BRIER_SKILL_SCORE;
-            case COEFFICIENT_OF_DETERMINATION:
-                return MetricConstants.COEFFICIENT_OF_DETERMINATION;
-            case CONTINGENCY_TABLE:
-                return MetricConstants.CONTINGENCY_TABLE;
-            case CORRELATION_PEARSONS:
-                return MetricConstants.CORRELATION_PEARSONS;
-            case CRITICAL_SUCCESS_INDEX:
-                return MetricConstants.CRITICAL_SUCCESS_INDEX;
-            case EQUITABLE_THREAT_SCORE:
-                return MetricConstants.EQUITABLE_THREAT_SCORE;
-            case MEAN_ABSOLUTE_ERROR:
-                return MetricConstants.MEAN_ABSOLUTE_ERROR;
-            case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
-                return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
-            case MEAN_ERROR:
-                return MetricConstants.MEAN_ERROR;
-            case MEAN_SQUARE_ERROR:
-                return MetricConstants.MEAN_SQUARE_ERROR;
-            case MEAN_SQUARE_ERROR_SKILL_SCORE:
-                return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE;
-            case PEIRCE_SKILL_SCORE:
-                return MetricConstants.PEIRCE_SKILL_SCORE;
-            case PROBABILITY_OF_DETECTION:
-                return MetricConstants.PROBABILITY_OF_DETECTION;
-            case QUANTILE_QUANTILE_DIAGRAM:
-                return MetricConstants.QUANTILE_QUANTILE_DIAGRAM;
-            case PROBABILITY_OF_FALSE_DETECTION:
-                return MetricConstants.PROBABILITY_OF_FALSE_DETECTION;
-            case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
-                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
-            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
-                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE;
-            case RELIABILITY_DIAGRAM:
-                return MetricConstants.RELIABILITY_DIAGRAM;
-            case ROOT_MEAN_SQUARE_ERROR:
-                return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
-            default:
-                throw new MetricConfigurationException("Unrecognized metric identifier in project configuration '"
-                    + translate + "'.");
-        }
-    }
-
-    /**
-     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
-     * 
-     * @param translate the input {@link ThresholdOperator}
-     * @return the corresponding {@link Operator}.
-     * @throws MetricConfigurationException if the operator name is unrecognized
-     */
-
-    private static Operator fromThresholdOperator(ThresholdOperator translate) throws MetricConfigurationException
-    {
-        Objects.requireNonNull(translate,
-                               "One or more metric identifiers in the project configuration could not be mapped "
-                                   + "to a supported metric identifier.");
-        switch(translate)
-        {
-            case LESS_THAN:
-                return Operator.LESS;
-            case GREATER_THAN:
-                return Operator.GREATER;
-            case LESS_THAN_OR_EQUAL_TO:
-                return Operator.LESS_EQUAL;
-            case GREATER_THAN_OR_EQUAL_TO:
-                return Operator.GREATER_EQUAL;
-            default:
-                throw new MetricConfigurationException("Unrecognized threshold operator in project configuration '"
-                    + translate + "'.");
-        }
     }
 
 }

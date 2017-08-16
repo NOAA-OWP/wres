@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -38,6 +39,8 @@ import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
+import wres.config.generated.MetricConfig;
+import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
@@ -98,7 +101,7 @@ public class Control implements Function<String[], Integer>
         {
             // Build a processing pipeline
             processPairExecutor = new ForkJoinPool();
-            
+
             // If null, uses ForkJoinPool.commonPool()
             //metricExecutor = null;
 
@@ -386,22 +389,21 @@ public class Control implements Function<String[], Integer>
 
             try
             {
-                final boolean filesWritten = writeOutputFiles( projectConfig,
-                                                         feature,
-                                                         processor.getStoredMetricOutput() );
-                if (!filesWritten)
+                final boolean filesWritten =
+                                           writeOutputFiles(projectConfig, feature, processor.getStoredMetricOutput());
+                if(!filesWritten)
                 {
                     return false;
                 }
             }
-            catch ( final InterruptedException ie )
+            catch(final InterruptedException ie)
             {
                 LOGGER.warn("Interrupted while writing output files.");
                 Thread.currentThread().interrupt();
             }
-            catch ( final ExecutionException e )
+            catch(final ExecutionException e)
             {
-                LOGGER.error("While writing output files: ", e );
+                LOGGER.error("While writing output files: ", e);
                 return false;
             }
 
@@ -420,71 +422,79 @@ public class Control implements Function<String[], Integer>
         return true;
     }
 
-    private boolean writeOutputFiles( final ProjectConfig projectConfig,
-                                      final Feature feature,
-                                      final MetricOutputForProjectByLeadThreshold storedMetricOutput )
-            throws InterruptedException, ExecutionException
+    /**
+     * Write numerical outputs to CSV files.
+     * 
+     * @param projectConfig the project configuration
+     * @param feature the feature
+     * @param storedMetricOutput the stored output
+     * @return true if the writing completed succesfully, false otherwise
+     * @throws InterruptedException if the writing is cancelled
+     * @throws ExecutionException if the writing failed
+     */
+    
+    private boolean writeOutputFiles(final ProjectConfig projectConfig,
+                                     final Feature feature,
+                                     final MetricOutputForProjectByLeadThreshold storedMetricOutput) throws InterruptedException,
+                                                                                                     ExecutionException
     {
         boolean result = true;
-        if ( projectConfig.getOutputs() == null
-             || projectConfig.getOutputs().getDestination() == null )
+        if(projectConfig.getOutputs() == null || projectConfig.getOutputs().getDestination() == null)
         {
             LOGGER.info("No numeric output files specified for project.");
             return false;
         }
 
-        for ( final DestinationConfig d : projectConfig.getOutputs().getDestination() )
+        for(final DestinationConfig d: projectConfig.getOutputs().getDestination())
         {
-            final Map<Integer,StringJoiner> rows = new TreeMap<>();
-            final StringJoiner headerRow = new StringJoiner( "," );
+            final Map<Integer, StringJoiner> rows = new TreeMap<>();
+            final StringJoiner headerRow = new StringJoiner(",");
             headerRow.add("LEAD_TIME");
 
-            if ( d.getType() == DestinationType.NUMERIC )
+            if(d.getType() == DestinationType.NUMERIC)
             {
-                for ( final Map.Entry<MapBiKey<MetricConstants,MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> m
-                        : storedMetricOutput.getScalarOutput().entrySet() )
+                for(final Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> m: storedMetricOutput.getScalarOutput()
+                                                                                                                                                   .entrySet())
                 {
                     final String name = m.getKey().getFirstKey().name();
                     final String secondName = m.getKey().getSecondKey().name();
 
-                    for ( final Threshold t : m.getValue().keySetByThreshold() )
+                    for(final Threshold t: m.getValue().keySetByThreshold())
                     {
                         final String column = name + "_" + secondName + "_" + t;
-                        headerRow.add( column );
+                        headerRow.add(column);
 
-                        for ( final MapBiKey<Integer, Threshold> key : m.getValue().sliceByThreshold( t ).keySet() )
+                        for(final MapBiKey<Integer, Threshold> key: m.getValue().sliceByThreshold(t).keySet())
                         {
 
-                            if ( rows.get( key.getFirstKey() ) == null )
+                            if(rows.get(key.getFirstKey()) == null)
                             {
-                                final StringJoiner row = new StringJoiner( "," );
-                                row.add( Integer.toString( key.getFirstKey() ) );
-                                rows.put( key.getFirstKey(), row );
+                                final StringJoiner row = new StringJoiner(",");
+                                row.add(Integer.toString(key.getFirstKey()));
+                                rows.put(key.getFirstKey(), row);
                             }
 
-                            final StringJoiner row = rows.get( key.getFirstKey() );
+                            final StringJoiner row = rows.get(key.getFirstKey());
 
-                            row.add( m.getValue().get( key ).toString() );
+                            row.add(m.getValue().get(key).toString());
                         }
                     }
                 }
             }
 
-            final Path outputPath = Paths.get( d.getPath() + feature.getLocation().getLid() + ".csv" );
-            try (BufferedWriter w =
-                    Files.newBufferedWriter( outputPath,
-                                             StandardCharsets.UTF_8,
-                                             StandardOpenOption.CREATE))
+            final Path outputPath = Paths.get(d.getPath() + feature.getLocation().getLid() + ".csv");
+            try (
+            BufferedWriter w = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8, StandardOpenOption.CREATE))
             {
-                w.write( headerRow.toString() );
-                w.write( System.lineSeparator() );
-                for ( final StringJoiner row : rows.values() )
+                w.write(headerRow.toString());
+                w.write(System.lineSeparator());
+                for(final StringJoiner row: rows.values())
                 {
-                    w.write( row.toString() );
-                    w.write( System.lineSeparator() );
+                    w.write(row.toString());
+                    w.write(System.lineSeparator());
                 }
             }
-            catch ( final IOException ioe )
+            catch(final IOException ioe)
             {
                 LOGGER.error("Failed to write to {}", outputPath, ioe);
                 result = false;
@@ -586,15 +596,22 @@ public class Control implements Function<String[], Integer>
         {
             for(final Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> e: scalarResults.entrySet())
             {
-                final DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
+                final ProjectConfig config = projectConfigPlus.getProjectConfig();
+                final DestinationConfig dest = config.getOutputs().getDestination().get(1);
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-
+                // Build the chart engine
+                MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                if(Objects.isNull(nextConfig))
+                {
+                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
+                    return false;
+                }
                 final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
-                                                                                            DATA_FACTORY,
-                                                                                            ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
-                                                                                            null,
-                                                                                            graphicsString);
-                //Build the output file name
+                                                                                                  DATA_FACTORY,
+                                                                                                  fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                  nextConfig.getTemplateResourceName(),
+                                                                                                  graphicsString);
+                //Build the output
                 final StringBuilder pathBuilder = new StringBuilder();
                 pathBuilder.append(dest.getPath())
                            .append(feature.getLocation().getLid())
@@ -611,7 +628,7 @@ public class Control implements Function<String[], Integer>
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
         {
-            LOGGER.error("While generating plots:", e);
+            LOGGER.error("While generating scalar charts:", e);
             return false;
         }
         return true;
@@ -619,8 +636,7 @@ public class Control implements Function<String[], Integer>
 
     /**
      * Processes a set of charts associated with {@link VectorOutput} across multiple metrics, forecast lead times, and
-     * thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. TODO: implement when wres-vis can handle
-     * these.
+     * thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. these.
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
@@ -632,43 +648,64 @@ public class Control implements Function<String[], Integer>
                                                final ProjectConfigPlus projectConfigPlus,
                                                final MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorResults)
     {
-//        //Check for results
-//        if(Objects.isNull(vectorResults))
-//        {
-//            LOGGER.error("No vector outputs from which to generate charts.");
-//            return false;
-//        }
-//        
-//        // Build charts
-//        try
-//        {
-//            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
-//            {
-//                DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
-//                String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-//
-//                ChartEngine engine = null;
-//
-//                //Build the output file name
-//                StringBuilder pathBuilder = new StringBuilder();
-//                pathBuilder.append(dest.getPath())
-//                           .append(feature.getLocation().getLid())
-//                           .append("_")
-//                           .append(e.getKey().getFirstKey())
-//                           .append("_")
-//                           .append(e.getKey().getSecondKey())
-//                           .append("_")
-//                           .append(projectConfigPlus.getProjectConfig().getInputs().getRight().getVariable().getValue())
-//                           .append(".png");
-//                Path outputImage = Paths.get(pathBuilder.toString());
-//                writeChart(outputImage, engine, dest);
-//            }
-//        }
-//        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
-//        {
-//            LOGGER.error("While generating plots:", e);
-//            return false;
-//        }
+        //Check for results
+        if(Objects.isNull(vectorResults))
+        {
+            LOGGER.error("No vector outputs from which to generate charts.");
+            return false;
+        }
+
+        // Build charts
+        try
+        {
+            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
+            {
+                final ProjectConfig config = projectConfigPlus.getProjectConfig();
+                final DestinationConfig dest = config.getOutputs().getDestination().get(1);
+                final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+                // Build the chart engine
+                MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                if(Objects.isNull(nextConfig))
+                {
+                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
+                    return false;
+                }
+                final Map<Object, ChartEngine> engines =
+                                                       ChartEngineFactory.buildVectorOutputChartEngine(e.getValue(),
+                                                                                                       DATA_FACTORY,
+                                                                                                       fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                       nextConfig.getTemplateResourceName(),
+                                                                                                       graphicsString);
+                // Build the outputs
+                for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
+                {
+                    // Build the output file name
+                    final StringBuilder pathBuilder = new StringBuilder();
+                    pathBuilder.append(dest.getPath())
+                               .append(feature.getLocation().getLid())
+                               .append("_")
+                               .append(e.getKey().getFirstKey())
+                               .append("_")
+                               .append(e.getKey().getSecondKey())
+                               .append("_")
+                               .append(projectConfigPlus.getProjectConfig()
+                                                        .getInputs()
+                                                        .getRight()
+                                                        .getVariable()
+                                                        .getValue())
+                               .append("_")
+                               .append(nextEntry.getKey())
+                               .append(".png");
+                    final Path outputImage = Paths.get(pathBuilder.toString());
+                    writeChart(outputImage, nextEntry.getValue(), dest);
+                }
+            }
+        }
+        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+        {
+            LOGGER.error("While generating vector charts:", e);
+            return false;
+        }
         return true;
     }
 
@@ -689,7 +726,7 @@ public class Control implements Function<String[], Integer>
         //Check for results
         if(Objects.isNull(multiVectorResults))
         {
-            LOGGER.error("No multivector outputs from which to generate charts.");
+            LOGGER.error("No multi-vector outputs from which to generate charts.");
             return false;
         }
 
@@ -699,17 +736,23 @@ public class Control implements Function<String[], Integer>
             // Build the charts for each metric
             for(final Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
             {
-                final DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
+                final ProjectConfig config = projectConfigPlus.getProjectConfig();
+                final DestinationConfig dest = config.getOutputs().getDestination().get(1);
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-                // TODO: make this template call to "reliabilityDiagramTemplate" generic across metrics. 
-                // Is it even needed? The Metadata contains the chart type and this is linked to the PlotType?
+                // Build the chart engine
+                MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                if(Objects.isNull(nextConfig))
+                {
+                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
+                    return false;
+                }
                 final Map<Object, ChartEngine> engines =
-                                                  ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
-                                                                                                             DATA_FACTORY,
-                                                                                                             VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
-                                                                                                             null,
-                                                                                                             graphicsString);
-                // Build one chart per lead time
+                                                       ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
+                                                                                                            DATA_FACTORY,
+                                                                                                            fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                            nextConfig.getTemplateResourceName(),
+                                                                                                            graphicsString);
+                // Build the outputs
                 for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
                 {
                     // Build the output file name
@@ -728,7 +771,6 @@ public class Control implements Function<String[], Integer>
                                                         .getValue())
                                .append("_")
                                .append(nextEntry.getKey())
-                               .append("h")
                                .append(".png");
                     final Path outputImage = Paths.get(pathBuilder.toString());
                     writeChart(outputImage, nextEntry.getValue(), dest);
@@ -737,7 +779,7 @@ public class Control implements Function<String[], Integer>
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
         {
-            LOGGER.error("While generating plots:", e);
+            LOGGER.error("While generating multi-vector charts:", e);
             return false;
         }
         return true;
@@ -757,8 +799,8 @@ public class Control implements Function<String[], Integer>
     private static void writeChart(final Path outputImage,
                                    final ChartEngine engine,
                                    final DestinationConfig dest) throws IOException,
-                                                           ChartEngineException,
-                                                           XYChartDataSourceException
+                                                                 ChartEngineException,
+                                                                 XYChartDataSourceException
     {
         if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
         {
@@ -863,8 +905,8 @@ public class Control implements Function<String[], Integer>
                 if(LOGGER.isInfoEnabled())
                 {
                     LOGGER.info("Completed processing of pairs for feature '{}' at lead time {}.",
-                                 nextInput.getMetadata().getIdentifier().getGeospatialID(),
-                                 nextInput.getMetadata().getLeadTime());
+                                nextInput.getMetadata().getIdentifier().getGeospatialID(),
+                                nextInput.getMetadata().getLeadTime());
                 }
             }
             catch(final InterruptedException e)
@@ -1053,6 +1095,59 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
+     * Locates the metric configuration corresponding to the input {@link MetricConstant} or null if no corresponding
+     * configuration could be found.
+     * 
+     * @param metric the metric
+     * @param config the project configuration
+     * @return the metric configuration or null
+     */
+
+    private static MetricConfig getMetricConfiguration(MetricConstants metric, ProjectConfig config)
+    {
+        // Find the corresponding configuration
+        Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter(a -> {
+            try
+            {
+                return metric.equals(MetricProcessor.fromMetricConfigName(a.getName()));
+            }
+            catch(MetricConfigurationException e)
+            {
+                LOGGER.error("Could not map metric name '{}' to metric configuration.", metric, e);
+                return false;
+            }
+        }).findFirst();
+        return returnMe.isPresent() ? returnMe.get() : null;
+    }
+
+    /**
+     * TODO: relocate this to the {@link ChartEngineFactory}. Maps between a {@link PlotTypeSelection} and a
+     * {@link VisualizationPlotType}.
+     * 
+     * @param plotType the {@link ChartEngineFactory}
+     * @return a {@link VisualizationPlotType} or null if the input is null
+     */
+
+    private static VisualizationPlotType fromMetricConfigName(PlotTypeSelection plotType) throws ChartEngineException
+    {
+        if(Objects.isNull(plotType))
+        {
+            return null;
+        }
+        switch(plotType)
+        {
+            case LEAD_THRESHOLD:
+                return VisualizationPlotType.LEAD_THRESHOLD;
+            case THRESHOLD_LEAD:
+                return VisualizationPlotType.THRESHOLD_LEAD;
+            case SINGLE_VALUED_PAIRS:
+                return VisualizationPlotType.SINGLE_VALUED_PAIRS;
+            default:
+                throw new ChartEngineException("Unable to map the input plot type '" + plotType + "'.");
+        }
+    }
+
+    /**
      * Default logger.
      */
 
@@ -1081,6 +1176,12 @@ public class Control implements Function<String[], Integer>
      */
 
     public static final int MAX_THREADS;
+    
+    /**
+     * Error message for missing configuration.
+     */
+    
+    private static final String MISSING_CONFIGURATION = "Could not locate the metric configuration for metric {}.";
 
     // Figure out the max threads from property or by default rule.
     // Ideally priority order would be: -D, SystemSettings, default rule.
