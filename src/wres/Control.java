@@ -1,20 +1,14 @@
 package wres;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.StringJoiner;
-import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -35,7 +29,6 @@ import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import wres.config.ProjectConfigException;
 import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
@@ -50,7 +43,6 @@ import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
 import wres.datamodel.metric.MultiVectorOutput;
 import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.Threshold;
 import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -84,13 +76,38 @@ public class Control implements Function<String[], Integer>
      */
     public Integer apply(final String[] args)
     {
-        // Validate the configurations
+        // Unmarshal the configurations
         final List<ProjectConfigPlus> projectConfiggies = getProjects(args);
-        final boolean validated = Validation.validateProjects(projectConfiggies);
-        if(!validated)
+
+        if ( !projectConfiggies.isEmpty() )
         {
-            return -1;
+            LOGGER.info( "Successfully unmarshalled {} project "
+                         + "configuration(s),  validating further...",
+                         projectConfiggies.size() );
         }
+        else
+        {
+            LOGGER.error( "Please correct project configuration files and pass "
+                          + "them in the command line like this: "
+                          + "wres executeConfigProject c:/path/to/config1.xml "
+                          + "c:/path/to/config2.xml" );
+            return 1;
+        }
+
+        // Validate unmarshalled configurations
+        final boolean validated = Validation.validateProjects(projectConfiggies);
+        if ( validated )
+        {
+            LOGGER.info( "Successfully validated {} project configuration(s). "
+                         + "Beginning execution...",
+                         projectConfiggies.size() );
+        }
+        else
+        {
+            LOGGER.error( "One or more projects did not pass validation.");
+            return 1;
+        }
+
         // Process the configurations with a ForkJoinPool
         ExecutorService processPairExecutor = null;
         final ExecutorService metricExecutor = null;
