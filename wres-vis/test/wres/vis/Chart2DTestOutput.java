@@ -170,7 +170,7 @@ public class Chart2DTestOutput extends TestCase
 
             //Call the factory.
             final Map<Integer, ChartEngine> engineMap =
-                                                      ChartEngineFactory.buildMultiVectorOutputChartEngineByLead(Integer.class,
+                                                      ChartEngineFactory.buildMultiVectorOutputChartEngine(Integer.class,
                                                                                                                  results,
                                                                                                                  factory,
                                                                                                                  ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
@@ -229,7 +229,7 @@ public class Chart2DTestOutput extends TestCase
 
             //Call the factory.
             final Map<Threshold, ChartEngine> engineMap =
-                                                      ChartEngineFactory.buildMultiVectorOutputChartEngineByLead(Threshold.class,
+                                                      ChartEngineFactory.buildMultiVectorOutputChartEngine(Threshold.class,
                                                                                                                  results,
                                                                                                                  factory,
                                                                                                                  ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD,

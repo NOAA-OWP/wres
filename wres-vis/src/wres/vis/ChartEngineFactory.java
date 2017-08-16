@@ -94,7 +94,7 @@ public abstract class ChartEngineFactory
      * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
      */
     @SuppressWarnings("unchecked")  //I do an unchecked cast below and I'd really rather not check it!
-    public static <T> ConcurrentMap<T, ChartEngine> buildMultiVectorOutputChartEngineByLead(final Class<T> genericTypeClass,
+    public static <T> ConcurrentMap<T, ChartEngine> buildMultiVectorOutputChartEngine(final Class<T> genericTypeClass,
                                                                                             final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
                                                                                             final MetadataFactory factory,
                                                                                             final VisualizationPlotType plotType,
