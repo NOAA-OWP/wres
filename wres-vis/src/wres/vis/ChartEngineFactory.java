@@ -240,7 +240,7 @@ public abstract class ChartEngineFactory
     /**
      * @param input The metric output to plot.
      * @param factory The data factory from which arguments will be identified.
-     * @param plotType An optional plot type to generate, where multiple plot types are supported for the input. May be
+     * @param userSpecifiedPlotType An optional plot type to generate, where multiple plot types are supported for the input. May be
      *            null.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for chart
      *            construction.  May be null to use default template identified in {@link #plotTypeInfoMap}.
