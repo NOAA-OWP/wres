@@ -509,7 +509,7 @@ distributions
                 // Must also add the new directory to classpath under
                 // startScripts below. For each module that adds to dist,
                 // add here for now until we can make it grab all of em.
-                ['dist', 'wres-vis/dist']
+                ['dist', 'wres-vis/dist', 'wres-io/dist']
             }
         }
     }
