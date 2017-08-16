@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.junit.Assert;
 
@@ -26,7 +27,6 @@ import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import ohd.hseb.hefs.utils.tools.FileTools;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.DefaultMetadataFactory;
 import wres.datamodel.metric.MapBiKey;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
@@ -66,8 +66,8 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-            //Get an implementation of the metadata factory to use for testing.
-            final MetadataFactory factory = DefaultMetadataFactory.getInstance();
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
             final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
@@ -108,8 +108,8 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-            //Get an implementation of the metadata factory to use for testing.
-            final MetadataFactory factory = DefaultMetadataFactory.getInstance();
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
             final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
@@ -165,8 +165,8 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-            //Get an implementation of the metadata factory to use for testing.
-            final MetadataFactory factory = DefaultMetadataFactory.getInstance();
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
@@ -222,8 +222,8 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-            //Get an implementation of the metadata factory to use for testing.
-            final MetadataFactory factory = DefaultMetadataFactory.getInstance();
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
@@ -235,8 +235,11 @@ public class Chart2DTestOutput extends TestCase
             //Generate the output file.
             for(final Object thresh: engineMap.keySet())
             {
-                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + ((Threshold)thresh).getThreshold() + "."
-                    + outputImageFileSuffix), engineMap.get(thresh).buildChart(), 800, 600);
+                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/"
+                    + ((Threshold)thresh).getThreshold() + "." + outputImageFileSuffix),
+                                                   engineMap.get(thresh).buildChart(),
+                                                   800,
+                                                   600);
 
             }
 
@@ -265,7 +268,56 @@ public class Chart2DTestOutput extends TestCase
      */
     public void test6VectorMetricOutput()
     {
-        final MetricOutputMapByLeadThreshold<VectorOutput> results = getVectorMetricOutputMapByLeadThreshold();
+        final String scenarioName = "test6";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+        try
+        {
+            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+        }
+        catch(final IOException e)
+        {
+            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+        }
+
+        //Construct some single-valued pairs
+        final MetricOutputMapByLeadThreshold<VectorOutput> input = getVectorMetricOutputMapByLeadThreshold();
+
+        try
+        {
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
+
+            //Call the factory.
+            final ConcurrentMap<Object, ChartEngine> engineMap = ChartEngineFactory.buildVectorOutputChartEngine(input,
+                                                                                                           factory,
+                                                                                                           ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
+                                                                                                           null,
+                                                                                                           null);
+            //Generate the output file.
+            for(final Object key: engineMap.keySet())
+            {
+                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + key + "."
+                    + outputImageFileSuffix), engineMap.get(key).buildChart(), 800, 600);
+
+            }
+
+            //Compare against OS specific image benchmark.
+            for(final Object key: engineMap.keySet())
+            {
+                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + key + "."
+                    + outputImageFileSuffix),
+                                                                          new File("testinput/chart2DTest/benchmark."
+                                                                              + key + "." + outputImageFileSuffix),
+                                                                          8,
+                                                                          true,
+                                                                          false);
+            }
+        }
+        catch(final Throwable t)
+        {
+            t.printStackTrace();
+            fail("Unexpected exception: " + t.getMessage());
+        }
     }
 
     /**
