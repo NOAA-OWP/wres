@@ -257,6 +257,7 @@ project(':wres-vis')
     dependencies
     {
         compile project(':wres-datamodel-api')
+        compile project(':wres-config')
         
         compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
         compile group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '1.2.6'
