@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -421,6 +422,17 @@ public class Control implements Function<String[], Integer>
         return true;
     }
 
+    /**
+     * Write numerical outputs to CSV files.
+     * 
+     * @param projectConfig the project configuration
+     * @param feature the feature
+     * @param storedMetricOutput the stored output
+     * @return true if the writing completed succesfully, false otherwise
+     * @throws InterruptedException if the writing is cancelled
+     * @throws ExecutionException if the writing failed
+     */
+    
     private boolean writeOutputFiles(final ProjectConfig projectConfig,
                                      final Feature feature,
                                      final MetricOutputForProjectByLeadThreshold storedMetricOutput) throws InterruptedException,
@@ -591,7 +603,8 @@ public class Control implements Function<String[], Integer>
                 MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
                 if(Objects.isNull(nextConfig))
                 {
-                    LOGGER.error("Could not locate the metric configuration for metric {}.", e.getKey().getFirstKey());
+                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
+                    return false;
                 }
                 final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
                                                                                                   DATA_FACTORY,
@@ -615,7 +628,7 @@ public class Control implements Function<String[], Integer>
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
         {
-            LOGGER.error("While generating plots:", e);
+            LOGGER.error("While generating scalar charts:", e);
             return false;
         }
         return true;
@@ -654,7 +667,8 @@ public class Control implements Function<String[], Integer>
                 MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
                 if(Objects.isNull(nextConfig))
                 {
-                    LOGGER.error("Could not locate the metric configuration for metric {}.", e.getKey().getFirstKey());
+                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
+                    return false;
                 }
                 final Map<Object, ChartEngine> engines =
                                                        ChartEngineFactory.buildVectorOutputChartEngine(e.getValue(),
@@ -689,7 +703,7 @@ public class Control implements Function<String[], Integer>
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
         {
-            LOGGER.error("While generating plots:", e);
+            LOGGER.error("While generating vector charts:", e);
             return false;
         }
         return true;
@@ -712,7 +726,7 @@ public class Control implements Function<String[], Integer>
         //Check for results
         if(Objects.isNull(multiVectorResults))
         {
-            LOGGER.error("No multivector outputs from which to generate charts.");
+            LOGGER.error("No multi-vector outputs from which to generate charts.");
             return false;
         }
 
@@ -729,7 +743,8 @@ public class Control implements Function<String[], Integer>
                 MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
                 if(Objects.isNull(nextConfig))
                 {
-                    LOGGER.error("Could not locate the metric configuration for metric {}.", e.getKey().getFirstKey());
+                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
+                    return false;
                 }
                 final Map<Object, ChartEngine> engines =
                                                        ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
@@ -764,7 +779,7 @@ public class Control implements Function<String[], Integer>
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
         {
-            LOGGER.error("While generating plots:", e);
+            LOGGER.error("While generating multi-vector charts:", e);
             return false;
         }
         return true;
@@ -1091,7 +1106,7 @@ public class Control implements Function<String[], Integer>
     private static MetricConfig getMetricConfiguration(MetricConstants metric, ProjectConfig config)
     {
         // Find the corresponding configuration
-        MetricConfig returnMe = config.getOutputs().getMetric().stream().filter(a -> {
+        Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter(a -> {
             try
             {
                 return metric.equals(MetricProcessor.fromMetricConfigName(a.getName()));
@@ -1101,8 +1116,8 @@ public class Control implements Function<String[], Integer>
                 LOGGER.error("Could not map metric name '{}' to metric configuration.", metric, e);
                 return false;
             }
-        }).findFirst().get();
-        return returnMe;
+        }).findFirst();
+        return returnMe.isPresent() ? returnMe.get() : null;
     }
 
     /**
@@ -1161,6 +1176,12 @@ public class Control implements Function<String[], Integer>
      */
 
     public static final int MAX_THREADS;
+    
+    /**
+     * Error message for missing configuration.
+     */
+    
+    private static final String MISSING_CONFIGURATION = "Could not locate the metric configuration for metric {}.";
 
     // Figure out the max threads from property or by default rule.
     // Ideally priority order would be: -D, SystemSettings, default rule.
