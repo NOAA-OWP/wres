@@ -26,7 +26,7 @@ public final class SafeMetricOutputMapByLeadThresholdTest
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetricOutputMapByLeadThreshold<ScalarOutput> results =
-                                                                   DataModelTestDataFactory.getMetricOutputMapByLeadThresholdOne();
+                                                                   DataModelTestDataFactory.getScalarMetricOutputMapByLeadThresholdOne();
 
         //Acquire a submap by threshold = 531.88 and lead time = 42
         final int leadTimeOne = 42;

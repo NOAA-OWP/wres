@@ -419,7 +419,7 @@ public final class DefaultSlicerTest
         double[] tE = new double[]{0.25, 0.5};
         double tF = 8.0 / 11.0;
         double tG = 0.01;
-        
+
         ProbabilityThreshold testA = metIn.getProbabilityThreshold(tA, Operator.GREATER);
         ProbabilityThreshold testB = metIn.getProbabilityThreshold(tB, Operator.GREATER);
         ProbabilityThreshold testC = metIn.getProbabilityThreshold(tC, Operator.GREATER);
@@ -438,7 +438,7 @@ public final class DefaultSlicerTest
                                                                  Operator.BETWEEN);
         QuantileThreshold expectedF = metIn.getQuantileThreshold(1.5, tF, Operator.GREATER);
         QuantileThreshold expectedG = metIn.getQuantileThreshold(1.5, tG, Operator.GREATER);
-        
+
         //Test for equality
         assertTrue("The inverse cumulative probability does not match the benchmark",
                    slicer.getQuantileFromProbability(testA, sorted).equals(expectedA));
@@ -503,7 +503,7 @@ public final class DefaultSlicerTest
         assertTrue("The transformed pair does not match the benchmark", mapper.apply(e).equals(metIn.pairOf(0, 1)));
         assertTrue("The transformed pair does not match the benchmark", mapper.apply(f).equals(metIn.pairOf(5, 1)));
     }
-    
+
     /**
      * Tests the {@link Slicer#sliceByRight(List)}.
      */
@@ -526,12 +526,30 @@ public final class DefaultSlicerTest
         input.add(metIn.pairOf(3, new double[]{1, 2, 3, 4, 5, 6}));
         input.add(metIn.pairOf(3, new double[]{1, 2, 3, 4, 5, 6}));
         //Slice
-        Map<Integer,List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.sliceByRight(input);
+        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.sliceByRight(input);
         //Check the results
-        assertTrue("Expected three subsets of sliced data.", sliced.size()==3);
-        assertTrue("Expected the first slice to contain three pairs.", sliced.get(3).size()==3);
-        assertTrue("Expected the second slice to contain five pairs.", sliced.get(5).size()==5);
-        assertTrue("Expected the third slice to contain four pairs.", sliced.get(6).size()==4);
-    }    
+        assertTrue("Expected three slices of data.", sliced.size() == 3);
+        assertTrue("Expected the first slice to contain three pairs.", sliced.get(3).size() == 3);
+        assertTrue("Expected the second slice to contain five pairs.", sliced.get(5).size() == 5);
+        assertTrue("Expected the third slice to contain four pairs.", sliced.get(6).size() == 4);
+    }
+
+    /**
+     * Tests the {@link Slicer#sliceByMetricComponent(MetricOutputMapByLeadThreshold)}.
+     */
+
+    @Test
+    public void test14SliceByMetricComponent()
+    {
+        //Obtain input and slice
+        MetricOutputMapByLeadThreshold<VectorOutput> toSlice =
+                                                             DataModelTestDataFactory.getVectorMetricOutputMapByLeadThresholdOne();
+        Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> sliced =
+                                                                                  slicer.sliceByMetricComponent(toSlice);
+
+        //Check the results
+        assertTrue("Expected five slices of data.", sliced.size() == 5);
+        sliced.forEach((key, value) -> assertTrue("Expected 638 elements in each slice.", value.size() == 638));
+    }
 
 }
