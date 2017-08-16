@@ -13,11 +13,12 @@ public class ReliabilityDiagramSampleSizeXYChartDataSource extends WRESXYChartDa
     public ReliabilityDiagramSampleSizeXYChartDataSource(final int orderIndex,
                                                         final MetricOutputMapByLeadThreshold<MultiVectorOutput> input)
     {
-        super(orderIndex, input, input.keySetByThreshold().size());
+        super(orderIndex, input, input.keySet().size());
 
         getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(1);
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("Forecast Probability");
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("Samples");
+        WRESTools.applyDefaultJFreeChartColorSequence(getDefaultFullySpecifiedDataSourceDrawingParameters());
     }
 
     @Override

@@ -5,41 +5,13 @@
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
 		<text>Reliability Diagram for Various Event Thresholds (Upper) and Sample Counts (Lower)
-@locationName@.@variableName@.@primaryScenario@ At Lead Hour @leadHour@
+@locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
 		</text>
 	</plotTitle>
-
-    <!-- Color the series of the first data source. -->
-	<datasourceDrawingParameters sourceIndex="0">
-		<plotter>LineAndScatter</plotter>
-		<subPlot>0</subPlot>
-		<yAxis>left</yAxis>
-
-		<!-- The colors defined through a palette. For this test, four colors for 
-			four series. -->
-		<lineColorPalette>
-			<color alpha="255" blue="255" green="0" red="0" />
-			<color alpha="255" blue="51" green="204" red="51" />
-			<color alpha="255" blue="0" green="0" red="255" />
-		</lineColorPalette>
-	</datasourceDrawingParameters>
 	
-	<!-- Color the series of the second data source to match and ensure the items do not show in the legend. -->
+	<!--Ensure the sampel size items do not show in the legend. -->
 	<datasourceDrawingParameters sourceIndex="1">
-		<plotter>LineAndScatter</plotter>
-		<subPlot>1</subPlot>
-		<yAxis>left</yAxis>
-
-		<!-- The colors defined through a palette. For this test, four colors for 
-			four series. -->
-		<lineColorPalette>
-			<color alpha="255" blue="255" green="0" red="0" />
-			<color alpha="255" blue="51" green="204" red="51" />
-			<color alpha="255" blue="0" green="0" red="255" />
-		</lineColorPalette>
-
-		<seriesDrawingParameters
-			createdIndexOfSeriesToModify="-1">
+		<seriesDrawingParameters createdIndexOfSeriesToModify="-1">
 			<nameInLegend></nameInLegend>
 			<showInLegend>false</showInLegend>
 		</seriesDrawingParameters>

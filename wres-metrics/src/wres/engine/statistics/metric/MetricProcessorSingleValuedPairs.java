@@ -3,7 +3,7 @@ package wres.engine.statistics.metric;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
@@ -12,15 +12,12 @@ import wres.datamodel.PairOfBooleans;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
-import wres.datamodel.metric.MapBiKey;
 import wres.datamodel.metric.MetricConstants.MetricInputGroup;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricInput;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
-import wres.datamodel.metric.ProbabilityThreshold;
-import wres.datamodel.metric.QuantileThreshold;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.Threshold;
@@ -79,8 +76,8 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
 
         //Process and return the result       
         MetricFutures futureResults = futures.build();
-        //Merge with existing futures, if required
-        mergeFutures(futureResults);
+        //Add for merge with existing futures, if required
+        addToMergeMap(leadTime, futureResults);
         return futureResults.getMetricOutput();
     }
 
@@ -89,21 +86,24 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
+     * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(MetricInput)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorSingleValuedPairs(DataFactory dataFactory,
-                                     ProjectConfig config,
+    MetricProcessorSingleValuedPairs(final DataFactory dataFactory,
+                                     final ProjectConfig config,
+                                     final ExecutorService executor,
                                      final MetricOutputGroup... mergeList) throws MetricConfigurationException
     {
-        super(dataFactory, config, mergeList);
+        super(dataFactory, config, executor, mergeList);
         //Construct the metrics
         if(hasMetrics(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR))
         {
             dichotomousScalar =
-                              metricFactory.ofDichotomousScalarCollection(getSelectedMetrics(metrics,
+                              metricFactory.ofDichotomousScalarCollection(executor,
+                                                                          getSelectedMetrics(metrics,
                                                                                              MetricInputGroup.DICHOTOMOUS,
                                                                                              MetricOutputGroup.SCALAR));
         }
@@ -137,12 +137,15 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.DICHOTOMOUS);
                 double[] sorted = getSortedLeftSide(input, global);
-                global.forEach(threshold -> processDichotomousThreshold(leadTime,
-                                                                        threshold,
-                                                                        sorted,
-                                                                        input,
-                                                                        dichotomousScalar,
-                                                                        futures.scalar));
+                global.forEach(threshold -> {
+                    //Only process discrete thresholds
+                    if(threshold.isFinite())
+                    {
+                        Threshold useMe = getThreshold(threshold, sorted);
+                        futures.addScalarOutput(dataFactory.getMapKey(leadTime, useMe),
+                                                processDichotomousThreshold(leadTime, useMe, input, dichotomousScalar));
+                    }
+                });
             }
             //Deal with metric-local thresholds
             else
@@ -155,48 +158,26 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
 
     /**
      * Builds a metric future for a {@link MetricCollection} that consumes {@link DichotomousPairs} at a specific lead
-     * time and {@link Threshold} and appends it to the input map of futures. Skips any thresholds for which
-     * {@link Double#isFinite(double)} returns <code>false</code> on the threshold value(s).
+     * time and {@link Threshold}.
      * 
      * @param leadTime the lead time
      * @param threshold the threshold
-     * @param sorted a sorted set of values from which to determine {@link QuantileThreshold} where the input
-     *            {@link Threshold} is a {@link ProbabilityThreshold}.
      * @param pairs the pairs
      * @param collection the metric collection
-     * @param futures the collection of futures to which the new future will be added
      * @return true if the future was added successfully
      */
 
-    private <T extends MetricOutput<?>> boolean processDichotomousThreshold(Integer leadTime,
-                                                                            Threshold threshold,
-                                                                            double[] sorted,
-                                                                            SingleValuedPairs pairs,
-                                                                            MetricCollection<DichotomousPairs, T> collection,
-                                                                            ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<T>>> futures)
+    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processDichotomousThreshold(Integer leadTime,
+                                                                                                       Threshold threshold,
+                                                                                                       SingleValuedPairs pairs,
+                                                                                                       MetricCollection<DichotomousPairs, T> collection)
     {
-        Threshold useMe = threshold;
-        //Skip non-finite thresholds
-        if(!useMe.isFinite())
-        {
-            return false;
-        }
-
-        //Quantile required: need to determine real-value from probability
-        if(threshold instanceof ProbabilityThreshold)
-        {
-            useMe = dataFactory.getSlicer().getQuantileFromProbability((ProbabilityThreshold)useMe, sorted);
-        }
-
         //Define a mapper to convert the single-valued pairs to dichotomous pairs
-        final Threshold finalThreshold = useMe;
-        Function<PairOfDoubles, PairOfBooleans> mapper =
-                                                       pair -> dataFactory.pairOf(finalThreshold.test(pair.getItemOne()),
-                                                                                  finalThreshold.test(pair.getItemTwo()));
+        Function<PairOfDoubles, PairOfBooleans> mapper = pair -> dataFactory.pairOf(threshold.test(pair.getItemOne()),
+                                                                                    threshold.test(pair.getItemTwo()));
         //Slice the pairs
         DichotomousPairs transformed = dataFactory.getSlicer().transformPairs(pairs, mapper);
-        return Objects.isNull(futures.put(dataFactory.getMapKey(leadTime, useMe),
-                                          CompletableFuture.supplyAsync(() -> collection.apply(transformed))));
+        return CompletableFuture.supplyAsync(() -> collection.apply(transformed));
     }
 
 }
