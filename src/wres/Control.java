@@ -24,12 +24,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.xml.bind.ValidationEvent;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.sun.xml.bind.Locatable;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
@@ -63,6 +59,7 @@ import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
 import wres.vis.ChartEngineFactory;
+import wres.config.Validation;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}. The processing
@@ -87,7 +84,7 @@ public class Control implements Function<String[], Integer>
     {
         // Validate the configurations
         final List<ProjectConfigPlus> projectConfiggies = getProjects(args);
-        final boolean validated = validateProjects(projectConfiggies);
+        final boolean validated = Validation.validateProjects(projectConfiggies);
         if(!validated)
         {
             return -1;
@@ -121,144 +118,6 @@ public class Control implements Function<String[], Integer>
             shutDownGracefully(processPairExecutor);
             shutDownGracefully(metricExecutor);
         }
-    }
-
-    /**
-     * Quick validation of the project configuration, will return detailed information to the user regarding issues
-     * about the configuration. Strict for now, i.e. return false even on minor xml problems. Does not return on first
-     * issue, tries to inform the user of all issues before returning.
-     *
-     * @param projectConfigPlus the project configuration
-     * @return true if no issues were detected, false otherwise
-     */
-
-    public static boolean isProjectValid(final ProjectConfigPlus projectConfigPlus)
-    {
-        // Assume valid until demonstrated otherwise
-        boolean result = true;
-
-        for(final ValidationEvent ve: projectConfigPlus.getValidationEvents())
-        {
-            if(LOGGER.isWarnEnabled())
-            {
-                if(ve.getLocator() != null)
-                {
-                    LOGGER.warn("In file {}, near line {} and column {}, WRES found an issue with the project "
-                        + "configuration. The parser said:",
-                                projectConfigPlus.getPath(),
-                                ve.getLocator().getLineNumber(),
-                                ve.getLocator().getColumnNumber(),
-                                ve.getLinkedException());
-                }
-                else
-                {
-                    LOGGER.warn("In file {}, WRES found an issue with the project configuration. The parser said:",
-                                projectConfigPlus.getPath(),
-                                ve.getLinkedException());
-                }
-            }
-            // Any validation event means we fail.
-            result = false;
-        }
-
-        // Validate graphics portion
-        result = result && isGraphicsPortionOfProjectValid(projectConfigPlus);
-
-        return result;
-    }
-
-    /**
-     * Validates graphics portion, similar to isProjectValid, but targeted.
-     * 
-     * @param projectConfigPlus the project configuration
-     * @return true if the graphics configuration is valid, false otherwise
-     */
-
-    public static boolean isGraphicsPortionOfProjectValid(final ProjectConfigPlus projectConfigPlus)
-    {
-        final String BEGIN_TAG = "<chartDrawingParameters>";
-        final String END_TAG = "</chartDrawingParameters>";
-        final String BEGIN_COMMENT = "<!--";
-        final String END_COMMENT = "-->";
-
-        boolean result = true;
-
-        final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-
-        for(final DestinationConfig d: projectConfig.getOutputs().getDestination())
-        {
-            final String customString = projectConfigPlus.getGraphicsStrings().get(d);
-            if(customString != null)
-            {
-                // For to give a helpful message, find closeby tag without NPE
-                Locatable nearbyTag;
-                if(d.getGraphical() != null && d.getGraphical().getConfig() != null)
-                {
-                    // Best case
-                    nearbyTag = d.getGraphical().getConfig();
-                }
-                else if(d.getGraphical() != null)
-                {
-                    // Not as targeted but close
-                    nearbyTag = d.getGraphical();
-                }
-                else
-                {
-                    // Destination tag.
-                    nearbyTag = d;
-                }
-
-                // If a custom vis config was provided, make sure string either
-                // starts with the correct tag or starts with a comment.
-                final String trimmedCustomString = customString.trim();
-                result = result
-                    && checkTrimmedString(trimmedCustomString, BEGIN_TAG, BEGIN_COMMENT, nearbyTag, projectConfigPlus);
-                result = result
-                    && checkTrimmedString(trimmedCustomString, END_TAG, END_COMMENT, nearbyTag, projectConfigPlus);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Validates a list of {@link ProjectConfigPlus}. Returns true if the projects validate successfully, false
-     * otherwise.
-     * 
-     * @param projectConfiggies a list of project configurations to validate
-     * @return true if the projects validate successfully, false otherwise
-     */
-
-    private static boolean validateProjects(final List<ProjectConfigPlus> projectConfiggies)
-    {
-        boolean validationsPassed = true;
-
-        if(projectConfiggies.isEmpty())
-        {
-            LOGGER.error("Please correct project configuration files and pass them in the command line "
-                + "like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml");
-            return false;
-        }
-        else
-        {
-            LOGGER.info("Successfully unmarshalled {} project configuration(s), validating further...",
-                        projectConfiggies.size());
-        }
-
-        // Validate all projects, not stopping until all are done
-        for(final ProjectConfigPlus projectConfigPlus: projectConfiggies)
-        {
-            if(!isProjectValid(projectConfigPlus))
-            {
-                validationsPassed = false;
-            }
-        }
-
-        if(validationsPassed)
-        {
-            LOGGER.info("Successfully read and validated {} project configuration(s). Beginning execution...",
-                        projectConfiggies.size());
-        }
-        return validationsPassed;
     }
 
     /**
@@ -976,38 +835,6 @@ public class Control implements Function<String[], Integer>
         }
     }
 
-    /**
-     * Checks a trimmed string in the graphics configuration.
-     * 
-     * @param trimmedCustomString the trimmed string
-     * @param tag the tag
-     * @param comment the comment
-     * @param nearbyTag a nearby tag
-     * @param projectConfigPlus the configuration
-     * @return true if the tag is valid, false otherwise
-     */
-
-    private static boolean checkTrimmedString(final String trimmedCustomString,
-                                              final String tag,
-                                              final String comment,
-                                              final Locatable nearbyTag,
-                                              final ProjectConfigPlus projectConfigPlus)
-    {
-        if(!trimmedCustomString.endsWith(tag) && !trimmedCustomString.endsWith(comment))
-        {
-            final String msg = "In file {}, near line {} and column {}, " + "WRES found an issue with the project "
-                + " configuration in the area of custom " + "graphics configuration. If customization is "
-                + "provided, please end it with " + tag;
-
-            LOGGER.warn(msg,
-                        projectConfigPlus.getPath(),
-                        nearbyTag.sourceLocation().getLineNumber(),
-                        nearbyTag.sourceLocation().getColumnNumber());
-
-            return false;
-        }
-        return true;
-    }
 
     /**
      * Composes a list of {@link CompletableFuture} so that execution completes when all futures are completed normally
@@ -1093,7 +920,7 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
-     * Locates the metric configuration corresponding to the input {@link MetricConstant} or null if no corresponding
+     * Locates the metric configuration corresponding to the input {@link MetricConstants} or null if no corresponding
      * configuration could be found.
      * 
      * @param metric the metric
