@@ -395,12 +395,14 @@ task(buildDocs, group: 'Documentation')
         inputs.files.each {
             // yuck, but I haven't found the better way yet
             def srcIdx =  it.path.indexOf(srcDir)
-            def basePath = it.path.substring(srcIdx + srcDir.length(), it.path.length() - 3)
+            def basePath = Paths.get(it.path).getFileName().toString()
+            def baseFileName = basePath.substring(0, basePath.length() - 3)
 
             // The meat - using commonmark to transform md to html
             def document = parser.parseReader(new FileReader(it))
             def output = renderer.render(document)
-            def outputPath = Paths.get(destDir, basePath + '.html')
+
+            def outputPath = Paths.get(destDir, baseFileName + '.html')
             Files.write(outputPath, output.getBytes(), StandardOpenOption.CREATE)
         }
     }
