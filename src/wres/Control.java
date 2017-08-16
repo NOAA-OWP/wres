@@ -1,10 +1,19 @@
 package wres;
 
-import java.io.*;
-import java.nio.charset.Charset;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -30,8 +39,20 @@ import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.*;
+import wres.datamodel.metric.DataFactory;
+import wres.datamodel.metric.DefaultDataFactory;
+import wres.datamodel.metric.MapBiKey;
+import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
+import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
+import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
+import wres.datamodel.metric.MultiVectorOutput;
+import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.metric.Threshold;
+import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
@@ -839,9 +860,9 @@ public class Control implements Function<String[], Integer>
             try
             {
                 nextInput = input.get();
-                if(LOGGER.isDebugEnabled())
+                if(LOGGER.isInfoEnabled())
                 {
-                    LOGGER.debug("Completed processing of pairs for feature '{}' at lead time {}.",
+                    LOGGER.info("Completed processing of pairs for feature '{}' at lead time {}.",
                                  nextInput.getMetadata().getIdentifier().getGeospatialID(),
                                  nextInput.getMetadata().getLeadTime());
                 }

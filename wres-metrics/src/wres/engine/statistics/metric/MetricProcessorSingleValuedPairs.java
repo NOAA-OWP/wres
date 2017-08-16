@@ -76,8 +76,8 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
 
         //Process and return the result       
         MetricFutures futureResults = futures.build();
-        //Merge with existing futures, if required
-        mergeFutures(futureResults);
+        //Add for merge with existing futures, if required
+        addToMergeMap(leadTime, futureResults);
         return futureResults.getMetricOutput();
     }
 
