@@ -42,16 +42,16 @@ public class Validation
         if ( projectConfiggies.isEmpty() )
         {
             LOGGER.error( "Please correct project configuration files and pass "
-                    + "them in the command line like this: "
-                    + "wres executeConfigProject c:/path/to/config1.xml "
-                    + "c:/path/to/config2.xml" );
+                          + "them in the command line like this: "
+                          + "wres executeConfigProject c:/path/to/config1.xml "
+                          + "c:/path/to/config2.xml" );
             return false;
         }
         else
         {
             LOGGER.info( "Successfully unmarshalled {} project "
-                            + "configuration(s),  validating further...",
-                    projectConfiggies.size() );
+                         + "configuration(s),  validating further...",
+                         projectConfiggies.size() );
         }
 
         // Validate all projects, not stopping until all are done
@@ -66,8 +66,8 @@ public class Validation
         if ( validationsPassed )
         {
             LOGGER.info( "Successfully read and validated {} project "
-                            + "configuration(s). Beginning execution...",
-                    projectConfiggies.size() );
+                         + "configuration(s). Beginning execution...",
+                         projectConfiggies.size() );
         }
 
         return validationsPassed;
