@@ -94,8 +94,7 @@ public abstract class ChartEngineFactory
      * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
      */
     @SuppressWarnings("unchecked")  //I do an unchecked cast below and I'd really rather not check it!
-    public static <T> ConcurrentMap<T, ChartEngine> buildMultiVectorOutputChartEngine(final Class<T> genericTypeClass,
-                                                                                            final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+    public static ConcurrentMap<Object, ChartEngine> buildMultiVectorOutputChartEngine(     final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
                                                                                             final MetadataFactory factory,
                                                                                             final VisualizationPlotType plotType,
                                                                                             final String templateResourceName,
@@ -103,14 +102,24 @@ public abstract class ChartEngineFactory
                                                                                                                                 GenericXMLReadingHandlerException
     {
         String templateName = null;
-        final ConcurrentMap<T, ChartEngine> results = new ConcurrentSkipListMap<>();
-
-        //Prepare the set through which we are going to loop.
-        @SuppressWarnings("rawtypes")
-        Set keySetValues = input.keySetByLead(); //I'm doing this by design.
-        if(genericTypeClass.isAssignableFrom(Threshold.class))
+        final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
+        
+        //I'm  not a big fant of this, but...
+        //This needs to be able to determine which key to loop over before actually diving into the loop.  And I want only one loop.  
+        //So, I'm goint to have to do an if-check up front to identify the key set, and then an if-check within the loop to identify the plots.
+        //Here is the first if-check...
+        Set<?> keySetValues = input.keySetByLead();
+        if (input.getMetadata().getMetricID() == MetricConstants.RELIABILITY_DIAGRAM)
         {
-            keySetValues = input.keySetBySecondKey();
+            if(plotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD))
+            {
+                keySetValues = input.keySetByThreshold();
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unrecognized plot type of " + input.getMetadata().getMetricID()
+                + " specified in the metric information.");
         }
 
         //For each lead time, do the following....
@@ -133,16 +142,8 @@ public abstract class ChartEngineFactory
                                                                  plotType,
                                                                  VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD);
                     final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
-                    if(genericTypeClass.isAssignableFrom(Threshold.class))
-                    {
-                        inputSlice = input.sliceByThreshold((Threshold)keyInstance);
-                    }
-                    else
-                    {
-                        inputSlice = input.sliceByLead((Integer)keyInstance);
-                    }
-                                                                                       
-
+                    inputSlice = input.sliceByLead((Integer)keyInstance);
+                                             
                     //Setup the default arguments.
                     final MetricOutputMetadata meta = inputSlice.getMetadata();
                     arguments = buildDefaultMetricOutputPlotArgumentsProcessor(factory, meta);
@@ -230,7 +231,7 @@ public abstract class ChartEngineFactory
 
             //Build the ChartEngine instance.
             final ChartEngine engine = ChartTools.buildChartEngine(dataSources, arguments, templateName, override);
-            results.put((T)keyInstance, engine);
+            results.put(keyInstance, engine);
         }
         return results;
     }
