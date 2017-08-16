@@ -25,6 +25,7 @@ import ohd.hseb.charter.datasource.instances.NumericalXYChartDataSource;
 import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
+import wres.config.generated.PlotTypeSelection;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DatasetIdentifier;
 import wres.datamodel.metric.Metadata;
@@ -80,6 +81,28 @@ public abstract class ChartEngineFactory
         LEAD_THRESHOLD, THRESHOLD_LEAD, SINGLE_VALUED_PAIRS, RELIABILITY_DIAGRAM_FOR_LEAD, RELIABILITY_DIAGRAM_FOR_THRESHOLD
     };
 
+    /**
+     * @return The {@link VisualizationPlotType} that corresponds to the provided {@link PlotTypeSelection}.
+     */
+    public static VisualizationPlotType fromMetricConfigName(final PlotTypeSelection plotType) throws ChartEngineException
+    {
+        if(Objects.isNull(plotType))
+        {
+            return null;
+        }
+        switch(plotType)
+        {
+            case LEAD_THRESHOLD:
+                return VisualizationPlotType.LEAD_THRESHOLD;
+            case THRESHOLD_LEAD:
+                return VisualizationPlotType.THRESHOLD_LEAD;
+            case SINGLE_VALUED_PAIRS:
+                return VisualizationPlotType.SINGLE_VALUED_PAIRS;
+            default:
+                throw new ChartEngineException("Unable to map the input plot type '" + plotType + "'.");
+        }
+    }
+    
     /**
      * @param input The metric output to plot.
      * @param factory The data factory from which arguments will be identified.
@@ -263,6 +286,12 @@ public abstract class ChartEngineFactory
         for (final Map.Entry<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> entry : slicedInput.entrySet())
         {
             final ChartEngine engine = buildGenericScalarOutputChartEngine(entry.getValue(), factory, userSpecifiedPlotType, userSpecifiedTemplateResourceName, overrideParametersStr);
+            
+            //Modify the arguments here.
+            if (!entry.getKey().equals(MetricConstants.MAIN))
+            {
+                
+            }
             results.put(entry.getKey(), engine);
         }
         return results;
@@ -482,6 +511,17 @@ public abstract class ChartEngineFactory
         arguments.addArgument("metricShortName", factory.getMetadataFactory().getMetricShortName(meta.getMetricID()));
         arguments.addArgument("outputUnitsText", " [" + meta.getDimension() + "]");
         arguments.addArgument("inputUnitsText", " [" + meta.getInputDimension() + "]");
+        
+        //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
+        //so why bother?  (This relates to an email James wrote.)
+        if (meta.getMetricComponentID().equals(MetricConstants.MAIN))
+        {
+            arguments.addArgument("metricComponentNameSuffix", "");
+        }
+        else
+        {
+            arguments.addArgument("metricComponentNameSuffix", " " + factory.getMetadataFactory().getMetricComponentName(meta.getMetricComponentID()));
+        }
 
         return arguments;
     }
