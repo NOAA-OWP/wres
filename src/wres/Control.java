@@ -32,6 +32,7 @@ import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
+import wres.config.ProjectConfigException;
 import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -58,6 +59,7 @@ import wres.io.Operations;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
+import wres.io.writing.CommaSeparated;
 import wres.vis.ChartEngineFactory;
 import wres.config.Validation;
 
@@ -246,19 +248,24 @@ public class Control implements Function<String[], Integer>
 
             try
             {
-                final boolean filesWritten =
-                                           writeOutputFiles(projectConfig, feature, processor.getStoredMetricOutput());
-                if(!filesWritten)
-                {
-                    return false;
-                }
+                CommaSeparated.writeOutputFiles( projectConfig,
+                                                 feature,
+                                                 processor.getStoredMetricOutput() );
+
             }
-            catch(final InterruptedException ie)
+            catch ( ProjectConfigException pce )
+            {
+                LOGGER.error( "Please include a numeric output clause in "
+                              + "project configuration. <destination><path>",
+                              pce );
+                return false;
+            }
+            catch ( InterruptedException ie )
             {
                 LOGGER.warn("Interrupted while writing output files.");
                 Thread.currentThread().interrupt();
             }
-            catch(final ExecutionException e)
+            catch ( IOException | ExecutionException e)
             {
                 LOGGER.error("While writing output files: ", e);
                 return false;
@@ -277,88 +284,6 @@ public class Control implements Function<String[], Integer>
             }
         }
         return true;
-    }
-
-    /**
-     * Write numerical outputs to CSV files.
-     * 
-     * @param projectConfig the project configuration
-     * @param feature the feature
-     * @param storedMetricOutput the stored output
-     * @return true if the writing completed succesfully, false otherwise
-     * @throws InterruptedException if the writing is cancelled
-     * @throws ExecutionException if the writing failed
-     */
-    
-    private boolean writeOutputFiles(final ProjectConfig projectConfig,
-                                     final Feature feature,
-                                     final MetricOutputForProjectByLeadThreshold storedMetricOutput) throws InterruptedException,
-                                                                                                     ExecutionException
-    {
-        boolean result = true;
-        if(projectConfig.getOutputs() == null || projectConfig.getOutputs().getDestination() == null)
-        {
-            LOGGER.info("No numeric output files specified for project.");
-            return false;
-        }
-
-        for(final DestinationConfig d: projectConfig.getOutputs().getDestination())
-        {
-            final Map<Integer, StringJoiner> rows = new TreeMap<>();
-            final StringJoiner headerRow = new StringJoiner(",");
-            headerRow.add("LEAD_TIME");
-
-            if(d.getType() == DestinationType.NUMERIC)
-            {
-                for(final Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> m: storedMetricOutput.getScalarOutput()
-                                                                                                                                                   .entrySet())
-                {
-                    final String name = m.getKey().getFirstKey().name();
-                    final String secondName = m.getKey().getSecondKey().name();
-
-                    for(final Threshold t: m.getValue().keySetByThreshold())
-                    {
-                        final String column = name + "_" + secondName + "_" + t;
-                        headerRow.add(column);
-
-                        for(final MapBiKey<Integer, Threshold> key: m.getValue().sliceByThreshold(t).keySet())
-                        {
-
-                            if(rows.get(key.getFirstKey()) == null)
-                            {
-                                final StringJoiner row = new StringJoiner(",");
-                                row.add(Integer.toString(key.getFirstKey()));
-                                rows.put(key.getFirstKey(), row);
-                            }
-
-                            final StringJoiner row = rows.get(key.getFirstKey());
-
-                            row.add(m.getValue().get(key).toString());
-                        }
-                    }
-                }
-            }
-
-            final Path outputPath = Paths.get(d.getPath() + feature.getLocation().getLid() + ".csv");
-            try (
-            BufferedWriter w = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8, StandardOpenOption.CREATE))
-            {
-                w.write(headerRow.toString());
-                w.write(System.lineSeparator());
-                for(final StringJoiner row: rows.values())
-                {
-                    w.write(row.toString());
-                    w.write(System.lineSeparator());
-                }
-            }
-            catch(final IOException ioe)
-            {
-                LOGGER.error("Failed to write to {}", outputPath, ioe);
-                result = false;
-            }
-        }
-
-        return result;
     }
 
     /**
