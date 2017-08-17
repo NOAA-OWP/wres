@@ -56,18 +56,6 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
     }
 
     @Override
-    protected String getTaskName () {
-        String type = " forecast";
-
-        if (!ConfigHelper.isForecast(this.dataSourceConfig))
-        {
-            type = "n observation";
-        }
-
-        return "ZippedPIXMLIngest - Saving content from " + this.fileName + " as a" + type;
-    }
-
-    @Override
     protected Logger getLogger () {
         return ZippedPIXMLIngest.LOGGER;
     }

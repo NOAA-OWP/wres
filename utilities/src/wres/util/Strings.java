@@ -2,6 +2,7 @@ package wres.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -23,7 +24,12 @@ public final class Strings {
 	{
 	    return POSSIBLE_TRUE_VALUES.contains(possibleBoolean);
 	}
-	
+
+	public static boolean hasValue(String word)
+	{
+		return word != null && !word.trim().isEmpty();
+	}
+
 	/**
 	 * Extracts the first grouping of characters in the source string that matches the pattern
 	 * @param source The string to extract the word from
@@ -83,6 +89,11 @@ public final class Strings {
 		Pattern regex = Pattern.compile(pattern);
 		return regex.matcher(full).find();
 	}
+
+	public static String removePattern(String string, String pattern)
+    {
+        return string.replaceAll(pattern, "");
+    }
 	
 	/**
 	 * Determines if a string describes some number
@@ -90,7 +101,7 @@ public final class Strings {
 	 * @return True if the possibleNumber really is a number
 	 */
 	public static boolean isNumeric(String possibleNumber) {
-		return possibleNumber != null && !possibleNumber.isEmpty() && possibleNumber.matches("^[-]?\\d*\\.?\\d+$");
+		return hasValue(possibleNumber) && possibleNumber.trim().matches("^[-]?\\d*\\.?\\d+$");
 	}
 	
 	public static String getSystemStats()
@@ -178,4 +189,14 @@ public final class Strings {
 
 		return isOne;
 	}
+
+    public static String getAbsolutePath(String filename)
+    {
+        return Paths.get(filename).toAbsolutePath().toString();
+    }
+
+    public static String getFileName(String path)
+    {
+        return Paths.get(path).getFileName().toString();
+    }
 }

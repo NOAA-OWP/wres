@@ -43,7 +43,7 @@ public class StatementRunner extends WRESRunnable {
             for (Object[] statementValues : this.values)
             {
                 int addedParameters = 0;
-                for (; addedParameters < this.values.size(); ++addedParameters)
+                for (; addedParameters < statementValues.length; ++addedParameters)
                 {
                     statement.setObject(addedParameters + 1, statementValues[addedParameters]);
                 }
@@ -60,6 +60,8 @@ public class StatementRunner extends WRESRunnable {
         }
         catch (SQLException e)
         {
+            LOGGER.error("Error occured while running prepared statement:");
+            LOGGER.error(this.script);
             LOGGER.error(Strings.getStackTrace(e));
         }
         finally
@@ -82,11 +84,6 @@ public class StatementRunner extends WRESRunnable {
                 Database.returnConnection(connection);
             }
         }
-    }
-
-    @Override
-    protected String getTaskName () {
-        return "StatementRunner";
     }
 
     @Override

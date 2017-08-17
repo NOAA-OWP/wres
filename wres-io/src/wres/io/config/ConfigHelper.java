@@ -22,7 +22,9 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
+import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -114,7 +116,7 @@ public class ConfigHelper
             lead = getLead(config, currentLead);
         }
         catch (InvalidPropertiesFormatException e) {
-            e.printStackTrace();
+            LOGGER.error(Strings.getStackTrace(e));
         }
 
         return lead != null &&
@@ -148,7 +150,8 @@ public class ConfigHelper
         return qualifier;
     }
 
-    public static String getVariablePositionClause(Conditions.Feature feature, int variableId) throws wres.util.NotImplementedException {
+    public static String getVariablePositionClause(Conditions.Feature feature, int variableId)
+    {
         StringBuilder clause = new StringBuilder();
 
         if (feature.getLocation() != null)
@@ -165,7 +168,7 @@ public class ConfigHelper
                 }
             }
             catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace(e));
             }
         }
         else if (feature.getIndex() != null)
@@ -357,5 +360,47 @@ public class ConfigHelper
         }
         // this call was not the first to put a set for this config.
         return theSet.add(message);
+    }
+
+    public static String getFeatureDescription(Conditions.Feature feature)
+    {
+        String description = null;
+
+        if (feature.getLocation() != null)
+        {
+            if (Strings.hasValue(feature.getLocation().getLid())) {
+                description = feature.getLocation().getLid();
+            }
+            else if (Strings.hasValue(feature.getLocation().getHuc())) {
+                description = feature.getLocation().getHuc();
+            }
+            else if (feature.getLocation().getComid() != null)
+            {
+                description = String.valueOf(feature.getLocation().getComid());
+            }
+            else if (Strings.hasValue(feature.getLocation().getGageId()))
+            {
+                description = feature.getLocation().getGageId();
+            }
+        }
+        else if (feature.getPolygon() != null && feature.getPolygon().getPoint().size() >= 3)
+        {
+            description = "Within: (";
+            List<String> coordinates = new ArrayList<>();
+
+            for (Coordinate coordinate : feature.getPolygon().getPoint())
+            {
+                coordinates.add("{" + String.valueOf(coordinate.getX()) + "," + String.valueOf(coordinate.getY()) + "}");
+            }
+
+            description += String.join(", ", coordinates);
+            description += ")";
+        }
+        else if (feature.getPoint() != null)
+        {
+            description = "{" + String.valueOf(feature.getPoint().getX()) + "," + String.valueOf(feature.getPoint().getY()) + "}";
+        }
+
+        return description;
     }
 }

@@ -1,7 +1,10 @@
 package wres.io.config;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.util.Internal;
+import wres.util.Strings;
 
 import javax.xml.stream.XMLStreamReader;
 import java.beans.PropertyVetoException;
@@ -18,6 +21,7 @@ import java.util.TreeMap;
  */
 @Internal(exclusivePackage = "wres.io")
 final class DatabaseSettings {
+	private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseSettings.class);
 
 	// A mapping of database names to the name of the class for the 
 	private static final Map<String, String> DRIVER_MAPPING = createDriverMapping();
@@ -134,7 +138,7 @@ final class DatabaseSettings {
 			datasource.setTestConnectionOnCheckout(false);
 		} 
 		catch (PropertyVetoException e) {
-			e.printStackTrace();
+			LOGGER.error(Strings.getStackTrace(e));
 		}
 
         return datasource;
@@ -158,7 +162,7 @@ final class DatabaseSettings {
 		}
 		catch (PropertyVetoException e)
 		{
-			e.printStackTrace();
+			LOGGER.error(Strings.getStackTrace(e));
 		}
 
 		return highPrioritySource;
@@ -287,7 +291,7 @@ final class DatabaseSettings {
 					max_idle_time = Integer.parseInt(value);
 					break;
 				default:
-					System.err.println("Tag of type: '" + tag_name + "' is not valid for database configuration.");
+					LOGGER.error("Tag of type: '" + tag_name + "' is not valid for database configuration.");
 				}
 			}
 		}

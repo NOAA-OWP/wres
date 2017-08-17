@@ -49,11 +49,6 @@ public class CopyExecutor extends WRESRunnable
 	}
 
 	@Override
-	protected String getTaskName () {
-		return "COPY: " + this.table_definition;
-	}
-
-	@Override
 	protected Logger getLogger () {
 		return CopyExecutor.LOGGER;
 	}

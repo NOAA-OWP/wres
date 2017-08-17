@@ -72,15 +72,17 @@ public final class UnitConversions
         this.conversionList = conversions;
     }
 
-    public static double convert(double value, int fromMeasurementUnitID, String toMeasurementUnit)
-            throws SQLException, NotImplementedException
+    public static double convert(double value, int fromMeasurementUnitID, String toMeasurementUnit) throws SQLException
     {
         int toMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(toMeasurementUnit);
 
         Conversion conversion = getConversion(fromMeasurementUnitID, toMeasurementUnitID);
 
         if (conversion == null) {
-            throw new NotImplementedException("There is not currently a conversion from the measurement unit " + String.valueOf(fromMeasurementUnitID) + " to the measurement unit " + String.valueOf(toMeasurementUnitID));
+            throw new NotImplementedException("There is not currently a conversion from the measurement unit " +
+                                                      String.valueOf(fromMeasurementUnitID) +
+                                                      " to the measurement unit " +
+                                                      String.valueOf(toMeasurementUnitID));
         }
         return conversion.convert(value);
     }

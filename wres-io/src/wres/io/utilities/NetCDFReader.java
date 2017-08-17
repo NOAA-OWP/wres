@@ -11,6 +11,7 @@ import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
+import wres.util.Strings;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -133,13 +134,12 @@ final class NetCDFReader {
 							}
                 			counter = counter + 1;
                 			if (counter >= 5) {
-                				System.out.println();
+                				LOGGER.info("");
                 				counter = 0;
                 			}                    		
                     	}
 					} catch (InvalidRangeException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						LOGGER.error(Strings.getStackTrace(e));
 					}
                     
                     if (path.endsWith(".gz"))
@@ -148,14 +148,14 @@ final class NetCDFReader {
 	                    Files.deleteIfExists(Paths.get(path.replaceAll(".gz", "")));
                     }
                     
-                    System.out.println();
+                    LOGGER.info("");
                 }
 			}
 		} 
 		catch (IOException error) 
 		{
-            System.out.println("Something went wrong while reading file named " + path + " : " + error);
-			error.printStackTrace();
+            LOGGER.error("Something went wrong while reading file named " + path + " : " + error);
+			LOGGER.error(Strings.getStackTrace(error));
 		}
 	}
 	
@@ -183,8 +183,7 @@ final class NetCDFReader {
 				}
 				System.out.println("");
 			} catch (IOException | InvalidRangeException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LOGGER.error(Strings.getStackTrace(e));
 			}
 
 	}

@@ -1,8 +1,11 @@
 package wres.io.data.caching;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import wres.io.data.details.ForecastTypeDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
+import wres.util.Strings;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -14,6 +17,7 @@ import java.sql.SQLException;
 @Internal(exclusivePackage = "wres.io")
 public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ForecastTypes.class);
     private static ForecastTypes INTERNAL_CACHE = null;
     private static final Object CACHE_LOCK = new Object();
 
@@ -36,9 +40,9 @@ public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
         try {
             forecastTypeID = getCache().getID(description);
         } catch (SQLException e) {
-            System.err.println("An error was encountered while trying to get the id for the forecast type named: '" + description + "'.");
-            System.err.println(description + " is not a valid forecast type.");
-            e.printStackTrace();
+            LOGGER.error("An error was encountered while trying to get the id for the forecast type named: '" + description + "'.");
+            LOGGER.error(description + " is not a valid forecast type.");
+            LOGGER.error(Strings.getStackTrace(e));
 
             throw e;
         }
@@ -72,7 +76,7 @@ public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
         }
         catch (SQLException error)
         {
-            System.err.println("An error was encountered when trying to populate the ForecastType cache.");
+            LOGGER.error("An error was encountered when trying to populate the ForecastType cache.");
         }
         finally
         {
@@ -84,7 +88,7 @@ public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
                 }
                 catch (SQLException error)
                 {
-                    System.err.println("The result set containing forecast types could not be closed.");
+                    LOGGER.error("The result set containing forecast types could not be closed.");
                 }
             }
 

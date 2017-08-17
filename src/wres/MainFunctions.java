@@ -1,34 +1,7 @@
 package wres;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.function.Function;
-
-import javax.xml.bind.JAXBException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
@@ -49,6 +22,23 @@ import wres.io.utilities.InputGenerator;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
+
+import javax.xml.bind.JAXBException;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Function;
 
 /**
  * @author ctubbs
@@ -95,7 +85,7 @@ final class MainFunctions
                 rawProject = projectBuilder.toString();
             }
             catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace(e));
             }
 
         }
@@ -252,19 +242,18 @@ final class MainFunctions
 	private static Function<String[], Integer> refreshTestData () {
 		return (final String[] args) -> {
 			Integer result = FAILURE;
-			if (args.length >= 2) {
+			if (args.length >= 3) {
 			    final ExecutorService executorService = Executors.newFixedThreadPool(SystemSettings.maximumThreadCount());
 			    final String date = args[0];
 				final String range = args[1];
+                final String category = args[2];
 
                 int cutoff = -1;
 
-                if (args.length >= 3 && Strings.isNumeric(args[2]))
+                if (args.length >= 4 && Strings.isNumeric(args[3]))
                 {
-                    cutoff = Integer.parseInt(args[2]);
+                    cutoff = Integer.parseInt(args[3]);
                 }
-
-                final String forecastDataType = "channel_rt";
 
 				if (!Arrays.asList("analysis_assim",
 								   "fe_analysis_assim",
@@ -282,6 +271,12 @@ final class MainFunctions
                     LOGGER.error("The range of: '" + range + "' is not a valid range of data.");
 					return FAILURE;
 				}
+
+				if (!Arrays.asList("land", "reservoir", "channel_rt", "terrain_rt").contains(category.toLowerCase()))
+                {
+                    LOGGER.error("The category of '{}' is not a valid category for this type of data.", category);
+                    return  FAILURE;
+                }
 
 				ProgressMonitor.deactivate();
 
@@ -331,7 +326,7 @@ final class MainFunctions
 
                         if (cutoff == -1)
                         {
-                            cutoff = 15;
+                            cutoff = 18;
                         }
                     }
                     else if (Strings.contains(range, "medium_range")) {
@@ -355,7 +350,22 @@ final class MainFunctions
                     }
 
                     while (current <= cutoff) {
-                        String address = "http://***REMOVED***dstore.***REMOVED***.***REMOVED***/nwm/nwm.";
+                        // We're creating the string ourselves because creating it with Path or URI mangles the host
+                        String address = SystemSettings.getRemoteNetcdfURL();//"http://***REMOVED***dstore.***REMOVED***.***REMOVED***/nwm/nwm.";
+
+                        if (!(address.toLowerCase().startsWith("http://") ||
+                                address.startsWith("https://") ||
+                                address.startsWith("ftp://")))
+                        {
+                            address = "http://" + address;
+                        }
+
+                        if (!address.endsWith("/"))
+                        {
+                            address += "/";
+                        }
+
+                        address += "nwm.";
                         address += date;
                         address += "/";
                         address += range;
@@ -388,7 +398,7 @@ final class MainFunctions
                         }
 
                         if (!isForcing) {
-                            filename += "." + forecastDataType;
+                            filename += "." + category;
                         }
 
                         if (isLong) {
@@ -449,8 +459,8 @@ final class MainFunctions
 			}
 			else {
 				LOGGER.warn("There are not enough parameters to download updated netcdf data.");
-                LOGGER.warn("usage: refreshTestData <date> <range name>");
-                LOGGER.warn("Example: refreshTestData 20170508 long_range_mem4");
+                LOGGER.warn("usage: refreshTestData <date> <range name> <category>");
+                LOGGER.warn("Example: refreshTestData 20170508 long_range_mem4 land");
                 LOGGER.warn("Acceptable ranges are:");
                 LOGGER.warn("	analysis_assim");
                 LOGGER.warn("	fe_analysis_assim");
@@ -465,6 +475,12 @@ final class MainFunctions
                 LOGGER.warn("	long_range_mem4");
                 LOGGER.warn("	medium_range");
                 LOGGER.warn("	short_range");
+                LOGGER.warn("");
+                LOGGER.warn("Acceptable categories are:");
+                LOGGER.warn("   land");
+                LOGGER.warn("   reservoir");
+                LOGGER.warn("   channel_rt");
+                LOGGER.warn("   terrain_rt");
 			}
 
 			return result;
@@ -537,7 +553,7 @@ final class MainFunctions
                 }
                 catch(final Exception e)
                 {
-                    e.printStackTrace();
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
 	        }
 	        else
@@ -751,7 +767,7 @@ final class MainFunctions
                                     statement.executeBatch();
                                 }
                                 catch (SQLException e) {
-                                    e.printStackTrace();
+                                    LOGGER.error(Strings.getStackTrace(e));
                                 }
                                 finally {
                                     if (statement != null)
@@ -760,7 +776,7 @@ final class MainFunctions
                                             statement.close();
                                         }
                                         catch (SQLException e) {
-                                            e.printStackTrace();
+                                            LOGGER.error(Strings.getStackTrace(e));
                                         }
                                     }
 
@@ -769,14 +785,6 @@ final class MainFunctions
                                         Database.returnConnection(connection);
                                     }
                                 }
-                            }
-
-                            @Override
-                            protected String getTaskName () {
-                                return "Adding Features " +
-                                        String.valueOf(this.parameters.get(0)[1]) +
-                                        " through " +
-                                        String.valueOf(this.parameters.get(this.parameters.size() - 1)[1]);
                             }
 
                             @Override
@@ -822,10 +830,10 @@ final class MainFunctions
 
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
                 catch (SQLException e) {
-                    e.printStackTrace();
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
             }
             else

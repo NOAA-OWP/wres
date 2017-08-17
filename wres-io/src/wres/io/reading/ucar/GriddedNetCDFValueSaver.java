@@ -1,4 +1,4 @@
-package wres.io.concurrency;
+package wres.io.reading.ucar;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6,12 +6,17 @@ import ucar.ma2.Array;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
+import wres.io.concurrency.CopyExecutor;
+import wres.io.concurrency.SQLExecutor;
+import wres.io.concurrency.WRESRunnable;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
+import wres.util.Strings;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -25,13 +30,12 @@ import java.util.concurrent.Future;
  * @author Christopher Tubbs
  */
 @Internal(exclusivePackage = "wres.io")
-public class GriddedNetCDFValueSaver extends WRESRunnable
+class GriddedNetCDFValueSaver extends WRESRunnable
 {
 	private final static String DELIMITER = ",";
     private static final Logger LOGGER = LoggerFactory.getLogger(GriddedNetCDFValueSaver.class);
 
     private int sourceID = Integer.MIN_VALUE;
-    private final String variableName;
     private final int variableID;
     private final String fileName;
     private StringBuilder builder;
@@ -46,10 +50,9 @@ public class GriddedNetCDFValueSaver extends WRESRunnable
     private final Stack<Future<?>> operations = new Stack<>();
 
     @Internal(exclusivePackage = "wres.io")
-	public GriddedNetCDFValueSaver (String fileName, String variableName, int variableID, Double invalidValue)
+	public GriddedNetCDFValueSaver (String fileName, int variableID, Double invalidValue)
 	{
 		this.fileName = fileName;
-		this.variableName = variableName;
 		this.variableID = variableID;
 	}
 
@@ -80,20 +83,20 @@ public class GriddedNetCDFValueSaver extends WRESRunnable
                     if (currentYIndex == half)
                     {
                         this.getLogger().trace("Currently halfway done with setting up jobs to save {} data from '{}'",
-                                this.variableName,
-                                this.source.getLocation());
+                                               this.variable.getShortName(),
+                                               this.source.getLocation());
                     }
                     else if (currentYIndex == quarter)
                     {
                         this.getLogger().trace("Currently a quarter of the way done setting up jobs to save {} data from '{}'",
-                                this.variableName,
-                                this.source.getLocation());
+                                               this.variable.getShortName(),
+                                               this.source.getLocation());
                     }
                     else if (currentYIndex == threeQuarter)
                     {
                         this.getLogger().trace("Currently three quarters of the way done setting up jobs to save {} data from '{}'",
-                                this.variableName,
-                                this.source.getLocation());
+                                               this.variable.getShortName(),
+                                               this.source.getLocation());
                     }
 
                     currentXIndex = 0;
@@ -152,7 +155,9 @@ public class GriddedNetCDFValueSaver extends WRESRunnable
 
                 copyValues();
 
-                this.getLogger().trace("Now waiting for all tasks used to save {} from '{}' to finish...", this.variableName, this.fileName);
+                this.getLogger().trace("Now waiting for all tasks used to save {} from '{}' to finish...",
+                                       this.variable.getShortName(),
+                                       this.fileName);
 
                 while (!this.operations.empty())
                 {
@@ -163,19 +168,21 @@ public class GriddedNetCDFValueSaver extends WRESRunnable
                     }
                     catch (Exception e)
                     {
-                        this.getLogger().error("Could not complete a task to save {} from '{}'", this.variableName, this.fileName);
+                        this.getLogger().error("Could not complete a task to save {} from '{}'",
+                                               this.variable.getShortName(),
+                                               this.fileName);
                     }
                 }
             }
 		} catch (Exception e) {
-			e.printStackTrace();
+            LOGGER.error(Strings.getStackTrace(e));
 		}
 		finally
 		{
             try {
                 this.closeFile();
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace(e));
             }
         }
 	}
@@ -200,14 +207,15 @@ public class GriddedNetCDFValueSaver extends WRESRunnable
     }
 
     private Variable getVariable() throws IOException {
-	    if (this.variable == null)
+        final String nameToFind = Variables.getName(this.variableID);
+
+	    if (this.variable == null && Strings.hasValue(nameToFind))
         {
             NetcdfFile source = getFile();
-
-            this.getLogger().trace("Now looking for {} inside '{}'", this.variableName, this.fileName);
+            this.getLogger().trace("Now looking for {} inside '{}'", nameToFind, this.fileName);
             for (Variable var : source.getVariables())
             {
-                if (var.getShortName().equalsIgnoreCase(this.variableName))
+                if (var.getShortName().equalsIgnoreCase(nameToFind))
                 {
                     this.variable = var;
                     break;
@@ -218,7 +226,7 @@ public class GriddedNetCDFValueSaver extends WRESRunnable
         if (this.variable == null)
         {
             throw new IOException("The variable " +
-                                          this.variableName +
+                                          String.valueOf(nameToFind) +
                                           " could not be found within '" +
                                           this.fileName + "'");
         }
@@ -268,7 +276,7 @@ public class GriddedNetCDFValueSaver extends WRESRunnable
                 this.getLogger().trace("Sending NetCDF values to the database executor to copy...");
                 this.operations.push(Database.execute(copier));
             } catch (ExecutionException | InterruptedException e) {
-                e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace(e));
             }
             builder = new StringBuilder();
             copyCount = 0;
@@ -292,7 +300,7 @@ public class GriddedNetCDFValueSaver extends WRESRunnable
                 Attribute attr = this.getVariable().findAttribute("_FillValue");
                 this.invalidValue = attr.getNumericValue().doubleValue();
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace(e));
             }
         }
         return this.invalidValue;
@@ -377,7 +385,7 @@ public class GriddedNetCDFValueSaver extends WRESRunnable
                     this.rank = var.getRank();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace(e));
             }
         }
         return this.rank;
@@ -426,26 +434,10 @@ public class GriddedNetCDFValueSaver extends WRESRunnable
             try {
                 this.sourceID = DataSources.getSourceID(this.fileName, outputTime, lead);
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace(e));
             }
         }
         return this.sourceID;
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        this.closeFile();
-        super.finalize();
-    }
-
-    @Override
-    protected String getTaskName () {
-	    StringBuilder name = new StringBuilder("GriddedNetCDFValueSaver: ");
-	    name.append(this.variableName);
-	    name.append(" inside ");
-	    name.append(this.fileName);
-
-        return name.toString();
     }
 
     @Override
