@@ -54,9 +54,10 @@ public interface Slicer
      * @param input the {@link SingleValuedPairs} to slice
      * @param threshold the {@link Threshold} on which to slice
      * @return the subset of pairs that meet the condition or null
+     * @throws MetricInputSliceException if the slice contains no elements
      */
 
-    SingleValuedPairs sliceByLeft(SingleValuedPairs input, Threshold threshold);
+    SingleValuedPairs sliceByLeft(SingleValuedPairs input, Threshold threshold) throws MetricInputSliceException;
 
     /**
      * Returns a subset of pairs where the {@link Threshold} is met on the left side or null for the empty subset.
@@ -64,9 +65,10 @@ public interface Slicer
      * @param input the {@link EnsemblePairs} to slice
      * @param threshold the {@link Threshold} on which to slice
      * @return the subset of pairs that meet the condition or null
+     * @throws MetricInputSliceException if the slice contains no elements
      */
 
-    EnsemblePairs sliceByLeft(EnsemblePairs input, Threshold threshold);
+    EnsemblePairs sliceByLeft(EnsemblePairs input, Threshold threshold) throws MetricInputSliceException;
 
     /**
      * Returns as many lists of {@link PairOfDoubleAndVectorOfDoubles} as groups of atomic pairs in the input with an

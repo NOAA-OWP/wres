@@ -10,6 +10,7 @@ import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.engine.statistics.metric.parameters.MetricParameter;
@@ -48,6 +49,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * 
      * @param s the input
      * @return the output
+     * @throws MetricInputException if the metric input is unexpected
      * @throws MetricCalculationException if the metric calculation fails
      */
 

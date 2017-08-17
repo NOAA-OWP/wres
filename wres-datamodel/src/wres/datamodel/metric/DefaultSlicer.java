@@ -87,7 +87,7 @@ public class DefaultSlicer implements Slicer
     }
 
     @Override
-    public SingleValuedPairs sliceByLeft(SingleValuedPairs input, Threshold threshold)
+    public SingleValuedPairs sliceByLeft(SingleValuedPairs input, Threshold threshold) throws MetricInputSliceException
     {
         Objects.requireNonNull(input, NULL_INPUT);
         Objects.requireNonNull(threshold, "Specify a non-null threshold.");
@@ -100,7 +100,8 @@ public class DefaultSlicer implements Slicer
         //No pairs in the subset
         if(mainPairsSubset.isEmpty())
         {
-            return null;
+            throw new MetricInputSliceException("While slicing, the threshold '" + threshold
+                + "' failed to obtain any data.");
         }
         if(input.hasBaseline())
         {
@@ -114,7 +115,8 @@ public class DefaultSlicer implements Slicer
             //No pairs in the subset
             if(basePairsSubset.isEmpty())
             {
-                return null;
+                throw new MetricInputSliceException("While slicing the baseline, the threshold '" + threshold
+                    + "' failed to obtain any data.");
             }
             return dataFac.ofSingleValuedPairs(mainPairsSubset,
                                                basePairsSubset,
@@ -126,7 +128,7 @@ public class DefaultSlicer implements Slicer
     }
 
     @Override
-    public EnsemblePairs sliceByLeft(EnsemblePairs input, Threshold threshold)
+    public EnsemblePairs sliceByLeft(EnsemblePairs input, Threshold threshold) throws MetricInputSliceException
     {
         Objects.requireNonNull(input, NULL_INPUT);
         Objects.requireNonNull(threshold, "Specify a non-null threshold.");
@@ -139,7 +141,8 @@ public class DefaultSlicer implements Slicer
         //No pairs in the subset
         if(mainPairsSubset.isEmpty())
         {
-            return null;
+            throw new MetricInputSliceException("While slicing, the threshold '" + threshold
+                                                + "' failed to obtain any data.");
         }
         if(input.hasBaseline())
         {
@@ -152,7 +155,8 @@ public class DefaultSlicer implements Slicer
             //No pairs in the subset
             if(basePairsSubset.isEmpty())
             {
-                return null;
+                throw new MetricInputSliceException("While slicing the baseline, the threshold '" + threshold
+                                                    + "' failed to obtain any data.");
             }
             return dataFac.ofEnsemblePairs(mainPairsSubset,
                                            basePairsSubset,

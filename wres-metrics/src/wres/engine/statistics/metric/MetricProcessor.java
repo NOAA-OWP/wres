@@ -31,6 +31,7 @@ import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricConstants.MetricInputGroup;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.MetricInputSliceException;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
@@ -512,8 +513,18 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                 double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     Threshold useMe = getThreshold(threshold, sorted);
-                    futures.addScalarOutput(dataFactory.getMapKey(leadTime, useMe),
-                                            processSingleValuedThreshold(leadTime, useMe, input, singleValuedScalar));
+                    try
+                    {
+                        futures.addScalarOutput(dataFactory.getMapKey(leadTime, useMe),
+                                                processSingleValuedThreshold(leadTime,
+                                                                             useMe,
+                                                                             input,
+                                                                             singleValuedScalar));
+                    }
+                    catch(MetricInputSliceException e)
+                    {
+                        LOGGER.error(e.getMessage(), e);
+                    }
                 });
             }
             //Deal with metric-local thresholds
@@ -533,8 +544,18 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                 double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     Threshold useMe = getThreshold(threshold, sorted);
-                    futures.addVectorOutput(dataFactory.getMapKey(leadTime, useMe),
-                                            processSingleValuedThreshold(leadTime, useMe, input, singleValuedVector));
+                    try
+                    {
+                        futures.addVectorOutput(dataFactory.getMapKey(leadTime, useMe),
+                                                processSingleValuedThreshold(leadTime,
+                                                                             useMe,
+                                                                             input,
+                                                                             singleValuedVector));
+                    }
+                    catch(MetricInputSliceException e)
+                    {
+                        LOGGER.error(e.getMessage(), e);
+                    }
                 });
             }
             //Deal with metric-local thresholds
@@ -554,11 +575,18 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                 double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     Threshold useMe = getThreshold(threshold, sorted);
-                    futures.addMultiVectorOutput(dataFactory.getMapKey(leadTime, useMe),
-                                                 processSingleValuedThreshold(leadTime,
-                                                                              useMe,
-                                                                              input,
-                                                                              singleValuedMultiVector));
+                    try
+                    {
+                        futures.addMultiVectorOutput(dataFactory.getMapKey(leadTime, useMe),
+                                                     processSingleValuedThreshold(leadTime,
+                                                                                  useMe,
+                                                                                  input,
+                                                                                  singleValuedMultiVector));
+                    }
+                    catch(MetricInputSliceException e)
+                    {
+                        LOGGER.error(e.getMessage(), e);
+                    }
                 });
             }
             //Deal with metric-local thresholds
@@ -896,12 +924,13 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * @param pairs the pairs
      * @param futures the collection of futures to which the new future will be added
      * @return the future result
+     * @throws MetricInputSliceException if the threshold fails to slice any data
      */
 
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processSingleValuedThreshold(Integer leadTime,
                                                                                                         Threshold threshold,
                                                                                                         SingleValuedPairs pairs,
-                                                                                                        MetricCollection<SingleValuedPairs, T> collection)
+                                                                                                        MetricCollection<SingleValuedPairs, T> collection) throws MetricInputSliceException
     {
         //Slice the pairs
         SingleValuedPairs subset = dataFactory.getSlicer().sliceByLeft(pairs, threshold);

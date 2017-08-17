@@ -1,8 +1,11 @@
 package wres.engine.statistics.metric;
 
+import java.util.Objects;
+
 import wres.datamodel.metric.EnsemblePairs;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.VectorOutput;
 
@@ -37,6 +40,10 @@ implements ProbabilityScore
     @Override
     public VectorOutput apply(EnsemblePairs s)
     {
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         switch(getDecompositionID())
         {
             case NONE:
