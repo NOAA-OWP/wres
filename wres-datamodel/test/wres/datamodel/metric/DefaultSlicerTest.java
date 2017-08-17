@@ -104,10 +104,12 @@ public final class DefaultSlicerTest
 
     /**
      * Tests the {@link Slicer#sliceByLeft(SingleValuedPairs, Threshold)}.
+     * 
+     * @throws MetricInputSliceException
      */
 
     @Test
-    public void test4SliceByLeft()
+    public void test4SliceByLeft() throws MetricInputSliceException
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
@@ -130,9 +132,16 @@ public final class DefaultSlicerTest
         SingleValuedPairs slicedNoBase = slicer.sliceByLeft(pairsNoBase, threshold);
         assertTrue("The left side of the test data does not match the benchmark.",
                    Arrays.equals(slicer.getLeftSide(slicedNoBase), expected));
-        //Test null return
-        SingleValuedPairs slicedNull = slicer.sliceByLeft(pairs, metIn.getThreshold(1.0, Operator.GREATER));
-        assertTrue("Expected a null return from the slice operation.", slicedNull == null);
+        //Test exception
+        try
+        {
+            slicer.sliceByLeft(pairs, metIn.getThreshold(1.0, Operator.GREATER));
+            fail("Expected an exception on attempting to return an empty subset.");
+        }
+        catch(Exception e)
+        {
+        }
+
         //Test null return on baseline
         final List<PairOfDoubles> nullValuesBase = new ArrayList<>();
         values.add(metIn.pairOf(0, 3.0 / 5.0));
@@ -142,17 +151,24 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(0, 0.0 / 5.0));
         values.add(metIn.pairOf(0, 1.0 / 5.0));
         SingleValuedPairs pairsNullBase = metIn.ofSingleValuedPairs(values, nullValuesBase, meta, meta, null);
-        SingleValuedPairs slicedNullBase = slicer.sliceByLeft(pairsNullBase, threshold);
-        assertTrue("Expected a null return from the slice operation.", slicedNullBase == null);
-
+        try
+        {
+            slicer.sliceByLeft(pairsNullBase, threshold);
+            fail("Expected an exception on attempting to return an empty subset for the baseline.");
+        }
+        catch(Exception e)
+        {
+        }           
     }
 
     /**
      * Tests the {@link Slicer#sliceByLeft(EnsemblePairs, Threshold)}.
+     * 
+     * @throws MetricInputSliceException
      */
 
     @Test
-    public void test5SliceByLeft()
+    public void test5SliceByLeft() throws MetricInputSliceException
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
@@ -175,10 +191,17 @@ public final class DefaultSlicerTest
         EnsemblePairs slicedNoBase = slicer.sliceByLeft(pairsNoBase, threshold);
         assertTrue("The left side of the test data does not match the benchmark.",
                    Arrays.equals(slicer.getLeftSide(slicedNoBase), expected));
-        //Test null return
-        EnsemblePairs slicedNull = slicer.sliceByLeft(pairs, metIn.getThreshold(1.0, Operator.GREATER));
-        assertTrue("Expected a null return from the slice operation.", slicedNull == null);
-        //Test null return on baseline
+        //Test exception
+        try
+        {
+            slicer.sliceByLeft(pairs, metIn.getThreshold(1.0, Operator.GREATER));
+            fail("Expected an exception on attempting to return an empty subset.");
+        }
+        catch(Exception e)
+        {
+        }        
+        
+        //Test exception on baseline
         final List<PairOfDoubleAndVectorOfDoubles> nullValuesBase = new ArrayList<>();
         values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
         values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
@@ -187,9 +210,14 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
         values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
         EnsemblePairs pairsNullBase = metIn.ofEnsemblePairs(values, nullValuesBase, meta, meta, null);
-        EnsemblePairs slicedNullBase = slicer.sliceByLeft(pairsNullBase, threshold);
-        assertTrue("Expected a null return from the slice operation.", slicedNullBase == null);
-
+        try
+        {
+            slicer.sliceByLeft(pairsNullBase, threshold);
+            fail("Expected an exception on attempting to return an empty subset for the baseline.");
+        }
+        catch(Exception e)
+        {
+        }     
     }
 
     /**
