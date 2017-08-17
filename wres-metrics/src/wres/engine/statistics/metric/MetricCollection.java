@@ -222,12 +222,16 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
 
     private MetricOutputMapByMetric<T> applyParallel(final S s) throws MetricCalculationException
     {
+        //Bounds checks
         if(!Objects.isNull(this.input))
         {
             throw new MetricCalculationException("The collection has already been constructed with a fixed input.");
         }
         
-        Objects.requireNonNull(s, "Specify non-null input to the metric collection.");
+        if(Objects.isNull(s))
+        {
+            throw new MetricCalculationException("Specify non-null input to the metric collection.");
+        }
 
         //Collection of future metric results
         final List<CompletableFuture<T>> metricFutures = new ArrayList<>(metrics.size());

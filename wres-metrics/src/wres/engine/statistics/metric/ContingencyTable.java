@@ -7,6 +7,7 @@ import java.util.stream.IntStream;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.MulticategoryPairs;
 
@@ -34,7 +35,10 @@ class ContingencyTable<S extends MulticategoryPairs> extends Metric<S, MatrixOut
     @Override
     public MatrixOutput apply(final MulticategoryPairs s)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         final int outcomes = s.getCategoryCount();
         final double[][] returnMe = new double[outcomes][outcomes];
         //Function that returns the index within the contingency matrix to increment

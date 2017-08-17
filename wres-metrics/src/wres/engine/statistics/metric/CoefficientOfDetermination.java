@@ -1,6 +1,9 @@
 package wres.engine.statistics.metric;
 
+import java.util.Objects;
+
 import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -44,6 +47,10 @@ class CoefficientOfDetermination extends CorrelationPearsons
     @Override
     public ScalarOutput getCollectionInput(SingleValuedPairs input)
     {
+        if(Objects.isNull(input))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         return super.apply(input);
     }
 

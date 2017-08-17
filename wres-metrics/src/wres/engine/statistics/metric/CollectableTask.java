@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutput;
 
 /**
@@ -49,12 +50,12 @@ implements Callable<U>
     }
 
     @Override
-    public U call() throws MetricCalculationException, InterruptedException, ExecutionException
+    public U call() throws MetricInputException, MetricCalculationException, InterruptedException, ExecutionException
     {
         final T in = input.get();
         if(Objects.isNull(in))
         {
-            throw new MetricCalculationException("Cannot compute a metric with null input.");
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
         }
         return metric.apply(in);
     }

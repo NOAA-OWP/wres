@@ -46,7 +46,10 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
     @Override
     public MatrixOutput getCollectionInput(final S s)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException(nullString);
+        }
         return table.apply(s);
     }
 
@@ -98,7 +101,10 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
 
     void isContingencyTable(final MatrixOutput output, final Metric<?, ?> metric)
     {
-        Objects.requireNonNull(output, nullString);
+        if(Objects.isNull(output))
+        {
+            throw new MetricInputException(nullString);
+        }
         final MatrixOfDoubles v = output.getData();
         if(!v.isSquare())
         {
@@ -118,7 +124,10 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
 
     void is2x2ContingencyTable(final MatrixOutput output, final Metric<?, ?> metric)
     {
-        Objects.requireNonNull(output, nullString);
+        if(Objects.isNull(output))
+        {
+            throw new MetricInputException(nullString);
+        }
         final MatrixOfDoubles v = output.getData();
         if(v.rows() != 2 || v.columns() != 2)
         {

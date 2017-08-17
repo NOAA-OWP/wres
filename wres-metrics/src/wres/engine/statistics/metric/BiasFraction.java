@@ -1,9 +1,11 @@
 package wres.engine.statistics.metric;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.DoubleAdder;
 
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -21,6 +23,10 @@ class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> implements Sc
     @Override
     public ScalarOutput apply(SingleValuedPairs s)
     {
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
         DoubleAdder left = new DoubleAdder();
         DoubleAdder right = new DoubleAdder();

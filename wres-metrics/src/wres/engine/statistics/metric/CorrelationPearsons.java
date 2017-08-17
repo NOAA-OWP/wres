@@ -11,6 +11,7 @@ import wres.datamodel.metric.Metadata;
 import wres.datamodel.metric.MetadataFactory;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
@@ -44,7 +45,10 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     @Override
     public ScalarOutput apply(SingleValuedPairs s)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         try
         {
             DataFactory d = getDataFactory();

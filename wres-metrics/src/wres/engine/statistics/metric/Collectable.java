@@ -38,6 +38,8 @@ interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>, U ext
      * 
      * @param input the metric input
      * @return the intermediate output that forms the input to metrics within this collection
+     * @throws MetricInputException if the metric input is unexpected
+     * @throws MetricCalculationException if the metric could not be computed
      */
 
     T getCollectionInput(S input);
