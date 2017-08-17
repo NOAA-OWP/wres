@@ -248,7 +248,7 @@ public class Control implements Function<String[], Integer>
         }
         catch(final Exception e)
         {
-            LOGGER.error("While processing feature '{}'.", feature.getLocation().getLid(), e);
+            LOGGER.error("While processing feature '{}':", feature.getLocation().getLid(), e);
             return false;
         }
 
@@ -293,12 +293,9 @@ public class Control implements Function<String[], Integer>
                 LOGGER.info("Completed processing of feature '{}'.", feature.getLocation().getLid());
             }
         }
-        else
+        else if(LOGGER.isInfoEnabled())
         {
-            if(LOGGER.isInfoEnabled())
-            {
-                LOGGER.info("No cached outputs to generate for feature '{}'.", feature.getLocation().getLid());
-            }
+            LOGGER.info("No cached outputs to generate for feature '{}'.", feature.getLocation().getLid());
         }
         return true;
     }
@@ -330,38 +327,37 @@ public class Control implements Function<String[], Integer>
         {
             for(final MetricOutputGroup nextGroup: outGroup)
             {
-                switch(nextGroup)
+                if(processor.getStoredMetricOutput().hasOutput(nextGroup))
                 {
-                    case SCALAR:
-                        if(processor.getStoredMetricOutput().hasOutput(MetricOutputGroup.SCALAR))
-                        {
+                    switch(nextGroup)
+                    {
+                        case SCALAR:
                             returnMe = returnMe
                                 && processScalarCharts(feature,
                                                        projectConfigPlus,
                                                        processor.getStoredMetricOutput().getScalarOutput());
-                        }
-                        break;
-                    case VECTOR:
-                        if(processor.getStoredMetricOutput().hasOutput(MetricOutputGroup.VECTOR))
-                        {
+                            break;
+                        case VECTOR:
                             returnMe = returnMe
                                 && processVectorCharts(feature,
                                                        projectConfigPlus,
                                                        processor.getStoredMetricOutput().getVectorOutput());
-                        }
-                        break;
-                    case MULTIVECTOR:
-                        if(processor.getStoredMetricOutput().hasOutput(MetricOutputGroup.MULTIVECTOR))
-                        {
+                            break;
+                        case MULTIVECTOR:
                             returnMe = returnMe
                                 && processMultiVectorCharts(feature,
                                                             projectConfigPlus,
                                                             processor.getStoredMetricOutput().getMultiVectorOutput());
-                        }
-                        break;
-                    default:
-                        LOGGER.error("Unsupported chart type {}.", nextGroup);
-                        returnMe = false;
+                            break;
+                        default:
+                            LOGGER.error("Unsupported chart type {}.", nextGroup);
+                            returnMe = false;
+                    }
+                }
+                else
+                {
+                    //Return silently: chart type not necessarily configured
+                    returnMe = false;
                 }
             }
         }
