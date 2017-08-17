@@ -600,7 +600,10 @@ public final class Database {
 
             while (results.next())
             {
-                collection.add(results.getObject(fieldLabel, collectionDataType));
+            	if (results.getObject(fieldLabel) != null)
+            	{
+					collection.add(results.getObject(fieldLabel, collectionDataType));
+				}
             }
 		}
 		catch (SQLException error)
@@ -640,7 +643,9 @@ public final class Database {
 
             while (results.next())
             {
-                map.put((K)results.getObject(keyName), (V)results.getObject(valueName));
+            	if (results.getObject(keyName) != null && results.getObject(valueName) != null) {
+					map.put((K) results.getObject(keyName), (V) results.getObject(valueName));
+				}
             }
         }
         catch (ClassCastException e)
