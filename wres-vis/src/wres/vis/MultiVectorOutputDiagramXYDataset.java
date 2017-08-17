@@ -7,17 +7,22 @@ import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
 import wres.datamodel.metric.MultiVectorOutput;
 
 /**
- * The {@link XYDataset} for use in building the sample size portion of the reliability diagram plot (the other being
- * the reliability diagram portion).
+ * The {@link XYDataset} for use in building the reliability diagram portion of the reliability diagram plot (the other
+ * being the sample size portion).
  * 
  * @author Hank.Herr
  */
-public class ReliabilityDiagramSampleSizeXYDataset extends WRESAbstractXYDataset<MetricOutputMapByLeadThreshold<MultiVectorOutput>,MetricOutputMapByLeadThreshold<MultiVectorOutput>>
+public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<MetricOutputMapByLeadThreshold<MultiVectorOutput>, MetricOutputMapByLeadThreshold<MultiVectorOutput>>
 {
     
-    public ReliabilityDiagramSampleSizeXYDataset(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input)
+    private final MetricConstants xConstant;
+    private final MetricConstants yConstant;
+
+    public MultiVectorOutputDiagramXYDataset(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input, final MetricConstants xConstant, final MetricConstants yConstant)
     {
         super(input);
+        this.xConstant = xConstant;
+        this.yConstant = yConstant;
     }
 
     @Override
@@ -31,23 +36,32 @@ public class ReliabilityDiagramSampleSizeXYDataset extends WRESAbstractXYDataset
         
         setPlotData(rawData);
     }
-    
+
     @Override
     public int getItemCount(final int series)
     {
-        return getPlotData().get(getPlotData().getKey(series)).getData().get(MetricConstants.FORECAST_PROBABILITY).getDoubles().length;
+        return getPlotData().get(getPlotData().getKey(series))
+                            .getData()
+                            .get(xConstant)
+                            .getDoubles().length;
     }
 
     @Override
     public Number getX(final int series, final int item)
     {
-        return getPlotData().get(getPlotData().getKey(series)).getData().get(MetricConstants.FORECAST_PROBABILITY).getDoubles()[item];
+        return getPlotData().get(getPlotData().getKey(series))
+                            .getData()
+                            .get(xConstant)
+                            .getDoubles()[item];
     }
 
     @Override
     public Number getY(final int series, final int item)
     {
-        return getPlotData().get(getPlotData().getKey(series)).getData().get(MetricConstants.SAMPLE_SIZE).getDoubles()[item];
+        return getPlotData().get(getPlotData().getKey(series))
+                            .getData()
+                            .get(yConstant)
+                            .getDoubles()[item];
     }
 
     @Override
@@ -77,5 +91,4 @@ public class ReliabilityDiagramSampleSizeXYDataset extends WRESAbstractXYDataset
             return getPlotData().getKey(series).getSecondKey().toString();
         } 
     }
-
 }

@@ -120,7 +120,7 @@ public final class DefaultSlicerTest
         double[] expected = new double[]{1, 1, 1};
         Threshold threshold = metIn.getThreshold(0.0, Operator.GREATER);
         Metadata meta = metIn.getMetadataFactory().getMetadata();
-        SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, values, meta, meta);
+        SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, values, meta, meta, null);
         SingleValuedPairs sliced = slicer.sliceByLeft(pairs, threshold);
         //Test with baseline
         assertTrue("The left side of the test data does not match the benchmark.",
@@ -141,7 +141,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(0, 3.0 / 5.0));
         values.add(metIn.pairOf(0, 0.0 / 5.0));
         values.add(metIn.pairOf(0, 1.0 / 5.0));
-        SingleValuedPairs pairsNullBase = metIn.ofSingleValuedPairs(values, nullValuesBase, meta, meta);
+        SingleValuedPairs pairsNullBase = metIn.ofSingleValuedPairs(values, nullValuesBase, meta, meta, null);
         SingleValuedPairs slicedNullBase = slicer.sliceByLeft(pairsNullBase, threshold);
         assertTrue("Expected a null return from the slice operation.", slicedNullBase == null);
 
@@ -165,7 +165,7 @@ public final class DefaultSlicerTest
         double[] expected = new double[]{1, 1, 1};
         Threshold threshold = metIn.getThreshold(0.0, Operator.GREATER);
         Metadata meta = metIn.getMetadataFactory().getMetadata();
-        EnsemblePairs pairs = metIn.ofEnsemblePairs(values, values, meta, meta);
+        EnsemblePairs pairs = metIn.ofEnsemblePairs(values, values, meta, meta, null);
         EnsemblePairs sliced = slicer.sliceByLeft(pairs, threshold);
         //Test with baseline
         assertTrue("The left side of the test data does not match the benchmark.",
@@ -186,7 +186,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
         values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
         values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
-        EnsemblePairs pairsNullBase = metIn.ofEnsemblePairs(values, nullValuesBase, meta, meta);
+        EnsemblePairs pairsNullBase = metIn.ofEnsemblePairs(values, nullValuesBase, meta, meta, null);
         EnsemblePairs slicedNullBase = slicer.sliceByLeft(pairsNullBase, threshold);
         assertTrue("Expected a null return from the slice operation.", slicedNullBase == null);
 
@@ -208,7 +208,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(0, new double[]{21, 22, 23, 24, 25}));
         values.add(metIn.pairOf(1, new double[]{26, 27, 28, 29, 30}));
         Metadata meta = metIn.getMetadataFactory().getMetadata();
-        EnsemblePairs input = metIn.ofEnsemblePairs(values, values, meta, meta);
+        EnsemblePairs input = metIn.ofEnsemblePairs(values, values, meta, meta, null);
         Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper = (in) -> {
             return metIn.pairOf(in.getItemOne(), Arrays.stream(in.getItemTwo()).average().getAsDouble());
         };
@@ -249,14 +249,18 @@ public final class DefaultSlicerTest
         expectedValues.add(metIn.pairOf(false, false));
         expectedValues.add(metIn.pairOf(true, true));
         DichotomousPairs expectedNoBase = metIn.ofDichotomousPairsFromAtomic(expectedValues, meta);
-        DichotomousPairs expectedBase = metIn.ofDichotomousPairsFromAtomic(expectedValues, expectedValues, meta, meta);
+        DichotomousPairs expectedBase = metIn.ofDichotomousPairsFromAtomic(expectedValues,
+                                                                           expectedValues,
+                                                                           meta,
+                                                                           meta,
+                                                                           null);
 
         //Test without baseline
         DichotomousPairs actualNoBase = slicer.transformPairs(metIn.ofSingleValuedPairs(values, meta), mapper);
 //        assertTrue("The transformed test data does not match the benchmark.",
 //                  actualNoBase.getData().equals(expectedNoBase.getData()));
         //Test baseline
-        DichotomousPairs actualBase = slicer.transformPairs(metIn.ofSingleValuedPairs(values, values, meta, meta),
+        DichotomousPairs actualBase = slicer.transformPairs(metIn.ofSingleValuedPairs(values, values, meta, meta, null),
                                                             mapper);
 //        assertTrue("The transformed test data does not match the benchmark.",
 //                   actualBase.getDataForBaseline().equals(expectedBase.getDataForBaseline()));
@@ -300,7 +304,8 @@ public final class DefaultSlicerTest
                                                                            metIn.ofEnsemblePairs(values,
                                                                                                  values,
                                                                                                  meta,
-                                                                                                 meta),
+                                                                                                 meta,
+                                                                                                 null),
                                                                            threshold,
                                                                            mapper)
                                                            .getBaselineData());
@@ -308,7 +313,8 @@ public final class DefaultSlicerTest
                                                                              metIn.ofEnsemblePairs(values,
                                                                                                    values,
                                                                                                    meta,
-                                                                                                   meta),
+                                                                                                   meta,
+                                                                                                   null),
                                                                              threshold,
                                                                              mapper)
                                                              .getBaselineData());

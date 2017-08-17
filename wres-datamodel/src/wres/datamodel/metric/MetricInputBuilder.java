@@ -1,5 +1,7 @@
 package wres.datamodel.metric;
 
+import wres.datamodel.VectorOfDoubles;
+
 /**
  * An abstract builder for building an immutable {@link MetricInput} with associated {@link Metadata}.
  * 
@@ -7,9 +9,27 @@ package wres.datamodel.metric;
  * @version 0.1
  * @since 0.1
  */
-public interface MetricInputBuilder<S>
+abstract class MetricInputBuilder<S>
 {
 
+    /**
+     * Climatology.
+     */
+
+    VectorOfDoubles climatology;   
+    
+    /**
+     * Metadata for input.
+     */
+
+    Metadata mainMeta;
+
+    /**
+     * Metadata for baseline.
+     */
+
+    Metadata baselineMeta;         
+    
     /**
      * Sets the input.
      * 
@@ -17,7 +37,7 @@ public interface MetricInputBuilder<S>
      * @return the builder
      */
 
-    public MetricInputBuilder<S> setData(S mainInput);
+    abstract MetricInputBuilder<S> setData(S mainInput);
 
     /**
      * Sets the metadata associated with the input.
@@ -26,7 +46,11 @@ public interface MetricInputBuilder<S>
      * @return the builder
      */
 
-    public MetricInputBuilder<S> setMetadata(Metadata mainMeta);
+    MetricInputBuilder<S> setMetadata(Metadata mainMeta)
+    {
+        this.mainMeta = mainMeta;
+        return this;
+    }
     
     /**
      * Sets the input for a baseline, which is used to calculate skill.
@@ -35,7 +59,7 @@ public interface MetricInputBuilder<S>
      * @return the builder
      */
 
-    public MetricInputBuilder<S> setDataForBaseline(S baselineInput);    
+    abstract MetricInputBuilder<S> setDataForBaseline(S baselineInput);    
     
     /**
      * Sets the metadata associated with the baseline input.
@@ -44,7 +68,23 @@ public interface MetricInputBuilder<S>
      * @return the builder
      */
 
-    public MetricInputBuilder<S> setMetadataForBaseline(Metadata baselineMeta);        
+    MetricInputBuilder<S> setMetadataForBaseline(Metadata baselineMeta) 
+    {
+        this.baselineMeta = baselineMeta;
+        return this;
+    }
+    
+    /**
+     * Sets a climatological dataset for the input.
+     * 
+     * @param climatology the climatology
+     * @return the builder
+     */
+
+    MetricInputBuilder<S> setClimatology(VectorOfDoubles climatology) {
+        this.climatology = climatology;
+        return this;
+    }
 
     /**
      * Builds the metric input.
@@ -52,6 +92,6 @@ public interface MetricInputBuilder<S>
      * @return the metric input
      */
 
-    public MetricInput<S> build();    
+    abstract MetricInput<S> build();    
     
 }
