@@ -355,14 +355,17 @@ https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setu
 apply plugin: 'jacoco'        // code coverage tool
 apply plugin: 'org.sonarqube' // static analysis tool
 
-task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [subprojects.test])
+task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [subprojects.test, test])
 {
     description = 'Generates an all-subproject aggregate code coverage report.'
 
     additionalSourceDirs = files(subprojects.sourceSets.main.allSource.srcDirs)
-    sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs, )
-    classDirectories = files(subprojects.sourceSets.main.output)
-    executionData = files(subprojects.jacocoTestReport.executionData)
+    sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs,
+                              sourceSets.main.allSource.srcDirs)
+    classDirectories = files(subprojects.sourceSets.main.output,
+                             sourceSets.main.output)
+    executionData = files(subprojects.jacocoTestReport.executionData,
+                          jacocoTestReport.executionData)
 
     doFirst
     {
