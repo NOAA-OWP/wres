@@ -21,7 +21,7 @@ import wres.datamodel.metric.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public final class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs>
+class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs>
 implements ProbabilityScore
 {
 

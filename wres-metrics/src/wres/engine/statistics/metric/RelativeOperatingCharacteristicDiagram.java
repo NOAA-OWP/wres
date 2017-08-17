@@ -15,7 +15,7 @@ import wres.datamodel.metric.MultiVectorOutput;
  * @since 0.1
  */
 
-public final class RelativeOperatingCharacteristicDiagram extends RelativeOperatingCharacteristic<MultiVectorOutput>
+class RelativeOperatingCharacteristicDiagram extends RelativeOperatingCharacteristic<MultiVectorOutput>
 {
 
     /**

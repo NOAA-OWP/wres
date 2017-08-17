@@ -12,7 +12,7 @@ import wres.datamodel.metric.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-public final class ProbabilityOfFalseDetection extends ContingencyTableScore<DichotomousPairs>
+class ProbabilityOfFalseDetection extends ContingencyTableScore<DichotomousPairs>
 {
 
     @Override

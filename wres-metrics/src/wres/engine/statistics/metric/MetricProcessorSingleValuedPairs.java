@@ -33,7 +33,7 @@ import wres.datamodel.metric.Threshold;
  * @since 0.1
  */
 
-final class MetricProcessorSingleValuedPairs extends MetricProcessor
+class MetricProcessorSingleValuedPairs extends MetricProcessor
 {
 
     /**

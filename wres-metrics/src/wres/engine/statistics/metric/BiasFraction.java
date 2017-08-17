@@ -15,7 +15,7 @@ import wres.datamodel.metric.SingleValuedPairs;
  * @version 0.1
  * @since 0.1
  */
-public final class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> implements Score
+class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> implements Score
 {
 
     @Override

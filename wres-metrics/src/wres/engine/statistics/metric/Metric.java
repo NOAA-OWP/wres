@@ -120,10 +120,10 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * </p>
      */
 
-    protected static abstract class MetricBuilder<P extends MetricInput<?>, Q extends MetricOutput<?>>
+    public static abstract class MetricBuilder<P extends MetricInput<?>, Q extends MetricOutput<?>>
     {
 
-        protected DataFactory dataFactory;
+        DataFactory dataFactory;
 
         /**
          * Build the {@link Metric}.
@@ -174,7 +174,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * @return the metadata
      */
 
-    protected MetricOutputMetadata getMetadata(final MetricInput<?> input,
+    MetricOutputMetadata getMetadata(final MetricInput<?> input,
                                                final int sampleSize,
                                                final MetricConstants componentID,
                                                final DatasetIdentifier baselineID)

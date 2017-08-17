@@ -18,7 +18,7 @@ import wres.datamodel.metric.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-public final class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyTableScore<S>
+class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyTableScore<S>
 {
 
     @Override
