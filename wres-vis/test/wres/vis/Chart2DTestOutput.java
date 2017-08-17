@@ -320,6 +320,70 @@ public class Chart2DTestOutput extends TestCase
             fail("Unexpected exception: " + t.getMessage());
         }
     }
+    
+    public void test7ROCDiagramByLeadTime()
+    {
+        final String scenarioName = "test7";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+
+        try
+        {
+            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+        }
+        catch(final IOException e)
+        {
+            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+        }
+
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
+
+//DEBUG OUTPUT:
+//        results.forEach((key,result)-> {
+//            System.out.println(key.getSecondKey());
+//            System.out.println(Arrays.toString(result.get(MetricConstants.FORECAST_PROBABILITY).getDoubles()));  //This array forms the domain
+//            System.out.println(Arrays.toString(result.get(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY).getDoubles()));  //This array forms the range for reliability diagram subplot
+//            System.out.println(Arrays.toString(result.get(MetricConstants.SAMPLE_SIZE).getDoubles())); //This array forms the range for the sample size subplot
+//        });
+        
+        try
+        {
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
+
+            //Call the factory.
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
+                                                                                                            factory,
+                                                                                                            ChartEngineFactory.VisualizationPlotType.ROC_DIAGRAM_FOR_LEAD,
+                                                                                                            null,
+                                                                                                            null);
+
+            //Generate the output file.
+            for(final Object lead: engineMap.keySet())
+            {
+                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + lead + "h."
+                    + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
+
+            }
+
+            //Compare against OS specific image benchmark.
+            for(final Object lead: engineMap.keySet())
+            {
+                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + lead
+                    + "h." + outputImageFileSuffix),
+                                                                          new File("testinput/chart2DTest/benchmark."
+                                                                              + lead + "h." + outputImageFileSuffix),
+                                                                          8,
+                                                                          true,
+                                                                          false);
+            }
+        }
+        catch(final Throwable t)
+        {
+            t.printStackTrace();
+            fail("Unexpected exception: " + t.getMessage());
+        }
+
+    }
 
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
@@ -699,8 +763,8 @@ public class Chart2DTestOutput extends TestCase
                         }
 
                         final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
-                        output.put(MetricConstants.PROBABILITY_OF_DETECTION, roc[0]); //PoD
-                        output.put(MetricConstants.PROBABILITY_OF_FALSE_DETECTION, roc[1]); //PoFD
+                        output.put(MetricConstants.PROBABILITY_OF_FALSE_DETECTION, roc[0]); //PoFD
+                        output.put(MetricConstants.PROBABILITY_OF_DETECTION, roc[1]); //PoD
                         final MultiVectorOutput value = outputFactory.ofMultiVectorOutput(output, meta);
 
                         //Append result
@@ -749,7 +813,7 @@ public class Chart2DTestOutput extends TestCase
                                                                                                              "PRECIPITATION",
                                                                                                              "HEFS"));
             //Single threshold
-            QuantileThreshold threshold =
+            final QuantileThreshold threshold =
                                         outputFactory.getQuantileThreshold(Double.NEGATIVE_INFINITY,
                                                                            Double.NEGATIVE_INFINITY,
                                                                            Operator.GREATER);
@@ -762,7 +826,7 @@ public class Chart2DTestOutput extends TestCase
                 final double leadTime = (Double)d.next().getKey();
                 final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, threshold);
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult)data.getResult(leadTime);
-                double[][] qq = t.getResult().toArray();
+                final double[][] qq = t.getResult().toArray();
 
                 final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
                 output.put(MetricConstants.PREDICTED_QUANTILES, qq[0]);

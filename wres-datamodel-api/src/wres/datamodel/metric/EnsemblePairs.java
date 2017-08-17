@@ -6,7 +6,8 @@ import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 
 /**
  * Store of {@link PairOfDoubleAndVectorOfDoubles} where the left side is a single value and the right side is an
- * ensemble of values.
+ * ensemble of values. Metrics should anticipate the possibility of an inconsistent number of ensemble members 
+ * in each pair (e.g. due to missing values).
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

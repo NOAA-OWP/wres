@@ -4,24 +4,23 @@
 
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
-		<text>Reliability Diagram for Various Event @plotTitleVariable@ (Upper) and Sample Counts (Lower)
+		<text>Relative Operating Characteristic Diagram for Various Event @plotTitleVariable@
 @locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
 		</text>
 	</plotTitle>
 	
-	<!--Ensure the sampel size items do not show in the legend. -->
-	<datasourceDrawingParameters sourceIndex="1">
-		<seriesDrawingParameters createdIndexOfSeriesToModify="-1">
-			<nameInLegend></nameInLegend>
-			<showInLegend>false</showInLegend>
+	<!-- Shapes for all series. -->
+	<datasourceDrawingParameters sourceIndex="0">
+		<plotter>LineAndScatter</plotter>
+		<seriesDrawingParameters
+			createdIndexOfSeriesToModify="-1">
+            <shape>circle</shape>
 		</seriesDrawingParameters>
 	</datasourceDrawingParameters>
 
     <!-- The diagonal line series. -->
-	<datasourceDrawingParameters sourceIndex="2">
+	<datasourceDrawingParameters sourceIndex="1">
 		<plotter>LineAndScatter</plotter>
-		<subPlot>0</subPlot>
-		<yAxis>left</yAxis>
 		<seriesDrawingParameters
 			createdIndexOfSeriesToModify="-1">
             <lineColor alpha="255" blue="128" green="128" red="128"/>
@@ -33,7 +32,7 @@
 	</datasourceDrawingParameters>
 
     <!-- Fix the bounds to 0 and 1. -->
-	<subPlot subPlotIndex="0" weight="3">
+	<subPlot subPlotIndex="0">
 		<leftRangeAxis>
 			<numericAxis>
 				<lowerBound>0.0</lowerBound>
@@ -42,7 +41,6 @@
 			</numericAxis>
 		</leftRangeAxis>
 	</subPlot>
-	<subPlot subPlotIndex="1" weight="1" />
 
     <!-- Fix the bounds to 0 and 1. -->
 	<domainAxis inverted="false" visible="true">

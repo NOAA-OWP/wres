@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.VectorOfDoubles;
 
 /**
  * Immutable implementation of a store of verification pairs that comprise two single-valued, continuous numerical,
@@ -39,12 +40,12 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      */
 
     private final Metadata baselineMeta;
-
-    @Override
-    public boolean hasBaseline()
-    {
-        return !Objects.isNull(baselineInput);
-    }
+    
+    /**
+     * Climatological dataset. May be null.
+     */
+    
+    private VectorOfDoubles climatology;
 
     @Override
     public List<PairOfDoubles> getData()
@@ -82,11 +83,17 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         return mainInput.size();
     }    
 
+    @Override
+    public VectorOfDoubles getClimatology()
+    {
+        return climatology;
+    }    
+    
     /**
      * A {@link MetricInputBuilder} to build the metric input.
      */
 
-    static class SingleValuedPairsBuilder implements MetricInputBuilder<List<PairOfDoubles>>
+    static class SingleValuedPairsBuilder extends MetricInputBuilder<List<PairOfDoubles>>
     {
 
         /**
@@ -98,30 +105,11 @@ class SafeSingleValuedPairs implements SingleValuedPairs
          * Pairs for baseline.
          */
         private List<PairOfDoubles> baselineInput;
-
-        /**
-         * Metadata for input.
-         */
-
-        private Metadata mainMeta;
-
-        /**
-         * Metadata for baseline.
-         */
-
-        private Metadata baselineMeta;
-
+        
         @Override
         public SingleValuedPairsBuilder setData(final List<PairOfDoubles> mainInput)
         {
             this.mainInput = mainInput;
-            return this;
-        }
-
-        @Override
-        public SingleValuedPairsBuilder setMetadata(final Metadata mainMeta)
-        {
-            this.mainMeta = mainMeta;
             return this;
         }
 
@@ -133,18 +121,10 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         }
 
         @Override
-        public SingleValuedPairsBuilder setMetadataForBaseline(final Metadata baselineMeta)
-        {
-            this.baselineMeta = baselineMeta;
-            return this;
-        }
-
-        @Override
         public SafeSingleValuedPairs build()
         {
             return new SafeSingleValuedPairs(this);
         }
-
     }
 
     /**
@@ -183,6 +163,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         baselineInput = Objects.nonNull(b.baselineInput) ? factory.safePairOfDoublesList(b.baselineInput) : null;
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
+        climatology = b.climatology;
     }
 
 }
