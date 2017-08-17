@@ -270,8 +270,10 @@ public class Control implements Function<String[], Integer>
             }
             catch ( ProjectConfigException pce )
             {
-                LOGGER.error( "Please include a numeric output clause in "
-                              + "project configuration. <destination><path>",
+                LOGGER.error( "Please include valid numeric output clause(s) in"
+                              + " project configuration. Example: <destination>"
+                              + "<path>c:/Users/myname/wres_output/</path>"
+                              + "</destination>",
                               pce );
                 return false;
             }

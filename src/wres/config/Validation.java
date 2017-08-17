@@ -4,11 +4,17 @@ import com.sun.xml.bind.Locatable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ProjectConfigPlus;
 
 import javax.xml.bind.ValidationEvent;
+import java.io.File;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -20,6 +26,9 @@ public class Validation
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Validation.class );
+
+    /** A message to display for programmers when null project config occurs */
+    private static final String NON_NULL = "The ProjectConfigPlus must not be null";
 
     private Validation()
     {
@@ -94,12 +103,84 @@ public class Validation
             result = false;
         }
 
+        // Validate numeric outputs portion
+        result = result && isNumericOutputPortionOfProjectValid( projectConfigPlus );
         // Validate graphics portion
         result = result && isGraphicsPortionOfProjectValid( projectConfigPlus );
 
         return result;
     }
 
+
+    /**
+     * Validates numeric outputs portion of project config.
+     *
+     * @param projectConfigPlus the project configuration
+     * @return true if the numeric outputs portion is valid, false otherwise
+     * @throws NullPointerException when projectConfigPlus is null
+     */
+
+    private static boolean isNumericOutputPortionOfProjectValid( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL);
+
+        boolean result = true;
+
+        // No outputs specified
+        if ( projectConfigPlus.getProjectConfig()
+                              .getOutputs() == null )
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( "In file {}, no output configuration was found.",
+                             projectConfigPlus.getPath() );
+            }
+
+            return false;
+        }
+
+        for ( DestinationConfig d : projectConfigPlus.getProjectConfig()
+                                                     .getOutputs()
+                                                     .getDestination() )
+        {
+
+            // Only validating numeric output clauses here.
+            if ( d.getType() == DestinationType.NUMERIC )
+            {
+                Path destinationPath;
+                try
+                {
+                    destinationPath = Paths.get( d.getPath() );
+                }
+                catch ( InvalidPathException ipe )
+                {
+                    LOGGER.warn( "In file {}, near line {} and column {}, "
+                                 + "the path {} could not be found.",
+                                 projectConfigPlus.getPath(),
+                                 d.sourceLocation().getLineNumber(),
+                                 d.sourceLocation().getColumnNumber(),
+                                 d.getPath() );
+                    result = false;
+                    continue;
+                }
+
+                File destinationFile = destinationPath.toFile();
+
+                if ( !destinationFile.canWrite() )
+                {
+                    LOGGER.warn( "In file {}, near line {} and column {}, "
+                                 + "the path {} was not a writeable location.",
+                                 projectConfigPlus.getPath(),
+                                 d.sourceLocation().getLineNumber(),
+                                 d.sourceLocation().getColumnNumber(),
+                                 d.getPath() );
+                    result = false;
+                }
+            }
+        }
+
+        return result;
+    }
 
     /**
      * Validates graphics portion, similar to isProjectValid, but targeted.
