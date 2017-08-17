@@ -28,7 +28,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metr
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static abstract class DoubleErrorScoreBuilder<S extends SingleValuedPairs>
+    static abstract class DoubleErrorScoreBuilder<S extends SingleValuedPairs>
     extends
         MetricBuilder<S, ScalarOutput>
     {

@@ -57,7 +57,7 @@ public final class BrierScore extends MeanSquareError<DiscreteProbabilityPairs> 
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class BrierScoreBuilder extends MeanSquareErrorBuilder<DiscreteProbabilityPairs>
+    static class BrierScoreBuilder extends MeanSquareErrorBuilder<DiscreteProbabilityPairs>
     {
 
         @Override

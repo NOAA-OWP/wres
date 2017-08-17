@@ -136,7 +136,7 @@ final class MetricProcessorSingleValuedPairs extends MetricProcessor
             if(hasGlobalThresholds(MetricInputGroup.DICHOTOMOUS))
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.DICHOTOMOUS);
-                double[] sorted = getSortedLeftSide(input, global);
+                double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     //Only process discrete thresholds
                     if(threshold.isFinite())

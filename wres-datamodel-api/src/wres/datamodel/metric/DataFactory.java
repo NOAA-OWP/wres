@@ -187,6 +187,103 @@ public interface DataFactory
     }
 
     /**
+     * Construct the dichotomous input without any pairs for a baseline.
+     * 
+     * @param pairs the verification pairs
+     * @param meta the metadata
+     * @param climatology an optional climatological dataset (may be null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    default DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta,
+                                                final VectorOfDoubles climatology)
+    {
+        return ofDichotomousPairs(pairs, null, meta, null, climatology);
+    }
+
+    /**
+     * Construct the dichotomous input from atomic {@link PairOfBooleans} without any pairs for a baseline.
+     * 
+     * @param pairs the verification pairs
+     * @param meta the metadata
+     * @param climatology an optional climatological dataset (may be null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    default DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs, final Metadata meta,
+                                                          final VectorOfDoubles climatology)
+    {
+        return ofDichotomousPairsFromAtomic(pairs, null, meta, null, climatology);
+    }
+
+    /**
+     * Construct the multicategory input without any pairs for a baseline.
+     * 
+     * @param pairs the verification pairs
+     * @param meta the metadata
+     * @param climatology an optional climatological dataset (may be null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    default MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs, final Metadata meta,
+                                                    final VectorOfDoubles climatology)
+    {
+        return ofMulticategoryPairs(pairs, null, meta, null, climatology);
+    }
+
+    /**
+     * Construct the discrete probability input without any pairs for a baseline.
+     * 
+     * @param pairs the discrete probability pairs
+     * @param meta the metadata
+     * @param climatology an optional climatological dataset (may be null)
+     * @throws MetricInputException if the inputs are invalid
+     * @return the pairs
+     */
+
+    default DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs, final Metadata meta,
+                                                                final VectorOfDoubles climatology)
+    {
+        return ofDiscreteProbabilityPairs(pairs, null, meta, null, climatology);
+    }
+
+    /**
+     * Construct the single-valued input without any pairs for a baseline.
+     * 
+     * @param pairs the single-valued pairs
+     * @param meta the metadata
+     * @param climatology an optional climatological dataset (may be null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    default SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Metadata meta,
+                                                  final VectorOfDoubles climatology)
+    {
+        return ofSingleValuedPairs(pairs, null, meta, null, climatology);
+    }
+
+    /**
+     * Construct the ensemble input without any pairs for a baseline.
+     * 
+     * @param pairs the ensemble pairs
+     * @param meta the metadata
+     * @param climatology an optional climatological dataset (may be null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    default EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs,
+                                          final Metadata meta,
+                                          final VectorOfDoubles climatology)
+    {
+        return ofEnsemblePairs(pairs, null, meta, null, climatology);
+    }
+
+    /**
      * Return a {@link VectorOutput} with a default decomposition template of {@link MetricDecompositionGroup#NONE}.
      * 
      * @param output the output data

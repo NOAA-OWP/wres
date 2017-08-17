@@ -19,6 +19,7 @@ import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
+import wres.engine.statistics.metric.RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder;
 import wres.engine.statistics.metric.ReliabilityDiagram.ReliabilityDiagramBuilder;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
@@ -442,6 +443,8 @@ public class MetricFactory
                 return ofBrierScore();
             case BRIER_SKILL_SCORE:
                 return ofBrierSkillScore();
+            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
+                return ofRelativeOperatingCharacteristicScore();
             default:
                 throw new IllegalArgumentException(error + " '" + metric + "'.");
         }
@@ -763,6 +766,18 @@ public class MetricFactory
     {
         return (RelativeOperatingCharacteristicDiagram)new RelativeOperatingCharacteristicBuilder().setOutputFactory(outputFactory)
                                                                                                    .build();
+    }
+
+    /**
+     * Return a default {@link RelativeOperatingCharacteristicScore} function.
+     * 
+     * @return a default {@link RelativeOperatingCharacteristicScore} function.
+     */
+
+    protected RelativeOperatingCharacteristicScore ofRelativeOperatingCharacteristicScore()
+    {
+        return (RelativeOperatingCharacteristicScore)new RelativeOperatingCharacteristicScoreBuilder().setOutputFactory(outputFactory)
+                                                                                                      .build();
     }
 
     /**

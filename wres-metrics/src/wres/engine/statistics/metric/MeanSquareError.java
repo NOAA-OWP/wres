@@ -57,7 +57,7 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class MeanSquareErrorBuilder<S extends SingleValuedPairs>
+    static class MeanSquareErrorBuilder<S extends SingleValuedPairs>
     extends
         DecomposableDoubleErrorScoreBuilder<S>
     {
@@ -76,7 +76,7 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
      * @param builder the builder
      */
 
-    protected MeanSquareError(final MeanSquareErrorBuilder<S> builder)
+    MeanSquareError(final MeanSquareErrorBuilder<S> builder)
     {
         super(builder);
     }

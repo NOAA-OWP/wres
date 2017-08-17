@@ -24,7 +24,7 @@ public abstract class SumOfSquareError<S extends SingleValuedPairs> extends Deco
      * @param builder the builder
      */
 
-    protected SumOfSquareError(final DecomposableDoubleErrorScoreBuilder<S> builder)
+    SumOfSquareError(final DecomposableDoubleErrorScoreBuilder<S> builder)
     {
         super(builder);
     }

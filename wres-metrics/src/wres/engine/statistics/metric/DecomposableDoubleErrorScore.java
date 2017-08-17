@@ -41,7 +41,7 @@ implements Score
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static abstract class DecomposableDoubleErrorScoreBuilder<S extends SingleValuedPairs>
+    static abstract class DecomposableDoubleErrorScoreBuilder<S extends SingleValuedPairs>
     extends
         MetricBuilder<S, VectorOutput>
     {

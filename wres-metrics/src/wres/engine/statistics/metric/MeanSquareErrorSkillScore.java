@@ -73,7 +73,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class MeanSquareErrorSkillScoreBuilder<S extends SingleValuedPairs>
+    static class MeanSquareErrorSkillScoreBuilder<S extends SingleValuedPairs>
     extends
         MeanSquareErrorBuilder<S>
     {

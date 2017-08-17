@@ -58,7 +58,7 @@ public final class RootMeanSquareError extends DoubleErrorScore<SingleValuedPair
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class RootMeanSquareErrorBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
+    static class RootMeanSquareErrorBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
     {
 
         @Override

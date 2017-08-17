@@ -103,7 +103,7 @@ implements ProbabilityScore
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class RelativeOperatingCharacteristicScoreBuilder
+    static class RelativeOperatingCharacteristicScoreBuilder
     extends
         MetricBuilder<DiscreteProbabilityPairs, VectorOutput>
     {

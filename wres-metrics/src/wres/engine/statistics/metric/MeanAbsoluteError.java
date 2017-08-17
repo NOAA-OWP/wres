@@ -49,7 +49,7 @@ public final class MeanAbsoluteError extends DoubleErrorScore<SingleValuedPairs>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class MeanAbsoluteErrorBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
+    static class MeanAbsoluteErrorBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
     {
 
         @Override
