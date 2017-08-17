@@ -1,13 +1,13 @@
-﻿-- Table: wres.Feature
+﻿-- Table: wres.feature
 
-CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
+CREATE SCHEMA IF NOT EXISTS wres;
 
-DROP TABLE IF EXISTS wres.Feature CASCADE;
+DROP TABLE IF EXISTS wres.feature;
 
-CREATE TABLE IF NOT EXISTS wres.Feature
+CREATE TABLE IF NOT EXISTS wres.feature
 (
-  feature_id SERIAL PRIMARY KEY,
-  comid INT,
+  feature_id serial NOT NULL,
+  comid integer,
   lid text,
   gage_id text,
   rfc text,
@@ -15,8 +15,10 @@ CREATE TABLE IF NOT EXISTS wres.Feature
   st_code text,
   huc text,
   feature_name text,
-  latitude REAL,
-  longitude REAL
+  latitude real,
+  longitude real,
+  nwm_index int,
+  CONSTRAINT feature_pkey PRIMARY KEY (feature_id)
 )
 WITH (
   OIDS=FALSE
@@ -24,21 +26,30 @@ WITH (
 ALTER TABLE wres.feature
   OWNER TO wres;
 
+-- Index: wres.feature_comid_idx
+
 DROP INDEX IF EXISTS wres.feature_comid_idx;
 
 CREATE INDEX IF NOT EXISTS feature_comid_idx
-  ON wres.Feature
+  ON wres.feature
   USING btree
   (comid);
 
-DROP INDEX IF EXISTS wres.feature_lid_idx;
-
-CREATE INDEX IF NOT EXISTS feature_lid_idx
-  ON wres.Feature
-  USING btree
-  (lid);
+-- Index: wres.feature_coordinates_idx
 
 DROP INDEX IF EXISTS wres.feature_coordinates_idx;
 
 CREATE INDEX IF NOT EXISTS feature_coordinates_idx
-  ON wres.Feature (latitude, longitude);
+  ON wres.feature
+  USING btree
+  (latitude, longitude);
+
+-- Index: wres.feature_lid_idx
+
+DROP INDEX IF EXISTS wres.feature_lid_idx;
+
+CREATE INDEX IF NOT EXISTS feature_lid_idx
+  ON wres.feature
+  USING btree
+  (lid COLLATE pg_catalog."default");
+
