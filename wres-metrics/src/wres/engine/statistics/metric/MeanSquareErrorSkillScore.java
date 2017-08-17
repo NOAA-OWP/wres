@@ -35,23 +35,19 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
             denominator = getSumOfSquareError(s.getBaselineData());
             baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
         }
-        else 
+        else
         {
             DataFactory d = getDataFactory();
             double meanRight = FunctionFactory.mean().applyAsDouble(d.vectorOf(d.getSlicer().getRightSide(s)));
-            for(PairOfDoubles next : s.getData()) {
-                denominator+=next.getItemOne()-meanRight;
+            for(PairOfDoubles next: s.getData())
+            {
+                denominator += Math.pow(next.getItemOne() - meanRight, 2);
             }
         }
-        final double[] result = new double[]{
-            FunctionFactory.skill().applyAsDouble(numerator,
-                                                  denominator)};
+        final double[] result = new double[]{FunctionFactory.skill().applyAsDouble(numerator, denominator)};
         //Metadata
         final MetricOutputMetadata metOut =
-                                          getMetadata(s,
-                                                      s.getData().size(),
-                                                      MetricConstants.MAIN,
-                                                      baselineIdentifier);        
+                                          getMetadata(s, s.getData().size(), MetricConstants.MAIN, baselineIdentifier);
         return getDataFactory().ofVectorOutput(result, metOut);
     }
 

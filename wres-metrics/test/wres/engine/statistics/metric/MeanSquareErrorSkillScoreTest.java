@@ -3,6 +3,8 @@ package wres.engine.statistics.metric;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
+
 import org.junit.Test;
 
 import wres.datamodel.metric.DataFactory;
@@ -26,12 +28,12 @@ public final class MeanSquareErrorSkillScoreTest
 {
 
     /**
-     * Constructs a {@link MeanSquareErrorSkillScore} and compares the actual result to the expected result. Also,
-     * checks the parameters of the metric.
+     * Constructs a {@link MeanSquareErrorSkillScore} with an explicit baseline and compares the actual result to the
+     * expected result. Also, checks the parameters of the metric.
      */
 
     @Test
-    public void test1MeanSquareErrorSkillScore()
+    public void test1MeanSquareErrorSkillScoreWithBaseline()
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -81,6 +83,51 @@ public final class MeanSquareErrorSkillScoreTest
         {
         }
 
+    }
+
+    /**
+     * Constructs a {@link MeanSquareErrorSkillScore} with a no-skill baseline and compares the actual result to
+     * the expected result.
+     */
+
+    @Test
+    public void test2MeanSquareErrorSkillScoreWithoutBaseline()
+    {
+        //Obtain the factories
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
+        //Generate some data
+        SingleValuedPairs input = null;
+        try
+        {
+            input = MetricTestDataFactory.getSingleValuedPairsFive();
+        }
+        catch(IOException e)
+        {
+            fail("Unable to read the test data.");
+        }
+        //Metadata for the output
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
+                                                                  metaFac.getDimension(),
+                                                                  metaFac.getDimension("MM/DAY"),
+                                                                  MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                                  MetricConstants.MAIN,
+                                                                  metaFac.getDatasetIdentifier("103.1", "QME", "NVE"),
+                                                                  24);
+
+        //Build the metric
+        final MeanSquareErrorSkillScoreBuilder<SingleValuedPairs> b =
+                                                                    new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>();
+        b.setOutputFactory(outF);
+        final MeanSquareErrorSkillScore<SingleValuedPairs> mse = b.build();
+
+        //Check the results
+        final VectorOutput actual = mse.apply(input);
+
+        final VectorOutput expected = outF.ofVectorOutput(new double[]{0.7832791707548252}, m1);
+        assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
+            + ".", actual.equals(expected));
     }
 
 }

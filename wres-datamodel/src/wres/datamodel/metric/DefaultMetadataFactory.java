@@ -2,6 +2,7 @@ package wres.datamodel.metric;
 
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 /**
  * A factory class for constructing {@link Metadata} and associated objects.
@@ -359,11 +360,11 @@ public class DefaultMetadataFactory implements MetadataFactory
         private final Dimension dim;
         private final DatasetIdentifier identifier;
         private final Integer leadTime;
-        private final String dimNull = "Specify a non-null dimension from which to construct the metadata.";
+        private static final String DIMNULL = "Specify a non-null dimension from which to construct the metadata.";
         
         private MetadataImpl(final Dimension dim)
         {
-            Objects.requireNonNull(dim,dimNull);
+            Objects.requireNonNull(dim,DIMNULL);
             this.dim = dim;
             this.identifier = null;
             this.leadTime = null;
@@ -371,7 +372,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         
         private MetadataImpl(final Dimension dim, final DatasetIdentifier identifier)
         {
-            Objects.requireNonNull(dim,dimNull);
+            Objects.requireNonNull(dim,DIMNULL);
             this.dim = dim;
             this.identifier = identifier;
             this.leadTime = null;
@@ -379,7 +380,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         
         private MetadataImpl(final Dimension dim, final DatasetIdentifier identifier, final Integer leadTime)
         {
-            Objects.requireNonNull(dim,dimNull);
+            Objects.requireNonNull(dim,DIMNULL);
             this.dim = dim;
             this.identifier = identifier;
             this.leadTime = leadTime;
@@ -412,7 +413,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             }
             final Metadata p = (Metadata)o;
             boolean returnMe = p.getDimension().equals(getDimension()) && hasIdentifier() == p.hasIdentifier()
-                && hasLeadTime() == hasLeadTime();
+                && hasLeadTime() == p.hasLeadTime();
             if(hasIdentifier())
             {
                 returnMe = returnMe && identifier.equals(p.getIdentifier());
@@ -514,25 +515,23 @@ public class DefaultMetadataFactory implements MetadataFactory
         @Override
         public String toString()
         {
-            final StringBuilder b = new StringBuilder();
-            b.append("[");
+            final StringJoiner b = new StringJoiner(",", "[", "]");
             if(hasGeospatialID())
             {
-                b.append(getGeospatialID()).append(",");
+                b.add(getGeospatialID());
             }
             if(hasVariableID())
             {
-                b.append(getVariableID()).append(",");
+                b.add(getVariableID());
             }
             if(hasScenarioID())
             {
-                b.append(getScenarioID()).append(",");
+                b.add(getScenarioID());
             }
             if(hasScenarioIDForBaseline())
             {
-                b.append(getScenarioIDForBaseline()).append(",");
+                b.add(getScenarioIDForBaseline());
             }
-            b.append("]");
             return b.toString();
         }
 

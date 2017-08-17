@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -251,12 +252,9 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
     @Override
     public String toString()
     {
-        final StringBuilder b = new StringBuilder();
-        b.append("[");
-        this.forEach((key, value) -> b.append(value).append(","));
-        b.delete(b.length() - 1, b.length());
-        b.append("]");
-        return b.toString();
+        StringJoiner joiner  = new StringJoiner(",","[","]");
+        this.forEach((key, value) -> joiner.add(value.toString()));
+        return joiner.toString();
     }
 
 }
