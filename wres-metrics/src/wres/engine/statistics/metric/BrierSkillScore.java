@@ -6,6 +6,7 @@ import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.metric.MetricInputException;
 import wres.datamodel.metric.MetricOutputMetadata;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
@@ -28,7 +29,10 @@ implements ProbabilityScore
     @Override
     public VectorOutput apply(final DiscreteProbabilityPairs s)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         //Explicit baseline
         if(s.hasBaseline())
         {

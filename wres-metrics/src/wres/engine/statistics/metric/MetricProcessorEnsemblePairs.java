@@ -19,6 +19,7 @@ import wres.datamodel.metric.EnsemblePairs;
 import wres.datamodel.metric.MetricConstants.MetricInputGroup;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metric.MetricInput;
+import wres.datamodel.metric.MetricInputSliceException;
 import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
@@ -245,8 +246,15 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
                 double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     Threshold useMe = getThreshold(threshold, sorted);
-                    futures.addVectorOutput(dataFactory.getMapKey(leadTime, useMe),
-                                            processEnsembleThreshold(leadTime, useMe, input, ensembleVector));
+                    try
+                    {
+                        futures.addVectorOutput(dataFactory.getMapKey(leadTime, useMe),
+                                                processEnsembleThreshold(leadTime, useMe, input, ensembleVector));
+                    }
+                    catch(MetricInputSliceException e)
+                    {
+                        LOGGER.error(e.getMessage(), e);
+                    }
                 });
             }
             //Deal with metric-local thresholds
@@ -266,8 +274,15 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
                 double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     Threshold useMe = getThreshold(threshold, sorted);
-                    futures.addMultiVectorOutput(dataFactory.getMapKey(leadTime, useMe),
-                                                 processEnsembleThreshold(leadTime, useMe, input, ensembleMultiVector));
+                    try
+                    {
+                        futures.addMultiVectorOutput(dataFactory.getMapKey(leadTime, useMe),
+                                                     processEnsembleThreshold(leadTime, useMe, input, ensembleMultiVector));
+                    }
+                    catch(MetricInputSliceException e)
+                    {
+                        LOGGER.error(e.getMessage(), e);
+                    }
                 });
             }
             //Deal with metric-local thresholds
@@ -383,12 +398,13 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
      * @param pairs the pairs
      * @param collection the metric collection
      * @return the future result
+     * @throws MetricInputSliceException if the threshold fails to slice any data
      */
 
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processEnsembleThreshold(Integer leadTime,
                                                                                                     Threshold threshold,
                                                                                                     EnsemblePairs pairs,
-                                                                                                    MetricCollection<EnsemblePairs, T> collection)
+                                                                                                    MetricCollection<EnsemblePairs, T> collection) throws MetricInputSliceException
     {
         //Slice the pairs
         EnsemblePairs subset = dataFactory.getSlicer().sliceByLeft(pairs, threshold);
