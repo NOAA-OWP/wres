@@ -431,12 +431,6 @@ public abstract class ChartEngineFactory
                                                                            userSpecifiedPlotType,
                                                                            userSpecifiedTemplateResourceName,
                                                                            overrideParametersStr);
-
-            //Modify the arguments here.
-            if(!entry.getKey().equals(MetricConstants.MAIN))
-            {
-
-            }
             results.put(entry.getKey(), engine);
         }
         return results;
