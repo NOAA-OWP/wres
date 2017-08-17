@@ -1,13 +1,7 @@
 package wres.io.writing;
 
-import wres.config.ProjectConfigException;
-import wres.config.generated.Conditions;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.*;
-
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -19,12 +13,27 @@ import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.config.ProjectConfigException;
+import wres.config.generated.Conditions;
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
+import wres.config.generated.ProjectConfig;
+import wres.datamodel.metric.*;
+
 /**
  * Helps write Comma Separated files.
  */
 public class CommaSeparated
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparated.class );
 
+    private CommaSeparated()
+    {
+        // Prevent construction.
+    }
 
     /**
      * Write numerical outputs to CSV files.
@@ -59,6 +68,41 @@ public class CommaSeparated
 
             if ( d.getType() == DestinationType.NUMERIC )
             {
+
+                Path outputDirectory = Paths.get( d.getPath() );
+
+                if ( outputDirectory == null )
+                {
+                    String message = "Destination path " + d.getPath() +
+                                     " could not be found.";
+                    throw new ProjectConfigException( d, message );
+                }
+                else
+                {
+                    File outputLocation = outputDirectory.toFile();
+                    if ( outputLocation.isDirectory() )
+                    {
+                        // good to go, best case
+                    }
+                    else if ( outputLocation.isFile() )
+                    {
+                        // Use parent directory, warn user
+                        outputDirectory = outputDirectory.getParent();
+                        LOGGER.warn( "Using parent directory {} for CSV output "
+                                     + "because there will be a file for each "
+                                     + "feature.",
+                                     outputDirectory.toString() );
+                    }
+                    else
+                    {
+                        // If we have neither a file nor a directory, is issue.
+                        String message = "Destination path " + d.getPath()
+                                         + " needs to be changed to a directory"
+                                         + " that can be written to.";
+                        throw new ProjectConfigException( d, message );
+                    }
+                }
+
                 for ( Map.Entry<MapBiKey<MetricConstants, MetricConstants>,
                                 MetricOutputMapByLeadThreshold<ScalarOutput>> m
                       : storedMetricOutput.getScalarOutput()
@@ -88,20 +132,23 @@ public class CommaSeparated
                         }
                     }
                 }
-            }
 
-            Path outputPath = Paths.get(d.getPath() + feature.getLocation().getLid() + ".csv");
-            try (BufferedWriter w = Files.newBufferedWriter( outputPath,
-                                                             StandardCharsets.UTF_8,
-                                                             StandardOpenOption.CREATE ) )
-            {
-                w.write( headerRow.toString() );
-                w.write( System.lineSeparator() );
+                Path outputPath = Paths.get(outputDirectory + "/"
+                                                 + feature.getLocation().getLid()
+                                                 + ".csv");
 
-                for ( StringJoiner row : rows.values() )
+                try (BufferedWriter w = Files.newBufferedWriter( outputPath,
+                                                                 StandardCharsets.UTF_8,
+                                                                 StandardOpenOption.CREATE ) )
                 {
-                    w.write( row.toString() );
+                    w.write( headerRow.toString() );
                     w.write( System.lineSeparator() );
+
+                    for ( StringJoiner row : rows.values() )
+                    {
+                        w.write( row.toString() );
+                        w.write( System.lineSeparator() );
+                    }
                 }
             }
         }
