@@ -8,6 +8,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.*;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
@@ -33,12 +34,13 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
     @Internal(exclusivePackage = "wres.io")
-    public InputRetriever (ProjectConfig projectConfig, Conditions.Feature feature, int progress, Function<String, Double> getLeftValue)
+    public InputRetriever (ProjectConfig projectConfig, Conditions.Feature feature, int progress, Function<String, Double> getLeftValue, VectorOfDoubles climatology)
     {
         this.projectConfig = projectConfig;
         this.feature = feature;
         this.progress = progress;
         this.getLeftValue = getLeftValue;
+        this.climatology = climatology;
     }
 
     @Override
@@ -73,7 +75,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         // TODO: Handle addition of climatology for probability thresholds on pair construction
         if (dataType == DatasourceType.ENSEMBLE_FORECASTS)
         {
-            input = factory.ofEnsemblePairs(this.primaryPairs, this.baselinePairs, metadata, baselineMetadata);
+            input = factory.ofEnsemblePairs(this.primaryPairs, this.baselinePairs, metadata, baselineMetadata, this.climatology);
         }
         else
         {
@@ -88,7 +90,8 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             input = factory.ofSingleValuedPairs(primary,
                                                 baseline,
                                                 metadata,
-                                                baselineMetadata);
+                                                baselineMetadata,
+                                                this.climatology);
         }
 
         this.primaryPairs = null;
@@ -176,6 +179,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private final ProjectConfig projectConfig;
     private final Conditions.Feature feature;
     private final Function<String, Double> getLeftValue;
+    private final VectorOfDoubles climatology;
     private List<PairOfDoubleAndVectorOfDoubles> primaryPairs;
     private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;
     private Boolean hasBaseline;
