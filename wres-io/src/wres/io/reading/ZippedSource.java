@@ -11,6 +11,7 @@ import wres.io.config.SystemSettings;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
+import wres.util.Strings;
 
 import java.io.*;
 import java.nio.file.Paths;
@@ -118,7 +119,7 @@ public class ZippedSource extends BasicSource {
                     ingestTask.get();
                 }
                 catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
                 ingestTask = this.getIngestTask();
             }
@@ -131,7 +132,7 @@ public class ZippedSource extends BasicSource {
                     ingestTask.get();
                 }
                 catch (ExecutionException e) {
-                    e.printStackTrace();
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
                 ingestTask = Database.getStoredIngestTask();
             }
@@ -142,7 +143,7 @@ public class ZippedSource extends BasicSource {
             }
         }
         catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            LOGGER.error(Strings.getStackTrace(e));
         }
         finally {
             if (archive != null)
@@ -151,7 +152,7 @@ public class ZippedSource extends BasicSource {
                     archive.close();
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
             }
 
@@ -161,7 +162,7 @@ public class ZippedSource extends BasicSource {
                     decompressedFileStream.close();
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
             }
 
@@ -171,7 +172,7 @@ public class ZippedSource extends BasicSource {
                     bufferedFile.close();
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
             }
 
@@ -181,7 +182,7 @@ public class ZippedSource extends BasicSource {
                     fileStream.close();
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    LOGGER.error(Strings.getStackTrace(e));
                 }
             }
         }

@@ -18,69 +18,8 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	private String variable_name = null;
 	public Integer measurementunitId = null;
 	private Integer variable_id = null;
-	private Integer maxXIndex;
-	private Integer maxYIndex;
+	private String variablePositionPartitionName;
 	private static Object saveLock = new Object();
-
-	//private final static Object partitionLock = new Object();
-
-	public Integer getMaxXIndex()
-	{
-		if (this.variable_id == null)
-		{
-			LOGGER.error("The maximum x position was requested for this variable, but there is no id for it.");
-			return null;
-		}
-
-		if (this.maxXIndex == null)
-		{
-			String script = "";
-			script += "SELECT MAX(x_position) AS max_index" + NEWLINE;
-			script += "FROM wres.VariablePosition" + NEWLINE;
-			script += "WHERE variable_id = " + String.valueOf(this.variable_id) + ";";
-
-			try {
-				this.maxXIndex = Database.getResult(script, "max_index");
-			} catch (SQLException e) {
-				String message = "The maximum x position for the variable with the name '";
-				message += String.valueOf(this.variable_name);
-				message += "' could not be retrieved.";
-				LOGGER.error(message);
-				e.printStackTrace();
-			}
-		}
-
-		return this.maxXIndex;
-	}
-
-	public Integer getMaxYIndex()
-	{
-		if (this.variable_id == null)
-        {
-			LOGGER.error("The maximum y position was requested for this variable, but there is no id for it.");
-            return null;
-        }
-
-        if (this.maxYIndex == null)
-        {
-            String script = "";
-            script += "SELECT MAX(y_position) AS max_index" + NEWLINE;
-            script += "FROM wres.VariablePosition" + NEWLINE;
-            script += "WHERE variable_id = " + String.valueOf(this.variable_id) + ";";
-
-            try {
-                this.maxYIndex = Database.getResult(script, "max_index");
-            } catch (SQLException e) {
-                String message = "The maximum x position for the variable with the name '";
-                message += String.valueOf(this.variable_name);
-                message += "' could not be retrieved.";
-                LOGGER.error(message);
-                e.printStackTrace();
-            }
-        }
-
-        return this.maxYIndex;
-	}
 
 	/**
 	 * Sets the name of the variable. The ID of the variable is invalidated if its name changes
@@ -109,6 +48,15 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		return variable_id;
 	}
 
+	public String getVariablePositionPartitionName()
+	{
+		if (this.variablePositionPartitionName == null)
+		{
+			this.variablePositionPartitionName = "partitions.VARIABLEPOSITION_VARIABLE_" + this.getId().toString();
+		}
+		return this.variablePositionPartitionName;
+	}
+
 	@Override
 	public void save() throws SQLException {
 
@@ -116,8 +64,8 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		{
 			super.save();
 			String partition = "";
-			partition += "CREATE TABLE IF NOT EXISTS partitions.VARIABLEPOSITION_VARIABLE_";
-			partition += this.getId().toString();
+			partition += "CREATE TABLE IF NOT EXISTS ";
+			partition += this.getVariablePositionPartitionName();
 			partition += " ( " + NEWLINE;
 			partition += "	CHECK (variable_id = ";
 			partition += this.getId().toString();

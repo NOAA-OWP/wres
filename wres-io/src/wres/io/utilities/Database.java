@@ -241,7 +241,7 @@ public final class Database {
 			SQL_TASKS.shutdown();
 			while (!SQL_TASKS.isTerminated());
 		}
-		ThreadFactory factory = runnable -> new Thread(runnable, "Database Thread: ");
+		ThreadFactory factory = runnable -> new Thread(runnable, "Database Thread");
 		ThreadPoolExecutor executor = new ThreadPoolExecutor(CONNECTION_POOL.getMaxPoolSize(),
                                                              CONNECTION_POOL.getMaxPoolSize(),
                                                              SystemSettings.poolObjectLifespan(),
@@ -267,7 +267,7 @@ public final class Database {
 						task.get();
 					}
 					catch (ExecutionException e) {
-						e.printStackTrace();
+						LOGGER.error(Strings.getStackTrace(e));
 					}
 				}
 				ProgressMonitor.completeStep();
@@ -458,7 +458,7 @@ public final class Database {
 			throw new CopyException("Data could not be copied: " + error.getMessage(), error);
 		}
         catch (IllegalAccessException e) {
-            e.printStackTrace();
+			LOGGER.error(Strings.getStackTrace(e));
         }
         catch (InvocationTargetException e) {
 		    String message = "The dynamically retrieved method '" + copyAPIMethodName + "' threw an exception upon execution.";
@@ -500,13 +500,13 @@ public final class Database {
 			database.close();
 		}
 		catch (SQLException e) {
-			e.printStackTrace();
+            LOGGER.error(Strings.getStackTrace(e));
 		}
 		catch (DatabaseException e) {
-			e.printStackTrace();
+            LOGGER.error(Strings.getStackTrace(e));
 		}
 		catch (LiquibaseException e) {
-			e.printStackTrace();
+            LOGGER.error(Strings.getStackTrace(e));
 		}
 		finally
 		{
@@ -725,7 +725,7 @@ public final class Database {
 
         }
         catch (SQLException e) {
-            e.printStackTrace();
+			LOGGER.error(Strings.getStackTrace(e));
         }
         finally {
         	Database.returnConnection(connection);

@@ -33,16 +33,11 @@ public class SQLExecutor extends WRESRunnable
 		{
 			Database.execute(this.script);
 		} catch (SQLException e) {
-		    LOGGER.error(Strings.getStackTrace(e));
+		    this.getLogger().error(Strings.getStackTrace(e));
 		}
 	}
 
 	private String script = null;
-
-	@Override
-	protected String getTaskName () {
-		return "SQLExecutor";
-	}
 
 	@Override
 	protected Logger getLogger () {

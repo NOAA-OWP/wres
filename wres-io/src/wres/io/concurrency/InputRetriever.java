@@ -14,7 +14,6 @@ import wres.io.data.caching.UnitConversions;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.Internal;
-import wres.util.NotImplementedException;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -98,7 +97,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private List<PairOfDoubleAndVectorOfDoubles> createPairs(DataSourceConfig dataSourceConfig)
-            throws InvalidPropertiesFormatException, NotImplementedException, SQLException
+            throws InvalidPropertiesFormatException, SQLException
     {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         String loadScript = ScriptGenerator.generateLoadDatasourceScript(this.projectConfig,
@@ -160,8 +159,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
         Dimension dim = metadataFactory.getDimension(String.valueOf(this.projectConfig.getPair().getUnit()));
 
-        // TODO: Build ConfigHelper method to get the identifier, but doesn't rely on having a location
-        String geospatialIdentifier = this.feature.getLocation().getLid();
+        String geospatialIdentifier = ConfigHelper.getFeatureDescription(this.feature);
         String variableIdentifier = sourceConfig.getVariable().getValue();
 
         // TODO: need to add scenario IDs for the main data and any baseline. Also need to use a general identifier for
@@ -190,12 +188,6 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         }
 
         return this.hasBaseline;
-    }
-
-    @Override
-    protected String getTaskName()
-    {
-        return "InputRetriever: Step " + String.valueOf(this.progress);
     }
 
     @Override

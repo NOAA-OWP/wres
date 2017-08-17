@@ -23,7 +23,6 @@ public abstract class WRESTask
         this.onRun = onRun;
     }
 
-    protected abstract String getTaskName();
     protected abstract Logger getLogger ();
 
     protected void executeOnComplete() {
@@ -42,15 +41,15 @@ public abstract class WRESTask
     private void setThreadName()
     {
         String threadName = Thread.currentThread().getName();
-        String newName = "[" + this.getTaskName() + "]";
+        String newName = " -> #" + String.valueOf(Thread.currentThread().getId());
 
-        if (Strings.contains(threadName, "\\[.+\\]"))
+        if (Strings.contains(threadName, "\\s->\\s#\\d+"))
         {
-            threadName = threadName.replace("\\[.+\\]", newName);
+            threadName = threadName.replace("\\s->\\s#\\d+", newName);
         }
         else
         {
-            threadName += " " + newName;
+            threadName += newName;
         }
 
         Thread.currentThread().setName(threadName);

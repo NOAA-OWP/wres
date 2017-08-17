@@ -31,7 +31,7 @@ public final class Executor {
 			SERVICE.shutdown();
 		}
 
-		ThreadFactory factory = runnable -> new Thread(runnable, "Executor Thread: ");
+		ThreadFactory factory = runnable -> new Thread(runnable, "Executor Thread");
 		return (ThreadPoolExecutor)Executors.newFixedThreadPool(SystemSettings.maximumThreadCount(), factory);
 	}
 	

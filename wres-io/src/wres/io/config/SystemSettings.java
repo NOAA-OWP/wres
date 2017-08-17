@@ -52,7 +52,7 @@ public final class SystemSettings extends XMLReader
     private boolean updateProgressMonitor = true;
     private int defaultChartWidth = 800;
     private int defaultChartHeight = 600;
-
+	private String remoteNetCDFURL = "http://***REMOVED***dstore.***REMOVED***.***REMOVED***/nwm/";
 
 	/**
 	 * The Default constructor
@@ -147,6 +147,14 @@ public final class SystemSettings extends XMLReader
                 {
                     this.defaultChartHeight = Integer.parseInt(XML.getXMLText(reader));
                 }
+                else if (XML.tagIs(reader, "netcdf_repo_url"))
+				{
+					String URL = XML.getXMLText(reader);
+					if (Strings.hasValue(URL))
+					{
+						this.remoteNetCDFURL = URL;
+					}
+				}
 			}
 		}
 		catch (Exception error)
@@ -165,6 +173,10 @@ public final class SystemSettings extends XMLReader
 		return INSTANCE.updateProgressMonitor;
 	}
 
+	public static String getRemoteNetcdfURL()
+	{
+		return INSTANCE.remoteNetCDFURL;
+	}
 	/**
 	 * @return The number of allowable threads
 	 */

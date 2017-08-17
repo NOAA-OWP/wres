@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.data.details.FeatureDetails;
 import wres.util.Internal;
+import wres.util.Strings;
 
 import java.sql.SQLException;
 
@@ -101,14 +102,14 @@ public class Features extends Cache<FeatureDetails, String>
 		}
 		catch (NullPointerException error)
 		{
-		    System.err.println();
-		    System.err.println("A variable position could not be retrieved with the parameters of:");
-		    System.err.println("\tLID: " + lid);
-		    System.err.println("\tStation Name: " + stationName);
-		    System.err.println("\tVariableID: " + variableID);
-            System.err.println();
-		    error.printStackTrace();
-            System.err.println();
+		    LOGGER.error("");
+			LOGGER.error("A variable position could not be retrieved with the parameters of:");
+			LOGGER.error("\tLID: " + lid);
+			LOGGER.error("\tStation Name: " + stationName);
+			LOGGER.error("\tVariableID: " + variableID);
+			LOGGER.error("");
+			LOGGER.error(Strings.getStackTrace(error));
+			LOGGER.error("");
             throw error;
 		}
 

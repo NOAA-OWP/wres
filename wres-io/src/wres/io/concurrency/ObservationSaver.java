@@ -80,11 +80,6 @@ public class ObservationSaver extends WRESRunnable {
 	private final DataSourceConfig dataSourceConfig;
 
 	@Override
-	protected String getTaskName () {
-		return "ObservationSaver: " + this.filepath;
-	}
-
-	@Override
 	protected Logger getLogger () {
 		return ObservationSaver.LOGGER;
 	}

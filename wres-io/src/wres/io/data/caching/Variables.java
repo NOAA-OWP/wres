@@ -117,6 +117,36 @@ public final class Variables extends Cache<VariableDetails, String>
 		return this.getKeyIndex().get(variableName);
 	}
 
+	public static String getName(Integer variableId)
+	{
+		return getCache().getKey(variableId);
+	}
+
+	public String getKey(Integer variableId)
+	{
+		String name = null;
+
+		if (this.get(variableId) != null)
+		{
+			name = this.get(variableId).getKey();
+		}
+
+		return name;
+	}
+
+	public static String getVariablePositionPartitionName(Integer variableID)
+    {
+        if (variableID == null || variableID < 0)
+        {
+            throw new IllegalArgumentException("The variable indicated by " +
+                                                       String.valueOf(variableID) +
+                                                       " is not a valid variable.");
+        }
+
+        VariableDetails details = Variables.getCache().get(variableID);
+        return details.getVariablePositionPartitionName();
+    }
+
 	@Override
 	protected int getMaxDetails() {
 		return 100;
@@ -129,6 +159,11 @@ public final class Variables extends Cache<VariableDetails, String>
         {
             Connection connection = null;
             ResultSet variables = null;
+
+            // Forces the creation of the details collection
+            // TODO: Find a better solution
+            this.getDetails();
+
             try
             {
                 connection = Database.getHighPriorityConnection();
@@ -137,7 +172,7 @@ public final class Variables extends Cache<VariableDetails, String>
                 loadScript += "FROM wres.variable;";
 
                 variables = Database.getResults(connection, loadScript);
-                VariableDetails detail = null;
+                VariableDetails detail;
 
                 while (variables.next()) {
                     detail = new VariableDetails();

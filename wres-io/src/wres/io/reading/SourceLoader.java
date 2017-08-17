@@ -11,6 +11,7 @@ import wres.io.concurrency.ObservationSaver;
 import wres.io.config.ConfigHelper;
 import wres.io.utilities.Database;
 import wres.util.Internal;
+import wres.util.Strings;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -124,7 +125,7 @@ public class SourceLoader
             files.close();
         }
         catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(Strings.getStackTrace(e));
         }
 
         return results;
@@ -182,7 +183,7 @@ public class SourceLoader
                 ingest = !dataExists(filePath, dataSourceConfig);
             }
             catch (SQLException e) {
-                e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace(e));
                 ingest = false;
             }
         }

@@ -11,7 +11,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.grouping.LabeledScript;
 import wres.util.Internal;
-import wres.util.NotImplementedException;
 
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
@@ -49,7 +48,7 @@ public final class ScriptGenerator
     public static String generateLoadDatasourceScript(final ProjectConfig projectConfig,
                                                       final DataSourceConfig dataSourceConfig,
                                                       final Conditions.Feature feature,
-                                                      final int progress) throws NotImplementedException, SQLException, InvalidPropertiesFormatException {
+                                                      final int progress) throws SQLException, InvalidPropertiesFormatException {
         StringBuilder script = new StringBuilder();
         Integer variableID = ConfigHelper.getVariableID(dataSourceConfig);
 

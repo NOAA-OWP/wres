@@ -55,11 +55,6 @@ public class ForecastSaver extends WRESRunnable
 	private final DataSourceConfig dataSourceConfig;
 	private final List<Conditions.Feature> specifiedFeatures;
 
-	@Override
-	protected String getTaskName () {
-		return "ForecastSaver: " + this.filepath;
-	}
-
     @Override
     protected Logger getLogger () {
         return ForecastSaver.LOGGER;

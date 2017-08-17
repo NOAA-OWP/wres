@@ -71,7 +71,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private Map<String, Double> leftHandMap;
         private VectorOfDoubles leftHandValues;
 
-        private void createLeftHandCache() throws SQLException, NotImplementedException {
+        private void createLeftHandCache() throws SQLException
+        {
             Map<String, Double> values = new HashMap<>();
             List<Double> futureVector = new ArrayList<>();
 
@@ -181,7 +182,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             this.leftHandValues = factory.vectorOf(futureVector.toArray(new Double[futureVector.size()]));
         }
 
-        public MetricInputIterator(ProjectConfig projectConfig, Conditions.Feature feature) throws SQLException, NotImplementedException
+        public MetricInputIterator(ProjectConfig projectConfig, Conditions.Feature feature) throws SQLException
         {
             this.projectConfig = projectConfig;
             this.feature = feature;

@@ -47,39 +47,11 @@ public final class PIXMLReader extends XMLReader
 
 	private static String createForecastValuePartition(Integer leadTime) throws SQLException {
 
-        String partitionHeader = null;
 		if (leadTime == null)
 		{
 			return null;
 		}
-
-		int partitionNumber = leadTime / PARTITION_HOURS + 1;
-
-		int low = (leadTime / PARTITION_HOURS) * PARTITION_HOURS;
-		int high = low + PARTITION_HOURS;
-
-		partitionHeader = "partitions.ForecastValue_Lead_";
-		partitionHeader += String.valueOf(partitionNumber);
-
-		String createScript = "CREATE TABLE IF NOT EXISTS ";
-		createScript += partitionHeader;
-		createScript += " ( " + NEWLINE;
-		createScript += "	CHECK ( lead >= " + String.valueOf(low) +
-                " AND lead < " + String.valueOf(high) + " )" + NEWLINE;
-		createScript += ") INHERITS (wres.ForecastValue);";
-
-		synchronized (PARTITION_LOCK)
-		{
-			Database.execute(createScript);
-		}
-
-		Database.saveIndex(partitionHeader,
-						   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_Lead_idx",
-						   "lead" );
-
-		Database.saveIndex(partitionHeader,
-						   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_ForecastEnsemble_idx",
-						   "forecastensemble_id");
+		String partitionHeader = ForecastDetails.getForecastValueParitionName(leadTime);
 
 		partitionHeader += " (forecastensemble_id, lead, forecasted_value)";
 		return partitionHeader;
