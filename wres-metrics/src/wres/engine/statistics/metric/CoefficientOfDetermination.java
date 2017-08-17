@@ -57,7 +57,7 @@ public final class CoefficientOfDetermination extends CorrelationPearsons
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class CoefficientOfDeterminationBuilder extends CorrelationPearsonsBuilder
+    static class CoefficientOfDeterminationBuilder extends CorrelationPearsonsBuilder
     {
 
         @Override

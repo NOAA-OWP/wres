@@ -23,8 +23,7 @@ public class ReaderFactory {
 
 		switch (type_of_file) {
 			case DATACARD:
-				// TODO: Implement new Datacard reader that adheres to new schema
-				//source = new wres.io.reading.nws.DatacardSource(filename);
+				source = new wres.io.reading.datacard.DatacardSource(filename);
 				break;
 			case ASCII:
 				// TODO: Implement new ASCII reader that adheres to new schema

@@ -152,11 +152,41 @@ public enum MetricConstants
     ROOT_MEAN_SQUARE_ERROR(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR),
 
     /**
+     * Indicator for no decomposition.
+     */
+
+    NONE(MetricDecompositionGroup.NONE),
+
+    /**
+     * Identifier for a Calibration-Refinement (CR) factorization.
+     */
+
+    CR(MetricDecompositionGroup.CR),
+
+    /**
+     * Identifier for a Calibration-Refinement (CR) factorization, together with an additional potential score
+     * component.
+     */
+
+    CR_POT(MetricDecompositionGroup.CR_POT),
+
+    /**
+     * Identifier for a Likeilihood-Base-Rate (LBR) factorization.
+     */
+
+    LBR(MetricDecompositionGroup.LBR),
+
+    /**
+     * Identifier for the score and components of both the CR and LBR factorizations.
+     */
+
+    CR_AND_LBR(MetricDecompositionGroup.CR_AND_LBR),
+
+    /**
      * Identifier for the main component of a metric, such as the overall score in a score decomposition.
      */
 
-    MAIN(MetricDecompositionGroup.NONE, MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, 
-         MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR),
+    MAIN(MetricDecompositionGroup.NONE, MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR),
 
     /**
      * Identifier for the reliability component of a score decomposition.
@@ -328,6 +358,18 @@ public enum MetricConstants
     }
 
     /**
+     * Returns all metric components in the {@link MetricDecompositionGroup} with which this constant is associated or
+     * null if none is defined.
+     * 
+     * @return the components in the {@link MetricDecompositionGroup} or null
+     */
+
+    public List<MetricConstants> getMetricComponents()
+    {
+        return Objects.isNull(decGroup) ? null : decGroup[0].getMetricComponents();
+    }
+
+    /**
      * Returns all {@link MetricConstants} associated with the specified {@link MetricInputGroup} and
      * {@link MetricOutputGroup}.
      * 
@@ -494,18 +536,14 @@ public enum MetricConstants
         CR_POT,
 
         /**
-         * Identifier for a decomposition into Type-II conditional bias - discrimination + sharpness, comprising the
-         * overall score followed by the three components in that order.
+         * Identifier for a Likelihood-Base-Rate (LBR) factorization into Type-II conditional bias - discrimination +
+         * sharpness, comprising the overall score followed by the three components in that order.
          */
 
         LBR,
 
         /**
-         * Identifier for the score and components of both the CR and LBR factorizations, as well as several mixed
-         * components: The overall score Reliability Resolution Uncertainty Type-II conditional bias Discrimination
-         * Sharpness And further components: Score | Observed to occur Score | Observed to not occur And further
-         * components: Type-II conditional bias | Observed to occur Type-II conditional bias | Observed to not occur
-         * Discrimination | Observed to occur Discrimination | Observed to not occur
+         * Identifier for the score and components of both the CR and LBR factorizations.
          */
 
         CR_AND_LBR;
@@ -519,7 +557,9 @@ public enum MetricConstants
         public List<MetricConstants> getMetricComponents()
         {
             List<MetricConstants> all = new ArrayList<>(EnumSet.allOf(MetricConstants.class));
-            all.removeIf(a -> Objects.isNull(a.decGroup) || !Arrays.asList(a.decGroup).contains(this));
+            //Remove constants with the same string trace across MetricConstants and MetricDecompositionGroup
+            all.removeIf(a -> Objects.isNull(a.decGroup) || a.toString().equals(toString())
+                || !Arrays.asList(a.decGroup).contains(this));
             return all;
         }
 

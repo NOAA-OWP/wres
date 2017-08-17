@@ -71,7 +71,7 @@ public final class ContingencyTable<S extends MulticategoryPairs> extends Metric
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class ContingencyTableBuilder<S extends MulticategoryPairs> extends MetricBuilder<S, MatrixOutput>
+    static class ContingencyTableBuilder<S extends MulticategoryPairs> extends MetricBuilder<S, MatrixOutput>
     {
 
         @Override
@@ -88,7 +88,7 @@ public final class ContingencyTable<S extends MulticategoryPairs> extends Metric
      * @param builder the builder.
      */
 
-    protected ContingencyTable(final ContingencyTableBuilder<S> builder)
+    ContingencyTable(final ContingencyTableBuilder<S> builder)
     {
         super(builder);
     }

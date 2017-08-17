@@ -257,6 +257,7 @@ project(':wres-vis')
     dependencies
     {
         compile project(':wres-datamodel-api')
+        compile project(':wres-config')
         
         compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
         compile group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '1.2.6'
@@ -354,14 +355,17 @@ https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setu
 apply plugin: 'jacoco'        // code coverage tool
 apply plugin: 'org.sonarqube' // static analysis tool
 
-task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [subprojects.test])
+task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [subprojects.test, test])
 {
     description = 'Generates an all-subproject aggregate code coverage report.'
 
     additionalSourceDirs = files(subprojects.sourceSets.main.allSource.srcDirs)
-    sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs, )
-    classDirectories = files(subprojects.sourceSets.main.output)
-    executionData = files(subprojects.jacocoTestReport.executionData)
+    sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs,
+                              sourceSets.main.allSource.srcDirs)
+    classDirectories = files(subprojects.sourceSets.main.output,
+                             sourceSets.main.output)
+    executionData = files(subprojects.jacocoTestReport.executionData,
+                          jacocoTestReport.executionData)
 
     doFirst
     {
@@ -395,12 +399,14 @@ task(buildDocs, group: 'Documentation')
         inputs.files.each {
             // yuck, but I haven't found the better way yet
             def srcIdx =  it.path.indexOf(srcDir)
-            def basePath = it.path.substring(srcIdx + srcDir.length(), it.path.length() - 3)
+            def basePath = Paths.get(it.path).getFileName().toString()
+            def baseFileName = basePath.substring(0, basePath.length() - 3)
 
             // The meat - using commonmark to transform md to html
             def document = parser.parseReader(new FileReader(it))
             def output = renderer.render(document)
-            def outputPath = Paths.get(destDir, basePath + '.html')
+
+            def outputPath = Paths.get(destDir, baseFileName + '.html')
             Files.write(outputPath, output.getBytes(), StandardOpenOption.CREATE)
         }
     }
@@ -509,7 +515,7 @@ distributions
                 // Must also add the new directory to classpath under
                 // startScripts below. For each module that adds to dist,
                 // add here for now until we can make it grab all of em.
-                ['dist', 'wres-vis/dist']
+                ['dist', 'wres-vis/dist', 'wres-io/dist']
             }
         }
     }

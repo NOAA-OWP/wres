@@ -46,7 +46,7 @@ public final class ProbabilityOfFalseDetection extends ContingencyTableScore<Dic
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class ProbabilityOfFalseDetectionBuilder extends MetricBuilder<DichotomousPairs, ScalarOutput>
+    static class ProbabilityOfFalseDetectionBuilder extends MetricBuilder<DichotomousPairs, ScalarOutput>
     {
 
         @Override

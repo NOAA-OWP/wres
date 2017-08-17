@@ -6,7 +6,7 @@
 
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
-		<text>@metricName@ for @primaryScenario@ predictions of @variableName@
+		<text>@metricName@@metricComponentNameSuffix@ for @primaryScenario@ predictions of @variableName@
 at @locationName@@baselineText@
 		</text>
 	</plotTitle>
@@ -59,7 +59,7 @@ at @locationName@@baselineText@
 		</threshold>
 	</thresholdList>
 
-	<!-- Put the legend on the right hand side. -->
+	<!-- Put the legend on the bottom with an appropriate title. -->
 	<legend visible="true">
 		<position>BOTTOM</position>
 		<title>

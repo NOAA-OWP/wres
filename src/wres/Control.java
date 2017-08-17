@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -17,20 +18,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.xml.bind.ValidationEvent;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.sun.xml.bind.Locatable;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
+import wres.config.ProjectConfigException;
+import wres.config.Validation;
 import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.MetricConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
@@ -52,8 +52,8 @@ import wres.io.Operations;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
+import wres.io.writing.CommaSeparated;
 import wres.vis.ChartEngineFactory;
-import wres.vis.ChartEngineFactory.VisualizationPlotType;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}. The processing
@@ -76,27 +76,52 @@ public class Control implements Function<String[], Integer>
      */
     public Integer apply(final String[] args)
     {
-        // Validate the configurations
-        List<ProjectConfigPlus> projectConfiggies = getProjects(args);
-        boolean validated = validateProjects(projectConfiggies);
-        if(!validated)
+        // Unmarshal the configurations
+        final List<ProjectConfigPlus> projectConfiggies = getProjects(args);
+
+        if ( !projectConfiggies.isEmpty() )
         {
-            return -1;
+            LOGGER.info( "Successfully unmarshalled {} project "
+                         + "configuration(s),  validating further...",
+                         projectConfiggies.size() );
         }
+        else
+        {
+            LOGGER.error( "Please correct project configuration files and pass "
+                          + "them in the command line like this: "
+                          + "wres executeConfigProject c:/path/to/config1.xml "
+                          + "c:/path/to/config2.xml" );
+            return 1;
+        }
+
+        // Validate unmarshalled configurations
+        final boolean validated = Validation.validateProjects(projectConfiggies);
+        if ( validated )
+        {
+            LOGGER.info( "Successfully validated {} project configuration(s). "
+                         + "Beginning execution...",
+                         projectConfiggies.size() );
+        }
+        else
+        {
+            LOGGER.error( "One or more projects did not pass validation.");
+            return 1;
+        }
+
         // Process the configurations with a ForkJoinPool
-        ForkJoinPool processPairExecutor = null;
-        ForkJoinPool metricExecutor = null;
+
+        // Build a processing pipeline
+
+        ExecutorService processPairExecutor = new ForkJoinPool( MAX_THREADS );
+        ExecutorService metricExecutor = new ForkJoinPool( MAX_THREADS );
+
         try
         {
-            // Build a processing pipeline
-            processPairExecutor = new ForkJoinPool();
-            // metricExecutor = null;
-
             // Iterate through the configurations
-            for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
+            for(final ProjectConfigPlus projectConfigPlus: projectConfiggies)
             {
                 // Process the next configuration
-                boolean processed = processProjectConfig(projectConfigPlus, processPairExecutor, metricExecutor);
+                final boolean processed = processProjectConfig(projectConfigPlus, processPairExecutor, metricExecutor);
                 if(!processed)
                 {
                     return -1;
@@ -108,145 +133,8 @@ public class Control implements Function<String[], Integer>
         finally
         {
             shutDownGracefully(processPairExecutor);
+            shutDownGracefully(metricExecutor);
         }
-    }
-
-    /**
-     * Quick validation of the project configuration, will return detailed information to the user regarding issues
-     * about the configuration. Strict for now, i.e. return false even on minor xml problems. Does not return on first
-     * issue, tries to inform the user of all issues before returning.
-     *
-     * @param projectConfigPlus the project configuration
-     * @return true if no issues were detected, false otherwise
-     */
-
-    public static boolean isProjectValid(ProjectConfigPlus projectConfigPlus)
-    {
-        // Assume valid until demonstrated otherwise
-        boolean result = true;
-
-        for(ValidationEvent ve: projectConfigPlus.getValidationEvents())
-        {
-            if(LOGGER.isWarnEnabled())
-            {
-                if(ve.getLocator() != null)
-                {
-                    LOGGER.warn("In file {}, near line {} and column {}, WRES found an issue with the project "
-                        + "configuration. The parser said:",
-                                projectConfigPlus.getPath(),
-                                ve.getLocator().getLineNumber(),
-                                ve.getLocator().getColumnNumber(),
-                                ve.getLinkedException());
-                }
-                else
-                {
-                    LOGGER.warn("In file {}, WRES found an issue with the project configuration. The parser said:",
-                                projectConfigPlus.getPath(),
-                                ve.getLinkedException());
-                }
-            }
-            // Any validation event means we fail.
-            result = false;
-        }
-
-        // Validate graphics portion
-        result = result && isGraphicsPortionOfProjectValid(projectConfigPlus);
-
-        return result;
-    }
-
-    /**
-     * Validates graphics portion, similar to isProjectValid, but targeted.
-     * 
-     * @param projectConfigPlus the project configuration
-     * @return true if the graphics configuration is valid, false otherwise
-     */
-
-    public static boolean isGraphicsPortionOfProjectValid(ProjectConfigPlus projectConfigPlus)
-    {
-        final String BEGIN_TAG = "<chartDrawingParameters>";
-        final String END_TAG = "</chartDrawingParameters>";
-        final String BEGIN_COMMENT = "<!--";
-        final String END_COMMENT = "-->";
-
-        boolean result = true;
-
-        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-
-        for(DestinationConfig d: projectConfig.getOutputs().getDestination())
-        {
-            String customString = projectConfigPlus.getGraphicsStrings().get(d);
-            if(customString != null)
-            {
-                // For to give a helpful message, find closeby tag without NPE
-                Locatable nearbyTag;
-                if(d.getGraphical() != null && d.getGraphical().getConfig() != null)
-                {
-                    // Best case
-                    nearbyTag = d.getGraphical().getConfig();
-                }
-                else if(d.getGraphical() != null)
-                {
-                    // Not as targeted but close
-                    nearbyTag = d.getGraphical();
-                }
-                else
-                {
-                    // Destination tag.
-                    nearbyTag = d;
-                }
-
-                // If a custom vis config was provided, make sure string either
-                // starts with the correct tag or starts with a comment.
-                String trimmedCustomString = customString.trim();
-                result = result
-                    && checkTrimmedString(trimmedCustomString, BEGIN_TAG, BEGIN_COMMENT, nearbyTag, projectConfigPlus);
-                result = result
-                    && checkTrimmedString(trimmedCustomString, END_TAG, END_COMMENT, nearbyTag, projectConfigPlus);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Validates a list of {@link ProjectConfigPlus}. Returns true if the projects validate successfully, false
-     * otherwise.
-     * 
-     * @param projectConfiggies a list of project configurations to validate
-     * @return true if the projects validate successfully, false otherwise
-     */
-
-    private static boolean validateProjects(List<ProjectConfigPlus> projectConfiggies)
-    {
-        boolean validationsPassed = true;
-
-        if(projectConfiggies.isEmpty())
-        {
-            LOGGER.error("Please correct project configuration files and pass them in the command line "
-                + "like this: wres executeConfigProject c:/path/to/config1.xml c:/path/to/config2.xml");
-            return false;
-        }
-        else
-        {
-            LOGGER.info("Successfully unmarshalled {} project configuration(s), validating further...",
-                        projectConfiggies.size());
-        }
-
-        // Validate all projects, not stopping until all are done
-        for(ProjectConfigPlus projectConfigPlus: projectConfiggies)
-        {
-            if(!isProjectValid(projectConfigPlus))
-            {
-                validationsPassed = false;
-            }
-        }
-
-        if(validationsPassed)
-        {
-            LOGGER.info("Successfully read and validated {} project configuration(s). Beginning execution...",
-                        projectConfiggies.size());
-        }
-        return validationsPassed;
     }
 
     /**
@@ -258,15 +146,15 @@ public class Control implements Function<String[], Integer>
      * @return true if the project processed successfully, false otherwise
      */
 
-    private boolean processProjectConfig(ProjectConfigPlus projectConfigPlus,
-                                         ExecutorService processPairExecutor,
-                                         ExecutorService metricExecutor)
+    private boolean processProjectConfig(final ProjectConfigPlus projectConfigPlus,
+                                         final ExecutorService processPairExecutor,
+                                         final ExecutorService metricExecutor)
     {
 
-        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+        final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
         // Need to ingest first
-        boolean ingestResult = Operations.ingest(projectConfig);
+        final boolean ingestResult = Operations.ingest(projectConfig);
 
         if(!ingestResult)
         {
@@ -275,10 +163,10 @@ public class Control implements Function<String[], Integer>
         }
 
         // Obtain the features
-        List<Feature> features = projectConfig.getConditions().getFeature();
+        final List<Feature> features = projectConfig.getConditions().getFeature();
 
         // Iterate through the features and process them
-        for(Feature nextFeature: features)
+        for(final Feature nextFeature: features)
         {
             if(!processFeature(nextFeature, projectConfigPlus, processPairExecutor, metricExecutor))
             {
@@ -298,13 +186,13 @@ public class Control implements Function<String[], Integer>
      * @return true if the project processed successfully, false otherwise
      */
 
-    private boolean processFeature(Feature feature,
-                                   ProjectConfigPlus projectConfigPlus,
-                                   ExecutorService processPairExecutor,
-                                   ExecutorService metricExecutor)
+    private boolean processFeature(final Feature feature,
+                                   final ProjectConfigPlus projectConfigPlus,
+                                   final ExecutorService processPairExecutor,
+                                   final ExecutorService metricExecutor)
     {
 
-        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+        final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
         if(LOGGER.isInfoEnabled())
         {
@@ -322,20 +210,20 @@ public class Control implements Function<String[], Integer>
                                                                                    MetricOutputGroup.SCALAR,
                                                                                    MetricOutputGroup.VECTOR);
         }
-        catch(MetricConfigurationException e)
+        catch(final MetricConfigurationException e)
         {
             LOGGER.error("While processing the metric configuration:", e);
             return false;
         }
 
         // Build an InputGenerator for the next feature
-        InputGenerator metricInputs = Operations.getInputs(projectConfig, feature);
+        final InputGenerator metricInputs = Operations.getInputs(projectConfig, feature);
 
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
 
         // Iterate
-        for(Future<MetricInput<?>> nextInput: metricInputs)
+        for(final Future<MetricInput<?>> nextInput: metricInputs)
         {
             // Complete all tasks asynchronously:
             // 1. Get some pairs from the database
@@ -372,6 +260,34 @@ public class Control implements Function<String[], Integer>
                                 processor,
                                 MetricOutputGroup.SCALAR,
                                 MetricOutputGroup.VECTOR);
+
+            try
+            {
+                CommaSeparated.writeOutputFiles( projectConfig,
+                                                 feature,
+                                                 processor.getStoredMetricOutput() );
+
+            }
+            catch ( ProjectConfigException pce )
+            {
+                LOGGER.error( "Please include valid numeric output clause(s) in"
+                              + " project configuration. Example: <destination>"
+                              + "<path>c:/Users/myname/wres_output/</path>"
+                              + "</destination>",
+                              pce );
+                return false;
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn("Interrupted while writing output files.");
+                Thread.currentThread().interrupt();
+            }
+            catch ( IOException | ExecutionException e)
+            {
+                LOGGER.error("While writing output files: ", e);
+                return false;
+            }
+
             if(LOGGER.isInfoEnabled())
             {
                 LOGGER.info("Completed processing of feature '{}'.", feature.getLocation().getLid());
@@ -397,10 +313,10 @@ public class Control implements Function<String[], Integer>
      * @return true it the processing completed successfully, false otherwise
      */
 
-    private static boolean processCachedCharts(Feature feature,
-                                               ProjectConfigPlus projectConfigPlus,
-                                               MetricProcessor processor,
-                                               MetricOutputGroup... outGroup)
+    private static boolean processCachedCharts(final Feature feature,
+                                               final ProjectConfigPlus projectConfigPlus,
+                                               final MetricProcessor processor,
+                                               final MetricOutputGroup... outGroup)
     {
         if(!processor.hasStoredMetricOutput())
         {
@@ -412,25 +328,36 @@ public class Control implements Function<String[], Integer>
         boolean returnMe = true;
         try
         {
-            for(MetricOutputGroup nextGroup: outGroup)
+            for(final MetricOutputGroup nextGroup: outGroup)
             {
                 switch(nextGroup)
                 {
                     case SCALAR:
-                        returnMe = returnMe && processScalarCharts(feature,
-                                                                   projectConfigPlus,
-                                                                   processor.getStoredMetricOutput().getScalarOutput());
+                        if(processor.getStoredMetricOutput().hasOutput(MetricOutputGroup.SCALAR))
+                        {
+                            returnMe = returnMe
+                                && processScalarCharts(feature,
+                                                       projectConfigPlus,
+                                                       processor.getStoredMetricOutput().getScalarOutput());
+                        }
                         break;
                     case VECTOR:
-                        returnMe = returnMe && processVectorCharts(feature,
-                                                                   projectConfigPlus,
-                                                                   processor.getStoredMetricOutput().getVectorOutput());
+                        if(processor.getStoredMetricOutput().hasOutput(MetricOutputGroup.VECTOR))
+                        {
+                            returnMe = returnMe
+                                && processVectorCharts(feature,
+                                                       projectConfigPlus,
+                                                       processor.getStoredMetricOutput().getVectorOutput());
+                        }
                         break;
                     case MULTIVECTOR:
-                        returnMe = returnMe
-                            && processMultiVectorCharts(feature,
-                                                        projectConfigPlus,
-                                                        processor.getStoredMetricOutput().getMultiVectorOutput());
+                        if(processor.getStoredMetricOutput().hasOutput(MetricOutputGroup.MULTIVECTOR))
+                        {
+                            returnMe = returnMe
+                                && processMultiVectorCharts(feature,
+                                                            projectConfigPlus,
+                                                            processor.getStoredMetricOutput().getMultiVectorOutput());
+                        }
                         break;
                     default:
                         LOGGER.error("Unsupported chart type {}.", nextGroup);
@@ -438,13 +365,13 @@ public class Control implements Function<String[], Integer>
                 }
             }
         }
-        catch(InterruptedException e)
+        catch(final InterruptedException e)
         {
             LOGGER.error("Interrupted while processing charts.", e);
             Thread.currentThread().interrupt();
             returnMe = false;
         }
-        catch(ExecutionException e)
+        catch(final ExecutionException e)
         {
             LOGGER.error("While processing charts:", e);
             returnMe = false;
@@ -462,9 +389,9 @@ public class Control implements Function<String[], Integer>
      * @return true it the processing completed successfully, false otherwise
      */
 
-    private static boolean processScalarCharts(Feature feature,
-                                               ProjectConfigPlus projectConfigPlus,
-                                               MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarResults)
+    private static boolean processScalarCharts(final Feature feature,
+                                               final ProjectConfigPlus projectConfigPlus,
+                                               final MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarResults)
     {
 
         //Check for results
@@ -477,18 +404,25 @@ public class Control implements Function<String[], Integer>
         // Build charts
         try
         {
-            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> e: scalarResults.entrySet())
+            for(final Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> e: scalarResults.entrySet())
             {
-                DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
-                String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-
-                ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
-                                                                                            DATA_FACTORY.getMetadataFactory(),
-                                                                                            ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
-                                                                                            null,
-                                                                                            graphicsString);
-                //Build the output file name
-                StringBuilder pathBuilder = new StringBuilder();
+                final ProjectConfig config = projectConfigPlus.getProjectConfig();
+                final DestinationConfig dest = config.getOutputs().getDestination().get(1);
+                final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+                // Build the chart engine
+                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                if(Objects.isNull(nextConfig))
+                {
+                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
+                    return false;
+                }
+                final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
+                                                                                                  DATA_FACTORY,
+                                                                                                  ChartEngineFactory.fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                  nextConfig.getTemplateResourceName(),
+                                                                                                  graphicsString);
+                //Build the output
+                final StringBuilder pathBuilder = new StringBuilder();
                 pathBuilder.append(dest.getPath())
                            .append(feature.getLocation().getLid())
                            .append("_")
@@ -498,13 +432,13 @@ public class Control implements Function<String[], Integer>
                            .append("_")
                            .append(projectConfigPlus.getProjectConfig().getInputs().getRight().getVariable().getValue())
                            .append(".png");
-                Path outputImage = Paths.get(pathBuilder.toString());
+                final Path outputImage = Paths.get(pathBuilder.toString());
                 writeChart(outputImage, engine, dest);
             }
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
         {
-            LOGGER.error("While generating plots:", e);
+            LOGGER.error("While generating scalar charts:", e);
             return false;
         }
         return true;
@@ -512,8 +446,7 @@ public class Control implements Function<String[], Integer>
 
     /**
      * Processes a set of charts associated with {@link VectorOutput} across multiple metrics, forecast lead times, and
-     * thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. TODO: implement when wres-vis can handle
-     * these.
+     * thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. these.
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
@@ -521,92 +454,43 @@ public class Control implements Function<String[], Integer>
      * @return true it the processing completed successfully, false otherwise
      */
 
-    private static boolean processVectorCharts(Feature feature,
-                                               ProjectConfigPlus projectConfigPlus,
-                                               MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorResults)
-    {
-//        //Check for results
-//        if(Objects.isNull(vectorResults))
-//        {
-//            LOGGER.error("No vector outputs from which to generate charts.");
-//            return false;
-//        }
-//        
-//        // Build charts
-//        try
-//        {
-//            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
-//            {
-//                DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
-//                String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-//
-//                ChartEngine engine = null;
-//
-//                //Build the output file name
-//                StringBuilder pathBuilder = new StringBuilder();
-//                pathBuilder.append(dest.getPath())
-//                           .append(feature.getLocation().getLid())
-//                           .append("_")
-//                           .append(e.getKey().getFirstKey())
-//                           .append("_")
-//                           .append(e.getKey().getSecondKey())
-//                           .append("_")
-//                           .append(projectConfigPlus.getProjectConfig().getInputs().getRight().getVariable().getValue())
-//                           .append(".png");
-//                Path outputImage = Paths.get(pathBuilder.toString());
-//                writeChart(outputImage, engine, dest);
-//            }
-//        }
-//        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
-//        {
-//            LOGGER.error("While generating plots:", e);
-//            return false;
-//        }
-        return true;
-    }
-
-    /**
-     * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, forecast lead times,
-     * and thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}.
-     * 
-     * @param feature the feature for which the chart is defined
-     * @param projectConfigPlus the project configuration
-     * @param multiVectorResults the scalar outputs
-     * @return true it the processing completed successfully, false otherwise
-     */
-
-    private static boolean processMultiVectorCharts(Feature feature,
-                                                    ProjectConfigPlus projectConfigPlus,
-                                                    MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> multiVectorResults)
+    private static boolean processVectorCharts(final Feature feature,
+                                               final ProjectConfigPlus projectConfigPlus,
+                                               final MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorResults)
     {
         //Check for results
-        if(Objects.isNull(multiVectorResults))
+        if(Objects.isNull(vectorResults))
         {
-            LOGGER.error("No multivector outputs from which to generate charts.");
+            LOGGER.error("No vector outputs from which to generate charts.");
             return false;
         }
 
         // Build charts
         try
         {
-            // Build the charts for each metric
-            for(Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
+            for(final Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
             {
-                DestinationConfig dest = projectConfigPlus.getProjectConfig().getOutputs().getDestination().get(1);
-                String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-                // TODO: make this template call to "reliabilityDiagramTemplate" generic across metrics. 
-                // Is it even needed? The Metadata contains the chart type and this is linked to the PlotType?
-                Map<Integer, ChartEngine> engines =
-                                                  ChartEngineFactory.buildMultiVectorOutputChartEngineByLead(e.getValue(),
-                                                                                                             DATA_FACTORY.getMetadataFactory(),
-                                                                                                             VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
-                                                                                                             null,
-                                                                                                             graphicsString);
-                // Build one chart per lead time
-                for(Map.Entry<Integer, ChartEngine> nextEntry: engines.entrySet())
+                final ProjectConfig config = projectConfigPlus.getProjectConfig();
+                final DestinationConfig dest = config.getOutputs().getDestination().get(1);
+                final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+                // Build the chart engine
+                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                if(Objects.isNull(nextConfig))
+                {
+                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
+                    return false;
+                }
+                final Map<Object, ChartEngine> engines =
+                                                       ChartEngineFactory.buildVectorOutputChartEngine(e.getValue(),
+                                                                                                       DATA_FACTORY,
+                                                                                                       ChartEngineFactory.fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                       nextConfig.getTemplateResourceName(),
+                                                                                                       graphicsString);
+                // Build the outputs
+                for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
                 {
                     // Build the output file name
-                    StringBuilder pathBuilder = new StringBuilder();
+                    final StringBuilder pathBuilder = new StringBuilder();
                     pathBuilder.append(dest.getPath())
                                .append(feature.getLocation().getLid())
                                .append("_")
@@ -621,16 +505,91 @@ public class Control implements Function<String[], Integer>
                                                         .getValue())
                                .append("_")
                                .append(nextEntry.getKey())
-                               .append("h")
                                .append(".png");
-                    Path outputImage = Paths.get(pathBuilder.toString());
+                    final Path outputImage = Paths.get(pathBuilder.toString());
                     writeChart(outputImage, nextEntry.getValue(), dest);
                 }
             }
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
         {
-            LOGGER.error("While generating plots:", e);
+            LOGGER.error("While generating vector charts:", e);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, forecast lead times,
+     * and thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}.
+     * 
+     * @param feature the feature for which the chart is defined
+     * @param projectConfigPlus the project configuration
+     * @param multiVectorResults the scalar outputs
+     * @return true it the processing completed successfully, false otherwise
+     */
+
+    private static boolean processMultiVectorCharts(final Feature feature,
+                                                    final ProjectConfigPlus projectConfigPlus,
+                                                    final MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> multiVectorResults)
+    {
+        //Check for results
+        if(Objects.isNull(multiVectorResults))
+        {
+            LOGGER.error("No multi-vector outputs from which to generate charts.");
+            return false;
+        }
+
+        // Build charts
+        try
+        {
+            // Build the charts for each metric
+            for(final Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
+            {
+                final ProjectConfig config = projectConfigPlus.getProjectConfig();
+                final DestinationConfig dest = config.getOutputs().getDestination().get(1);
+                final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+                // Build the chart engine
+                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                if(Objects.isNull(nextConfig))
+                {
+                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
+                    return false;
+                }
+                final Map<Object, ChartEngine> engines =
+                                                       ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
+                                                                                                            DATA_FACTORY,
+                                                                                                            ChartEngineFactory.fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                            nextConfig.getTemplateResourceName(),
+                                                                                                            graphicsString);
+                // Build the outputs
+                for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
+                {
+                    // Build the output file name
+                    final StringBuilder pathBuilder = new StringBuilder();
+                    pathBuilder.append(dest.getPath())
+                               .append(feature.getLocation().getLid())
+                               .append("_")
+                               .append(e.getKey().getFirstKey())
+                               .append("_")
+                               .append(e.getKey().getSecondKey())
+                               .append("_")
+                               .append(projectConfigPlus.getProjectConfig()
+                                                        .getInputs()
+                                                        .getRight()
+                                                        .getVariable()
+                                                        .getValue())
+                               .append("_")
+                               .append(nextEntry.getKey())
+                               .append(".png");
+                    final Path outputImage = Paths.get(pathBuilder.toString());
+                    writeChart(outputImage, nextEntry.getValue(), dest);
+                }
+            }
+        }
+        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+        {
+            LOGGER.error("While generating multi-vector charts:", e);
             return false;
         }
         return true;
@@ -647,18 +606,18 @@ public class Control implements Function<String[], Integer>
      * @throws IOException
      */
 
-    private static void writeChart(Path outputImage,
-                                   ChartEngine engine,
-                                   DestinationConfig dest) throws IOException,
-                                                           ChartEngineException,
-                                                           XYChartDataSourceException
+    private static void writeChart(final Path outputImage,
+                                   final ChartEngine engine,
+                                   final DestinationConfig dest) throws IOException,
+                                                                 ChartEngineException,
+                                                                 XYChartDataSourceException
     {
         if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
         {
             LOGGER.warn("File {} already existed and is being overwritten.", outputImage);
         }
 
-        File outputImageFile = outputImage.toFile();
+        final File outputImageFile = outputImage.toFile();
 
         int width = SystemSettings.getDefaultChartWidth();
         int height = SystemSettings.getDefaultChartHeight();
@@ -681,15 +640,15 @@ public class Control implements Function<String[], Integer>
      * @param args the paths to the projects
      * @return the successfully found, read, unmarshalled project configs
      */
-    private static List<ProjectConfigPlus> getProjects(String[] args)
+    private static List<ProjectConfigPlus> getProjects(final String[] args)
     {
-        List<Path> existingProjectFiles = new ArrayList<>();
+        final List<Path> existingProjectFiles = new ArrayList<>();
 
         if(args.length > 0)
         {
-            for(String arg: args)
+            for(final String arg: args)
             {
-                Path path = Paths.get(arg);
+                final Path path = Paths.get(arg);
                 if(path.toFile().exists())
                 {
                     existingProjectFiles.add(path);
@@ -707,16 +666,16 @@ public class Control implements Function<String[], Integer>
             }
         }
 
-        List<ProjectConfigPlus> projectConfiggies = new ArrayList<>();
+        final List<ProjectConfigPlus> projectConfiggies = new ArrayList<>();
 
-        for(Path path: existingProjectFiles)
+        for(final Path path: existingProjectFiles)
         {
             try
             {
-                ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from(path);
+                final ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from(path);
                 projectConfiggies.add(projectConfigPlus);
             }
-            catch(IOException ioe)
+            catch(final IOException ioe)
             {
                 LOGGER.error("Could not read project configuration: ", ioe);
             }
@@ -760,12 +719,12 @@ public class Control implements Function<String[], Integer>
                                 nextInput.getMetadata().getLeadTime());
                 }
             }
-            catch(InterruptedException e)
+            catch(final InterruptedException e)
             {
                 LOGGER.error("Interrupted while processing pairs.", e);
                 Thread.currentThread().interrupt();
             }
-            catch(Exception e)
+            catch(final Exception e)
             {
                 LOGGER.error("While processing pairs:", e);
             }
@@ -798,7 +757,7 @@ public class Control implements Function<String[], Integer>
          * @param projectConfigPlus the project configuration
          */
 
-        private IntermediateResultProcessor(Feature feature, ProjectConfigPlus projectConfigPlus)
+        private IntermediateResultProcessor(final Feature feature, final ProjectConfigPlus projectConfigPlus)
         {
             this.projectConfigPlus = projectConfigPlus;
             this.feature = feature;
@@ -814,53 +773,21 @@ public class Control implements Function<String[], Integer>
                 {
                     processMultiVectorCharts(feature, projectConfigPlus, input.getMultiVectorOutput());
                     meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
-                    if(LOGGER.isInfoEnabled())
+                    if(LOGGER.isDebugEnabled())
                     {
-                        LOGGER.info("Completed processing of intermediate metrics results for feature '{}' at lead time {}.",
-                                    meta.getIdentifier().getGeospatialID(),
-                                    meta.getLeadTime());
+                        LOGGER.debug("Completed processing of intermediate metrics results for feature '{}' at lead time {}.",
+                                     meta.getIdentifier().getGeospatialID(),
+                                     meta.getLeadTime());
                     }
                 }
             }
-            catch(Exception e)
+            catch(final Exception e)
             {
                 LOGGER.error("While processing intermediate results:", e);
             }
         }
     }
 
-    /**
-     * Checks a trimmed string in the graphics configuration.
-     * 
-     * @param trimmedCustomString the trimmed string
-     * @param tag the tag
-     * @param comment the comment
-     * @param nearbyTag a nearby tag
-     * @param projectConfigPlus the configuration
-     * @return true if the tag is valid, false otherwise
-     */
-
-    private static boolean checkTrimmedString(String trimmedCustomString,
-                                              String tag,
-                                              String comment,
-                                              Locatable nearbyTag,
-                                              ProjectConfigPlus projectConfigPlus)
-    {
-        if(!trimmedCustomString.endsWith(tag) && !trimmedCustomString.endsWith(comment))
-        {
-            String msg = "In file {}, near line {} and column {}, " + "WRES found an issue with the project "
-                + " configuration in the area of custom " + "graphics configuration. If customization is "
-                + "provided, please end it with " + tag;
-
-            LOGGER.warn(msg,
-                        projectConfigPlus.getPath(),
-                        nearbyTag.sourceLocation().getLineNumber(),
-                        nearbyTag.sourceLocation().getColumnNumber());
-
-            return false;
-        }
-        return true;
-    }
 
     /**
      * Composes a list of {@link CompletableFuture} so that execution completes when all futures are completed normally
@@ -895,11 +822,11 @@ public class Control implements Function<String[], Integer>
     /**
      * Kill off the executors passed in even if there are remaining tasks.
      *
-     * @param processPairExecutor the executor to shutdown
+     * @param executor the executor to shutdown
      */
-    private static void shutDownGracefully(ExecutorService processPairExecutor)
+    private static void shutDownGracefully(final ExecutorService executor)
     {
-        if(Objects.isNull(processPairExecutor))
+        if(Objects.isNull(executor))
         {
             return;
         }
@@ -907,7 +834,7 @@ public class Control implements Function<String[], Integer>
         int processingSkipped = 0;
         int i = 0;
         boolean deathTime = false;
-        while(!processPairExecutor.isTerminated())
+        while(!executor.isTerminated())
         {
             if(i == 0)
             {
@@ -933,7 +860,7 @@ public class Control implements Function<String[], Integer>
                 if(deathTime)
                 {
                     LOGGER.info("Forcing shutdown.");
-                    processingSkipped += processPairExecutor.shutdownNow().size();
+                    processingSkipped += executor.shutdownNow().size();
                 }
             }
             i++;
@@ -943,6 +870,32 @@ public class Control implements Function<String[], Integer>
         {
             LOGGER.info("Abandoned {} processing tasks.", processingSkipped);
         }
+    }
+
+    /**
+     * Locates the metric configuration corresponding to the input {@link MetricConstants} or null if no corresponding
+     * configuration could be found.
+     * 
+     * @param metric the metric
+     * @param config the project configuration
+     * @return the metric configuration or null
+     */
+
+    private static MetricConfig getMetricConfiguration(final MetricConstants metric, final ProjectConfig config)
+    {
+        // Find the corresponding configuration
+        final Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter(a -> {
+            try
+            {
+                return metric.equals(MetricProcessor.fromMetricConfigName(a.getName()));
+            }
+            catch(final MetricConfigurationException e)
+            {
+                LOGGER.error("Could not map metric name '{}' to metric configuration.", metric, e);
+                return false;
+            }
+        }).findFirst();
+        return returnMe.isPresent() ? returnMe.get() : null;
     }
 
     /**
@@ -974,12 +927,18 @@ public class Control implements Function<String[], Integer>
      */
 
     public static final int MAX_THREADS;
+    
+    /**
+     * Error message for missing configuration.
+     */
+    
+    private static final String MISSING_CONFIGURATION = "Could not locate the metric configuration for metric {}.";
 
     // Figure out the max threads from property or by default rule.
     // Ideally priority order would be: -D, SystemSettings, default rule.
     static
     {
-        String maxThreadsStr = System.getProperty(MAX_THREADS_PROP_NAME);
+        final String maxThreadsStr = System.getProperty(MAX_THREADS_PROP_NAME);
         int maxThreads;
         try
         {
@@ -990,15 +949,19 @@ public class Control implements Function<String[], Integer>
             maxThreads = SystemSettings.maximumThreadCount();
         }
 
-        if(maxThreads >= 1)
+        // Since ForkJoinPool goes ape when this is 2 or less...
+        if ( maxThreads >= 3 )
         {
             MAX_THREADS = maxThreads;
         }
         else
         {
-            //LOGGER.warn("Java -D property {} was likely less than 1, setting Control.MAX_THREADS to 1",
-            //            MAX_THREADS_PROP_NAME);
-            MAX_THREADS = 1;
+            LOGGER.warn( "Java -D property {} or SystemSettings "
+                         + "maximumThreadCount was likely less than 1, setting "
+                         + " Control.MAX_THREADS to 3",
+                         MAX_THREADS_PROP_NAME );
+
+            MAX_THREADS = 3;
         }
     }
 

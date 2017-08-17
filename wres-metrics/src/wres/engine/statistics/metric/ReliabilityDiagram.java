@@ -104,7 +104,7 @@ public final class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, M
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class ReliabilityDiagramBuilder extends MetricBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
+    static class ReliabilityDiagramBuilder extends MetricBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
     {
 
         @Override

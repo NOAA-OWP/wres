@@ -119,7 +119,7 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class CorrelationPearsonsBuilder extends MetricBuilder<SingleValuedPairs, ScalarOutput>
+    static class CorrelationPearsonsBuilder extends MetricBuilder<SingleValuedPairs, ScalarOutput>
     {
 
         @Override

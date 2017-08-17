@@ -4,8 +4,8 @@
 
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
-		<text>Reliability Diagram for Various Event Thresholds (Upper) and Sample Counts (Lower)
-@locationName@.@variableName@.@primaryScenario@ At Lead Hour @leadHour@
+		<text>Reliability Diagram for Various Event @plotTitleVariable@ (Upper) and Sample Counts (Lower)
+@locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
 		</text>
 	</plotTitle>
 	
@@ -53,7 +53,7 @@
 		</numericAxis>
 	</domainAxis>
 	
-	<!-- Put the legend on the right hand side. -->
+	<!-- Put the legend on the bottom with an appropriate title. -->
     <legend visible="true">
         <position>BOTTOM</position>
         <title>

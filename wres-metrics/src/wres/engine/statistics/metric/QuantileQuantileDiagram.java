@@ -79,7 +79,7 @@ public final class QuantileQuantileDiagram extends Metric<SingleValuedPairs, Mul
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class QuantileQuantileDiagramBuilder extends MetricBuilder<SingleValuedPairs, MultiVectorOutput>
+    static class QuantileQuantileDiagramBuilder extends MetricBuilder<SingleValuedPairs, MultiVectorOutput>
     {
 
         @Override

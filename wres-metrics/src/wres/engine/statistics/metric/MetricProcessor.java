@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
@@ -151,16 +152,108 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     final MetricOutputGroup[] mergeList;
 
     /**
-     * The metric futures from previous calls.
+     * The metric futures from previous calls, indexed by lead time.
      */
 
-    MetricFutures futures = null;
+    ConcurrentMap<Integer, MetricFutures> futures = new ConcurrentSkipListMap<>();
 
     /**
      * Default logger.
      */
 
     static final Logger LOGGER = LoggerFactory.getLogger(MetricProcessor.class);
+
+    /**
+     * Maps between metric identifiers in {@link MetricConfigName} and those in {@link MetricConstants}.
+     * 
+     * @param translate the input {@link MetricConfigName}
+     * @return the corresponding {@link MetricConstants}.
+     * @throws MetricConfigurationException if the input name is unrecognized
+     */
+
+    public static MetricConstants fromMetricConfigName(MetricConfigName translate) throws MetricConfigurationException
+    {
+        Objects.requireNonNull(translate,
+                               "One or more metric identifiers in the project configuration could not be mapped "
+                                   + "to a supported metric identifier.");
+        switch(translate)
+        {
+            case BIAS_FRACTION:
+                return MetricConstants.BIAS_FRACTION;
+            case BRIER_SCORE:
+                return MetricConstants.BRIER_SCORE;
+            case BRIER_SKILL_SCORE:
+                return MetricConstants.BRIER_SKILL_SCORE;
+            case COEFFICIENT_OF_DETERMINATION:
+                return MetricConstants.COEFFICIENT_OF_DETERMINATION;
+            case CONTINGENCY_TABLE:
+                return MetricConstants.CONTINGENCY_TABLE;
+            case CORRELATION_PEARSONS:
+                return MetricConstants.CORRELATION_PEARSONS;
+            case CRITICAL_SUCCESS_INDEX:
+                return MetricConstants.CRITICAL_SUCCESS_INDEX;
+            case EQUITABLE_THREAT_SCORE:
+                return MetricConstants.EQUITABLE_THREAT_SCORE;
+            case MEAN_ABSOLUTE_ERROR:
+                return MetricConstants.MEAN_ABSOLUTE_ERROR;
+            case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
+                return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
+            case MEAN_ERROR:
+                return MetricConstants.MEAN_ERROR;
+            case MEAN_SQUARE_ERROR:
+                return MetricConstants.MEAN_SQUARE_ERROR;
+            case MEAN_SQUARE_ERROR_SKILL_SCORE:
+                return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE;
+            case PEIRCE_SKILL_SCORE:
+                return MetricConstants.PEIRCE_SKILL_SCORE;
+            case PROBABILITY_OF_DETECTION:
+                return MetricConstants.PROBABILITY_OF_DETECTION;
+            case QUANTILE_QUANTILE_DIAGRAM:
+                return MetricConstants.QUANTILE_QUANTILE_DIAGRAM;
+            case PROBABILITY_OF_FALSE_DETECTION:
+                return MetricConstants.PROBABILITY_OF_FALSE_DETECTION;
+            case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
+                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
+            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
+                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE;
+            case RELIABILITY_DIAGRAM:
+                return MetricConstants.RELIABILITY_DIAGRAM;
+            case ROOT_MEAN_SQUARE_ERROR:
+                return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
+            default:
+                throw new MetricConfigurationException("Unrecognized metric identifier in project configuration '"
+                    + translate + "'.");
+        }
+    }
+
+    /**
+     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
+     * 
+     * @param translate the input {@link ThresholdOperator}
+     * @return the corresponding {@link Operator}.
+     * @throws MetricConfigurationException if the operator name is unrecognized
+     */
+
+    public static Operator fromThresholdOperator(ThresholdOperator translate) throws MetricConfigurationException
+    {
+        Objects.requireNonNull(translate,
+                               "One or more metric identifiers in the project configuration could not be mapped "
+                                   + "to a supported metric identifier.");
+        switch(translate)
+        {
+            case LESS_THAN:
+                return Operator.LESS;
+            case GREATER_THAN:
+                return Operator.GREATER;
+            case LESS_THAN_OR_EQUAL_TO:
+                return Operator.LESS_EQUAL;
+            case GREATER_THAN_OR_EQUAL_TO:
+                return Operator.GREATER_EQUAL;
+            default:
+                throw new MetricConfigurationException("Unrecognized threshold operator in project configuration '"
+                    + translate + "'.");
+        }
+    }
 
     /**
      * Returns a {@link MetricOutputForProjectByLeadThreshold} for the last available results or null if
@@ -171,7 +264,17 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
     public MetricOutputForProjectByLeadThreshold getStoredMetricOutput()
     {
-        return hasStoredMetricOutput() ? futures.getMetricOutput() : null;
+        MetricOutputForProjectByLeadThreshold returnMe = null;
+        if(hasStoredMetricOutput())
+        {
+            MetricFutures.Builder builder = new MetricFutures.Builder().addDataFactory(dataFactory);
+            for(MetricFutures future: futures.values())
+            {
+                builder.addFutures(future, mergeList);
+            }
+            returnMe = builder.build().getMetricOutput();
+        }
+        return returnMe;
     }
 
     /**
@@ -182,7 +285,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
     public boolean hasStoredMetricOutput()
     {
-        return Objects.nonNull(futures) && futures.hasFutureOutputs();
+        return futures.values().stream().anyMatch(MetricFutures::hasFutureOutputs);
     }
 
     /**
@@ -308,10 +411,11 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         //Construct the metrics that are common to more than one type of input pairs
         if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR))
         {
-            singleValuedScalar = metricFactory.ofSingleValuedScalarCollection(executor,
-                                                                              getSelectedMetrics(metrics,
-                                                                                                 MetricInputGroup.SINGLE_VALUED,
-                                                                                                 MetricOutputGroup.SCALAR));
+            singleValuedScalar =
+                               metricFactory.ofSingleValuedScalarCollection(executor,
+                                                                            getSelectedMetrics(metrics,
+                                                                                               MetricInputGroup.SINGLE_VALUED,
+                                                                                               MetricOutputGroup.SCALAR));
         }
         else
         {
@@ -319,10 +423,11 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         }
         if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR))
         {
-            singleValuedVector = metricFactory.ofSingleValuedVectorCollection(executor,
-                                                                              getSelectedMetrics(metrics,
-                                                                                                 MetricInputGroup.SINGLE_VALUED,
-                                                                                                 MetricOutputGroup.VECTOR));
+            singleValuedVector =
+                               metricFactory.ofSingleValuedVectorCollection(executor,
+                                                                            getSelectedMetrics(metrics,
+                                                                                               MetricInputGroup.SINGLE_VALUED,
+                                                                                               MetricOutputGroup.VECTOR));
         }
         else
         {
@@ -330,10 +435,11 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         }
         if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR))
         {
-            singleValuedMultiVector = metricFactory.ofSingleValuedMultiVectorCollection(executor,
-                                                                                        getSelectedMetrics(metrics,
-                                                                                                           MetricInputGroup.SINGLE_VALUED,
-                                                                                                           MetricOutputGroup.MULTIVECTOR));
+            singleValuedMultiVector =
+                                    metricFactory.ofSingleValuedMultiVectorCollection(executor,
+                                                                                      getSelectedMetrics(metrics,
+                                                                                                         MetricInputGroup.SINGLE_VALUED,
+                                                                                                         MetricOutputGroup.MULTIVECTOR));
         }
         else
         {
@@ -365,30 +471,20 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
     }
 
     /**
-     * Merges the input {@link MetricFutures} with any existing {@link MetricFutures} defined for this processor.
+     * Adds the input {@link MetricFutures} to the internal store of existing {@link MetricFutures} defined for this
+     * processor.
      * 
-     * @param mergeFuture the futures to merge
-     * @throws MetricConfigurationException if the input futures contain unsupported output types
+     * @param leadTime the lead time
+     * @param mergeFuture the futures to add
      */
 
-    void mergeFutures(MetricFutures mergeFutures)
+    void addToMergeMap(Integer leadTime, MetricFutures mergeFutures)
     {
         Objects.requireNonNull(mergeFutures, "Specify non-null futures for merging.");
         //Merge futures if cached outputs identified
         if(willStoreMetricOutput())
         {
-            MetricFutures.Builder builder = new MetricFutures.Builder();
-            if(Objects.nonNull(futures))
-            {
-                futures = builder.addDataFactory(dataFactory)
-                                 .addFutures(futures, mergeList)
-                                 .addFutures(mergeFutures, mergeList)
-                                 .build();
-            }
-            else
-            {
-                futures = builder.addDataFactory(dataFactory).addFutures(mergeFutures, mergeList).build();
-            }
+            futures.put(leadTime, mergeFutures);
         }
     }
 
@@ -413,13 +509,12 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             if(hasGlobalThresholds(MetricInputGroup.SINGLE_VALUED))
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
-                double[] sorted = getSortedLeftSide(input, global);
-                global.forEach(threshold -> processSingleValuedThreshold(leadTime,
-                                                                         threshold,
-                                                                         sorted,
-                                                                         input,
-                                                                         singleValuedScalar,
-                                                                         futures.scalar));
+                double[] sorted = getSortedClimatology(input, global);
+                global.forEach(threshold -> {
+                    Threshold useMe = getThreshold(threshold, sorted);
+                    futures.addScalarOutput(dataFactory.getMapKey(leadTime, useMe),
+                                            processSingleValuedThreshold(leadTime, useMe, input, singleValuedScalar));
+                });
             }
             //Deal with metric-local thresholds
             else
@@ -435,13 +530,12 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             if(hasGlobalThresholds(MetricInputGroup.SINGLE_VALUED))
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
-                double[] sorted = getSortedLeftSide(input, global);
-                global.forEach(threshold -> processSingleValuedThreshold(leadTime,
-                                                                         threshold,
-                                                                         sorted,
-                                                                         input,
-                                                                         singleValuedVector,
-                                                                         futures.vector));
+                double[] sorted = getSortedClimatology(input, global);
+                global.forEach(threshold -> {
+                    Threshold useMe = getThreshold(threshold, sorted);
+                    futures.addVectorOutput(dataFactory.getMapKey(leadTime, useMe),
+                                            processSingleValuedThreshold(leadTime, useMe, input, singleValuedVector));
+                });
             }
             //Deal with metric-local thresholds
             else
@@ -457,13 +551,15 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             if(hasGlobalThresholds(MetricInputGroup.SINGLE_VALUED))
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
-                double[] sorted = getSortedLeftSide(input, global);
-                global.forEach(threshold -> processSingleValuedThreshold(leadTime,
-                                                                         threshold,
-                                                                         sorted,
-                                                                         input,
-                                                                         singleValuedMultiVector,
-                                                                         futures.multivector));
+                double[] sorted = getSortedClimatology(input, global);
+                global.forEach(threshold -> {
+                    Threshold useMe = getThreshold(threshold, sorted);
+                    futures.addMultiVectorOutput(dataFactory.getMapKey(leadTime, useMe),
+                                                 processSingleValuedThreshold(leadTime,
+                                                                              useMe,
+                                                                              input,
+                                                                              singleValuedMultiVector));
+                });
             }
             //Deal with metric-local thresholds
             else
@@ -555,20 +651,20 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
              * Scalar results.
              */
 
-            final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
-                                                                                                                    new ConcurrentHashMap<>();
+            private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
+                                                                                                                            new ConcurrentHashMap<>();
             /**
              * Vector results.
              */
 
-            final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
-                                                                                                                    new ConcurrentHashMap<>();
+            private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
+                                                                                                                            new ConcurrentHashMap<>();
             /**
              * Multivector results.
              */
 
-            final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
-                                                                                                                              new ConcurrentHashMap<>();
+            private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
+                                                                                                                                      new ConcurrentHashMap<>();
             /**
              * Instance of a {@link DataFactory}
              */
@@ -588,6 +684,62 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             }
 
             /**
+             * Adds a set of future {@link ScalarOutput} to the appropriate internal store.
+             * 
+             * @param key the key
+             * @param value the future result
+             * @return the builder
+             */
+
+            Builder addScalarOutput(MapBiKey<Integer, Threshold> key,
+                                    Future<MetricOutputMapByMetric<ScalarOutput>> value)
+            {
+                scalar.put(key, value);
+                return this;
+            }
+
+            /**
+             * Adds a set of future {@link VectorOutput} to the appropriate internal store.
+             * 
+             * @param key the key
+             * @param value the future result
+             * @return the builder
+             */
+
+            Builder addVectorOutput(MapBiKey<Integer, Threshold> key,
+                                    Future<MetricOutputMapByMetric<VectorOutput>> value)
+            {
+                vector.put(key, value);
+                return this;
+            }
+
+            /**
+             * Adds a set of future {@link MultiVectorOutput} to the appropriate internal store.
+             * 
+             * @param key the key
+             * @param value the future result
+             * @return the builder
+             */
+
+            Builder addMultiVectorOutput(MapBiKey<Integer, Threshold> key,
+                                         Future<MetricOutputMapByMetric<MultiVectorOutput>> value)
+            {
+                multivector.put(key, value);
+                return this;
+            }
+
+            /**
+             * Build the metric futures.
+             * 
+             * @return the metric futures
+             */
+
+            MetricFutures build()
+            {
+                return new MetricFutures(this);
+            }
+
+            /**
              * Adds the outputs from an existing {@link MetricFutures} for the outputs that are included in the merge
              * list.
              * 
@@ -596,7 +748,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
              * @throws MetricConfigurationException
              */
 
-            Builder addFutures(MetricFutures futures, MetricOutputGroup[] mergeList)
+            private Builder addFutures(MetricFutures futures, MetricOutputGroup[] mergeList)
             {
                 if(Objects.nonNull(mergeList))
                 {
@@ -619,17 +771,6 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                     }
                 }
                 return this;
-            }
-
-            /**
-             * Build the metric futures.
-             * 
-             * @return the metric futures
-             */
-
-            MetricFutures build()
-            {
-                return new MetricFutures(this);
             }
 
         }
@@ -707,48 +848,64 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * @return a sorted array of values or null
      */
 
-    double[] getSortedLeftSide(SingleValuedPairs input, List<Threshold> thresholds)
+    double[] getSortedClimatology(MetricInput<?> input, List<Threshold> thresholds)
     {
         double[] sorted = null;
-        if(hasProbabilityThreshold(thresholds))
+        if(hasProbabilityThreshold(thresholds) && input.hasClimatology())
         {
-            sorted = dataFactory.getSlicer().getLeftSide(input);
+            sorted = input.getClimatology().getDoubles();
             Arrays.sort(sorted);
         }
         return sorted;
     }
 
     /**
-     * Builds a metric future for a {@link MetricCollection} that consumes {@link SingleValuedPairs} at a specific lead
-     * time and {@link Threshold} and appends it to the input map of futures.
+     * Returns the input {@link Threshold} or a {@link QuantileThreshold} if the input is a
+     * {@link ProbabilityThreshold}. The {@link QuantileThreshold} is obtained from the prescribed, sorted,
+     * observations.
      * 
-     * @param leadTime the lead time
-     * @param threshold the threshold
+     * @param threshold the input threshold
      * @param sorted a sorted set of values from which to determine {@link QuantileThreshold} where the input
      *            {@link Threshold} is a {@link ProbabilityThreshold}.
-     * @param pairs the pairs
-     * @param collection the metric collection
-     * @param futures the collection of futures to which the new future will be added
-     * @return true if the future was added successfully
+     * @return the threshold
+     * @throws MetricCalculationException if the sorted array is null and quantiles are required
      */
 
-    private <T extends MetricOutput<?>> boolean processSingleValuedThreshold(Integer leadTime,
-                                                                             Threshold threshold,
-                                                                             double[] sorted,
-                                                                             SingleValuedPairs pairs,
-                                                                             MetricCollection<SingleValuedPairs, T> collection,
-                                                                             ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<T>>> futures)
+    Threshold getThreshold(Threshold threshold, double[] sorted)
     {
         Threshold useMe = threshold;
         //Quantile required: need to determine real-value from probability
         if(threshold instanceof ProbabilityThreshold)
         {
+            if(Objects.isNull(sorted))
+            {
+                throw new MetricCalculationException("Unable to determine quantile threshold from probability "
+                    + "threshold: no climatological observations were available in the input.");
+            }
             useMe = dataFactory.getSlicer().getQuantileFromProbability((ProbabilityThreshold)useMe, sorted);
         }
+        return useMe;
+    }
+
+    /**
+     * Builds a metric future for a {@link MetricCollection} that consumes {@link SingleValuedPairs} at a specific lead
+     * time and {@link Threshold}.
+     * 
+     * @param leadTime the lead time
+     * @param threshold the threshold
+     * @param pairs the pairs
+     * @param futures the collection of futures to which the new future will be added
+     * @return the future result
+     */
+
+    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processSingleValuedThreshold(Integer leadTime,
+                                                                                                        Threshold threshold,
+                                                                                                        SingleValuedPairs pairs,
+                                                                                                        MetricCollection<SingleValuedPairs, T> collection)
+    {
         //Slice the pairs
-        SingleValuedPairs subset = dataFactory.getSlicer().sliceByLeft(pairs, useMe);
-        return Objects.isNull(futures.putIfAbsent(dataFactory.getMapKey(leadTime, useMe),
-                                                  CompletableFuture.supplyAsync(() -> collection.apply(subset))));
+        SingleValuedPairs subset = dataFactory.getSlicer().sliceByLeft(pairs, threshold);
+        return CompletableFuture.supplyAsync(() -> collection.apply(subset));
     }
 
     /**
@@ -799,14 +956,14 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         //Add a threshold for "all data" by default
         globalThresholds.add(dataFactory.getThreshold(Double.NEGATIVE_INFINITY, Operator.GREATER));
         //Add probability thresholds
-        if(!Objects.isNull(outputs.getProbabilityThresholds()))
+        if(Objects.nonNull(outputs.getProbabilityThresholds()))
         {
             Operator oper = fromThresholdOperator(outputs.getProbabilityThresholds().getOperator());
             String values = outputs.getProbabilityThresholds().getCommaSeparatedValues();
             globalThresholds.addAll(getThresholdsFromCommaSeparatedValues(values, oper, true));
         }
         //Add real-valued thresholds
-        if(!Objects.isNull(outputs.getValueThresholds()))
+        if(Objects.nonNull(outputs.getValueThresholds()))
         {
             Operator oper = fromThresholdOperator(outputs.getValueThresholds().getOperator());
             String values = outputs.getValueThresholds().getCommaSeparatedValues();
@@ -874,98 +1031,6 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             }
         }
         return returnMe;
-    }
-
-    /**
-     * Maps between metric identifiers in {@link MetricConfigName} and those in {@link MetricConstants}.
-     * 
-     * @param translate the input {@link MetricConfigName}
-     * @return the corresponding {@link MetricConstants}.
-     * @throws MetricConfigurationException if the input name is unrecognized
-     */
-
-    private static MetricConstants fromMetricConfigName(MetricConfigName translate) throws MetricConfigurationException
-    {
-        Objects.requireNonNull(translate,
-                               "One or more metric identifiers in the project configuration could not be mapped "
-                                   + "to a supported metric identifier.");
-        switch(translate)
-        {
-            case BIAS_FRACTION:
-                return MetricConstants.BIAS_FRACTION;
-            case BRIER_SCORE:
-                return MetricConstants.BRIER_SCORE;
-            case BRIER_SKILL_SCORE:
-                return MetricConstants.BRIER_SKILL_SCORE;
-            case COEFFICIENT_OF_DETERMINATION:
-                return MetricConstants.COEFFICIENT_OF_DETERMINATION;
-            case CONTINGENCY_TABLE:
-                return MetricConstants.CONTINGENCY_TABLE;
-            case CORRELATION_PEARSONS:
-                return MetricConstants.CORRELATION_PEARSONS;
-            case CRITICAL_SUCCESS_INDEX:
-                return MetricConstants.CRITICAL_SUCCESS_INDEX;
-            case EQUITABLE_THREAT_SCORE:
-                return MetricConstants.EQUITABLE_THREAT_SCORE;
-            case MEAN_ABSOLUTE_ERROR:
-                return MetricConstants.MEAN_ABSOLUTE_ERROR;
-            case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
-                return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
-            case MEAN_ERROR:
-                return MetricConstants.MEAN_ERROR;
-            case MEAN_SQUARE_ERROR:
-                return MetricConstants.MEAN_SQUARE_ERROR;
-            case MEAN_SQUARE_ERROR_SKILL_SCORE:
-                return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE;
-            case PEIRCE_SKILL_SCORE:
-                return MetricConstants.PEIRCE_SKILL_SCORE;
-            case PROBABILITY_OF_DETECTION:
-                return MetricConstants.PROBABILITY_OF_DETECTION;
-            case QUANTILE_QUANTILE_DIAGRAM:
-                return MetricConstants.QUANTILE_QUANTILE_DIAGRAM;
-            case PROBABILITY_OF_FALSE_DETECTION:
-                return MetricConstants.PROBABILITY_OF_FALSE_DETECTION;
-            case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
-                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
-            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
-                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE;
-            case RELIABILITY_DIAGRAM:
-                return MetricConstants.RELIABILITY_DIAGRAM;
-            case ROOT_MEAN_SQUARE_ERROR:
-                return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
-            default:
-                throw new MetricConfigurationException("Unrecognized metric identifier in project configuration '"
-                    + translate + "'.");
-        }
-    }
-
-    /**
-     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
-     * 
-     * @param translate the input {@link ThresholdOperator}
-     * @return the corresponding {@link Operator}.
-     * @throws MetricConfigurationException if the operator name is unrecognized
-     */
-
-    private static Operator fromThresholdOperator(ThresholdOperator translate) throws MetricConfigurationException
-    {
-        Objects.requireNonNull(translate,
-                               "One or more metric identifiers in the project configuration could not be mapped "
-                                   + "to a supported metric identifier.");
-        switch(translate)
-        {
-            case LESS_THAN:
-                return Operator.LESS;
-            case GREATER_THAN:
-                return Operator.GREATER;
-            case LESS_THAN_OR_EQUAL_TO:
-                return Operator.LESS_EQUAL;
-            case GREATER_THAN_OR_EQUAL_TO:
-                return Operator.GREATER_EQUAL;
-            default:
-                throw new MetricConfigurationException("Unrecognized threshold operator in project configuration '"
-                    + translate + "'.");
-        }
     }
 
 }

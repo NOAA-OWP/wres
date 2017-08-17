@@ -95,7 +95,7 @@ implements ProbabilityScore
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class CRPSBuilder extends MetricBuilder<EnsemblePairs, VectorOutput>
+    static class CRPSBuilder extends MetricBuilder<EnsemblePairs, VectorOutput>
     {
         /**
          * The type of metric decomposition.

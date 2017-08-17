@@ -53,14 +53,14 @@ public final class DefaultDataFactoryTest
         final Metadata m3 = metaFac.getMetadata(metaFac.getDimension(),
                                                 metaFac.getDatasetIdentifier("DRRC2", "SQIN", "ESP"));
         metIn.ofDiscreteProbabilityPairs(dInput, m2);
-        metIn.ofDiscreteProbabilityPairs(dInput, dInput, m2, m3);
+        metIn.ofDiscreteProbabilityPairs(dInput, dInput, m2, m3, null);
         metIn.ofSingleValuedPairs(dInput, m3);
-        metIn.ofSingleValuedPairs(dInput, dInput, m2, m3);
+        metIn.ofSingleValuedPairs(dInput, dInput, m2, m3, null);
         
         final List<PairOfDoubleAndVectorOfDoubles> eInput = new ArrayList<>();
         eInput.add(metIn.pairOf(0.0, new double[]{1.0,2.0}));
         metIn.ofEnsemblePairs(eInput, m3);
-        metIn.ofEnsemblePairs(eInput, eInput, m2, m3);       
+        metIn.ofEnsemblePairs(eInput, eInput, m2, m3, null);       
     }
 
     @Test
