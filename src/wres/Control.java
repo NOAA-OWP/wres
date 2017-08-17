@@ -27,6 +27,7 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import wres.config.ProjectConfigException;
+import wres.config.Validation;
 import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.MetricConfig;
@@ -53,7 +54,6 @@ import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
 import wres.io.writing.CommaSeparated;
 import wres.vis.ChartEngineFactory;
-import wres.config.Validation;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}. The processing
@@ -333,20 +333,31 @@ public class Control implements Function<String[], Integer>
                 switch(nextGroup)
                 {
                     case SCALAR:
-                        returnMe = returnMe && processScalarCharts(feature,
-                                                                   projectConfigPlus,
-                                                                   processor.getStoredMetricOutput().getScalarOutput());
+                        if(processor.getStoredMetricOutput().hasOutput(MetricOutputGroup.SCALAR))
+                        {
+                            returnMe = returnMe
+                                && processScalarCharts(feature,
+                                                       projectConfigPlus,
+                                                       processor.getStoredMetricOutput().getScalarOutput());
+                        }
                         break;
                     case VECTOR:
-                        returnMe = returnMe && processVectorCharts(feature,
-                                                                   projectConfigPlus,
-                                                                   processor.getStoredMetricOutput().getVectorOutput());
+                        if(processor.getStoredMetricOutput().hasOutput(MetricOutputGroup.VECTOR))
+                        {
+                            returnMe = returnMe
+                                && processVectorCharts(feature,
+                                                       projectConfigPlus,
+                                                       processor.getStoredMetricOutput().getVectorOutput());
+                        }
                         break;
                     case MULTIVECTOR:
-                        returnMe = returnMe
-                            && processMultiVectorCharts(feature,
-                                                        projectConfigPlus,
-                                                        processor.getStoredMetricOutput().getMultiVectorOutput());
+                        if(processor.getStoredMetricOutput().hasOutput(MetricOutputGroup.MULTIVECTOR))
+                        {
+                            returnMe = returnMe
+                                && processMultiVectorCharts(feature,
+                                                            projectConfigPlus,
+                                                            processor.getStoredMetricOutput().getMultiVectorOutput());
+                        }
                         break;
                     default:
                         LOGGER.error("Unsupported chart type {}.", nextGroup);
