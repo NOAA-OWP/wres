@@ -272,17 +272,20 @@ class VectorNetCDFValueSaver extends WRESRunnable
         {
             StringBuilder script = new StringBuilder();
 
-            script.append("SELECT VP.x_position, FE.forecastensemble_id").append(NEWLINE);
+            script.append("SELECT F.nwm_index, FE.forecastensemble_id").append(NEWLINE);
             script.append("FROM wres.ForecastEnsemble FE").append(NEWLINE);
             script.append("INNER JOIN ").append(this.getVariablePositionPartitionName()).append(" VP").append(NEWLINE);
             script.append("     ON VP.variableposition_id = FE.variableposition_id").append(NEWLINE);
+            script.append("INNER JOIN wres.Feature F").append(NEWLINE);
+            script.append("     ON F.feature_id = VP.x_position").append(NEWLINE);
             script.append("WHERE FE.forecast_id = ").append(this.getForecastID()).append(NEWLINE);
-            script.append("     AND VP.variable_id = ").append(this.getVariableID()).append(";");
+            script.append("     AND VP.variable_id = ").append(this.getVariableID()).append(NEWLINE);
+            script.append("     AND F.nwm_index IS NOT NULL;");
 
             this.indexMapping = new TreeMap<>();
             Database.populateMap(this.indexMapping,
                                  script.toString(),
-                                 "x_position",
+                                 "nwm_index",
                                  "forecastensemble_id");
         }
 
