@@ -17,7 +17,7 @@ import wres.datamodel.metric.MetricOutput;
  * @since 0.1
  */
 
-public final class CollectableTask<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
+class CollectableTask<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
 implements Callable<U>
 {
 

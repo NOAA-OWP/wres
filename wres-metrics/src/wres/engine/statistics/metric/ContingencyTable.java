@@ -28,7 +28,7 @@ import wres.datamodel.metric.MulticategoryPairs;
  * @since 0.1
  */
 
-public final class ContingencyTable<S extends MulticategoryPairs> extends Metric<S, MatrixOutput>
+class ContingencyTable<S extends MulticategoryPairs> extends Metric<S, MatrixOutput>
 {
 
     @Override

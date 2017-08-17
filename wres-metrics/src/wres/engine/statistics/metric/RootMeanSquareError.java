@@ -14,7 +14,7 @@ import wres.datamodel.metric.SingleValuedPairs;
  * @version 0.1
  * @since 0.1
  */
-public final class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
+class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
 {
 
     @Override

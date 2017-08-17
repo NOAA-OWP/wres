@@ -12,7 +12,7 @@ import wres.datamodel.metric.SingleValuedPairs;
  * @version 0.1
  * @since 0.1
  */
-public final class MeanError extends DoubleErrorScore<SingleValuedPairs>
+class MeanError extends DoubleErrorScore<SingleValuedPairs>
 {
 
     @Override

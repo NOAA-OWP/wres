@@ -18,7 +18,7 @@ import wres.datamodel.metric.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends MeanSquareError<S>
+class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends MeanSquareError<S>
 {
 
     @Override

@@ -22,7 +22,7 @@ import wres.datamodel.metric.Slicer;
  * @since 0.1
  */
 
-public final class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVectorOutput>
+class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVectorOutput>
 {
 
     /**

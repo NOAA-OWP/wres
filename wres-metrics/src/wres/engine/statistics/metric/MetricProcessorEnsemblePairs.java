@@ -40,7 +40,7 @@ import wres.datamodel.metric.VectorOutput;
  * @since 0.1
  */
 
-final class MetricProcessorEnsemblePairs extends MetricProcessor
+class MetricProcessorEnsemblePairs extends MetricProcessor
 {
 
     /**

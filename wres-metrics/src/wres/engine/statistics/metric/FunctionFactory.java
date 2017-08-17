@@ -16,7 +16,7 @@ import wres.datamodel.VectorOfDoubles;
  * @since 0.1
  */
 
-public final class FunctionFactory
+class FunctionFactory
 {
     /**
      * Return a function that computes the difference between the first and second entries in a {@link PairOfDoubles}.

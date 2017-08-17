@@ -25,7 +25,7 @@ package wres.engine.statistics.metric;
  * @version 0.1
  * @since 0.1
  */
-public interface ProbabilityScore extends Score
+interface ProbabilityScore extends Score
 {
 
     /**

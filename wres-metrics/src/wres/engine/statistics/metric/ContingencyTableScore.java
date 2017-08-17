@@ -21,7 +21,7 @@ import wres.engine.statistics.metric.ContingencyTable.ContingencyTableBuilder;
  * @since 0.1
  */
 
-public abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Metric<S, ScalarOutput>
+abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Metric<S, ScalarOutput>
 implements Score, Collectable<S, MatrixOutput, ScalarOutput>
 {
 
