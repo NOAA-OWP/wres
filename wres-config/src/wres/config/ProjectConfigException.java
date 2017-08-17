@@ -37,6 +37,11 @@ public class ProjectConfigException extends Exception
 
     private static String getMessagePrefix(final Locatable problemElement)
     {
+        // If there is no sourceLocation available, use an empty prefix.
+        if ( problemElement.sourceLocation() == null )
+        {
+            return "";
+        }
         return "Near line " + problemElement.sourceLocation().getLineNumber()
                + ", column " + problemElement.sourceLocation().getLineNumber()
                + ": ";
