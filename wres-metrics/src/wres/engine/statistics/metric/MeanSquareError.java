@@ -14,7 +14,7 @@ import wres.datamodel.metric.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
+class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
 {
 
     @Override

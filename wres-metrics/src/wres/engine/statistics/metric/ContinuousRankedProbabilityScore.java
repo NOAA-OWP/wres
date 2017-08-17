@@ -24,7 +24,7 @@ import wres.datamodel.metric.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-public final class ContinuousRankedProbabilityScore extends Metric<EnsemblePairs, VectorOutput>
+class ContinuousRankedProbabilityScore extends Metric<EnsemblePairs, VectorOutput>
 implements ProbabilityScore
 {
 

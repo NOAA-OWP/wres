@@ -13,7 +13,7 @@ import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
  * @since 0.1
  */
 
-public interface Score
+interface Score
 {
 
     /**

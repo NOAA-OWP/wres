@@ -9,7 +9,7 @@ import wres.datamodel.metric.SingleValuedPairs;
  * @version 0.1
  * @since 0.1
  */
-public abstract class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableDoubleErrorScore<S>
+abstract class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableDoubleErrorScore<S>
 {
 
     @Override

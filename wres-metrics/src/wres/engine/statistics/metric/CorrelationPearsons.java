@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric;
 
+import java.util.Objects;
+
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +25,7 @@ import wres.datamodel.metric.Slicer;
  * @version 0.1
  * @since 0.1
  */
-public class CorrelationPearsons extends Metric<SingleValuedPairs, ScalarOutput>
+class CorrelationPearsons extends Metric<SingleValuedPairs, ScalarOutput>
 implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
 {
 
@@ -42,6 +44,7 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     @Override
     public ScalarOutput apply(SingleValuedPairs s)
     {
+        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         try
         {
             DataFactory d = getDataFactory();

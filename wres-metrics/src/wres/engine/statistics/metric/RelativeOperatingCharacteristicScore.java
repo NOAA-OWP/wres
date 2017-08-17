@@ -38,7 +38,7 @@ import wres.datamodel.metric.VectorOutput;
  * @since 0.1
  */
 
-public final class RelativeOperatingCharacteristicScore extends RelativeOperatingCharacteristic<VectorOutput>
+class RelativeOperatingCharacteristicScore extends RelativeOperatingCharacteristic<VectorOutput>
 implements ProbabilityScore
 {
 
