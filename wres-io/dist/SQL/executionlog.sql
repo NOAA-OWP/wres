@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS public.executionlog
   username text,
   address text,
   start_time timestamp without time zone,
-  run_time interval
+  run_time interval,
+  failed boolean DEFAULT false
 )
 WITH (
   OIDS=FALSE
