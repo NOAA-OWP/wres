@@ -147,6 +147,37 @@ public final class MetricTestDataFactory
     }
 
     /**
+     * Returns a small test dataset with predictions and corresponding observations from location "103.1" from
+     * https://github.com/NVE/RunoffTestData. The data are stored in
+     * testinput/metricTestDataFactory/getSingleValuedPairsFive.asc
+     * 
+     * @return single-valued pairs
+     * @throws IOException if the read fails
+     */
+
+    public static SingleValuedPairs getSingleValuedPairsFive() throws IOException
+    {
+        //Construct some pairs
+        final List<PairOfDoubles> values = new ArrayList<>();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        File file = new File("testinput/metricTestDataFactory/getSingleValuedPairsFive.asc");
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8")))
+        {
+            String line = null;
+            while(Objects.nonNull(line = in.readLine()) && !line.isEmpty())
+            {
+                double[] doubleValues = Arrays.stream(line.split("\\s+")).mapToDouble(Double::parseDouble).toArray();
+                values.add(metIn.pairOf(doubleValues[0], doubleValues[1]));
+            }
+        }
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata meta = metFac.getMetadata(metFac.getDimension("MM/DAY"),
+                                                 metFac.getDatasetIdentifier("103.1", "QME", "NVE"),
+                                                 24);
+        return metIn.ofSingleValuedPairs(values, meta);
+    }
+
+    /**
      * Returns a moderately-sized test dataset of ensemble pairs without a baseline. Reads the pairs from
      * testinput/metricTestDataFactory/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours.
      * 
@@ -160,6 +191,7 @@ public final class MetricTestDataFactory
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         final DataFactory metIn = DefaultDataFactory.getInstance();
         File file = new File("testinput/metricTestDataFactory/getEnsemblePairsOne.asc");
+        List<Double> climatology = new ArrayList<>();
         try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8")))
         {
             String line = null;
@@ -167,13 +199,14 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues = Arrays.stream(line.split("\\s+")).mapToDouble(Double::parseDouble).toArray();
                 values.add(metIn.pairOf(doubleValues[0], Arrays.copyOfRange(doubleValues, 1, doubleValues.length)));
+                climatology.add(doubleValues[0]);
             }
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"),
                                                  24);
-        return metIn.ofEnsemblePairs(values, meta);
+        return metIn.ofEnsemblePairs(values, meta, metIn.vectorOf(climatology.toArray(new Double[climatology.size()])));
     }
 
     /**

@@ -97,7 +97,7 @@ public abstract class BasicSource {
         return unit;
     }
 
-    private String getSpecifiedLocationID()
+    protected String getSpecifiedLocationID()
     {
         String locationID = null;
 
@@ -114,7 +114,7 @@ public abstract class BasicSource {
         return locationID;
     }
 
-    private String getSpecifiedTimeZone()
+    protected String getSpecifiedTimeZone()
     {
         String timeZone = "UTC";
 

@@ -75,7 +75,7 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
      * @return the {@link MetricOutputMetadata}
      */
 
-    protected MetricOutputMetadata getMetadata(final MatrixOutput output)
+    MetricOutputMetadata getMetadata(final MatrixOutput output)
     {
         final MetricOutputMetadata metIn = output.getMetadata();
         final MetadataFactory f = getDataFactory().getMetadataFactory();
@@ -96,7 +96,7 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
      * @throws MetricInputException if the output is not a valid input for an intermediate calculation
      */
 
-    protected void isContingencyTable(final MatrixOutput output, final Metric<?, ?> metric)
+    void isContingencyTable(final MatrixOutput output, final Metric<?, ?> metric)
     {
         Objects.requireNonNull(output, nullString);
         final MatrixOfDoubles v = output.getData();
@@ -116,7 +116,7 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
      * @throws MetricInputException if the output is not a valid input for an intermediate calculation
      */
 
-    protected void is2x2ContingencyTable(final MatrixOutput output, final Metric<?, ?> metric)
+    void is2x2ContingencyTable(final MatrixOutput output, final Metric<?, ?> metric)
     {
         Objects.requireNonNull(output, nullString);
         final MatrixOfDoubles v = output.getData();
@@ -133,7 +133,7 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
      * @param builder the builder
      */
 
-    protected ContingencyTableScore(final MetricBuilder<S, ScalarOutput> builder)
+    ContingencyTableScore(final MetricBuilder<S, ScalarOutput> builder)
     {
         super(builder);
         ContingencyTableBuilder<S> ct = new ContingencyTableBuilder<>();

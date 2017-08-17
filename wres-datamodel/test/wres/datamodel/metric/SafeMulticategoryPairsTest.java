@@ -39,7 +39,7 @@ public final class SafeMulticategoryPairsTest
         }
         final Metadata meta = metaFac.getMetadata(metaFac.getDimension(),
                                                   metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
-        MulticategoryPairs p = b.setData(values).setMetadata(meta).build();
+        MulticategoryPairs p = (MulticategoryPairs)b.setData(values).setMetadata(meta).build();
 
         //Check category count
         assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);
@@ -49,12 +49,12 @@ public final class SafeMulticategoryPairsTest
         final MulticategoryPairsBuilder bn = new MulticategoryPairsBuilder();
         values.clear();
         values.add(metIn.vectorOf(new boolean[]{true, false, true, false}));
-        final MulticategoryPairs q = bn.setData(values).setMetadata(meta).build();
+        final MulticategoryPairs q = (MulticategoryPairs)bn.setData(values).setMetadata(meta).build();
         assertTrue("Unexpected category count on inputs [2," + q.getCategoryCount() + "].", q.getCategoryCount() == 2);
         //Check for no baseline
         assertTrue("Expected a dataset without a baseline [false," + p.hasBaseline() + "].", !p.hasBaseline());
         //Check for baseline
-        p = b.setDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
+        p = (MulticategoryPairs)b.setDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
         assertTrue("Expected a dataset with a baseline [true," + p.hasBaseline() + "].", p.hasBaseline());
         //Check the metadata
         final Metadata t = metaFac.getMetadata();

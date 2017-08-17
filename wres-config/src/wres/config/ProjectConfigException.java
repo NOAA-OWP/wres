@@ -12,34 +12,38 @@ import com.sun.xml.bind.Locatable;
  * explaining the steps the user could take to solve the issue.
  *
  * Additionally the throwing code must include an element where the issue was
- * detected. The purpose of this is so that the code receiving/catching this
- * exception can add to the message the estimated location in the config file.
+ * detected. The purpose of this is so that the location can be included in the
+ * message.
  *
- * The thrower does not need to include the location in the config file,it is
- * expected that the catcher will display the location information by using the
- * first param. All the elements in the generated code should implement
- * Locatable, so the best guess of which element caused the issue is acceptable.
+ * The thrower does not need to include the location in the config file, it is
+ * inserted automatically at the beginning of the exception message.
  */
+
 public class ProjectConfigException extends Exception
 {
-    private final Locatable problemElement;
 
     public ProjectConfigException(final Locatable problemElement,
             final String s,
             final Throwable t)
     {
-        super(s, t);
-        this.problemElement = problemElement;
+        super( getMessagePrefix( problemElement ) + s, t);
     }
 
     public ProjectConfigException(final Locatable problemElement,
             final String s)
     {
-        super(s);
-        this.problemElement = problemElement;
+        super( getMessagePrefix( problemElement ) + s);
     }
-    public Locatable getProblemElement()
+
+    private static String getMessagePrefix(final Locatable problemElement)
     {
-        return problemElement;
+        // If there is no sourceLocation available, use an empty prefix.
+        if ( problemElement.sourceLocation() == null )
+        {
+            return "";
+        }
+        return "Near line " + problemElement.sourceLocation().getLineNumber()
+               + ", column " + problemElement.sourceLocation().getLineNumber()
+               + ": ";
     }
 }

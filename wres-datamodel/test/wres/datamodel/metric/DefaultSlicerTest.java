@@ -120,7 +120,7 @@ public final class DefaultSlicerTest
         double[] expected = new double[]{1, 1, 1};
         Threshold threshold = metIn.getThreshold(0.0, Operator.GREATER);
         Metadata meta = metIn.getMetadataFactory().getMetadata();
-        SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, values, meta, meta);
+        SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, values, meta, meta, null);
         SingleValuedPairs sliced = slicer.sliceByLeft(pairs, threshold);
         //Test with baseline
         assertTrue("The left side of the test data does not match the benchmark.",
@@ -141,7 +141,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(0, 3.0 / 5.0));
         values.add(metIn.pairOf(0, 0.0 / 5.0));
         values.add(metIn.pairOf(0, 1.0 / 5.0));
-        SingleValuedPairs pairsNullBase = metIn.ofSingleValuedPairs(values, nullValuesBase, meta, meta);
+        SingleValuedPairs pairsNullBase = metIn.ofSingleValuedPairs(values, nullValuesBase, meta, meta, null);
         SingleValuedPairs slicedNullBase = slicer.sliceByLeft(pairsNullBase, threshold);
         assertTrue("Expected a null return from the slice operation.", slicedNullBase == null);
 
@@ -165,7 +165,7 @@ public final class DefaultSlicerTest
         double[] expected = new double[]{1, 1, 1};
         Threshold threshold = metIn.getThreshold(0.0, Operator.GREATER);
         Metadata meta = metIn.getMetadataFactory().getMetadata();
-        EnsemblePairs pairs = metIn.ofEnsemblePairs(values, values, meta, meta);
+        EnsemblePairs pairs = metIn.ofEnsemblePairs(values, values, meta, meta, null);
         EnsemblePairs sliced = slicer.sliceByLeft(pairs, threshold);
         //Test with baseline
         assertTrue("The left side of the test data does not match the benchmark.",
@@ -186,7 +186,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
         values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
         values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
-        EnsemblePairs pairsNullBase = metIn.ofEnsemblePairs(values, nullValuesBase, meta, meta);
+        EnsemblePairs pairsNullBase = metIn.ofEnsemblePairs(values, nullValuesBase, meta, meta, null);
         EnsemblePairs slicedNullBase = slicer.sliceByLeft(pairsNullBase, threshold);
         assertTrue("Expected a null return from the slice operation.", slicedNullBase == null);
 
@@ -208,7 +208,7 @@ public final class DefaultSlicerTest
         values.add(metIn.pairOf(0, new double[]{21, 22, 23, 24, 25}));
         values.add(metIn.pairOf(1, new double[]{26, 27, 28, 29, 30}));
         Metadata meta = metIn.getMetadataFactory().getMetadata();
-        EnsemblePairs input = metIn.ofEnsemblePairs(values, values, meta, meta);
+        EnsemblePairs input = metIn.ofEnsemblePairs(values, values, meta, meta, null);
         Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper = (in) -> {
             return metIn.pairOf(in.getItemOne(), Arrays.stream(in.getItemTwo()).average().getAsDouble());
         };
@@ -249,14 +249,18 @@ public final class DefaultSlicerTest
         expectedValues.add(metIn.pairOf(false, false));
         expectedValues.add(metIn.pairOf(true, true));
         DichotomousPairs expectedNoBase = metIn.ofDichotomousPairsFromAtomic(expectedValues, meta);
-        DichotomousPairs expectedBase = metIn.ofDichotomousPairsFromAtomic(expectedValues, expectedValues, meta, meta);
+        DichotomousPairs expectedBase = metIn.ofDichotomousPairsFromAtomic(expectedValues,
+                                                                           expectedValues,
+                                                                           meta,
+                                                                           meta,
+                                                                           null);
 
         //Test without baseline
         DichotomousPairs actualNoBase = slicer.transformPairs(metIn.ofSingleValuedPairs(values, meta), mapper);
 //        assertTrue("The transformed test data does not match the benchmark.",
 //                  actualNoBase.getData().equals(expectedNoBase.getData()));
         //Test baseline
-        DichotomousPairs actualBase = slicer.transformPairs(metIn.ofSingleValuedPairs(values, values, meta, meta),
+        DichotomousPairs actualBase = slicer.transformPairs(metIn.ofSingleValuedPairs(values, values, meta, meta, null),
                                                             mapper);
 //        assertTrue("The transformed test data does not match the benchmark.",
 //                   actualBase.getDataForBaseline().equals(expectedBase.getDataForBaseline()));
@@ -300,7 +304,8 @@ public final class DefaultSlicerTest
                                                                            metIn.ofEnsemblePairs(values,
                                                                                                  values,
                                                                                                  meta,
-                                                                                                 meta),
+                                                                                                 meta,
+                                                                                                 null),
                                                                            threshold,
                                                                            mapper)
                                                            .getBaselineData());
@@ -308,7 +313,8 @@ public final class DefaultSlicerTest
                                                                              metIn.ofEnsemblePairs(values,
                                                                                                    values,
                                                                                                    meta,
-                                                                                                   meta),
+                                                                                                   meta,
+                                                                                                   null),
                                                                              threshold,
                                                                              mapper)
                                                              .getBaselineData());
@@ -419,7 +425,7 @@ public final class DefaultSlicerTest
         double[] tE = new double[]{0.25, 0.5};
         double tF = 8.0 / 11.0;
         double tG = 0.01;
-        
+
         ProbabilityThreshold testA = metIn.getProbabilityThreshold(tA, Operator.GREATER);
         ProbabilityThreshold testB = metIn.getProbabilityThreshold(tB, Operator.GREATER);
         ProbabilityThreshold testC = metIn.getProbabilityThreshold(tC, Operator.GREATER);
@@ -438,7 +444,7 @@ public final class DefaultSlicerTest
                                                                  Operator.BETWEEN);
         QuantileThreshold expectedF = metIn.getQuantileThreshold(1.5, tF, Operator.GREATER);
         QuantileThreshold expectedG = metIn.getQuantileThreshold(1.5, tG, Operator.GREATER);
-        
+
         //Test for equality
         assertTrue("The inverse cumulative probability does not match the benchmark",
                    slicer.getQuantileFromProbability(testA, sorted).equals(expectedA));
@@ -503,7 +509,7 @@ public final class DefaultSlicerTest
         assertTrue("The transformed pair does not match the benchmark", mapper.apply(e).equals(metIn.pairOf(0, 1)));
         assertTrue("The transformed pair does not match the benchmark", mapper.apply(f).equals(metIn.pairOf(5, 1)));
     }
-    
+
     /**
      * Tests the {@link Slicer#sliceByRight(List)}.
      */
@@ -526,12 +532,31 @@ public final class DefaultSlicerTest
         input.add(metIn.pairOf(3, new double[]{1, 2, 3, 4, 5, 6}));
         input.add(metIn.pairOf(3, new double[]{1, 2, 3, 4, 5, 6}));
         //Slice
-        Map<Integer,List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.sliceByRight(input);
+        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.sliceByRight(input);
         //Check the results
-        assertTrue("Expected three subsets of sliced data.", sliced.size()==3);
-        assertTrue("Expected the first slice to contain three pairs.", sliced.get(3).size()==3);
-        assertTrue("Expected the second slice to contain five pairs.", sliced.get(5).size()==5);
-        assertTrue("Expected the third slice to contain four pairs.", sliced.get(6).size()==4);
-    }    
+        assertTrue("Expected three slices of data.", sliced.size() == 3);
+        assertTrue("Expected the first slice to contain three pairs.", sliced.get(3).size() == 3);
+        assertTrue("Expected the second slice to contain five pairs.", sliced.get(5).size() == 5);
+        assertTrue("Expected the third slice to contain four pairs.", sliced.get(6).size() == 4);
+    }
+
+    /**
+     * Tests the {@link Slicer#sliceByMetricComponent(MetricOutputMapByLeadThreshold)}.
+     */
+
+    @Test
+    public void test14SliceByMetricComponent()
+    {
+        //Obtain input and slice
+        MetricOutputMapByLeadThreshold<VectorOutput> toSlice =
+                                                             DataModelTestDataFactory.getVectorMetricOutputMapByLeadThresholdOne();
+        Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> sliced =
+                                                                                  slicer.sliceByMetricComponent(toSlice);
+
+        //Check the results
+        assertTrue("Expected five slices of data.",
+                   sliced.size() == toSlice.getMetadata().getMetricComponentID().getMetricComponents().size());
+        sliced.forEach((key, value) -> assertTrue("Expected 638 elements in each slice.", value.size() == 638));
+    }
 
 }

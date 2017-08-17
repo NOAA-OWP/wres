@@ -1,0 +1,3993 @@
+<?xml version="1.0" standalone="yes"?><results>
+<!--
+	Result file containing the results for a single metric by lead period.
+	Some metrics, such as reliability diagrams, have results for specific thresholds 
+	(e.g. probability thresholds).  In that case, the results are stored by lead period 
+	and then by threshold value.  The actual data associated with a result always appears 
+	within a 'values' tag.  A metric result that comprises a single value will appear as a 
+	single value in this tag.  A metric result that comprises a 1D matrix will appear as a 
+	row of values separated by commas in the input order.  A metric result that comprises a 
+	2D matrix will appear as a sequence of rows, each with a 'values' tag, which are written 
+	in the input order.  For example, a diagram metric with an x and y axis will comprise 
+	two rows of data (i.e. two rows within two separate 'values' tags).  The default input 
+	order would be data for the x axis followed by data for the y axis.  Data that refer to 
+	cumulative probabilities are, by default, always defined in increasing size of probability.
+-->
+	<meta_data>
+		<thresholds_type>true</thresholds_type>
+		<original_file_id>NPTP1.Streamflow.HEFS.Mean_continuous_ranked_probability_score.xml</original_file_id>
+	</meta_data>
+	<result>
+		<lead_hour>42.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1284.58329, 557.76396, 1251.22017, 1978.0395, 726.81933</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1286.71697, 556.73456, 1246.67514, 1976.65755, 729.98242</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1288.75252, 555.3023, 1260.67868, 1994.12891, 733.45023</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1310.46622, 548.36069, 1247.85106, 2009.9566, 762.10553</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1346.45241, 545.9919, 1239.90755, 2040.36806, 800.46051</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>1416.6644, 529.63322, 1225.50354, 2112.53472, 887.03118</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>1496.70035, 501.85987, 1187.59875, 2182.43924, 994.84048</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>1609.75916, 482.16006, 1128.51202, 2256.11111, 1127.59909</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>1750.66803, 467.58856, 1079.47695, 2362.55642, 1283.07947</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>1946.01245, 476.30502, 1033.2049, 2502.91233, 1469.70743</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>2248.43022, 523.36393, 979.8252, 2704.89149, 1725.06629</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>2739.34556, 618.88277, 906.40353, 3026.86632, 2120.46279</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>3652.57882, 871.92355, 798.07736, 3578.73264, 2780.65528</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>3783.28882, 918.18252, 784.41627, 3649.52257, 2865.1063</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>4011.45671, 985.71322, 734.80339, 3760.54687, 3025.74348</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>4273.47654, 1091.65163, 691.30877, 3873.13368, 3181.82491</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>4607.53805, 1226.89347, 531.07417, 3911.71875, 3380.64458</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>5109.20981, 1516.47075, 416.76615, 4009.50521, 3592.73906</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>5781.52902, 1799.83251, -70.23817, 3911.45833, 3981.69651</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>6700.31076, 2156.4661, -626.52695, 3917.31771, 4543.84466</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>8036.24194, 2675.84472, -1437.52396, 3922.87326, 5360.39723</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>9361.4477, 3974.51634, -1084.19699, 4302.73437, 5386.93136</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>66.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1312.57169, 397.11751, 1062.66648, 1978.12066, 915.45418</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1314.80749, 395.55355, 1057.45874, 1976.71267, 919.25393</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1316.99847, 393.53786, 1070.69867, 1994.15929, 923.46061</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1339.96894, 381.73764, 1051.9167, 2010.148, 958.2313</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1377.64387, 373.15479, 1035.92672, 2040.4158, 1004.48908</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>1453.71545, 345.06399, 1003.85288, 2112.50434, 1108.65146</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>1544.07826, 308.51815, 946.96593, 2182.52604, 1235.56011</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>1673.31345, 278.25547, 861.27015, 2256.32812, 1395.05798</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>1835.20881, 251.79767, 779.33191, 2362.74306, 1583.41115</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>2063.04334, 250.80556, 692.05041, 2504.28819, 1812.23778</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>2427.52035, 295.55005, 572.9863, 2704.9566, 2131.9703</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>3030.06695, 423.53347, 420.33285, 3026.86632, 2606.53347</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>4311.55271, 924.49842, 191.67834, 3578.73264, 3387.0543</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>4533.44549, 1013.30338, 129.38046, 3649.52257, 3520.14211</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>4846.25457, 1156.65715, 70.94946, 3760.54687, 3689.59742</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>5211.53363, 1322.61895, -15.781, 3873.13368, 3888.91468</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>5706.79481, 1600.84716, -194.2289, 3911.71875, 4105.94765</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>6434.55931, 1953.34047, -471.71363, 4009.50521, 4481.21884</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>7337.20777, 2451.68524, -974.06419, 3911.45833, 4885.52253</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>8628.71848, 3104.15288, -1607.24789, 3917.31771, 5524.5656</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>10815.69338, 4135.17841, -2757.64171, 3922.87326, 6680.51497</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>14251.91437, 7511.79057, -2437.38942, 4302.73437, 6740.12379</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>90.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1342.28744, 296.44174, 932.26628, 1978.11198, 1045.8457</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1344.61852, 294.66919, 926.74251, 1976.69184, 1049.94933</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1347.01251, 292.49106, 939.56275, 1994.0842, 1054.52145</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1371.40077, 279.12535, 917.91773, 2010.19314, 1092.27542</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1410.97315, 268.13463, 897.82901, 2040.66753, 1142.83853</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>1492.89222, 238.02595, 857.90282, 2112.7691, 1254.86627</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>1591.68876, 202.93131, 793.88579, 2182.64323, 1388.75744</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>1733.95049, 177.836, 700.41328, 2256.52778, 1556.1145</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>1911.66376, 158.25543, 609.39115, 2362.79948, 1753.40833</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>2170.71201, 171.14111, 504.60879, 2504.17969, 1999.5709</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>2574.85123, 232.93212, 363.03749, 2704.9566, 2341.91911</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>3269.67334, 420.36805, 177.56103, 3026.86632, 2849.30529</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>4795.12062, 1151.13068, -65.2573, 3578.73264, 3643.98994</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>5054.16643, 1275.21803, -129.42583, 3649.52257, 3778.9484</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>5417.35839, 1471.55746, -185.25405, 3760.54687, 3945.80093</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>5817.46787, 1661.17603, -283.15815, 3873.13368, 4156.29183</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>6398.02744, 1997.91977, -488.38892, 3911.71875, 4400.10767</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>7170.83062, 2468.79414, -692.53127, 4009.50521, 4702.03648</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>8163.23457, 3112.76927, -1139.00696, 3911.45833, 5050.46529</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>9638.57618, 3919.36872, -1801.88975, 3917.31771, 5719.20745</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>11743.884, 5350.56055, -2470.45018, 3922.87326, 6393.32345</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>15582.16894, 9037.83289, -2241.60167, 4302.73437, 6544.33605</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>114.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1390.61672, 239.83388, 827.34433, 1978.12717, 1150.78284</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1393.18443, 237.99738, 821.70444, 1976.89149, 1155.18705</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1395.75572, 235.7765, 834.15706, 1994.13628, 1159.97922</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1422.06201, 221.88954, 810.08578, 2010.25825, 1200.17247</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1463.46103, 210.00246, 787.37172, 2040.8303, 1253.45858</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>1551.38578, 179.72751, 741.38861, 2113.04687, 1371.65827</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>1661.46513, 149.87549, 671.04925, 2182.63889, 1511.58964</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>1817.66738, 130.9135, 570.24265, 2256.99653, 1686.75388</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2017.04413, 120.00432, 466.02008, 2363.0599, 1897.03981</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>2304.72421, 149.33307, 348.78856, 2504.17969, 2155.39113</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>2751.25599, 232.85924, 186.55984, 2704.9566, 2518.39675</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>3539.23316, 477.52957, -34.83727, 3026.86632, 3061.70359</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>5302.14727, 1356.7798, -366.63483, 3578.73264, 3945.36747</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>5613.58346, 1523.85275, -440.20814, 3649.52257, 4089.73071</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>6027.60563, 1775.79228, -491.26647, 3760.54687, 4251.81335</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>6506.98864, 2043.56524, -590.28972, 3873.13368, 4463.4234</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>7174.45597, 2450.30732, -812.4299, 3911.71875, 4724.14865</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>8009.70663, 3023.11936, -977.08206, 4009.50521, 4986.58727</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>9064.16366, 3694.77923, -1457.92609, 3911.45833, 5369.38442</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>10554.74752, 4521.99003, -2115.43978, 3917.31771, 6032.75749</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>12745.07809, 5874.25901, -2947.94582, 3922.87326, 6870.81908</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>17652.26571, 9998.92584, -3350.60549, 4302.73437, 7653.33987</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>138.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1438.34085, 201.76526, 741.73865, 1978.31424, 1236.57559</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1440.98892, 199.91374, 736.02335, 1977.09852, 1241.07517</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1443.80581, 197.68679, 748.20563, 1994.32465, 1246.11902</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1471.78922, 183.63196, 722.15871, 2010.31597, 1288.15726</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1515.79645, 171.52434, 696.67538, 2040.94748, 1344.27211</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>1609.06136, 142.68507, 646.83985, 2113.21615, 1466.37629</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>1730.76484, 116.29312, 570.32863, 2184.80035, 1614.47172</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>1896.25615, 102.67266, 463.34794, 2256.93142, 1793.58349</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2117.39859, 102.08545, 347.41255, 2362.72569, 2015.31314</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>2431.28419, 143.72903, 216.62452, 2504.17969, 2287.55517</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>2924.72115, 248.92091, 29.15636, 2704.9566, 2675.80024</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>3790.35674, 552.13777, -211.35265, 3026.86632, 3238.21897</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>5772.35828, 1656.87437, -536.75128, 3578.73264, 4115.48392</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>6125.34736, 1882.65431, -593.17047, 3649.52257, 4242.69304</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>6554.72514, 2143.4544, -650.72387, 3760.54687, 4411.27075</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>7107.9952, 2528.47836, -706.38316, 3873.13368, 4579.51684</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>7830.86968, 2981.62791, -937.52302, 3911.71875, 4849.24177</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>8770.95632, 3685.692, -1075.7591, 4009.50521, 5085.26431</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>9939.76273, 4495.37709, -1532.92731, 3911.45833, 5444.38564</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>11579.86414, 5594.26625, -2068.28017, 3917.31771, 5985.59788</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>13820.11404, 7011.37774, -2885.86303, 3922.87326, 6808.73629</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>18755.12362, 11184.71294, -3267.6763, 4302.73437, 7570.41068</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>162.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1494.50407, 174.81899, 658.64608, 1978.33116, 1319.68508</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1497.23509, 172.96942, 653.06029, 1977.32595, 1324.26567</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1500.32683, 170.76392, 664.7778, 1994.34071, 1329.56291</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1530.36511, 156.84128, 636.86636, 2010.39019, 1373.52383</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1578.04161, 144.88124, 607.96941, 2041.12977, 1433.16037</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>1676.53323, 117.67128, 554.29343, 2113.15538, 1558.86195</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>1810.8158, 94.66532, 468.84084, 2184.99132, 1716.15048</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>1988.58092, 85.36517, 353.75474, 2256.97049, 1903.21575</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2231.88316, 93.30704, 224.14957, 2362.72569, 2138.57612</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>2569.4601, 151.52983, 86.24942, 2504.17969, 2417.93027</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>3099.63035, 281.27944, -113.39432, 2704.9566, 2818.35091</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>4047.84573, 659.08032, -361.89909, 3026.86632, 3388.76541</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>6253.79548, 2012.01161, -663.05124, 3578.73264, 4241.78388</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>6662.00018, 2283.83649, -728.64112, 3649.52257, 4378.16369</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>7144.62609, 2620.01548, -764.06374, 3760.54687, 4524.61061</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>7726.83375, 3016.12847, -837.5716, 3873.13368, 4710.70528</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>8527.63516, 3563.0546, -1052.86181, 3911.71875, 4964.58056</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>9513.05364, 4229.62582, -1273.92261, 4009.50521, 5283.42782</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>10798.50142, 5134.85415, -1752.18893, 3911.45833, 5663.64726</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>12620.37586, 6502.27511, -2200.78304, 3917.31771, 6118.10075</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>15064.13395, 8282.20521, -2859.05548, 3922.87326, 6781.92874</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>20029.9368, 12907.64221, -2819.56022, 4302.73437, 7122.29459</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>186.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1549.31255, 152.1685, 581.33598, 1978.48003, 1397.14405</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1552.26053, 150.33707, 575.43461, 1977.35807, 1401.92346</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1555.58294, 148.16639, 586.97191, 1994.38845, 1407.41655</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1587.87807, 134.54146, 557.22112, 2010.55773, 1453.33661</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1638.01303, 122.71844, 526.14768, 2041.44227, 1515.29459</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>1743.56845, 97.39634, 467.13518, 2113.30729, 1646.17211</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>1888.44522, 77.26589, 373.74255, 2184.92187, 1811.17933</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2082.90144, 73.51928, 247.45378, 2256.83594, 2009.38216</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2341.14601, 89.43667, 111.22035, 2362.92969, 2251.70934</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>2703.30381, 159.97226, -39.15186, 2504.17969, 2543.33155</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>3266.61394, 318.83339, -242.82395, 2704.9566, 2947.78055</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>4284.37173, 789.35197, -468.15343, 3026.86632, 3495.01975</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>6723.59943, 2328.22029, -816.6465, 3578.73264, 4395.37914</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>7163.81331, 2687.21986, -827.07088, 3649.52257, 4476.59345</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>7687.86509, 3061.74206, -865.57616, 3760.54687, 4626.12303</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>8332.65195, 3505.33003, -954.18823, 3873.13368, 4827.32191</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>9193.82403, 4204.67965, -1077.42563, 3911.71875, 4989.14438</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>10289.61962, 5080.50763, -1199.60678, 4009.50521, 5209.11199</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>11614.12712, 6057.31603, -1645.35276, 3911.45833, 5556.81109</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>13539.6713, 7663.56796, -1958.78562, 3917.31771, 5876.10333</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>15942.12572, 9145.63253, -2873.61993, 3922.87326, 6796.49319</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>21090.66942, 13814.73485, -2973.2002, 4302.73437, 7275.93457</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>210.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1604.50069, 132.80827, 506.92607, 1978.61849, 1471.69242</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1607.70011, 131.0365, 500.79863, 1977.46224, 1476.66361</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1611.28252, 128.90886, 512.18276, 1994.55642, 1482.37366</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1645.40603, 115.61183, 480.89069, 2010.6849, 1529.7942</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1698.28856, 104.02704, 447.18076, 2041.44227, 1594.26152</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>1811.71558, 80.24744, 381.99974, 2113.46788, 1731.46814</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>1964.3761, 62.46995, 283.185, 2185.09115, 1901.90615</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2173.76178, 62.66902, 147.40985, 2258.5026, 2111.09276</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2445.37905, 85.46519, 2.84221, 2362.75608, 2359.91386</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>2827.61439, 166.32367, -157.11103, 2504.17969, 2661.29072</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>3432.85475, 349.30546, -378.59269, 2704.9566, 3083.54928</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>4527.57462, 899.71042, -600.99788, 3026.86632, 3627.8642</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>7173.06114, 2636.84, -957.4885, 3578.73264, 4536.22114</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>7617.26433, 2972.15519, -995.58657, 3649.52257, 4645.10914</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>8203.61019, 3419.93245, -1023.13086, 3760.54687, 4783.67773</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>8896.69769, 3988.0318, -1035.53221, 3873.13368, 4908.66589</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>9829.62069, 4788.93148, -1128.97047, 3911.71875, 5040.68922</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>11000.66678, 5838.70763, -1152.45395, 4009.50521, 5161.95915</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>12412.47768, 7006.22682, -1494.79253, 3911.45833, 5406.25086</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>14451.7996, 8778.25274, -1756.22915, 3917.31771, 5673.54686</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>17107.7044, 10880.74569, -2304.08545, 3922.87326, 6226.95871</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>22307.85474, 15757.38849, -2247.73187, 4302.73437, 6550.46625</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>234.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1658.81335, 118.32139, 438.33356, 1978.82552, 1540.49196</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1662.27316, 116.57762, 431.84526, 1977.5408, 1545.69553</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1666.07328, 114.4999, 443.25866, 1994.83203, 1551.57337</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1701.83209, 101.53816, 410.69522, 2010.98915, 1600.29393</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1757.92883, 90.25848, 377.94293, 2045.61328, 1667.67035</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>1877.69693, 67.72605, 303.67495, 2113.64583, 1809.97088</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2042.36139, 52.39447, 194.95062, 2184.91753, 1989.96691</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2263.25785, 54.63051, 49.93603, 2258.56337, 2208.62734</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2546.90528, 81.94692, -102.31079, 2362.64757, 2464.95836</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>2949.17966, 171.48533, -273.51464, 2504.17969, 2777.69433</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>3598.82862, 373.381, -520.49102, 2704.9566, 3225.44762</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>4763.17001, 987.55572, -748.74797, 3026.86632, 3775.61429</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>7597.03781, 2928.16383, -1090.14134, 3578.73264, 4668.87398</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>8081.67661, 3275.42906, -1156.72497, 3649.52257, 4806.24754</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>8687.77112, 3702.13359, -1225.09066, 3760.54687, 4985.63753</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>9435.6377, 4315.54727, -1246.95675, 3873.13368, 5120.09043</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>10430.34522, 5178.12377, -1340.5027, 3911.71875, 5252.22145</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>11628.55329, 6255.80791, -1363.24017, 4009.50521, 5372.74538</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>13137.92363, 7534.02383, -1692.44147, 3911.45833, 5603.89981</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>15261.06625, 9475.38755, -1868.36099, 3917.31771, 5785.6787</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>17999.25829, 11612.94281, -2463.44222, 3922.87326, 6386.31548</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>23269.24452, 16709.18711, -2257.32304, 4302.73437, 6560.05741</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>258.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1711.67402, 108.10759, 375.34589, 1978.91233, 1603.56644</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1715.21254, 106.39322, 368.84952, 1977.66884, 1608.81932</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1719.13918, 104.38222, 380.24651, 1995.00347, 1614.75696</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1756.93373, 91.84608, 345.88414, 2010.97179, 1665.08765</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1814.87708, 80.85146, 311.79295, 2045.81858, 1734.02562</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>1943.10868, 60.00658, 230.69999, 2113.80208, 1883.1021</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2119.20153, 46.93368, 112.75819, 2185.02604, 2072.26785</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2350.08208, 51.38564, -40.19818, 2258.49826, 2298.69644</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2644.70291, 83.93379, -198.00436, 2362.76476, 2560.76912</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3063.3582, 184.65508, -374.52343, 2504.17969, 2878.70312</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>3746.69044, 408.8521, -632.88174, 2704.9566, 3337.83834</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>4992.43643, 1085.46492, -880.10519, 3026.86632, 3906.97151</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>7999.04239, 3272.85344, -1147.45632, 3578.73264, 4726.18895</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>8508.37191, 3600.85737, -1257.99197, 3649.52257, 4907.51454</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>9155.10902, 4070.7757, -1323.78644, 3760.54687, 5084.33332</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>9939.59072, 4696.02543, -1370.43161, 3873.13368, 5243.56529</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>10998.05528, 5677.37138, -1408.96515, 3911.71875, 5320.6839</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>12223.41597, 6728.52221, -1485.38855, 4009.50521, 5494.89376</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>13781.35734, 7993.0961, -1876.80291, 3911.45833, 5788.26124</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>16019.58902, 9966.89626, -2135.37505, 3917.31771, 6052.69276</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>18747.00143, 12313.38313, -2510.74504, 3922.87326, 6433.6183</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>24367.05088, 18287.45868, -1776.85783, 4302.73437, 6079.5922</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>282.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1758.23008, 98.47849, 319.15336, 1978.90495, 1659.75159</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1762.15263, 96.84126, 312.49636, 1977.80773, 1665.31136</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1766.19661, 94.86634, 323.59074, 1994.92101, 1671.33027</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1805.44549, 82.6749, 288.29669, 2011.06727, 1722.77059</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1866.46925, 72.22479, 251.86491, 2046.10937, 1794.24446</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2001.04472, 52.66849, 165.58644, 2113.96267, 1948.37623</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2185.41944, 41.17931, 41.26769, 2185.50781, 2144.24013</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2426.16883, 47.36024, -120.08897, 2258.71962, 2378.80858</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2729.21789, 85.18954, -278.80266, 2365.22569, 2644.02836</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3167.1268, 197.51777, -464.36163, 2505.2474, 2969.60903</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>3877.2863, 446.77094, -725.55876, 2704.9566, 3430.51536</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5185.59672, 1186.86413, -971.86626, 3026.86632, 3998.73258</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>8337.25871, 3467.32941, -1291.19666, 3578.73264, 4869.9293</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>8882.53707, 3845.82777, -1387.18672, 3649.52257, 5036.70929</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>9564.70217, 4349.37941, -1454.77589, 3760.54687, 5215.32277</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>10360.50931, 4944.18377, -1543.19186, 3873.13368, 5416.32554</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>11442.58556, 5916.58854, -1614.27827, 3911.71875, 5525.99702</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>12707.79008, 6989.37166, -1708.91322, 4009.50521, 5718.41843</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>14306.56937, 8347.22507, -2047.88597, 3911.45833, 5959.3443</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>16616.86032, 10361.28777, -2338.25484, 3917.31771, 6255.57255</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>19607.34602, 13029.85396, -2654.6188, 3922.87326, 6577.49206</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>25384.39609, 19153.92917, -1927.73255, 4302.73437, 6230.46692</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>306.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1792.81752, 90.55906, 276.72895, 1978.98741, 1702.25846</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1796.96458, 88.96319, 270.02769, 1978.02908, 1708.00139</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1801.13445, 87.01146, 280.79801, 1994.92101, 1714.123</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1841.53608, 75.06275, 244.82832, 2011.30165, 1766.47333</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1903.61849, 64.80145, 207.37915, 2046.19618, 1838.81703</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2043.88866, 46.46617, 116.57925, 2114.00174, 1997.42249</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2234.68022, 36.42038, -12.39178, 2185.86806, 2198.25984</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2480.07307, 44.07937, -177.22634, 2258.76736, 2435.99371</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2790.42685, 86.89574, -338.40524, 2365.12587, 2703.53111</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3236.52947, 207.40096, -523.88111, 2505.2474, 3029.12851</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>3961.51686, 488.09891, -768.46135, 2704.9566, 3473.41794</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5307.82358, 1256.86969, -1024.08757, 3026.86632, 4050.95388</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>8584.47855, 3602.10204, -1403.64387, 3578.73264, 4982.37651</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9141.768, 3976.30879, -1515.93664, 3649.52257, 5165.45921</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>9821.34604, 4479.13685, -1581.66231, 3760.54687, 5342.20919</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>10658.59297, 5101.04768, -1684.41161, 3873.13368, 5557.54529</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>11755.85599, 6094.59863, -1749.53862, 3911.71875, 5661.25737</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>13101.56153, 7304.72763, -1787.32869, 4009.50521, 5796.8339</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>14723.48561, 8749.40544, -2062.62184, 3911.45833, 5974.08017</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>17063.46039, 10908.72897, -2237.41371, 3917.31771, 6154.73142</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>20084.42293, 13685.67047, -2475.8792, 3922.87326, 6398.75247</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26042.60883, 21238.60954, -501.26491, 4302.73437, 4803.99928</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>330.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1824.89723, 84.544, 238.61248, 1978.96571, 1740.35323</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1829.05679, 82.96114, 231.91607, 1978.01172, 1746.09565</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1833.43513, 81.0777, 242.80229, 1995.15972, 1752.35743</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1874.89634, 69.42346, 205.99804, 2011.47092, 1805.47288</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1938.04201, 59.54668, 167.81803, 2046.31337, 1878.49533</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2082.52116, 42.24898, 73.79032, 2114.0625, 2040.27218</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2279.89689, 33.89411, -59.93507, 2186.06771, 2246.00278</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2527.08248, 43.71525, -224.17887, 2259.18837, 2483.36724</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2842.73514, 92.24071, -385.44234, 2365.05208, 2750.49443</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3294.15352, 226.50775, -562.39837, 2505.2474, 3067.64576</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4032.98575, 524.67656, -803.35259, 2704.9566, 3508.30919</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5414.49855, 1334.25962, -1053.37261, 3026.86632, 4080.23893</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>8778.93143, 3731.5585, -1468.64029, 3578.73264, 5047.37293</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9355.5917, 4158.68248, -1547.38666, 3649.52257, 5196.90923</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10072.52379, 4687.53207, -1624.44484, 3760.54687, 5384.99172</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>10928.00739, 5316.75408, -1738.11963, 3873.13368, 5611.25332</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12040.28622, 6309.32371, -1819.24375, 3911.71875, 5730.9625</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>13396.15292, 7550.67364, -1835.97407, 4009.50521, 5845.47928</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15063.79103, 8917.15312, -2235.17958, 3911.45833, 6146.63791</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>17476.08591, 11196.93887, -2361.82933, 3917.31771, 6279.14704</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>20595.60045, 14227.10017, -2445.62701, 3922.87326, 6368.50028</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26421.19224, 20843.76232, -1274.69555, 4302.73437, 5577.42992</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>354.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1855.14015, 80.79016, 204.6244, 1978.97439, 1774.35</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1859.48727, 79.25714, 197.74252, 1977.97266, 1780.23013</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1863.89986, 77.41623, 208.68912, 1995.17274, 1786.48363</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1906.30436, 66.09479, 171.25266, 2011.46224, 1840.20958</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1971.52166, 56.73189, 131.5236, 2046.31337, 1914.78976</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2119.32424, 40.66159, 35.59083, 2114.25347, 2078.66264</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2322.83256, 33.71455, -102.92878, 2186.18924, 2289.11802</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2572.01245, 45.94136, -266.76988, 2259.30122, 2526.07109</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2892.03653, 99.77932, -427.44384, 2364.81337, 2792.25721</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3351.39014, 246.80835, -599.62519, 2504.9566, 3104.58179</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4103.36971, 565.39137, -833.02175, 2704.9566, 3537.97834</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5522.75294, 1409.56237, -1086.32425, 3026.86632, 4113.19057</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>8948.44772, 3922.14148, -1447.5736, 3578.73264, 5026.30623</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9542.94756, 4376.41346, -1517.01153, 3649.52257, 5166.5341</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10272.27247, 4952.45616, -1559.26943, 3760.54687, 5319.81631</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11150.36708, 5632.09775, -1645.13566, 3873.13368, 5518.26934</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12297.55487, 6742.08361, -1643.75251, 3911.71875, 5555.47126</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>13645.64357, 8009.33696, -1626.8014, 4009.50521, 5636.30661</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15327.50159, 9535.77078, -1880.27247, 3911.45833, 5791.73081</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>17842.06498, 12253.96707, -1670.7802, 3917.31771, 5588.09791</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>20848.06291, 15533.83335, -1391.3563, 3922.87326, 5314.22956</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26644.68436, 22451.84394, 109.89396, 4302.73437, 4192.84042</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>378.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1878.14881, 77.12357, 178.05766, 1979.0829, 1801.02524</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1882.50428, 75.61956, 170.99245, 1977.87717, 1806.88472</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1886.90645, 73.80259, 182.0819, 1995.18576, 1813.10386</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1930.0435, 62.82541, 144.26585, 2011.48394, 1867.21809</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>1996.64406, 53.95907, 103.86275, 2046.54774, 1942.68499</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2147.99596, 39.00243, 5.44657, 2114.4401, 2108.99353</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2353.47903, 33.60771, -133.22201, 2186.64931, 2319.87132</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2606.18999, 48.00336, -298.80295, 2259.38368, 2558.18663</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2929.54491, 107.69202, -456.54039, 2365.3125, 2821.85289</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3395.57911, 267.82206, -623.12162, 2504.63542, 3127.75704</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4158.94231, 607.58452, -846.40119, 2704.9566, 3551.35779</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5612.61224, 1475.04437, -1110.70155, 3026.86632, 4137.56787</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9097.3878, 4169.16271, -1349.49245, 3578.73264, 4928.22509</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9697.74284, 4636.37708, -1411.84319, 3649.52257, 5061.36576</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10419.70613, 5194.55091, -1464.60835, 3760.54687, 5225.15523</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11310.06919, 5949.83899, -1487.09652, 3873.13368, 5360.2302</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12449.0788, 7045.18071, -1492.17934, 3911.71875, 5403.89809</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>13808.69587, 8301.74942, -1497.44124, 4009.50521, 5506.94645</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15505.10088, 9808.45937, -1785.18318, 3911.45833, 5696.64152</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18028.35146, 12458.80888, -1652.22487, 3917.31771, 5569.54257</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21073.0087, 15886.68542, -1263.45001, 3922.87326, 5186.32328</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26628.26027, 21974.90993, -350.61597, 4302.73437, 4653.35034</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>402.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1898.9965, 75.21466, 155.31972, 1979.10156, 1823.78184</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1903.41463, 73.75616, 148.23171, 1977.89019, 1829.65848</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1908.1501, 72.03741, 159.01231, 1995.125, 1836.11269</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1951.35861, 61.33159, 121.4439, 2011.47092, 1890.02702</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2018.857, 52.89111, 80.70338, 2046.66927, 1965.96589</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2173.17839, 38.90858, -19.73422, 2114.53559, 2134.26981</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2381.60351, 34.59799, -160.35621, 2186.64931, 2347.00552</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2632.32804, 50.65069, -322.09402, 2259.58333, 2581.67735</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2958.14156, 116.27336, -476.2215, 2365.6467, 2841.8682</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3430.28059, 283.56232, -641.94396, 2504.77431, 3146.71826</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4206.25922, 637.7316, -862.61615, 2705.91146, 3568.52761</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5674.75595, 1561.22423, -1086.6654, 3026.86632, 4113.53172</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9182.05975, 4339.48551, -1263.8416, 3578.73264, 4842.57424</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9776.54867, 4839.40618, -1287.61991, 3649.52257, 4937.14248</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10507.91855, 5451.48243, -1295.88924, 3760.54687, 5056.43611</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11413.44068, 6242.25001, -1298.05699, 3873.13368, 5171.19067</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12555.12269, 7356.13686, -1287.26707, 3911.71875, 5198.98582</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>13927.74455, 8748.31855, -1169.92079, 4009.50521, 5179.426</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15654.71166, 10470.34316, -1272.91017, 3911.45833, 5184.3685</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18149.1479, 13186.43863, -1045.39157, 3917.31771, 4962.70927</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21067.98575, 16495.12198, -649.99051, 3922.87326, 4572.86377</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26574.92715, 22855.6816, 583.48882, 4302.73437, 3719.24555</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>426.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1917.22299, 73.18477, 135.09936, 1979.13759, 1844.03822</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1921.69017, 71.7523, 127.91065, 1977.84852, 1849.93787</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1926.39266, 70.05533, 138.86362, 1995.20095, 1856.33733</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1970.15484, 59.58249, 100.73755, 2011.3099, 1910.57235</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2038.41449, 51.31809, 59.38841, 2046.48481, 1987.0964</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2194.09359, 37.75055, -41.60346, 2114.73958, 2156.34305</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2405.46513, 34.01435, -184.44991, 2187.00087, 2371.45078</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2654.25374, 51.65001, -342.96397, 2259.63976, 2602.60373</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2975.78796, 122.84313, -486.99431, 2365.95052, 2852.94483</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3452.45386, 302.71463, -644.71319, 2505.02604, 3149.73923</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4239.33768, 675.71279, -857.90006, 2705.72483, 3563.62489</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5728.02388, 1617.65889, -1083.49867, 3026.86632, 4110.36499</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9246.70788, 4404.77285, -1263.20239, 3578.73264, 4841.93503</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9845.86934, 4890.42274, -1305.92402, 3649.52257, 4955.44659</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10595.55936, 5502.04171, -1332.97077, 3760.54687, 5093.51764</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11508.69696, 6298.78916, -1336.77412, 3873.13368, 5209.9078</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12638.29875, 7359.67859, -1366.90141, 3911.71875, 5278.62016</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>13999.91375, 8744.29958, -1246.10897, 4009.50521, 5255.61417</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15726.22663, 10486.31111, -1328.45718, 3911.45833, 5239.91551</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18202.8195, 13265.73026, -1019.77152, 3917.31771, 4937.08923</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21193.43594, 16484.3044, -786.25828, 3922.87326, 4709.13154</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26692.83509, 23440.77904, 1050.67832, 4302.73437, 3252.05605</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>450.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1933.98104, 71.41485, 116.41081, 1978.977, 1862.56619</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1938.5399, 70.01183, 109.26403, 1977.7921, 1868.52807</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1943.24383, 68.34226, 120.43654, 1995.33811, 1874.90156</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>1987.55647, 58.10561, 82.24141, 2011.69227, 1929.45086</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2057.02531, 50.11353, 39.66678, 2046.57856, 2006.91178</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2214.83521, 37.12137, -62.87009, 2114.84375, 2177.71384</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2428.98023, 34.08237, -207.92737, 2186.97049, 2394.89786</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2675.778, 53.18245, -362.56517, 2260.03038, 2622.59555</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>2997.35701, 128.54635, -502.76031, 2366.05035, 2868.81065</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3476.10261, 319.60951, -651.26741, 2505.22569, 3156.4931</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4276.73915, 710.1681, -861.11532, 2705.45573, 3566.57105</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5775.89323, 1686.26093, -1062.76598, 3026.86632, 4089.6323</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9296.88675, 4407.65599, -1310.49811, 3578.73264, 4889.23075</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9889.74715, 4893.79777, -1346.42682, 3649.52257, 4995.94939</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10631.81466, 5486.90621, -1384.36158, 3760.54687, 5144.90845</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11528.96802, 6245.12297, -1410.71137, 3873.13368, 5283.84506</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12658.24745, 7282.28506, -1464.24364, 3911.71875, 5375.96239</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14026.0071, 8643.20822, -1373.29367, 4009.50521, 5382.79887</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15743.71397, 10298.61976, -1533.63587, 3911.45833, 5445.0942</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18199.45258, 13079.54355, -1202.59132, 3917.31771, 5119.90903</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21091.60486, 16480.9482, -687.7834, 3922.87326, 4610.65666</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26650.92858, 22592.7548, 244.5606, 4302.73437, 4058.17378</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>474.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1947.99402, 69.12277, 100.09793, 1978.96918, 1878.87126</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1952.52489, 67.73382, 93.15945, 1977.95052, 1884.79107</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1957.29104, 66.09761, 104.12341, 1995.31684, 1891.19343</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>2001.97377, 56.10785, 65.78382, 2011.64974, 1945.86592</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2072.36994, 48.34338, 22.38273, 2046.40929, 2024.02656</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2231.41228, 36.06687, -80.3237, 2115.0217, 2195.3454</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2447.42505, 33.87141, -226.28367, 2187.26997, 2413.55364</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2693.72321, 54.87081, -378.76125, 2260.09115, 2638.8524</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>3016.95314, 133.92382, -514.94337, 2368.08594, 2883.02931</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3502.36634, 333.11982, -664.00781, 2505.23872, 3169.24652</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4310.43305, 731.31124, -873.66608, 2705.45573, 3579.12181</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5819.2768, 1728.11039, -1064.3001, 3026.86632, 4091.16641</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9353.36368, 4457.45853, -1317.1725, 3578.73264, 4895.90514</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9942.39357, 4891.85404, -1401.01696, 3649.52257, 5050.53953</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10681.59637, 5439.68282, -1481.36667, 3760.54687, 5241.91355</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11587.05333, 6220.27155, -1493.6481, 3873.13368, 5366.78178</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12719.70327, 7239.46351, -1568.52101, 3911.71875, 5480.23976</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14058.67177, 8524.52102, -1524.64554, 4009.50521, 5534.15075</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15770.32903, 10238.71014, -1620.16056, 3911.45833, 5531.61889</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18265.59599, 12829.26955, -1519.00873, 3917.31771, 5436.32644</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21104.18775, 15940.5048, -1240.80969, 3922.87326, 5163.68295</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26618.59388, 22061.09627, -254.76323, 4302.73437, 4557.49761</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>498.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1957.08418, 66.39697, 88.23857, 1978.92578, 1890.68721</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1961.62053, 65.03176, 81.32963, 1977.9184, 1896.58877</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1966.47879, 63.42253, 92.28402, 1995.34028, 1903.05626</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>2011.4766, 53.66666, 53.89492, 2011.70486, 1957.80994</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2082.48212, 46.09738, 10.12872, 2046.51345, 2036.38473</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2242.06337, 34.41324, -92.55464, 2115.09549, 2207.65013</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2459.4572, 33.32436, -238.67191, 2187.46094, 2426.13284</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2705.2036, 56.18332, -388.61664, 2260.40365, 2649.02028</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>3030.424, 139.28708, -522.73848, 2368.39844, 2891.13692</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3520.94165, 346.80899, -668.7594, 2505.37326, 3174.13266</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4335.72909, 755.33874, -874.93462, 2705.45573, 3580.39035</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5845.95669, 1769.61481, -1049.47556, 3026.86632, 4076.34188</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9376.47546, 4486.50117, -1311.24165, 3578.73264, 4889.97429</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9965.85652, 4898.65912, -1417.67483, 3649.52257, 5067.1974</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10703.47281, 5455.32526, -1487.60068, 3760.54687, 5248.14755</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11623.78817, 6224.90707, -1525.74742, 3873.13368, 5398.8811</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12742.24834, 7213.73585, -1616.79374, 3911.71875, 5528.51249</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14092.25543, 8482.57082, -1600.17941, 4009.50521, 5609.68461</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15805.59258, 10102.59948, -1791.53477, 3911.45833, 5702.9931</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18240.71688, 12739.91218, -1583.48699, 3917.31771, 5500.8047</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21088.9301, 15564.82014, -1601.23669, 3922.87326, 5524.10995</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26731.96645, 22312.81725, -116.41482, 4302.73437, 4419.1492</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>522.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1964.98898, 64.46508, 78.30249, 1978.82639, 1900.5239</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1969.47093, 63.11585, 71.53989, 1977.89497, 1906.35508</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1974.355, 61.54037, 82.57861, 1995.39323, 1912.81462</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>2019.56154, 52.02713, 44.29761, 2011.83203, 1967.53442</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2090.88869, 44.60827, 0.5195, 2046.79991, 2046.28041</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2251.67135, 33.65628, -102.76333, 2115.25174, 2218.01507</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2469.13355, 33.33013, -248.28606, 2187.51736, 2435.80342</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2713.8566, 57.35629, -396.0793, 2260.42101, 2656.50031</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>3040.7639, 143.82516, -528.21478, 2368.72396, 2896.93874</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3532.20519, 359.37152, -667.64703, 2505.18663, 3172.83367</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4351.71439, 775.01395, -871.2447, 2705.45573, 3576.70043</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5868.83377, 1782.40574, -1059.56171, 3026.86632, 4086.42803</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9397.6311, 4426.33691, -1392.56155, 3578.73264, 4971.29419</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9979.74676, 4841.52233, -1488.70187, 3649.52257, 5138.22443</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10718.38276, 5373.37064, -1584.46525, 3760.54687, 5345.01212</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11633.85851, 6112.87259, -1647.85223, 3873.13368, 5520.98591</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12755.8088, 7079.18011, -1764.90994, 3911.71875, 5676.62869</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14080.24691, 8335.79357, -1734.94813, 4009.50521, 5744.45334</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15794.98554, 9858.05385, -2025.47336, 3911.45833, 5936.9317</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18294.19332, 12591.38194, -1785.49367, 3917.31771, 5702.81138</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21146.93332, 15328.94521, -1895.11484, 3922.87326, 5817.98811</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26901.57107, 21680.75557, -918.08112, 4302.73437, 5220.8155</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>546.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1970.98549, 63.07391, 71.0728, 1978.98437, 1907.91157</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1975.5023, 61.7362, 64.2135, 1977.9796, 1913.7661</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1980.38599, 60.19214, 75.27316, 1995.46701, 1920.19386</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>2025.81223, 50.87185, 37.08176, 2012.02214, 1974.94038</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2097.35153, 43.52757, -6.75495, 2047.06901, 2053.82396</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2259.17934, 33.2414, -110.6862, 2115.25174, 2225.93794</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2475.94516, 33.39718, -254.88739, 2187.66059, 2442.54798</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2718.98616, 58.72274, -399.51689, 2260.74653, 2660.26342</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>3048.20845, 147.60539, -531.97025, 2368.63281, 2900.60306</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3537.26052, 371.9608, -660.05667, 2505.24306, 3165.29972</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4356.70567, 792.94453, -858.30541, 2705.45573, 3563.76114</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5876.73512, 1802.44794, -1047.42086, 3026.86632, 4074.28718</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9384.6994, 4390.04834, -1415.91842, 3578.73264, 4994.65106</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9961.9709, 4807.77567, -1504.67265, 3649.52257, 5154.19522</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10702.95194, 5359.20921, -1583.19586, 3760.54687, 5343.74273</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11617.00397, 6104.53845, -1639.33184, 3873.13368, 5512.46552</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12732.28228, 7078.48357, -1742.07996, 3911.71875, 5653.79871</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14071.69614, 8408.61295, -1653.57798, 4009.50521, 5663.08319</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15798.29608, 10103.84528, -1782.99247, 3911.45833, 5694.4508</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18307.98806, 12921.13842, -1469.53194, 3917.31771, 5386.84965</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21203.33842, 16001.49535, -1278.96981, 3922.87326, 5201.84307</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26825.44814, 21474.58521, -1048.12855, 4302.73437, 5350.86292</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>570.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1977.32224, 62.4543, 64.25966, 1979.1276, 1914.86794</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1981.91796, 61.1602, 57.22836, 1977.98611, 1920.75775</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1986.74951, 59.63577, 68.38799, 1995.50174, 1927.11374</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>2032.34679, 50.5568, 30.24907, 2012.03906, 1981.78999</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2104.45618, 43.52965, -13.66655, 2047.25998, 2060.92653</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2267.47886, 34.1073, -117.52521, 2115.84635, 2233.37156</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2484.50419, 35.27135, -261.25975, 2187.97309, 2449.23284</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2727.78759, 62.58071, -404.21729, 2260.98958, 2665.20687</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>3058.25193, 155.27348, -534.25449, 2368.72396, 2902.97844</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3550.38594, 386.39267, -658.75456, 2505.23872, 3163.99327</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4369.94421, 814.74896, -849.73952, 2705.45573, 3555.19525</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5892.19527, 1838.81807, -1026.51088, 3026.86632, 4053.3772</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9394.91857, 4451.315, -1364.87093, 3578.73264, 4943.60357</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>9980.25147, 4874.27415, -1456.45475, 3649.52257, 5105.97732</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10723.32466, 5453.793, -1508.98479, 3760.54687, 5269.53166</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11642.53113, 6186.40906, -1582.9884, 3873.13368, 5456.12208</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12771.68973, 7214.79397, -1645.17702, 3911.71875, 5556.89577</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14117.63721, 8528.21004, -1579.92197, 4009.50521, 5589.42717</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15847.3742, 10144.15869, -1791.75718, 3911.45833, 5703.21552</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18369.20273, 12745.80163, -1706.08338, 3917.31771, 5623.40109</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21248.81518, 15723.62048, -1602.32144, 3922.87326, 5525.1947</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26929.28917, 22115.21556, -511.33923, 4302.73437, 4814.07361</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>594.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1983.56497, 59.88294, 55.65868, 1979.34071, 1923.68203</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1988.12652, 58.59373, 48.66383, 1978.19661, 1929.53279</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1992.95508, 57.07941, 59.66078, 1995.53646, 1935.87568</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>2038.6161, 48.08332, 21.57399, 2012.10677, 1990.53278</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2111.27698, 41.12723, -22.60765, 2047.5421, 2070.14975</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2275.6427, 32.14018, -127.36971, 2116.13281, 2243.50252</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2492.96385, 33.79192, -270.98616, 2188.18576, 2459.17192</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2736.00488, 62.16935, -410.93188, 2262.90365, 2673.83553</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>3069.00779, 157.20999, -542.83947, 2368.95833, 2911.7978</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3564.50832, 390.95261, -666.97151, 2506.5842, 3173.55571</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4387.67925, 819.39277, -862.83075, 2705.45573, 3568.28648</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5915.52619, 1809.78634, -1078.87353, 3026.86632, 4105.73985</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9433.62577, 4425.10379, -1429.78934, 3578.73264, 5008.52198</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>10024.14222, 4844.30806, -1530.31159, 3649.52257, 5179.83416</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10778.47336, 5426.28564, -1591.64084, 3760.54687, 5352.18772</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11702.34477, 6150.00857, -1679.20252, 3873.13368, 5552.3362</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12821.45161, 7135.45831, -1774.27455, 3911.71875, 5685.9933</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14173.45096, 8425.61691, -1738.32884, 4009.50521, 5747.83405</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15887.72284, 10034.18898, -1942.07553, 3911.45833, 5853.53386</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18387.34554, 12852.04506, -1617.98278, 3917.31771, 5535.30048</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21243.50004, 15553.82742, -1766.79936, 3922.87326, 5689.67262</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26948.1592, 21629.855, -1015.56983, 4302.73437, 5318.3042</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>618.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1987.35534, 58.02483, 50.04579, 1979.3763, 1929.33051</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1991.89991, 56.75766, 43.18067, 1978.32292, 1935.14225</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>1996.78322, 55.27085, 54.20508, 1995.71745, 1941.51237</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>2042.34756, 46.45911, 16.25695, 2012.1454, 1995.88845</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2115.55508, 39.65085, -28.1538, 2047.75043, 2075.90423</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2280.22757, 31.22732, -132.86744, 2116.13281, 2249.00025</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2497.71176, 33.75322, -275.65124, 2188.30729, 2463.95853</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2740.89977, 63.52486, -414.22822, 2263.1467, 2677.37492</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>3073.11847, 162.93637, -541.44512, 2368.73698, 2910.1821</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3570.90825, 400.40549, -663.91857, 2506.5842, 3170.50277</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4400.20696, 831.04529, -863.70594, 2705.45573, 3569.16167</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5933.68578, 1805.2967, -1101.52276, 3026.86632, 4128.38908</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9480.53939, 4465.32556, -1436.48119, 3578.73264, 5015.21383</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>10071.48035, 4883.72584, -1538.23195, 3649.52257, 5187.75451</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10820.82775, 5453.72679, -1606.55409, 3760.54687, 5367.10096</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11749.95027, 6182.95476, -1693.86183, 3873.13368, 5566.99551</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12867.2886, 7133.62921, -1821.94064, 3911.71875, 5733.65939</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14207.17403, 8423.90222, -1773.76661, 4009.50521, 5783.27182</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15920.09115, 10074.04589, -1934.58693, 3911.45833, 5846.04526</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18387.30293, 12871.14579, -1598.83943, 3917.31771, 5516.15714</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21256.62482, 15628.95836, -1704.79319, 3922.87326, 5627.66645</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26942.16985, 21605.71303, -1033.72244, 4302.73437, 5336.45682</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>642.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1992.97713, 57.14127, 43.53307, 1979.36892, 1935.83586</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>1997.42444, 55.86237, 37.05729, 1978.61936, 1941.56206</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>2002.3044, 54.38671, 48.05019, 1995.96788, 1947.9177</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>2047.86216, 45.62774, 10.06854, 2012.30295, 2002.23441</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2121.79585, 38.96193, -35.01838, 2047.81554, 2082.83392</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2287.36144, 30.82117, -140.33801, 2116.20226, 2256.54027</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2505.33239, 33.57903, -283.12489, 2188.62847, 2471.75336</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2747.16607, 63.95094, -419.71688, 2263.49826, 2683.21514</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>3080.75591, 164.92029, -547.08562, 2368.75, 2915.83562</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3576.7872, 402.70183, -667.50117, 2506.5842, 3174.08537</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4409.91465, 828.22513, -876.23379, 2705.45573, 3581.68952</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5951.94275, 1794.41485, -1130.66158, 3026.86632, 4157.5279</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9500.49132, 4441.14088, -1480.6178, 3578.73264, 5059.35044</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>10100.61011, 4893.26608, -1557.82145, 3649.52257, 5207.34402</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10845.33918, 5470.2065, -1614.5858, 3760.54687, 5375.13268</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11767.64862, 6208.87745, -1685.6375, 3873.13368, 5558.77118</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12874.00872, 7148.42443, -1813.86554, 3911.71875, 5725.58429</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14209.51995, 8509.7072, -1690.30755, 4009.50521, 5699.81276</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15927.93231, 10137.47199, -1879.00199, 3911.45833, 5790.46032</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18408.69623, 13078.72442, -1412.6541, 3917.31771, 5329.97181</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21297.46401, 16240.13301, -1134.45774, 3922.87326, 5057.331</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26907.38276, 21668.99831, -935.65008, 4302.73437, 5238.38445</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>666.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>1999.06019, 55.89749, 36.29607, 1979.45877, 1943.1627</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>2003.59822, 54.64651, 29.71409, 1978.6658, 1948.9517</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>2008.42732, 53.1835, 40.8534, 1996.09722, 1955.24383</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>2054.0469, 44.51798, 2.83089, 2012.35981, 2009.52892</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2128.48843, 37.89279, -42.7801, 2047.81554, 2090.59564</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2294.96266, 29.97143, -148.50686, 2116.48437, 2264.99124</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2513.00854, 32.73928, -291.30224, 2188.96701, 2480.26926</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2754.36904, 63.61473, -427.03035, 2263.72396, 2690.75431</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>3088.68244, 165.3818, -554.89787, 2368.40278, 2923.30065</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3583.98057, 406.4281, -670.96827, 2506.5842, 3177.55247</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4421.99339, 829.43438, -887.10328, 2705.45573, 3592.55901</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5967.47919, 1795.37965, -1145.23322, 3026.86632, 4172.09954</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9525.80962, 4465.31447, -1481.76251, 3578.73264, 5060.49515</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>10118.14247, 4901.23833, -1567.38157, 3649.52257, 5216.90414</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10862.15695, 5457.0203, -1644.58978, 3760.54687, 5405.13665</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11773.90658, 6163.75817, -1737.01473, 3873.13368, 5610.14841</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12887.83909, 7095.63903, -1880.48131, 3911.71875, 5792.20006</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14217.52732, 8410.72633, -1797.29578, 4009.50521, 5806.80099</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15942.45052, 10025.41038, -2005.58181, 3911.45833, 5917.04015</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18433.22195, 12683.19547, -1832.70877, 3917.31771, 5750.02648</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21321.90588, 15671.74435, -1727.28826, 3922.87326, 5650.16153</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>26937.94505, 21122.22666, -1512.98401, 4302.73437, 5815.71838</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>690.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>2004.90498, 54.64979, 29.44923, 1979.70443, 1950.2552</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>2009.47219, 53.40802, 22.71925, 1978.78342, 1956.06417</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>2014.16305, 51.92912, 33.94186, 1996.17578, 1962.23393</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>2060.00165, 43.41193, -4.11273, 2012.477, 2016.58972</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2135.0654, 36.87427, -50.31917, 2047.87196, 2098.19113</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2302.5458, 29.22921, -156.4633, 2116.8533, 2273.31659</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2520.83954, 32.27319, -299.47347, 2189.09288, 2488.56635</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2762.95824, 63.83895, -435.45175, 2263.66753, 2699.11929</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>3098.26704, 167.5269, -562.84518, 2367.89497, 2930.74015</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3594.1844, 410.8926, -676.7076, 2506.5842, 3183.2918</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4437.79647, 832.16768, -900.17307, 2705.45573, 3605.6288</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>5990.17872, 1807.51019, -1155.8022, 3026.86632, 4182.66852</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9555.03358, 4472.37361, -1503.92733, 3578.73264, 5082.65997</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>10155.17621, 4931.48895, -1574.16469, 3649.52257, 5223.68726</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10905.16492, 5489.24467, -1655.37338, 3760.54687, 5415.92025</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11820.3309, 6247.35004, -1699.84718, 3873.13368, 5572.98086</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>12932.61121, 7181.95157, -1838.94088, 3911.71875, 5750.65963</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14272.00152, 8524.46471, -1738.0316, 4009.50521, 5747.53681</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>15992.97982, 10237.79422, -1843.72726, 3911.45833, 5755.1856</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18445.99481, 12759.0898, -1769.5873, 3917.31771, 5686.90501</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21358.87518, 15644.38809, -1791.61383, 3922.87326, 5714.48709</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>27047.08299, 21828.8185, -915.53012, 4302.73437, 5218.2645</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+	<result>
+		<lead_hour>714.0</lead_hour>
+		<threshold_data>
+			<threshold>
+				<threshold_value>All data</threshold_value>
+				<data>
+					<values>2011.59279, 53.91435, 22.05724, 1979.73568, 1957.67844</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 531.88 (Pr=0.005)</threshold_value>
+				<data>
+					<values>2016.10223, 52.6777, 15.57547, 1979.0, 1963.42453</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 560.26 (Pr=0.01)</threshold_value>
+				<data>
+					<values>2020.9305, 51.24173, 26.80472, 1996.49349, 1969.68877</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 713.6 (Pr=0.05)</threshold_value>
+				<data>
+					<values>2066.96667, 42.88527, -11.48895, 2012.59245, 2024.0814</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 858.04 (Pr=0.1)</threshold_value>
+				<data>
+					<values>2142.30077, 36.43346, -57.78268, 2048.08464, 2105.86731</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1147.05263 (Pr=0.2)</threshold_value>
+				<data>
+					<values>2311.42488, 29.41311, -164.55083, 2117.46094, 2282.01176</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1513.25 (Pr=0.3)</threshold_value>
+				<data>
+					<values>2529.94988, 32.92751, -303.8149, 2193.20747, 2497.02237</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 1996.4 (Pr=0.4)</threshold_value>
+				<data>
+					<values>2774.32926, 65.71402, -444.9477, 2263.66753, 2708.61524</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 2707.5 (Pr=0.5)</threshold_value>
+				<data>
+					<values>3111.26627, 170.38447, -572.98683, 2367.89497, 2940.8818</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 3588.66667 (Pr=0.6)</threshold_value>
+				<data>
+					<values>3612.58227, 412.97614, -693.02193, 2506.5842, 3199.60614</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 4749.0 (Pr=0.7)</threshold_value>
+				<data>
+					<values>4465.32717, 829.4365, -930.43495, 2705.45573, 3635.89068</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 6315.33333 (Pr=0.8)</threshold_value>
+				<data>
+					<values>6031.04008, 1797.94503, -1206.22873, 3026.86632, 4233.09505</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 9647.0 (Pr=0.9)</threshold_value>
+				<data>
+					<values>9625.49786, 4471.28502, -1575.48021, 3578.73264, 5154.21285</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10261.71429 (Pr=0.91)</threshold_value>
+				<data>
+					<values>10233.92001, 4924.86136, -1659.53608, 3649.52257, 5309.05865</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 10944.0 (Pr=0.92)</threshold_value>
+				<data>
+					<values>10993.77691, 5500.81108, -1732.41895, 3760.54687, 5492.96583</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 11819.66667 (Pr=0.93)</threshold_value>
+				<data>
+					<values>11914.68747, 6271.31686, -1770.23692, 3873.13368, 5643.3706</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 12641.14286 (Pr=0.94)</threshold_value>
+				<data>
+					<values>13030.8046, 7194.54383, -1924.54202, 3911.71875, 5836.26077</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 13685.0 (Pr=0.95)</threshold_value>
+				<data>
+					<values>14386.74329, 8602.3876, -1774.85048, 4009.50521, 5784.35569</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 15278.4 (Pr=0.96)</threshold_value>
+				<data>
+					<values>16126.45775, 10431.64819, -1783.35123, 3911.45833, 5694.80956</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 18122.0 (Pr=0.97)</threshold_value>
+				<data>
+					<values>18580.56471, 13120.78902, -1542.45798, 3917.31771, 5459.77569</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 22448.0 (Pr=0.98)</threshold_value>
+				<data>
+					<values>21438.82618, 15863.38829, -1652.56462, 3922.87326, 5575.43789</values>
+				</data>
+			</threshold>
+			<threshold>
+				<threshold_value>GT 26648.0 (Pr=0.99)</threshold_value>
+				<data>
+					<values>27177.00289, 22655.61266, -218.65585, 4302.73437, 4521.39022</values>
+				</data>
+			</threshold>
+		</threshold_data>
+	</result>
+</results>
