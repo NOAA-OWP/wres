@@ -1,17 +1,15 @@
 package wres.datamodel.metric;
 
+import java.util.Objects;
+
+import wres.datamodel.VectorOfDoubles;
+
 /**
- * <p>
- * An input to be iterated over by a metric. A metric input may comprise paired data or unpaired data and may contain
- * one or more individual datasets. In addition, a metric input may contain a baseline dataset to be used in the same
- * context (e.g. for skill scores). Each dataset should contain one or more elements with no, explicit, missing values.
- * Missing values should be handled in advance. For ensemble forecasts, metrics should anticipate the possibility of an
- * inconsistent number of ensemble members (e.g. due to missing values).
- * </p>
- * <p>
- * By convention, the two datasets required for a skill calculation should be stored with the reference dataset or
- * baseline in the second index.
- * </p>
+ * An input to be iterated over by a metric. A metric input may comprise paired data or unpaired data. In addition, a
+ * {@link MetricInput} may contain a baseline dataset to be used in the same context (e.g. for skill scores). Each
+ * dataset should contain one or more elements with no, explicit, missing values. Missing values should be handled in
+ * advance. Optionally, a climatological dataset may be associated with the {@link MetricInput}. This may be used to
+ * derive quantiles from climatological probabilities, for example.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -19,6 +17,28 @@ package wres.datamodel.metric;
  */
 public interface MetricInput<S>
 {
+
+    /**
+     * Returns true if the metric input has a baseline for skill calculations, false otherwise.
+     * 
+     * @return true if a baseline is defined, false otherwise
+     */
+
+    default boolean hasBaseline()
+    {
+        return !Objects.isNull(getDataForBaseline());
+    }
+
+    /**
+     * Returns true if the metric input has a climatological dataset associated with it, false otherwise.
+     * 
+     * @return true if a climatological dataset is defined, false otherwise
+     */
+
+    default boolean hasClimatology()
+    {
+        return !Objects.isNull(getClimatology());
+    }
 
     /**
      * Returns the raw input.
@@ -37,13 +57,13 @@ public interface MetricInput<S>
     Metadata getMetadata();
 
     /**
-     * Returns the baseline data as a {@link MetricInput}. 
+     * Returns the baseline data as a {@link MetricInput}.
      * 
      * @return the baseline
      */
-    
+
     MetricInput<S> getBaselineData();
-    
+
     /**
      * Returns the raw input associated with a baseline/reference for skill calculations or null if no baseline is
      * defined.
@@ -62,14 +82,6 @@ public interface MetricInput<S>
     Metadata getMetadataForBaseline();
 
     /**
-     * Returns true if the metric input has a baseline for skill calculations, false otherwise.
-     * 
-     * @return true if a baseline is defined, false otherwise
-     */
-
-    boolean hasBaseline();
-    
-    /**
      * Returns the number of elements in the input.
      * 
      * @return the size of the input
@@ -77,4 +89,12 @@ public interface MetricInput<S>
 
     int size();
     
+    /**
+     * Returns a climatological dataset if {@link #hasClimatology()} returns true, otherwise null.
+     * 
+     * @return a climatological dataset or null
+     */
+    
+    VectorOfDoubles getClimatology();
+
 }

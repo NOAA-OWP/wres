@@ -72,86 +72,94 @@ public class DefaultDataFactory implements DataFactory
     public DichotomousPairs ofDichotomousPairs(List<VectorOfBooleans> pairs,
                                                List<VectorOfBooleans> basePairs,
                                                Metadata mainMeta,
-                                               Metadata baselineMeta)
+                                               Metadata baselineMeta,
+                                               VectorOfDoubles climatology)
     {
         final SafeDichotomousPairs.DichotomousPairsBuilder b = new SafeDichotomousPairs.DichotomousPairsBuilder();
-        b.setData(pairs);
-        b.setMetadata(mainMeta);
-        b.setDataForBaseline(basePairs);
-        b.setMetadataForBaseline(baselineMeta);
-        return b.build();
+        return (DichotomousPairs)b.setData(pairs)
+                                  .setMetadata(mainMeta)
+                                  .setDataForBaseline(basePairs)
+                                  .setMetadataForBaseline(baselineMeta)
+                                  .setClimatology(climatology)
+                                  .build();
     }
 
     @Override
     public DichotomousPairs ofDichotomousPairsFromAtomic(List<PairOfBooleans> pairs,
                                                          List<PairOfBooleans> basePairs,
                                                          Metadata mainMeta,
-                                                         Metadata baselineMeta)
+                                                         Metadata baselineMeta,
+                                                         VectorOfDoubles climatology)
     {
         final SafeDichotomousPairs.DichotomousPairsBuilder b = new SafeDichotomousPairs.DichotomousPairsBuilder();
-        b.setDataFromAtomic(pairs);
-        b.setMetadata(mainMeta);
-        b.setDataForBaselineFromAtomic(basePairs);
-        b.setMetadataForBaseline(baselineMeta);
-        return b.build();
+        b.setDataFromAtomic(pairs).setMetadata(mainMeta).setClimatology(climatology);
+        return (DichotomousPairs)b.setDataForBaselineFromAtomic(basePairs).setMetadataForBaseline(baselineMeta).build();
     }
 
     @Override
     public MulticategoryPairs ofMulticategoryPairs(List<VectorOfBooleans> pairs,
                                                    List<VectorOfBooleans> basePairs,
                                                    Metadata mainMeta,
-                                                   Metadata baselineMeta)
+                                                   Metadata baselineMeta,
+                                                   VectorOfDoubles climatology)
     {
         final SafeMulticategoryPairs.MulticategoryPairsBuilder b =
                                                                  new SafeMulticategoryPairs.MulticategoryPairsBuilder();
-        b.setData(pairs);
-        b.setMetadata(mainMeta);
-        b.setDataForBaseline(basePairs);
-        b.setMetadataForBaseline(baselineMeta);
-        return b.build();
+        return (MulticategoryPairs)b.setData(pairs)
+                                    .setMetadata(mainMeta)
+                                    .setDataForBaseline(basePairs)
+                                    .setMetadataForBaseline(baselineMeta)
+                                    .setClimatology(climatology)
+                                    .build();
     }
 
     @Override
     public DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
                                                                final List<PairOfDoubles> basePairs,
                                                                final Metadata mainMeta,
-                                                               final Metadata baselineMeta)
+                                                               final Metadata baselineMeta,
+                                                               VectorOfDoubles climatology)
     {
         final SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
                                                                              new SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
-        b.setData(pairs);
-        b.setMetadata(mainMeta);
-        b.setDataForBaseline(basePairs);
-        b.setMetadataForBaseline(baselineMeta);
-        return b.build();
+        return (DiscreteProbabilityPairs)b.setData(pairs)
+                                          .setMetadata(mainMeta)
+                                          .setDataForBaseline(basePairs)
+                                          .setMetadataForBaseline(baselineMeta)
+                                          .setClimatology(climatology)
+                                          .build();
     }
 
     @Override
     public SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
                                                  final List<PairOfDoubles> basePairs,
                                                  final Metadata mainMeta,
-                                                 final Metadata baselineMeta)
+                                                 final Metadata baselineMeta,
+                                                 VectorOfDoubles climatology)
     {
         final SafeSingleValuedPairs.SingleValuedPairsBuilder b = new SafeSingleValuedPairs.SingleValuedPairsBuilder();
-        b.setMetadata(mainMeta);
-        b.setData(pairs);
-        b.setDataForBaseline(basePairs);
-        b.setMetadataForBaseline(baselineMeta);
-        return b.build();
+        return (SingleValuedPairs)b.setMetadata(mainMeta)
+                                   .setData(pairs)
+                                   .setDataForBaseline(basePairs)
+                                   .setMetadataForBaseline(baselineMeta)
+                                   .setClimatology(climatology)
+                                   .build();
     }
 
     @Override
     public EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs,
                                          final List<PairOfDoubleAndVectorOfDoubles> basePairs,
                                          final Metadata mainMeta,
-                                         final Metadata baselineMeta)
+                                         final Metadata baselineMeta,
+                                         VectorOfDoubles climatology)
     {
         final SafeEnsemblePairs.EnsemblePairsBuilder b = new SafeEnsemblePairs.EnsemblePairsBuilder();
-        b.setMetadata(mainMeta);
-        b.setData(pairs);
-        b.setDataForBaseline(basePairs);
-        b.setMetadataForBaseline(baselineMeta);
-        return b.build();
+        return (EnsemblePairs)b.setMetadata(mainMeta)
+                               .setData(pairs)
+                               .setDataForBaseline(basePairs)
+                               .setMetadataForBaseline(baselineMeta)
+                               .setClimatology(climatology)
+                               .build();
     }
 
     @Override
