@@ -717,5 +717,70 @@ public class Chart2DTestOutput extends TestCase
         //Return the results
         return outputFactory.ofMap(rawData);
     }
-    
+
+    /**
+     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
+     * Quantile-Quantile Diagram (predicted quantiles and observed quantiles) for various thresholds and forecast lead
+     * times. Reads the input data from testinput/chart2DTest/getQQDiagramByLeadThreshold.xml.
+     * 
+     * @return an output map of verification scores
+     */
+
+    private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getQQDiagramByLeadThreshold()
+    {
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
+        final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        try
+        {
+            //Create the input file
+            final File resultFile = new File("testinput/chart2DTest/getQQDiagramByLeadThreshold.xml");
+            final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
+
+            final Iterator<MetricResultKey> d = data.getIterator();
+
+            //Metric output metadata
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
+                                                                            metaFactory.getDimension(),
+                                                                            metaFactory.getDimension("MILLIMETER"),
+                                                                            MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
+                                                                            MetricConstants.MAIN,
+                                                                            metaFactory.getDatasetIdentifier("WGCM8",
+                                                                                                             "PRECIPITATION",
+                                                                                                             "HEFS"));
+            //Single threshold
+            QuantileThreshold threshold =
+                                        outputFactory.getQuantileThreshold(Double.NEGATIVE_INFINITY,
+                                                                           Double.NEGATIVE_INFINITY,
+                                                                           Operator.GREATER);
+
+            //Iterate through the lead times.
+            while(d.hasNext())
+            {
+
+                //Set the lead time
+                final double leadTime = (Double)d.next().getKey();
+                final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, threshold);
+                final DoubleMatrix2DResult t = (DoubleMatrix2DResult)data.getResult(leadTime);
+                double[][] qq = t.getResult().toArray();
+
+                final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
+                output.put(MetricConstants.PREDICTED_QUANTILES, qq[0]);
+                output.put(MetricConstants.OBSERVED_QUANTILES, qq[1]);
+                final MultiVectorOutput value = outputFactory.ofMultiVectorOutput(output, meta);
+
+                //Append result
+                rawData.put(key, value);
+
+            }
+        }
+        catch(final Exception e)
+        {
+            e.printStackTrace();
+            Assert.fail("Test failed : " + e.getMessage());
+        }
+        //Return the results
+        return outputFactory.ofMap(rawData);
+    }
+
 }
