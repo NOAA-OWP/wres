@@ -50,7 +50,7 @@ public final class CriticalSuccessIndex extends ContingencyTableScore<Dichotomou
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class CriticalSuccessIndexBuilder extends MetricBuilder<DichotomousPairs, ScalarOutput>
+    static class CriticalSuccessIndexBuilder extends MetricBuilder<DichotomousPairs, ScalarOutput>
     {
 
         @Override

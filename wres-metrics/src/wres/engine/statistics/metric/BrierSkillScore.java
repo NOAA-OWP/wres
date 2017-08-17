@@ -83,7 +83,7 @@ implements ProbabilityScore
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class BrierSkillScoreBuilder extends MeanSquareErrorSkillScoreBuilder<DiscreteProbabilityPairs>
+    static class BrierSkillScoreBuilder extends MeanSquareErrorSkillScoreBuilder<DiscreteProbabilityPairs>
     {
 
         @Override

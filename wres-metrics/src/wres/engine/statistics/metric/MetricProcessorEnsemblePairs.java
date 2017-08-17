@@ -23,7 +23,6 @@ import wres.datamodel.metric.MetricOutput;
 import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.ProbabilityThreshold;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.Slicer;
@@ -243,7 +242,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             if(hasGlobalThresholds(MetricInputGroup.ENSEMBLE))
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.ENSEMBLE);
-                double[] sorted = getSortedLeftSide(input, global);
+                double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     Threshold useMe = getThreshold(threshold, sorted);
                     futures.addVectorOutput(dataFactory.getMapKey(leadTime, useMe),
@@ -264,7 +263,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             if(hasGlobalThresholds(MetricInputGroup.ENSEMBLE))
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.ENSEMBLE);
-                double[] sorted = getSortedLeftSide(input, global);
+                double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     Threshold useMe = getThreshold(threshold, sorted);
                     futures.addMultiVectorOutput(dataFactory.getMapKey(leadTime, useMe),
@@ -303,7 +302,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             if(hasGlobalThresholds(MetricInputGroup.DISCRETE_PROBABILITY))
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.DISCRETE_PROBABILITY);
-                double[] sorted = getSortedLeftSide(input, global);
+                double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     //Only process discrete thresholds
                     if(threshold.isFinite())
@@ -331,7 +330,7 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
             if(hasGlobalThresholds(MetricInputGroup.DISCRETE_PROBABILITY))
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.DISCRETE_PROBABILITY);
-                double[] sorted = getSortedLeftSide(input, global);
+                double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     if(threshold.isFinite())
                     {
@@ -394,26 +393,6 @@ final class MetricProcessorEnsemblePairs extends MetricProcessor
         //Slice the pairs
         EnsemblePairs subset = dataFactory.getSlicer().sliceByLeft(pairs, threshold);
         return CompletableFuture.supplyAsync(() -> collection.apply(subset));
-    }
-
-    /**
-     * Helper that returns a sorted set of values from the left side of the input pairs if any of the thresholds are
-     * {@link ProbabilityThreshold}.
-     * 
-     * @param input the inputs pairs
-     * @param thresholds the thresholds to test
-     * @return a sorted array of values or null
-     */
-
-    private double[] getSortedLeftSide(EnsemblePairs input, List<Threshold> thresholds)
-    {
-        double[] sorted = null;
-        if(hasProbabilityThreshold(thresholds))
-        {
-            sorted = dataFactory.getSlicer().getLeftSide(input);
-            Arrays.sort(sorted);
-        }
-        return sorted;
     }
 
 }

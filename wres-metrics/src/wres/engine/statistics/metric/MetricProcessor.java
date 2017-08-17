@@ -253,8 +253,8 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                 throw new MetricConfigurationException("Unrecognized threshold operator in project configuration '"
                     + translate + "'.");
         }
-    }    
-    
+    }
+
     /**
      * Returns a {@link MetricOutputForProjectByLeadThreshold} for the last available results or null if
      * {@link #hasStoredMetricOutput()} returns false.
@@ -509,7 +509,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             if(hasGlobalThresholds(MetricInputGroup.SINGLE_VALUED))
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
-                double[] sorted = getSortedLeftSide(input, global);
+                double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     Threshold useMe = getThreshold(threshold, sorted);
                     futures.addScalarOutput(dataFactory.getMapKey(leadTime, useMe),
@@ -530,7 +530,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             if(hasGlobalThresholds(MetricInputGroup.SINGLE_VALUED))
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
-                double[] sorted = getSortedLeftSide(input, global);
+                double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     Threshold useMe = getThreshold(threshold, sorted);
                     futures.addVectorOutput(dataFactory.getMapKey(leadTime, useMe),
@@ -551,7 +551,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
             if(hasGlobalThresholds(MetricInputGroup.SINGLE_VALUED))
             {
                 List<Threshold> global = globalThresholds.get(MetricInputGroup.SINGLE_VALUED);
-                double[] sorted = getSortedLeftSide(input, global);
+                double[] sorted = getSortedClimatology(input, global);
                 global.forEach(threshold -> {
                     Threshold useMe = getThreshold(threshold, sorted);
                     futures.addMultiVectorOutput(dataFactory.getMapKey(leadTime, useMe),
@@ -848,12 +848,12 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * @return a sorted array of values or null
      */
 
-    double[] getSortedLeftSide(SingleValuedPairs input, List<Threshold> thresholds)
+    double[] getSortedClimatology(MetricInput<?> input, List<Threshold> thresholds)
     {
         double[] sorted = null;
-        if(hasProbabilityThreshold(thresholds))
+        if(hasProbabilityThreshold(thresholds) && input.hasClimatology())
         {
-            sorted = dataFactory.getSlicer().getLeftSide(input);
+            sorted = input.getClimatology().getDoubles();
             Arrays.sort(sorted);
         }
         return sorted;
@@ -868,6 +868,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * @param sorted a sorted set of values from which to determine {@link QuantileThreshold} where the input
      *            {@link Threshold} is a {@link ProbabilityThreshold}.
      * @return the threshold
+     * @throws MetricCalculationException if the sorted array is null and quantiles are required
      */
 
     Threshold getThreshold(Threshold threshold, double[] sorted)
@@ -876,6 +877,11 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         //Quantile required: need to determine real-value from probability
         if(threshold instanceof ProbabilityThreshold)
         {
+            if(Objects.isNull(sorted))
+            {
+                throw new MetricCalculationException("Unable to determine quantile threshold from probability "
+                    + "threshold: no climatological observations were available in the input.");
+            }
             useMe = dataFactory.getSlicer().getQuantileFromProbability((ProbabilityThreshold)useMe, sorted);
         }
         return useMe;
@@ -950,14 +956,14 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
         //Add a threshold for "all data" by default
         globalThresholds.add(dataFactory.getThreshold(Double.NEGATIVE_INFINITY, Operator.GREATER));
         //Add probability thresholds
-        if(!Objects.isNull(outputs.getProbabilityThresholds()))
+        if(Objects.nonNull(outputs.getProbabilityThresholds()))
         {
             Operator oper = fromThresholdOperator(outputs.getProbabilityThresholds().getOperator());
             String values = outputs.getProbabilityThresholds().getCommaSeparatedValues();
             globalThresholds.addAll(getThresholdsFromCommaSeparatedValues(values, oper, true));
         }
         //Add real-valued thresholds
-        if(!Objects.isNull(outputs.getValueThresholds()))
+        if(Objects.nonNull(outputs.getValueThresholds()))
         {
             Operator oper = fromThresholdOperator(outputs.getValueThresholds().getOperator());
             String values = outputs.getValueThresholds().getCommaSeparatedValues();

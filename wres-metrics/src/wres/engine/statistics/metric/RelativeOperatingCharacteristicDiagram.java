@@ -27,7 +27,7 @@ public final class RelativeOperatingCharacteristicDiagram extends RelativeOperat
     @Override
     public MultiVectorOutput apply(final DiscreteProbabilityPairs s)
     {
-        return getROC(s,points);
+        return getROC(s, points);
     }
 
     @Override
@@ -40,7 +40,7 @@ public final class RelativeOperatingCharacteristicDiagram extends RelativeOperat
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class RelativeOperatingCharacteristicBuilder
+    static class RelativeOperatingCharacteristicBuilder
     extends
         MetricBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
     {

@@ -65,7 +65,7 @@ public final class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> 
      * A {@link MetricBuilder} to build the metric.
      */
 
-    protected static class BiasFractionBuilder extends MetricBuilder<SingleValuedPairs, ScalarOutput>
+    static class BiasFractionBuilder extends MetricBuilder<SingleValuedPairs, ScalarOutput>
     {
 
         @Override

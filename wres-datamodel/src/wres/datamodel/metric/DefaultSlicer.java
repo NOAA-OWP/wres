@@ -122,7 +122,7 @@ public class DefaultSlicer implements Slicer
                                                input.getMetadataForBaseline(),
                                                input.getClimatology());
         }
-        return dataFac.ofSingleValuedPairs(mainPairsSubset, input.getMetadata());
+        return dataFac.ofSingleValuedPairs(mainPairsSubset, input.getMetadata(), input.getClimatology());
     }
 
     @Override
@@ -160,7 +160,7 @@ public class DefaultSlicer implements Slicer
                                            input.getMetadataForBaseline(),
                                            input.getClimatology());
         }
-        return dataFac.ofEnsemblePairs(mainPairsSubset, input.getMetadata());
+        return dataFac.ofEnsemblePairs(mainPairsSubset, input.getMetadata(), input.getClimatology());
     }
 
     @Override
@@ -239,7 +239,7 @@ public class DefaultSlicer implements Slicer
                                                         metaBaseTransformed,
                                                         input.getClimatology());
         }
-        return dataFac.ofDichotomousPairsFromAtomic(mainPairsTransformed, metaTransformed);
+        return dataFac.ofDichotomousPairsFromAtomic(mainPairsTransformed, metaTransformed, input.getClimatology());
     }
 
     @Override
@@ -258,7 +258,7 @@ public class DefaultSlicer implements Slicer
                                                input.getMetadataForBaseline(),
                                                input.getClimatology());
         }
-        return dataFac.ofSingleValuedPairs(mainPairsTransformed, input.getMetadata());
+        return dataFac.ofSingleValuedPairs(mainPairsTransformed, input.getMetadata(), input.getClimatology());
     }
 
     @Override
@@ -282,7 +282,7 @@ public class DefaultSlicer implements Slicer
                                                       input.getMetadataForBaseline(),
                                                       input.getClimatology());
         }
-        return dataFac.ofDiscreteProbabilityPairs(mainPairsTransformed, input.getMetadata());
+        return dataFac.ofDiscreteProbabilityPairs(mainPairsTransformed, input.getMetadata(), input.getClimatology());
     }
 
     @Override
