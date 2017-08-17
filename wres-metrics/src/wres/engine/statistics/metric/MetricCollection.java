@@ -53,7 +53,7 @@ import wres.datamodel.metric.MetricOutputMapByMetric;
  * @since 0.1
  */
 
-public final class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
+class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
 implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMetric<T>>
 {
 
@@ -226,6 +226,8 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         {
             throw new MetricCalculationException("The collection has already been constructed with a fixed input.");
         }
+        
+        Objects.requireNonNull(s, "Specify non-null input to the metric collection.");
 
         //Collection of future metric results
         final List<CompletableFuture<T>> metricFutures = new ArrayList<>(metrics.size());

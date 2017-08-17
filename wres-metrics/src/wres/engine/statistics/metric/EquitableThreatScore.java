@@ -15,7 +15,7 @@ import wres.datamodel.metric.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-public final class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs>
+class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs>
 {
 
     @Override

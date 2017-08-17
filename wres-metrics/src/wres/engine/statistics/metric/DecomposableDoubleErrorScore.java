@@ -15,7 +15,7 @@ import wres.datamodel.metric.VectorOutput;
  * @since 0.1
  */
 
-public abstract class DecomposableDoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, VectorOutput>
+abstract class DecomposableDoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, VectorOutput>
 implements Score
 {
 

@@ -17,7 +17,7 @@ import wres.datamodel.metric.MetricOutputMetadata;
  * @version 0.1
  * @since 0.1
  */
-public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
+interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
 {
 
     /**

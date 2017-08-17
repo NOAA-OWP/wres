@@ -31,7 +31,7 @@ import wres.datamodel.metric.MultiVectorOutput;
  * @since 0.1
  */
 
-public final class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOutput>
+class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOutput>
 {
 
     /**

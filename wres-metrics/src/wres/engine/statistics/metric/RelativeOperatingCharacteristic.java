@@ -28,7 +28,7 @@ import wres.datamodel.metric.Slicer;
  * @since 0.1
  */
 
-public abstract class RelativeOperatingCharacteristic<T extends MetricOutput<?>>
+abstract class RelativeOperatingCharacteristic<T extends MetricOutput<?>>
 extends
     Metric<DiscreteProbabilityPairs, T>
 {
