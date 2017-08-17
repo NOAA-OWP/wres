@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.VectorOfDoubles;
 
 /**
  * Immutable store of verification pairs associated with the outcome (true or false) of a multi-category event. The
@@ -42,12 +43,12 @@ class SafeMulticategoryPairs implements MulticategoryPairs
      */
 
     private final Metadata baselineMeta;
-
-    @Override
-    public boolean hasBaseline()
-    {
-        return !Objects.isNull(baselineInput);
-    }
+    
+    /**
+     * Climatological dataset. May be null.
+     */
+    
+    private VectorOfDoubles climatology;    
 
     @Override
     public List<VectorOfBooleans> getData()
@@ -85,6 +86,12 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         return mainInput.size();
     }
     
+    @Override
+    public VectorOfDoubles getClimatology()
+    {
+        return climatology;
+    }       
+    
     /**
      * Returns the number of outcomes or categories in the dataset.
      * 
@@ -101,7 +108,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
      * A {@link MetricInputBuilder} to build the metric input.
      */
 
-    static class MulticategoryPairsBuilder implements MetricInputBuilder<List<VectorOfBooleans>>
+    static class MulticategoryPairsBuilder extends MetricInputBuilder<List<VectorOfBooleans>>
     {
 
         /**
@@ -112,20 +119,8 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         /**
          * Pairs for baseline.
          */
-        private List<VectorOfBooleans> baselineInput;
-
-        /**
-         * Metadata for input.
-         */
-
-        private Metadata mainMeta;
-
-        /**
-         * Metadata for baseline.
-         */
-
-        private Metadata baselineMeta;
-
+        private List<VectorOfBooleans> baselineInput; 
+        
         @Override
         public MulticategoryPairsBuilder setData(final List<VectorOfBooleans> mainInput)
         {
@@ -134,23 +129,9 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         }
 
         @Override
-        public MulticategoryPairsBuilder setMetadata(final Metadata mainMeta)
-        {
-            this.mainMeta = mainMeta;
-            return this;
-        }
-
-        @Override
         public MulticategoryPairsBuilder setDataForBaseline(final List<VectorOfBooleans> baselineInput)
         {
             this.baselineInput = baselineInput;
-            return this;
-        }
-
-        @Override
-        public MulticategoryPairsBuilder setMetadataForBaseline(final Metadata baselineMeta)
-        {
-            this.baselineMeta = baselineMeta;
             return this;
         }
 
@@ -191,6 +172,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         baselineInput = Objects.nonNull(b.baselineInput) ? factory.safeVectorOfBooleansList(b.baselineInput) : null;
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
+        climatology = b.climatology;
     }
 
     /**

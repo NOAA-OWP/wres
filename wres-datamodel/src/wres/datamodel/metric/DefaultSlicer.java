@@ -119,7 +119,8 @@ public class DefaultSlicer implements Slicer
             return dataFac.ofSingleValuedPairs(mainPairsSubset,
                                                basePairsSubset,
                                                input.getMetadata(),
-                                               input.getMetadataForBaseline());
+                                               input.getMetadataForBaseline(),
+                                               input.getClimatology());
         }
         return dataFac.ofSingleValuedPairs(mainPairsSubset, input.getMetadata());
     }
@@ -156,7 +157,8 @@ public class DefaultSlicer implements Slicer
             return dataFac.ofEnsemblePairs(mainPairsSubset,
                                            basePairsSubset,
                                            input.getMetadata(),
-                                           input.getMetadataForBaseline());
+                                           input.getMetadataForBaseline(),
+                                           input.getClimatology());
         }
         return dataFac.ofEnsemblePairs(mainPairsSubset, input.getMetadata());
     }
@@ -234,7 +236,8 @@ public class DefaultSlicer implements Slicer
             return dataFac.ofDichotomousPairsFromAtomic(mainPairsTransformed,
                                                         basePairsTransformed,
                                                         metaTransformed,
-                                                        metaBaseTransformed);
+                                                        metaBaseTransformed,
+                                                        input.getClimatology());
         }
         return dataFac.ofDichotomousPairsFromAtomic(mainPairsTransformed, metaTransformed);
     }
@@ -252,7 +255,8 @@ public class DefaultSlicer implements Slicer
             return dataFac.ofSingleValuedPairs(mainPairsTransformed,
                                                basePairsTransformed,
                                                input.getMetadata(),
-                                               input.getMetadataForBaseline());
+                                               input.getMetadataForBaseline(),
+                                               input.getClimatology());
         }
         return dataFac.ofSingleValuedPairs(mainPairsTransformed, input.getMetadata());
     }
@@ -275,7 +279,8 @@ public class DefaultSlicer implements Slicer
             return dataFac.ofDiscreteProbabilityPairs(mainPairsTransformed,
                                                       basePairsTransformed,
                                                       input.getMetadata(),
-                                                      input.getMetadataForBaseline());
+                                                      input.getMetadataForBaseline(),
+                                                      input.getClimatology());
         }
         return dataFac.ofDiscreteProbabilityPairs(mainPairsTransformed, input.getMetadata());
     }

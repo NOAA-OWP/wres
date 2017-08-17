@@ -113,7 +113,7 @@ public interface DataFactory
 
     default DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
     {
-        return ofDichotomousPairs(pairs, null, meta, null);
+        return ofDichotomousPairs(pairs, null, meta, null, null);
     }
 
     /**
@@ -127,7 +127,7 @@ public interface DataFactory
 
     default DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs, final Metadata meta)
     {
-        return ofDichotomousPairsFromAtomic(pairs, null, meta, null);
+        return ofDichotomousPairsFromAtomic(pairs, null, meta, null, null);
     }
 
     /**
@@ -141,7 +141,7 @@ public interface DataFactory
 
     default MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs, final Metadata meta)
     {
-        return ofMulticategoryPairs(pairs, null, meta, null);
+        return ofMulticategoryPairs(pairs, null, meta, null, null);
     }
 
     /**
@@ -155,7 +155,7 @@ public interface DataFactory
 
     default DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs, final Metadata meta)
     {
-        return ofDiscreteProbabilityPairs(pairs, null, meta, null);
+        return ofDiscreteProbabilityPairs(pairs, null, meta, null, null);
     }
 
     /**
@@ -169,7 +169,7 @@ public interface DataFactory
 
     default SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Metadata meta)
     {
-        return ofSingleValuedPairs(pairs, null, meta, null);
+        return ofSingleValuedPairs(pairs, null, meta, null, null);
     }
 
     /**
@@ -183,7 +183,7 @@ public interface DataFactory
 
     default EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs, final Metadata meta)
     {
-        return ofEnsemblePairs(pairs, null, meta, null);
+        return ofEnsemblePairs(pairs, null, meta, null, null);
     }
 
     /**
@@ -197,8 +197,103 @@ public interface DataFactory
     default VectorOutput ofVectorOutput(final double[] output, final MetricOutputMetadata meta)
     {
         return ofVectorOutput(output, MetricDecompositionGroup.NONE, meta);
-    }    
-    
+    }
+
+    /**
+     * Construct the single-valued input with a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs (may be null)
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    default SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
+                                                  final List<PairOfDoubles> basePairs,
+                                                  final Metadata mainMeta,
+                                                  final Metadata baselineMeta)
+    {
+        return ofSingleValuedPairs(pairs, basePairs, mainMeta, baselineMeta, null);
+    }
+
+    /**
+     * Construct the ensemble input with a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs (may be null)
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    default EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs,
+                                          final List<PairOfDoubleAndVectorOfDoubles> basePairs,
+                                          final Metadata mainMeta,
+                                          final Metadata baselineMeta)
+    {
+        return ofEnsemblePairs(pairs, basePairs, mainMeta, baselineMeta, null);
+    }
+
+    /**
+     * Construct the multicategory input without any pairs for a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs (may be null)
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    default MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs,
+                                                    final List<VectorOfBooleans> basePairs,
+                                                    final Metadata mainMeta,
+                                                    final Metadata baselineMeta)
+    {
+        return ofMulticategoryPairs(pairs, basePairs, mainMeta, baselineMeta, null);
+    }
+
+    /**
+     * Construct the discrete probability input with a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs (may be null)
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @throws MetricInputException if the inputs are invalid
+     * @return the pairs
+     */
+
+    default DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
+                                                                final List<PairOfDoubles> basePairs,
+                                                                final Metadata mainMeta,
+                                                                final Metadata baselineMeta)
+    {
+        return ofDiscreteProbabilityPairs(pairs, basePairs, mainMeta, baselineMeta, null);
+    }
+
+    /**
+     * Construct the dichotomous input with pairs for a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs (may be null)
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    default DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs,
+                                                final List<VectorOfBooleans> basePairs,
+                                                final Metadata mainMeta,
+                                                final Metadata baselineMeta)
+    {
+        return ofDichotomousPairs(pairs, basePairs, mainMeta, baselineMeta, null);
+    }
+
     /**
      * Returns a {@link MetadataFactory} for building {@link Metadata}.
      * 
@@ -219,9 +314,10 @@ public interface DataFactory
      * Construct the single-valued input with a baseline.
      * 
      * @param pairs the main verification pairs
-     * @param basePairs the baseline pairs
+     * @param basePairs the baseline pairs (may be null)
      * @param mainMeta the metadata for the main pairs
-     * @param baselineMeta the metadata for the baseline pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @param climatology an optional climatological dataset (may be null)
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
@@ -229,15 +325,17 @@ public interface DataFactory
     SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
                                           final List<PairOfDoubles> basePairs,
                                           final Metadata mainMeta,
-                                          final Metadata baselineMeta);
+                                          final Metadata baselineMeta,
+                                          final VectorOfDoubles climatology);
 
     /**
      * Construct the ensemble input with a baseline.
      * 
      * @param pairs the main verification pairs
-     * @param basePairs the baseline pairs
+     * @param basePairs the baseline pairs (may be null)
      * @param mainMeta the metadata for the main pairs
-     * @param baselineMeta the metadata for the baseline pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @param climatology an optional climatological dataset (may be null)
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
@@ -245,15 +343,17 @@ public interface DataFactory
     EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs,
                                   final List<PairOfDoubleAndVectorOfDoubles> basePairs,
                                   final Metadata mainMeta,
-                                  final Metadata baselineMeta);
+                                  final Metadata baselineMeta,
+                                  final VectorOfDoubles climatology);
 
     /**
      * Construct the multicategory input without any pairs for a baseline.
      * 
      * @param pairs the main verification pairs
-     * @param basePairs the baseline pairs
+     * @param basePairs the baseline pairs (may be null)
      * @param mainMeta the metadata for the main pairs
-     * @param baselineMeta the metadata for the baseline pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @param climatology an optional climatological dataset (may be null)
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
@@ -261,15 +361,17 @@ public interface DataFactory
     MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs,
                                             final List<VectorOfBooleans> basePairs,
                                             final Metadata mainMeta,
-                                            final Metadata baselineMeta);
+                                            final Metadata baselineMeta,
+                                            final VectorOfDoubles climatology);
 
     /**
      * Construct the discrete probability input with a baseline.
      * 
      * @param pairs the main verification pairs
-     * @param basePairs the baseline pairs
+     * @param basePairs the baseline pairs (may be null)
      * @param mainMeta the metadata for the main pairs
-     * @param baselineMeta the metadata for the baseline pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @param climatology an optional climatological dataset (may be null)
      * @throws MetricInputException if the inputs are invalid
      * @return the pairs
      */
@@ -277,15 +379,17 @@ public interface DataFactory
     DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
                                                         final List<PairOfDoubles> basePairs,
                                                         final Metadata mainMeta,
-                                                        final Metadata baselineMeta);
+                                                        final Metadata baselineMeta,
+                                                        final VectorOfDoubles climatology);
 
     /**
      * Construct the dichotomous input with pairs for a baseline.
      * 
      * @param pairs the main verification pairs
-     * @param basePairs the baseline pairs
+     * @param basePairs the baseline pairs (may be null)
      * @param mainMeta the metadata for the main pairs
-     * @param baselineMeta the metadata for the baseline pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @param climatology an optional climatological dataset (may be null)
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
@@ -293,15 +397,17 @@ public interface DataFactory
     DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs,
                                         final List<VectorOfBooleans> basePairs,
                                         final Metadata mainMeta,
-                                        final Metadata baselineMeta);
+                                        final Metadata baselineMeta,
+                                        final VectorOfDoubles climatology);
 
     /**
      * Construct the dichotomous input from atomic {@link PairOfBooleans} with pairs for a baseline.
      * 
      * @param pairs the main verification pairs
-     * @param basePairs the baseline pairs
+     * @param basePairs the baseline pairs (may be null)
      * @param mainMeta the metadata for the main pairs
-     * @param baselineMeta the metadata for the baseline pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @param climatology an optional climatological dataset (may be null)
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
@@ -309,7 +415,8 @@ public interface DataFactory
     DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs,
                                                   final List<PairOfBooleans> basePairs,
                                                   final Metadata mainMeta,
-                                                  final Metadata baselineMeta);
+                                                  final Metadata baselineMeta,
+                                                  final VectorOfDoubles climatology);
 
     /**
      * Return a {@link PairOfDoubles} from two double values.
