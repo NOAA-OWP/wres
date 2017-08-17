@@ -1,7 +1,10 @@
 package wres.datamodel.metric;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.junit.Assert;
 
@@ -13,6 +16,7 @@ import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
 import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.metric.SafeMetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
 import wres.datamodel.metric.SafeMetricOutputMapByLeadThreshold.Builder;
 import wres.datamodel.metric.Threshold.Operator;
 
@@ -167,4 +171,42 @@ public final class DataModelTestDataFactory
         }
         return builder.build();
     }
+
+    /**
+     * Returns a {@link MetricOutputForProjectByLeadThreshold} with fake data.
+     * 
+     * @return a {@link MetricOutputForProjectByLeadThreshold} with fake data
+     */
+
+    public static MetricOutputForProjectByLeadThreshold getMetricOutputForProjectByLeadThreshold()
+    {
+        //Prep
+        MetricOutputForProjectByLeadThresholdBuilder builder = new MetricOutputForProjectByLeadThresholdBuilder();
+        DataFactory factory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFactory = factory.getMetadataFactory();
+        final MetricOutputMetadata fakeMeta =
+                                            factory.getMetadataFactory()
+                                                   .getOutputMetadata(1000,
+                                                                      metaFactory.getDimension(),
+                                                                      metaFactory.getDimension("CMS"),
+                                                                      MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE);
+        List<ScalarOutput> fakeData = new ArrayList<>();
+
+        //Add some fake numbers
+        fakeData.add(factory.ofScalarOutput(10.0, fakeMeta));
+        fakeData.add(factory.ofScalarOutput(6.0, fakeMeta));
+        fakeData.add(factory.ofScalarOutput(7.0, fakeMeta));
+        fakeData.add(factory.ofScalarOutput(16.0, fakeMeta));
+
+        //Build the input map
+        MetricOutputMapByMetric<ScalarOutput> in = factory.ofMap(fakeData);
+
+        //Fake lead time and threshold
+        builder.addScalarOutput(factory.getMapKeyByLeadThreshold(1, 23.0, Operator.GREATER),
+                                CompletableFuture.completedFuture(in));
+
+        //Return data
+        return builder.build();
+    }
+
 }
