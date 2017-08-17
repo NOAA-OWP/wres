@@ -50,7 +50,7 @@ at @locationName@@baselineText@
 		</threshold>
 	</thresholdList>
 
-	<!-- Put the legend on the right hand side. -->
+	<!-- Put the legend on the bottom with an appropriate title. -->
 	<legend visible="true">
 		<position>BOTTOM</position>
 		<title>
