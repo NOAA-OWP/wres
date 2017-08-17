@@ -74,7 +74,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private void createLeftHandCache() throws SQLException
         {
             Map<String, Double> values = new HashMap<>();
-            List<Double> futureVector = new ArrayList<>();
+            List<Double> futureVector = null;
 
             String desiredMeasurementUnit = this.projectConfig.getPair().getUnit();
             Integer desiredMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(desiredMeasurementUnit);
@@ -161,7 +161,15 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                     }
 
                     values.put(date, value);
-                    futureVector.add(value);
+
+                    if (ConfigHelper.usesProbabilityThresholds(projectConfig))
+                    {
+                        if (futureVector == null)
+                        {
+                            futureVector = new ArrayList<>();
+                        }
+                        futureVector.add(value);
+                    }
                 }
             }
             finally
@@ -179,7 +187,11 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             this.leftHandMap = values;
 
             DataFactory factory = DefaultDataFactory.getInstance();
-            this.leftHandValues = factory.vectorOf(futureVector.toArray(new Double[futureVector.size()]));
+
+            if (ConfigHelper.usesProbabilityThresholds(projectConfig))
+            {
+                this.leftHandValues = factory.vectorOf(futureVector.toArray(new Double[futureVector.size()]));
+            }
         }
 
         public MetricInputIterator(ProjectConfig projectConfig, Conditions.Feature feature) throws SQLException
@@ -248,8 +260,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                                                               this.windowNumber,
                                                               (String date) -> {
                                                                     return this.leftHandMap.getOrDefault(date,null);
-                                                                    }
-                                                                );
+                                                                    },
+                                                              this.leftHandValues);
                 retriever.setOnRun(ProgressMonitor.onThreadStartHandler());
                 retriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                 nextInput = Database.submit(retriever);

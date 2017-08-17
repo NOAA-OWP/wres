@@ -77,6 +77,20 @@ public class ConfigHelper
         return result.toString();
     }
 
+    public static boolean usesProbabilityThresholds(final ProjectConfig projectConfig)
+    {
+        boolean hasProbabilityThreshold = projectConfig.getOutputs().getProbabilityThresholds() != null;
+
+        if (!hasProbabilityThreshold)
+        {
+            hasProbabilityThreshold = Collections.exists(projectConfig.getOutputs().getMetric(), (MetricConfig config) -> {
+                return config.getProbabilityThresholds() != null;
+            });
+        }
+
+        return hasProbabilityThreshold;
+    }
+
     /**
      *
      * @param projectConfig
