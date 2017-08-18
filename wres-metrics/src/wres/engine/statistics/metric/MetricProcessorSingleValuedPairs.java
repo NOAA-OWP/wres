@@ -143,7 +143,7 @@ class MetricProcessorSingleValuedPairs extends MetricProcessor
                     {
                         Threshold useMe = getThreshold(threshold, sorted);
                         futures.addScalarOutput(dataFactory.getMapKey(leadTime, useMe),
-                                                processDichotomousThreshold(leadTime, useMe, input, dichotomousScalar));
+                                                processDichotomousThreshold(useMe, input, dichotomousScalar));
                     }
                 });
             }
@@ -160,15 +160,13 @@ class MetricProcessorSingleValuedPairs extends MetricProcessor
      * Builds a metric future for a {@link MetricCollection} that consumes {@link DichotomousPairs} at a specific lead
      * time and {@link Threshold}.
      * 
-     * @param leadTime the lead time
      * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection
      * @return true if the future was added successfully
      */
 
-    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processDichotomousThreshold(Integer leadTime,
-                                                                                                       Threshold threshold,
+    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processDichotomousThreshold(Threshold threshold,
                                                                                                        SingleValuedPairs pairs,
                                                                                                        MetricCollection<DichotomousPairs, T> collection)
     {

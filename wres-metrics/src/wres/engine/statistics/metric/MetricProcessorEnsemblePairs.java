@@ -161,6 +161,7 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
                 + config.getLabel() + "'.");
         }
         //Construct the metrics
+        //Discrete probability input, vector output
         if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR))
         {
             discreteProbabilityVector =
@@ -173,6 +174,7 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
         {
             discreteProbabilityVector = null;
         }
+        //Discrete probability input, multi-vector output
         if(hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR))
         {
             discreteProbabilityMultiVector =
@@ -185,33 +187,34 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
         {
             discreteProbabilityMultiVector = null;
         }
+        //Ensemble input, vector output
+        if(hasMetrics(MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR))
+        {
+            ensembleVector = metricFactory.ofEnsembleVectorCollection(executor,
+                                                                      getSelectedMetrics(metrics,
+                                                                                         MetricInputGroup.ENSEMBLE,
+                                                                                         MetricOutputGroup.VECTOR));
+        }
+        else
+        {
+            ensembleVector = null;
+        }
 
-        //TODO: implement the ensemble metrics
-        ensembleVector = null;
+        //TODO: implement the ensemble multi-vector
         ensembleMultiVector = null;
 
-//        if(hasMetrics(MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR))
-//        {
-//            ensembleVector =
-//                              metricFactory.ofEnsembleVectorCollection(getSelectedMetrics(metrics,
-//                                                                                             MetricInputGroup.ENSEMBLE,
-//                                                                                             MetricOutputGroup.VECTOR),executor);
-//        }
-//        else
-//        {
-//            ensembleVector = null;
-//        }
+//        //Ensemble input, multi-vector output
 //        if(hasMetrics(MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR))
 //        {
-//            ensembleMultiVector =
-//                                metricFactory.ofEnsembleMultiVectorCollection(getSelectedMetrics(metrics,
-//                                                                                                 MetricInputGroup.ENSEMBLE,
-//                                                                                                 MetricOutputGroup.MULTIVECTOR),executor);
+//            ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection(executor,
+//                                                                                getSelectedMetrics(metrics,
+//                                                                                                   MetricInputGroup.ENSEMBLE,
+//                                                                                                   MetricOutputGroup.MULTIVECTOR));
 //        }
 //        else
 //        {
 //            ensembleMultiVector = null;
-//        }                   
+//        }                
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
         toSingleValues = in -> dataFactory.pairOf(in.getItemOne(),
@@ -249,7 +252,7 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
                     try
                     {
                         futures.addVectorOutput(dataFactory.getMapKey(leadTime, useMe),
-                                                processEnsembleThreshold(leadTime, useMe, input, ensembleVector));
+                                                processEnsembleThreshold(useMe, input, ensembleVector));
                     }
                     catch(MetricInputSliceException e)
                     {
@@ -277,7 +280,7 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
                     try
                     {
                         futures.addMultiVectorOutput(dataFactory.getMapKey(leadTime, useMe),
-                                                     processEnsembleThreshold(leadTime, useMe, input, ensembleMultiVector));
+                                                     processEnsembleThreshold(useMe, input, ensembleMultiVector));
                     }
                     catch(MetricInputSliceException e)
                     {
@@ -324,8 +327,7 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
                     {
                         Threshold useMe = getThreshold(threshold, sorted);
                         futures.addVectorOutput(dataFactory.getMapKey(leadTime, useMe),
-                                                processDiscreteProbabilityThreshold(leadTime,
-                                                                                    useMe,
+                                                processDiscreteProbabilityThreshold(useMe,
                                                                                     input,
                                                                                     discreteProbabilityVector));
                     }
@@ -351,8 +353,7 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
                     {
                         Threshold useMe = getThreshold(threshold, sorted);
                         futures.addMultiVectorOutput(dataFactory.getMapKey(leadTime, useMe),
-                                                     processDiscreteProbabilityThreshold(leadTime,
-                                                                                         useMe,
+                                                     processDiscreteProbabilityThreshold(useMe,
                                                                                          input,
                                                                                          discreteProbabilityMultiVector));
                     }
@@ -371,15 +372,13 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
      * Builds a metric future for a {@link MetricCollection} that consumes {@link EnsemblePairs} at a specific
      * {@link Threshold}.
      * 
-     * @param leadTime the lead time
      * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection
      * @return the future result
      */
 
-    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processDiscreteProbabilityThreshold(Integer leadTime,
-                                                                                                               Threshold threshold,
+    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processDiscreteProbabilityThreshold(Threshold threshold,
                                                                                                                EnsemblePairs pairs,
                                                                                                                MetricCollection<DiscreteProbabilityPairs, T> collection)
     {
@@ -393,7 +392,6 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
      * Builds a metric future for a {@link MetricCollection} that consumes {@link EnsemblePairs} at a specific
      * {@link Threshold} and appends it to the input map of futures.
      * 
-     * @param leadTime the lead time
      * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection
@@ -401,8 +399,7 @@ class MetricProcessorEnsemblePairs extends MetricProcessor
      * @throws MetricInputSliceException if the threshold fails to slice any data
      */
 
-    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processEnsembleThreshold(Integer leadTime,
-                                                                                                    Threshold threshold,
+    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processEnsembleThreshold(Threshold threshold,
                                                                                                     EnsemblePairs pairs,
                                                                                                     MetricCollection<EnsemblePairs, T> collection) throws MetricInputSliceException
     {
