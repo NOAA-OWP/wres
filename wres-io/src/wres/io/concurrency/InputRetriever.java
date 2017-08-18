@@ -71,8 +71,6 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             baselineMetadata = this.buildMetadata(factory, this.projectConfig.getInputs().getBaseline());
         }
 
-        // TODO: Handle baseline pairs
-        // TODO: Handle addition of climatology for probability thresholds on pair construction
         if (dataType == DatasourceType.ENSEMBLE_FORECASTS)
         {
             input = factory.ofEnsemblePairs(this.primaryPairs, this.baselinePairs, metadata, baselineMetadata, this.climatology);
@@ -82,7 +80,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             List<PairOfDoubles> primary = factory.getSlicer().transformPairs(this.primaryPairs, factory.getSlicer()::transformPair);
             List<PairOfDoubles> baseline = null;
 
-            if (this.baselinePairs != null)
+            if (this.baselinePairs != null && this.baselinePairs.size() > 0)
             {
                 baseline = factory.getSlicer().transformPairs(this.baselinePairs, factory.getSlicer()::transformPair);
             }
@@ -94,8 +92,13 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                 this.climatology);
         }
 
-        this.primaryPairs = null;
-        this.baselinePairs = null;
+        if (this.primaryPairs.size() == 0)
+        {
+            LOGGER.error("");
+            LOGGER.error("THERE IS NO DATA FOR THE INPUT RETRIEVER FOR WINDOW {}", this.progress);
+            LOGGER.error("");
+        }
+
         return input;
     }
 
