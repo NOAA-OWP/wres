@@ -18,8 +18,8 @@
 		</seriesDrawingParameters>
 	</datasourceDrawingParameters>
 
-    <!-- The diagonal line series. -->
-	<!-- <datasourceDrawingParameters sourceIndex="1">
+    <!-- The diagonal line series has a data source index of 1 for a Q-Q plot.  The createdIndexOfSeriesToModify must be -1. -->
+	<datasourceDrawingParameters sourceIndex="1">
 		<plotter>LineAndScatter</plotter>
 		<seriesDrawingParameters
 			createdIndexOfSeriesToModify="-1">
@@ -29,7 +29,7 @@
             <shape>none</shape>
             <lineWidth>2.0</lineWidth>
 		</seriesDrawingParameters>
-	</datasourceDrawingParameters>-->
+	</datasourceDrawingParameters>
 	
 	<!-- Put the legend on the bottom with an appropriate title. -->
     <legend visible="true">
