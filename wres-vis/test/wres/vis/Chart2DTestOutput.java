@@ -41,15 +41,15 @@ import wres.datamodel.metric.Threshold.Operator;
 import wres.datamodel.metric.VectorOutput;
 
 /**
- * Tests the construction of a 3D chart of metric outputs.
+ * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit
+ * tests. To compare the images with benchmarks in testinput, YOU MUST EXECUTE THIS CLASS' MAIN!
  * 
  * @author hank.herr
  * @author james.brown@hydrosolved.com
  */
 public class Chart2DTestOutput extends TestCase
 {
-    private static int IMAGE_COMPARISON_SENSITIVITY = 8;
-    
+
     //TODO Note that test1 is within the Chart2DTestInput.java unit tests.  The two unit tests need to either be completely separate
     //(different testoutput, testinput directories) or merged.  
     //
@@ -82,14 +82,6 @@ public class Chart2DTestOutput extends TestCase
 
             //Generate the output file.
             ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
-
-            //Compare against OS specific image benchmark.
-            FileComparisonUtilities.assertImageFileSimilarToBenchmark(outputImageFile,
-                                                                      new File("testinput/chart2DTest/benchmark."
-                                                                          + scenarioName + "_output.png"),
-                                                                      IMAGE_COMPARISON_SENSITIVITY,
-                                                                      true,
-                                                                      false);
         }
         catch(final Throwable t)
         {
@@ -124,14 +116,6 @@ public class Chart2DTestOutput extends TestCase
 
             //Generate the output file.
             ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
-
-            //Compare against OS specific image benchmark.
-            FileComparisonUtilities.assertImageFileSimilarToBenchmark(outputImageFile,
-                                                                      new File("testinput/chart2DTest/benchmark."
-                                                                          + scenarioName + "_output.png"),
-                                                                      IMAGE_COMPARISON_SENSITIVITY,
-                                                                      true,
-                                                                      false);
         }
         catch(final Throwable t)
         {
@@ -186,18 +170,6 @@ public class Chart2DTestOutput extends TestCase
                     + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
 
             }
-
-            //Compare against OS specific image benchmark.
-            for(final Object lead: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + lead
-                    + "h." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + lead + "h." + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
-            }
         }
         catch(final Throwable t)
         {
@@ -246,19 +218,6 @@ public class Chart2DTestOutput extends TestCase
                                                    600);
 
             }
-
-            //Compare against OS specific image benchmark.
-            for(final Object thresh: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/"
-                    + ((Threshold)thresh).getThreshold() + "." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + ((Threshold)thresh).getThreshold() + "."
-                                                                              + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
-            }
         }
         catch(final Throwable t)
         {
@@ -304,18 +263,6 @@ public class Chart2DTestOutput extends TestCase
                     + outputImageFileSuffix), engineMap.get(key).buildChart(), 800, 600);
 
             }
-
-            //Compare against OS specific image benchmark.
-            for(final Object key: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + key + "."
-                    + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + key + "." + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
-            }
         }
         catch(final Throwable t)
         {
@@ -323,7 +270,7 @@ public class Chart2DTestOutput extends TestCase
             fail("Unexpected exception: " + t.getMessage());
         }
     }
-    
+
     public void test7ROCDiagramByLeadTime()
     {
         final String scenarioName = "test7";
@@ -339,7 +286,7 @@ public class Chart2DTestOutput extends TestCase
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
-        
+
         try
         {
             //Get an implementation of the factory to use for testing.
@@ -358,18 +305,6 @@ public class Chart2DTestOutput extends TestCase
                 ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + lead + "h."
                     + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
 
-            }
-
-            //Compare against OS specific image benchmark.
-            for(final Object lead: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + lead
-                    + "h." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + lead + "h." + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
             }
         }
         catch(final Throwable t)
@@ -394,7 +329,7 @@ public class Chart2DTestOutput extends TestCase
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
-        
+
         try
         {
             //Get an implementation of the factory to use for testing.
@@ -417,19 +352,6 @@ public class Chart2DTestOutput extends TestCase
                                                    600);
 
             }
-
-            //Compare against OS specific image benchmark.
-            for(final Object thresh: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/"
-                    + ((Threshold)thresh).getThreshold() + "." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + ((Threshold)thresh).getThreshold() + "."
-                                                                              + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
-            }
         }
         catch(final Throwable t)
         {
@@ -437,6 +359,7 @@ public class Chart2DTestOutput extends TestCase
             fail("Unexpected exception: " + t.getMessage());
         }
     }
+
     public void test9QQDiagramByLeadTime()
     {
         final String scenarioName = "test9";
@@ -452,7 +375,7 @@ public class Chart2DTestOutput extends TestCase
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
-        
+
         try
         {
             //Get an implementation of the factory to use for testing.
@@ -471,18 +394,6 @@ public class Chart2DTestOutput extends TestCase
                 ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + lead + "h."
                     + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
 
-            }
-
-            //Compare against OS specific image benchmark.
-            for(final Object lead: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + lead
-                    + "h." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + lead + "h." + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
             }
         }
         catch(final Throwable t)
@@ -507,7 +418,7 @@ public class Chart2DTestOutput extends TestCase
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
-        
+
         try
         {
             //Get an implementation of the factory to use for testing.
@@ -523,25 +434,9 @@ public class Chart2DTestOutput extends TestCase
             //Generate the output file.
             for(final Object thresh: engineMap.keySet())
             {
-                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/"
-                    + "alldata" + "." + outputImageFileSuffix),
-                                                   engineMap.get(thresh).buildChart(),
-                                                   800,
-                                                   600);
+                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + "alldata" + "."
+                    + outputImageFileSuffix), engineMap.get(thresh).buildChart(), 800, 600);
 
-            }
-
-            //Compare against OS specific image benchmark.
-            for(final Object thresh: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/"
-                    + "alldata" + "." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + "alldata" + "."
-                                                                              + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
             }
         }
         catch(final Throwable t)
@@ -550,7 +445,7 @@ public class Chart2DTestOutput extends TestCase
             fail("Unexpected exception: " + t.getMessage());
         }
     }
-    
+
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
      * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
@@ -979,10 +874,9 @@ public class Chart2DTestOutput extends TestCase
                                                                                                              "PRECIPITATION",
                                                                                                              "HEFS"));
             //Single threshold
-            final QuantileThreshold threshold =
-                                        outputFactory.getQuantileThreshold(Double.NEGATIVE_INFINITY,
-                                                                           Double.NEGATIVE_INFINITY,
-                                                                           Operator.GREATER);
+            final QuantileThreshold threshold = outputFactory.getQuantileThreshold(Double.NEGATIVE_INFINITY,
+                                                                                   Double.NEGATIVE_INFINITY,
+                                                                                   Operator.GREATER);
 
             //Iterate through the lead times.
             while(d.hasNext())
@@ -1011,6 +905,42 @@ public class Chart2DTestOutput extends TestCase
         }
         //Return the results
         return outputFactory.ofMap(rawData);
+    }
+    
+    /**
+     * The comparison sensitivity.
+     */
+    private static int IMAGE_COMPARISON_SENSITIVITY = 2;
+
+    /**
+     * Main line compares images with benchmarks.
+     * 
+     * @param args
+     */
+    public static void main(final String[] args)
+    {
+        for(final File file: FileTools.listFilesWithSuffix(new File("testoutput/chart2DTest/"), ".png"))
+        {
+            final File benchmarkFile = new File("testinput/chart2DTest/benchmark." + file.getName());
+
+            try
+            {
+                System.out.println("");
+                System.out.println("####>> Comparing " + file.getName()
+                    + " ================================================");
+                System.out.println("");
+                FileComparisonUtilities.assertImageFileSimilarToBenchmark(file,
+                                                                          benchmarkFile,
+                                                                          IMAGE_COMPARISON_SENSITIVITY,
+                                                                          true,
+                                                                          true);
+            }
+            catch(final Throwable t)
+            {
+                System.err.println("####>> Comparison failed for " + file.getName() + " and "
+                    + benchmarkFile.getName() + ". Dissimilarity file was created; see debug information for the difference numbers computed.");
+            }
+        }
     }
 
 }
