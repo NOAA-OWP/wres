@@ -1,6 +1,7 @@
 package wres.vis;
 
 import java.awt.geom.Point2D;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,11 +13,14 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.xy.XYDataset;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 
+import ohd.hseb.charter.ChartConstants;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
@@ -25,6 +29,7 @@ import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.charter.datasource.instances.DataSetXYChartDataSource;
 import ohd.hseb.charter.datasource.instances.NumericalXYChartDataSource;
 import ohd.hseb.charter.parameters.ChartDrawingParameters;
+import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.config.generated.PlotTypeSelection;
@@ -47,6 +52,7 @@ import wres.datamodel.metric.VectorOutput;
  */
 public abstract class ChartEngineFactory
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChartEngineFactory.class);
 
     /**
      * Maintains information about the different {@link ScalarOutput} plot types, including defaults and expected
@@ -70,39 +76,39 @@ public abstract class ChartEngineFactory
      * classes.
      */
     private static Table<MetricConstants, PlotTypeSelection, PlotTypeInformation> multiVectorOutputPlotTypeInfoTable =
-                                                                                                                   HashBasedTable.create();
+                                                                                                                     HashBasedTable.create();
     static
     {
         multiVectorOutputPlotTypeInfoTable.put(MetricConstants.RELIABILITY_DIAGRAM,
-                                             PlotTypeSelection.LEAD_THRESHOLD,
-                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                                     MultiVectorOutput.class,
-                                                                     "reliabilityDiagramTemplate.xml"));
+                                               PlotTypeSelection.LEAD_THRESHOLD,
+                                               new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                       MultiVectorOutput.class,
+                                                                       "reliabilityDiagramTemplate.xml"));
         multiVectorOutputPlotTypeInfoTable.put(MetricConstants.RELIABILITY_DIAGRAM,
-                                             PlotTypeSelection.THRESHOLD_LEAD,
-                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                                     MultiVectorOutput.class,
-                                                                     "reliabilityDiagramTemplate.xml"));
+                                               PlotTypeSelection.THRESHOLD_LEAD,
+                                               new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                       MultiVectorOutput.class,
+                                                                       "reliabilityDiagramTemplate.xml"));
         multiVectorOutputPlotTypeInfoTable.put(MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                             PlotTypeSelection.LEAD_THRESHOLD,
-                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                                     MultiVectorOutput.class,
-                                                                     "rocDiagramTemplate.xml"));
+                                               PlotTypeSelection.LEAD_THRESHOLD,
+                                               new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                       MultiVectorOutput.class,
+                                                                       "rocDiagramTemplate.xml"));
         multiVectorOutputPlotTypeInfoTable.put(MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                             PlotTypeSelection.THRESHOLD_LEAD,
-                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                                     MultiVectorOutput.class,
-                                                                     "rocDiagramTemplate.xml"));
+                                               PlotTypeSelection.THRESHOLD_LEAD,
+                                               new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                       MultiVectorOutput.class,
+                                                                       "rocDiagramTemplate.xml"));
         multiVectorOutputPlotTypeInfoTable.put(MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                             PlotTypeSelection.LEAD_THRESHOLD,
-                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                                     MultiVectorOutput.class,
-                                                                     "qqDiagramTemplate.xml"));
+                                               PlotTypeSelection.LEAD_THRESHOLD,
+                                               new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                       MultiVectorOutput.class,
+                                                                       "qqDiagramTemplate.xml"));
         multiVectorOutputPlotTypeInfoTable.put(MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                             PlotTypeSelection.THRESHOLD_LEAD,
-                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                                     MultiVectorOutput.class,
-                                                                     "qqDiagramTemplate.xml"));
+                                               PlotTypeSelection.THRESHOLD_LEAD,
+                                               new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                       MultiVectorOutput.class,
+                                                                       "qqDiagramTemplate.xml"));
     }
 
     /**
@@ -121,7 +127,7 @@ public abstract class ChartEngineFactory
         }
         return results;
     }
-    
+
     /**
      * @param input The metric output to plot.
      * @param factory The data factory from which arguments will be identified.
@@ -169,6 +175,8 @@ public abstract class ChartEngineFactory
         {
             final List<XYChartDataSource> dataSources = new ArrayList<>();
             WRESArgumentProcessor arguments = null;
+            int[] diagonalDataSourceIndices = null;
+            String axisToSquareAgainstDomain = null;
 
             //=====================
             //RELIABILITY DIAGRAM
@@ -200,8 +208,7 @@ public abstract class ChartEngineFactory
                     }
                     arguments.addArgument("legendTitle", legendTitle);
                     arguments.addArgument("legendUnitsText", legendUnitsText);
-                    arguments.addArgument("diagramInstanceDescription",
-                                          "at Lead Hour " + keyInstance);
+                    arguments.addArgument("diagramInstanceDescription", "at Lead Hour " + keyInstance);
                     arguments.addArgument("plotTitleVariable", "Lead Times");
 
                     dataSources.add(new MultiVectorOutputDiagramXYChartDataSource(0,
@@ -216,6 +223,7 @@ public abstract class ChartEngineFactory
                                                                                   MetricConstants.SAMPLE_SIZE,
                                                                                   "Forecast Probability",
                                                                                   "Samples"));
+                    //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(2,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
@@ -253,6 +261,7 @@ public abstract class ChartEngineFactory
                                                                                   MetricConstants.SAMPLE_SIZE,
                                                                                   "Forecast Probability",
                                                                                   "Samples"));
+                    //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(2,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
@@ -306,6 +315,7 @@ public abstract class ChartEngineFactory
                                                                                   MetricConstants.PROBABILITY_OF_DETECTION,
                                                                                   "Probability of False Detection",
                                                                                   "Probability of Detection"));
+                    //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(1,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
@@ -338,6 +348,7 @@ public abstract class ChartEngineFactory
                                                                                   MetricConstants.PROBABILITY_OF_DETECTION,
                                                                                   "Probability of False Detection",
                                                                                   "Probability of Detection"));
+                    //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(1,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
@@ -346,11 +357,10 @@ public abstract class ChartEngineFactory
                 //This is an error, since there are only two allowable types of reliability diagrams.
                 else
                 {
-                    throw new IllegalArgumentException("Plot type " + usedPlotType
-                        + " is invalid for a ROC diagram.");
+                    throw new IllegalArgumentException("Plot type " + usedPlotType + " is invalid for a ROC diagram.");
                 }
             }
-            
+
             //=====================
             //QQ DIAGRAM
             //=====================
@@ -385,16 +395,18 @@ public abstract class ChartEngineFactory
                                           "at Lead Hour " + inputSlice.getKey(0).getFirstKey().toString());
                     arguments.addArgument("plotTitleVariable", "Lead Times");
 
-                    final MultiVectorOutputDiagramXYChartDataSource dataSource = new MultiVectorOutputDiagramXYChartDataSource(0,
-                                                                                                                         inputSlice,
-                                                                                                                         MetricConstants.OBSERVED_QUANTILES,
-                                                                                                                         MetricConstants.PREDICTED_QUANTILES,
-                                                                                                                         "Observed @variableName@@inputUnitsText@",
-                                                                                                                         "Forecast @variableName@@inputUnitsText@");
+                    final MultiVectorOutputDiagramXYChartDataSource dataSource =
+                                                                               new MultiVectorOutputDiagramXYChartDataSource(0,
+                                                                                                                             inputSlice,
+                                                                                                                             MetricConstants.OBSERVED_QUANTILES,
+                                                                                                                             MetricConstants.PREDICTED_QUANTILES,
+                                                                                                                             "Observed @variableName@@inputUnitsText@",
+                                                                                                                             "Predicted @variableName@@inputUnitsText@");
+                    //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
+                    //Also squaring the axes.
+                    diagonalDataSourceIndices = new int[]{1};
+                    axisToSquareAgainstDomain = ChartConstants.YAXIS_XML_STRINGS[ChartConstants.LEFT_YAXIS_INDEX];
                     dataSources.add(dataSource);
-//                    dataSources.add(constructConnectedPointsDataSource(1,
-//                                                                       new Point2D.Double(dataSource., -100000d),
-//                                                                       new Point2D.Double(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY)));
                 }
 
                 //-----------------------------------------------------------------
@@ -423,17 +435,17 @@ public abstract class ChartEngineFactory
                                                                                   MetricConstants.OBSERVED_QUANTILES,
                                                                                   MetricConstants.PREDICTED_QUANTILES,
                                                                                   "Observed @variableName@@inputUnitsText@",
-                                                                                  "Forecast @variableName@@inputUnitsText@"));
-                    dataSources.add(constructConnectedPointsDataSource(1,
-                                                                       new Point2D.Double(0.0, 0.0),
-                                                                       new Point2D.Double(1.0, 1.0)));
+                                                                                  "Predicted @variableName@@inputUnitsText@"));
+                    //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
+                    //Also squaring the axes.
+                    diagonalDataSourceIndices = new int[]{1};
+                    axisToSquareAgainstDomain = ChartConstants.YAXIS_XML_STRINGS[ChartConstants.LEFT_YAXIS_INDEX];
                 }
 
                 //This is an error, since there are only two allowable types of reliability diagrams.
                 else
                 {
-                    throw new IllegalArgumentException("Plot type " + usedPlotType
-                        + " is invalid for a ROC diagram.");
+                    throw new IllegalArgumentException("Plot type " + usedPlotType + " is invalid for a ROC diagram.");
                 }
             }
 
@@ -446,20 +458,13 @@ public abstract class ChartEngineFactory
                     + " specified in the metric information.");
             }
 
-            //Process override parameters.
-            ChartDrawingParameters override = null;
-            if(overrideParametersStr != null)//TRIM ONLY IF NOT NULL!
-            {
-                final String usedStr = overrideParametersStr.trim();
-                if(!usedStr.isEmpty())
-                {
-                    override = new ChartDrawingParameters();
-                    XMLTools.readXMLFromString(usedStr, override);
-                }
-            }
-
             //Build the ChartEngine instance.
-            final ChartEngine engine = ChartTools.buildChartEngine(dataSources, arguments, templateName, override);
+            final ChartEngine engine = generateChartEngine(dataSources,
+                                                           arguments,
+                                                           templateName,
+                                                           overrideParametersStr,
+                                                           diagonalDataSourceIndices,
+                                                           axisToSquareAgainstDomain);
             results.put(keyInstance, engine);
         }
         return results;
@@ -581,23 +586,13 @@ public abstract class ChartEngineFactory
                 + " is not valid for a generic scalar output plot by lead/threshold.");
         }
 
-        //Process override parameters.
-        ChartDrawingParameters override = null;
-        if(overrideParametersStr != null)//TRIM ONLY IF NOT NULL!
-        {
-            final String usedStr = overrideParametersStr.trim();
-            if(!usedStr.isEmpty())
-            {
-                override = new ChartDrawingParameters();
-                XMLTools.readXMLFromString(usedStr, override);
-            }
-        }
-
         //Build the ChartEngine instance.
-        final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
-                                                               arguments,
-                                                               templateName,
-                                                               override);
+        final ChartEngine engine = generateChartEngine(Lists.newArrayList(source),
+                                                       arguments,
+                                                       templateName,
+                                                       overrideParametersStr,
+                                                       null,
+                                                       null);
 
         return engine;
     }
@@ -735,8 +730,80 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * Stores information about each plot type necessary to validation user parameters, including
-     * the default template name.
+     * Method to call in order to generate an instance of {@link WRESChartEngine}.
+     * 
+     * @param dataSources The data sources to include.
+     * @param arguments The arguments to use.
+     * @param templateName The name of the template system resource or file. It will be loaded here.
+     * @param overrideParametersStr The XML string defining the override parameters supplied by a user. They will be
+     *            read herein.
+     * @param diagonalDataSourceIndices The indices of the data sources used to define the appearance of the diagonals.
+     *            ONLY supply these indices if you want the chart engine to add the diagonals through JFreeChart tools;
+     *            such diagonals will never appear in the legend, only on the plot. If you need the diagonal to appear
+     *            on the legend and on the plot, then you must define it through a regular data source, likely making
+     *            use of {@link #constructConnectedPointsDataSource(int, Point2D...)}.
+     * @param axisToSquareAgainstDomain A string indicating the axes to square against the domain; either "left" or
+     *            "right".
+     * @return A {@link WRESChartEngine} instance ready to use.
+     * @throws ChartEngineException If the template fails to parse.
+     */
+    public static WRESChartEngine generateChartEngine(final List<XYChartDataSource> dataSources,
+                                                      final ArgumentsProcessor arguments,
+                                                      final String templateName,
+                                                      final String overrideParametersStr,
+                                                      final int[] diagonalDataSourceIndices,
+                                                      final String axisToSquareAgainstDomain) throws ChartEngineException
+    {
+        //Load the template parameters.
+        final ChartDrawingParameters parameters = new ChartDrawingParameters();
+        try
+        {
+            XMLTools.readXMLFromResource(templateName, parameters);
+        }
+        catch(final Throwable t)
+        {
+            try
+            {
+                XMLTools.readXMLFromFile(new File(templateName), parameters);
+            }
+            catch(final Throwable t2)
+            {
+                throw new ChartEngineException("Unable to load default chart drawing parameters from resource or file with name '"
+                    + templateName + "': " + t2.getMessage());
+            }
+        }
+
+        //Process override parameters.
+        ChartDrawingParameters override = null;
+        if(overrideParametersStr != null)//TRIM ONLY IF NOT NULL!
+        {
+            final String usedStr = overrideParametersStr.trim();
+            if(!usedStr.isEmpty())
+            {
+                override = new ChartDrawingParameters();
+                try
+                {
+                    XMLTools.readXMLFromString(usedStr, override);
+                }
+                catch(final Throwable t)
+                {
+                    LOGGER.warn("Unable to parse XML provided by user for chart drawing: " + t.getMessage());
+                    LOGGER.trace("Unable to parse XML provided by user for chart drawing", t);
+                }
+            }
+        }
+
+        return new WRESChartEngine(dataSources,
+                                   arguments,
+                                   parameters,
+                                   override,
+                                   diagonalDataSourceIndices,
+                                   axisToSquareAgainstDomain);
+    }
+
+    /**
+     * Stores information about each plot type necessary to validation user parameters, including the default template
+     * name.
      * 
      * @author hank.herr
      */
