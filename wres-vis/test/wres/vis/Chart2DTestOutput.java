@@ -437,6 +437,119 @@ public class Chart2DTestOutput extends TestCase
             fail("Unexpected exception: " + t.getMessage());
         }
     }
+    public void test9QQDiagramByLeadTime()
+    {
+        final String scenarioName = "test9";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+
+        try
+        {
+            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+        }
+        catch(final IOException e)
+        {
+            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+        }
+
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
+        
+        try
+        {
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
+
+            //Call the factory.
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
+                                                                                                            factory,
+                                                                                                            PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                            null,
+                                                                                                            null);
+
+            //Generate the output file.
+            for(final Object lead: engineMap.keySet())
+            {
+                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + lead + "h."
+                    + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
+
+            }
+
+            //Compare against OS specific image benchmark.
+            for(final Object lead: engineMap.keySet())
+            {
+                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + lead
+                    + "h." + outputImageFileSuffix),
+                                                                          new File("testinput/chart2DTest/benchmark."
+                                                                              + lead + "h." + outputImageFileSuffix),
+                                                                          IMAGE_COMPARISON_SENSITIVITY,
+                                                                          true,
+                                                                          false);
+            }
+        }
+        catch(final Throwable t)
+        {
+            t.printStackTrace();
+            fail("Unexpected exception: " + t.getMessage());
+        }
+    }
+
+    public void test10QQDiagramByThreshold()
+    {
+        final String scenarioName = "test8";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+
+        try
+        {
+            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+        }
+        catch(final IOException e)
+        {
+            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+        }
+
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
+        
+        try
+        {
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
+
+            //Call the factory.
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
+                                                                                                            factory,
+                                                                                                            PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                            null,
+                                                                                                            null);
+
+            //Generate the output file.
+            for(final Object thresh: engineMap.keySet())
+            {
+                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/"
+                    + "alldata" + "." + outputImageFileSuffix),
+                                                   engineMap.get(thresh).buildChart(),
+                                                   800,
+                                                   600);
+
+            }
+
+            //Compare against OS specific image benchmark.
+            for(final Object thresh: engineMap.keySet())
+            {
+                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/"
+                    + "alldata" + "." + outputImageFileSuffix),
+                                                                          new File("testinput/chart2DTest/benchmark."
+                                                                              + "alldata" + "."
+                                                                              + outputImageFileSuffix),
+                                                                          IMAGE_COMPARISON_SENSITIVITY,
+                                                                          true,
+                                                                          false);
+            }
+        }
+        catch(final Throwable t)
+        {
+            t.printStackTrace();
+            fail("Unexpected exception: " + t.getMessage());
+        }
+    }
     
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
