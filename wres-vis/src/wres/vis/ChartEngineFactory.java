@@ -419,9 +419,7 @@ public abstract class ChartEngineFactory
     /**
      * @param input The metric output to plot.
      * @param factory The data factory from which arguments will be identified.
-     * @param userSpecifiedPlotType The plot type to generate. For this chart, the plot type must be either
-     *            {@link VisualizationPlotType#LEAD_THRESHOLD} or {@link VisualizationPlotType#THRESHOLD_LEAD}. May be
-     *            null and, if so, defaults to {@link VisualizationPlotType#LEAD_THRESHOLD}.
+     * @param userSpecifiedPlotType The plot type to generate.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
      *            chart construction. May be null to use default template identified in static map/table.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
@@ -651,7 +649,7 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * Stores information about each {@link VisualizationPlotType} necessary to validation user parameters, including
+     * Stores information about each plot type necessary to validation user parameters, including
      * the default template name.
      * 
      * @author hank.herr
