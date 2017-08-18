@@ -239,7 +239,8 @@
             <xs:enumeration value="critical success index" />
             <xs:enumeration value="equitable threat score" />
             <xs:enumeration value="mean absolute error" />
-            <xs:enumeration value="mean continuous ranked probability skill score" />
+            <xs:enumeration value="continuous ranked probability score" />
+            <xs:enumeration value="continuous ranked probability skill score" />
             <xs:enumeration value="mean error" />
             <xs:enumeration value="mean square error" />
             <xs:enumeration value="mean square error skill score" />
