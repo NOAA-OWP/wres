@@ -100,7 +100,7 @@ public final class ForecastDetails {
 		script += "WITH new_forecast AS" + NEWLINE;
 		script += "(" + NEWLINE;
 		script += "		INSERT INTO wres.Forecast(forecast_date, forecasttype_id)" + NEWLINE;
-		script += "		SELECT '" + this.getSourceDate() + "', ";
+		script += "		SELECT '" + this.forecastDate + "', ";
 
 		if (this.range == null)
         {
@@ -114,7 +114,7 @@ public final class ForecastDetails {
 		script += "		WHERE NOT EXISTS (" + NEWLINE;
 		script += "			SELECT 1" + NEWLINE;
 		script += "			FROM wres.Forecast" + NEWLINE;
-		script += "			WHERE forecast_date = '" + this.getSourceDate() + "'" + NEWLINE;
+		script += "			WHERE forecast_date = '" + this.forecastDate + "'" + NEWLINE;
 		script += "				AND forecasttype_id ";
 
 		if (this.range == null)
@@ -135,7 +135,7 @@ public final class ForecastDetails {
 		script += "";
 		script += "SELECT forecast_id" + NEWLINE;
 		script += "FROM wres.Forecast" + NEWLINE;
-		script += "WHERE forecast_date = '" + this.getSourceDate() + "'" + NEWLINE;
+		script += "WHERE forecast_date = '" + this.forecastDate + "'" + NEWLINE;
 		script += "     AND forecasttype_id ";
 
         if (this.range == null)
