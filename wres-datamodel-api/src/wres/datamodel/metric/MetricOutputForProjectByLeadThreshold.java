@@ -37,7 +37,6 @@ public interface MetricOutputForProjectByLeadThreshold extends MetricOutputForPr
     MetricOutputMultiMapByLeadThreshold<ScalarOutput> getScalarOutput() throws InterruptedException,
                                                                              ExecutionException;
 
-
     /**
      * Returns a {@link MetricOutputMultiMapByLeadThreshold} of {@link VectorOutput} or null if no output exists.
      * 

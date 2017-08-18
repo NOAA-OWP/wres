@@ -22,7 +22,7 @@ extends MetricOutputMultiMap<MetricOutputMapByLeadThreshold<S>>
      * @param <S> the type of output to store
      */
 
-    interface Builder<S extends MetricOutput<?>>
+    interface MetricOutputMultiMapByLeadThresholdBuilder<S extends MetricOutput<?>>
     extends MetricOutputMultiMap.Builder<MetricOutputMapByLeadThreshold<S>>
     {
 
@@ -34,7 +34,7 @@ extends MetricOutputMultiMap<MetricOutputMapByLeadThreshold<S>>
          * @return the builder
          */
 
-        default Builder<S> put(MapBiKey<Integer, Threshold> key, MetricOutputMapByMetric<S> result)
+        default MetricOutputMultiMapByLeadThresholdBuilder<S> put(MapBiKey<Integer, Threshold> key, MetricOutputMapByMetric<S> result)
         {
             put(key.getFirstKey(), key.getSecondKey(), result);
             return this;
@@ -49,7 +49,7 @@ extends MetricOutputMultiMap<MetricOutputMapByLeadThreshold<S>>
          * @return the builder
          */
 
-        Builder<S> put(int leadTime, Threshold threshold, MetricOutputMapByMetric<S> result);
+        MetricOutputMultiMapByLeadThresholdBuilder<S> put(int leadTime, Threshold threshold, MetricOutputMapByMetric<S> result);
 
     }
 
