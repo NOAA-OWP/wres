@@ -40,6 +40,24 @@ extends
         WRESTools.applyDefaultJFreeChartColorSequence(getDefaultFullySpecifiedDataSourceDrawingParameters());
     }
 
+
+    /**
+     * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
+     *            such as the rendering order, legend order, and so forth.
+     * @param input The data for which to display a chart.
+     */
+    public MultiVectorOutputDiagramXYChartDataSource(final int orderIndex,
+                                               final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                               final MetricConstants xConstant,
+                                               final MetricConstants yConstant,
+                                               final String domainTitle,
+                                               final String rangeTitle,
+                                               final int subPlotIndex)
+    {
+        this(orderIndex, input, xConstant, yConstant, domainTitle, rangeTitle);
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(subPlotIndex);
+    }
+
     @Override
     protected MultiVectorOutputDiagramXYChartDataSource instantiateCopyOfDataSource()
     {

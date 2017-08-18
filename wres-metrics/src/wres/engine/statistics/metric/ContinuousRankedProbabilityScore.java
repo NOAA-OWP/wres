@@ -52,20 +52,10 @@ class ContinuousRankedProbabilityScore extends Metric<EnsemblePairs, VectorOutpu
         //Slice the data into groups with an equal number of ensemble members
         Slicer slicer = getDataFactory().getSlicer();
         Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.sliceByRight(s.getData());
-
         //CRPS, currently without decomposition
+        //TODO: implement the decomposition
         double[] crps = new double[1];
-        sliced.values().forEach(pairs -> {
-            switch(getDecompositionID())
-            {
-                case NONE:
-                    crps[0] += getSumCRPSNoDecomp(pairs);
-                    break;
-                case CR:
-                default:
-                    throw new UnsupportedOperationException("The CRPS decomposition is not currently implemented.");
-            }
-        });
+        sliced.values().forEach(pairs -> crps[0] += getSumCRPS(pairs)[0]);
         //Compute the average (implicitly weighted by the number of pairs in each group)
         crps[0] = crps[0] / s.size();
         //Metadata
@@ -157,9 +147,14 @@ class ContinuousRankedProbabilityScore extends Metric<EnsemblePairs, VectorOutpu
     private ContinuousRankedProbabilityScore(final CRPSBuilder builder)
     {
         super(builder);
-        if(builder.decompositionID != MetricDecompositionGroup.CR)
+        switch(builder.decompositionID)
         {
-            throw new IllegalArgumentException("Unsupported decomposition identifier: " + builder.decompositionID);
+            case NONE:
+            case CR:
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported decomposition identifier: "
+                    + builder.decompositionID);
         }
         this.decompositionID = builder.decompositionID;
     }
@@ -168,14 +163,16 @@ class ContinuousRankedProbabilityScore extends Metric<EnsemblePairs, VectorOutpu
      * Returns the sum of the CRPS values for the individual pairs, without any decomposition. Uses the procedure
      * outlined in Hersbach, H. (2000). Requires an equal number of ensemble members in each pair.
      * 
-     * @param s the pairs
-     * @return the mean CRPS without decomposition
+     * TODO: implement the decomposition
+     * 
+     * @param pairs the pairs
+     * @return the mean CRPS, with decomposition if required
      */
 
-    private double getSumCRPSNoDecomp(final List<PairOfDoubleAndVectorOfDoubles> s)
+    private double[] getSumCRPS(final List<PairOfDoubleAndVectorOfDoubles> pairs)
     {
         //Number of ensemble members
-        int members = s.get(0).getItemTwo().length;
+        int members = pairs.get(0).getItemTwo().length;
 
         double totCRPS = 0.0;
 
@@ -183,79 +180,122 @@ class ContinuousRankedProbabilityScore extends Metric<EnsemblePairs, VectorOutpu
         for(int i = 0; i < members + 1; i++)
         {
             Incrementer incrementer = new Incrementer(i, members);
-            for(PairOfDoubleAndVectorOfDoubles nextPair: s)
+            for(PairOfDoubleAndVectorOfDoubles nextPair: pairs)
             {
-                sumAlphaBeta().accept(nextPair, incrementer);
+                //Combine and sort forecast
+                double[] sorted = new double[members + 1];
+                sorted[0] = nextPair.getItemOne();
+                System.arraycopy(nextPair.getItemTwo(), 0, sorted, 1, members);
+                Arrays.sort(sorted, 1, members + 1);
+                //Increment
+                sumAlphaBeta().accept(sorted, incrementer);
             }
             totCRPS += incrementer.totCRPS;
-            //TODO: increment the alpha and beta here when decompositions are implemented
         }
-        return totCRPS;
+        return new double[]{totCRPS};
     }
 
     /**
-     * Returns a consumer that increments the parameters within an {@link Incrementer} for each input pair. TODO:
-     * increment the alphas and betas when decompositions are implemented
+     * Returns a consumer that increments the parameters within an {@link Incrementer} for each input pair with sorted
+     * forecasts. 
      * 
      * @return a consumer that increments the parameters in the {@link Incrementer} for each input pair
      */
 
-    private static BiConsumer<PairOfDoubleAndVectorOfDoubles, Incrementer> sumAlphaBeta()
+    private static BiConsumer<double[], Incrementer> sumAlphaBeta()
     {
-        return (nextPair, inc) -> {
-            //Observation 
-            double obs = nextPair.getItemOne();
-            double[] forecast = nextPair.getItemTwo();
-            //Sort the forecast
-            Arrays.sort(forecast);
+        return (pair, inc) -> {
             if(inc.member == 0)
             {
-                //Deal with low outlier: case 1
-                if(obs < forecast[0])
-                {
-                    final double nextBeta = forecast[0] - obs;
-//                    inc.betaSum += nextBeta; //Alpha unchanged
-                    inc.totCRPS += (nextBeta * inc.invProbSquared);
-                }
+                sumAlphaBetaLow().accept(pair,inc);;
             }
             //Deal with high outlier: case 2
             else if(inc.member == inc.totalMembers)
             {
-                if(obs > forecast[inc.totalMembers - 1])
-                {
-                    final double nextAlpha = obs - forecast[inc.totalMembers - 1];
-//                    inc.alphaSum += nextAlpha; //Beta unchanged
-                    inc.totCRPS += (nextAlpha * inc.probSquared);
-                }
+                sumAlphaBetaHigh().accept(pair,inc);
             }
             //Deal with remaining 3 cases, for 0 < i < N
             else
             {
-                //Case 3: observed exceeds ith
-                if(obs > forecast[inc.member])
-                {
-                    final double nextAlpha = forecast[inc.member] - forecast[inc.member - 1];
-//                    inc.alphaSum += nextAlpha; //Beta unchanged
-                    inc.totCRPS += nextAlpha * inc.probSquared;
-                } //Case 4: observed falls below i-1th
-                else if(obs < forecast[inc.member - 1])
-                {
-                    final double nextBeta = forecast[inc.member] - forecast[inc.member - 1];
-//                    inc.betaSum += nextBeta; //Alpha unchanged
-                    inc.totCRPS += nextBeta * inc.invProbSquared;
-                } //Case 5: observed falls between i-1th and ith
-                else
-                {
-                    final double nextAlpha = obs - forecast[inc.member - 1];
-                    final double nextBeta = forecast[inc.member] - obs;
-//                    inc.alphaSum += nextAlpha;
-//                    inc.betaSum += nextBeta;
-                    inc.totCRPS += ((nextAlpha * inc.probSquared) + (nextBeta * inc.invProbSquared));
-                }
+                sumAlphaBetaMiddle().accept(pair,inc);
             }
         };
     }
 
+    /**
+     * Returns a consumer that increments the parameters within an {@link Incrementer} for each input pair with sorted
+     * forecasts. Appropriate for low outliers, where the observation falls below the lowest member.
+     * 
+     * @return a consumer that increments the parameters in the {@link Incrementer} for each input pair
+     */
+
+    private static BiConsumer<double[], Incrementer> sumAlphaBetaLow()
+    {
+        return (pair, inc) -> {
+            //Deal with low outlier: case 1
+            if(pair[0] < pair[1])
+            {
+                final double nextBeta = pair[1] - pair[0];
+//                    inc.betaSum += nextBeta; //Alpha unchanged
+                inc.totCRPS += (nextBeta * inc.invProbSquared);
+            }
+        };
+    }
+    
+    /**
+     * Returns a consumer that increments the parameters within an {@link Incrementer} for each input pair with sorted
+     * forecasts. Appropriate where the observation falls between two ensemble members.
+     * 
+     * @return a consumer that increments the parameters in the {@link Incrementer} for each input pair
+     */    
+
+    private static BiConsumer<double[], Incrementer> sumAlphaBetaMiddle()
+    {
+        return (pair, inc) -> {
+            //Case 3: observed exceeds ith
+            if(pair[0] > pair[inc.member + 1])
+            {
+                final double nextAlpha = pair[inc.member + 1] - pair[inc.member];
+//                inc.alphaSum += nextAlpha; //Beta unchanged
+                inc.totCRPS += nextAlpha * inc.probSquared;            
+            } //Case 4: observed falls below i-1th
+            else if(pair[0] < pair[inc.member])
+            {
+                final double nextBeta = pair[inc.member + 1] - pair[inc.member];
+//                inc.betaSum += nextBeta; //Alpha unchanged
+                inc.totCRPS += nextBeta * inc.invProbSquared;
+            } //Case 5: observed falls between i-1th and ith
+            else if (pair[0] > pair[inc.member] && pair[0] < pair[inc.member+1])
+            {
+                final double nextAlpha = pair[0] - pair[inc.member];
+                final double nextBeta = pair[inc.member + 1] - pair[0];
+//                inc.alphaSum += nextAlpha;
+//                inc.betaSum += nextBeta;
+                inc.totCRPS += ((nextAlpha * inc.probSquared) + (nextBeta * inc.invProbSquared));        
+            }
+        };
+    }    
+    
+    /**
+     * Returns a consumer that increments the parameters within an {@link Incrementer} for each input pair with sorted
+     * forecasts. Appropriate for high outliers, where the observation falls above the highest member.
+     * 
+     * @return a consumer that increments the parameters in the {@link Incrementer} for each input pair
+     */
+    
+    private static BiConsumer<double[], Incrementer> sumAlphaBetaHigh()
+    {
+        return (pair, inc) -> {
+            //Deal with high outlier: case 2
+            if(pair[0] > pair[inc.member])
+            {
+                final double nextAlpha = pair[0] - pair[inc.member];
+//                inc.alphaSum += nextAlpha; //Beta unchanged
+                inc.totCRPS += (nextAlpha * inc.probSquared);    
+            }
+        };
+    }    
+        
     /**
      * Class to increment CRPS components.
      */
@@ -320,7 +360,7 @@ class ContinuousRankedProbabilityScore extends Metric<EnsemblePairs, VectorOutpu
             this.member = member;
             this.totalMembers = totalMembers;
             prob = ((double)member) / totalMembers;
-            probSquared = prob * prob;
+            probSquared = Math.pow(prob, 2);
             invProbSquared = Math.pow(1.0 - prob, 2);
         }
 
