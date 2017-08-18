@@ -753,7 +753,7 @@ public abstract class ChartEngineFactory
      *            ONLY supply these indices if you want the chart engine to add the diagonals through JFreeChart tools;
      *            such diagonals will never appear in the legend, only on the plot. If you need the diagonal to appear
      *            on the legend and on the plot, then you must define it through a regular data source, likely making
-     *            use of {@link #constructConnectedPointsDataSource(int, Point2D...)}.
+     *            use of the constructConnectedPointsDataSource method.
      * @param axisToSquareAgainstDomain A string indicating the axes to square against the domain; either "left" or
      *            "right".
      * @return A {@link WRESChartEngine} instance ready to use.
