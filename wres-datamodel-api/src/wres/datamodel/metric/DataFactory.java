@@ -11,6 +11,7 @@ import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
 import wres.datamodel.metric.Threshold.Operator;
 
 /**
@@ -196,7 +197,8 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs, final Metadata meta,
+    default DichotomousPairs ofDichotomousPairs(final List<VectorOfBooleans> pairs,
+                                                final Metadata meta,
                                                 final VectorOfDoubles climatology)
     {
         return ofDichotomousPairs(pairs, null, meta, null, climatology);
@@ -212,7 +214,8 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs, final Metadata meta,
+    default DichotomousPairs ofDichotomousPairsFromAtomic(final List<PairOfBooleans> pairs,
+                                                          final Metadata meta,
                                                           final VectorOfDoubles climatology)
     {
         return ofDichotomousPairsFromAtomic(pairs, null, meta, null, climatology);
@@ -228,7 +231,8 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs, final Metadata meta,
+    default MulticategoryPairs ofMulticategoryPairs(final List<VectorOfBooleans> pairs,
+                                                    final Metadata meta,
                                                     final VectorOfDoubles climatology)
     {
         return ofMulticategoryPairs(pairs, null, meta, null, climatology);
@@ -244,7 +248,8 @@ public interface DataFactory
      * @return the pairs
      */
 
-    default DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs, final Metadata meta,
+    default DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
+                                                                final Metadata meta,
                                                                 final VectorOfDoubles climatology)
     {
         return ofDiscreteProbabilityPairs(pairs, null, meta, null, climatology);
@@ -260,7 +265,8 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs, final Metadata meta,
+    default SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
+                                                  final Metadata meta,
                                                   final VectorOfDoubles climatology)
     {
         return ofSingleValuedPairs(pairs, null, meta, null, climatology);
@@ -733,11 +739,11 @@ public interface DataFactory
      * {@link MetricOutputMapByLeadThreshold} as they are computed.
      * 
      * @param <T> the type of output
-     * @return a {@link MetricOutputMultiMapByLeadThreshold.Builder} for a map of metric outputs by lead time and
+     * @return a {@link MetricOutputMultiMapByLeadThresholdBuilder} for a map of metric outputs by lead time and
      *         threshold
      */
 
-    <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold.Builder<T> ofMultiMap();
+    <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThresholdBuilder<T> ofMultiMap();
 
     /**
      * Returns a builder for a {@link MetricOutputForProjectByLeadThreshold}.

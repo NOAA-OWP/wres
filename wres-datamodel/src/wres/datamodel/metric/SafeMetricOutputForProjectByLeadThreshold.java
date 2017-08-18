@@ -15,7 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metric.SafeMetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
+import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
+import wres.datamodel.metric.SafeMetricOutputMultiMapByLeadThreshold.SafeMetricOutputMultiMapByLeadThresholdBuilder;
 
 /**
  * <p>
@@ -87,8 +88,8 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
                                                                                                          ExecutionException
     {
         Objects.requireNonNull(outGroup, "Specify one or more output types to return.");
-        MetricOutputMultiMapByLeadThresholdBuilder<MetricOutput<?>> builder =
-                                                                            new MetricOutputMultiMapByLeadThresholdBuilder<>();
+        SafeMetricOutputMultiMapByLeadThresholdBuilder<MetricOutput<?>> builder =
+                                                                            new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
         //Iterate through the types
         for(MetricOutputGroup next: outGroup)
         {

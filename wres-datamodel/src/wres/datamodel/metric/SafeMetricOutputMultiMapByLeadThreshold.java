@@ -34,9 +34,9 @@ implements MetricOutputMultiMapByLeadThreshold<S>
     private final TreeMap<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<S>> store;
 
     @Override
-    public Builder<S> builder()
+    public SafeMetricOutputMultiMapByLeadThresholdBuilder<S> builder()
     {
-        return new MetricOutputMultiMapByLeadThresholdBuilder<>();
+        return new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
     }
 
     @Override
@@ -97,7 +97,7 @@ implements MetricOutputMultiMapByLeadThreshold<S>
         return b.toString();
     }
 
-    protected static class MetricOutputMultiMapByLeadThresholdBuilder<S extends MetricOutput<?>> implements Builder<S>
+    protected static class SafeMetricOutputMultiMapByLeadThresholdBuilder<S extends MetricOutput<?>> implements MetricOutputMultiMapByLeadThresholdBuilder<S>
     {
 
         /**
@@ -114,7 +114,7 @@ implements MetricOutputMultiMapByLeadThreshold<S>
         }
 
         @Override
-        public Builder<S> put(final int leadTime, final Threshold threshold, final MetricOutputMapByMetric<S> result)
+        public MetricOutputMultiMapByLeadThresholdBuilder<S> put(final int leadTime, final Threshold threshold, final MetricOutputMapByMetric<S> result)
         {
             Objects.requireNonNull(result, "Specify a non-null metric result.");
             result.forEach((key, value) -> {
@@ -137,7 +137,7 @@ implements MetricOutputMultiMapByLeadThreshold<S>
         }
 
         @Override
-        public Builder<S> put(MapBiKey<MetricConstants, MetricConstants> key, MetricOutputMapByLeadThreshold<S> result)
+        public MetricOutputMultiMapByLeadThresholdBuilder<S> put(MapBiKey<MetricConstants, MetricConstants> key, MetricOutputMapByLeadThreshold<S> result)
         {
             Objects.requireNonNull(result, "Specify a non-null metric result.");
             //Safe put
@@ -158,7 +158,7 @@ implements MetricOutputMultiMapByLeadThreshold<S>
      * 
      * @param builder the builder
      */
-    private SafeMetricOutputMultiMapByLeadThreshold(final MetricOutputMultiMapByLeadThresholdBuilder<S> builder)
+    private SafeMetricOutputMultiMapByLeadThreshold(final SafeMetricOutputMultiMapByLeadThresholdBuilder<S> builder)
     {
         //Bounds checks
         if(builder.internal.isEmpty())
