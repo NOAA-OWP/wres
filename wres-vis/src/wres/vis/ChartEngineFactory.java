@@ -222,9 +222,11 @@ public abstract class ChartEngineFactory
                                                                                   MetricConstants.FORECAST_PROBABILITY,
                                                                                   MetricConstants.SAMPLE_SIZE,
                                                                                   "Forecast Probability",
-                                                                                  "Samples"));
+                                                                                  "Samples",
+                                                                                  1));
                     //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(2,
+                                                                       0,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
                 }
@@ -260,9 +262,11 @@ public abstract class ChartEngineFactory
                                                                                   MetricConstants.FORECAST_PROBABILITY,
                                                                                   MetricConstants.SAMPLE_SIZE,
                                                                                   "Forecast Probability",
-                                                                                  "Samples"));
+                                                                                  "Samples",
+                                                                                  1));
                     //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(2,
+                                                                       0,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
                 }
@@ -317,6 +321,7 @@ public abstract class ChartEngineFactory
                                                                                   "Probability of Detection"));
                     //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(1,
+                                                                       0,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
                 }
@@ -350,6 +355,7 @@ public abstract class ChartEngineFactory
                                                                                   "Probability of Detection"));
                     //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(1,
+                                                                       0,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
                 }
@@ -672,7 +678,9 @@ public abstract class ChartEngineFactory
      * @throws XYChartDataSourceException Currently, this is a place holder from the stuff called in case a subclass is
      *             used that needs to throw an exception. However, this will not get thrown as of now.
      */
-    private static XYChartDataSource constructConnectedPointsDataSource(final int sourceIndex, final Point2D... points)
+    private static XYChartDataSource constructConnectedPointsDataSource(final int sourceIndex,
+                                                                        final int subPlotIndex,
+                                                                        final Point2D... points)
     {
         final double[] xValues = new double[points.length];
         final double[] yValues = new double[points.length];
@@ -683,10 +691,14 @@ public abstract class ChartEngineFactory
         }
         try
         {
-            return new NumericalXYChartDataSource(null,
-                                                  sourceIndex,
-                                                  Lists.newArrayList(xValues),
-                                                  Lists.newArrayList(yValues));
+            final NumericalXYChartDataSource source = new NumericalXYChartDataSource(null,
+                                                                                     sourceIndex,
+                                                                                     Lists.newArrayList(xValues),
+                                                                                     Lists.newArrayList(yValues));
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("");
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("");
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(subPlotIndex);
+            return source;
         }
         catch(final XYChartDataSourceException e)
         {
@@ -741,7 +753,7 @@ public abstract class ChartEngineFactory
      *            ONLY supply these indices if you want the chart engine to add the diagonals through JFreeChart tools;
      *            such diagonals will never appear in the legend, only on the plot. If you need the diagonal to appear
      *            on the legend and on the plot, then you must define it through a regular data source, likely making
-     *            use of {@link #constructConnectedPointsDataSource(int, Point2D...)}.
+     *            use of the constructConnectedPointsDataSource method.
      * @param axisToSquareAgainstDomain A string indicating the axes to square against the domain; either "left" or
      *            "right".
      * @return A {@link WRESChartEngine} instance ready to use.

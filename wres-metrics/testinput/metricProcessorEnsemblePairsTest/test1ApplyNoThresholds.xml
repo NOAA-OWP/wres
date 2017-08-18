@@ -44,8 +44,9 @@
     <metric><name>bias fraction</name></metric>
     <metric><name>coefficient of determination</name></metric>
     <metric><name>root mean square error</name></metric>
-    <destination type="numeric">/home/jesse/text_output"</destination>
-    <destination type="graphic"><path>/tmp/</path>
+    <metric><name>continuous ranked probability score</name></metric>
+    <destination type="numeric"></destination>
+    <destination type="graphic"><path></path>
     <!--Optional:-->
     <graphical width="1920" height="1080">
       <plotType>LEAD_THRESHOLD</plotType>

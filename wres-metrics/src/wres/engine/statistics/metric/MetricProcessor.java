@@ -174,9 +174,11 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
     public static MetricConstants fromMetricConfigName(MetricConfigName translate) throws MetricConfigurationException
     {
-        Objects.requireNonNull(translate,
-                               "One or more metric identifiers in the project configuration could not be mapped "
-                                   + "to a supported metric identifier.");
+        if(Objects.isNull(translate))
+        {
+            throw new MetricConfigurationException("One or more metric identifiers in the project configuration could "
+                + "not be mapped to a supported metric identifier.");
+        }
         switch(translate)
         {
             case BIAS_FRACTION:
@@ -197,7 +199,9 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                 return MetricConstants.EQUITABLE_THREAT_SCORE;
             case MEAN_ABSOLUTE_ERROR:
                 return MetricConstants.MEAN_ABSOLUTE_ERROR;
-            case MEAN_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
+            case CONTINUOUS_RANKED_PROBABILITY_SCORE:
+                return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE;
+            case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
                 return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
             case MEAN_ERROR:
                 return MetricConstants.MEAN_ERROR;
@@ -516,10 +520,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                     try
                     {
                         futures.addScalarOutput(dataFactory.getMapKey(leadTime, useMe),
-                                                processSingleValuedThreshold(leadTime,
-                                                                             useMe,
-                                                                             input,
-                                                                             singleValuedScalar));
+                                                processSingleValuedThreshold(useMe, input, singleValuedScalar));
                     }
                     catch(MetricInputSliceException e)
                     {
@@ -547,10 +548,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                     try
                     {
                         futures.addVectorOutput(dataFactory.getMapKey(leadTime, useMe),
-                                                processSingleValuedThreshold(leadTime,
-                                                                             useMe,
-                                                                             input,
-                                                                             singleValuedVector));
+                                                processSingleValuedThreshold(useMe, input, singleValuedVector));
                     }
                     catch(MetricInputSliceException e)
                     {
@@ -578,8 +576,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                     try
                     {
                         futures.addMultiVectorOutput(dataFactory.getMapKey(leadTime, useMe),
-                                                     processSingleValuedThreshold(leadTime,
-                                                                                  useMe,
+                                                     processSingleValuedThreshold(useMe,
                                                                                   input,
                                                                                   singleValuedMultiVector));
                     }
@@ -650,7 +647,8 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
         MetricOutputForProjectByLeadThreshold getMetricOutput()
         {
-            MetricOutputForProjectByLeadThreshold.Builder builder = dataFactory.ofMetricOutputForProjectByLeadThreshold();
+            MetricOutputForProjectByLeadThreshold.Builder builder =
+                                                                  dataFactory.ofMetricOutputForProjectByLeadThreshold();
             //Add outputs for current futures
             scalar.forEach(builder::addScalarOutput);
             vector.forEach(builder::addVectorOutput);
@@ -919,7 +917,6 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * Builds a metric future for a {@link MetricCollection} that consumes {@link SingleValuedPairs} at a specific lead
      * time and {@link Threshold}.
      * 
-     * @param leadTime the lead time
      * @param threshold the threshold
      * @param pairs the pairs
      * @param futures the collection of futures to which the new future will be added
@@ -927,8 +924,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
      * @throws MetricInputSliceException if the threshold fails to slice any data
      */
 
-    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processSingleValuedThreshold(Integer leadTime,
-                                                                                                        Threshold threshold,
+    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processSingleValuedThreshold(Threshold threshold,
                                                                                                         SingleValuedPairs pairs,
                                                                                                         MetricCollection<SingleValuedPairs, T> collection) throws MetricInputSliceException
     {

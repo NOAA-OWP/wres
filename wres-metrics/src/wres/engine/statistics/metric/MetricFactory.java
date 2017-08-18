@@ -7,6 +7,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DichotomousPairs;
 import wres.datamodel.metric.DiscreteProbabilityPairs;
+import wres.datamodel.metric.EnsemblePairs;
 import wres.datamodel.metric.MatrixOutput;
 import wres.datamodel.metric.MetricConstants;
 import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
@@ -16,6 +17,7 @@ import wres.datamodel.metric.MulticategoryPairs;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.VectorOutput;
+import wres.engine.statistics.metric.ContinuousRankedProbabilityScore.CRPSBuilder;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
@@ -213,6 +215,19 @@ public class MetricFactory
     {
         return ofMulticategoryMatrixCollection(null, metric);
     }
+    
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * {@link VectorOutput}.
+     * 
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<EnsemblePairs, VectorOutput> ofEnsembleVectorCollection(MetricConstants... metric)
+    {
+        return ofEnsembleVectorCollection(null, metric);
+    }    
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
@@ -361,6 +376,27 @@ public class MetricFactory
         builder.setOutputFactory(outputFactory).setExecutorService(executor);
         return builder.build();
     }
+    
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * {@link VectorOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<EnsemblePairs, VectorOutput> ofEnsembleVectorCollection(ExecutorService executor,
+                                                                                            MetricConstants... metric)
+    {
+        final MetricCollectionBuilder<EnsemblePairs, VectorOutput> builder = MetricCollectionBuilder.of();
+        for(MetricConstants next: metric)
+        {
+            builder.add(ofEnsembleVector(next));
+        }
+        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        return builder.build();
+    }    
 
     /**
      * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link ScalarOutput}.
@@ -532,6 +568,24 @@ public class MetricFactory
                 throw new IllegalArgumentException(error + " '" + metric + "'.");
         }
     }
+    
+    /**
+     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link VectorOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     */
+
+    public Metric<EnsemblePairs, VectorOutput> ofEnsembleVector(MetricConstants metric)
+    {
+        switch(metric)
+        {
+            case CONTINUOUS_RANKED_PROBABILITY_SCORE:
+                return ofContinuousRankedProbabilityScore();
+            default:
+                throw new IllegalArgumentException(error + " '" + metric + "'.");
+        }
+    }    
 
     /**
      * Return a default {@link BiasFraction} function.
@@ -780,6 +834,18 @@ public class MetricFactory
                                                                                                       .build();
     }
 
+    /**
+     * Return a default {@link ContinuousRankedProbabilityScore} function.
+     * 
+     * @return a default {@link ContinuousRankedProbabilityScore} function.
+     */
+
+    protected ContinuousRankedProbabilityScore ofContinuousRankedProbabilityScore()
+    {
+        return (ContinuousRankedProbabilityScore)new CRPSBuilder().setOutputFactory(outputFactory)
+                                                                                                      .build();
+    }    
+    
     /**
      * Hidden constructor.
      * 

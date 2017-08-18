@@ -2,6 +2,7 @@ package wres.datamodel.metric;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
@@ -71,6 +72,17 @@ class SafeVectorOutput implements VectorOutput
         return getMetadata().hashCode() + getOutputTemplate().hashCode() + Arrays.hashCode(output.getDoubles());
     }
 
+    @Override
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner(",","[","]");
+        for(double next : output.getDoubles())
+        {
+            joiner.add(Double.toString(next));
+        }
+        return joiner.toString();
+    }    
+    
     /**
      * Construct the output.
      * 
