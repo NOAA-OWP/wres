@@ -13,7 +13,9 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.xy.XYDataset;
 
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Table;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
@@ -47,76 +49,77 @@ public abstract class ChartEngineFactory
 {
 
     /**
-     * Maintains information about the different plot types, including defaults and expected classes. Its unclear to me
-     * if all of the fields stored in the {@link PlotTypeInformation} is needed, but I know the template name is.
+     * Maintains information about the different {@link ScalarOutput} plot types, including defaults and expected
+     * classes.
      */
-    private static HashMap<VisualizationPlotType, PlotTypeInformation> plotTypeInfoMap = new HashMap<>();
+    private static HashMap<PlotTypeSelection, PlotTypeInformation> scalarOutputPlotTypeInfoMap = new HashMap<>();
     static
     {
-        plotTypeInfoMap.put(VisualizationPlotType.LEAD_THRESHOLD,
-                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                    ScalarOutput.class,
-                                                    "scalarOutputLeadThresholdTemplate.xml"));
-        plotTypeInfoMap.put(VisualizationPlotType.THRESHOLD_LEAD,
-                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                    ScalarOutput.class,
-                                                    "scalarOutputThresholdLeadTemplate.xml"));
-        plotTypeInfoMap.put(VisualizationPlotType.SINGLE_VALUED_PAIRS,
-                            new PlotTypeInformation(SingleValuedPairs.class, null, "singleValuedPairsTemplate.xml"));
-        plotTypeInfoMap.put(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
-                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                    MultiVectorOutput.class,
-                                                    "reliabilityDiagramTemplate.xml"));
-        plotTypeInfoMap.put(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD,
-                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                    MultiVectorOutput.class,
-                                                    "reliabilityDiagramTemplate.xml"));
-        plotTypeInfoMap.put(VisualizationPlotType.ROC_DIAGRAM_FOR_LEAD,
-                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                    MultiVectorOutput.class,
-                                                    "rocDiagramTemplate.xml"));
-        plotTypeInfoMap.put(VisualizationPlotType.ROC_DIAGRAM_FOR_THRESHOLD,
-                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-                                                    MultiVectorOutput.class,
-                                                    "rocDiagramTemplate.xml"));
-//        plotTypeInfoMap.put(VisualizationPlotType.QQ_DIAGRAM_FOR_LEAD,
-//                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-//                                                    MultiVectorOutput.class,
-//                                                    "reliabilityDiagramTemplate.xml"));
-//        plotTypeInfoMap.put(VisualizationPlotType.QQ_DIAGRAM_FOR_THRESHOLD,
-//                            new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
-//                                                    MultiVectorOutput.class,
-//                                                    "reliabilityDiagramTemplate.xml"));
+        scalarOutputPlotTypeInfoMap.put(PlotTypeSelection.LEAD_THRESHOLD,
+                                        new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                ScalarOutput.class,
+                                                                "scalarOutputLeadThresholdTemplate.xml"));
+        scalarOutputPlotTypeInfoMap.put(PlotTypeSelection.THRESHOLD_LEAD,
+                                        new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                ScalarOutput.class,
+                                                                "scalarOutputThresholdLeadTemplate.xml"));
     }
 
     /**
-     * Defines the valid visualization plot types.
+     * Maintains information about the different {@link MultiVectorOutput} plot types, including defaults and expected
+     * classes.
      */
-    public static enum VisualizationPlotType
+    private static Table<MetricConstants, PlotTypeSelection, PlotTypeInformation> multiVectorOutputPlotTypeInfoTable =
+                                                                                                                   HashBasedTable.create();
+    static
     {
-        LEAD_THRESHOLD, THRESHOLD_LEAD, SINGLE_VALUED_PAIRS, RELIABILITY_DIAGRAM_FOR_LEAD, RELIABILITY_DIAGRAM_FOR_THRESHOLD, ROC_DIAGRAM_FOR_LEAD, ROC_DIAGRAM_FOR_THRESHOLD, QQ_DIAGRAM_FOR_LEAD, QQ_DIAGRAM_FOR_THRESHOLD
-    };
+        multiVectorOutputPlotTypeInfoTable.put(MetricConstants.RELIABILITY_DIAGRAM,
+                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                     MultiVectorOutput.class,
+                                                                     "reliabilityDiagramTemplate.xml"));
+        multiVectorOutputPlotTypeInfoTable.put(MetricConstants.RELIABILITY_DIAGRAM,
+                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                     MultiVectorOutput.class,
+                                                                     "reliabilityDiagramTemplate.xml"));
+        multiVectorOutputPlotTypeInfoTable.put(MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                     MultiVectorOutput.class,
+                                                                     "rocDiagramTemplate.xml"));
+        multiVectorOutputPlotTypeInfoTable.put(MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                     MultiVectorOutput.class,
+                                                                     "rocDiagramTemplate.xml"));
+        multiVectorOutputPlotTypeInfoTable.put(MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
+                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                     MultiVectorOutput.class,
+                                                                     "qqDiagramTemplate.xml"));
+        multiVectorOutputPlotTypeInfoTable.put(MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
+                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                             new PlotTypeInformation(MetricOutputMapByLeadThreshold.class,
+                                                                     MultiVectorOutput.class,
+                                                                     "qqDiagramTemplate.xml"));
+    }
 
     /**
-     * @return The {@link VisualizationPlotType} that corresponds to the provided {@link PlotTypeSelection}.
+     * @return {@link PlotTypeInformation} for the provided {@link MetricConstants} metric id and
+     *         {@link PlotTypeSelection}. This will throw an {@link IllegalArgumentException} if the combination is not
+     *         yet supported in the {@link #multiVectorOutputPlotTypeInfoTable}.
      */
-    public static VisualizationPlotType fromMetricConfigName(final PlotTypeSelection plotType) throws ChartEngineException
+    public static PlotTypeInformation getNonNullMultiVectorOutputPlotTypeInformation(final MetricConstants metricId,
+                                                                                     final PlotTypeSelection plotType)
     {
-        if(Objects.isNull(plotType))
+        final PlotTypeInformation results = multiVectorOutputPlotTypeInfoTable.get(metricId, plotType);
+        if(results == null)
         {
-            return null;
+            throw new IllegalArgumentException("MultiVectorOutput plot type for metric " + metricId + " and plot type "
+                + plotType + " is not supported.");
         }
-        switch(plotType)
-        {
-            case LEAD_THRESHOLD:
-                return VisualizationPlotType.LEAD_THRESHOLD;
-            case THRESHOLD_LEAD:
-                return VisualizationPlotType.THRESHOLD_LEAD;
-            case SINGLE_VALUED_PAIRS:
-                return VisualizationPlotType.SINGLE_VALUED_PAIRS;
-            default:
-                throw new ChartEngineException("Unable to map the input plot type '" + plotType + "'.");
-        }
+        return results;
     }
 
     /**
@@ -136,39 +139,29 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<Object, ChartEngine> buildMultiVectorOutputChartEngine(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
                                                                                        final DataFactory factory,
-                                                                                       final VisualizationPlotType userSpecifiedPlotType,
+                                                                                       final PlotTypeSelection userSpecifiedPlotType,
                                                                                        final String userSpecifiedTemplateResourceName,
                                                                                        final String overrideParametersStr) throws ChartEngineException,
                                                                                                                            GenericXMLReadingHandlerException
     {
-        String templateName = null;
         final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
 
-        //I'm  not a big fant of this, but...
-        //This needs to be able to determine which key to loop over before actually diving into the loop.  And I want only one loop.  
-        //So, I'm goint to have to do an if-check up front to identify the key set, and then an if-check within the loop to identify the plots.
-        //Here is the first if-check...
+        //Determine used plot type and template name.  Note that if no plot type information is provided for the metric id
+        //and plot type, then an illegal argument exception will be thrown.
+        PlotTypeSelection usedPlotType = PlotTypeSelection.LEAD_THRESHOLD; //Lead time first plot type is the default!!!
+        if(userSpecifiedPlotType != null)
+        {
+            usedPlotType = userSpecifiedPlotType;
+        }
+        final String templateName =
+                                  getNonNullMultiVectorOutputPlotTypeInformation(input.getMetadata().getMetricID(),
+                                                                                 usedPlotType).getDefaultTemplateName();
+
+        //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
         Set<?> keySetValues = input.keySetByLead();
-        if(input.getMetadata().getMetricID() == MetricConstants.RELIABILITY_DIAGRAM)
+        if(usedPlotType.equals(PlotTypeSelection.THRESHOLD_LEAD))
         {
-            if((userSpecifiedPlotType != null)
-                && (userSpecifiedPlotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD)))
-            {
-                keySetValues = input.keySetByThreshold();
-            }
-        }
-        else if(input.getMetadata().getMetricID() == MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM)
-        {
-            if((userSpecifiedPlotType != null)
-                && (userSpecifiedPlotType.equals(VisualizationPlotType.ROC_DIAGRAM_FOR_THRESHOLD)))
-            {
-                keySetValues = input.keySetByThreshold();
-            }
-        }
-        else
-        {
-            throw new IllegalArgumentException("Unrecognized plot type of " + input.getMetadata().getMetricID()
-                + " specified in the metric information.");
+            keySetValues = input.keySetByThreshold();
         }
 
         //For each lead time, do the following....
@@ -185,12 +178,8 @@ public abstract class ChartEngineFactory
                 //-----------------------------------------------------------------
                 //Reliability diagram for each lead time, thresholds in the legend.
                 //-----------------------------------------------------------------
-                if((userSpecifiedPlotType == null)
-                    || (userSpecifiedPlotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD)))
+                if((userSpecifiedPlotType == null) || (userSpecifiedPlotType.equals(PlotTypeSelection.LEAD_THRESHOLD)))
                 {
-                    templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName,
-                                                                 userSpecifiedPlotType,
-                                                                 VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD);
                     final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
                     inputSlice = input.sliceByLead((Integer)keyInstance);
 
@@ -235,12 +224,8 @@ public abstract class ChartEngineFactory
                 //-----------------------------------------------------------------
                 //Reliability diagram for each treshold, lead times in the legend.
                 //-----------------------------------------------------------------
-                else if(userSpecifiedPlotType.equals(VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD))
+                else if(userSpecifiedPlotType.equals(PlotTypeSelection.THRESHOLD_LEAD))
                 {
-                    templateName =
-                                 determineTemplateResourceName(userSpecifiedTemplateResourceName,
-                                                               userSpecifiedPlotType,
-                                                               VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD);
                     final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice =
                                                                                        input.sliceByThreshold((Threshold)keyInstance);
 
@@ -290,12 +275,8 @@ public abstract class ChartEngineFactory
                 //-----------------------------------------------------------------
                 //ROC diagram for each lead time, thresholds in the legend.
                 //-----------------------------------------------------------------
-                if((userSpecifiedPlotType == null)
-                    || userSpecifiedPlotType.equals(VisualizationPlotType.ROC_DIAGRAM_FOR_LEAD))
+                if((userSpecifiedPlotType == null) || userSpecifiedPlotType.equals(PlotTypeSelection.LEAD_THRESHOLD))
                 {
-                    templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName,
-                                                                 userSpecifiedPlotType,
-                                                                 VisualizationPlotType.ROC_DIAGRAM_FOR_LEAD);
                     final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice =
                                                                                        input.sliceByLead((Integer)keyInstance);
 
@@ -334,7 +315,7 @@ public abstract class ChartEngineFactory
                 //-----------------------------------------------------------------
                 //Reliability diagram for each treshold, lead times in the legend.
                 //-----------------------------------------------------------------
-                else if(userSpecifiedPlotType.equals(VisualizationPlotType.ROC_DIAGRAM_FOR_THRESHOLD))
+                else if(userSpecifiedPlotType.equals(PlotTypeSelection.THRESHOLD_LEAD))
                 {
 //                    templateName =
 //                                 determineTemplateResourceName(userSpecifiedTemplateResourceName,
@@ -414,7 +395,7 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<Object, ChartEngine> buildVectorOutputChartEngine(final MetricOutputMapByLeadThreshold<VectorOutput> input,
                                                                                   final DataFactory factory,
-                                                                                  final VisualizationPlotType userSpecifiedPlotType,
+                                                                                  final PlotTypeSelection userSpecifiedPlotType,
                                                                                   final String userSpecifiedTemplateResourceName,
                                                                                   final String overrideParametersStr) throws ChartEngineException,
                                                                                                                       GenericXMLReadingHandlerException
@@ -454,11 +435,18 @@ public abstract class ChartEngineFactory
      */
     public static ChartEngine buildGenericScalarOutputChartEngine(final MetricOutputMapByLeadThreshold<ScalarOutput> input,
                                                                   final DataFactory factory,
-                                                                  final VisualizationPlotType userSpecifiedPlotType,
+                                                                  final PlotTypeSelection userSpecifiedPlotType,
                                                                   final String userSpecifiedTemplateResourceName,
                                                                   final String overrideParametersStr) throws ChartEngineException,
                                                                                                       GenericXMLReadingHandlerException
     {
+        //Define the used plot type.
+        PlotTypeSelection usedPlotType = PlotTypeSelection.LEAD_THRESHOLD;
+        if(userSpecifiedPlotType != null)
+        {
+            usedPlotType = userSpecifiedPlotType;
+        }
+
         //Setup the default arguments.
         final MetricOutputMetadata meta = input.getMetadata();
         final WRESArgumentProcessor arguments = buildDefaultMetricOutputPlotArgumentsProcessor(factory, meta);
@@ -474,14 +462,11 @@ public abstract class ChartEngineFactory
 
         //Build the source.
         XYChartDataSource source = null;
-        String templateName = null;
+        final String templateName = scalarOutputPlotTypeInfoMap.get(usedPlotType).getDefaultTemplateName();
 
         //Lead-threshold is the default.  This is for plots with the lead time on the domain axis and threshold in the legend.
-        if(userSpecifiedPlotType == null || userSpecifiedPlotType.equals(VisualizationPlotType.LEAD_THRESHOLD))
+        if(usedPlotType.equals(PlotTypeSelection.LEAD_THRESHOLD))
         {
-            templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName,
-                                                         userSpecifiedPlotType,
-                                                         VisualizationPlotType.LEAD_THRESHOLD);
             source = new ScalarOutputByLeadThresholdXYChartDataSource(0, input);
 
             //Legend title.
@@ -499,11 +484,8 @@ public abstract class ChartEngineFactory
             arguments.addArgument("legendUnitsText", legendUnitsText);
         }
         //This is for plots with the threshold on the domain axis and lead time in the legend.
-        else if(userSpecifiedPlotType.equals(VisualizationPlotType.THRESHOLD_LEAD))
+        else if(usedPlotType.equals(PlotTypeSelection.THRESHOLD_LEAD))
         {
-            templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName,
-                                                         userSpecifiedPlotType,
-                                                         VisualizationPlotType.LEAD_THRESHOLD);
             source = new ScalarOutputByThresholdLeadXYChartDataSource(0, input);
 
             //Legend title.
@@ -555,9 +537,11 @@ public abstract class ChartEngineFactory
                                                                                                     GenericXMLReadingHandlerException
     {
 
-        final String templateName = determineTemplateResourceName(userSpecifiedTemplateResourceName,
-                                                                  null,
-                                                                  VisualizationPlotType.SINGLE_VALUED_PAIRS);
+        String templateName = "singleValuedPairsTemplate.xml";
+        if(userSpecifiedTemplateResourceName != null)
+        {
+            templateName = userSpecifiedTemplateResourceName;
+        }
 
         //Build the source.
         final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource(0, input);
@@ -665,40 +649,6 @@ public abstract class ChartEngineFactory
         }
 
         return arguments;
-    }
-
-    /**
-     * @param userSpecifiedName The user specified template name, which is always used if not null.
-     * @param userSpecifiedPlotType The user specified plot type, which is used to access {@link #plotTypeInfoMap} to
-     *            acquire the default template resource name, but only if it is not null.
-     * @param defaultPlotType The fall back if neither of the other two are specified. If an entry in the
-     *            {@link #plotTypeInfoMap} cannot be found, then an {@link IllegalStateException} will be thrown, since
-     *            this reflects a run-time, coding error.
-     * @return The template resource name, which may be either the name of something on the class path or a file name on
-     *         the file system.
-     */
-    private static String determineTemplateResourceName(final String userSpecifiedName,
-                                                        final VisualizationPlotType userSpecifiedPlotType,
-                                                        final VisualizationPlotType defaultPlotType)
-    {
-        if(userSpecifiedName != null)
-        {
-            return userSpecifiedName;
-        }
-        if(userSpecifiedPlotType != null)
-        {
-            final PlotTypeInformation info = plotTypeInfoMap.get(userSpecifiedPlotType);
-            if(info != null)
-            {
-                return info.getDefaultTemplateName();
-            }
-        }
-        final PlotTypeInformation info = plotTypeInfoMap.get(defaultPlotType);
-        if(info == null)
-        {
-            throw new IllegalStateException("The default plot type is being used to acquire plot type information, but it is not defined in the plotTypeInfoMap.");
-        }
-        return info.getDefaultTemplateName();
     }
 
     /**

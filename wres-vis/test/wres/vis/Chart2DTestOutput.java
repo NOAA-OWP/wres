@@ -25,6 +25,7 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import ohd.hseb.hefs.utils.tools.FileTools;
+import wres.config.generated.PlotTypeSelection;
 import wres.datamodel.metric.DataFactory;
 import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MapBiKey;
@@ -47,6 +48,8 @@ import wres.datamodel.metric.VectorOutput;
  */
 public class Chart2DTestOutput extends TestCase
 {
+    private static int IMAGE_COMPARISON_SENSITIVITY = 8;
+    
     //TODO Note that test1 is within the Chart2DTestInput.java unit tests.  The two unit tests need to either be completely separate
     //(different testoutput, testinput directories) or merged.  
     //
@@ -73,7 +76,7 @@ public class Chart2DTestOutput extends TestCase
             //Call the factory.
             final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
                                                                                               factory,
-                                                                                              ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
+                                                                                              PlotTypeSelection.LEAD_THRESHOLD,
                                                                                               null,
                                                                                               null);
 
@@ -84,7 +87,7 @@ public class Chart2DTestOutput extends TestCase
             FileComparisonUtilities.assertImageFileSimilarToBenchmark(outputImageFile,
                                                                       new File("testinput/chart2DTest/benchmark."
                                                                           + scenarioName + "_output.png"),
-                                                                      8,
+                                                                      IMAGE_COMPARISON_SENSITIVITY,
                                                                       true,
                                                                       false);
         }
@@ -115,7 +118,7 @@ public class Chart2DTestOutput extends TestCase
             //Call the factory.
             final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
                                                                                               factory,
-                                                                                              ChartEngineFactory.VisualizationPlotType.THRESHOLD_LEAD,
+                                                                                              PlotTypeSelection.THRESHOLD_LEAD,
                                                                                               null,
                                                                                               null);
 
@@ -126,7 +129,7 @@ public class Chart2DTestOutput extends TestCase
             FileComparisonUtilities.assertImageFileSimilarToBenchmark(outputImageFile,
                                                                       new File("testinput/chart2DTest/benchmark."
                                                                           + scenarioName + "_output.png"),
-                                                                      8,
+                                                                      IMAGE_COMPARISON_SENSITIVITY,
                                                                       true,
                                                                       false);
         }
@@ -172,7 +175,7 @@ public class Chart2DTestOutput extends TestCase
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
                                                                                                             factory,
-                                                                                                            ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_LEAD,
+                                                                                                            PlotTypeSelection.LEAD_THRESHOLD,
                                                                                                             null,
                                                                                                             null);
 
@@ -191,7 +194,7 @@ public class Chart2DTestOutput extends TestCase
                     + "h." + outputImageFileSuffix),
                                                                           new File("testinput/chart2DTest/benchmark."
                                                                               + lead + "h." + outputImageFileSuffix),
-                                                                          8,
+                                                                          IMAGE_COMPARISON_SENSITIVITY,
                                                                           true,
                                                                           false);
             }
@@ -229,7 +232,7 @@ public class Chart2DTestOutput extends TestCase
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
                                                                                                             factory,
-                                                                                                            ChartEngineFactory.VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD,
+                                                                                                            PlotTypeSelection.THRESHOLD_LEAD,
                                                                                                             null,
                                                                                                             null);
 
@@ -252,7 +255,7 @@ public class Chart2DTestOutput extends TestCase
                                                                           new File("testinput/chart2DTest/benchmark."
                                                                               + ((Threshold)thresh).getThreshold() + "."
                                                                               + outputImageFileSuffix),
-                                                                          8,
+                                                                          IMAGE_COMPARISON_SENSITIVITY,
                                                                           true,
                                                                           false);
             }
@@ -291,7 +294,7 @@ public class Chart2DTestOutput extends TestCase
             //Call the factory.
             final ConcurrentMap<Object, ChartEngine> engineMap = ChartEngineFactory.buildVectorOutputChartEngine(input,
                                                                                                                  factory,
-                                                                                                                 ChartEngineFactory.VisualizationPlotType.LEAD_THRESHOLD,
+                                                                                                                 PlotTypeSelection.LEAD_THRESHOLD,
                                                                                                                  null,
                                                                                                                  null);
             //Generate the output file.
@@ -309,7 +312,7 @@ public class Chart2DTestOutput extends TestCase
                     + outputImageFileSuffix),
                                                                           new File("testinput/chart2DTest/benchmark."
                                                                               + key + "." + outputImageFileSuffix),
-                                                                          8,
+                                                                          IMAGE_COMPARISON_SENSITIVITY,
                                                                           true,
                                                                           false);
             }
@@ -353,7 +356,7 @@ public class Chart2DTestOutput extends TestCase
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
                                                                                                             factory,
-                                                                                                            ChartEngineFactory.VisualizationPlotType.ROC_DIAGRAM_FOR_LEAD,
+                                                                                                            PlotTypeSelection.LEAD_THRESHOLD,
                                                                                                             null,
                                                                                                             null);
 
@@ -372,7 +375,7 @@ public class Chart2DTestOutput extends TestCase
                     + "h." + outputImageFileSuffix),
                                                                           new File("testinput/chart2DTest/benchmark."
                                                                               + lead + "h." + outputImageFileSuffix),
-                                                                          8,
+                                                                          IMAGE_COMPARISON_SENSITIVITY,
                                                                           true,
                                                                           false);
             }

@@ -112,8 +112,8 @@ public class Control implements Function<String[], Integer>
 
         // Build a processing pipeline
 
-        ExecutorService processPairExecutor = new ForkJoinPool( MAX_THREADS );
-        ExecutorService metricExecutor = new ForkJoinPool( MAX_THREADS );
+        final ExecutorService processPairExecutor = new ForkJoinPool( MAX_THREADS );
+        final ExecutorService metricExecutor = new ForkJoinPool( MAX_THREADS );
 
         try
         {
@@ -268,7 +268,7 @@ public class Control implements Function<String[], Integer>
                                                  processor.getStoredMetricOutput() );
 
             }
-            catch ( ProjectConfigException pce )
+            catch ( final ProjectConfigException pce )
             {
                 LOGGER.error( "Please include valid numeric output clause(s) in"
                               + " project configuration. Example: <destination>"
@@ -277,7 +277,7 @@ public class Control implements Function<String[], Integer>
                               pce );
                 return false;
             }
-            catch ( InterruptedException ie )
+            catch ( final InterruptedException ie )
             {
                 LOGGER.warn("Interrupted while writing output files.");
                 Thread.currentThread().interrupt();
@@ -414,7 +414,7 @@ public class Control implements Function<String[], Integer>
                 }
                 final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
                                                                                                   DATA_FACTORY,
-                                                                                                  ChartEngineFactory.fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                  nextConfig.getPlotType(),
                                                                                                   nextConfig.getTemplateResourceName(),
                                                                                                   graphicsString);
                 //Build the output
@@ -479,7 +479,7 @@ public class Control implements Function<String[], Integer>
                 final Map<Object, ChartEngine> engines =
                                                        ChartEngineFactory.buildVectorOutputChartEngine(e.getValue(),
                                                                                                        DATA_FACTORY,
-                                                                                                       ChartEngineFactory.fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                       nextConfig.getPlotType(),
                                                                                                        nextConfig.getTemplateResourceName(),
                                                                                                        graphicsString);
                 // Build the outputs
@@ -555,7 +555,7 @@ public class Control implements Function<String[], Integer>
                 final Map<Object, ChartEngine> engines =
                                                        ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
                                                                                                             DATA_FACTORY,
-                                                                                                            ChartEngineFactory.fromMetricConfigName(nextConfig.getPlotType()),
+                                                                                                            nextConfig.getPlotType(),
                                                                                                             nextConfig.getTemplateResourceName(),
                                                                                                             graphicsString);
                 // Build the outputs
