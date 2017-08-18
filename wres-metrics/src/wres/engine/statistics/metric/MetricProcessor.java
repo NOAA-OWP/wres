@@ -96,6 +96,12 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 {
 
     /**
+     * The number of decimal places to use when rounding.
+     */
+    
+    private static final int DECIMALS = 5;
+    
+    /**
      * Instance of a {@link MetricFactory}.
      */
 
@@ -908,7 +914,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
                 throw new MetricCalculationException("Unable to determine quantile threshold from probability "
                     + "threshold: no climatological observations were available in the input.");
             }
-            useMe = dataFactory.getSlicer().getQuantileFromProbability((ProbabilityThreshold)useMe, sorted);
+            useMe = dataFactory.getSlicer().getQuantileFromProbability((ProbabilityThreshold)useMe, sorted, DECIMALS);
         }
         return useMe;
     }

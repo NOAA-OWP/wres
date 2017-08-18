@@ -1,5 +1,6 @@
 package wres.datamodel.metric;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -344,7 +345,7 @@ public class DefaultSlicer implements Slicer
     }
 
     @Override
-    public QuantileThreshold getQuantileFromProbability(ProbabilityThreshold threshold, double[] sorted)
+    public QuantileThreshold getQuantileFromProbability(ProbabilityThreshold threshold, double[] sorted, Integer digits)
     {
         Objects.requireNonNull(threshold, "Specify a non-null probability threshold.");
         Objects.requireNonNull(sorted, "Specify a non-null array of sorted values.");
@@ -353,16 +354,39 @@ public class DefaultSlicer implements Slicer
             throw new IllegalArgumentException("Cannot compute the quantile from empty input.");
         }
         Double first = getQuantile(threshold.getThreshold(), sorted);
+        if(Objects.nonNull(digits))
+        {
+            first = round().apply(first, digits);
+        }
         Double second = null;
         if(threshold.hasBetweenCondition())
         {
             second = getQuantile(threshold.getThresholdUpper(), sorted);
+            if(Objects.nonNull(digits))
+            {
+                second = round().apply(second, digits);
+            }
         }
         return dataFac.getQuantileThreshold(first,
                                             second,
                                             threshold.getThreshold(),
                                             threshold.getThresholdUpper(),
                                             threshold.getCondition());
+    }
+
+    /**
+     * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
+     * 
+     * @return a function that rounds to a prescribed number of decimal places
+     */
+
+    private static BiFunction<Double, Integer, Double> round()
+    {
+        return (input, digits) -> {
+            BigDecimal bd = new BigDecimal(Double.toString(input)); //Always use String constructor
+            bd = bd.setScale(digits, BigDecimal.ROUND_HALF_UP);
+            return bd.doubleValue();
+        };
     }
 
     /**
