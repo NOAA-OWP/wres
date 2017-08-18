@@ -339,14 +339,6 @@ public class Chart2DTestOutput extends TestCase
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
-
-//DEBUG OUTPUT:
-//        results.forEach((key,result)-> {
-//            System.out.println(key.getSecondKey());
-//            System.out.println(Arrays.toString(result.get(MetricConstants.FORECAST_PROBABILITY).getDoubles()));  //This array forms the domain
-//            System.out.println(Arrays.toString(result.get(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY).getDoubles()));  //This array forms the range for reliability diagram subplot
-//            System.out.println(Arrays.toString(result.get(MetricConstants.SAMPLE_SIZE).getDoubles())); //This array forms the range for the sample size subplot
-//        });
         
         try
         {
@@ -385,9 +377,67 @@ public class Chart2DTestOutput extends TestCase
             t.printStackTrace();
             fail("Unexpected exception: " + t.getMessage());
         }
-
     }
 
+    public void test8ROCDiagramByThreshold()
+    {
+        final String scenarioName = "test8";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+
+        try
+        {
+            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+        }
+        catch(final IOException e)
+        {
+            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+        }
+
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
+        
+        try
+        {
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
+
+            //Call the factory.
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
+                                                                                                            factory,
+                                                                                                            PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                            null,
+                                                                                                            null);
+
+            //Generate the output file.
+            for(final Object thresh: engineMap.keySet())
+            {
+                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/"
+                    + ((Threshold)thresh).getThreshold() + "." + outputImageFileSuffix),
+                                                   engineMap.get(thresh).buildChart(),
+                                                   800,
+                                                   600);
+
+            }
+
+            //Compare against OS specific image benchmark.
+            for(final Object thresh: engineMap.keySet())
+            {
+                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/"
+                    + ((Threshold)thresh).getThreshold() + "." + outputImageFileSuffix),
+                                                                          new File("testinput/chart2DTest/benchmark."
+                                                                              + ((Threshold)thresh).getThreshold() + "."
+                                                                              + outputImageFileSuffix),
+                                                                          IMAGE_COMPARISON_SENSITIVITY,
+                                                                          true,
+                                                                          false);
+            }
+        }
+        catch(final Throwable t)
+        {
+            t.printStackTrace();
+            fail("Unexpected exception: " + t.getMessage());
+        }
+    }
+    
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
      * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
