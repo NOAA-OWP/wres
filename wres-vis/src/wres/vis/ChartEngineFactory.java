@@ -222,9 +222,11 @@ public abstract class ChartEngineFactory
                                                                                   MetricConstants.FORECAST_PROBABILITY,
                                                                                   MetricConstants.SAMPLE_SIZE,
                                                                                   "Forecast Probability",
-                                                                                  "Samples"));
+                                                                                  "Samples",
+                                                                                  1));
                     //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(2,
+                                                                       0,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
                 }
@@ -260,9 +262,11 @@ public abstract class ChartEngineFactory
                                                                                   MetricConstants.FORECAST_PROBABILITY,
                                                                                   MetricConstants.SAMPLE_SIZE,
                                                                                   "Forecast Probability",
-                                                                                  "Samples"));
+                                                                                  "Samples",
+                                                                                  1));
                     //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(2,
+                                                                       0,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
                 }
@@ -317,6 +321,7 @@ public abstract class ChartEngineFactory
                                                                                   "Probability of Detection"));
                     //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(1,
+                                                                       0,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
                 }
@@ -350,6 +355,7 @@ public abstract class ChartEngineFactory
                                                                                   "Probability of Detection"));
                     //Diagonal data source added so that it shows up in the legend.
                     dataSources.add(constructConnectedPointsDataSource(1,
+                                                                       0,
                                                                        new Point2D.Double(0.0, 0.0),
                                                                        new Point2D.Double(1.0, 1.0)));
                 }
@@ -672,7 +678,9 @@ public abstract class ChartEngineFactory
      * @throws XYChartDataSourceException Currently, this is a place holder from the stuff called in case a subclass is
      *             used that needs to throw an exception. However, this will not get thrown as of now.
      */
-    private static XYChartDataSource constructConnectedPointsDataSource(final int sourceIndex, final Point2D... points)
+    private static XYChartDataSource constructConnectedPointsDataSource(final int sourceIndex,
+                                                                        final int subPlotIndex,
+                                                                        final Point2D... points)
     {
         final double[] xValues = new double[points.length];
         final double[] yValues = new double[points.length];
@@ -683,10 +691,14 @@ public abstract class ChartEngineFactory
         }
         try
         {
-            return new NumericalXYChartDataSource(null,
-                                                  sourceIndex,
-                                                  Lists.newArrayList(xValues),
-                                                  Lists.newArrayList(yValues));
+            final NumericalXYChartDataSource source = new NumericalXYChartDataSource(null,
+                                                                                     sourceIndex,
+                                                                                     Lists.newArrayList(xValues),
+                                                                                     Lists.newArrayList(yValues));
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("");
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("");
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(subPlotIndex);
+            return source;
         }
         catch(final XYChartDataSourceException e)
         {

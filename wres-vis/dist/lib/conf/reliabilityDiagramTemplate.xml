@@ -9,7 +9,7 @@
 		</text>
 	</plotTitle>
 	
-	<!--Ensure the sampel size items do not show in the legend. -->
+	<!--Ensure the sample size items do not show in the legend and that it plots on the lower subplot with index 1. -->
 	<datasourceDrawingParameters sourceIndex="1">
 		<seriesDrawingParameters createdIndexOfSeriesToModify="-1">
 			<nameInLegend></nameInLegend>
@@ -17,7 +17,7 @@
 		</seriesDrawingParameters>
 	</datasourceDrawingParameters>
 
-    <!-- The diagonal line series. -->
+    <!-- The diagonal line series.-->
 	<datasourceDrawingParameters sourceIndex="2">
 		<plotter>LineAndScatter</plotter>
 		<subPlot>0</subPlot>
