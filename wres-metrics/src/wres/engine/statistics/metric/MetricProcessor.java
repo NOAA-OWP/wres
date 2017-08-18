@@ -650,7 +650,7 @@ public abstract class MetricProcessor implements Function<MetricInput<?>, Metric
 
         MetricOutputForProjectByLeadThreshold getMetricOutput()
         {
-            MetricOutputForProjectByLeadThreshold.Builder builder = dataFactory.ofMetricOutputForProjectByThreshold();
+            MetricOutputForProjectByLeadThreshold.Builder builder = dataFactory.ofMetricOutputForProjectByLeadThreshold();
             //Add outputs for current futures
             scalar.forEach(builder::addScalarOutput);
             vector.forEach(builder::addVectorOutput);

@@ -746,7 +746,7 @@ public interface DataFactory
      *         threshold
      */
 
-    MetricOutputForProjectByLeadThreshold.Builder ofMetricOutputForProjectByThreshold();
+    MetricOutputForProjectByLeadThreshold.Builder ofMetricOutputForProjectByLeadThreshold();
 
     /**
      * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.

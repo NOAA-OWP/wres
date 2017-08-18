@@ -23,38 +23,8 @@ import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
  * @since 0.1
  */
 
-public interface MetricOutputForProjectByLeadThreshold
+public interface MetricOutputForProjectByLeadThreshold extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
 {
-
-    /**
-     * Returns true if results are available for the input type, false otherwise.
-     * 
-     * @param outGroup the {@link MetricOutputGroup} to test
-     * @return true if results are available for the input, false otherwise
-     */
-
-    boolean hasOutput(MetricOutputGroup outGroup);
-
-    /**
-     * Returns a {@link MetricOutputMultiMapByLeadThreshold} for a prescribed array of {@link MetricOutputGroup} or null
-     * if no output exists. To return all available outputs, use {@link #getOutputTypes()} as input to this method.
-     * 
-     * @param outGroup the array of {@link MetricOutputGroup}
-     * @return the metric output or null
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
-     */
-
-    MetricOutputMultiMapByLeadThreshold<MetricOutput<?>> getOutput(MetricOutputGroup... outGroup) throws InterruptedException,
-                                                                                                  ExecutionException;
-
-    /**
-     * Returns all {@link MetricOutputGroup} for which outputs are available.
-     * 
-     * @return all {@link MetricOutputGroup} for which outputs are available
-     */
-
-    MetricOutputGroup[] getOutputTypes();
 
     /**
      * Returns a {@link MetricOutputMultiMapByLeadThreshold} of {@link ScalarOutput} or null if no output exists.
@@ -64,7 +34,9 @@ public interface MetricOutputForProjectByLeadThreshold
      * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
      */
 
-    MetricOutputMultiMapByLeadThreshold<ScalarOutput> getScalarOutput() throws InterruptedException, ExecutionException;
+    MetricOutputMultiMapByLeadThreshold<ScalarOutput> getScalarOutput() throws InterruptedException,
+                                                                             ExecutionException;
+
 
     /**
      * Returns a {@link MetricOutputMultiMapByLeadThreshold} of {@link VectorOutput} or null if no output exists.
@@ -74,7 +46,8 @@ public interface MetricOutputForProjectByLeadThreshold
      * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
      */
 
-    MetricOutputMultiMapByLeadThreshold<VectorOutput> getVectorOutput() throws InterruptedException, ExecutionException;
+    MetricOutputMultiMapByLeadThreshold<VectorOutput> getVectorOutput() throws InterruptedException,
+                                                                             ExecutionException;
 
     /**
      * Returns a {@link MetricOutputMultiMapByLeadThreshold} of {@link MultiVectorOutput} or null if no output exists.
@@ -85,7 +58,7 @@ public interface MetricOutputForProjectByLeadThreshold
      */
 
     MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> getMultiVectorOutput() throws InterruptedException,
-                                                                                  ExecutionException;
+                                                                                       ExecutionException;
 
     /**
      * Returns a {@link MetricOutputMultiMapByLeadThreshold} of {@link MatrixOutput} or null if no output exists.
@@ -95,7 +68,8 @@ public interface MetricOutputForProjectByLeadThreshold
      * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
      */
 
-    MetricOutputMultiMapByLeadThreshold<MatrixOutput> getMatrixOutput() throws InterruptedException, ExecutionException;
+    MetricOutputMultiMapByLeadThreshold<MatrixOutput> getMatrixOutput() throws InterruptedException,
+                                                                             ExecutionException; 
 
     /**
      * Builder.
