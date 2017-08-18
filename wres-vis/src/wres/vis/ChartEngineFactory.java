@@ -128,7 +128,7 @@ public abstract class ChartEngineFactory
      * @param userSpecifiedPlotType An optional plot type to generate, where multiple plot types are supported for the
      *            input. May be null.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
-     *            chart construction. May be null to use default template identified in {@link #plotTypeInfoMap}.
+     *            chart construction. May be null to use default template identified in static table.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
      * @return A {@link ChartEngine} that can be used to build the {@link JFreeChart} and output the image. This can be
@@ -201,7 +201,7 @@ public abstract class ChartEngineFactory
                     arguments.addArgument("legendTitle", legendTitle);
                     arguments.addArgument("legendUnitsText", legendUnitsText);
                     arguments.addArgument("diagramInstanceDescription",
-                                          "at Lead Hour " + inputSlice.getKey(0).getFirstKey().toString());
+                                          "at Lead Hour " + keyInstance);
                     arguments.addArgument("plotTitleVariable", "Lead Times");
 
                     dataSources.add(new MultiVectorOutputDiagramXYChartDataSource(0,
@@ -236,9 +236,8 @@ public abstract class ChartEngineFactory
                     //Legend title and lead time argument are specific to the plot.
                     arguments.addArgument("legendTitle", "Lead Time");
                     arguments.addArgument("legendUnitsText", " [hours]");
-                    arguments.addArgument("leadHour", inputSlice.getKey(0).getFirstKey().toString());
                     arguments.addArgument("diagramInstanceDescription",
-                                          "for Threshold " + inputSlice.getKey(0).getSecondKey().toString() + " ("
+                                          "for Threshold " + ((Threshold)keyInstance).toString() + " ("
                                               + meta.getInputDimension() + ")");
                     arguments.addArgument("plotTitleVariable", "Thresholds");
 
@@ -313,35 +312,35 @@ public abstract class ChartEngineFactory
                 }
 
                 //-----------------------------------------------------------------
-                //Reliability diagram for each treshold, lead times in the legend.
+                //ROC diagram for each threshold, lead times in the legend.
                 //-----------------------------------------------------------------
                 else if(userSpecifiedPlotType.equals(PlotTypeSelection.THRESHOLD_LEAD))
                 {
-//                    templateName =
-//                                 determineTemplateResourceName(userSpecifiedTemplateResourceName,
-//                                                               userSpecifiedPlotType,
-//                                                               VisualizationPlotType.RELIABILITY_DIAGRAM_FOR_THRESHOLD);
-//                    final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice =
-//                                                                                       input.sliceByThreshold((Threshold)keyInstance);
-//
-//                    //Setup the default arguments.
-//                    final MetricOutputMetadata meta = inputSlice.getMetadata();
-//                    arguments = buildDefaultMetricOutputPlotArgumentsProcessor(factory, meta);
-//
-//                    //Legend title and lead time argument are specific to the plot.
-//                    arguments.addArgument("legendTitle", "Lead Time");
-//                    arguments.addArgument("legendUnitsText", " [hours]");
-//                    arguments.addArgument("leadHour", inputSlice.getKey(0).getFirstKey().toString());
-//                    arguments.addArgument("diagramInstanceDescription",
-//                                          "for Threshold " + inputSlice.getKey(0).getSecondKey().toString() + " ("
-//                                              + meta.getInputDimension() + ")");
-//                    arguments.addArgument("plotTitleVariable", "Thresholds");
-//
-//                    dataSources.add(new ReliabilityDiagramXYChartDataSource(0, inputSlice));
-//                    dataSources.add(new ReliabilityDiagramSampleSizeXYChartDataSource(1, inputSlice));
-//                    dataSources.add(constructConnectedPointsDataSource(2,
-//                                                                       new Point2D.Double(0.0, 0.0),
-//                                                                       new Point2D.Double(1.0, 1.0)));
+                    final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice =
+                                                                                       input.sliceByThreshold((Threshold)keyInstance);
+
+                    //Setup the default arguments.
+                    final MetricOutputMetadata meta = inputSlice.getMetadata();
+                    arguments = buildDefaultMetricOutputPlotArgumentsProcessor(factory, meta);
+
+                    //Legend title and lead time argument are specific to the plot.
+                    arguments.addArgument("legendTitle", "Lead Time");
+                    arguments.addArgument("legendUnitsText", " [hours]");
+                    arguments.addArgument("leadHour", inputSlice.getKey(0).getFirstKey().toString());
+                    arguments.addArgument("diagramInstanceDescription",
+                                          "for Threshold " + ((Threshold)keyInstance).toString() + " ("
+                                              + meta.getInputDimension() + ")");
+                    arguments.addArgument("plotTitleVariable", "Thresholds");
+
+                    dataSources.add(new MultiVectorOutputDiagramXYChartDataSource(0,
+                                                                                  inputSlice,
+                                                                                  MetricConstants.PROBABILITY_OF_FALSE_DETECTION,
+                                                                                  MetricConstants.PROBABILITY_OF_DETECTION,
+                                                                                  "Probability of False Detection",
+                                                                                  "Probability of Detection"));
+                    dataSources.add(constructConnectedPointsDataSource(1,
+                                                                       new Point2D.Double(0.0, 0.0),
+                                                                       new Point2D.Double(1.0, 1.0)));
                 }
 
                 //This is an error, since there are only two allowable types of reliability diagrams.
@@ -386,7 +385,7 @@ public abstract class ChartEngineFactory
      * @param userSpecifiedPlotType An optional plot type to generate, where multiple plot types are supported for the
      *            input. May be null.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
-     *            chart construction. May be null to use default template identified in {@link #plotTypeInfoMap}.
+     *            chart construction. May be null to use default template identified in static maps.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
      * @return
@@ -424,7 +423,7 @@ public abstract class ChartEngineFactory
      *            {@link VisualizationPlotType#LEAD_THRESHOLD} or {@link VisualizationPlotType#THRESHOLD_LEAD}. May be
      *            null and, if so, defaults to {@link VisualizationPlotType#LEAD_THRESHOLD}.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
-     *            chart construction. May be null to use default template identified in {@link #plotTypeInfoMap}.
+     *            chart construction. May be null to use default template identified in static map/table.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
      * @return A {@link ChartEngine} that can be used to build the {@link JFreeChart} and output the image. This can be
