@@ -80,7 +80,7 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Met
         
         if((getPlotData().keySetByFirstKey().size() == 1) && (getPlotData().keySetBySecondKey().size() == 1))
         {
-            return getPlotData().getKey(series).getFirstKey().toString() + "h, " + getPlotData().getKey(series).getSecondKey().toString();
+            return "All Data"; //All of the data is in a single series.
         }
         else if((getPlotData().keySetByFirstKey().size() >= 1) && (getPlotData().keySetBySecondKey().size() == 1))
         {
