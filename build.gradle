@@ -261,10 +261,12 @@ project(':wres-vis')
         
         compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
         compile group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '1.2.6'
-        compile group: 'org.slf4j', name: 'log4j-over-slf4j', version: '1.7.25'
         compile 'com.google.guava:guava:22.0'
         compile 'org.slf4j:slf4j-api:1.7.25'
         runtime 'ch.qos.logback:logback-classic:1.2.3'
+
+        // For ohdcommonchps.jar:
+        runtime group: 'org.slf4j', name: 'log4j-over-slf4j', version: '1.7.25'
 
         compile files('../libs/external/jcommon-1.0.12.jar')
         compile files('../libs/external/jfreechart-1.0.9.jar')
@@ -277,6 +279,16 @@ project(':wres-vis')
         testCompile files('../libs/external/jfreechart-1.0.9.jar')
         testCompile files('../libs/external/EVS.jar')
         testRuntime files('dist/lib/conf')
+
+    }
+
+    configurations
+    {
+        testCompile
+        {
+            // to prevent the testCompile and testRuntime from inheriting this:
+            exclude group: 'org.slf4j', module: 'log4j-over-slf4j'
+        }
     }
 }
 
