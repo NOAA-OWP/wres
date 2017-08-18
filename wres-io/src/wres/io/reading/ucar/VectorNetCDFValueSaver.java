@@ -297,6 +297,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
         {
             ForecastDetails details = new ForecastDetails(this.filePath.toAbsolutePath().toString());
             details.setCreationDate(NetCDF.getInitializedTime(this.getSource()));
+            details.setForecastDate(NetCDF.getValidTime(this.getSource()));
             details.setLead(this.getLead());
             details.setRange(NetCDF.getNWMRange(this.getSource()));
             this.forecastID = details.getForecastID();
