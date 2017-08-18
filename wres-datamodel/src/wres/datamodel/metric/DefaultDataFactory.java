@@ -20,7 +20,7 @@ import wres.datamodel.SafeVectorOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.SafeMetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
+import wres.datamodel.metric.SafeMetricOutputMultiMapByLeadThreshold.SafeMetricOutputMultiMapByLeadThresholdBuilder;
 import wres.datamodel.metric.Threshold.Operator;
 
 /**
@@ -285,16 +285,16 @@ public class DefaultDataFactory implements DataFactory
     public <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold<T> ofMultiMap(final Map<MapBiKey<Integer, Threshold>, MetricOutputMapByMetric<T>> input)
     {
         Objects.requireNonNull(input, "Specify a non-null map of inputs by threshold.");
-        final MetricOutputMultiMapByLeadThresholdBuilder<T> builder =
-                                                                    new MetricOutputMultiMapByLeadThresholdBuilder<>();
+        final SafeMetricOutputMultiMapByLeadThresholdBuilder<T> builder =
+                                                                    new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
         input.forEach(builder::put);
         return builder.build();
     }
 
     @Override
-    public <S extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold.Builder<S> ofMultiMap()
+    public <S extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder<S> ofMultiMap()
     {
-        return new SafeMetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder<>();
+        return new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
     }
 
     @Override
