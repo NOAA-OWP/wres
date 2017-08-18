@@ -6,8 +6,11 @@ import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import wres.io.concurrency.SQLExecutor;
+import wres.io.concurrency.WRESRunnable;
 import wres.io.config.SystemSettings;
 import wres.io.grouping.DualString;
+import wres.util.FormattedStopwatch;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
@@ -16,7 +19,10 @@ import java.io.PushbackReader;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -163,16 +169,24 @@ public final class Database {
 
 	public synchronized static void restoreAllIndices()
 	{
+	    if (SAVED_INDEXES.size() == 0)
+        {
+            return;
+        }
+
 		StringBuilder builder;
 
-		Set<String> updatedTables = new HashSet<>();
 		boolean shouldRefresh = false;
+        LinkedList<Future<?>> indexTasks = new LinkedList<>();
+		LOGGER.info("Restoring Indices...");
 
+        FormattedStopwatch watch = new FormattedStopwatch();
+        watch.start();
 		for (String tableName : SAVED_INDEXES.keySet())
 		{
 		    shouldRefresh = true;
 			Object[] indexNames = SAVED_INDEXES.get(tableName).keySet().toArray();
-
+			LOGGER.trace("Restoring: {}", tableName);
 			for (int nameIndex = 0; nameIndex < indexNames.length; ++nameIndex)
 			{
 				String indexName = (String)indexNames[nameIndex];
@@ -183,20 +197,27 @@ public final class Database {
 				builder.append("	USING ").append(definition.getSecond()).append(NEWLINE);
 				builder.append("	").append(definition.getFirst()).append(";");
 
-				try {
-					LOGGER.trace("Restoring the {} index on {}...", indexName, tableName);
-					execute(builder.toString());
-					SAVED_INDEXES.get(tableName).remove(indexName);
-					updatedTables.add(tableName);
-					LOGGER.trace("The {} index on {} has been restored.", indexName, tableName);
-				}
-				catch (SQLException e) {
-				    LOGGER.error("The {} index on {} could not be restored.", indexName, tableName);
-                    LOGGER.error(NEWLINE + builder.toString() + NEWLINE);
-					LOGGER.error(Strings.getStackTrace(e));
-				}
+                LOGGER.trace("Restoring the {} index on {}...", indexName, tableName);
+                WRESRunnable restore = new SQLExecutor(builder.toString());
+                restore.setOnRun(ProgressMonitor.onThreadStartHandler());
+                restore.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                indexTasks.add(Database.execute(restore));
+                SAVED_INDEXES.get(tableName).remove(indexName);
 			}
 		}
+
+		Future<?> task;
+		while ((task = indexTasks.poll()) != null)
+        {
+            try {
+                task.get();
+            }
+            catch (InterruptedException | ExecutionException e) {
+                LOGGER.error(Strings.getStackTrace(e));
+            }
+        }
+        watch.stop();
+		LOGGER.trace("It took {} to restore all indexes in the database.", watch.getFormattedDuration());
 
 		SAVED_INDEXES.clear();
 
@@ -256,6 +277,7 @@ public final class Database {
 
 	public static void completeAllIngestTasks()
 	{
+		LOGGER.trace("Now completing all issued ingest tasks...");
 		Future task;
 		try {
 			while (storedIngestTasks.peek() != null)
