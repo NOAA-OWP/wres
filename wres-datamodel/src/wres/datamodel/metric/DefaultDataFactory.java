@@ -416,7 +416,7 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public MetricOutputForProjectByLeadThreshold.Builder ofMetricOutputForProjectByThreshold()
+    public MetricOutputForProjectByLeadThreshold.Builder ofMetricOutputForProjectByLeadThreshold()
     {
         return new SafeMetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder();
     }
