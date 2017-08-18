@@ -22,6 +22,20 @@ public interface Slicer
 {
 
     /**
+     * Returns a {@link QuantileThreshold} for the prescribed {@link ProbabilityThreshold}, where the quantiles are
+     * mapped using {@link #getQuantile(double, double[])}.
+     * 
+     * @param sorted the sorted input array
+     * @param threshold the {@link ProbabilityThreshold} from which the {@link QuantileThreshold} is determined
+     * @return the {@link QuantileThreshold}
+     */
+
+    default QuantileThreshold getQuantileFromProbability(ProbabilityThreshold threshold, double[] sorted)
+    {
+        return getQuantileFromProbability(threshold, sorted, null);
+    }
+
+    /**
      * Returns the left side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
      * 
      * @param input the input pairs
@@ -184,9 +198,10 @@ public interface Slicer
      * 
      * @param sorted the sorted input array
      * @param threshold the {@link ProbabilityThreshold} from which the {@link QuantileThreshold} is determined
+     * @param decimals an optional number of decimal places to which the threshold will be rounded up (may be null)
      * @return the {@link QuantileThreshold}
      */
 
-    QuantileThreshold getQuantileFromProbability(ProbabilityThreshold threshold, double[] sorted);
+    QuantileThreshold getQuantileFromProbability(ProbabilityThreshold threshold, double[] sorted, Integer decimals);
 
 }
