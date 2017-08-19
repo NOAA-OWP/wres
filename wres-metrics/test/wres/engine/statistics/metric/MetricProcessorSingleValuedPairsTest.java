@@ -21,7 +21,7 @@ import wres.datamodel.metric.SingleValuedPairs;
 import wres.io.config.ProjectConfigPlus;
 
 /**
- * Tests the {@link MetricProcessorSingleValuedPairs}.
+ * Tests the {@link MetricProcessorSingleValuedPairsByLeadTime}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -33,8 +33,8 @@ public final class MetricProcessorSingleValuedPairsTest
     private final DataFactory dataFactory = DefaultDataFactory.getInstance();
 
     /**
-     * Tests the construction of a {@link MetricProcessorSingleValuedPairs} and application of
-     * {@link MetricProcessorSingleValuedPairs#apply(wres.datamodel.metric.SingleValuedPairs)} to configuration obtained
+     * Tests the construction of a {@link MetricProcessorSingleValuedPairsByLeadTime} and application of
+     * {@link MetricProcessorSingleValuedPairsByLeadTime#apply(wres.datamodel.metric.SingleValuedPairs)} to configuration obtained
      * from testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getSingleValuedPairsFour()}.
      */
@@ -46,9 +46,8 @@ public final class MetricProcessorSingleValuedPairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
-            MetricProcessorSingleValuedPairs processor =
-                                                       (MetricProcessorSingleValuedPairs)MetricFactory.getInstance(dataFactory)
-                                                                                                      .getMetricProcessor(config);
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor = MetricFactory.getInstance(dataFactory)
+                                                                                            .getMetricProcessorByLeadTime(config);
             SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
             MetricOutputForProjectByLeadThreshold results = processor.apply(pairs);
             MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.getScalarOutput()
@@ -85,8 +84,8 @@ public final class MetricProcessorSingleValuedPairsTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorSingleValuedPairs} and application of
-     * {@link MetricProcessorSingleValuedPairs#apply(wres.datamodel.metric.SingleValuedPairs)} to configuration obtained
+     * Tests the construction of a {@link MetricProcessorSingleValuedPairsByLeadTime} and application of
+     * {@link MetricProcessorSingleValuedPairsByLeadTime#apply(wres.datamodel.metric.SingleValuedPairs)} to configuration obtained
      * from testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple calls with separate
      * forecast lead times.
@@ -100,10 +99,10 @@ public final class MetricProcessorSingleValuedPairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
-            MetricProcessorSingleValuedPairs processor =
-                                                       (MetricProcessorSingleValuedPairs)MetricFactory.getInstance(metIn)
-                                                                                                      .getMetricProcessor(config,
-                                                                                                                          MetricOutputGroup.SCALAR);
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                                                                             MetricFactory.getInstance(metIn)
+                                                                                          .getMetricProcessorByLeadTime(config,
+                                                                                                              MetricOutputGroup.SCALAR);
             SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
             final MetadataFactory metFac = metIn.getMetadataFactory();
             //Generate results for 10 nominal lead times

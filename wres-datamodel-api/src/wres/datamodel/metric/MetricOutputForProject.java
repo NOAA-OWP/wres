@@ -36,6 +36,46 @@ public interface MetricOutputForProject<T extends MetricOutputMultiMap<?>>
     boolean hasOutput(MetricOutputGroup outGroup);
 
     /**
+     * Returns a {@link MetricOutputMultiMap} of {@link ScalarOutput} or null if no output exists.
+     * 
+     * @return the scalar output or null
+     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
+     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     */
+
+    MetricOutputMultiMap<ScalarOutput> getScalarOutput() throws InterruptedException, ExecutionException;
+
+    /**
+     * Returns a {@link MetricOutputMultiMap} of {@link VectorOutput} or null if no output exists.
+     * 
+     * @return the vector output or null
+     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
+     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     */
+
+    MetricOutputMultiMap<VectorOutput> getVectorOutput() throws InterruptedException, ExecutionException;
+
+    /**
+     * Returns a {@link MetricOutputMultiMap} of {@link MultiVectorOutput} or null if no output exists.
+     * 
+     * @return the multi-vector output or null
+     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
+     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     */
+
+    MetricOutputMultiMap<MultiVectorOutput> getMultiVectorOutput() throws InterruptedException, ExecutionException;
+
+    /**
+     * Returns a {@link MetricOutputMultiMap} of {@link MatrixOutput} or null if no output exists.
+     * 
+     * @return the matrix output or null
+     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
+     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     */
+
+    MetricOutputMultiMap<MatrixOutput> getMatrixOutput() throws InterruptedException, ExecutionException;
+
+    /**
      * Returns a {@link MetricOutputMultiMap} for a prescribed array of {@link MetricOutputGroup} or null if no output
      * exists. To return all available outputs, use {@link #getOutputTypes()} as input to this method.
      * 

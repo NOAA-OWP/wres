@@ -11,6 +11,7 @@ import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
 import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
 import wres.datamodel.metric.Threshold.Operator;
 
@@ -748,11 +749,11 @@ public interface DataFactory
     /**
      * Returns a builder for a {@link MetricOutputForProjectByLeadThreshold}.
      * 
-     * @return a {@link MetricOutputForProjectByLeadThreshold.Builder} for a map of metric outputs by lead time and
+     * @return a {@link MetricOutputForProjectByLeadThresholdBuilder} for a map of metric outputs by lead time and
      *         threshold
      */
 
-    MetricOutputForProjectByLeadThreshold.Builder ofMetricOutputForProjectByLeadThreshold();
+    MetricOutputForProjectByLeadThresholdBuilder ofMetricOutputForProjectByLeadThreshold();
 
     /**
      * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.

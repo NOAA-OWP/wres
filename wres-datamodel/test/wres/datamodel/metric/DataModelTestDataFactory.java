@@ -16,7 +16,7 @@ import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
 import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.SafeMetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
+import wres.datamodel.metric.SafeMetricOutputForProjectByLeadThreshold.SafeMetricOutputForProjectByLeadThresholdBuilder;
 import wres.datamodel.metric.SafeMetricOutputMapByLeadThreshold.Builder;
 import wres.datamodel.metric.Threshold.Operator;
 
@@ -181,7 +181,7 @@ public final class DataModelTestDataFactory
     public static MetricOutputForProjectByLeadThreshold getMetricOutputForProjectByLeadThreshold()
     {
         //Prep
-        MetricOutputForProjectByLeadThresholdBuilder builder = new MetricOutputForProjectByLeadThresholdBuilder();
+        SafeMetricOutputForProjectByLeadThresholdBuilder builder = new SafeMetricOutputForProjectByLeadThresholdBuilder();
         DataFactory factory = DefaultDataFactory.getInstance();
         MetadataFactory metaFactory = factory.getMetadataFactory();
         final MetricOutputMetadata fakeMeta =

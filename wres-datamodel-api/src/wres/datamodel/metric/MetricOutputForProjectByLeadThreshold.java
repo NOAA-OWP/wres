@@ -23,59 +23,55 @@ import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
  * @since 0.1
  */
 
-public interface MetricOutputForProjectByLeadThreshold extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
+public interface MetricOutputForProjectByLeadThreshold
+extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
 {
 
     /**
-     * Returns a {@link MetricOutputMultiMapByLeadThreshold} of {@link ScalarOutput} or null if no output exists.
+     * Returns a {@link MetricOutputMultiMap} of {@link ScalarOutput} or null if no output exists.
      * 
      * @return the scalar output or null
      * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
      * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
      */
 
-    MetricOutputMultiMapByLeadThreshold<ScalarOutput> getScalarOutput() throws InterruptedException,
-                                                                             ExecutionException;
+    MetricOutputMultiMapByLeadThreshold<ScalarOutput> getScalarOutput() throws InterruptedException, ExecutionException;
 
     /**
-     * Returns a {@link MetricOutputMultiMapByLeadThreshold} of {@link VectorOutput} or null if no output exists.
+     * Returns a {@link MetricOutputMultiMap} of {@link VectorOutput} or null if no output exists.
      * 
      * @return the vector output or null
      * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
      * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
      */
 
-    MetricOutputMultiMapByLeadThreshold<VectorOutput> getVectorOutput() throws InterruptedException,
-                                                                             ExecutionException;
+    MetricOutputMultiMapByLeadThreshold<VectorOutput> getVectorOutput() throws InterruptedException, ExecutionException;
 
     /**
-     * Returns a {@link MetricOutputMultiMapByLeadThreshold} of {@link MultiVectorOutput} or null if no output exists.
+     * Returns a {@link MetricOutputMultiMap} of {@link MultiVectorOutput} or null if no output exists.
      * 
      * @return the multi-vector output or null
      * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
      * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
      */
 
-    MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> getMultiVectorOutput() throws InterruptedException,
-                                                                                       ExecutionException;
+    MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> getMultiVectorOutput() throws InterruptedException, ExecutionException;
 
     /**
-     * Returns a {@link MetricOutputMultiMapByLeadThreshold} of {@link MatrixOutput} or null if no output exists.
+     * Returns a {@link MetricOutputMultiMap} of {@link MatrixOutput} or null if no output exists.
      * 
      * @return the matrix output or null
      * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
      * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
      */
 
-    MetricOutputMultiMapByLeadThreshold<MatrixOutput> getMatrixOutput() throws InterruptedException,
-                                                                             ExecutionException; 
-
+    MetricOutputMultiMapByLeadThreshold<MatrixOutput> getMatrixOutput() throws InterruptedException, ExecutionException;    
+    
     /**
      * Builder.
      */
 
-    interface Builder
-    {
+    interface MetricOutputForProjectByLeadThresholdBuilder {
 
         /**
          * Adds a new scalar result for a collection of metrics to the internal store.
@@ -85,8 +81,8 @@ public interface MetricOutputForProjectByLeadThreshold extends MetricOutputForPr
          * @return the builder
          */
 
-        default Builder addScalarOutput(MapBiKey<Integer, Threshold> key,
-                                        Future<MetricOutputMapByMetric<ScalarOutput>> result)
+        default MetricOutputForProjectByLeadThresholdBuilder addScalarOutput(MapBiKey<Integer, Threshold> key,
+                                                                             Future<MetricOutputMapByMetric<ScalarOutput>> result)
         {
             addScalarOutput(key.getFirstKey(), key.getSecondKey(), result);
             return this;
@@ -100,8 +96,8 @@ public interface MetricOutputForProjectByLeadThreshold extends MetricOutputForPr
          * @return the builder
          */
 
-        default Builder addVectorOutput(MapBiKey<Integer, Threshold> key,
-                                        Future<MetricOutputMapByMetric<VectorOutput>> result)
+        default MetricOutputForProjectByLeadThresholdBuilder addVectorOutput(MapBiKey<Integer, Threshold> key,
+                                                                             Future<MetricOutputMapByMetric<VectorOutput>> result)
         {
             addVectorOutput(key.getFirstKey(), key.getSecondKey(), result);
             return this;
@@ -115,8 +111,8 @@ public interface MetricOutputForProjectByLeadThreshold extends MetricOutputForPr
          * @return the builder
          */
 
-        default Builder addMultiVectorOutput(MapBiKey<Integer, Threshold> key,
-                                             Future<MetricOutputMapByMetric<MultiVectorOutput>> result)
+        default MetricOutputForProjectByLeadThresholdBuilder addMultiVectorOutput(MapBiKey<Integer, Threshold> key,
+                                                                                  Future<MetricOutputMapByMetric<MultiVectorOutput>> result)
         {
             addMultiVectorOutput(key.getFirstKey(), key.getSecondKey(), result);
             return this;
@@ -130,8 +126,8 @@ public interface MetricOutputForProjectByLeadThreshold extends MetricOutputForPr
          * @return the builder
          */
 
-        default Builder addMatrixOutput(MapBiKey<Integer, Threshold> key,
-                                        Future<MetricOutputMapByMetric<MatrixOutput>> result)
+        default MetricOutputForProjectByLeadThresholdBuilder addMatrixOutput(MapBiKey<Integer, Threshold> key,
+                                                                             Future<MetricOutputMapByMetric<MatrixOutput>> result)
         {
             addMatrixOutput(key.getFirstKey(), key.getSecondKey(), result);
             return this;
@@ -146,9 +142,9 @@ public interface MetricOutputForProjectByLeadThreshold extends MetricOutputForPr
          * @return the builder
          */
 
-        Builder addScalarOutput(Integer leadTime,
-                                Threshold threshold,
-                                Future<MetricOutputMapByMetric<ScalarOutput>> result);
+        MetricOutputForProjectByLeadThresholdBuilder addScalarOutput(Integer leadTime,
+                                                                     Threshold threshold,
+                                                                     Future<MetricOutputMapByMetric<ScalarOutput>> result);
 
         /**
          * Adds a new vector result for a collection of metrics to the internal store.
@@ -159,9 +155,9 @@ public interface MetricOutputForProjectByLeadThreshold extends MetricOutputForPr
          * @return the builder
          */
 
-        Builder addVectorOutput(Integer leadTime,
-                                Threshold threshold,
-                                Future<MetricOutputMapByMetric<VectorOutput>> result);
+        MetricOutputForProjectByLeadThresholdBuilder addVectorOutput(Integer leadTime,
+                                                                     Threshold threshold,
+                                                                     Future<MetricOutputMapByMetric<VectorOutput>> result);
 
         /**
          * Adds a new multi-vector result for a collection of metrics to the internal store.
@@ -172,9 +168,9 @@ public interface MetricOutputForProjectByLeadThreshold extends MetricOutputForPr
          * @return the builder
          */
 
-        Builder addMultiVectorOutput(Integer leadTime,
-                                     Threshold threshold,
-                                     Future<MetricOutputMapByMetric<MultiVectorOutput>> result);
+        MetricOutputForProjectByLeadThresholdBuilder addMultiVectorOutput(Integer leadTime,
+                                                                          Threshold threshold,
+                                                                          Future<MetricOutputMapByMetric<MultiVectorOutput>> result);
 
         /**
          * Adds a new matrix result for a collection of metrics to the internal store.
@@ -185,9 +181,9 @@ public interface MetricOutputForProjectByLeadThreshold extends MetricOutputForPr
          * @return the builder
          */
 
-        Builder addMatrixOutput(Integer leadTime,
-                                Threshold threshold,
-                                Future<MetricOutputMapByMetric<MatrixOutput>> result);
+        MetricOutputForProjectByLeadThresholdBuilder addMatrixOutput(Integer leadTime,
+                                                                     Threshold threshold,
+                                                                     Future<MetricOutputMapByMetric<MatrixOutput>> result);
 
         /**
          * Returns a {@link MetricOutputForProjectByLeadThreshold}.
