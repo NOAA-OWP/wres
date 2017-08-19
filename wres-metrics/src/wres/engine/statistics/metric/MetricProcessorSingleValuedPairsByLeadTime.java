@@ -21,6 +21,7 @@ import wres.datamodel.metric.MetricOutputMapByMetric;
 import wres.datamodel.metric.ScalarOutput;
 import wres.datamodel.metric.SingleValuedPairs;
 import wres.datamodel.metric.Threshold;
+import wres.engine.statistics.metric.MetricProcessorByLeadTime.MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
@@ -33,7 +34,7 @@ import wres.datamodel.metric.Threshold;
  * @since 0.1
  */
 
-class MetricProcessorSingleValuedPairs extends MetricProcessor
+class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTime
 {
 
     /**
@@ -54,7 +55,8 @@ class MetricProcessorSingleValuedPairs extends MetricProcessor
         Objects.requireNonNull(leadTime, "Expected a non-null forecast lead time in the input metadata.");
 
         //Metric futures 
-        MetricFutures.Builder futures = new MetricFutures.Builder().addDataFactory(dataFactory);
+        MetricFuturesByLeadTimeBuilder futures = new MetricFuturesByLeadTimeBuilder();
+        futures.addDataFactory(dataFactory);
 
         //Process the metrics that consume single-valued pairs
         if(hasMetrics(MetricInputGroup.SINGLE_VALUED))
@@ -75,7 +77,7 @@ class MetricProcessorSingleValuedPairs extends MetricProcessor
         }
 
         //Process and return the result       
-        MetricFutures futureResults = futures.build();
+        MetricFuturesByLeadTime futureResults = futures.build();
         //Add for merge with existing futures, if required
         addToMergeMap(leadTime, futureResults);
         return futureResults.getMetricOutput();
@@ -92,7 +94,7 @@ class MetricProcessorSingleValuedPairs extends MetricProcessor
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorSingleValuedPairs(final DataFactory dataFactory,
+    MetricProcessorSingleValuedPairsByLeadTime(final DataFactory dataFactory,
                                      final ProjectConfig config,
                                      final ExecutorService executor,
                                      final MetricOutputGroup... mergeList) throws MetricConfigurationException
@@ -124,7 +126,9 @@ class MetricProcessorSingleValuedPairs extends MetricProcessor
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairs(Integer leadTime, SingleValuedPairs input, MetricFutures.Builder futures)
+    private void processDichotomousPairs(Integer leadTime,
+                                         SingleValuedPairs input,
+                                         MetricFuturesByLeadTimeBuilder futures)
     {
 
         //Metric-specific overrides are currently unsupported

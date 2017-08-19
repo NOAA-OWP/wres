@@ -20,6 +20,7 @@ import wres.datamodel.SafeVectorOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
 import wres.datamodel.metric.SafeMetricOutputMultiMapByLeadThreshold.SafeMetricOutputMultiMapByLeadThresholdBuilder;
 import wres.datamodel.metric.Threshold.Operator;
 
@@ -286,7 +287,7 @@ public class DefaultDataFactory implements DataFactory
     {
         Objects.requireNonNull(input, "Specify a non-null map of inputs by threshold.");
         final SafeMetricOutputMultiMapByLeadThresholdBuilder<T> builder =
-                                                                    new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
+                                                                        new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
         input.forEach(builder::put);
         return builder.build();
     }
@@ -311,84 +312,14 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public <S extends Comparable<S>> MapKey<S> getMapKey(final S key)
     {
-
-        //Bounds checks
-        Objects.requireNonNull(key, "Specify a non-null key.");
-
-        /**
-         * Default implementation of a {@link MapKey}.
-         */
-
-        class DefaultMapKey implements MapKey<S>
-        {
-
-            @Override
-            public int compareTo(final MapKey<S> o)
-            {
-                //Compare the key
-                Objects.requireNonNull(o, "Specify a non-null map key for comparison.");
-                return key.compareTo(o.getKey());
-            }
-
-            @Override
-            public S getKey()
-            {
-                return key;
-            }
-
-        }
-        return new DefaultMapKey();
+        return new DefaultMapKey<>(key);
     }
 
     @Override
     public <S extends Comparable<S>, T extends Comparable<T>> MapBiKey<S, T> getMapKey(final S firstKey,
                                                                                        final T secondKey)
     {
-
-        //Bounds checks
-        Objects.requireNonNull(firstKey, "Specify a non-null first key.");
-        Objects.requireNonNull(secondKey, "Specify a non-null second key.");
-
-        /**
-         * Default implementation of a {@link MapBiKey}.
-         */
-
-        class DefaultMapBiKey implements MapBiKey<S, T>
-        {
-
-            @Override
-            public int compareTo(final MapBiKey<S, T> o)
-            {
-                //Compare the keys
-                Objects.requireNonNull(o, "Specify a non-null map key for comparison.");
-                final int returnMe = getFirstKey().compareTo(o.getFirstKey());
-                if(returnMe != 0)
-                {
-                    return returnMe;
-                }
-                return getSecondKey().compareTo(o.getSecondKey());
-            }
-
-            @Override
-            public S getFirstKey()
-            {
-                return firstKey;
-            }
-
-            @Override
-            public T getSecondKey()
-            {
-                return secondKey;
-            }
-
-            @Override
-            public String toString()
-            {
-                return "[" + getFirstKey().toString() + ", " + getSecondKey().toString() + "]";
-            }
-
-        }
-        return new DefaultMapBiKey();
+        return new DefaultMapBiKey<>(firstKey, secondKey);
     }
 
     @Override
@@ -416,9 +347,9 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public MetricOutputForProjectByLeadThreshold.Builder ofMetricOutputForProjectByLeadThreshold()
+    public MetricOutputForProjectByLeadThresholdBuilder ofMetricOutputForProjectByLeadThreshold()
     {
-        return new SafeMetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder();
+        return new SafeMetricOutputForProjectByLeadThreshold.SafeMetricOutputForProjectByLeadThresholdBuilder();
     }
 
     @Override
@@ -585,6 +516,111 @@ public class DefaultDataFactory implements DataFactory
         }
 
     };
+
+    /**
+     * Default implementation of a {@link MapKey}.
+     */
+
+    class DefaultMapKey<S extends Comparable<S>> implements MapKey<S>
+    {
+
+        /**
+         * The map key.
+         */
+
+        private final S key;
+
+        DefaultMapKey(S key)
+        {
+            Objects.requireNonNull(key, "Specify a non-null map key.");
+            this.key = key;
+        }
+
+        @Override
+        public int compareTo(final MapKey<S> o)
+        {
+            //Compare the keys
+            Objects.requireNonNull(o, "Specify a non-null map key for comparison.");
+            return getKey().compareTo(o.getKey());
+        }
+
+        @Override
+        public S getKey()
+        {
+            return key;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "[" + getKey().toString() + "]";
+        }
+    }
+
+    /**
+     * Default implementation of a {@link MapBiKey}.
+     */
+
+    class DefaultMapBiKey<S extends Comparable<S>, T extends Comparable<T>> implements MapBiKey<S, T>
+    {
+
+        /**
+         * The first map key.
+         */
+
+        private final S firstKey;        
+        
+        /**
+         * The second map key.
+         */
+
+        private final T secondKey;
+
+        /**
+         * Constructor.
+         * 
+         * @param firstKey the first key
+         * @param secondKey the second key
+         */
+
+        DefaultMapBiKey(S firstKey, T secondKey)
+        {
+            Objects.requireNonNull(secondKey, "Specify a non-null first map key.");
+            Objects.requireNonNull(secondKey, "Specify a non-null second map key.");
+            this.firstKey = firstKey;
+            this.secondKey = secondKey;
+        }
+
+        @Override
+        public int compareTo(final MapBiKey<S,T> o)
+        {
+            Objects.requireNonNull(o, "Specify a non-null map key for comparison.");
+            int returnMe = getFirstKey().compareTo(o.getFirstKey());
+            if(returnMe != 0)
+            {
+                return returnMe;
+            }
+            return getSecondKey().compareTo(o.getSecondKey());
+        }
+
+        @Override
+        public S getFirstKey()
+        {
+            return firstKey;
+        }        
+        
+        @Override
+        public T getSecondKey()
+        {
+            return secondKey;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "[" + getFirstKey().toString() + ", " + getSecondKey().toString() + "]";
+        }
+    }
 
     /**
      * Prevent construction.

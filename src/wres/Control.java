@@ -48,6 +48,7 @@ import wres.datamodel.metric.VectorOutput;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
+import wres.engine.statistics.metric.MetricProcessorByLeadTime;
 import wres.io.Operations;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
@@ -202,10 +203,11 @@ public class Control implements Function<String[], Integer>
         // Sink for the results: the results are added incrementally to an immutable store via a builder
         // Some output types are processed at the end of the pipeline, others after each input is processed
         // Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR
-        MetricProcessor processor = null;
+        // TODO: support additional processor types
+        MetricProcessorByLeadTime processor = null;
         try
         {
-            processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessor(projectConfig,
+            processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessorByLeadTime(projectConfig,
                                                                                    metricExecutor,
                                                                                    MetricOutputGroup.SCALAR,
                                                                                    MetricOutputGroup.VECTOR);
@@ -312,7 +314,7 @@ public class Control implements Function<String[], Integer>
 
     private static boolean processCachedCharts(final Feature feature,
                                                final ProjectConfigPlus projectConfigPlus,
-                                               final MetricProcessor processor,
+                                               final MetricProcessorByLeadTime processor,
                                                final MetricOutputGroup... outGroup)
     {
         if(!processor.hasStoredMetricOutput())
@@ -767,7 +769,9 @@ public class Control implements Function<String[], Integer>
             {
                 if(input.hasOutput(MetricOutputGroup.MULTIVECTOR))
                 {
-                    processMultiVectorCharts(feature, projectConfigPlus, input.getMultiVectorOutput());
+                    processMultiVectorCharts(feature,
+                                             projectConfigPlus,
+                                             input.getMultiVectorOutput());
                     meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
                     if(LOGGER.isDebugEnabled())
                     {

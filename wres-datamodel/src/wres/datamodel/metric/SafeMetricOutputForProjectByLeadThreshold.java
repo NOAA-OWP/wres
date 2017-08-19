@@ -171,7 +171,7 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
      * Builder.
      */
 
-    static class MetricOutputForProjectByLeadThresholdBuilder implements Builder
+    static class SafeMetricOutputForProjectByLeadThresholdBuilder implements MetricOutputForProjectByLeadThresholdBuilder
     {
 
         /**
@@ -203,7 +203,7 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
                                                                                                                                 new ConcurrentHashMap<>();
 
         @Override
-        public Builder addScalarOutput(Integer leadTime,
+        public MetricOutputForProjectByLeadThresholdBuilder addScalarOutput(Integer leadTime,
                                        Threshold threshold,
                                        Future<MetricOutputMapByMetric<ScalarOutput>> result)
         {
@@ -212,7 +212,7 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
         }
 
         @Override
-        public Builder addVectorOutput(Integer leadTime,
+        public MetricOutputForProjectByLeadThresholdBuilder addVectorOutput(Integer leadTime,
                                        Threshold threshold,
                                        Future<MetricOutputMapByMetric<VectorOutput>> result)
         {
@@ -221,7 +221,7 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
         }
 
         @Override
-        public Builder addMultiVectorOutput(Integer leadTime,
+        public MetricOutputForProjectByLeadThresholdBuilder addMultiVectorOutput(Integer leadTime,
                                             Threshold threshold,
                                             Future<MetricOutputMapByMetric<MultiVectorOutput>> result)
         {
@@ -230,7 +230,7 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
         }
 
         @Override
-        public Builder addMatrixOutput(Integer leadTime,
+        public MetricOutputForProjectByLeadThresholdBuilder addMatrixOutput(Integer leadTime,
                                        Threshold threshold,
                                        Future<MetricOutputMapByMetric<MatrixOutput>> result)
         {
@@ -252,7 +252,7 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
      * @param builder the builder
      */
 
-    private SafeMetricOutputForProjectByLeadThreshold(MetricOutputForProjectByLeadThresholdBuilder builder)
+    private SafeMetricOutputForProjectByLeadThreshold(SafeMetricOutputForProjectByLeadThresholdBuilder builder)
     {
         scalar.putAll(builder.scalarInternal);
         vector.putAll(builder.vectorInternal);

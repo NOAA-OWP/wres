@@ -23,7 +23,7 @@ import wres.datamodel.metric.VectorOutput;
 import wres.io.config.ProjectConfigPlus;
 
 /**
- * Tests the {@link MetricProcessorEnsemblePairs}.
+ * Tests the {@link MetricProcessorEnsemblePairsByLeadTime}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -35,8 +35,8 @@ public final class MetricProcessorEnsemblePairsTest
     private final DataFactory dataFactory = DefaultDataFactory.getInstance();
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairs} and application of
-     * {@link MetricProcessorEnsemblePairs#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained from
+     * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
+     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -48,9 +48,9 @@ public final class MetricProcessorEnsemblePairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
-            MetricProcessorEnsemblePairs processor =
-                                                   (MetricProcessorEnsemblePairs)MetricFactory.getInstance(dataFactory)
-                                                                                              .getMetricProcessor(config);
+            MetricProcessorEnsemblePairsByLeadTime processor =
+                                                   (MetricProcessorEnsemblePairsByLeadTime)MetricFactory.getInstance(dataFactory)
+                                                                                              .getMetricProcessorByLeadTime(config);
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             MetricOutputForProjectByLeadThreshold results = processor.apply(pairs);
             MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.getScalarOutput()
@@ -93,8 +93,8 @@ public final class MetricProcessorEnsemblePairsTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairs} and application of
-     * {@link MetricProcessorEnsemblePairs#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained from
+     * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
+     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test2ApplyWithValueThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -107,8 +107,10 @@ public final class MetricProcessorEnsemblePairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
-            MetricProcessor processor = MetricFactory.getInstance(metIn).getMetricProcessor(config,
-                                                                                            MetricOutputGroup.SCALAR);
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                                                                             MetricFactory.getInstance(metIn)
+                                                                                          .getMetricProcessorByLeadTime(config,
+                                                                                                              MetricOutputGroup.SCALAR);
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             processor.apply(pairs);
             //Obtain the results
@@ -208,8 +210,8 @@ public final class MetricProcessorEnsemblePairsTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairs} and application of
-     * {@link MetricProcessorEnsemblePairs#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained from
+     * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
+     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test3ApplyWithProbabilityThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -222,8 +224,10 @@ public final class MetricProcessorEnsemblePairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
-            MetricProcessor processor = MetricFactory.getInstance(metIn).getMetricProcessor(config,
-                                                                                            MetricOutputGroup.SCALAR);
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                                                                             MetricFactory.getInstance(metIn)
+                                                                                          .getMetricProcessorByLeadTime(config,
+                                                                                                              MetricOutputGroup.SCALAR);
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             processor.apply(pairs);
             //Obtain the results

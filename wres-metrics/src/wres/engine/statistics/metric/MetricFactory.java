@@ -90,10 +90,10 @@ public class MetricFactory
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public MetricProcessor getMetricProcessor(final ProjectConfig config,
+    public MetricProcessorByLeadTime getMetricProcessorByLeadTime(final ProjectConfig config,
                                               final MetricOutputGroup... mergeList) throws MetricConfigurationException
     {
-        return getMetricProcessor(config, null, mergeList);
+        return getMetricProcessorByLeadTime(config, null, mergeList);
     }
 
     /**
@@ -109,16 +109,16 @@ public class MetricFactory
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public MetricProcessor getMetricProcessor(final ProjectConfig config,
+    public MetricProcessorByLeadTime getMetricProcessorByLeadTime(final ProjectConfig config,
                                               final ExecutorService executor,
                                               final MetricOutputGroup... mergeList) throws MetricConfigurationException
     {
         switch(MetricProcessor.getInputType(config))
         {
             case SINGLE_VALUED:
-                return new MetricProcessorSingleValuedPairs(outputFactory, config, executor, mergeList);
+                return new MetricProcessorSingleValuedPairsByLeadTime(outputFactory, config, executor, mergeList);
             case ENSEMBLE:
-                return new MetricProcessorEnsemblePairs(outputFactory, config, executor, mergeList);
+                return new MetricProcessorEnsemblePairsByLeadTime(outputFactory, config, executor, mergeList);
             default:
                 throw new UnsupportedOperationException("Unsupported input type in the project configuration '" + config
                     + "'");
