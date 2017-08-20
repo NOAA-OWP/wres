@@ -714,7 +714,7 @@ public class Control implements Function<String[], Integer>
                 {
                     LOGGER.info("Completed processing of pairs for feature '{}' at lead time {}.",
                                 nextInput.getMetadata().getIdentifier().getGeospatialID(),
-                                nextInput.getMetadata().getLeadTime());
+                                nextInput.getMetadata().getLeadTimeInHours());
                 }
             }
             catch(final InterruptedException e)
@@ -777,7 +777,7 @@ public class Control implements Function<String[], Integer>
                     {
                         LOGGER.debug("Completed processing of intermediate metrics results for feature '{}' at lead time {}.",
                                      meta.getIdentifier().getGeospatialID(),
-                                     meta.getLeadTime());
+                                     meta.getLeadTimeInHours());
                     }
                 }
             }

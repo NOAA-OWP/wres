@@ -12,7 +12,6 @@ import java.util.Objects;
 public interface Metadata
 {
 
-
     /**
      * Returns true if {@link #getIdentifier()} returns non-null, false otherwise.
      * 
@@ -24,13 +23,13 @@ public interface Metadata
     } 
     
     /**
-     * Returns true if {@link #getLeadTime()} returns non-null, false otherwise.
+     * Returns true if {@link #getLeadTimeInHours()} returns non-null, false otherwise.
      * 
-     * @return true if {@link #getLeadTime()} returns non-null, false otherwise.
+     * @return true if {@link #getLeadTimeInHours()} returns non-null, false otherwise.
      */
     default boolean hasLeadTime()
     {
-        return Objects.nonNull(getLeadTime());
+        return Objects.nonNull(getLeadTimeInHours());
     }      
     
     /**
@@ -50,12 +49,12 @@ public interface Metadata
     DatasetIdentifier getIdentifier();
 
     /**
-     * Returns an optional forecast lead time to associate with the metadata or null. For analysis and simulation types,
-     * this might be <code>0</code>.
+     * Returns an optional forecast lead time in hours to associate with the metadata or null. For analysis and 
+     * simulation types, this might be <code>0</code>.
      * 
      * @return a lead time or null
      */
 
-    Integer getLeadTime();
+    Integer getLeadTimeInHours();
 
 }
