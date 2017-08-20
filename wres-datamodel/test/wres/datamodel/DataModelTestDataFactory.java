@@ -47,7 +47,7 @@ public final class DataModelTestDataFactory
         {
             //Create the input file
             final File resultFile =
-                                  new File("testinput/wres/datamodel/metric/getScalarMetricOutputMapByLeadThresholdOne.xml");
+                                  new File("testinput/wres/datamodel/getScalarMetricOutputMapByLeadThresholdOne.xml");
             final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
 
             final Iterator<MetricResultKey> d = data.getIterator();
@@ -118,7 +118,7 @@ public final class DataModelTestDataFactory
         {
             //Create the input file
             final File resultFile =
-                                  new File("testinput/wres/datamodel/metric/getVectorMetricOutputMapByLeadThresholdOne.xml");
+                                  new File("testinput/wres/datamodel/getVectorMetricOutputMapByLeadThresholdOne.xml");
             final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
 
             final Iterator<MetricResultKey> d = data.getIterator();
