@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
-public class SafePairOfDoubleAndVectorOfDoubles
+class SafePairOfDoubleAndVectorOfDoubles
 implements PairOfDoubleAndVectorOfDoubles
 {
     private final double itemOne;

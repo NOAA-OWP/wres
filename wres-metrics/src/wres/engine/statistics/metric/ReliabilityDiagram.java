@@ -7,11 +7,11 @@ import java.util.function.Consumer;
 
 import org.apache.commons.math3.util.Precision;
 
+import wres.datamodel.DiscreteProbabilityPairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DiscreteProbabilityPairs;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.MultiVectorOutput;
 
 /**
  * <p>

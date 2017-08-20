@@ -2,14 +2,14 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DiscreteProbabilityPairs;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DiscreteProbabilityPairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.VectorOutput;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * <p>

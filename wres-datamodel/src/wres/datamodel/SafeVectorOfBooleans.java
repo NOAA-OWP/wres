@@ -7,7 +7,7 @@ package wres.datamodel;
  * 
  * @author jesse
  */
-public class SafeVectorOfBooleans implements VectorOfBooleans
+class SafeVectorOfBooleans implements VectorOfBooleans
 {
     private final boolean[] booleans;
 

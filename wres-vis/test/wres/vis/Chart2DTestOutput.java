@@ -26,19 +26,19 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import ohd.hseb.hefs.utils.tools.FileTools;
 import wres.config.generated.PlotTypeSelection;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.MapBiKey;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.QuantileThreshold;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.Threshold;
-import wres.datamodel.metric.Threshold.Operator;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MapBiKey;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.QuantileThreshold;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.Threshold;
+import wres.datamodel.VectorOutput;
+import wres.datamodel.Threshold.Operator;
 
 /**
  * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit

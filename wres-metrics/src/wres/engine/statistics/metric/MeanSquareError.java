@@ -1,9 +1,9 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.VectorOutput;
 
 /**
  * The mean square error (MSE) measures the accuracy of a single-valued predictand. It comprises the average square

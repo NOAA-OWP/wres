@@ -9,17 +9,17 @@ import java.util.TreeSet;
 import org.junit.Test;
 
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.EnsemblePairs;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.Threshold;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.EnsemblePairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.Threshold;
+import wres.datamodel.VectorOutput;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.io.config.ProjectConfigPlus;
 
 /**
@@ -36,7 +36,7 @@ public final class MetricProcessorEnsemblePairsTest
 
     /**
      * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
-     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained from
+     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -94,7 +94,7 @@ public final class MetricProcessorEnsemblePairsTest
 
     /**
      * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
-     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained from
+     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test2ApplyWithValueThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -211,7 +211,7 @@ public final class MetricProcessorEnsemblePairsTest
 
     /**
      * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
-     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained from
+     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test3ApplyWithProbabilityThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */

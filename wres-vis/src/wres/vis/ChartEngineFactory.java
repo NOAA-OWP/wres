@@ -33,17 +33,17 @@ import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.config.generated.PlotTypeSelection;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DatasetIdentifier;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.Threshold;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.Metadata;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.Threshold;
+import wres.datamodel.VectorOutput;
 
 /**
  * Factory to use in order to construct a wres-vis chart.

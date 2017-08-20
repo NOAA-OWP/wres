@@ -2,13 +2,13 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DatasetIdentifier;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.VectorOutput;
 
 /**
  * The Mean Square Error (MSE) Skill Score (SS) measures the reduction in MSE associated with one set of predictions

@@ -16,11 +16,11 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputMapByMetric;
+import wres.datamodel.DataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInput;
+import wres.datamodel.MetricOutput;
+import wres.datamodel.MetricOutputMapByMetric;
 
 /**
  * <p>

@@ -2,10 +2,10 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.VectorOutput;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * A generic implementation of an error score that is decomposable.

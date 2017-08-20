@@ -1,8 +1,8 @@
 package wres.vis;
 
 import ohd.hseb.charter.datasource.XYChartDataSource;
-import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.MetricInput;
+import wres.datamodel.SingleValuedPairs;
 
 /**
  * An {@link XYChartDataSource} that makes use of a {@link MetricInput}.

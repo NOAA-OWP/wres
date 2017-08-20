@@ -4,12 +4,12 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
+import wres.datamodel.MatrixOutput;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.MulticategoryPairs;
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.MatrixOutput;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.MulticategoryPairs;
 
 /**
  * <p>

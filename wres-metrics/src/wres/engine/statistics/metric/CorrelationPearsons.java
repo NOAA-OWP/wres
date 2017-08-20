@@ -6,16 +6,16 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.Slicer;
+import wres.datamodel.DataFactory;
+import wres.datamodel.Metadata;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.Slicer;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * Computes Pearson's product-moment correlation coefficient between the left and right sides of the {SingleValuedPairs}

@@ -1,8 +1,8 @@
 package wres.vis;
 
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MultiVectorOutput;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MultiVectorOutput;
 
 /**
  * A chart data source for the reliability portion (top subplot) of a reliability diagram for which a diagram for each

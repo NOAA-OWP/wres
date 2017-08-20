@@ -8,19 +8,19 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DichotomousPairs;
+import wres.datamodel.MetricInput;
+import wres.datamodel.MetricOutput;
+import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputMapByMetric;
 import wres.datamodel.PairOfBooleans;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DichotomousPairs;
-import wres.datamodel.metric.MetricConstants.MetricInputGroup;
-import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMapByMetric;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.Threshold;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.Threshold;
+import wres.datamodel.MetricConstants.MetricInputGroup;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.MetricProcessorByLeadTime.MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder;
 
 /**

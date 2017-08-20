@@ -21,7 +21,7 @@ import wres.config.generated.Conditions;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.*;
+import wres.datamodel.*;
 
 /**
  * Helps write Comma Separated files.

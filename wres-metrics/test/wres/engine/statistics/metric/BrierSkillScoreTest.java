@@ -4,14 +4,14 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.DiscreteProbabilityPairs;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.DiscreteProbabilityPairs;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.VectorOutput;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.engine.statistics.metric.BrierSkillScore.BrierSkillScoreBuilder;
 
 /**
