@@ -11,7 +11,7 @@ import wres.datamodel.metric.MetricInputSliceException;
  * @version 0.1
  * @since 0.1
  */
-public final class PairExceptionTest
+public final class MetricInputSliceExceptionTest
 {
 
     /**
