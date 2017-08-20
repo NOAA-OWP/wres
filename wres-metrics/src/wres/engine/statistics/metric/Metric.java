@@ -210,7 +210,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
                                              getID(),
                                              componentID,
                                              identifier,
-                                             metIn.getLeadTime());
+                                             metIn.getLeadTimeInHours());
     }
 
     /**

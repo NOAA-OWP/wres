@@ -91,7 +91,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         {
             throw new MetricCalculationException("Expected ensemble pairs for metric processing.");
         }
-        Integer leadTime = input.getMetadata().getLeadTime();
+        Integer leadTime = input.getMetadata().getLeadTimeInHours();
         Objects.requireNonNull(leadTime, "Expected a non-null forecast lead time in the input metadata.");
 
         //Metric futures 
@@ -124,7 +124,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         {
             LOGGER.info("Completed processing of metrics for feature '{}' at lead time {}.",
                         input.getMetadata().getIdentifier().getGeospatialID(),
-                        input.getMetadata().getLeadTime());
+                        input.getMetadata().getLeadTimeInHours());
         }
 
         //Process and return the result       

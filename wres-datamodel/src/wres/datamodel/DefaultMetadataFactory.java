@@ -403,7 +403,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         }
 
         @Override
-        public Integer getLeadTime()
+        public Integer getLeadTimeInHours()
         {
             return leadTime;
         }
@@ -424,7 +424,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             }
             if(hasLeadTime())
             {
-                returnMe = returnMe && leadTime.equals(p.getLeadTime());
+                returnMe = returnMe && leadTime.equals(p.getLeadTimeInHours());
             }
             return returnMe;
         }

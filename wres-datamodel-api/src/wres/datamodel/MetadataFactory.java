@@ -59,7 +59,7 @@ public interface MetadataFactory
 
     default Metadata getMetadata(final Metadata input, final Dimension dim)
     {
-        return getMetadata(dim, input.getIdentifier(), input.getLeadTime());
+        return getMetadata(dim, input.getIdentifier(), input.getLeadTimeInHours());
     }
 
     /**
@@ -174,7 +174,7 @@ public interface MetadataFactory
                                  metricID,
                                  componentID,
                                  metadata.getIdentifier(),
-                                 metadata.getLeadTime());
+                                 metadata.getLeadTimeInHours());
     }
 
     /**
@@ -217,7 +217,7 @@ public interface MetadataFactory
                                  source.getMetricID(),
                                  componentID,
                                  source.getIdentifier(),
-                                 source.getLeadTime());
+                                 source.getLeadTimeInHours());
     }
 
     /**
@@ -235,7 +235,7 @@ public interface MetadataFactory
     /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
      * and the input, {@link MetricConstants} identifiers for the metric and the metric component, respectively, and an
-     * optional {@link DatasetIdentifier} identifier and lead time.
+     * optional {@link DatasetIdentifier} identifier and lead time in hours.
      * 
      * @param sampleSize the sample size
      * @param dim the output dimension
@@ -243,7 +243,7 @@ public interface MetadataFactory
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
      * @param identifier an optional dataset identifier (may be null)
-     * @param leadTime an optional lead time
+     * @param leadTime an optional lead time in hours
      * @return a {@link MetricOutputMetadata} object
      */
 
