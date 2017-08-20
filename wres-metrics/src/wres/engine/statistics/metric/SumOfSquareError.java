@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.SingleValuedPairs;
 
 /**
  * Abstract base class for decomposable scores that involve a sum-of-square errors.

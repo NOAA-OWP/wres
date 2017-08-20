@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * Identifies a scoring rule. A score may be an absolute or relative measure. An absolute score is dimensioned, whereas

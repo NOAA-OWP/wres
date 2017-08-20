@@ -3,12 +3,12 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 import java.util.concurrent.atomic.DoubleAdder;
 
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * Computes the mean error of a single-valued prediction as a fraction of the mean observed value.

@@ -6,14 +6,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import wres.datamodel.EnsemblePairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
+import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.metric.EnsemblePairs;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.Slicer;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.Slicer;
+import wres.datamodel.VectorOutput;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * <p>

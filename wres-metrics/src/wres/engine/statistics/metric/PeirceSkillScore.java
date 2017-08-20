@@ -3,10 +3,10 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
-import wres.datamodel.metric.MatrixOutput;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MulticategoryPairs;
-import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.MatrixOutput;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MulticategoryPairs;
+import wres.datamodel.ScalarOutput;
 
 /**
  * The Peirce Skill Score is a categorical measure of the average accuracy of a predictand for a multi-category event,

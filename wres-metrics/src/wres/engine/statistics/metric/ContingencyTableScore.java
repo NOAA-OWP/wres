@@ -3,14 +3,14 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
-import wres.datamodel.metric.MatrixOutput;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.MulticategoryPairs;
-import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.MatrixOutput;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.MulticategoryPairs;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.engine.statistics.metric.ContingencyTable.ContingencyTableBuilder;
 
 /**

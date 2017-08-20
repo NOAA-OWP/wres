@@ -10,21 +10,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.MapBiKey;
-import wres.datamodel.metric.MetricConstants.MetricInputGroup;
-import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.MetricInputSliceException;
-import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
-import wres.datamodel.metric.MetricOutputMapByMetric;
-import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.Threshold;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.DataFactory;
+import wres.datamodel.MapBiKey;
+import wres.datamodel.MetricInput;
+import wres.datamodel.MetricInputSliceException;
+import wres.datamodel.MetricOutput;
+import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputMapByMetric;
+import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.Threshold;
+import wres.datamodel.VectorOutput;
+import wres.datamodel.MetricConstants.MetricInputGroup;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
 
 /**
  * A {@link MetricProcessor} that processes and stores metric by forecast lead time.

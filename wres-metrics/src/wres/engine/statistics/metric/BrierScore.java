@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.DiscreteProbabilityPairs;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.DiscreteProbabilityPairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * <p>

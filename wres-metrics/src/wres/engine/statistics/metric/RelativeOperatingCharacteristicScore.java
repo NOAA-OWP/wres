@@ -6,13 +6,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DiscreteProbabilityPairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DiscreteProbabilityPairs;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.VectorOutput;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * <p>

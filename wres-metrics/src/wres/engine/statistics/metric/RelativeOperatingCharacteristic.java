@@ -6,16 +6,16 @@ import java.util.Objects;
 
 import org.apache.commons.math3.util.Precision;
 
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DichotomousPairs;
-import wres.datamodel.metric.DiscreteProbabilityPairs;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputMapByMetric;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.Slicer;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DichotomousPairs;
+import wres.datamodel.DiscreteProbabilityPairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutput;
+import wres.datamodel.MetricOutputMapByMetric;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.Slicer;
 
 /**
  * Computes the Relative Operating Characteristic (ROC; also known as the Receiver Operating Characteristic), which

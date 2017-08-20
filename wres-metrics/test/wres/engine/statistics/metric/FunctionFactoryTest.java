@@ -6,8 +6,8 @@ import java.util.function.BiPredicate;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
 
 /**
  * Tests the {@link FunctionFactory}.

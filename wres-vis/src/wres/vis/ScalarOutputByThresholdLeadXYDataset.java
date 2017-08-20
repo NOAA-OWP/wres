@@ -5,8 +5,8 @@ import java.util.List;
 
 import org.jfree.data.xy.AbstractXYDataset;
 
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.ScalarOutput;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link MetricOutputMapByLeadThreshold} which contains a set of

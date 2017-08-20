@@ -8,16 +8,16 @@ import java.nio.file.Paths;
 import org.junit.Test;
 
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Metadata;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.io.config.ProjectConfigPlus;
 
 /**
@@ -34,7 +34,7 @@ public final class MetricProcessorSingleValuedPairsTest
 
     /**
      * Tests the construction of a {@link MetricProcessorSingleValuedPairsByLeadTime} and application of
-     * {@link MetricProcessorSingleValuedPairsByLeadTime#apply(wres.datamodel.metric.SingleValuedPairs)} to configuration obtained
+     * {@link MetricProcessorSingleValuedPairsByLeadTime#apply(wres.datamodel.SingleValuedPairs)} to configuration obtained
      * from testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getSingleValuedPairsFour()}.
      */
@@ -85,7 +85,7 @@ public final class MetricProcessorSingleValuedPairsTest
 
     /**
      * Tests the construction of a {@link MetricProcessorSingleValuedPairsByLeadTime} and application of
-     * {@link MetricProcessorSingleValuedPairsByLeadTime#apply(wres.datamodel.metric.SingleValuedPairs)} to configuration obtained
+     * {@link MetricProcessorSingleValuedPairsByLeadTime#apply(wres.datamodel.SingleValuedPairs)} to configuration obtained
      * from testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple calls with separate
      * forecast lead times.

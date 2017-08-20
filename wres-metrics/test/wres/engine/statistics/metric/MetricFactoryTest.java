@@ -8,9 +8,9 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.MetricConstants;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MetricConstants;
 
 /**
  * Tests the {@link MetricFactory}.

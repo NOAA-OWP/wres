@@ -1,0 +1,105 @@
+package wres.datamodel;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import wres.datamodel.PairOfBooleans;
+import wres.datamodel.VectorOfBooleans;
+
+/**
+ * Immutable store of verification pairs associated with a dichotomous input, i.e. a single event whose outcome is
+ * recorded as occurring (true) or not occurring (false). The event is not defined as part of the input. A dichotomous
+ * pair is be encoded with a single indicator.
+ * 
+ * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
+ */
+class SafeDichotomousPairs extends SafeMulticategoryPairs implements DichotomousPairs
+{
+
+    @Override
+    public DichotomousPairs getBaselineData()
+    {
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        return metIn.ofDichotomousPairs(getDataForBaseline(), getMetadataForBaseline());
+    }
+
+    @Override
+    public int getCategoryCount()
+    {
+        return 2;
+    }
+
+    /**
+     * A {@link MetricInputBuilder} to build the metric input.
+     */
+
+    static class DichotomousPairsBuilder extends MulticategoryPairsBuilder
+    {
+
+        @Override
+        public SafeDichotomousPairs build()
+        {
+            return new SafeDichotomousPairs(this);
+        }
+
+        /**
+         * Convenience method for setting the input data from atomic {@link PairOfBooleans}.
+         * 
+         * @param mainInput the main input
+         * @return the builder
+         */
+
+        public MulticategoryPairsBuilder setDataFromAtomic(final List<PairOfBooleans> mainInput)
+        {
+            if(!Objects.isNull(mainInput))
+            {
+                DataFactory d = DefaultDataFactory.getInstance();
+                List<VectorOfBooleans> mainIn = new ArrayList<>();
+                mainInput.forEach(pair -> mainIn.add(d.vectorOf(new boolean[]{pair.getItemOne(), pair.getItemTwo()})));
+                setData(mainIn);
+            }
+            return this;
+        }
+
+        /**
+         * Convenience method for setting the input data for the baseline from atomic {@link PairOfBooleans}.
+         * 
+         * @param baselineInput the baseline input
+         * @return the builder
+         */
+
+        public MulticategoryPairsBuilder setDataForBaselineFromAtomic(final List<PairOfBooleans> baselineInput)
+        {
+            if(!Objects.isNull(baselineInput))
+            {
+                DataFactory d = DefaultDataFactory.getInstance();
+                List<VectorOfBooleans> baseIn = new ArrayList<>();
+                baselineInput.forEach(pair -> baseIn.add(d.vectorOf(new boolean[]{pair.getItemOne(),
+                    pair.getItemTwo()})));
+                setDataForBaseline(baseIn);
+            }
+            return this;
+        }
+
+    }
+
+    /**
+     * Construct the pairs with a builder.
+     * 
+     * @param b the builder
+     * @throws MetricInputException if the pairs are invalid
+     */
+
+    private SafeDichotomousPairs(final DichotomousPairsBuilder b)
+    {
+        super(b);
+        if(super.getCategoryCount() != 2)
+        {
+            throw new MetricInputException("Expected one outcome in the dichotomous input (two or four columns).");
+        }
+    }
+
+}

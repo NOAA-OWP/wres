@@ -5,12 +5,12 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.Slicer;
+import wres.datamodel.DataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.Slicer;
 
 /**
  * Compares the quantiles of two samples at a prescribed number (<code>N</code>) of (evenly-spaced) probabilities on the

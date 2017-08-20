@@ -5,9 +5,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutput;
+import wres.datamodel.MetricInput;
+import wres.datamodel.MetricInputException;
+import wres.datamodel.MetricOutput;
 
 /**
  * Wraps a {@link Collectable} and a {@link MetricOutput} into a {@link Callable} task to compute a metric result from

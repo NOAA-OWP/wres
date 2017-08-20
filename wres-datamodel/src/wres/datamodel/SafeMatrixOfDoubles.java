@@ -1,6 +1,6 @@
 package wres.datamodel;
 
-public class SafeMatrixOfDoubles implements MatrixOfDoubles
+class SafeMatrixOfDoubles implements MatrixOfDoubles
 {
     private final double[][] doubles;
 

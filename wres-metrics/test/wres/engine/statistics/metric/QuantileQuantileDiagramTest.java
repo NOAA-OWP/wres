@@ -8,13 +8,13 @@ import java.util.List;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.SingleValuedPairs;
 import wres.engine.statistics.metric.QuantileQuantileDiagram.QuantileQuantileDiagramBuilder;
 
 /**
