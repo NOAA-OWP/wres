@@ -259,6 +259,8 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "PROBABILITY OF FALSE DETECTION";
             case QUANTILE_QUANTILE_DIAGRAM:
                 return "QUANTILE-QUANTILE DIAGRAM";
+            case RANK_HISTOGRAM:
+                return "RANK HISTOGRAM";                     
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return "RELATIVE OPERATING CHARACTERISTIC";
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
@@ -316,6 +318,8 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "PoFD";
             case QUANTILE_QUANTILE_DIAGRAM:
                 return "QQ DIAGRAM";
+            case RANK_HISTOGRAM:
+                return "RANK HISTOGRAM";                
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return "ROC";
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:

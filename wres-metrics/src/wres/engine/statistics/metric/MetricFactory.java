@@ -21,6 +21,7 @@ import wres.engine.statistics.metric.ContinuousRankedProbabilityScore.CRPSBuilde
 import wres.engine.statistics.metric.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
+import wres.engine.statistics.metric.RankHistogram.RankHistogramBuilder;
 import wres.engine.statistics.metric.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
 import wres.engine.statistics.metric.RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder;
 import wres.engine.statistics.metric.ReliabilityDiagram.ReliabilityDiagramBuilder;
@@ -252,6 +253,20 @@ public class MetricFactory
     }
 
     /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * {@link MultiVectorOutput}.
+     * 
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<EnsemblePairs, MultiVectorOutput>
+            ofEnsembleMultiVectorCollection( MetricConstants... metric )
+    {
+        return ofEnsembleMultiVectorCollection( null, metric );
+    }
+
+    /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
      * {@link ScalarOutput}.
      * 
@@ -404,6 +419,27 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * {@link ScalarOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<EnsemblePairs, ScalarOutput> ofEnsembleScalarCollection( ExecutorService executor,
+                                                                                     MetricConstants... metric )
+    {
+        final MetricCollectionBuilder<EnsemblePairs, ScalarOutput> builder = MetricCollectionBuilder.of();
+        for ( MetricConstants next : metric )
+        {
+            builder.add( ofEnsembleScalar( next ) );
+        }
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
      * {@link VectorOutput}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -425,20 +461,20 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
-     * {@link ScalarOutput}.
+     * {@link MultiVectorOutput}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
      */
 
-    public MetricCollection<EnsemblePairs, ScalarOutput> ofEnsembleScalarCollection( ExecutorService executor,
-                                                                                     MetricConstants... metric )
+    public MetricCollection<EnsemblePairs, MultiVectorOutput> ofEnsembleMultiVectorCollection( ExecutorService executor,
+                                                                                               MetricConstants... metric )
     {
-        final MetricCollectionBuilder<EnsemblePairs, ScalarOutput> builder = MetricCollectionBuilder.of();
+        final MetricCollectionBuilder<EnsemblePairs, MultiVectorOutput> builder = MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( ofEnsembleScalar( next ) );
+            builder.add( ofEnsembleMultiVector( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -619,6 +655,24 @@ public class MetricFactory
     }
 
     /**
+     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link ScalarOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     */
+
+    public Metric<EnsemblePairs, ScalarOutput> ofEnsembleScalar( MetricConstants metric )
+    {
+        switch ( metric )
+        {
+            case SAMPLE_SIZE:
+                return ofSampleSize();
+            default:
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
+        }
+    }
+
+    /**
      * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link VectorOutput}.
      * 
      * @param metric the metric identifier
@@ -639,18 +693,18 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link ScalarOutput}.
+     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link MultiVectorOutput}.
      * 
      * @param metric the metric identifier
      * @return a metric
      */
 
-    public Metric<EnsemblePairs, ScalarOutput> ofEnsembleScalar( MetricConstants metric )
+    public Metric<EnsemblePairs, MultiVectorOutput> ofEnsembleMultiVector( MetricConstants metric )
     {
         switch ( metric )
         {
-            case SAMPLE_SIZE:
-                return ofSampleSize();
+            case RANK_HISTOGRAM:
+                return ofRankHistogram();
             default:
                 throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
@@ -659,7 +713,7 @@ public class MetricFactory
     /**
      * Return a default {@link BiasFraction} function.
      * 
-     * @return a default {@link BiasFraction} function.
+     * @return a default {@link BiasFraction} function
      */
 
     BiasFraction ofBiasFraction()
@@ -670,7 +724,7 @@ public class MetricFactory
     /**
      * Return a default {@link BrierScore} function.
      * 
-     * @return a default {@link BrierScore} function.
+     * @return a default {@link BrierScore} function
      */
 
     BrierScore ofBrierScore()
@@ -681,7 +735,7 @@ public class MetricFactory
     /**
      * Return a default {@link BrierSkillScore} function.
      * 
-     * @return a default {@link BrierSkillScore} function.
+     * @return a default {@link BrierSkillScore} function
      */
 
     BrierSkillScore ofBrierSkillScore()
@@ -692,7 +746,7 @@ public class MetricFactory
     /**
      * Return a default {@link CoefficientOfDetermination} function.
      * 
-     * @return a default {@link CoefficientOfDetermination} function.
+     * @return a default {@link CoefficientOfDetermination} function
      */
 
     CorrelationPearsons ofCoefficientOfDetermination()
@@ -704,7 +758,7 @@ public class MetricFactory
     /**
      * Return a default {@link ContingencyTable} function.
      * 
-     * @return a default {@link ContingencyTable} function.
+     * @return a default {@link ContingencyTable} function
      */
 
     ContingencyTable<MulticategoryPairs> ofContingencyTable()
@@ -716,7 +770,7 @@ public class MetricFactory
     /**
      * Return a default {@link CorrelationPearsons} function.
      * 
-     * @return a default {@link CorrelationPearsons} function.
+     * @return a default {@link CorrelationPearsons} function
      */
 
     CorrelationPearsons ofCorrelationPearsons()
@@ -728,7 +782,7 @@ public class MetricFactory
     /**
      * Return a default {@link CriticalSuccessIndex} function.
      * 
-     * @return a default {@link CriticalSuccessIndex} function.
+     * @return a default {@link CriticalSuccessIndex} function
      */
 
     CriticalSuccessIndex ofCriticalSuccessIndex()
@@ -740,7 +794,7 @@ public class MetricFactory
     /**
      * Return a default {@link EquitableThreatScore} function.
      * 
-     * @return a default {@link EquitableThreatScore} function.
+     * @return a default {@link EquitableThreatScore} function
      */
 
     EquitableThreatScore ofEquitableThreatScore()
@@ -752,7 +806,7 @@ public class MetricFactory
     /**
      * Return a default {@link MeanAbsoluteError} function.
      * 
-     * @return a default {@link MeanAbsoluteError} function.
+     * @return a default {@link MeanAbsoluteError} function
      */
 
     MeanAbsoluteError ofMeanAbsoluteError()
@@ -764,7 +818,7 @@ public class MetricFactory
     /**
      * Return a default {@link MeanError} function.
      * 
-     * @return a default {@link MeanError} function.
+     * @return a default {@link MeanError} function
      */
 
     MeanError ofMeanError()
@@ -775,7 +829,7 @@ public class MetricFactory
     /**
      * Return a default {@link MeanSquareError} function.
      * 
-     * @return a default {@link MeanSquareError} function.
+     * @return a default {@link MeanSquareError} function
      */
 
     MeanSquareError<SingleValuedPairs> ofMeanSquareError()
@@ -787,7 +841,7 @@ public class MetricFactory
     /**
      * Return a default {@link MeanSquareErrorSkillScore} function.
      * 
-     * @return a default {@link MeanSquareErrorSkillScore} function.
+     * @return a default {@link MeanSquareErrorSkillScore} function
      */
 
     MeanSquareErrorSkillScore<SingleValuedPairs> ofMeanSquareErrorSkillScore()
@@ -799,7 +853,7 @@ public class MetricFactory
     /**
      * Return a default {@link PeirceSkillScore} function for a dichotomous event.
      * 
-     * @return a default {@link PeirceSkillScore} function for a dichotomous event.
+     * @return a default {@link PeirceSkillScore} function for a dichotomous event
      */
 
     PeirceSkillScore<DichotomousPairs> ofPeirceSkillScore()
@@ -811,7 +865,7 @@ public class MetricFactory
     /**
      * Return a default {@link PeirceSkillScore} function for a multicategory event.
      * 
-     * @return a default {@link PeirceSkillScore} function for a multicategory event.
+     * @return a default {@link PeirceSkillScore} function for a multicategory event
      */
 
     PeirceSkillScore<MulticategoryPairs> ofPeirceSkillScoreMulti()
@@ -823,7 +877,7 @@ public class MetricFactory
     /**
      * Return a default {@link ProbabilityOfDetection} function.
      * 
-     * @return a default {@link ProbabilityOfDetection} function.
+     * @return a default {@link ProbabilityOfDetection} function
      */
 
     ProbabilityOfDetection ofProbabilityOfDetection()
@@ -835,7 +889,7 @@ public class MetricFactory
     /**
      * Return a default {@link ProbabilityOfFalseDetection} function.
      * 
-     * @return a default {@link ProbabilityOfFalseDetection} function.
+     * @return a default {@link ProbabilityOfFalseDetection} function
      */
 
     ProbabilityOfFalseDetection ofProbabilityOfFalseDetection()
@@ -847,7 +901,7 @@ public class MetricFactory
     /**
      * Return a default {@link QuantileQuantileDiagram} function.
      * 
-     * @return a default {@link QuantileQuantileDiagram} function.
+     * @return a default {@link QuantileQuantileDiagram} function
      */
 
     QuantileQuantileDiagram ofQuantileQuantileDiagram()
@@ -859,7 +913,7 @@ public class MetricFactory
     /**
      * Return a default {@link RootMeanSquareError} function.
      * 
-     * @return a default {@link RootMeanSquareError} function.
+     * @return a default {@link RootMeanSquareError} function
      */
 
     RootMeanSquareError ofRootMeanSquareError()
@@ -871,7 +925,7 @@ public class MetricFactory
     /**
      * Return a default {@link ReliabilityDiagram} function.
      * 
-     * @return a default {@link ReliabilityDiagram} function.
+     * @return a default {@link ReliabilityDiagram} function
      */
 
     ReliabilityDiagram ofReliabilityDiagram()
@@ -882,7 +936,7 @@ public class MetricFactory
     /**
      * Return a default {@link RelativeOperatingCharacteristicDiagram} function.
      * 
-     * @return a default {@link RelativeOperatingCharacteristicDiagram} function.
+     * @return a default {@link RelativeOperatingCharacteristicDiagram} function
      */
 
     RelativeOperatingCharacteristicDiagram ofRelativeOperatingCharacteristic()
@@ -894,7 +948,7 @@ public class MetricFactory
     /**
      * Return a default {@link RelativeOperatingCharacteristicScore} function.
      * 
-     * @return a default {@link RelativeOperatingCharacteristicScore} function.
+     * @return a default {@link RelativeOperatingCharacteristicScore} function
      */
 
     RelativeOperatingCharacteristicScore ofRelativeOperatingCharacteristicScore()
@@ -906,7 +960,7 @@ public class MetricFactory
     /**
      * Return a default {@link ContinuousRankedProbabilityScore} function.
      * 
-     * @return a default {@link ContinuousRankedProbabilityScore} function.
+     * @return a default {@link ContinuousRankedProbabilityScore} function
      */
 
     ContinuousRankedProbabilityScore ofContinuousRankedProbabilityScore()
@@ -917,7 +971,7 @@ public class MetricFactory
     /**
      * Return a default {@link ContinuousRankedProbabilitySkillScore} function.
      * 
-     * @return a default {@link ContinuousRankedProbabilitySkillScore} function.
+     * @return a default {@link ContinuousRankedProbabilitySkillScore} function
      */
 
     ContinuousRankedProbabilityScore ofContinuousRankedProbabilitySkillScore()
@@ -929,12 +983,23 @@ public class MetricFactory
      * Return a default {@link SampleSize} function.
      * 
      * @param <T> the type of {@link MetricInput}
-     * @return a default {@link SampleSize} function.
+     * @return a default {@link SampleSize} function
      */
 
     <T extends MetricInput<?>> SampleSize<T> ofSampleSize()
     {
         return (SampleSize<T>) new SampleSizeBuilder<T>().setOutputFactory( outputFactory ).build();
+    }
+
+    /**
+     * Return a default {@link RankHistogram} function.
+     * 
+     * @return a default {@link RankHistogram} function
+     */
+
+    RankHistogram ofRankHistogram()
+    {
+        return (RankHistogram) new RankHistogramBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
