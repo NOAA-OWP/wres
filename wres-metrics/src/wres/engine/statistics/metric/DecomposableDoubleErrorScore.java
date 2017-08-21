@@ -3,19 +3,20 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricInput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
- * A generic implementation of an error score that is decomposable.
+ * A generic implementation of an error score for {@link SingleValuedPairs} that is decomposable.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-abstract class DecomposableDoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, VectorOutput>
+abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Metric<S, VectorOutput>
 implements Score
 {
 
@@ -41,7 +42,7 @@ implements Score
      * A {@link MetricBuilder} to build the metric.
      */
 
-    static abstract class DecomposableDoubleErrorScoreBuilder<S extends SingleValuedPairs>
+    static abstract class DecomposableDoubleErrorScoreBuilder<S extends MetricInput<?>>
     extends
         MetricBuilder<S, VectorOutput>
     {
@@ -49,7 +50,7 @@ implements Score
          * The type of metric decomposition. See {@link MetricConstants#getDecompositionID()}.
          */
 
-        private MetricDecompositionGroup decompositionID = MetricDecompositionGroup.NONE;
+        MetricDecompositionGroup decompositionID = MetricDecompositionGroup.NONE;
 
         /**
          * Sets the decomposition identifier.
@@ -58,7 +59,7 @@ implements Score
          * @return the builder
          */
 
-        protected DecomposableDoubleErrorScoreBuilder<S> setDecompositionID(final MetricDecompositionGroup decompositionID)
+        DecomposableDoubleErrorScoreBuilder<S> setDecompositionID(final MetricDecompositionGroup decompositionID)
         {
             this.decompositionID = decompositionID;
             return this;
@@ -71,7 +72,7 @@ implements Score
      * @param builder the builder
      */
 
-    protected DecomposableDoubleErrorScore(final DecomposableDoubleErrorScoreBuilder<S> builder)
+    DecomposableDoubleErrorScore(final DecomposableDoubleErrorScoreBuilder<S> builder)
     {
         super(builder);
         Objects.requireNonNull(builder.decompositionID, "Specify a non-null decomposition identifier.");

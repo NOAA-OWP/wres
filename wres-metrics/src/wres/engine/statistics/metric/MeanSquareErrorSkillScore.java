@@ -47,7 +47,7 @@ class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends MeanSquareE
         final double[] result = new double[]{FunctionFactory.skill().applyAsDouble(numerator, denominator)};
         //Metadata
         final MetricOutputMetadata metOut =
-                                          getMetadata(s, s.getData().size(), MetricConstants.MAIN, baselineIdentifier);
+                                          getMetadata(s, s.getData().size(), MetricConstants.NONE, baselineIdentifier);
         return getDataFactory().ofVectorOutput(result, metOut);
     }
 
