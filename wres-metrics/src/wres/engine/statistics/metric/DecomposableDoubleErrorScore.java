@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricInput;
 import wres.datamodel.SingleValuedPairs;
@@ -21,7 +20,7 @@ implements Score
 {
 
     /**
-     * The decomposition identifier. See {@link MetricConstants#getDecompositionID()}.
+     * The decomposition identifier. See {@link MetricDecompositionGroup}.
      */
 
     private final MetricDecompositionGroup decompositionID;
@@ -47,7 +46,7 @@ implements Score
         MetricBuilder<S, VectorOutput>
     {
         /**
-         * The type of metric decomposition. See {@link MetricConstants#getDecompositionID()}.
+         * The type of metric decomposition. See {@link MetricDecompositionGroup}.
          */
 
         MetricDecompositionGroup decompositionID = MetricDecompositionGroup.NONE;

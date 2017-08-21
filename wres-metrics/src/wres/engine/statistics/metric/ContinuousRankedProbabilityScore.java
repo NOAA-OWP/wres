@@ -138,6 +138,7 @@ class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorScore<Ense
         double totCRPS = 0.0;
 
         //Iterate through the member positions and determine the mean alpha and beta      
+        BiConsumer<double[], Incrementer> summer = sumAlphaBeta();
         for ( int i = 0; i < members + 1; i++ )
         {
             Incrementer incrementer = new Incrementer( i, members );
@@ -149,7 +150,7 @@ class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorScore<Ense
                 System.arraycopy( nextPair.getItemTwo(), 0, sorted, 1, members );
                 Arrays.sort( sorted, 1, members + 1 );
                 //Increment
-                sumAlphaBeta().accept( sorted, incrementer );
+                summer.accept( sorted, incrementer );
             }
             totCRPS += incrementer.totCRPS;
         }
@@ -165,21 +166,24 @@ class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorScore<Ense
 
     private static BiConsumer<double[], Incrementer> sumAlphaBeta()
     {
+        //Handle three possibilities
+        BiConsumer<double[], Incrementer> low = sumAlphaBetaLow();
+        BiConsumer<double[], Incrementer> middle = sumAlphaBetaMiddle();
+        BiConsumer<double[], Incrementer> high = sumAlphaBetaHigh();
         return ( pair, inc ) -> {
             if ( inc.member == 0 )
             {
-                sumAlphaBetaLow().accept( pair, inc );
-                ;
+                low.accept( pair, inc );
             }
             //Deal with high outlier: case 2
             else if ( inc.member == inc.totalMembers )
             {
-                sumAlphaBetaHigh().accept( pair, inc );
+                high.accept( pair, inc );
             }
             //Deal with remaining 3 cases, for 0 < i < N
             else
             {
-                sumAlphaBetaMiddle().accept( pair, inc );
+                middle.accept( pair, inc );
             }
         };
     }
@@ -315,6 +319,9 @@ class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorScore<Ense
 
         /**
          * Construct the incrementer.
+         * 
+         * @param member the member position
+         * @param totalMembers the total number of members
          */
 
         private Incrementer( int member, int totalMembers )
