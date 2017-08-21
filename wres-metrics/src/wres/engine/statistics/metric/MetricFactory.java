@@ -928,6 +928,7 @@ public class MetricFactory
     /**
      * Return a default {@link SampleSize} function.
      * 
+     * @param <T> the type of {@link MetricInput}
      * @return a default {@link SampleSize} function.
      */
 

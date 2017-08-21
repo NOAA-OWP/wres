@@ -425,6 +425,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * Builds a metric future for a {@link MetricCollection} that consumes {@link EnsemblePairs} at a specific
      * {@link Threshold}.
      * 
+     * @param <T> the type of {@link MetricOutput}
      * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection
@@ -446,6 +447,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * Builds a metric future for a {@link MetricCollection} that consumes {@link EnsemblePairs} at a specific
      * {@link Threshold} and appends it to the input map of futures.
      * 
+     * @param <T> the type of {@link MetricOutput}
      * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection

@@ -64,7 +64,7 @@ class CriticalSuccessIndex extends ContingencyTableScore<DichotomousPairs>
     /**
      * Hidden constructor.
      * 
-     * @param builder the {@link builder}.
+     * @param builder the builder
      */
 
     private CriticalSuccessIndex(final CriticalSuccessIndexBuilder builder)

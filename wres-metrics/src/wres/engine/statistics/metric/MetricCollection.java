@@ -289,7 +289,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
      * (intermediate) input once. Each metric is computed asynchronously.
      * 
      * @return the output for each metric, contained in a collection
-     * @throws InterruptedException
+     * @throws InterruptedException if the calculation is interrupted
      */
 
     private MetricOutputMapByMetric<T> callInternal() throws InterruptedException
@@ -337,6 +337,8 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
 
     /**
      * Hidden constructor.
+     * 
+     * @param builder the builder
      */
 
     private MetricCollection(final MetricCollectionBuilder<S, T> builder)

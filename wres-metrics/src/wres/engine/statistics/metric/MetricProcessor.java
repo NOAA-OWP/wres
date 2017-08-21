@@ -372,7 +372,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @param config the project configuration
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
-     *            {@link #apply(MetricInput)}
+     *            {@link #apply(Object)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
@@ -435,6 +435,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     /**
      * Returns true if the input list of thresholds contains one or more probability thresholds, false otherwise.
      * 
+     * @param check the thresholds to check
      * @return true if the input list contains one or more probability thresholds, false otherwise
      */
 
@@ -453,6 +454,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     /**
      * Returns true if global thresholds are available for a particular {@link MetricInputGroup}, false otherwise.
      * 
+     * @param group the {@link MetricInputGroup} to check
      * @return true if global thresholds are available for a {@link MetricInputGroup}, false otherwise
      */
 
@@ -634,6 +636,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @param inputString the comma-separated input string
      * @param oper the operator
      * @param areProbs is true to generate {@link ProbabilityThreshold}, false for {@link Threshold}
+     * @return the thresholds
      * @throws MetricConfigurationException if the thresholds are configured incorrectly
      */
 
