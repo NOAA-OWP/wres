@@ -18,9 +18,12 @@ import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
+import wres.config.generated.ThresholdOperator;
 import wres.datamodel.DataFactory;
 import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricInputGroup;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputForProject;
@@ -30,11 +33,8 @@ import wres.datamodel.QuantileThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Threshold;
-import wres.datamodel.VectorOutput;
-import wres.datamodel.MetricConstants.MetricInputGroup;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold.Operator;
-import wres.config.generated.ThresholdOperator;
+import wres.datamodel.VectorOutput;
 
 /**
  * <p>
@@ -214,6 +214,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
                 return MetricConstants.RELIABILITY_DIAGRAM;
             case ROOT_MEAN_SQUARE_ERROR:
                 return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
+            case SAMPLE_SIZE:
+                return MetricConstants.SAMPLE_SIZE;                
             default:
                 throw new MetricConfigurationException("Unrecognized metric identifier in project configuration '"
                     + translate + "'.");
