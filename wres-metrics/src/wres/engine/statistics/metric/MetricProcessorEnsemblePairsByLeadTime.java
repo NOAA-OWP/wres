@@ -220,22 +220,18 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         {
             ensembleScalar = null;
         }
-
-        //TODO: implement the ensemble multi-vector
-        ensembleMultiVector = null;
-
-//        //Ensemble input, multi-vector output
-//        if(hasMetrics(MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR))
-//        {
-//            ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection(executor,
-//                                                                                getSelectedMetrics(metrics,
-//                                                                                                   MetricInputGroup.ENSEMBLE,
-//                                                                                                   MetricOutputGroup.MULTIVECTOR));
-//        }
-//        else
-//        {
-//            ensembleMultiVector = null;
-//        }                
+        //Ensemble input, multi-vector output
+        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
+        {
+            ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection( executor,
+                                                                                 getSelectedMetrics( metrics,
+                                                                                                     MetricInputGroup.ENSEMBLE,
+                                                                                                     MetricOutputGroup.MULTIVECTOR ) );
+        }
+        else
+        {
+            ensembleMultiVector = null;
+        }
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
         toSingleValues = in -> dataFactory.pairOf( in.getItemOne(),

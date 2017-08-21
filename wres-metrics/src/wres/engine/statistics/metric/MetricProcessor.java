@@ -206,6 +206,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
                 return MetricConstants.QUANTILE_QUANTILE_DIAGRAM;
             case PROBABILITY_OF_FALSE_DETECTION:
                 return MetricConstants.PROBABILITY_OF_FALSE_DETECTION;
+            case RANK_HISTOGRAM:
+                return MetricConstants.RANK_HISTOGRAM;                
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:

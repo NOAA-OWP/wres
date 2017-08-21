@@ -248,6 +248,7 @@
             <xs:enumeration value="probability of detection" />
             <xs:enumeration value="probability of false detection" />
             <xs:enumeration value="quantile quantile diagram" />
+            <xs:enumeration value="rank histogram" />
             <xs:enumeration value="relative operating characteristic diagram" />
             <xs:enumeration value="relative operating characteristic score" />
             <xs:enumeration value="reliability diagram" />

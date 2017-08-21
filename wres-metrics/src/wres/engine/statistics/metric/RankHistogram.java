@@ -56,12 +56,15 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
 
         //Set the ranked positions as 1:N+1
         double[] ranks = IntStream.range( 1, useMe.get( 0 ).getItemTwo().length + 1 ).asDoubleStream().toArray();
-        double[] relativeFrequencies = new double[ranks.length];
+        double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
 
         //Compute the sum of ranks
         BiConsumer<PairOfDoubleAndVectorOfDoubles, double[]> ranker = rankWithTies();
-        useMe.forEach( nextPair -> ranker.accept( nextPair, relativeFrequencies ) );
+        useMe.forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
 
+        //Compute relative frequencies
+        double[] relativeFrequencies = Arrays.stream( sumRanks ).map( a -> a / useMe.size() ).toArray();
+        
         //Set and return the results
         Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
         output.put( MetricConstants.RANK_ORDER, ranks );
@@ -130,7 +133,7 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
             //Greater or equal to upper bound
             else if ( obs >= sorted[sorted.length - 1] )
             {
-                sumRanks[sorted.length - 1] += 1;
+                sumRanks[sumRanks.length - 1] += 1;
             }
             //Contained
             else
@@ -156,7 +159,7 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
                 if ( obs <= sorted[k] )
                 {
                     //Unique
-                    if ( k < ( sorted.length - 1 ) && Math.abs( sorted[k] - sorted[k + 1] ) > .0000001 )
+                    if ( k < ( sorted.length - 1 ) && sorted[k] < sorted[k + 1] )
                     {
                         sumRanks[k] += 1;
                     }
@@ -165,6 +168,7 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
                     {
                         tiedRanker.accept( sorted, k, sumRanks );
                     }
+                    break;
                 }
             }
         };
@@ -195,9 +199,17 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
                     break;
                 }
             }
+            //Same lower and upper bound
+            if ( startRank == endRank )
+            {
+                sumRanks[startRank] += 1;
+            }
             //Select a random rank between upper and lower
-            int adj = endRank - startRank;
-            sumRanks[RNG.nextInt( adj + 1 ) + startRank] += 1;
+            else
+            {
+                int adj = endRank - startRank;
+                sumRanks[RNG.nextInt( adj + 1 ) + startRank] += 1;
+            }
         };
     }
 
