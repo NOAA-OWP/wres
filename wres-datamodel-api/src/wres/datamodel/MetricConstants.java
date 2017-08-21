@@ -128,6 +128,12 @@ public enum MetricConstants
     QUANTILE_QUANTILE_DIAGRAM( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ),
 
     /**
+     * Identifier for the Rank Histogram.
+     */
+
+    RANK_HISTOGRAM( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ),
+    
+    /**
      * Identifier for the Relative Operating Characteristic.
      */
 
@@ -248,6 +254,18 @@ public enum MetricConstants
 
     OBSERVED_GIVEN_FORECAST_PROBABILITY,
 
+    /**
+     * Identifier for the observed relative frequency with which an event occurs.
+     */
+
+    OBSERVED_RELATIVE_FREQUENCY,    
+    
+    /**
+     * Identifier for a rank ordering.
+     */
+    
+    RANK_ORDER,
+    
     /**
      * Identifier for predicted quantiles.
      */

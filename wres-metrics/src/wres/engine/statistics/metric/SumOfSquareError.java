@@ -32,7 +32,7 @@ abstract class SumOfSquareError<S extends SingleValuedPairs> extends Decomposabl
     /**
      * Returns the sum of square errors for the input.
      * 
-     * @param input the input
+     * @param s the input
      * @return the sum of square errors
      */
 
