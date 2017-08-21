@@ -23,218 +23,218 @@ public enum MetricConstants
      * Identifier for fractional bias or relative mean error.
      */
 
-    BIAS_FRACTION(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR),
+    BIAS_FRACTION( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
 
     /**
      * Identifier for a Brier Score.
      */
 
-    BRIER_SCORE(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR),
+    BRIER_SCORE( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ),
 
     /**
      * Identifier for a Brier Skill Score.
      */
 
-    BRIER_SKILL_SCORE(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR),
+    BRIER_SKILL_SCORE( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ),
 
     /**
      * Identifier for coefficient of determination.
      */
 
-    COEFFICIENT_OF_DETERMINATION(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR),
+    COEFFICIENT_OF_DETERMINATION( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
 
     /**
      * Identifier for a Mean Continuous Ranked Probability Score
      */
 
-    CONTINUOUS_RANKED_PROBABILITY_SCORE(MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR),
+    CONTINUOUS_RANKED_PROBABILITY_SCORE( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ),
 
     /**
      * Identifier for a Mean Continuous Ranked Probability Skill Score
      */
 
-    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE(MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR),
+    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ),
 
     /**
      * Identifier for a Contingency Table.
      */
 
-    CONTINGENCY_TABLE(MetricInputGroup.MULTICATEGORY, MetricOutputGroup.MATRIX),
+    CONTINGENCY_TABLE( MetricInputGroup.MULTICATEGORY, MetricOutputGroup.MATRIX ),
 
     /**
      * Identifier for Pearson's product-moment correlation coefficient.
      */
 
-    CORRELATION_PEARSONS(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR),
+    CORRELATION_PEARSONS( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
 
     /**
      * Identifier for a Critical Success Index.
      */
 
-    CRITICAL_SUCCESS_INDEX(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR),
+    CRITICAL_SUCCESS_INDEX( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
 
     /**
      * Identifier for an Equitable Threat Score.
      */
 
-    EQUITABLE_THREAT_SCORE(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR),
+    EQUITABLE_THREAT_SCORE( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
 
     /**
      * Identifier for a Mean Absolute Error.
      */
 
-    MEAN_ABSOLUTE_ERROR(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR),
+    MEAN_ABSOLUTE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
 
     /**
      * Identifier for a Mean Error.
      */
 
-    MEAN_ERROR(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR),
+    MEAN_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
 
     /**
      * Identifier for a Mean Square Error.
      */
 
-    MEAN_SQUARE_ERROR(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR),
+    MEAN_SQUARE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ),
 
     /**
      * Identifier for a Mean Square Error Skill Score.
      */
 
-    MEAN_SQUARE_ERROR_SKILL_SCORE(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR),
+    MEAN_SQUARE_ERROR_SKILL_SCORE( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ),
 
     /**
      * Identifier for a Peirce Skill Score.
      */
 
-    PEIRCE_SKILL_SCORE(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR),
+    PEIRCE_SKILL_SCORE( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
 
     /**
      * Identifier for a Probability Of Detection.
      */
 
-    PROBABILITY_OF_DETECTION(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR),
+    PROBABILITY_OF_DETECTION( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
 
     /**
      * Identifier for a Probability Of False Detection.
      */
 
-    PROBABILITY_OF_FALSE_DETECTION(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR),
+    PROBABILITY_OF_FALSE_DETECTION( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
 
     /**
      * Quantile-quantile diagram.
      */
 
-    QUANTILE_QUANTILE_DIAGRAM(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR),
+    QUANTILE_QUANTILE_DIAGRAM( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ),
 
     /**
      * Identifier for the Relative Operating Characteristic.
      */
 
-    RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR),
+    RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ),
 
     /**
      * Identifier for the Relative Operating Characteristic Score.
      */
 
-    RELATIVE_OPERATING_CHARACTERISTIC_SCORE(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR),
+    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ),
 
     /**
      * Identifier for the Reliability Diagram.
      */
 
-    RELIABILITY_DIAGRAM(MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR),
+    RELIABILITY_DIAGRAM( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ),
 
     /**
      * Identifier for a Root Mean Square Error.
      */
 
-    ROOT_MEAN_SQUARE_ERROR(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR),
+    ROOT_MEAN_SQUARE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+
+    /**
+     * Identifier for the sample size.
+     */
+
+    SAMPLE_SIZE( MetricInputGroup.SINGLE_VALUED, MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCALAR ),
 
     /**
      * Indicator for no decomposition.
      */
 
-    NONE(MetricDecompositionGroup.NONE),
+    NONE( MetricDecompositionGroup.NONE ),
 
     /**
      * Identifier for a Calibration-Refinement (CR) factorization.
      */
 
-    CR(MetricDecompositionGroup.CR),
+    CR( MetricDecompositionGroup.CR ),
 
     /**
      * Identifier for a Calibration-Refinement (CR) factorization, together with an additional potential score
      * component.
      */
 
-    CR_POT(MetricDecompositionGroup.CR_POT),
+    CR_POT( MetricDecompositionGroup.CR_POT ),
 
     /**
      * Identifier for a Likeilihood-Base-Rate (LBR) factorization.
      */
 
-    LBR(MetricDecompositionGroup.LBR),
+    LBR( MetricDecompositionGroup.LBR ),
 
     /**
      * Identifier for the score and components of both the CR and LBR factorizations.
      */
 
-    CR_AND_LBR(MetricDecompositionGroup.CR_AND_LBR),
+    CR_AND_LBR( MetricDecompositionGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the main component of a metric, such as the overall score in a score decomposition.
      */
 
-    MAIN(MetricDecompositionGroup.NONE, MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR),
+    MAIN( MetricDecompositionGroup.NONE, MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the reliability component of a score decomposition.
      */
 
-    RELIABILITY(MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR),
+    RELIABILITY( MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the resolution component of a score decomposition.
      */
 
-    RESOLUTION(MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR),
+    RESOLUTION( MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the uncertainty component of a score decomposition.
      */
 
-    UNCERTAINTY(MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR),
+    UNCERTAINTY( MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the potential score value (perfect reliability).
      */
 
-    POTENTIAL(MetricDecompositionGroup.CR_POT),
+    POTENTIAL( MetricDecompositionGroup.CR_POT ),
 
     /**
      * Identifier for the Type-II conditional bias component of a score decomposition.
      */
 
-    TYPE_II_BIAS(MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR),
+    TYPE_II_BIAS( MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the discrimination component of a score decomposition.
      */
 
-    DISCRIMINATION(MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR),
+    DISCRIMINATION( MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the sharpness component of a score decomposition.
      */
 
-    SHARPNESS(MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR),
-
-    /**
-     * Identifier for the sample size component of a metric.
-     */
-
-    SAMPLE_SIZE,
+    SHARPNESS( MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR ),
 
     /**
      * Identifier for a forecast probability.
@@ -264,7 +264,7 @@ public enum MetricConstants
      * The {@link MetricInputGroup} or null if the {@link MetricConstants} does not belong to a group.
      */
 
-    private final MetricInputGroup inGroup;
+    private final MetricInputGroup[] inGroup;
 
     /**
      * The {@link MetricOutputGroup} or null if the {@link MetricConstants} does not belong to a group.
@@ -297,9 +297,24 @@ public enum MetricConstants
      * @param outputGroup the output group
      */
 
-    private MetricConstants(MetricInputGroup inGroup, MetricOutputGroup outGroup)
+    private MetricConstants( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
-        this.inGroup = inGroup;
+        this.inGroup = new MetricInputGroup[] { inGroup };
+        this.outGroup = outGroup;
+        decGroup = null;
+    }
+
+    /**
+     * Construct with two {@link MetricInputGroup} and a {@link MetricOutputGroup}.
+     * 
+     * @param firstGroup the first input group
+     * @param secondGroup the second input group
+     * @param outputGroup the output group
+     */
+
+    private MetricConstants( MetricInputGroup firstGroup, MetricInputGroup secondGroup, MetricOutputGroup outGroup )
+    {
+        this.inGroup = new MetricInputGroup[] { firstGroup, secondGroup };
         this.outGroup = outGroup;
         decGroup = null;
     }
@@ -310,7 +325,7 @@ public enum MetricConstants
      * @param decGroup the decomposition groups to which the {@link MetricConstants} belongs
      */
 
-    private MetricConstants(MetricDecompositionGroup... decGroup)
+    private MetricConstants( MetricDecompositionGroup... decGroup )
     {
         this.decGroup = decGroup;
         inGroup = null;
@@ -324,9 +339,9 @@ public enum MetricConstants
      * @return true if the input {@link MetricInputGroup} contains the current {@link MetricConstants}, false otherwise
      */
 
-    public boolean isInGroup(MetricInputGroup inGroup)
+    public boolean isInGroup( MetricInputGroup inGroup )
     {
-        return this.inGroup == inGroup;
+        return Arrays.asList( this.inGroup ).contains( inGroup );
     }
 
     /**
@@ -337,7 +352,7 @@ public enum MetricConstants
      * @return true if the input {@link MetricOutputGroup} contains the current {@link MetricConstants}, false otherwise
      */
 
-    public boolean isInGroup(MetricOutputGroup outGroup)
+    public boolean isInGroup( MetricOutputGroup outGroup )
     {
         return this.outGroup == outGroup;
     }
@@ -352,9 +367,9 @@ public enum MetricConstants
      *         {@link MetricConstants}, false otherwise
      */
 
-    public boolean isInGroup(MetricInputGroup inGroup, MetricOutputGroup outGroup)
+    public boolean isInGroup( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
-        return isInGroup(inGroup) && isInGroup(outGroup);
+        return isInGroup( inGroup ) && isInGroup( outGroup );
     }
 
     /**
@@ -366,7 +381,7 @@ public enum MetricConstants
 
     public List<MetricConstants> getMetricComponents()
     {
-        return Objects.isNull(decGroup) ? null : decGroup[0].getMetricComponents();
+        return Objects.isNull( decGroup ) ? null : decGroup[0].getMetricComponents();
     }
 
     /**
@@ -378,10 +393,11 @@ public enum MetricConstants
      * @return the {@link MetricConstants} associated with the current {@link MetricInputGroup}
      */
 
-    public static Set<MetricConstants> getMetrics(MetricInputGroup inGroup, MetricOutputGroup outGroup)
+    public static Set<MetricConstants> getMetrics( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
-        Set<MetricConstants> all = EnumSet.allOf(MetricConstants.class);
-        all.removeIf(a -> a.inGroup != inGroup || a.outGroup != outGroup);
+        Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
+        all.removeIf( a -> Objects.isNull( a.inGroup ) || !Arrays.asList( a.inGroup ).contains( inGroup )
+                           || a.outGroup != outGroup );
         return all;
     }
 
@@ -430,8 +446,8 @@ public enum MetricConstants
 
         public Set<MetricConstants> getMetrics()
         {
-            Set<MetricConstants> all = EnumSet.allOf(MetricConstants.class);
-            all.removeIf(a -> a.inGroup != this);
+            Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
+            all.removeIf( a -> Objects.isNull( a.inGroup ) || !Arrays.asList( a.inGroup ).contains( this ) );
             return all;
         }
 
@@ -442,9 +458,9 @@ public enum MetricConstants
          * @return true if this {@link MetricInputGroup} contains the input {@link MetricConstants}, false otherwise
          */
 
-        public boolean contains(MetricConstants input)
+        public boolean contains( MetricConstants input )
         {
-            return getMetrics().contains(input);
+            return getMetrics().contains( input );
         }
 
     }
@@ -488,8 +504,8 @@ public enum MetricConstants
 
         public Set<MetricConstants> getMetrics()
         {
-            Set<MetricConstants> all = EnumSet.allOf(MetricConstants.class);
-            all.removeIf(a -> a.outGroup != this);
+            Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
+            all.removeIf( a -> a.outGroup != this );
             return all;
         }
 
@@ -500,9 +516,9 @@ public enum MetricConstants
          * @return true if this {@link MetricOutputGroup} contains the input {@link MetricConstants}, false otherwise
          */
 
-        public boolean contains(MetricConstants input)
+        public boolean contains( MetricConstants input )
         {
-            return getMetrics().contains(input);
+            return getMetrics().contains( input );
         }
 
     }
@@ -556,10 +572,10 @@ public enum MetricConstants
 
         public List<MetricConstants> getMetricComponents()
         {
-            List<MetricConstants> all = new ArrayList<>(EnumSet.allOf(MetricConstants.class));
+            List<MetricConstants> all = new ArrayList<>( EnumSet.allOf( MetricConstants.class ) );
             //Remove constants with the same string trace across MetricConstants and MetricDecompositionGroup
-            all.removeIf(a -> Objects.isNull(a.decGroup) || a.toString().equals(toString())
-                || !Arrays.asList(a.decGroup).contains(this));
+            all.removeIf( a -> Objects.isNull( a.decGroup ) || a.toString().equals( toString() )
+                               || !Arrays.asList( a.decGroup ).contains( this ) );
             return all;
         }
 
@@ -572,9 +588,9 @@ public enum MetricConstants
          *         otherwise
          */
 
-        public boolean contains(MetricConstants input)
+        public boolean contains( MetricConstants input )
         {
-            return getMetricComponents().contains(input);
+            return getMetricComponents().contains( input );
         }
 
     }
