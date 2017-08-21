@@ -14,7 +14,6 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MapBiKey;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricInput;
 import wres.datamodel.MetricInputSliceException;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
@@ -80,11 +79,11 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
     }
 
     /**
-     * Adds the input {@link MetricFutures} to the internal store of existing {@link MetricFutures} defined for this
-     * processor.
+     * Adds the input {@link MetricFuturesByLeadTime} to the internal store of existing {@link MetricFuturesByLeadTime} 
+     * defined for this processor.
      * 
      * @param leadTime the lead time
-     * @param mergeFuture the futures to add
+     * @param mergeFutures the futures to add
      */
 
     void addToMergeMap(Integer leadTime, MetricFuturesByLeadTime mergeFutures)
@@ -98,7 +97,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
     }
 
     /**
-     * Store of metric futures for each output type. Use {@ link #getMetricOutput()} to obtain the processed
+     * Store of metric futures for each output type. Use {@link #getMetricOutput()} to obtain the processed
      * {@link MetricOutputForProjectByLeadThreshold}.
      */
 
@@ -194,6 +193,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
              * Adds a data factory.
              * 
              * @param dataFactory the data factory
+             * @return the builder
              */
 
             MetricFuturesByLeadTimeBuilder addDataFactory(DataFactory dataFactory)
@@ -259,12 +259,12 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
             }
 
             /**
-             * Adds the outputs from an existing {@link MetricFutures} for the outputs that are included in the merge
+             * Adds the outputs from an existing {@link MetricFuturesByLeadTime} for the outputs that are included in the merge
              * list.
              * 
              * @param futures the input futures
              * @param mergeList the merge list
-             * @throws MetricConfigurationException
+             * @return the builder
              */
 
             private MetricFuturesByLeadTimeBuilder addFutures(MetricFuturesByLeadTime futures,
@@ -426,7 +426,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
      * @param config the project configuration
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
-     *            {@link #apply(MetricInput)}
+     *            {@link #apply(Object)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
@@ -442,9 +442,10 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
      * Builds a metric future for a {@link MetricCollection} that consumes {@link SingleValuedPairs} at a specific lead
      * time and {@link Threshold}.
      * 
+     * @param <T> the type of {@link MetricOutput}
      * @param threshold the threshold
      * @param pairs the pairs
-     * @param futures the collection of futures to which the new future will be added
+     * @param collection the collection of metrics
      * @return the future result
      * @throws MetricInputSliceException if the threshold fails to slice any data
      */

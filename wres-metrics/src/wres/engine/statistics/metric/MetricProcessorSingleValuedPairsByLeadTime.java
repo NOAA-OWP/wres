@@ -10,6 +10,8 @@ import java.util.function.Function;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DichotomousPairs;
+import wres.datamodel.MetricConstants.MetricInputGroup;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
@@ -19,8 +21,6 @@ import wres.datamodel.PairOfDoubles;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Threshold;
-import wres.datamodel.MetricConstants.MetricInputGroup;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.MetricProcessorByLeadTime.MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder;
 
 /**
@@ -164,6 +164,7 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
      * Builds a metric future for a {@link MetricCollection} that consumes {@link DichotomousPairs} at a specific lead
      * time and {@link Threshold}.
      * 
+     * @param <T> the type of {@link MetricOutput}
      * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection
