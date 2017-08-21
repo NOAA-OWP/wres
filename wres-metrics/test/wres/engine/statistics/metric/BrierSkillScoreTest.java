@@ -9,9 +9,9 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.VectorOutput;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.engine.statistics.metric.BrierSkillScore.BrierSkillScoreBuilder;
 
 /**
@@ -49,7 +49,7 @@ public final class BrierSkillScoreTest
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension(),
                                                                   MetricConstants.BRIER_SKILL_SCORE,
-                                                                  MetricConstants.MAIN,
+                                                                  MetricConstants.NONE,
                                                                   metaFac.getDatasetIdentifier("DRRC2",
                                                                                                "SQIN",
                                                                                                "HEFS",

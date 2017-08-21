@@ -5,15 +5,15 @@ import java.util.Objects;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * <p>
- * The Brier Skill Score (SS) measures the reduction in the Brier Score (i.e. probabilistic Mean Square Error)
+ * The Brier Skill Score (SS) measures the reduction in the {@link BrierScore} (i.e. probabilistic Mean Square Error)
  * associated with one set of predictions when compared to another. The BSS is analogous to the
  * {@link MeanSquareErrorSkillScore} or the Nash-Sutcliffe Efficiency for a single-valued input. The perfect BSS is 1.0.
  * </p>
@@ -48,7 +48,7 @@ implements ProbabilityScore
             final double[] result = new double[]{
                 FunctionFactory.skill().applyAsDouble(getSumOfSquareError(s) / s.size(), p * (1.0 - p))};
             //Metadata
-            final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
+            final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.NONE, null);
             return getDataFactory().ofVectorOutput(result, metOut);
         }
     }

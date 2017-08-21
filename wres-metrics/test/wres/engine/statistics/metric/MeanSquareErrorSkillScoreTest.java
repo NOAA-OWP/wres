@@ -11,10 +11,10 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.engine.statistics.metric.MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder;
 
 /**
@@ -47,7 +47,7 @@ public final class MeanSquareErrorSkillScoreTest
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                                  MetricConstants.MAIN,
+                                                                  MetricConstants.NONE,
                                                                   metaFac.getDatasetIdentifier("DRRC2",
                                                                                                "SQIN",
                                                                                                "HEFS",
@@ -112,7 +112,7 @@ public final class MeanSquareErrorSkillScoreTest
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("MM/DAY"),
                                                                   MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                                  MetricConstants.MAIN,
+                                                                  MetricConstants.NONE,
                                                                   metaFac.getDatasetIdentifier("103.1", "QME", "NVE"),
                                                                   24);
 
