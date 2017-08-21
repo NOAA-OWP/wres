@@ -144,7 +144,8 @@ public class CommaSeparated
 
                 try (BufferedWriter w = Files.newBufferedWriter( outputPath,
                                                                  StandardCharsets.UTF_8,
-                                                                 StandardOpenOption.CREATE ) )
+                                                                 StandardOpenOption.CREATE,
+                                                                 StandardOpenOption.TRUNCATE_EXISTING ) )
                 {
                     w.write( headerRow.toString() );
                     w.write( System.lineSeparator() );
