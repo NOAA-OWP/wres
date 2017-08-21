@@ -1,0 +1,92 @@
+package wres.engine.statistics.metric;
+
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.Test;
+
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.EnsemblePairs;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.VectorOutput;
+import wres.engine.statistics.metric.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
+
+/**
+ * Tests the {@link ContinousRankedProbabilitySkillScore}.
+ * 
+ * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
+ */
+public final class ContinousRankedProbabilitySkillScoreTest
+{
+
+    /**
+     * Constructs a {@link ContinousRankedProbabilitySkillScore} and compares the actual result to the expected result 
+     * for a scenario without  missing data. Also, checks the parameters of the metric.
+     */
+
+    @Test
+    public void test1CRPSSNoMissings()
+    {
+        //Generate some data
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+        final List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        pairs.add( outF.pairOf( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
+        pairs.add( outF.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
+        pairs.add( outF.pairOf( 32, new double[] { 23, 54, 23, 12, 32 } ) );
+        pairs.add( outF.pairOf( 47, new double[] { 12, 54, 23, 54, 78 } ) );
+        pairs.add( outF.pairOf( 12, new double[] { 9, 8, 5, 6, 12 } ) );
+        pairs.add( outF.pairOf( 43, new double[] { 23, 12, 12, 34, 10 } ) );
+        final List<PairOfDoubleAndVectorOfDoubles> basePairs = new ArrayList<>();
+        basePairs.add( outF.pairOf( 25.7, new double[] { 20, 43, 45, 23, 94 } ) );
+        basePairs.add( outF.pairOf( 21.4, new double[] { 19, 76, 57, 23, 9 } ) );
+        basePairs.add( outF.pairOf( 32, new double[] { 23, 53, 23, 12, 32 } ) );
+        basePairs.add( outF.pairOf( 47, new double[] { 2, 54, 23, 54, 78 } ) );
+        basePairs.add( outF.pairOf( 12, new double[] { 9, 18, 5, 6, 12 } ) );
+        basePairs.add( outF.pairOf( 43, new double[] { 23, 12, 12, 39, 10 } ) );
+        EnsemblePairs input = outF.ofEnsemblePairs( pairs, basePairs, metaFac.getMetadata(), metaFac.getMetadata() );
+
+        //Build the metric
+        final CRPSSBuilder b = new CRPSSBuilder();
+
+        b.setDecompositionID( MetricDecompositionGroup.NONE ).setOutputFactory( outF );
+
+        final ContinuousRankedProbabilitySkillScore crpss = b.build();
+
+        //Metadata for the output
+        final MetricOutputMetadata m1 =
+                metaFac.getOutputMetadata( input.size(),
+                                           metaFac.getDimension(),
+                                           metaFac.getDimension(),
+                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                           MetricConstants.NONE );
+        //Check the results       
+        final VectorOutput actual = crpss.apply( input );
+        final VectorOutput expected = outF.ofVectorOutput( new double[] { 0.10086324398000912 }, m1 );
+        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+                    + ". Expected: "
+                    + expected.getData().getDoubles()[0]
+                    + ".",
+                    actual.equals( expected ) );
+        //Check the parameters
+        assertTrue( "Unexpected name for the Continous Ranked Probability Skill Score.",
+                    crpss.getName()
+                         .equals( metaFac.getMetricName( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) ) );
+        assertTrue( "The Continuous Ranked Probability Skill Score is decomposable.", crpss.isDecomposable() );
+        assertTrue( "The Continuous Ranked Probability Skill Score is a skill score.", crpss.isSkillScore() );
+        assertTrue( "Expected no decomposition for the Continuous Ranked Probability Skill Score.",
+                    crpss.getDecompositionID() == MetricDecompositionGroup.NONE );
+        assertTrue( "The Continuous Ranked Probability Skill Score is not proper.", !crpss.isProper() );
+        assertTrue( "The Continuous Ranked Probability Skill Score is not strictly proper.", !crpss.isStrictlyProper() );
+    }
+
+}
