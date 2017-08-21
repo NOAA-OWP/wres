@@ -267,6 +267,8 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "RELIABILITY DIAGRAM";
             case ROOT_MEAN_SQUARE_ERROR:
                 return "ROOT MEAN SQUARE ERROR";
+            case SAMPLE_SIZE:
+                return "SAMPLE SIZE";                
             default:
                 throw new IllegalArgumentException("Unable to determine the metric name from the prescribed "
                     + "identifier '" + identifier + "'.");
@@ -322,6 +324,8 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "RELIABILITY DIAGRAM";
             case ROOT_MEAN_SQUARE_ERROR:
                 return "RMSE";
+            case SAMPLE_SIZE:
+                return "SAMPLE SIZE";                 
             default:
                 throw new IllegalArgumentException("Unable to determine the short metric name from the prescribed "
                     + "identifier '" + identifier + "'.");

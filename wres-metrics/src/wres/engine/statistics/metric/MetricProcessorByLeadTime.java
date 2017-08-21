@@ -12,19 +12,19 @@ import java.util.concurrent.Future;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MapBiKey;
+import wres.datamodel.MetricConstants.MetricInputGroup;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
 import wres.datamodel.MetricInputSliceException;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
 import wres.datamodel.MetricOutputMapByMetric;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Threshold;
 import wres.datamodel.VectorOutput;
-import wres.datamodel.MetricConstants.MetricInputGroup;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
 
 /**
  * A {@link MetricProcessor} that processes and stores metric by forecast lead time.
@@ -315,6 +315,8 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
 
     /**
      * Processes a set of metric futures for {@link SingleValuedPairs}.
+     * 
+     * TODO: collapse this with a generic call to futures.addOutput and take an input collection of metrics
      * 
      * @param leadTime the lead time
      * @param input the input pairs
