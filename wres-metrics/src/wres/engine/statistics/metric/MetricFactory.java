@@ -10,19 +10,21 @@ import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MatrixOutput;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.MulticategoryPairs;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.ContinuousRankedProbabilityScore.CRPSBuilder;
+import wres.engine.statistics.metric.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
 import wres.engine.statistics.metric.RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder;
 import wres.engine.statistics.metric.ReliabilityDiagram.ReliabilityDiagramBuilder;
+import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
@@ -68,12 +70,12 @@ public class MetricFactory
      * @return a {@link MetricFactory}
      */
 
-    public static MetricFactory getInstance(final DataFactory dataFactory)
+    public static MetricFactory getInstance( final DataFactory dataFactory )
     {
         //Lazy construction
-        if(Objects.isNull(instance))
+        if ( Objects.isNull( instance ) )
         {
-            instance = new MetricFactory(dataFactory);
+            instance = new MetricFactory( dataFactory );
         }
         return instance;
     }
@@ -90,10 +92,11 @@ public class MetricFactory
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public MetricProcessorByLeadTime getMetricProcessorByLeadTime(final ProjectConfig config,
-                                              final MetricOutputGroup... mergeList) throws MetricConfigurationException
+    public MetricProcessorByLeadTime getMetricProcessorByLeadTime( final ProjectConfig config,
+                                                                   final MetricOutputGroup... mergeList )
+            throws MetricConfigurationException
     {
-        return getMetricProcessorByLeadTime(config, null, mergeList);
+        return getMetricProcessorByLeadTime( config, null, mergeList );
     }
 
     /**
@@ -109,19 +112,21 @@ public class MetricFactory
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public MetricProcessorByLeadTime getMetricProcessorByLeadTime(final ProjectConfig config,
-                                              final ExecutorService executor,
-                                              final MetricOutputGroup... mergeList) throws MetricConfigurationException
+    public MetricProcessorByLeadTime getMetricProcessorByLeadTime( final ProjectConfig config,
+                                                                   final ExecutorService executor,
+                                                                   final MetricOutputGroup... mergeList )
+            throws MetricConfigurationException
     {
-        switch(MetricProcessor.getInputType(config))
+        switch ( MetricProcessor.getInputType( config ) )
         {
             case SINGLE_VALUED:
-                return new MetricProcessorSingleValuedPairsByLeadTime(outputFactory, config, executor, mergeList);
+                return new MetricProcessorSingleValuedPairsByLeadTime( outputFactory, config, executor, mergeList );
             case ENSEMBLE:
-                return new MetricProcessorEnsemblePairsByLeadTime(outputFactory, config, executor, mergeList);
+                return new MetricProcessorEnsemblePairsByLeadTime( outputFactory, config, executor, mergeList );
             default:
-                throw new UnsupportedOperationException("Unsupported input type in the project configuration '" + config
-                    + "'");
+                throw new UnsupportedOperationException( "Unsupported input type in the project configuration '"
+                                                         + config
+                                                         + "'" );
         }
     }
 
@@ -133,9 +138,9 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(MetricConstants... metric)
+    public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection( MetricConstants... metric )
     {
-        return ofSingleValuedScalarCollection(null, metric);
+        return ofSingleValuedScalarCollection( null, metric );
     }
 
     /**
@@ -146,9 +151,9 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection(MetricConstants... metric)
+    public MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection( MetricConstants... metric )
     {
-        return ofSingleValuedVectorCollection(null, metric);
+        return ofSingleValuedVectorCollection( null, metric );
     }
 
     /**
@@ -159,9 +164,10 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVectorCollection(MetricConstants... metric)
+    public MetricCollection<SingleValuedPairs, MultiVectorOutput>
+            ofSingleValuedMultiVectorCollection( MetricConstants... metric )
     {
-        return ofSingleValuedMultiVectorCollection(null, metric);
+        return ofSingleValuedMultiVectorCollection( null, metric );
     }
 
     /**
@@ -172,9 +178,10 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVectorCollection(MetricConstants... metric)
+    public MetricCollection<DiscreteProbabilityPairs, VectorOutput>
+            ofDiscreteProbabilityVectorCollection( MetricConstants... metric )
     {
-        return ofDiscreteProbabilityVectorCollection(null, metric);
+        return ofDiscreteProbabilityVectorCollection( null, metric );
     }
 
     /**
@@ -185,9 +192,9 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<DichotomousPairs, ScalarOutput> ofDichotomousScalarCollection(MetricConstants... metric)
+    public MetricCollection<DichotomousPairs, ScalarOutput> ofDichotomousScalarCollection( MetricConstants... metric )
     {
-        return ofDichotomousScalarCollection(null, metric);
+        return ofDichotomousScalarCollection( null, metric );
     }
 
     /**
@@ -198,9 +205,10 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput> ofDiscreteProbabilityMultiVectorCollection(MetricConstants... metric)
+    public MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput>
+            ofDiscreteProbabilityMultiVectorCollection( MetricConstants... metric )
     {
-        return ofDiscreteProbabilityMultiVectorCollection(null, metric);
+        return ofDiscreteProbabilityMultiVectorCollection( null, metric );
     }
 
     /**
@@ -211,11 +219,25 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrixCollection(MetricConstants... metric)
+    public MetricCollection<MulticategoryPairs, MatrixOutput>
+            ofMulticategoryMatrixCollection( MetricConstants... metric )
     {
-        return ofMulticategoryMatrixCollection(null, metric);
+        return ofMulticategoryMatrixCollection( null, metric );
     }
-    
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * {@link ScalarOutput}.
+     * 
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<EnsemblePairs, ScalarOutput> ofEnsembleScalarCollection( MetricConstants... metric )
+    {
+        return ofEnsembleScalarCollection( null, metric );
+    }
+
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
      * {@link VectorOutput}.
@@ -224,10 +246,10 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<EnsemblePairs, VectorOutput> ofEnsembleVectorCollection(MetricConstants... metric)
+    public MetricCollection<EnsemblePairs, VectorOutput> ofEnsembleVectorCollection( MetricConstants... metric )
     {
-        return ofEnsembleVectorCollection(null, metric);
-    }    
+        return ofEnsembleVectorCollection( null, metric );
+    }
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
@@ -238,15 +260,15 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection(ExecutorService executor,
-                                                                                            MetricConstants... metric)
+    public MetricCollection<SingleValuedPairs, ScalarOutput> ofSingleValuedScalarCollection( ExecutorService executor,
+                                                                                             MetricConstants... metric )
     {
         final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
+        for ( MetricConstants next : metric )
         {
-            builder.add(ofSingleValuedScalar(next));
+            builder.add( ofSingleValuedScalar( next ) );
         }
-        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
     }
 
@@ -259,15 +281,15 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection(ExecutorService executor,
-                                                                                            MetricConstants... metric)
+    public MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection( ExecutorService executor,
+                                                                                             MetricConstants... metric )
     {
         final MetricCollectionBuilder<SingleValuedPairs, VectorOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
+        for ( MetricConstants next : metric )
         {
-            builder.add(ofSingleValuedVector(next));
+            builder.add( ofSingleValuedVector( next ) );
         }
-        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
     }
 
@@ -280,15 +302,16 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVectorCollection(ExecutorService executor,
-                                                                                                      MetricConstants... metric)
+    public MetricCollection<SingleValuedPairs, MultiVectorOutput>
+            ofSingleValuedMultiVectorCollection( ExecutorService executor,
+                                                 MetricConstants... metric )
     {
         final MetricCollectionBuilder<SingleValuedPairs, MultiVectorOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
+        for ( MetricConstants next : metric )
         {
-            builder.add(ofSingleValuedMultiVector(next));
+            builder.add( ofSingleValuedMultiVector( next ) );
         }
-        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
     }
 
@@ -301,15 +324,16 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVectorCollection(ExecutorService executor,
-                                                                                                          MetricConstants... metric)
+    public MetricCollection<DiscreteProbabilityPairs, VectorOutput>
+            ofDiscreteProbabilityVectorCollection( ExecutorService executor,
+                                                   MetricConstants... metric )
     {
         final MetricCollectionBuilder<DiscreteProbabilityPairs, VectorOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
+        for ( MetricConstants next : metric )
         {
-            builder.add(ofDiscreteProbabilityVector(next));
+            builder.add( ofDiscreteProbabilityVector( next ) );
         }
-        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
     }
 
@@ -322,15 +346,15 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<DichotomousPairs, ScalarOutput> ofDichotomousScalarCollection(ExecutorService executor,
-                                                                                          MetricConstants... metric)
+    public MetricCollection<DichotomousPairs, ScalarOutput> ofDichotomousScalarCollection( ExecutorService executor,
+                                                                                           MetricConstants... metric )
     {
         final MetricCollectionBuilder<DichotomousPairs, ScalarOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
+        for ( MetricConstants next : metric )
         {
-            builder.add(ofDichotomousScalar(next));
+            builder.add( ofDichotomousScalar( next ) );
         }
-        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
     }
 
@@ -343,16 +367,17 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput> ofDiscreteProbabilityMultiVectorCollection(ExecutorService executor,
-                                                                                                                    MetricConstants... metric)
+    public MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput>
+            ofDiscreteProbabilityMultiVectorCollection( ExecutorService executor,
+                                                        MetricConstants... metric )
     {
         final MetricCollectionBuilder<DiscreteProbabilityPairs, MultiVectorOutput> builder =
-                                                                                           MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
+                MetricCollectionBuilder.of();
+        for ( MetricConstants next : metric )
         {
-            builder.add(ofDiscreteProbabilityMultiVector(next));
+            builder.add( ofDiscreteProbabilityMultiVector( next ) );
         }
-        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
     }
 
@@ -365,18 +390,18 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrixCollection(ExecutorService executor,
-                                                                                              MetricConstants... metric)
+    public MetricCollection<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrixCollection( ExecutorService executor,
+                                                                                               MetricConstants... metric )
     {
         final MetricCollectionBuilder<MulticategoryPairs, MatrixOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
+        for ( MetricConstants next : metric )
         {
-            builder.add(ofMulticategoryMatrix(next));
+            builder.add( ofMulticategoryMatrix( next ) );
         }
-        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
     }
-    
+
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
      * {@link VectorOutput}.
@@ -386,17 +411,38 @@ public class MetricFactory
      * @return a collection of metrics
      */
 
-    public MetricCollection<EnsemblePairs, VectorOutput> ofEnsembleVectorCollection(ExecutorService executor,
-                                                                                            MetricConstants... metric)
+    public MetricCollection<EnsemblePairs, VectorOutput> ofEnsembleVectorCollection( ExecutorService executor,
+                                                                                     MetricConstants... metric )
     {
         final MetricCollectionBuilder<EnsemblePairs, VectorOutput> builder = MetricCollectionBuilder.of();
-        for(MetricConstants next: metric)
+        for ( MetricConstants next : metric )
         {
-            builder.add(ofEnsembleVector(next));
+            builder.add( ofEnsembleVector( next ) );
         }
-        builder.setOutputFactory(outputFactory).setExecutorService(executor);
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
-    }    
+    }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * {@link ScalarOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     */
+
+    public MetricCollection<EnsemblePairs, ScalarOutput> ofEnsembleScalarCollection( ExecutorService executor,
+                                                                                     MetricConstants... metric )
+    {
+        final MetricCollectionBuilder<EnsemblePairs, ScalarOutput> builder = MetricCollectionBuilder.of();
+        for ( MetricConstants next : metric )
+        {
+            builder.add( ofEnsembleScalar( next ) );
+        }
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        return builder.build();
+    }
 
     /**
      * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link ScalarOutput}.
@@ -405,9 +451,9 @@ public class MetricFactory
      * @return the metric
      */
 
-    public Metric<SingleValuedPairs, ScalarOutput> ofSingleValuedScalar(MetricConstants metric)
+    public Metric<SingleValuedPairs, ScalarOutput> ofSingleValuedScalar( MetricConstants metric )
     {
-        switch(metric)
+        switch ( metric )
         {
             case BIAS_FRACTION:
                 return ofBiasFraction();
@@ -421,8 +467,10 @@ public class MetricFactory
                 return ofCorrelationPearsons();
             case COEFFICIENT_OF_DETERMINATION:
                 return ofCoefficientOfDetermination();
+            case SAMPLE_SIZE:
+                return ofSampleSize();
             default:
-                throw new IllegalArgumentException(error + " '" + metric + "'.");
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
 
@@ -433,16 +481,16 @@ public class MetricFactory
      * @return a metric
      */
 
-    public Metric<SingleValuedPairs, VectorOutput> ofSingleValuedVector(MetricConstants metric)
+    public Metric<SingleValuedPairs, VectorOutput> ofSingleValuedVector( MetricConstants metric )
     {
-        switch(metric)
+        switch ( metric )
         {
             case MEAN_SQUARE_ERROR:
                 return ofMeanSquareError();
             case MEAN_SQUARE_ERROR_SKILL_SCORE:
                 return ofMeanSquareErrorSkillScore();
             default:
-                throw new IllegalArgumentException(error + " '" + metric + "'.");
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
 
@@ -453,14 +501,14 @@ public class MetricFactory
      * @return a metric
      */
 
-    public Metric<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVector(MetricConstants metric)
+    public Metric<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVector( MetricConstants metric )
     {
-        switch(metric)
+        switch ( metric )
         {
             case QUANTILE_QUANTILE_DIAGRAM:
                 return ofQuantileQuantileDiagram();
             default:
-                throw new IllegalArgumentException(error + " '" + metric + "'.");
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
 
@@ -471,9 +519,9 @@ public class MetricFactory
      * @return a metric
      */
 
-    public Metric<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVector(MetricConstants metric)
+    public Metric<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVector( MetricConstants metric )
     {
-        switch(metric)
+        switch ( metric )
         {
             case BRIER_SCORE:
                 return ofBrierScore();
@@ -482,7 +530,7 @@ public class MetricFactory
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
                 return ofRelativeOperatingCharacteristicScore();
             default:
-                throw new IllegalArgumentException(error + " '" + metric + "'.");
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
 
@@ -493,9 +541,9 @@ public class MetricFactory
      * @return a metric
      */
 
-    public Metric<DichotomousPairs, ScalarOutput> ofDichotomousScalar(MetricConstants metric)
+    public Metric<DichotomousPairs, ScalarOutput> ofDichotomousScalar( MetricConstants metric )
     {
-        switch(metric)
+        switch ( metric )
         {
             case CRITICAL_SUCCESS_INDEX:
                 return ofCriticalSuccessIndex();
@@ -508,7 +556,7 @@ public class MetricFactory
             case PROBABILITY_OF_FALSE_DETECTION:
                 return ofProbabilityOfFalseDetection();
             default:
-                throw new IllegalArgumentException(error + " '" + metric + "'.");
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
 
@@ -520,14 +568,14 @@ public class MetricFactory
      * @return a metric
      */
 
-    public Metric<MulticategoryPairs, ScalarOutput> ofMulticategoryScalar(MetricConstants metric)
+    public Metric<MulticategoryPairs, ScalarOutput> ofMulticategoryScalar( MetricConstants metric )
     {
-        switch(metric)
+        switch ( metric )
         {
             case PEIRCE_SKILL_SCORE:
                 return ofPeirceSkillScoreMulti();
             default:
-                throw new IllegalArgumentException(error + " '" + metric + "'.");
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
 
@@ -538,16 +586,17 @@ public class MetricFactory
      * @return a metric
      */
 
-    public Metric<DiscreteProbabilityPairs, MultiVectorOutput> ofDiscreteProbabilityMultiVector(MetricConstants metric)
+    public Metric<DiscreteProbabilityPairs, MultiVectorOutput>
+            ofDiscreteProbabilityMultiVector( MetricConstants metric )
     {
-        switch(metric)
+        switch ( metric )
         {
             case RELIABILITY_DIAGRAM:
                 return ofReliabilityDiagram();
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return ofRelativeOperatingCharacteristic();
             default:
-                throw new IllegalArgumentException(error + " '" + metric + "'.");
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
 
@@ -558,17 +607,17 @@ public class MetricFactory
      * @return a metric
      */
 
-    public Metric<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrix(MetricConstants metric)
+    public Metric<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrix( MetricConstants metric )
     {
-        switch(metric)
+        switch ( metric )
         {
             case CONTINGENCY_TABLE:
                 return ofContingencyTable();
             default:
-                throw new IllegalArgumentException(error + " '" + metric + "'.");
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
-    
+
     /**
      * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link VectorOutput}.
      * 
@@ -576,16 +625,36 @@ public class MetricFactory
      * @return a metric
      */
 
-    public Metric<EnsemblePairs, VectorOutput> ofEnsembleVector(MetricConstants metric)
+    public Metric<EnsemblePairs, VectorOutput> ofEnsembleVector( MetricConstants metric )
     {
-        switch(metric)
+        switch ( metric )
         {
             case CONTINUOUS_RANKED_PROBABILITY_SCORE:
                 return ofContinuousRankedProbabilityScore();
+            case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
+                return ofContinuousRankedProbabilitySkillScore();
             default:
-                throw new IllegalArgumentException(error + " '" + metric + "'.");
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
-    }    
+    }
+
+    /**
+     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link ScalarOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     */
+
+    public Metric<EnsemblePairs, ScalarOutput> ofEnsembleScalar( MetricConstants metric )
+    {
+        switch ( metric )
+        {
+            case SAMPLE_SIZE:
+                return ofSampleSize();
+            default:
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
+        }
+    }
 
     /**
      * Return a default {@link BiasFraction} function.
@@ -593,9 +662,9 @@ public class MetricFactory
      * @return a default {@link BiasFraction} function.
      */
 
-    protected BiasFraction ofBiasFraction()
+    BiasFraction ofBiasFraction()
     {
-        return (BiasFraction)new BiasFraction.BiasFractionBuilder().setOutputFactory(outputFactory).build();
+        return (BiasFraction) new BiasFraction.BiasFractionBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -604,9 +673,9 @@ public class MetricFactory
      * @return a default {@link BrierScore} function.
      */
 
-    protected BrierScore ofBrierScore()
+    BrierScore ofBrierScore()
     {
-        return (BrierScore)new BrierScore.BrierScoreBuilder().setOutputFactory(outputFactory).build();
+        return (BrierScore) new BrierScore.BrierScoreBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -615,9 +684,9 @@ public class MetricFactory
      * @return a default {@link BrierSkillScore} function.
      */
 
-    protected BrierSkillScore ofBrierSkillScore()
+    BrierSkillScore ofBrierSkillScore()
     {
-        return (BrierSkillScore)new BrierSkillScore.BrierSkillScoreBuilder().setOutputFactory(outputFactory).build();
+        return (BrierSkillScore) new BrierSkillScore.BrierSkillScoreBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -626,10 +695,10 @@ public class MetricFactory
      * @return a default {@link CoefficientOfDetermination} function.
      */
 
-    protected CorrelationPearsons ofCoefficientOfDetermination()
+    CorrelationPearsons ofCoefficientOfDetermination()
     {
-        return (CoefficientOfDetermination)new CoefficientOfDetermination.CoefficientOfDeterminationBuilder().setOutputFactory(outputFactory)
-                                                                                                             .build();
+        return (CoefficientOfDetermination) new CoefficientOfDetermination.CoefficientOfDeterminationBuilder().setOutputFactory( outputFactory )
+                                                                                                              .build();
     }
 
     /**
@@ -638,10 +707,10 @@ public class MetricFactory
      * @return a default {@link ContingencyTable} function.
      */
 
-    protected ContingencyTable<MulticategoryPairs> ofContingencyTable()
+    ContingencyTable<MulticategoryPairs> ofContingencyTable()
     {
-        return (ContingencyTable<MulticategoryPairs>)new ContingencyTable.ContingencyTableBuilder<>().setOutputFactory(outputFactory)
-                                                                                                     .build();
+        return (ContingencyTable<MulticategoryPairs>) new ContingencyTable.ContingencyTableBuilder<>().setOutputFactory( outputFactory )
+                                                                                                      .build();
     }
 
     /**
@@ -650,10 +719,10 @@ public class MetricFactory
      * @return a default {@link CorrelationPearsons} function.
      */
 
-    protected CorrelationPearsons ofCorrelationPearsons()
+    CorrelationPearsons ofCorrelationPearsons()
     {
-        return (CorrelationPearsons)new CorrelationPearsons.CorrelationPearsonsBuilder().setOutputFactory(outputFactory)
-                                                                                        .build();
+        return (CorrelationPearsons) new CorrelationPearsons.CorrelationPearsonsBuilder().setOutputFactory( outputFactory )
+                                                                                         .build();
     }
 
     /**
@@ -662,10 +731,10 @@ public class MetricFactory
      * @return a default {@link CriticalSuccessIndex} function.
      */
 
-    protected CriticalSuccessIndex ofCriticalSuccessIndex()
+    CriticalSuccessIndex ofCriticalSuccessIndex()
     {
-        return (CriticalSuccessIndex)new CriticalSuccessIndex.CriticalSuccessIndexBuilder().setOutputFactory(outputFactory)
-                                                                                           .build();
+        return (CriticalSuccessIndex) new CriticalSuccessIndex.CriticalSuccessIndexBuilder().setOutputFactory( outputFactory )
+                                                                                            .build();
     }
 
     /**
@@ -674,10 +743,10 @@ public class MetricFactory
      * @return a default {@link EquitableThreatScore} function.
      */
 
-    protected EquitableThreatScore ofEquitableThreatScore()
+    EquitableThreatScore ofEquitableThreatScore()
     {
-        return (EquitableThreatScore)new EquitableThreatScore.EquitableThreatScoreBuilder().setOutputFactory(outputFactory)
-                                                                                           .build();
+        return (EquitableThreatScore) new EquitableThreatScore.EquitableThreatScoreBuilder().setOutputFactory( outputFactory )
+                                                                                            .build();
     }
 
     /**
@@ -686,10 +755,10 @@ public class MetricFactory
      * @return a default {@link MeanAbsoluteError} function.
      */
 
-    protected MeanAbsoluteError ofMeanAbsoluteError()
+    MeanAbsoluteError ofMeanAbsoluteError()
     {
-        return (MeanAbsoluteError)new MeanAbsoluteError.MeanAbsoluteErrorBuilder().setOutputFactory(outputFactory)
-                                                                                  .build();
+        return (MeanAbsoluteError) new MeanAbsoluteError.MeanAbsoluteErrorBuilder().setOutputFactory( outputFactory )
+                                                                                   .build();
     }
 
     /**
@@ -698,9 +767,9 @@ public class MetricFactory
      * @return a default {@link MeanError} function.
      */
 
-    protected MeanError ofMeanError()
+    MeanError ofMeanError()
     {
-        return (MeanError)new MeanError.MeanErrorBuilder().setOutputFactory(outputFactory).build();
+        return (MeanError) new MeanError.MeanErrorBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -709,10 +778,10 @@ public class MetricFactory
      * @return a default {@link MeanSquareError} function.
      */
 
-    protected MeanSquareError<SingleValuedPairs> ofMeanSquareError()
+    MeanSquareError<SingleValuedPairs> ofMeanSquareError()
     {
-        return (MeanSquareError<SingleValuedPairs>)new MeanSquareError.MeanSquareErrorBuilder<>().setOutputFactory(outputFactory)
-                                                                                                 .build();
+        return (MeanSquareError<SingleValuedPairs>) new MeanSquareError.MeanSquareErrorBuilder<>().setOutputFactory( outputFactory )
+                                                                                                  .build();
     }
 
     /**
@@ -721,10 +790,10 @@ public class MetricFactory
      * @return a default {@link MeanSquareErrorSkillScore} function.
      */
 
-    protected MeanSquareErrorSkillScore<SingleValuedPairs> ofMeanSquareErrorSkillScore()
+    MeanSquareErrorSkillScore<SingleValuedPairs> ofMeanSquareErrorSkillScore()
     {
-        return (MeanSquareErrorSkillScore<SingleValuedPairs>)new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>().setOutputFactory(outputFactory)
-                                                                                                                               .build();
+        return (MeanSquareErrorSkillScore<SingleValuedPairs>) new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>().setOutputFactory( outputFactory )
+                                                                                                                                .build();
     }
 
     /**
@@ -733,10 +802,10 @@ public class MetricFactory
      * @return a default {@link PeirceSkillScore} function for a dichotomous event.
      */
 
-    protected PeirceSkillScore<DichotomousPairs> ofPeirceSkillScore()
+    PeirceSkillScore<DichotomousPairs> ofPeirceSkillScore()
     {
-        return (PeirceSkillScore<DichotomousPairs>)new PeirceSkillScore.PeirceSkillScoreBuilder<DichotomousPairs>().setOutputFactory(outputFactory)
-                                                                                                                   .build();
+        return (PeirceSkillScore<DichotomousPairs>) new PeirceSkillScore.PeirceSkillScoreBuilder<DichotomousPairs>().setOutputFactory( outputFactory )
+                                                                                                                    .build();
     }
 
     /**
@@ -745,10 +814,10 @@ public class MetricFactory
      * @return a default {@link PeirceSkillScore} function for a multicategory event.
      */
 
-    protected PeirceSkillScore<MulticategoryPairs> ofPeirceSkillScoreMulti()
+    PeirceSkillScore<MulticategoryPairs> ofPeirceSkillScoreMulti()
     {
-        return (PeirceSkillScore<MulticategoryPairs>)new PeirceSkillScore.PeirceSkillScoreBuilder<MulticategoryPairs>().setOutputFactory(outputFactory)
-                                                                                                                       .build();
+        return (PeirceSkillScore<MulticategoryPairs>) new PeirceSkillScore.PeirceSkillScoreBuilder<MulticategoryPairs>().setOutputFactory( outputFactory )
+                                                                                                                        .build();
     }
 
     /**
@@ -757,10 +826,10 @@ public class MetricFactory
      * @return a default {@link ProbabilityOfDetection} function.
      */
 
-    protected ProbabilityOfDetection ofProbabilityOfDetection()
+    ProbabilityOfDetection ofProbabilityOfDetection()
     {
-        return (ProbabilityOfDetection)new ProbabilityOfDetection.ProbabilityOfDetectionBuilder().setOutputFactory(outputFactory)
-                                                                                                 .build();
+        return (ProbabilityOfDetection) new ProbabilityOfDetection.ProbabilityOfDetectionBuilder().setOutputFactory( outputFactory )
+                                                                                                  .build();
     }
 
     /**
@@ -769,10 +838,10 @@ public class MetricFactory
      * @return a default {@link ProbabilityOfFalseDetection} function.
      */
 
-    protected ProbabilityOfFalseDetection ofProbabilityOfFalseDetection()
+    ProbabilityOfFalseDetection ofProbabilityOfFalseDetection()
     {
-        return (ProbabilityOfFalseDetection)new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder().setOutputFactory(outputFactory)
-                                                                                                                .build();
+        return (ProbabilityOfFalseDetection) new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder().setOutputFactory( outputFactory )
+                                                                                                                 .build();
     }
 
     /**
@@ -781,10 +850,10 @@ public class MetricFactory
      * @return a default {@link QuantileQuantileDiagram} function.
      */
 
-    protected QuantileQuantileDiagram ofQuantileQuantileDiagram()
+    QuantileQuantileDiagram ofQuantileQuantileDiagram()
     {
-        return (QuantileQuantileDiagram)new QuantileQuantileDiagram.QuantileQuantileDiagramBuilder().setOutputFactory(outputFactory)
-                                                                                                    .build();
+        return (QuantileQuantileDiagram) new QuantileQuantileDiagram.QuantileQuantileDiagramBuilder().setOutputFactory( outputFactory )
+                                                                                                     .build();
     }
 
     /**
@@ -793,10 +862,10 @@ public class MetricFactory
      * @return a default {@link RootMeanSquareError} function.
      */
 
-    protected RootMeanSquareError ofRootMeanSquareError()
+    RootMeanSquareError ofRootMeanSquareError()
     {
-        return (RootMeanSquareError)new RootMeanSquareError.RootMeanSquareErrorBuilder().setOutputFactory(outputFactory)
-                                                                                        .build();
+        return (RootMeanSquareError) new RootMeanSquareError.RootMeanSquareErrorBuilder().setOutputFactory( outputFactory )
+                                                                                         .build();
     }
 
     /**
@@ -805,9 +874,9 @@ public class MetricFactory
      * @return a default {@link ReliabilityDiagram} function.
      */
 
-    protected ReliabilityDiagram ofReliabilityDiagram()
+    ReliabilityDiagram ofReliabilityDiagram()
     {
-        return (ReliabilityDiagram)new ReliabilityDiagramBuilder().setOutputFactory(outputFactory).build();
+        return (ReliabilityDiagram) new ReliabilityDiagramBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -816,10 +885,10 @@ public class MetricFactory
      * @return a default {@link RelativeOperatingCharacteristicDiagram} function.
      */
 
-    protected RelativeOperatingCharacteristicDiagram ofRelativeOperatingCharacteristic()
+    RelativeOperatingCharacteristicDiagram ofRelativeOperatingCharacteristic()
     {
-        return (RelativeOperatingCharacteristicDiagram)new RelativeOperatingCharacteristicBuilder().setOutputFactory(outputFactory)
-                                                                                                   .build();
+        return (RelativeOperatingCharacteristicDiagram) new RelativeOperatingCharacteristicBuilder().setOutputFactory( outputFactory )
+                                                                                                    .build();
     }
 
     /**
@@ -828,10 +897,10 @@ public class MetricFactory
      * @return a default {@link RelativeOperatingCharacteristicScore} function.
      */
 
-    protected RelativeOperatingCharacteristicScore ofRelativeOperatingCharacteristicScore()
+    RelativeOperatingCharacteristicScore ofRelativeOperatingCharacteristicScore()
     {
-        return (RelativeOperatingCharacteristicScore)new RelativeOperatingCharacteristicScoreBuilder().setOutputFactory(outputFactory)
-                                                                                                      .build();
+        return (RelativeOperatingCharacteristicScore) new RelativeOperatingCharacteristicScoreBuilder().setOutputFactory( outputFactory )
+                                                                                                       .build();
     }
 
     /**
@@ -840,24 +909,45 @@ public class MetricFactory
      * @return a default {@link ContinuousRankedProbabilityScore} function.
      */
 
-    protected ContinuousRankedProbabilityScore ofContinuousRankedProbabilityScore()
+    ContinuousRankedProbabilityScore ofContinuousRankedProbabilityScore()
     {
-        return (ContinuousRankedProbabilityScore)new CRPSBuilder().setOutputFactory(outputFactory)
-                                                                                                      .build();
-    }    
-    
+        return (ContinuousRankedProbabilityScore) new CRPSBuilder().setOutputFactory( outputFactory ).build();
+    }
+
+    /**
+     * Return a default {@link ContinuousRankedProbabilitySkillScore} function.
+     * 
+     * @return a default {@link ContinuousRankedProbabilitySkillScore} function.
+     */
+
+    ContinuousRankedProbabilityScore ofContinuousRankedProbabilitySkillScore()
+    {
+        return (ContinuousRankedProbabilitySkillScore) new CRPSSBuilder().setOutputFactory( outputFactory ).build();
+    }
+
+    /**
+     * Return a default {@link SampleSize} function.
+     * 
+     * @return a default {@link SampleSize} function.
+     */
+
+    <T extends MetricInput<?>> SampleSize<T> ofSampleSize()
+    {
+        return (SampleSize<T>) new SampleSizeBuilder<T>().setOutputFactory( outputFactory ).build();
+    }
+
     /**
      * Hidden constructor.
      * 
      * @param dataFactory a {@link DataFactory}
      */
 
-    private MetricFactory(final DataFactory dataFactory)
+    private MetricFactory( final DataFactory dataFactory )
     {
-        if(Objects.isNull(dataFactory))
+        if ( Objects.isNull( dataFactory ) )
         {
-            throw new IllegalArgumentException("Specify a non-null metric output factory to construct the "
-                + "metric factory.");
+            throw new IllegalArgumentException( "Specify a non-null metric output factory to construct the "
+                                                + "metric factory." );
         }
         this.outputFactory = dataFactory;
     }

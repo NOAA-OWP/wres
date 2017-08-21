@@ -252,6 +252,7 @@
             <xs:enumeration value="relative operating characteristic score" />
             <xs:enumeration value="reliability diagram" />
             <xs:enumeration value="root mean square error" />
+            <xs:enumeration value="sample size" />
         </xs:restriction>
     </xs:simpleType>
 

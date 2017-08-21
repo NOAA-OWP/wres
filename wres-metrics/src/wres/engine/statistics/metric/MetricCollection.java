@@ -263,6 +263,8 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
                .filter(p -> !(p instanceof Collectable)) //Only work with non-collectable metrics here
                .forEach(y -> metricFutures.add(CompletableFuture.supplyAsync(() -> y.apply(s), metricPool)));
         List<T> returnMe = new ArrayList<>();
+        //Throw one exception per collection
+        Exception throwMe = null;
         for(CompletableFuture<T> nextResult: metricFutures)
         {
             try
@@ -271,8 +273,12 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
             }
             catch(Exception e)
             {
-                LOGGER.error("While processing metric:", e);
+                throwMe = e;
             }
+        }
+        if(Objects.nonNull( throwMe ))
+        {
+            LOGGER.error("While processing metric:", throwMe);
         }
         return dataFactory.ofMap(returnMe);
     }
