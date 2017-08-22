@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project label="ExampleProject">
   <inputs>
-    <left label="My Desired Name For Graphics" type="observation">
+    <left label="My Desired Name For Graphics">
       <type>observations</type>
       <source recursive="true" all="true" format="PI-XML">/media/sf_userprofile/hefs_data/resources/DRRC2SQIN.xml</source>
       <!-- web unsupported as of 2017-08-15 <source recursive="false" format="netCDF">https://my.observations.com/bar/some.nc</source> -->
@@ -18,9 +18,6 @@
           <unit>HOUR</unit>
       </rollingTimeAggregation>
     </right>
-    <baseline>
-      <type>simple forecasts</type>
-    </baseline>
   </inputs>
   <conditions> <!-- aka filters -->
 <!--    <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>--> <!-- optional, default all -->
@@ -38,19 +35,25 @@
   </pair>
   <outputs>
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
-    <metric label="ME">
+    <valueThresholds>
+      <applyTo>left</applyTo>
+      <commaSeparatedValues>10.0</commaSeparatedValues>
+      <operator>greater than or equal to</operator>
+    </valueThresholds>
+
+<!--    <metric label="ME">
       <name>mean error</name>
     </metric>
     <metric label="">
       <name>correlation pearsons</name>
-    </metric>
+    </metric>-->
+    <metric><name>reliability diagram</name></metric>
     <destination type="numeric"><path>/home/jesse/</path></destination>
-    <destination type="graphic"><path>/tmp/</path>
-    <!--Optional:-->
-    <graphical width="1920" height="1080">
+    <!--<destination type="graphic"><path>/tmp/</path>
+    <graphical width="192" height="108">
       <plotType>lead threshold</plotType>
       </graphical>
-    </destination>
+    </destination>-->
   </outputs>
 </project>
 
