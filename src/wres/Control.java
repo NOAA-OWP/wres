@@ -30,6 +30,7 @@ import wres.config.ProjectConfigException;
 import wres.config.Validation;
 import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
@@ -257,37 +258,46 @@ public class Control implements Function<String[], Integer>
         // Complete the end-of-pipeline processing
         if(processor.hasStoredMetricOutput())
         {
-            processCachedCharts(feature,
-                                projectConfigPlus,
-                                processor,
-                                MetricOutputGroup.SCALAR,
-                                MetricOutputGroup.VECTOR);
+            if ( configNeedsThisTypeOfOutput( projectConfig,
+                                              DestinationType.GRAPHIC ) )
+            {
+                processCachedCharts( feature,
+                                     projectConfigPlus,
+                                     processor,
+                                     MetricOutputGroup.SCALAR,
+                                     MetricOutputGroup.VECTOR );
+            }
 
-            try
+            if ( configNeedsThisTypeOfOutput( projectConfig,
+                                              DestinationType.NUMERIC ) )
             {
-                CommaSeparated.writeOutputFiles( projectConfig,
-                                                 feature,
-                                                 processor.getStoredMetricOutput() );
+                try
+                {
+                    CommaSeparated.writeOutputFiles( projectConfig,
+                                                     feature,
+                                                     processor.getStoredMetricOutput() );
 
-            }
-            catch ( final ProjectConfigException pce )
-            {
-                LOGGER.error( "Please include valid numeric output clause(s) in"
-                              + " project configuration. Example: <destination>"
-                              + "<path>c:/Users/myname/wres_output/</path>"
-                              + "</destination>",
-                              pce );
-                return false;
-            }
-            catch ( final InterruptedException ie )
-            {
-                LOGGER.warn("Interrupted while writing output files.");
-                Thread.currentThread().interrupt();
-            }
-            catch ( IOException | ExecutionException e)
-            {
-                LOGGER.error("While writing output files: ", e);
-                return false;
+                }
+                catch ( final ProjectConfigException pce )
+                {
+                    LOGGER.error(
+                            "Please include valid numeric output clause(s) in"
+                            + " project configuration. Example: <destination>"
+                            + "<path>c:/Users/myname/wres_output/</path>"
+                            + "</destination>",
+                            pce );
+                    return false;
+                }
+                catch ( final InterruptedException ie )
+                {
+                    LOGGER.warn( "Interrupted while writing output files." );
+                    Thread.currentThread().interrupt();
+                }
+                catch ( IOException | ExecutionException e )
+                {
+                    LOGGER.error( "While writing output files: ", e );
+                    return false;
+                }
             }
 
             if(LOGGER.isInfoEnabled())
@@ -896,6 +906,35 @@ public class Control implements Function<String[], Integer>
             }
         }).findFirst();
         return returnMe.isPresent() ? returnMe.get() : null;
+    }
+
+
+    /**
+     * Returns true if the given config has one or more of given output type.
+     * @param config the config to search
+     * @param type the type of output to look for
+     * @return true if the output type is present, false otherwise
+     */
+
+    private static boolean configNeedsThisTypeOfOutput( ProjectConfig config,
+                                                        DestinationType type )
+    {
+        if ( config.getOutputs() == null
+             || config.getOutputs().getDestination() == null )
+        {
+            LOGGER.debug( "No destinations specified for config {}", config );
+            return false;
+        }
+
+        for ( DestinationConfig d : config.getOutputs().getDestination() )
+        {
+            if ( d.getType().equals( type ) )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
