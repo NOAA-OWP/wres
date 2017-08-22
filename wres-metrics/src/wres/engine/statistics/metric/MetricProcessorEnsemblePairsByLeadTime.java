@@ -14,6 +14,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.EnsemblePairs;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
@@ -199,6 +200,13 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         //Ensemble input, vector output
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
         {
+            if ( metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                 && Objects.isNull( config.getInputs().getBaseline() ) )
+            {
+                throw new MetricConfigurationException( "Specify a non-null baseline from which to generate the '"
+                                                        + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
+                                                        + "'." );
+            }
             ensembleVector = metricFactory.ofEnsembleVectorCollection( executor,
                                                                        getSelectedMetrics( metrics,
                                                                                            MetricInputGroup.ENSEMBLE,
