@@ -139,7 +139,6 @@ public class Control implements Function<String[], Integer>
         // Shutdown
         finally
         {
-            Operations.shutdown();
             shutDownGracefully(processPairExecutor);
             shutDownGracefully(metricExecutor);
         }
