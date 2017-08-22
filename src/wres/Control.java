@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -137,6 +138,7 @@ public class Control implements Function<String[], Integer>
         // Shutdown
         finally
         {
+            Operations.shutdown();
             shutDownGracefully(processPairExecutor);
             shutDownGracefully(metricExecutor);
         }
@@ -856,45 +858,16 @@ public class Control implements Function<String[], Integer>
         {
             return;
         }
-        // (There are probably better ways to do this, e.g. awaitTermination)
-        int processingSkipped = 0;
-        int i = 0;
-        boolean deathTime = false;
-        while(!executor.isTerminated())
+
+        executor.shutdown();
+
+        try
         {
-            if(i == 0)
-            {
-                LOGGER.info("Some processing is finishing up before exit.");
-            }
-
-            if(i > 10)
-            {
-                deathTime = true;
-            }
-
-            try
-            {
-                Thread.sleep(500);
-            }
-            catch(final InterruptedException ie)
-            {
-                deathTime = true;
-                Thread.currentThread().interrupt();
-            }
-            finally
-            {
-                if(deathTime)
-                {
-                    LOGGER.info("Forcing shutdown.");
-                    processingSkipped += executor.shutdownNow().size();
-                }
-            }
-            i++;
+            executor.awaitTermination( 5, TimeUnit.SECONDS );
         }
-
-        if(processingSkipped > 0)
+        catch ( InterruptedException ie )
         {
-            LOGGER.info("Abandoned {} processing tasks.", processingSkipped);
+            Thread.currentThread().interrupt();
         }
     }
 
