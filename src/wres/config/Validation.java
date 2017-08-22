@@ -84,17 +84,19 @@ public class Validation
                 {
                     LOGGER.warn( "In file {}, near line {} and column {}, WRES "
                                  + "found an issue with the project "
-                                 + "configuration. The parser said:",
+                                 + "configuration. The parser said: {}",
                                  projectConfigPlus.getPath(),
                                  ve.getLocator().getLineNumber(),
                                  ve.getLocator().getColumnNumber(),
+                                 ve.getMessage(),
                                  ve.getLinkedException() );
                 }
                 else
                 {
                     LOGGER.warn( "In file {}, WRES found an issue with the "
-                                 + "project configuration. The parser said:",
+                                 + "project configuration. The parser said: {}",
                                  projectConfigPlus.getPath(),
+                                 ve.getMessage(),
                                  ve.getLinkedException() );
                 }
             }
