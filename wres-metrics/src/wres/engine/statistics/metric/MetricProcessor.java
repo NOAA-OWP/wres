@@ -151,7 +151,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * Default logger.
      */
 
-    static final Logger LOGGER = LoggerFactory.getLogger(MetricProcessor.class);
+    static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessor.class );
 
     /**
      * Maps between metric identifiers in {@link MetricConfigName} and those in {@link MetricConstants}.
@@ -161,14 +161,14 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @throws MetricConfigurationException if the input name is unrecognized
      */
 
-    public static MetricConstants fromMetricConfigName(MetricConfigName translate) throws MetricConfigurationException
+    public static MetricConstants fromMetricConfigName( MetricConfigName translate ) throws MetricConfigurationException
     {
-        if(Objects.isNull(translate))
+        if ( Objects.isNull( translate ) )
         {
-            throw new MetricConfigurationException("One or more metric identifiers in the project configuration could "
-                + "not be mapped to a supported metric identifier.");
+            throw new MetricConfigurationException( "One or more metric identifiers in the project configuration could "
+                                                    + "not be mapped to a supported metric identifier." );
         }
-        switch(translate)
+        switch ( translate )
         {
             case BIAS_FRACTION:
                 return MetricConstants.BIAS_FRACTION;
@@ -207,7 +207,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
             case PROBABILITY_OF_FALSE_DETECTION:
                 return MetricConstants.PROBABILITY_OF_FALSE_DETECTION;
             case RANK_HISTOGRAM:
-                return MetricConstants.RANK_HISTOGRAM;                
+                return MetricConstants.RANK_HISTOGRAM;
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                 return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
@@ -217,10 +217,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
             case ROOT_MEAN_SQUARE_ERROR:
                 return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
             case SAMPLE_SIZE:
-                return MetricConstants.SAMPLE_SIZE;                
+                return MetricConstants.SAMPLE_SIZE;
             default:
-                throw new MetricConfigurationException("Unrecognized metric identifier in project configuration '"
-                    + translate + "'.");
+                throw new MetricConfigurationException( "Unrecognized metric identifier in project configuration '"
+                                                        + translate + "'." );
         }
     }
 
@@ -232,12 +232,12 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @throws MetricConfigurationException if the operator name is unrecognized
      */
 
-    public static Operator fromThresholdOperator(ThresholdOperator translate) throws MetricConfigurationException
+    public static Operator fromThresholdOperator( ThresholdOperator translate ) throws MetricConfigurationException
     {
-        Objects.requireNonNull(translate,
-                               "One or more metric identifiers in the project configuration could not be mapped "
-                                   + "to a supported metric identifier.");
-        switch(translate)
+        Objects.requireNonNull( translate,
+                                "One or more metric identifiers in the project configuration could not be mapped "
+                                           + "to a supported metric identifier." );
+        switch ( translate )
         {
             case LESS_THAN:
                 return Operator.LESS;
@@ -248,8 +248,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
             case GREATER_THAN_OR_EQUAL_TO:
                 return Operator.GREATER_EQUAL;
             default:
-                throw new MetricConfigurationException("Unrecognized threshold operator in project configuration '"
-                    + translate + "'.");
+                throw new MetricConfigurationException( "Unrecognized threshold operator in project configuration '"
+                                                        + translate + "'." );
         }
     }
 
@@ -292,9 +292,9 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      *         otherwise
      */
 
-    public boolean hasMetrics(MetricInputGroup inGroup, MetricOutputGroup outGroup)
+    public boolean hasMetrics( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
-        return getSelectedMetrics(metrics, inGroup, outGroup).length > 0;
+        return getSelectedMetrics( metrics, inGroup, outGroup ).length > 0;
     }
 
     /**
@@ -304,9 +304,9 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @return true if metrics are available for the input {@link MetricInputGroup} false otherwise
      */
 
-    public boolean hasMetrics(MetricInputGroup inGroup)
+    public boolean hasMetrics( MetricInputGroup inGroup )
     {
-        return metrics.stream().anyMatch(a -> a.isInGroup(inGroup));
+        return metrics.stream().anyMatch( a -> a.isInGroup( inGroup ) );
 
     }
 
@@ -317,9 +317,9 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @return true if metrics are available for the input {@link MetricOutputGroup} false otherwise
      */
 
-    public boolean hasMetrics(MetricOutputGroup outGroup)
+    public boolean hasMetrics( MetricOutputGroup outGroup )
     {
-        return metrics.stream().anyMatch(a -> a.isInGroup(outGroup));
+        return metrics.stream().anyMatch( a -> a.isInGroup( outGroup ) );
     }
 
     /**
@@ -338,8 +338,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
 
     public boolean hasThresholdMetrics()
     {
-        return hasMetrics(MetricInputGroup.DISCRETE_PROBABILITY) || hasMetrics(MetricInputGroup.DICHOTOMOUS)
-            || hasMetrics(MetricInputGroup.MULTICATEGORY);
+        return hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY ) || hasMetrics( MetricInputGroup.DICHOTOMOUS )
+               || hasMetrics( MetricInputGroup.MULTICATEGORY );
     }
 
     /**
@@ -350,11 +350,11 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @throws MetricConfigurationException if the input type is not recognized
      */
 
-    static MetricInputGroup getInputType(ProjectConfig config) throws MetricConfigurationException
+    static MetricInputGroup getInputType( ProjectConfig config ) throws MetricConfigurationException
     {
-        Objects.requireNonNull(config, "Specify a non-null project from which to generate metrics.");
+        Objects.requireNonNull( config, "Specify a non-null project from which to generate metrics." );
         DatasourceType type = config.getInputs().getRight().getType();
-        switch(type)
+        switch ( type )
         {
             case ENSEMBLE_FORECASTS:
                 return MetricInputGroup.ENSEMBLE;
@@ -362,8 +362,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
             case ASSIMILATIONS:
                 return MetricInputGroup.SINGLE_VALUED;
             default:
-                throw new MetricConfigurationException("Unable to interpret the input type '" + type
-                    + "' when attempting to process the metrics ");
+                throw new MetricConfigurationException( "Unable to interpret the input type '" + type
+                                                        + "' when attempting to process the metrics " );
         }
     }
 
@@ -378,59 +378,60 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessor(final DataFactory dataFactory,
-                    final ProjectConfig config,
-                    final ExecutorService executor,
-                    final MetricOutputGroup... mergeList) throws MetricConfigurationException
+    MetricProcessor( final DataFactory dataFactory,
+                     final ProjectConfig config,
+                     final ExecutorService executor,
+                     final MetricOutputGroup... mergeList )
+            throws MetricConfigurationException
     {
-        Objects.requireNonNull(config,
-                               "Specify a non-null project configuration from which to construct the metric processor.");
-        Objects.requireNonNull(dataFactory,
-                               "Specify a non-null data factory from which to construct the metric processor.");
+        Objects.requireNonNull( config,
+                                "Specify a non-null project configuration from which to construct the metric processor." );
+        Objects.requireNonNull( dataFactory,
+                                "Specify a non-null data factory from which to construct the metric processor." );
         this.dataFactory = dataFactory;
-        metrics = getMetricsFromConfig(config);
-        metricFactory = MetricFactory.getInstance(dataFactory);
+        metrics = getMetricsFromConfig( config );
+        metricFactory = MetricFactory.getInstance( dataFactory );
         //Construct the metrics that are common to more than one type of input pairs
-        if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR))
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) )
         {
             singleValuedScalar =
-                               metricFactory.ofSingleValuedScalarCollection(executor,
-                                                                            getSelectedMetrics(metrics,
-                                                                                               MetricInputGroup.SINGLE_VALUED,
-                                                                                               MetricOutputGroup.SCALAR));
+                    metricFactory.ofSingleValuedScalarCollection( executor,
+                                                                  getSelectedMetrics( metrics,
+                                                                                      MetricInputGroup.SINGLE_VALUED,
+                                                                                      MetricOutputGroup.SCALAR ) );
         }
         else
         {
             singleValuedScalar = null;
         }
-        if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR))
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ) )
         {
             singleValuedVector =
-                               metricFactory.ofSingleValuedVectorCollection(executor,
-                                                                            getSelectedMetrics(metrics,
-                                                                                               MetricInputGroup.SINGLE_VALUED,
-                                                                                               MetricOutputGroup.VECTOR));
+                    metricFactory.ofSingleValuedVectorCollection( executor,
+                                                                  getSelectedMetrics( metrics,
+                                                                                      MetricInputGroup.SINGLE_VALUED,
+                                                                                      MetricOutputGroup.VECTOR ) );
         }
         else
         {
             singleValuedVector = null;
         }
-        if(hasMetrics(MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR))
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
         {
             singleValuedMultiVector =
-                                    metricFactory.ofSingleValuedMultiVectorCollection(executor,
-                                                                                      getSelectedMetrics(metrics,
-                                                                                                         MetricInputGroup.SINGLE_VALUED,
-                                                                                                         MetricOutputGroup.MULTIVECTOR));
+                    metricFactory.ofSingleValuedMultiVectorCollection( executor,
+                                                                       getSelectedMetrics( metrics,
+                                                                                           MetricInputGroup.SINGLE_VALUED,
+                                                                                           MetricOutputGroup.MULTIVECTOR ) );
         }
         else
         {
             singleValuedMultiVector = null;
         }
         //Obtain the thresholds for each metric and store them
-        localThresholds = new EnumMap<>(MetricConstants.class);
-        globalThresholds = new EnumMap<>(MetricInputGroup.class);
-        setThresholds(dataFactory, config);
+        localThresholds = new EnumMap<>( MetricConstants.class );
+        globalThresholds = new EnumMap<>( MetricInputGroup.class );
+        setThresholds( dataFactory, config );
         this.mergeList = mergeList;
     }
 
@@ -441,11 +442,11 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @return true if the input list contains one or more probability thresholds, false otherwise
      */
 
-    boolean hasProbabilityThreshold(List<Threshold> check)
+    boolean hasProbabilityThreshold( List<Threshold> check )
     {
-        for(Threshold next: check)
+        for ( Threshold next : check )
         {
-            if(next instanceof ProbabilityThreshold)
+            if ( next instanceof ProbabilityThreshold )
             {
                 return true;
             }
@@ -460,9 +461,9 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @return true if global thresholds are available for a {@link MetricInputGroup}, false otherwise
      */
 
-    boolean hasGlobalThresholds(MetricInputGroup group)
+    boolean hasGlobalThresholds( MetricInputGroup group )
     {
-        return globalThresholds.containsKey(group);
+        return globalThresholds.containsKey( group );
     }
 
     /**
@@ -475,40 +476,80 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      *         or an empty array
      */
 
-    MetricConstants[] getSelectedMetrics(List<MetricConstants> input,
-                                         MetricInputGroup inGroup,
-                                         MetricOutputGroup outGroup)
+    MetricConstants[] getSelectedMetrics( List<MetricConstants> input,
+                                          MetricInputGroup inGroup,
+                                          MetricOutputGroup outGroup )
     {
-        Objects.requireNonNull(input, "Specify a non-null array of metric identifiers from which to select metrics.");
+        Objects.requireNonNull( input, "Specify a non-null array of metric identifiers from which to select metrics." );
         //Find the matching metrics 
-        Set<MetricConstants> metrics = MetricConstants.getMetrics(inGroup, outGroup);
-        metrics.removeIf(a -> !input.contains(a));
-        return metrics.toArray(new MetricConstants[metrics.size()]);
+        Set<MetricConstants> metrics = MetricConstants.getMetrics( inGroup, outGroup );
+        metrics.removeIf( a -> !input.contains( a ) );
+        return metrics.toArray( new MetricConstants[metrics.size()] );
     }
 
     /**
-     * Returns a set of {@link MetricConstants} from a {@link ProjectConfig}.
+     * Returns a set of {@link MetricConstants} from a {@link ProjectConfig}. If the {@link ProjectConfig} contains
+     * the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics are returned that are consistent
+     * with the configuration. 
+     * 
+     * TODO: consider interpreting configured metrics in combination with {@link MetricConfigName#ALL_VALID} as 
+     * overrides to be removed from the {@link MetricConfigName#ALL_VALID} metrics.
      * 
      * @param config the project configuration
      * @return a set of {@link MetricConstants}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    List<MetricConstants> getMetricsFromConfig(ProjectConfig config) throws MetricConfigurationException
+    List<MetricConstants> getMetricsFromConfig( ProjectConfig config ) throws MetricConfigurationException
     {
-        Objects.requireNonNull(config, "Specify a non-null project from which to generate metrics.");
+        Objects.requireNonNull( config, "Specify a non-null project from which to generate metrics." );
         //Obtain the list of metrics
         List<MetricConfigName> metricsConfig = config.getOutputs()
                                                      .getMetric()
                                                      .stream()
-                                                     .map(MetricConfig::getName)
-                                                     .collect(Collectors.toList());
+                                                     .map( MetricConfig::getName )
+                                                     .collect( Collectors.toList() );
         List<MetricConstants> metrics = new ArrayList<>();
-        for(MetricConfigName metric: metricsConfig)
+        //All valid metrics
+        if ( metricsConfig.contains( MetricConfigName.ALL_VALID ) )
         {
-            metrics.add(fromMetricConfigName(metric));
+            getAllValidMetricsFromConfig( config );
+        }
+        //Explicitly configured metrics
+        else
+        {
+            for ( MetricConfigName metric : metricsConfig )
+            {
+                metrics.add( fromMetricConfigName( metric ) );
+            }
         }
         return metrics;
+    }
+    
+    /**
+     * <p>Returns a list of all supported metrics given the input {@link ProjectConfig}. Specifically, checks the 
+     * {@link ProjectConfig} for the data type of the right-side and for any thresholds, returning metrics as 
+     * follows:</p>
+     * <ol>
+     * <li>If the right side contains {@link DatasourceType#ENSEMBLE_FORECASTS} and thresholds are defined: returns
+     * all metrics that consume {@link MetricInputGroup#ENSEMBLE}, {@link MetricInputGroup#SINGLE_VALUED} and
+     * {@link MetricInputGroup#DISCRETE_PROBABILITY}</li>
+     * <li>If the right side contains {@link DatasourceType#ENSEMBLE_FORECASTS} and thresholds are not defined: returns
+     * all metrics that consume {@link MetricInputGroup#ENSEMBLE} and {@link MetricInputGroup#SINGLE_VALUED}</li>
+     * <li>If the right side contains {@link DatasourceType#SIMPLE_FORECASTS} and thresholds are defined: returns
+     * all metrics that consume {@link MetricInputGroup#SINGLE_VALUED} and {@link MetricInputGroup#DICHOTOMOUS}</li>
+     * <li>If the right side contains {@link DatasourceType#SIMPLE_FORECASTS} and thresholds are not defined: returns
+     * all metrics that consume {@link MetricInputGroup#SINGLE_VALUED}.</li>
+     * </ol>
+     * 
+     * TODO: implement multicategory metrics.
+     * @param project the {@link ProjectConfig}
+     * @return a list of all metrics that are compatible with the project configuration 
+     */
+    
+    List<MetricConstants> getAllValidMetricsFromConfig(ProjectConfig config)
+    {
+        return null;
     }
 
     /**
@@ -520,13 +561,13 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @return a sorted array of values or null
      */
 
-    double[] getSortedClimatology(MetricInput<?> input, List<Threshold> thresholds)
+    double[] getSortedClimatology( MetricInput<?> input, List<Threshold> thresholds )
     {
         double[] sorted = null;
-        if(hasProbabilityThreshold(thresholds) && input.hasClimatology())
+        if ( hasProbabilityThreshold( thresholds ) && input.hasClimatology() )
         {
             sorted = input.getClimatology().getDoubles();
-            Arrays.sort(sorted);
+            Arrays.sort( sorted );
         }
         return sorted;
     }
@@ -543,18 +584,20 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @throws MetricCalculationException if the sorted array is null and quantiles are required
      */
 
-    Threshold getThreshold(Threshold threshold, double[] sorted)
+    Threshold getThreshold( Threshold threshold, double[] sorted )
     {
         Threshold useMe = threshold;
         //Quantile required: need to determine real-value from probability
-        if(threshold instanceof ProbabilityThreshold)
+        if ( threshold instanceof ProbabilityThreshold )
         {
-            if(Objects.isNull(sorted))
+            if ( Objects.isNull( sorted ) )
             {
-                throw new MetricCalculationException("Unable to determine quantile threshold from probability "
-                    + "threshold: no climatological observations were available in the input.");
+                throw new MetricCalculationException( "Unable to determine quantile threshold from probability "
+                                                      + "threshold: no climatological observations were available in the input." );
             }
-            useMe = dataFactory.getSlicer().getQuantileFromProbability((ProbabilityThreshold)useMe, sorted, DECIMALS);
+            useMe = dataFactory.getSlicer().getQuantileFromProbability( (ProbabilityThreshold) useMe,
+                                                                        sorted,
+                                                                        DECIMALS );
         }
         return useMe;
     }
@@ -568,65 +611,67 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @throws MetricConfigurationException if thresholds are configured incorrectly
      */
 
-    private void setThresholds(DataFactory dataFactory, ProjectConfig config) throws MetricConfigurationException
+    private void setThresholds( DataFactory dataFactory, ProjectConfig config ) throws MetricConfigurationException
     {
         //Throw an exception if no thresholds are configured alongside metrics that require thresholds
         Outputs outputs = config.getOutputs();
-        if(hasThresholdMetrics() && Objects.isNull(outputs.getProbabilityThresholds())
-            && Objects.isNull(outputs.getValueThresholds()))
+        if ( hasThresholdMetrics() && Objects.isNull( outputs.getProbabilityThresholds() )
+             && Objects.isNull( outputs.getValueThresholds() ) )
         {
-            throw new MetricConfigurationException("Thresholds are required by one or more of the configured "
-                + "metrics.");
+            throw new MetricConfigurationException( "Thresholds are required by one or more of the configured "
+                                                    + "metrics." );
         }
         //Check for metric-local thresholds and throw an exception if they are defined, as they are currently not supported
-        EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>(MetricConstants.class);
-        for(MetricConfig metric: outputs.getMetric())
+        EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>( MetricConstants.class );
+        for ( MetricConfig metric : outputs.getMetric() )
         {
             //Obtain metric-local thresholds here
             List<Threshold> thresholds = new ArrayList<>();
-            MetricConstants name = fromMetricConfigName(metric.getName());
-            if(Objects.nonNull(metric.getProbabilityThresholds()) || Objects.nonNull(metric.getValueThresholds()))
+            MetricConstants name = fromMetricConfigName( metric.getName() );
+            if ( Objects.nonNull( metric.getProbabilityThresholds() )
+                 || Objects.nonNull( metric.getValueThresholds() ) )
             {
-                throw new MetricConfigurationException("Found metric-local thresholds for '" + name
-                    + "', which are not " + "currently supported.");
+                throw new MetricConfigurationException( "Found metric-local thresholds for '" + name
+                                                        + "', which are not "
+                                                        + "currently supported." );
             }
             //TODO: implement this when metric-local threshold conditions are available in the configuration
-            if(!thresholds.isEmpty())
+            if ( !thresholds.isEmpty() )
             {
-                localThresholds.put(name, thresholds);
+                localThresholds.put( name, thresholds );
             }
         }
         ;
-        if(!localThresholds.isEmpty())
+        if ( !localThresholds.isEmpty() )
         {
-            this.localThresholds.putAll(localThresholds);
+            this.localThresholds.putAll( localThresholds );
         }
         //Pool together all probability thresholds and real-valued thresholds in the context of the 
         //outputs configuration. 
         List<Threshold> globalThresholds = new ArrayList<>();
         //Add a threshold for "all data" by default
-        globalThresholds.add(dataFactory.getThreshold(Double.NEGATIVE_INFINITY, Operator.GREATER));
+        globalThresholds.add( dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
         //Add probability thresholds
-        if(Objects.nonNull(outputs.getProbabilityThresholds()))
+        if ( Objects.nonNull( outputs.getProbabilityThresholds() ) )
         {
-            Operator oper = fromThresholdOperator(outputs.getProbabilityThresholds().getOperator());
+            Operator oper = fromThresholdOperator( outputs.getProbabilityThresholds().getOperator() );
             String values = outputs.getProbabilityThresholds().getCommaSeparatedValues();
-            globalThresholds.addAll(getThresholdsFromCommaSeparatedValues(values, oper, true));
+            globalThresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, true ) );
         }
         //Add real-valued thresholds
-        if(Objects.nonNull(outputs.getValueThresholds()))
+        if ( Objects.nonNull( outputs.getValueThresholds() ) )
         {
-            Operator oper = fromThresholdOperator(outputs.getValueThresholds().getOperator());
+            Operator oper = fromThresholdOperator( outputs.getValueThresholds().getOperator() );
             String values = outputs.getValueThresholds().getCommaSeparatedValues();
-            globalThresholds.addAll(getThresholdsFromCommaSeparatedValues(values, oper, false));
+            globalThresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, false ) );
         }
 
         //Only set the global thresholds if no local ones are available
-        if(localThresholds.isEmpty())
+        if ( localThresholds.isEmpty() )
         {
-            for(MetricInputGroup group: MetricInputGroup.values())
+            for ( MetricInputGroup group : MetricInputGroup.values() )
             {
-                this.globalThresholds.put(group, globalThresholds);
+                this.globalThresholds.put( group, globalThresholds );
             }
         }
     }
@@ -642,44 +687,45 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @throws MetricConfigurationException if the thresholds are configured incorrectly
      */
 
-    private List<Threshold> getThresholdsFromCommaSeparatedValues(String inputString,
-                                                                  Operator oper,
-                                                                  boolean areProbs) throws MetricConfigurationException
+    private List<Threshold> getThresholdsFromCommaSeparatedValues( String inputString,
+                                                                   Operator oper,
+                                                                   boolean areProbs )
+            throws MetricConfigurationException
     {
         //Parse the double values
         List<Double> addMe =
-                           Arrays.stream(inputString.split(",")).map(Double::parseDouble).collect(Collectors.toList());
+                Arrays.stream( inputString.split( "," ) ).map( Double::parseDouble ).collect( Collectors.toList() );
         List<Threshold> returnMe = new ArrayList<>();
         //Between operator
-        if(oper == Operator.BETWEEN)
+        if ( oper == Operator.BETWEEN )
         {
-            if(addMe.size() < 2)
+            if ( addMe.size() < 2 )
             {
-                throw new MetricConfigurationException("At least two values are required to compose a "
-                    + "threshold that operates between a lower and an upper bound.");
+                throw new MetricConfigurationException( "At least two values are required to compose a "
+                                                        + "threshold that operates between a lower and an upper bound." );
             }
-            for(int i = 0; i < addMe.size() - 1; i++)
+            for ( int i = 0; i < addMe.size() - 1; i++ )
             {
-                if(areProbs)
+                if ( areProbs )
                 {
-                    returnMe.add(dataFactory.getProbabilityThreshold(addMe.get(i), addMe.get(i + 1), oper));
+                    returnMe.add( dataFactory.getProbabilityThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
                 }
                 else
                 {
-                    returnMe.add(dataFactory.getThreshold(addMe.get(i), addMe.get(i + 1), oper));
+                    returnMe.add( dataFactory.getThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
                 }
             }
         }
         //Other operators
         else
         {
-            if(areProbs)
+            if ( areProbs )
             {
-                addMe.forEach(threshold -> returnMe.add(dataFactory.getProbabilityThreshold(threshold, oper)));
+                addMe.forEach( threshold -> returnMe.add( dataFactory.getProbabilityThreshold( threshold, oper ) ) );
             }
             else
             {
-                addMe.forEach(threshold -> returnMe.add(dataFactory.getThreshold(threshold, oper)));
+                addMe.forEach( threshold -> returnMe.add( dataFactory.getThreshold( threshold, oper ) ) );
             }
         }
         return returnMe;

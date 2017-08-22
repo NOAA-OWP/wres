@@ -842,7 +842,106 @@ public class Chart2DTestOutput extends TestCase
         //Return the results
         return outputFactory.ofMap(rawData);
     }
+    
+    /**
+     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
+     * Rank Histogram (rank position, which represents the number of gaps between ensemble members plus one) and 
+     * the relative frequency of observations that fall within each gap. The results include various thresholds and 
+     * forecast lead times. Reads the input data from testinput/chart2DTest/getRankHistogramByLeadThreshold.xml.
+     * 
+     * @return an output map of verification scores
+     */
 
+    private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getRankHistogramByLeadThreshold()
+    {
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
+        final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        //Read only selected quantiles
+        final List<QuantileThreshold> allowed = new ArrayList<>();
+        final double[][] allow = new double[][]{{0.1, 858.04}, {0.5, 2707.5}, {0.9, 9647.0}, {0.95, 13685.0}};
+        for(final double[] next: allow)
+        {
+            allowed.add(outputFactory.getQuantileThreshold(next[1], next[0], Operator.GREATER));
+        }
+        try
+        {
+            //Create the input file
+            final File resultFile = new File("testinput/chart2DTest/getRankHistogramByLeadThreshold.xml");
+            final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
+
+            final Iterator<MetricResultKey> d = data.getIterator();
+
+            //Metric output metadata
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
+                                                                            metaFactory.getDimension(),
+                                                                            metaFactory.getDimension("CMS"),
+                                                                            MetricConstants.RANK_HISTOGRAM,
+                                                                            MetricConstants.MAIN,
+                                                                            metaFactory.getDatasetIdentifier("NPTP1",
+                                                                                                             "STREAMFLOW",
+                                                                                                             "HEFS"));
+
+            //Iterate through the lead times.
+            while(d.hasNext())
+            {
+
+                //Set the lead time
+                final double leadTime = (Double)d.next().getKey();
+                final MetricResultByThreshold t = (MetricResultByThreshold)data.getResult(leadTime);
+                final Iterator<MetricResultKey> e = t.getIterator();
+
+                //Iterate through the thresholds
+                while(e.hasNext())
+                {
+                    //Build the quantile
+                    final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
+                    final double[] constants = f.getParValReal().getConstants();
+                    final double[] probConstants = f.getParVal().getConstants();
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0],
+                                                                                   probConstants[0],
+                                                                                   Operator.GREATER);
+                    //Read only selected quantiles
+                    if(allowed.contains(q))
+                    {
+                        final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, q);
+
+                        //Build the result
+                        final MetricResult result = t.getResult(f);
+                        final double[][] rh = ((DoubleMatrix2DResult)result).getResult().toArray();
+
+                        //Ensure missings are NaN by brute force.
+                        for(int i = 0; i < rh.length; i++)
+                        {
+                            for(int j = 0; j < rh[i].length; j++)
+                            {
+                                if(rh[i][j] == -999D)
+                                {
+                                    rh[i][j] = Double.NaN;
+                                }
+                            }
+                        }
+
+                        final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
+                        output.put(MetricConstants.RANK_ORDER, rh[0]); 
+                        output.put(MetricConstants.OBSERVED_RELATIVE_FREQUENCY, rh[1]);
+                        final MultiVectorOutput value = outputFactory.ofMultiVectorOutput(output, meta);
+
+                        //Append result
+                        rawData.put(key, value);
+                    }
+                }
+            }
+        }
+        catch(final Exception e)
+        {
+            e.printStackTrace();
+            Assert.fail("Test failed : " + e.getMessage());
+        }
+        //Return the results
+        return outputFactory.ofMap(rawData);
+    }    
+    
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
      * Quantile-Quantile Diagram (predicted quantiles and observed quantiles) for various thresholds and forecast lead
