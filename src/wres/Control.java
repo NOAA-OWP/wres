@@ -732,10 +732,11 @@ public class Control implements Function<String[], Integer>
                 LOGGER.error("Interrupted while processing pairs.", e);
                 Thread.currentThread().interrupt();
             }
-            catch(final Exception e)
+            catch( ExecutionException e )
             {
-                LOGGER.error("While processing pairs:", e);
+                throw new WresProcessingException( "While processing pairs:", e );
             }
+
             return nextInput;
         }
     }
