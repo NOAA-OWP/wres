@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
@@ -154,7 +155,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessor.class );
 
     /**
-     * Maps between metric identifiers in {@link MetricConfigName} and those in {@link MetricConstants}.
+     * Maps between metric identifiers in {@link MetricConfigName} and those in {@link MetricConstants}. Returns a
+     * null type for {@link MetricConfigName#ALL_VALID}.
      * 
      * @param translate the input {@link MetricConfigName}
      * @return the corresponding {@link MetricConstants}.
@@ -218,6 +220,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
                 return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
             case SAMPLE_SIZE:
                 return MetricConstants.SAMPLE_SIZE;
+            case ALL_VALID:
+                return null;
             default:
                 throw new MetricConfigurationException( "Unrecognized metric identifier in project configuration '"
                                                         + translate + "'." );
@@ -444,7 +448,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
                     returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
                 }
             }
-            break;
+                break;
             case SINGLE_VALUED:
             {
                 returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
@@ -453,9 +457,18 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
                     returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
                 }
             }
-            break;
-            default: throw new MetricConfigurationException("Unexpected input identifier '"+group+"'.");
+                break;
+            default:
+                throw new MetricConfigurationException( "Unexpected input identifier '" + group + "'." );
         }
+        //Remove CRPSS if no baseline available
+        DataSourceConfig baseline = config.getInputs().getBaseline();
+        if ( Objects.isNull( baseline ) || baseline.getSource().isEmpty() )
+        {
+            returnMe.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
+        }
+        //Remove rank histogram until fully supported: TODO: remove when implemented
+        returnMe.remove( MetricConstants.RANK_HISTOGRAM );
         return returnMe;
     }
 
