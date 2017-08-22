@@ -368,6 +368,125 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     }
 
     /**
+     * Returns a set of {@link MetricConstants} from a {@link ProjectConfig}. If the {@link ProjectConfig} contains
+     * the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics are returned that are consistent
+     * with the configuration. 
+     * 
+     * TODO: consider interpreting configured metrics in combination with {@link MetricConfigName#ALL_VALID} as 
+     * overrides to be removed from the {@link MetricConfigName#ALL_VALID} metrics.
+     * 
+     * @param config the project configuration
+     * @return a set of {@link MetricConstants}
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
+     */
+
+    static List<MetricConstants> getMetricsFromConfig( ProjectConfig config ) throws MetricConfigurationException
+    {
+        Objects.requireNonNull( config, "Specify a non-null project from which to generate metrics." );
+        //Obtain the list of metrics
+        List<MetricConfigName> metricsConfig = config.getOutputs()
+                                                     .getMetric()
+                                                     .stream()
+                                                     .map( MetricConfig::getName )
+                                                     .collect( Collectors.toList() );
+        List<MetricConstants> metrics = new ArrayList<>();
+        //All valid metrics
+        if ( metricsConfig.contains( MetricConfigName.ALL_VALID ) )
+        {
+            metrics = getAllValidMetricsFromConfig( config );
+        }
+        //Explicitly configured metrics
+        else
+        {
+            for ( MetricConfigName metric : metricsConfig )
+            {
+                metrics.add( fromMetricConfigName( metric ) );
+            }
+        }
+        return metrics;
+    }
+
+    /**
+     * <p>Returns a list of all supported metrics given the input {@link ProjectConfig}. Specifically, checks the 
+     * {@link ProjectConfig} for the data type of the right-side and for any thresholds, returning metrics as 
+     * follows:</p>
+     * <ol>
+     * <li>If the right side contains {@link DatasourceType#ENSEMBLE_FORECASTS} and thresholds are defined: returns
+     * all metrics that consume {@link MetricInputGroup#ENSEMBLE}, {@link MetricInputGroup#SINGLE_VALUED} and
+     * {@link MetricInputGroup#DISCRETE_PROBABILITY}</li>
+     * <li>If the right side contains {@link DatasourceType#ENSEMBLE_FORECASTS} and thresholds are not defined: returns
+     * all metrics that consume {@link MetricInputGroup#ENSEMBLE} and {@link MetricInputGroup#SINGLE_VALUED}</li>
+     * <li>If the right side contains {@link DatasourceType#SIMPLE_FORECASTS} and thresholds are defined: returns
+     * all metrics that consume {@link MetricInputGroup#SINGLE_VALUED} and {@link MetricInputGroup#DICHOTOMOUS}</li>
+     * <li>If the right side contains {@link DatasourceType#SIMPLE_FORECASTS} and thresholds are not defined: returns
+     * all metrics that consume {@link MetricInputGroup#SINGLE_VALUED}.</li>
+     * </ol>
+     * 
+     * TODO: implement multicategory metrics.
+     * @param config the {@link ProjectConfig}
+     * @return a list of all metrics that are compatible with the project configuration  
+     * @throws MetricConfigurationException if the configuration is invalid
+     */
+
+    static List<MetricConstants> getAllValidMetricsFromConfig( ProjectConfig config )
+            throws MetricConfigurationException
+    {
+        List<MetricConstants> returnMe = new ArrayList<>();
+        MetricInputGroup group = getInputType( config );
+        switch ( group )
+        {
+            case ENSEMBLE:
+            {
+                returnMe.addAll( MetricInputGroup.ENSEMBLE.getMetrics() );
+                returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
+                if ( hasThresholds( config ) )
+                {
+                    returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
+                }
+            }
+            break;
+            case SINGLE_VALUED:
+            {
+                returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
+                if ( hasThresholds( config ) )
+                {
+                    returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
+                }
+            }
+            break;
+            default: throw new MetricConfigurationException("Unexpected input identifier '"+group+"'.");
+        }
+        return returnMe;
+    }
+
+    /**
+     * Returns true if the input {@link ProjectConfig} has thresholds configured, false otherwise.
+     * 
+     * @param config the {@link ProjectConfig}
+     * @return true if the project configuration has thresholds configured, false otherwise
+     */
+
+    static boolean hasThresholds( ProjectConfig config )
+    {
+        //Global thresholds
+        if ( Objects.nonNull( config.getOutputs().getProbabilityThresholds() )
+             || Objects.nonNull( config.getOutputs().getValueThresholds() ) )
+        {
+            return true;
+        }
+        //Local thresholds
+        for ( MetricConfig metric : config.getOutputs().getMetric() )
+        {
+            if ( Objects.nonNull( metric.getProbabilityThresholds() )
+                 || Objects.nonNull( metric.getValueThresholds() ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Constructor.
      * 
      * @param dataFactory the data factory
@@ -488,71 +607,6 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     }
 
     /**
-     * Returns a set of {@link MetricConstants} from a {@link ProjectConfig}. If the {@link ProjectConfig} contains
-     * the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics are returned that are consistent
-     * with the configuration. 
-     * 
-     * TODO: consider interpreting configured metrics in combination with {@link MetricConfigName#ALL_VALID} as 
-     * overrides to be removed from the {@link MetricConfigName#ALL_VALID} metrics.
-     * 
-     * @param config the project configuration
-     * @return a set of {@link MetricConstants}
-     * @throws MetricConfigurationException if the metrics are configured incorrectly
-     */
-
-    List<MetricConstants> getMetricsFromConfig( ProjectConfig config ) throws MetricConfigurationException
-    {
-        Objects.requireNonNull( config, "Specify a non-null project from which to generate metrics." );
-        //Obtain the list of metrics
-        List<MetricConfigName> metricsConfig = config.getOutputs()
-                                                     .getMetric()
-                                                     .stream()
-                                                     .map( MetricConfig::getName )
-                                                     .collect( Collectors.toList() );
-        List<MetricConstants> metrics = new ArrayList<>();
-        //All valid metrics
-        if ( metricsConfig.contains( MetricConfigName.ALL_VALID ) )
-        {
-            getAllValidMetricsFromConfig( config );
-        }
-        //Explicitly configured metrics
-        else
-        {
-            for ( MetricConfigName metric : metricsConfig )
-            {
-                metrics.add( fromMetricConfigName( metric ) );
-            }
-        }
-        return metrics;
-    }
-    
-    /**
-     * <p>Returns a list of all supported metrics given the input {@link ProjectConfig}. Specifically, checks the 
-     * {@link ProjectConfig} for the data type of the right-side and for any thresholds, returning metrics as 
-     * follows:</p>
-     * <ol>
-     * <li>If the right side contains {@link DatasourceType#ENSEMBLE_FORECASTS} and thresholds are defined: returns
-     * all metrics that consume {@link MetricInputGroup#ENSEMBLE}, {@link MetricInputGroup#SINGLE_VALUED} and
-     * {@link MetricInputGroup#DISCRETE_PROBABILITY}</li>
-     * <li>If the right side contains {@link DatasourceType#ENSEMBLE_FORECASTS} and thresholds are not defined: returns
-     * all metrics that consume {@link MetricInputGroup#ENSEMBLE} and {@link MetricInputGroup#SINGLE_VALUED}</li>
-     * <li>If the right side contains {@link DatasourceType#SIMPLE_FORECASTS} and thresholds are defined: returns
-     * all metrics that consume {@link MetricInputGroup#SINGLE_VALUED} and {@link MetricInputGroup#DICHOTOMOUS}</li>
-     * <li>If the right side contains {@link DatasourceType#SIMPLE_FORECASTS} and thresholds are not defined: returns
-     * all metrics that consume {@link MetricInputGroup#SINGLE_VALUED}.</li>
-     * </ol>
-     * 
-     * TODO: implement multicategory metrics.
-     * @param project the {@link ProjectConfig}
-     * @return a list of all metrics that are compatible with the project configuration 
-     */
-    
-    List<MetricConstants> getAllValidMetricsFromConfig(ProjectConfig config)
-    {
-        return null;
-    }
-
-    /**
      * Helper that returns a sorted set of values from the left side of the input pairs if any of the thresholds are
      * {@link ProbabilityThreshold}.
      * 
@@ -615,8 +669,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     {
         //Throw an exception if no thresholds are configured alongside metrics that require thresholds
         Outputs outputs = config.getOutputs();
-        if ( hasThresholdMetrics() && Objects.isNull( outputs.getProbabilityThresholds() )
-             && Objects.isNull( outputs.getValueThresholds() ) )
+        if ( hasThresholdMetrics() && !hasThresholds( config ) )
         {
             throw new MetricConfigurationException( "Thresholds are required by one or more of the configured "
                                                     + "metrics." );
@@ -625,23 +678,25 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>( MetricConstants.class );
         for ( MetricConfig metric : outputs.getMetric() )
         {
-            //Obtain metric-local thresholds here
-            List<Threshold> thresholds = new ArrayList<>();
-            MetricConstants name = fromMetricConfigName( metric.getName() );
-            if ( Objects.nonNull( metric.getProbabilityThresholds() )
-                 || Objects.nonNull( metric.getValueThresholds() ) )
+            if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
-                throw new MetricConfigurationException( "Found metric-local thresholds for '" + name
-                                                        + "', which are not "
-                                                        + "currently supported." );
-            }
-            //TODO: implement this when metric-local threshold conditions are available in the configuration
-            if ( !thresholds.isEmpty() )
-            {
-                localThresholds.put( name, thresholds );
+                //Obtain metric-local thresholds here
+                List<Threshold> thresholds = new ArrayList<>();
+                MetricConstants name = fromMetricConfigName( metric.getName() );
+                if ( Objects.nonNull( metric.getProbabilityThresholds() )
+                     || Objects.nonNull( metric.getValueThresholds() ) )
+                {
+                    throw new MetricConfigurationException( "Found metric-local thresholds for '" + name
+                                                            + "', which are not "
+                                                            + "currently supported." );
+                }
+                //TODO: implement this when metric-local threshold conditions are available in the configuration
+                if ( !thresholds.isEmpty() )
+                {
+                    localThresholds.put( name, thresholds );
+                }
             }
         }
-        ;
         if ( !localThresholds.isEmpty() )
         {
             this.localThresholds.putAll( localThresholds );
