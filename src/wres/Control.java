@@ -33,11 +33,13 @@ import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.MetricConfig;
+import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MapBiKey;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
@@ -46,7 +48,6 @@ import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.VectorOutput;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
@@ -409,17 +410,17 @@ public class Control implements Function<String[], Integer>
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
                 final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
-                if(Objects.isNull(nextConfig))
+                PlotTypeSelection plotType = null;
+                String templateResourceName = null;
+                if(!Objects.isNull(nextConfig))
                 {
-                    String message = MISSING_CONFIGURATION
-                                     + e.getKey().getFirstKey().toString()
-                                     + ".";
-                    throw new WresProcessingException( message );
+                    plotType = nextConfig.getPlotType();
+                    templateResourceName = nextConfig.getTemplateResourceName();
                 }
                 final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
                                                                                                   DATA_FACTORY,
-                                                                                                  nextConfig.getPlotType(),
-                                                                                                  nextConfig.getTemplateResourceName(),
+                                                                                                  plotType,
+                                                                                                  templateResourceName,
                                                                                                   graphicsString);
                 //Build the output
                 final StringBuilder pathBuilder = new StringBuilder();
@@ -473,18 +474,18 @@ public class Control implements Function<String[], Integer>
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
                 final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
-                if(Objects.isNull(nextConfig))
+                PlotTypeSelection plotType = null;
+                String templateResourceName = null;
+                if(!Objects.isNull(nextConfig))
                 {
-                    String message = MISSING_CONFIGURATION
-                                     + e.getKey().getFirstKey().toString()
-                                     + ".";
-                    throw new WresProcessingException( message );
+                    plotType = nextConfig.getPlotType();
+                    templateResourceName = nextConfig.getTemplateResourceName();
                 }
                 final Map<Object, ChartEngine> engines =
                                                        ChartEngineFactory.buildVectorOutputChartEngine(e.getValue(),
                                                                                                        DATA_FACTORY,
-                                                                                                       nextConfig.getPlotType(),
-                                                                                                       nextConfig.getTemplateResourceName(),
+                                                                                                       plotType,
+                                                                                                       templateResourceName,
                                                                                                        graphicsString);
                 // Build the outputs
                 for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
@@ -549,20 +550,19 @@ public class Control implements Function<String[], Integer>
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
                 final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
-
-                if(Objects.isNull(nextConfig))
+                PlotTypeSelection plotType = null;
+                String templateResourceName = null;
+                if(!Objects.isNull(nextConfig))
                 {
-                    String message = MISSING_CONFIGURATION
-                                     + e.getKey().getFirstKey().toString()
-                                     + ".";
-                    throw new WresProcessingException( message );
+                    plotType = nextConfig.getPlotType();
+                    templateResourceName = nextConfig.getTemplateResourceName();
                 }
 
                 final Map<Object, ChartEngine> engines =
                                                        ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
                                                                                                             DATA_FACTORY,
-                                                                                                            nextConfig.getPlotType(),
-                                                                                                            nextConfig.getTemplateResourceName(),
+                                                                                                            plotType,
+                                                                                                            templateResourceName,
                                                                                                             graphicsString);
                 // Build the outputs
                 for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
