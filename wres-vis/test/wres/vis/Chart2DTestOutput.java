@@ -37,8 +37,8 @@ import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.QuantileThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
-import wres.datamodel.VectorOutput;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.VectorOutput;
 
 /**
  * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit
@@ -911,6 +911,11 @@ public class Chart2DTestOutput extends TestCase
      * The comparison sensitivity.
      */
     private static int IMAGE_COMPARISON_SENSITIVITY = 2;
+    
+    /**
+     * Comparison debug output
+     */
+    private static boolean IMAGE_COMPARISON_DEBUG_OUTPUT = false;
 
     /**
      * Main line compares images with benchmarks.
@@ -933,7 +938,7 @@ public class Chart2DTestOutput extends TestCase
                                                                           benchmarkFile,
                                                                           IMAGE_COMPARISON_SENSITIVITY,
                                                                           true,
-                                                                          true);
+                                                                          IMAGE_COMPARISON_DEBUG_OUTPUT);
             }
             catch(final Throwable t)
             {
