@@ -791,13 +791,33 @@ public class Control implements Function<String[], Integer>
                     }
                 }
             }
-            catch(final Exception e)
+            catch( InterruptedException ie)
             {
-                LOGGER.error("While processing intermediate results:", e);
+                LOGGER.warn( "Interrupted while processing intermediate results" );
+                Thread.currentThread().interrupt();
+            }
+            catch ( ExecutionException ee )
+            {
+                throw new WresProcessingException(
+                        "While processing intermediate results: ",
+                        ee );
             }
         }
     }
 
+
+    /**
+     * An exception representing that execution of a step failed.
+     * Needed because ForkJoinPool does not deal kindly with checked Exceptions.
+     */
+    private static class WresProcessingException extends RuntimeException
+    {
+        // A marker exception distinct from plain RuntimeException
+        WresProcessingException(String message, Throwable cause)
+        {
+            super(message, cause);
+        }
+    }
 
     /**
      * Composes a list of {@link CompletableFuture} so that execution completes when all futures are completed normally
