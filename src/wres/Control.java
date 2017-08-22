@@ -368,7 +368,7 @@ public class Control implements Function<String[], Integer>
         }
         catch(final InterruptedException e)
         {
-            LOGGER.error("Interrupted while processing charts.", e);
+            LOGGER.warn( "Interrupted while processing charts.", e );
             Thread.currentThread().interrupt();
         }
         catch(final ExecutionException e)
@@ -721,7 +721,7 @@ public class Control implements Function<String[], Integer>
             }
             catch(final InterruptedException e)
             {
-                LOGGER.error("Interrupted while processing pairs.", e);
+                LOGGER.warn( "Interrupted while processing pairs.", e );
                 Thread.currentThread().interrupt();
             }
             catch( ExecutionException e )
