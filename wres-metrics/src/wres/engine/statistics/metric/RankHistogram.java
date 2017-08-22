@@ -55,7 +55,7 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
                 sliced.values().stream().max( Comparator.comparingInt( List::size ) ).get();
 
         //Set the ranked positions as 1:N+1
-        double[] ranks = IntStream.range( 1, useMe.get( 0 ).getItemTwo().length + 1 ).asDoubleStream().toArray();
+        double[] ranks = IntStream.range( 1, useMe.get( 0 ).getItemTwo().length + 2 ).asDoubleStream().toArray();
         double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
 
         //Compute the sum of ranks
