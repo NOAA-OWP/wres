@@ -463,7 +463,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         }
         //Remove CRPSS if no baseline available
         DataSourceConfig baseline = config.getInputs().getBaseline();
-        if ( Objects.isNull( baseline ) || baseline.getSource().isEmpty() )
+        if ( Objects.isNull( baseline ) )
         {
             returnMe.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
         }
