@@ -108,7 +108,7 @@ public class ProjectConfigPlus
      * Parse a config file, store validation events, get the vis config strings.
      *
      * @param path The path to xml file to unmarshal
-     * @return
+     * @return a handy bundle including the projectconfig and path to it
      * @throws IOException when the file cannot be successfully parsed
      */
     public static ProjectConfigPlus from(Path path) throws IOException
