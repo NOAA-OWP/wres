@@ -4,8 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -143,8 +147,8 @@ public class Control implements Function<String[], Integer>
 
                 Operations.logExecution( String.join(" ", args),
                                          projectRawConfig,
-                                         Long.toString( startTime ),
-                                         Long.toString( endTime ),
+                                         Control.sqlDateFromMillis( startTime ),
+                                         Control.sqlDateFromMillis( endTime ),
                                          false );
             }
             return 0;
@@ -157,8 +161,8 @@ public class Control implements Function<String[], Integer>
 
             Operations.logExecution( String.join(" ", args),
                                      projectRawConfig,
-                                     Long.toString( startTime ),
-                                     Long.toString( endTime ),
+                                     Control.sqlDateFromMillis( startTime ),
+                                     Control.sqlDateFromMillis( endTime ),
                                      true );
 
             return -1;
@@ -972,6 +976,16 @@ public class Control implements Function<String[], Integer>
         }
 
         return false;
+    }
+
+    private static String sqlDateFromMillis( long millis )
+    {
+        final String PATTERN = "YYYY-MM-dd HH:mm:ss.SSSZ";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern( PATTERN,
+                                                                   Locale.US )
+                                                       .withZone( ZoneId.systemDefault() );
+        Instant instant = Instant.ofEpochMilli( millis );
+        return formatter.format( instant );
     }
 
     /**
