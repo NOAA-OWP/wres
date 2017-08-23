@@ -19,6 +19,7 @@ import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
 import wres.engine.statistics.metric.ContinuousRankedProbabilityScore.CRPSBuilder;
 import wres.engine.statistics.metric.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
+import wres.engine.statistics.metric.IndexOfAgreement.IndexOfAgreementBuilder;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.RankHistogram.RankHistogramBuilder;
@@ -505,6 +506,8 @@ public class MetricFactory
                 return ofCoefficientOfDetermination();
             case SAMPLE_SIZE:
                 return ofSampleSize();
+            case INDEX_OF_AGREEMENT:
+                return ofIndexOfAgreement();    
             default:
                 throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
@@ -979,6 +982,17 @@ public class MetricFactory
         return (ContinuousRankedProbabilitySkillScore) new CRPSSBuilder().setOutputFactory( outputFactory ).build();
     }
 
+    /**
+     * Return a default {@link IndexOfAgreement} function.
+     * 
+     * @return a default {@link IndexOfAgreement} function
+     */
+
+    IndexOfAgreement ofIndexOfAgreement()
+    {
+        return (IndexOfAgreement) new IndexOfAgreementBuilder().setOutputFactory( outputFactory ).build();
+    }    
+    
     /**
      * Return a default {@link SampleSize} function.
      * 
