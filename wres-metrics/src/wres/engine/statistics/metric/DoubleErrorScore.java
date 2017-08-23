@@ -9,8 +9,9 @@ import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 
 /**
- * A generic implementation of an error score that applies a {@link DoubleErrorFunction} to each pair within a
- * {@link SingleValuedPairs} and returns the average error across those pairs.
+ * A generic implementation of an error score without decomposition. For scores that can be computed in a single-pass,
+ * provide a {@link DoubleErrorFunction} to the constructor. This function is applied to each pair, and the average
+ * score returned across all pairs.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -57,6 +58,8 @@ abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, S
     public ScalarOutput apply(final S s)
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        Objects.requireNonNull(f, "Override or specify a non-null error function for the '" + toString() + "'.");
+        
         //Metadata
         DatasetIdentifier id = null;
         if(s.hasBaseline() && s.getMetadataForBaseline().hasIdentifier())
@@ -77,7 +80,6 @@ abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, S
     protected DoubleErrorScore(final DoubleErrorScoreBuilder<S> builder)
     {
         super(builder);
-        Objects.requireNonNull(builder.f, "Specify a non-null function from which to construct the metric.");
         this.f = builder.f;
     }
 
