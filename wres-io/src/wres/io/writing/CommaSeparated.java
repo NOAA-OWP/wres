@@ -8,7 +8,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.SortedMap;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
@@ -25,6 +28,7 @@ import wres.datamodel.MapBiKey;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
 
@@ -33,7 +37,8 @@ import wres.datamodel.Threshold;
  */
 public class CommaSeparated
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparated.class );
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger( CommaSeparated.class );
 
     private CommaSeparated()
     {
@@ -50,26 +55,35 @@ public class CommaSeparated
      * @throws ExecutionException when a dependent task failed
      * @throws IOException when the writing itself fails
      * @throws ProjectConfigException when no output files are specified
+     * @throws NullPointerException when any of the arguments are null
      */
 
     public static void writeOutputFiles( ProjectConfig projectConfig,
                                          Conditions.Feature feature,
-                                         MetricOutputForProjectByLeadThreshold storedMetricOutput)
-            throws InterruptedException, ExecutionException, IOException, ProjectConfigException
+                                         MetricOutputForProjectByLeadThreshold storedMetricOutput )
+            throws InterruptedException, ExecutionException, IOException,
+            ProjectConfigException
     {
+        Objects.requireNonNull( storedMetricOutput,
+                                "Metric outputs must not be null." );
+        Objects.requireNonNull( feature,
+                                "The feature must not be null." );
+        Objects.requireNonNull( projectConfig,
+                                "The project config must not be null." );
+
         if ( projectConfig.getOutputs() == null
              || projectConfig.getOutputs().getDestination() == null
              || projectConfig.getOutputs().getDestination().isEmpty() )
         {
             String message = "No numeric output files specified for project.";
-            throw new ProjectConfigException( projectConfig.getOutputs(), message );
+            throw new ProjectConfigException( projectConfig.getOutputs(),
+                                              message );
         }
 
-        for ( DestinationConfig d: projectConfig.getOutputs().getDestination() )
+        for ( DestinationConfig d : projectConfig.getOutputs()
+                                                 .getDestination() )
         {
-            final Map<Integer, StringJoiner> rows = new TreeMap<>();
-            final StringJoiner headerRow = new StringJoiner( "," );
-            headerRow.add( "LEAD_TIME" );
+
 
             if ( d.getType() == DestinationType.NUMERIC )
             {
@@ -108,48 +122,30 @@ public class CommaSeparated
                     }
                 }
 
-                for ( Map.Entry<MapBiKey<MetricConstants, MetricConstants>,
-                                MetricOutputMapByLeadThreshold<ScalarOutput>> m
-                      : storedMetricOutput.getScalarOutput()
-                                          .entrySet() )
+                SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
+
+                MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarOutput =
+                        storedMetricOutput.getScalarOutput();
+
+                if ( scalarOutput != null )
                 {
-                    String name = m.getKey().getFirstKey().name();
-                    String secondName = m.getKey().getSecondKey().name();
-
-                    for ( Threshold t: m.getValue().keySetByThreshold() )
+                    SortedMap<Integer, StringJoiner> scalars =
+                            CommaSeparated.getScalarRows( scalarOutput );
+                    for ( Map.Entry<Integer, StringJoiner> e : scalars.entrySet() )
                     {
-                        String column = name + "_" + secondName + "_" + t;
-                        headerRow.add( column );
-
-                        for ( MapBiKey<Integer, Threshold> key
-                              : m.getValue().sliceByThreshold( t ).keySet() )
-                        {
-                            if ( rows.get( key.getFirstKey() ) == null )
-                            {
-                                StringJoiner row = new StringJoiner( "," );
-                                row.add( Integer.toString( key.getFirstKey() ) );
-                                rows.put( key.getFirstKey(), row );
-                            }
-
-                            StringJoiner row = rows.get( key.getFirstKey() );
-
-                            row.add( m.getValue().get( key ).toString() );
-                        }
+                        rows.put( e.getKey(), e.getValue() );
                     }
                 }
 
-                Path outputPath = Paths.get(outputDirectory + "/"
-                                                 + feature.getLocation().getLid()
-                                                 + ".csv");
+                Path outputPath = Paths.get( outputDirectory + "/"
+                                             + feature.getLocation().getLid()
+                                             + ".csv" );
 
-                try (BufferedWriter w = Files.newBufferedWriter( outputPath,
-                                                                 StandardCharsets.UTF_8,
-                                                                 StandardOpenOption.CREATE,
-                                                                 StandardOpenOption.TRUNCATE_EXISTING ) )
+                try ( BufferedWriter w = Files.newBufferedWriter( outputPath,
+                                                                  StandardCharsets.UTF_8,
+                                                                  StandardOpenOption.CREATE,
+                                                                  StandardOpenOption.TRUNCATE_EXISTING ) )
                 {
-                    w.write( headerRow.toString() );
-                    w.write( System.lineSeparator() );
-
                     for ( StringJoiner row : rows.values() )
                     {
                         w.write( row.toString() );
@@ -158,5 +154,52 @@ public class CommaSeparated
                 }
             }
         }
+    }
+
+    private static SortedMap<Integer, StringJoiner> getScalarRows(
+            MetricOutputMultiMapByLeadThreshold<ScalarOutput> output )
+    {
+        SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
+        StringJoiner headerRow = new StringJoiner( "," );
+
+        headerRow.add( "LEAD_TIME" );
+        for ( Map.Entry<MapBiKey<MetricConstants, MetricConstants>,
+                MetricOutputMapByLeadThreshold<ScalarOutput>> m
+                : output.entrySet() )
+        {
+            String name = m.getKey().getFirstKey().name();
+            String secondName = m.getKey().getSecondKey().name();
+
+            for ( Threshold t : m.getValue().keySetByThreshold() )
+            {
+                String column = name + "_" + secondName + "_" + t;
+                headerRow.add( column );
+
+                for ( MapBiKey<Integer, Threshold> key
+                        : m.getValue().sliceByThreshold( t ).keySet() )
+                {
+                    if ( rows.get( key.getFirstKey() ) == null )
+                    {
+                        StringJoiner row = new StringJoiner( "," );
+                        row.add( Integer.toString( key.getFirstKey() ) );
+                        rows.put( key.getFirstKey(), row );
+                    }
+
+                    StringJoiner row = rows.get( key.getFirstKey() );
+
+                    row.add( m.getValue().get( key ).toString() );
+                }
+            }
+        }
+
+        SortedMap<Integer,StringJoiner> result = new TreeMap<>();
+        result.put(Integer.MIN_VALUE, headerRow);
+
+        for ( Map.Entry<Integer, StringJoiner> e : rows.entrySet() )
+        {
+            result.put( e.getKey(), e.getValue() );
+        }
+
+        return result;
     }
 }
