@@ -956,12 +956,6 @@ public class Control implements Function<String[], Integer>
      */
 
     public static final int MAX_THREADS;
-    
-    /**
-     * Error message for missing configuration.
-     */
-    
-    private static final String MISSING_CONFIGURATION = "Could not locate the metric configuration for metric ";
 
     // Figure out the max threads from property or by default rule.
     // Ideally priority order would be: -D, SystemSettings, default rule.
