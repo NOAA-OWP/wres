@@ -769,7 +769,9 @@ public class Control implements Function<String[], Integer>
             MetricOutputMetadata meta = null;
             try
             {
-                if(input.hasOutput(MetricOutputGroup.MULTIVECTOR))
+                if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR )
+                     && configNeedsThisTypeOfOutput( projectConfigPlus.getProjectConfig(),
+                                                     DestinationType.GRAPHIC ) )
                 {
                     processMultiVectorCharts(feature,
                                              projectConfigPlus,
