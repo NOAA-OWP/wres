@@ -7,7 +7,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.MetricInput;
+import wres.datamodel.MetricInput;
 import wres.io.Operations;
 import wres.io.concurrency.Downloader;
 import wres.io.concurrency.SQLExecutor;

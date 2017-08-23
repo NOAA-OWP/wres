@@ -3,16 +3,16 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 import java.util.function.Function;
 
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DatasetIdentifier;
-import wres.datamodel.metric.Dimension;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.Dimension;
+import wres.datamodel.Metadata;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInput;
+import wres.datamodel.MetricInputException;
+import wres.datamodel.MetricOutput;
+import wres.datamodel.MetricOutputMetadata;
 import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
@@ -210,7 +210,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
                                              getID(),
                                              componentID,
                                              identifier,
-                                             metIn.getLeadTime());
+                                             metIn.getLeadTimeInHours());
     }
 
     /**

@@ -1,21 +1,35 @@
 package wres.io.config;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.xml.XMLConstants;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.ValidationEvent;
+import javax.xml.bind.ValidationEventHandler;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
+
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.GraphicalType;
 import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
-
-import javax.xml.bind.*;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-import java.util.*;
 
 /**
  * Associates a project configuration object with its graphgen xml string.
@@ -52,6 +66,8 @@ public class ProjectConfigPlus
 
     /** Used to find the end of the graphics custom configuration */
     private static final String GFX_END_TAG = "</config>";
+
+    private static final String XSD_NAME = "ProjectConfig.xsd";
 
     private ProjectConfigPlus(Path path,
                               ProjectConfig projectConfig,
@@ -92,7 +108,7 @@ public class ProjectConfigPlus
      * Parse a config file, store validation events, get the vis config strings.
      *
      * @param path The path to xml file to unmarshal
-     * @return
+     * @return a handy bundle including the projectconfig and path to it
      * @throws IOException when the file cannot be successfully parsed
      */
     public static ProjectConfigPlus from(Path path) throws IOException
@@ -114,7 +130,16 @@ public class ProjectConfigPlus
             File xmlFile = path.toFile();
             Source xmlSource = new StreamSource(xmlFile);
             JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
+
+            // Validate against schema during unmarshaling;
+            InputStream schemaStream = ClassLoader.getSystemResourceAsStream( XSD_NAME );
+            Source schemaSource = new StreamSource( schemaStream );
+            SchemaFactory schemaFactory =
+                    SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
+            Schema schema = schemaFactory.newSchema( schemaSource );
+
             Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+            jaxbUnmarshaller.setSchema( schema );
             jaxbUnmarshaller.setEventHandler(new ProjValidationEventHandler());
             final JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
             projectConfig = wrappedConfig.getValue();
@@ -153,6 +178,12 @@ public class ProjectConfigPlus
             String message = "A value in the file " + path + " was unable to be converted to a number.";
             // communicate failure back up the stack
             throw new IOException(message, nfe);
+        }
+        catch ( SAXException e )
+        {
+            String message = "Expected a valid XML schema on classpath at "
+                             + XSD_NAME + ".";
+            throw new IOException( message, e );
         }
 
         List<String> xmlLines;

@@ -1,6 +1,8 @@
 package wres.engine.statistics.metric;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.ToDoubleFunction;
@@ -68,6 +70,21 @@ class FunctionFactory
     {
         return (a, b) -> 1.0 - (a / b);
     }
+    
+    /**
+     * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
+     * 
+     * @return a function that rounds to a prescribed number of decimal places
+     */
+
+    public static BiFunction<Double,Integer,Double> round()
+    {
+        return (input, digits) -> {        
+            BigDecimal bd = new BigDecimal(Double.toString(input));  //Always use String constructor
+            bd = bd.setScale(digits,BigDecimal.ROUND_HALF_UP);
+            return bd.doubleValue();
+        };
+    }    
 
     /**
      * <p>

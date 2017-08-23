@@ -1,10 +1,10 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutput;
-import wres.datamodel.metric.MetricOutputMetadata;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInput;
+import wres.datamodel.MetricInputException;
+import wres.datamodel.MetricOutput;
+import wres.datamodel.MetricOutputMetadata;
 
 /**
  * An interface that allows for a {@link Metric} to be computed from an intermediate {@link MetricOutput}, thereby
@@ -32,7 +32,7 @@ interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>, U ext
     U apply(T output);
 
     /**
-     * Returns the result whose method {@link Metric#apply(wres.datamodel.metric.MetricInput)} provides the input to
+     * Returns the result whose method {@link Metric#apply(wres.datamodel.MetricInput)} provides the input to
      * {@link #apply(MetricOutput)}. Ensure that the {@link Metric#getID()} associated with the
      * {@link MetricOutputMetadata} of the output corresponds to that of the implementing class and not the caller.
      * 

@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -30,24 +31,27 @@ import wres.config.ProjectConfigException;
 import wres.config.Validation;
 import wres.config.generated.Conditions.Feature;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.MetricConfig;
+import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.MapBiKey;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metric.MetricInput;
-import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
-import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MapBiKey;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricInput;
+import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
+import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.VectorOutput;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
+import wres.engine.statistics.metric.MetricProcessorByLeadTime;
 import wres.io.Operations;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
@@ -121,13 +125,16 @@ public class Control implements Function<String[], Integer>
             for(final ProjectConfigPlus projectConfigPlus: projectConfiggies)
             {
                 // Process the next configuration
-                final boolean processed = processProjectConfig(projectConfigPlus, processPairExecutor, metricExecutor);
-                if(!processed)
-                {
-                    return -1;
-                }
+                processProjectConfig( projectConfigPlus,
+                                      processPairExecutor,
+                                      metricExecutor );
             }
             return 0;
+        }
+        catch ( WresProcessingException wpe )
+        {
+            LOGGER.error( "Could not complete project execution:", wpe );
+            return -1;
         }
         // Shutdown
         finally
@@ -143,10 +150,10 @@ public class Control implements Function<String[], Integer>
      * @param projectConfigPlus the project configuration
      * @param processPairExecutor the {@link ExecutorService}
      * @param metricExecutor an optional {@link ExecutorService} for processing metrics
-     * @return true if the project processed successfully, false otherwise
+     * @throws WresProcessingException when an error occurs during processing
      */
 
-    private boolean processProjectConfig(final ProjectConfigPlus projectConfigPlus,
+    private void   processProjectConfig( final ProjectConfigPlus projectConfigPlus,
                                          final ExecutorService processPairExecutor,
                                          final ExecutorService metricExecutor)
     {
@@ -158,8 +165,7 @@ public class Control implements Function<String[], Integer>
 
         if(!ingestResult)
         {
-            LOGGER.error("Error while attempting to ingest data.");
-            return false;
+            throw new WresProcessingException( "Error while attempting to ingest data." );
         }
 
         // Obtain the features
@@ -168,12 +174,11 @@ public class Control implements Function<String[], Integer>
         // Iterate through the features and process them
         for(final Feature nextFeature: features)
         {
-            if(!processFeature(nextFeature, projectConfigPlus, processPairExecutor, metricExecutor))
-            {
-                return false;
-            }
+            processFeature( nextFeature,
+                            projectConfigPlus,
+                            processPairExecutor,
+                            metricExecutor );
         }
-        return true;
     }
 
     /**
@@ -183,10 +188,10 @@ public class Control implements Function<String[], Integer>
      * @param projectConfigPlus the project configuration
      * @param processPairExecutor the {@link ExecutorService}
      * @param metricExecutor an optional {@link ExecutorService} for processing metrics
-     * @return true if the project processed successfully, false otherwise
+     * @throws WresProcessingException when an error occurs during processing
      */
 
-    private boolean processFeature(final Feature feature,
+    private void processFeature(   final Feature feature,
                                    final ProjectConfigPlus projectConfigPlus,
                                    final ExecutorService processPairExecutor,
                                    final ExecutorService metricExecutor)
@@ -202,18 +207,19 @@ public class Control implements Function<String[], Integer>
         // Sink for the results: the results are added incrementally to an immutable store via a builder
         // Some output types are processed at the end of the pipeline, others after each input is processed
         // Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR
-        MetricProcessor processor = null;
+        // TODO: support additional processor types
+        MetricProcessorByLeadTime processor = null;
         try
         {
-            processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessor(projectConfig,
+            processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessorByLeadTime(projectConfig,
                                                                                    metricExecutor,
                                                                                    MetricOutputGroup.SCALAR,
                                                                                    MetricOutputGroup.VECTOR);
         }
         catch(final MetricConfigurationException e)
         {
-            LOGGER.error("While processing the metric configuration:", e);
-            return false;
+            throw new WresProcessingException( "While processing the metric configuration:",
+                                               e );
         }
 
         // Build an InputGenerator for the next feature
@@ -242,50 +248,51 @@ public class Control implements Function<String[], Integer>
         }
 
         // Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
-        try
-        {
-            doAllOrException(listOfFutures).join();
-        }
-        catch(final Exception e)
-        {
-            LOGGER.error("While processing feature '{}':", feature.getLocation().getLid(), e);
-            return false;
-        }
+
+        doAllOrException(listOfFutures).join();
 
         // Complete the end-of-pipeline processing
         if(processor.hasStoredMetricOutput())
         {
-            processCachedCharts(feature,
-                                projectConfigPlus,
-                                processor,
-                                MetricOutputGroup.SCALAR,
-                                MetricOutputGroup.VECTOR);
+            if ( configNeedsThisTypeOfOutput( projectConfig,
+                                              DestinationType.GRAPHIC ) )
+            {
+                processCachedCharts( feature,
+                                     projectConfigPlus,
+                                     processor,
+                                     MetricOutputGroup.SCALAR,
+                                     MetricOutputGroup.VECTOR );
+            }
 
-            try
+            if ( configNeedsThisTypeOfOutput( projectConfig,
+                                              DestinationType.NUMERIC ) )
             {
-                CommaSeparated.writeOutputFiles( projectConfig,
-                                                 feature,
-                                                 processor.getStoredMetricOutput() );
+                try
+                {
+                    CommaSeparated.writeOutputFiles( projectConfig,
+                                                     feature,
+                                                     processor.getStoredMetricOutput() );
 
-            }
-            catch ( final ProjectConfigException pce )
-            {
-                LOGGER.error( "Please include valid numeric output clause(s) in"
-                              + " project configuration. Example: <destination>"
-                              + "<path>c:/Users/myname/wres_output/</path>"
-                              + "</destination>",
-                              pce );
-                return false;
-            }
-            catch ( final InterruptedException ie )
-            {
-                LOGGER.warn("Interrupted while writing output files.");
-                Thread.currentThread().interrupt();
-            }
-            catch ( IOException | ExecutionException e)
-            {
-                LOGGER.error("While writing output files: ", e);
-                return false;
+                }
+                catch ( final ProjectConfigException pce )
+                {
+                    throw new WresProcessingException(
+                            "Please include valid numeric output clause(s) in"
+                            + " project configuration. Example: <destination>"
+                            + "<path>c:/Users/myname/wres_output/</path>"
+                            + "</destination>",
+                            pce );
+                }
+                catch ( final InterruptedException ie )
+                {
+                    LOGGER.warn( "Interrupted while writing output files." );
+                    Thread.currentThread().interrupt();
+                }
+                catch ( IOException | ExecutionException e )
+                {
+                    throw new WresProcessingException ( "While writing output files: ",
+                                                        e );
+                }
             }
 
             if(LOGGER.isInfoEnabled())
@@ -297,7 +304,6 @@ public class Control implements Function<String[], Integer>
         {
             LOGGER.info("No cached outputs to generate for feature '{}'.", feature.getLocation().getLid());
         }
-        return true;
     }
 
     /**
@@ -307,22 +313,20 @@ public class Control implements Function<String[], Integer>
      * @param projectConfigPlus the project configuration
      * @param processor the {@link MetricProcessor} that contains the results for all chart types
      * @param outGroup the {@link MetricOutputGroup} for which charts are required
-     * @return true it the processing completed successfully, false otherwise
+     * @throws WresProcessingException when an error occurs during processing
      */
 
-    private static boolean processCachedCharts(final Feature feature,
+    private static void   processCachedCharts( final Feature feature,
                                                final ProjectConfigPlus projectConfigPlus,
-                                               final MetricProcessor processor,
+                                               final MetricProcessorByLeadTime processor,
                                                final MetricOutputGroup... outGroup)
     {
         if(!processor.hasStoredMetricOutput())
         {
-            LOGGER.error("No cached outputs to process.");
-            return false;
+            LOGGER.warn( "No cached outputs to process. ");
+            return;
         }
 
-        // True until failed
-        boolean returnMe = true;
         try
         {
             for(final MetricOutputGroup nextGroup: outGroup)
@@ -332,47 +336,45 @@ public class Control implements Function<String[], Integer>
                     switch(nextGroup)
                     {
                         case SCALAR:
-                            returnMe = returnMe
-                                && processScalarCharts(feature,
-                                                       projectConfigPlus,
-                                                       processor.getStoredMetricOutput().getScalarOutput());
+                            processScalarCharts( feature,
+                                                 projectConfigPlus,
+                                                 processor.getStoredMetricOutput()
+                                                          .getScalarOutput() );
                             break;
                         case VECTOR:
-                            returnMe = returnMe
-                                && processVectorCharts(feature,
-                                                       projectConfigPlus,
-                                                       processor.getStoredMetricOutput().getVectorOutput());
+                            processVectorCharts( feature,
+                                                 projectConfigPlus,
+                                                 processor.getStoredMetricOutput()
+                                                          .getVectorOutput() );
                             break;
                         case MULTIVECTOR:
-                            returnMe = returnMe
-                                && processMultiVectorCharts(feature,
-                                                            projectConfigPlus,
-                                                            processor.getStoredMetricOutput().getMultiVectorOutput());
+                            processMultiVectorCharts( feature,
+                                                      projectConfigPlus,
+                                                      processor.getStoredMetricOutput()
+                                                               .getMultiVectorOutput() );
                             break;
                         default:
-                            LOGGER.error("Unsupported chart type {}.", nextGroup);
-                            returnMe = false;
+                            LOGGER.warn( "Unsupported chart type {}.",
+                                         nextGroup );
+                            return;
                     }
                 }
                 else
                 {
                     //Return silently: chart type not necessarily configured
-                    returnMe = false;
+                    return;
                 }
             }
         }
         catch(final InterruptedException e)
         {
-            LOGGER.error("Interrupted while processing charts.", e);
+            LOGGER.warn( "Interrupted while processing charts.", e );
             Thread.currentThread().interrupt();
-            returnMe = false;
         }
         catch(final ExecutionException e)
         {
-            LOGGER.error("While processing charts:", e);
-            returnMe = false;
+            throw new WresProcessingException( "Error while processing charts:", e);
         }
-        return returnMe;
     }
 
     /**
@@ -382,10 +384,10 @@ public class Control implements Function<String[], Integer>
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
      * @param scalarResults the scalar outputs
-     * @return true it the processing completed successfully, false otherwise
+     * @throws WresProcessingException when an error occurs during processing
      */
 
-    private static boolean processScalarCharts(final Feature feature,
+    private static void   processScalarCharts( final Feature feature,
                                                final ProjectConfigPlus projectConfigPlus,
                                                final MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarResults)
     {
@@ -393,8 +395,8 @@ public class Control implements Function<String[], Integer>
         //Check for results
         if(Objects.isNull(scalarResults))
         {
-            LOGGER.error("No scalar outputs from which to generate charts.");
-            return false;
+            LOGGER.warn("No scalar outputs from which to generate charts.");
+            return;
         }
 
         // Build charts
@@ -407,15 +409,17 @@ public class Control implements Function<String[], Integer>
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
                 final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
-                if(Objects.isNull(nextConfig))
+                PlotTypeSelection plotType = null;
+                String templateResourceName = null;
+                if(!Objects.isNull(nextConfig))
                 {
-                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
-                    return false;
+                    plotType = nextConfig.getPlotType();
+                    templateResourceName = nextConfig.getTemplateResourceName();
                 }
                 final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
                                                                                                   DATA_FACTORY,
-                                                                                                  nextConfig.getPlotType(),
-                                                                                                  nextConfig.getTemplateResourceName(),
+                                                                                                  plotType,
+                                                                                                  templateResourceName,
                                                                                                   graphicsString);
                 //Build the output
                 final StringBuilder pathBuilder = new StringBuilder();
@@ -434,10 +438,8 @@ public class Control implements Function<String[], Integer>
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
         {
-            LOGGER.error("While generating scalar charts:", e);
-            return false;
+            throw new WresProcessingException( "Error while generating scalar charts:", e);
         }
-        return true;
     }
 
     /**
@@ -447,18 +449,18 @@ public class Control implements Function<String[], Integer>
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
      * @param vectorResults the scalar outputs
-     * @return true it the processing completed successfully, false otherwise
+     * @throws WresProcessingException when an error occurs during processing
      */
 
-    private static boolean processVectorCharts(final Feature feature,
+    private static void   processVectorCharts( final Feature feature,
                                                final ProjectConfigPlus projectConfigPlus,
                                                final MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorResults)
     {
         //Check for results
         if(Objects.isNull(vectorResults))
         {
-            LOGGER.error("No vector outputs from which to generate charts.");
-            return false;
+            LOGGER.warn("No vector outputs from which to generate charts.");
+            return;
         }
 
         // Build charts
@@ -471,16 +473,18 @@ public class Control implements Function<String[], Integer>
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
                 final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
-                if(Objects.isNull(nextConfig))
+                PlotTypeSelection plotType = null;
+                String templateResourceName = null;
+                if(!Objects.isNull(nextConfig))
                 {
-                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
-                    return false;
+                    plotType = nextConfig.getPlotType();
+                    templateResourceName = nextConfig.getTemplateResourceName();
                 }
                 final Map<Object, ChartEngine> engines =
                                                        ChartEngineFactory.buildVectorOutputChartEngine(e.getValue(),
                                                                                                        DATA_FACTORY,
-                                                                                                       nextConfig.getPlotType(),
-                                                                                                       nextConfig.getTemplateResourceName(),
+                                                                                                       plotType,
+                                                                                                       templateResourceName,
                                                                                                        graphicsString);
                 // Build the outputs
                 for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
@@ -509,10 +513,8 @@ public class Control implements Function<String[], Integer>
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
         {
-            LOGGER.error("While generating vector charts:", e);
-            return false;
+            throw new WresProcessingException( "Error while generating vector charts:", e );
         }
-        return true;
     }
 
     /**
@@ -522,18 +524,18 @@ public class Control implements Function<String[], Integer>
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
      * @param multiVectorResults the scalar outputs
-     * @return true it the processing completed successfully, false otherwise
+     * @throws WresProcessingException if the processing completed unsuccessfully
      */
 
-    private static boolean processMultiVectorCharts(final Feature feature,
+    private static void   processMultiVectorCharts( final Feature feature,
                                                     final ProjectConfigPlus projectConfigPlus,
                                                     final MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> multiVectorResults)
     {
         //Check for results
         if(Objects.isNull(multiVectorResults))
         {
-            LOGGER.error("No multi-vector outputs from which to generate charts.");
-            return false;
+            LOGGER.warn( "No multi-vector outputs from which to generate charts." );
+            return;
         }
 
         // Build charts
@@ -547,16 +549,19 @@ public class Control implements Function<String[], Integer>
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
                 final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
-                if(Objects.isNull(nextConfig))
+                PlotTypeSelection plotType = null;
+                String templateResourceName = null;
+                if(!Objects.isNull(nextConfig))
                 {
-                    LOGGER.error(MISSING_CONFIGURATION, e.getKey().getFirstKey());
-                    return false;
+                    plotType = nextConfig.getPlotType();
+                    templateResourceName = nextConfig.getTemplateResourceName();
                 }
+
                 final Map<Object, ChartEngine> engines =
                                                        ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
                                                                                                             DATA_FACTORY,
-                                                                                                            nextConfig.getPlotType(),
-                                                                                                            nextConfig.getTemplateResourceName(),
+                                                                                                            plotType,
+                                                                                                            templateResourceName,
                                                                                                             graphicsString);
                 // Build the outputs
                 for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
@@ -585,10 +590,8 @@ public class Control implements Function<String[], Integer>
         }
         catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
         {
-            LOGGER.error("While generating multi-vector charts:", e);
-            return false;
+            throw new WresProcessingException( "Error while generating multi-vector charts:", e );
         }
-        return true;
     }
 
     /**
@@ -712,18 +715,19 @@ public class Control implements Function<String[], Integer>
                 {
                     LOGGER.info("Completed processing of pairs for feature '{}' at lead time {}.",
                                 nextInput.getMetadata().getIdentifier().getGeospatialID(),
-                                nextInput.getMetadata().getLeadTime());
+                                nextInput.getMetadata().getLeadTimeInHours());
                 }
             }
             catch(final InterruptedException e)
             {
-                LOGGER.error("Interrupted while processing pairs.", e);
+                LOGGER.warn( "Interrupted while processing pairs.", e );
                 Thread.currentThread().interrupt();
             }
-            catch(final Exception e)
+            catch( ExecutionException e )
             {
-                LOGGER.error("While processing pairs:", e);
+                throw new WresProcessingException( "While processing pairs:", e );
             }
+
             return nextInput;
         }
     }
@@ -767,23 +771,50 @@ public class Control implements Function<String[], Integer>
             {
                 if(input.hasOutput(MetricOutputGroup.MULTIVECTOR))
                 {
-                    processMultiVectorCharts(feature, projectConfigPlus, input.getMultiVectorOutput());
+                    processMultiVectorCharts(feature,
+                                             projectConfigPlus,
+                                             input.getMultiVectorOutput());
                     meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
                     if(LOGGER.isDebugEnabled())
                     {
                         LOGGER.debug("Completed processing of intermediate metrics results for feature '{}' at lead time {}.",
                                      meta.getIdentifier().getGeospatialID(),
-                                     meta.getLeadTime());
+                                     meta.getLeadTimeInHours());
                     }
                 }
             }
-            catch(final Exception e)
+            catch( InterruptedException ie)
             {
-                LOGGER.error("While processing intermediate results:", e);
+                LOGGER.warn( "Interrupted while processing intermediate results" );
+                Thread.currentThread().interrupt();
+            }
+            catch ( ExecutionException ee )
+            {
+                throw new WresProcessingException(
+                        "While processing intermediate results: ",
+                        ee );
             }
         }
     }
 
+
+    /**
+     * An exception representing that execution of a step failed.
+     * Needed because ForkJoinPool and/or the Java 8 Function world does not
+     * deal kindly with checked Exceptions.
+     */
+    private static class WresProcessingException extends RuntimeException
+    {
+        WresProcessingException( String message, Throwable cause )
+        {
+            super( message, cause );
+        }
+
+        WresProcessingException( String message )
+        {
+            super( message );
+        }
+    }
 
     /**
      * Composes a list of {@link CompletableFuture} so that execution completes when all futures are completed normally
@@ -826,45 +857,16 @@ public class Control implements Function<String[], Integer>
         {
             return;
         }
-        // (There are probably better ways to do this, e.g. awaitTermination)
-        int processingSkipped = 0;
-        int i = 0;
-        boolean deathTime = false;
-        while(!executor.isTerminated())
+
+        executor.shutdown();
+
+        try
         {
-            if(i == 0)
-            {
-                LOGGER.info("Some processing is finishing up before exit.");
-            }
-
-            if(i > 10)
-            {
-                deathTime = true;
-            }
-
-            try
-            {
-                Thread.sleep(500);
-            }
-            catch(final InterruptedException ie)
-            {
-                deathTime = true;
-                Thread.currentThread().interrupt();
-            }
-            finally
-            {
-                if(deathTime)
-                {
-                    LOGGER.info("Forcing shutdown.");
-                    processingSkipped += executor.shutdownNow().size();
-                }
-            }
-            i++;
+            executor.awaitTermination( 5, TimeUnit.SECONDS );
         }
-
-        if(processingSkipped > 0)
+        catch ( InterruptedException ie )
         {
-            LOGGER.info("Abandoned {} processing tasks.", processingSkipped);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -892,6 +894,35 @@ public class Control implements Function<String[], Integer>
             }
         }).findFirst();
         return returnMe.isPresent() ? returnMe.get() : null;
+    }
+
+
+    /**
+     * Returns true if the given config has one or more of given output type.
+     * @param config the config to search
+     * @param type the type of output to look for
+     * @return true if the output type is present, false otherwise
+     */
+
+    private static boolean configNeedsThisTypeOfOutput( ProjectConfig config,
+                                                        DestinationType type )
+    {
+        if ( config.getOutputs() == null
+             || config.getOutputs().getDestination() == null )
+        {
+            LOGGER.debug( "No destinations specified for config {}", config );
+            return false;
+        }
+
+        for ( DestinationConfig d : config.getOutputs().getDestination() )
+        {
+            if ( d.getType().equals( type ) )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -928,7 +959,7 @@ public class Control implements Function<String[], Integer>
      * Error message for missing configuration.
      */
     
-    private static final String MISSING_CONFIGURATION = "Could not locate the metric configuration for metric {}.";
+    private static final String MISSING_CONFIGURATION = "Could not locate the metric configuration for metric ";
 
     // Figure out the max threads from property or by default rule.
     // Ideally priority order would be: -D, SystemSettings, default rule.

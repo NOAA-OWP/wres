@@ -1,9 +1,9 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.DichotomousPairs;
-import wres.datamodel.metric.MatrixOutput;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.DichotomousPairs;
+import wres.datamodel.MatrixOutput;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.ScalarOutput;
 
 /**
  * <p>
@@ -64,7 +64,7 @@ class CriticalSuccessIndex extends ContingencyTableScore<DichotomousPairs>
     /**
      * Hidden constructor.
      * 
-     * @param builder the {@link builder}.
+     * @param builder the builder
      */
 
     private CriticalSuccessIndex(final CriticalSuccessIndexBuilder builder)

@@ -10,18 +10,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.DichotomousPairs;
+import wres.datamodel.DiscreteProbabilityPairs;
+import wres.datamodel.EnsemblePairs;
+import wres.datamodel.Metadata;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MulticategoryPairs;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.DichotomousPairs;
-import wres.datamodel.metric.DiscreteProbabilityPairs;
-import wres.datamodel.metric.EnsemblePairs;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MulticategoryPairs;
-import wres.datamodel.metric.SingleValuedPairs;
 
 /**
  * Factory class for generating test datasets for metric calculations.

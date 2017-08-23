@@ -9,20 +9,21 @@ import java.util.TreeSet;
 import org.junit.Test;
 
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.EnsemblePairs;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metric.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMultiMapByLeadThreshold;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.Threshold;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.EnsemblePairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.Threshold;
+import wres.datamodel.VectorOutput;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.io.config.ProjectConfigPlus;
 
 /**
- * Tests the {@link MetricProcessorEnsemblePairs}.
+ * Tests the {@link MetricProcessorEnsemblePairsByLeadTime}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -34,8 +35,8 @@ public final class MetricProcessorEnsemblePairsTest
     private final DataFactory dataFactory = DefaultDataFactory.getInstance();
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairs} and application of
-     * {@link MetricProcessorEnsemblePairs#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained from
+     * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
+     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -47,9 +48,9 @@ public final class MetricProcessorEnsemblePairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
-            MetricProcessorEnsemblePairs processor =
-                                                   (MetricProcessorEnsemblePairs)MetricFactory.getInstance(dataFactory)
-                                                                                              .getMetricProcessor(config);
+            MetricProcessorEnsemblePairsByLeadTime processor =
+                                                   (MetricProcessorEnsemblePairsByLeadTime)MetricFactory.getInstance(dataFactory)
+                                                                                              .getMetricProcessorByLeadTime(config);
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             MetricOutputForProjectByLeadThreshold results = processor.apply(pairs);
             MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.getScalarOutput()
@@ -64,6 +65,9 @@ public final class MetricProcessorEnsemblePairsTest
             MetricOutputMapByLeadThreshold<ScalarOutput> me = results.getScalarOutput().get(MetricConstants.MEAN_ERROR);
             MetricOutputMapByLeadThreshold<ScalarOutput> rmse = results.getScalarOutput()
                                                                        .get(MetricConstants.ROOT_MEAN_SQUARE_ERROR);
+            MetricOutputMapByLeadThreshold<VectorOutput> crps =
+                                                              results.getVectorOutput()
+                                                                     .get(MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE);
 
             //Test contents
             assertTrue("Unexpected difference in " + MetricConstants.BIAS_FRACTION,
@@ -78,6 +82,8 @@ public final class MetricProcessorEnsemblePairsTest
                        me.getValue(0).getData().equals(1.157869354367079));
             assertTrue("Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
                        rmse.getValue(0).getData().equals(41.01563032408479));
+            assertTrue("Unexpected difference in " + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                       Double.compare(crps.getValue(0).getData().getDoubles()[0], 9.075772555092389) == 0);
         }
         catch(Exception e)
         {
@@ -87,9 +93,9 @@ public final class MetricProcessorEnsemblePairsTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairs} and application of
-     * {@link MetricProcessorEnsemblePairs#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained
-     * from testinput/metricProcessorEnsemblePairsTest/test2ApplyWithValueThresholds.xml and pairs obtained from
+     * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
+     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
+     * testinput/metricProcessorEnsemblePairsTest/test2ApplyWithValueThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
 
@@ -101,8 +107,10 @@ public final class MetricProcessorEnsemblePairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
-            MetricProcessor processor = MetricFactory.getInstance(metIn).getMetricProcessor(config,
-                                                                                            MetricOutputGroup.SCALAR);
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                                                                             MetricFactory.getInstance(metIn)
+                                                                                          .getMetricProcessorByLeadTime(config,
+                                                                                                              MetricOutputGroup.SCALAR);
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             processor.apply(pairs);
             //Obtain the results
@@ -181,18 +189,18 @@ public final class MetricProcessorEnsemblePairsTest
                 + me.getKey(5), me.getValue(5).getData().equals(4.218543908073952));
             //Validate rmse
             MetricOutputMapByLeadThreshold<ScalarOutput> rmse = results.get(MetricConstants.ROOT_MEAN_SQUARE_ERROR);
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(0), rmse.getValue(0).getData().equals(41.01563032408479));
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(1), rmse.getValue(1).getData().equals(41.01563032408479));
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(2), rmse.getValue(2).getData().equals(52.55361580348336));
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(3), rmse.getValue(3).getData().equals(54.82426155439095));
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(4), rmse.getValue(4).getData().equals(58.12352988180837));
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(5), rmse.getValue(5).getData().equals(61.12163959516186));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(0), rmse.getValue(0).getData().equals(41.01563032408479));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(1), rmse.getValue(1).getData().equals(41.01563032408479));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(2), rmse.getValue(2).getData().equals(52.55361580348336));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(3), rmse.getValue(3).getData().equals(54.82426155439095));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(4), rmse.getValue(4).getData().equals(58.12352988180837));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(5), rmse.getValue(5).getData().equals(61.12163959516186));
         }
         catch(Exception e)
         {
@@ -202,9 +210,9 @@ public final class MetricProcessorEnsemblePairsTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairs} and application of
-     * {@link MetricProcessorEnsemblePairs#apply(wres.datamodel.metric.EnsemblePairs)} to configuration obtained
-     * from testinput/metricProcessorEnsemblePairsTest/test3ApplyWithProbabilityThresholds.xml and pairs obtained from
+     * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
+     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
+     * testinput/metricProcessorEnsemblePairsTest/test3ApplyWithProbabilityThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
 
@@ -216,21 +224,20 @@ public final class MetricProcessorEnsemblePairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
-            MetricProcessor processor = MetricFactory.getInstance(metIn).getMetricProcessor(config,
-                                                                                            MetricOutputGroup.SCALAR);
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                                                                             MetricFactory.getInstance(metIn)
+                                                                                          .getMetricProcessorByLeadTime(config,
+                                                                                                              MetricOutputGroup.SCALAR);
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             processor.apply(pairs);
             //Obtain the results
             MetricOutputMultiMapByLeadThreshold<ScalarOutput> results = processor.getStoredMetricOutput()
                                                                                  .getScalarOutput();
-            
-            
+
             TreeSet<Threshold> s = new TreeSet<>();
-            
-            results.get(MetricConstants.BIAS_FRACTION).keySetByThreshold().forEach(res -> s.add(res));;
-            
-            System.out.println(s);
-            
+
+            results.get(MetricConstants.BIAS_FRACTION).keySetByThreshold().forEach(res -> s.add(res));
+            ;
 
             //Validate bias
             MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.get(MetricConstants.BIAS_FRACTION);
@@ -305,24 +312,24 @@ public final class MetricProcessorEnsemblePairsTest
                 + me.getKey(5), me.getValue(5).getData().equals(4.218543908073952));
             //Validate rmse
             MetricOutputMapByLeadThreshold<ScalarOutput> rmse = results.get(MetricConstants.ROOT_MEAN_SQUARE_ERROR);
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(0), rmse.getValue(0).getData().equals(41.01563032408479));
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(1), rmse.getValue(1).getData().equals(41.01563032408479));
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(2), rmse.getValue(2).getData().equals(52.55361580348336));
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(3), rmse.getValue(3).getData().equals(54.82426155439095));
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(4), rmse.getValue(4).getData().equals(58.12352988180837));
-            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR + " at "
-                + rmse.getKey(5), rmse.getValue(5).getData().equals(61.12163959516186));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(0), rmse.getValue(0).getData().equals(41.01563032408479));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(1), rmse.getValue(1).getData().equals(41.01563032408479));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(2), rmse.getValue(2).getData().equals(52.55361580348336));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(3), rmse.getValue(3).getData().equals(54.82426155439095));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(4), rmse.getValue(4).getData().equals(58.12352988180837));
+            assertTrue("Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                + " at " + rmse.getKey(5), rmse.getValue(5).getData().equals(61.12163959516186));
         }
         catch(Exception e)
         {
             e.printStackTrace();
             fail("Unexpected exception on processing project configuration '" + configPath + "'.");
         }
-    }    
-    
+    }
+
 }

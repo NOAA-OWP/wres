@@ -1,17 +1,19 @@
 package wres.engine.statistics.metric;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.apache.commons.math3.util.Precision;
 
+import wres.datamodel.DiscreteProbabilityPairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DiscreteProbabilityPairs;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.MultiVectorOutput;
 
 /**
  * <p>
@@ -41,9 +43,9 @@ class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOut
     private final int bins;
 
     @Override
-    public MultiVectorOutput apply(final DiscreteProbabilityPairs s)
+    public MultiVectorOutput apply( final DiscreteProbabilityPairs s )
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        Objects.requireNonNull( s, "Specify non-null input for the '" + toString() + "'." );
         //Determine the probabilities and sample sizes 
         double constant = 1.0 / bins;
         double[] fProb = new double[bins];
@@ -52,17 +54,17 @@ class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOut
         //Consumer that increments the probabilities and sample size
         Consumer<PairOfDoubles> mapper = pair -> {
             //Determine forecast bin
-            for(int i = 0; i < bins; i++)
+            for ( int i = 0; i < bins; i++ )
             {
                 //Define the bin
-                double lower = Precision.round(i * constant, 5);
-                double upper = Precision.round(lower + constant, 5);
-                if(i == 0)
+                double lower = Precision.round( i * constant, 5 );
+                double upper = Precision.round( lower + constant, 5 );
+                if ( i == 0 )
                 {
                     lower = -1.0; //Catch forecast probabilities of zero in the first bin
                 }
                 //Establish whether the forecast probability falls inside it
-                if(pair.getItemTwo() > lower && pair.getItemTwo() <= upper)
+                if ( pair.getItemTwo() > lower && pair.getItemTwo() <= upper )
                 {
                     fProb[i] += pair.getItemTwo();
                     oProb[i] += pair.getItemOne();
@@ -71,21 +73,28 @@ class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOut
                 }
             }
         };
-        //Compute the average probabilities
-        s.getData().forEach(mapper);
-        for(int i = 0; i < bins; i++)
+        //Compute the average probabilities for samples > 0
+        s.getData().forEach( mapper );
+        List<Double> fProbFinal = new ArrayList<>(); //Forecast probs for samples > 0
+        List<Double> oProbFinal = new ArrayList<>(); //Observed probs for samples > 0
+        for ( int i = 0; i < bins; i++ )
         {
-            fProb[i] = fProb[i] / samples[i];
-            oProb[i] = oProb[i] / samples[i];
+            if ( samples[i] > 0 )
+            {
+                fProbFinal.add( fProb[i] / samples[i] );
+                oProbFinal.add( oProb[i] / samples[i] );
+            }
         }
 
         //Set the results
-        Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
-        output.put(MetricConstants.FORECAST_PROBABILITY, fProb);
-        output.put(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY, oProb);
-        output.put(MetricConstants.SAMPLE_SIZE, samples);
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
-        return getDataFactory().ofMultiVectorOutput(output, metOut);
+        Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
+        output.put( MetricConstants.FORECAST_PROBABILITY,
+                    fProbFinal.stream().mapToDouble( Double::doubleValue ).toArray() );
+        output.put( MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY,
+                    oProbFinal.stream().mapToDouble( Double::doubleValue ).toArray() );
+        output.put( MetricConstants.SAMPLE_SIZE, samples );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        return getDataFactory().ofMultiVectorOutput( output, metOut );
     }
 
     @Override
@@ -110,7 +119,7 @@ class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOut
         @Override
         protected ReliabilityDiagram build()
         {
-            return new ReliabilityDiagram(this);
+            return new ReliabilityDiagram( this );
         }
 
     }
@@ -121,9 +130,9 @@ class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOut
      * @param builder the builder
      */
 
-    protected ReliabilityDiagram(final ReliabilityDiagramBuilder builder)
+    protected ReliabilityDiagram( final ReliabilityDiagramBuilder builder )
     {
-        super(builder);
+        super( builder );
         //Set the default bins
         bins = 10;
     }

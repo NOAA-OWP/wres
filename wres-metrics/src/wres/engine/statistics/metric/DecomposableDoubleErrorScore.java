@@ -2,25 +2,25 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.SingleValuedPairs;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricInput;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.VectorOutput;
 
 /**
- * A generic implementation of an error score that is decomposable.
+ * A generic implementation of an error score for {@link SingleValuedPairs} that is decomposable.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-abstract class DecomposableDoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, VectorOutput>
+abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Metric<S, VectorOutput>
 implements Score
 {
 
     /**
-     * The decomposition identifier. See {@link MetricConstants#getDecompositionID()}.
+     * The decomposition identifier. See {@link MetricDecompositionGroup}.
      */
 
     private final MetricDecompositionGroup decompositionID;
@@ -41,15 +41,15 @@ implements Score
      * A {@link MetricBuilder} to build the metric.
      */
 
-    static abstract class DecomposableDoubleErrorScoreBuilder<S extends SingleValuedPairs>
+    static abstract class DecomposableDoubleErrorScoreBuilder<S extends MetricInput<?>>
     extends
         MetricBuilder<S, VectorOutput>
     {
         /**
-         * The type of metric decomposition. See {@link MetricConstants#getDecompositionID()}.
+         * The type of metric decomposition. See {@link MetricDecompositionGroup}.
          */
 
-        private MetricDecompositionGroup decompositionID = MetricDecompositionGroup.NONE;
+        MetricDecompositionGroup decompositionID = MetricDecompositionGroup.NONE;
 
         /**
          * Sets the decomposition identifier.
@@ -58,7 +58,7 @@ implements Score
          * @return the builder
          */
 
-        protected DecomposableDoubleErrorScoreBuilder<S> setDecompositionID(final MetricDecompositionGroup decompositionID)
+        DecomposableDoubleErrorScoreBuilder<S> setDecompositionID(final MetricDecompositionGroup decompositionID)
         {
             this.decompositionID = decompositionID;
             return this;
@@ -71,7 +71,7 @@ implements Score
      * @param builder the builder
      */
 
-    protected DecomposableDoubleErrorScore(final DecomposableDoubleErrorScoreBuilder<S> builder)
+    DecomposableDoubleErrorScore(final DecomposableDoubleErrorScoreBuilder<S> builder)
     {
         super(builder);
         Objects.requireNonNull(builder.decompositionID, "Specify a non-null decomposition identifier.");

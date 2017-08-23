@@ -2,9 +2,9 @@ package wres.vis;
 
 import org.jfree.data.xy.XYDataset;
 
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MultiVectorOutput;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MultiVectorOutput;
 
 /**
  * The {@link XYDataset} for use in building the reliability diagram portion of the reliability diagram plot (the other
