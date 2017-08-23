@@ -41,6 +41,7 @@ import wres.datamodel.MapBiKey;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
+import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.MetricOutputMetadata;
@@ -277,58 +278,78 @@ public class Control implements Function<String[], Integer>
 
         doAllOrException(listOfFutures).join();
 
-        // Complete the end-of-pipeline processing
-        if(processor.hasStoredMetricOutput())
+        // Generated stored output if available
+        if ( processor.hasStoredMetricOutput() )
         {
-            if ( configNeedsThisTypeOfOutput( projectConfig,
-                                              DestinationType.GRAPHIC ) )
+            processCachedProducts( projectConfigPlus, processor, feature );
+        }
+        else if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "No cached outputs to generate for feature '{}'.", feature.getLocation().getLid() );
+        }
+    }
+
+    /**
+     * Completes the processing of products, including graphical and numerical products, at the end of a processing 
+     * pipeline using the cached {@link MetricOutput} stored in the {@link MetricProcessor}, and in keeping with 
+     * the supplied {@link ProjectConfig}.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param processor the processor with cached metric outputs
+     * @param feature the feature being processed
+     */
+
+    private static void   processCachedProducts( ProjectConfigPlus projectConfigPlus,
+                                               MetricProcessorByLeadTime processor,
+                                               Feature feature )
+    {
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+        //Generate graphical output
+        if ( configNeedsThisTypeOfOutput( projectConfig,
+                                          DestinationType.GRAPHIC ) )
+        {
+            processCachedCharts( feature,
+                                 projectConfigPlus,
+                                 processor,
+                                 MetricOutputGroup.SCALAR,
+                                 MetricOutputGroup.VECTOR );
+        }
+
+        //Generate numerical output
+        if ( configNeedsThisTypeOfOutput( projectConfig,
+                                          DestinationType.NUMERIC ) )
+        {
+            try
             {
-                processCachedCharts( feature,
-                                     projectConfigPlus,
-                                     processor,
-                                     MetricOutputGroup.SCALAR,
-                                     MetricOutputGroup.VECTOR );
+                CommaSeparated.writeOutputFiles( projectConfig,
+                                                 feature,
+                                                 processor.getStoredMetricOutput() );
+
             }
-
-            if ( configNeedsThisTypeOfOutput( projectConfig,
-                                              DestinationType.NUMERIC ) )
+            catch ( final ProjectConfigException pce )
             {
-                try
-                {
-                    CommaSeparated.writeOutputFiles( projectConfig,
-                                                     feature,
-                                                     processor.getStoredMetricOutput() );
-
-                }
-                catch ( final ProjectConfigException pce )
-                {
-                    throw new WresProcessingException(
-                            "Please include valid numeric output clause(s) in"
-                            + " project configuration. Example: <destination>"
-                            + "<path>c:/Users/myname/wres_output/</path>"
-                            + "</destination>",
-                            pce );
-                }
-                catch ( final InterruptedException ie )
-                {
-                    LOGGER.warn( "Interrupted while writing output files." );
-                    Thread.currentThread().interrupt();
-                }
-                catch ( IOException | ExecutionException e )
-                {
-                    throw new WresProcessingException ( "While writing output files: ",
-                                                        e );
-                }
+                throw new WresProcessingException(
+                                                   "Please include valid numeric output clause(s) in"
+                                                   + " project configuration. Example: <destination>"
+                                                   + "<path>c:/Users/myname/wres_output/</path>"
+                                                   + "</destination>",
+                                                   pce );
             }
-
-            if(LOGGER.isInfoEnabled())
+            catch ( final InterruptedException ie )
             {
-                LOGGER.info("Completed processing of feature '{}'.", feature.getLocation().getLid());
+                LOGGER.warn( "Interrupted while writing output files." );
+                Thread.currentThread().interrupt();
+            }
+            catch ( IOException | ExecutionException e )
+            {
+                throw new WresProcessingException( "While writing output files: ",
+                                                   e );
             }
         }
-        else if(LOGGER.isInfoEnabled())
+
+        if ( LOGGER.isInfoEnabled() )
         {
-            LOGGER.info("No cached outputs to generate for feature '{}'.", feature.getLocation().getLid());
+            LOGGER.info( "Completed processing of feature '{}'.", feature.getLocation().getLid() );
         }
     }
 
@@ -626,9 +647,9 @@ public class Control implements Function<String[], Integer>
      * @param outputImage the path to the output image
      * @param engine the chart engine
      * @param dest the destination configuration
-     * @throws XYChartDataSourceException
-     * @throws ChartEngineException
-     * @throws IOException
+     * @throws XYChartDataSourceException if the chart data could not be constructed
+     * @throws ChartEngineException if the chart could not be constructed
+     * @throws IOException if the chart could not be written
      */
 
     private static void writeChart(final Path outputImage,
@@ -709,8 +730,7 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
-     * Task that waits for pairs to arrive, computes metrics from them, and then produces any intermediate
-     * (within-pipeline) products.
+     * Task that waits for pairs to arrive and then returns them.
      */
     private static class PairsByLeadProcessor implements Supplier<MetricInput<?>>
     {
@@ -759,7 +779,7 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
-     * A function that does something with a set of results (in this case, prints to a logger).
+     * A task the processes an intermediate set of results.
      */
 
     private static class IntermediateResultProcessor implements Consumer<MetricOutputForProjectByLeadThreshold>
@@ -780,6 +800,7 @@ public class Control implements Function<String[], Integer>
         /**
          * Construct.
          * 
+         * @param feature the feature
          * @param projectConfigPlus the project configuration
          */
 
