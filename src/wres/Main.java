@@ -71,7 +71,16 @@ public class Main {
                                    "...");
         watch.start();
 
-        Integer exitCode = MainFunctions.call(operation, cutArgs);
+        Integer exitCode = null;
+
+        try
+        {
+            exitCode = MainFunctions.call( operation, cutArgs );
+        }
+        catch ( Exception e )
+        {
+            LOGGER.error( "Operation {} completed unsuccessfully:", operation, e );
+        }
 
         if (exitCode == null)
         {

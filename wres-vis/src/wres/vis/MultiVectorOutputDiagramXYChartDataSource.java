@@ -1,8 +1,8 @@
 package wres.vis;
 
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MultiVectorOutput;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MultiVectorOutput;
 
 /**
  * A chart data source for the reliability portion (top subplot) of a reliability diagram for which a diagram for each
@@ -38,6 +38,24 @@ extends
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle(domainTitle);//("Forecast Probability");
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle(rangeTitle);//("Observed Probability Given Forecast Probability");
         WRESTools.applyDefaultJFreeChartColorSequence(getDefaultFullySpecifiedDataSourceDrawingParameters());
+    }
+
+
+    /**
+     * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
+     *            such as the rendering order, legend order, and so forth.
+     * @param input The data for which to display a chart.
+     */
+    public MultiVectorOutputDiagramXYChartDataSource(final int orderIndex,
+                                               final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                               final MetricConstants xConstant,
+                                               final MetricConstants yConstant,
+                                               final String domainTitle,
+                                               final String rangeTitle,
+                                               final int subPlotIndex)
+    {
+        this(orderIndex, input, xConstant, yConstant, domainTitle, rangeTitle);
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(subPlotIndex);
     }
 
     @Override

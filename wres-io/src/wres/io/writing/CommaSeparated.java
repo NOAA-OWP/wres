@@ -21,7 +21,12 @@ import wres.config.generated.Conditions;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metric.*;
+import wres.datamodel.MapBiKey;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.Threshold;
 
 /**
  * Helps write Comma Separated files.
@@ -139,7 +144,8 @@ public class CommaSeparated
 
                 try (BufferedWriter w = Files.newBufferedWriter( outputPath,
                                                                  StandardCharsets.UTF_8,
-                                                                 StandardOpenOption.CREATE ) )
+                                                                 StandardOpenOption.CREATE,
+                                                                 StandardOpenOption.TRUNCATE_EXISTING ) )
                 {
                     w.write( headerRow.toString() );
                     w.write( System.lineSeparator() );

@@ -15,12 +15,12 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartPanelTools;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Metadata;
+import wres.datamodel.MetadataFactory;
 import wres.datamodel.PairOfDoubles;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.Metadata;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.SingleValuedPairs;
 
 public class Chart2DTestInput extends TestCase
 {

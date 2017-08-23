@@ -1,7 +1,7 @@
 package wres.vis;
 
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.ScalarOutput;
 
 /**
  * A chart data source for a single verification metric, indexed by forecast lead time and threshold.

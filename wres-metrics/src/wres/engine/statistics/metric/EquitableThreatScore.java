@@ -2,10 +2,10 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.metric.DichotomousPairs;
-import wres.datamodel.metric.MatrixOutput;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.DichotomousPairs;
+import wres.datamodel.MatrixOutput;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.ScalarOutput;
 
 /**
  * The Equitable Threat Score (ETS) is a dichotomous measure of the fraction of all predicted outcomes that occurred

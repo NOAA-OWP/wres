@@ -2,11 +2,11 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricInputException;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.SingleValuedPairs;
 
 /**
  * Computes the square of Pearson's product-moment correlation coefficient between the left and right sides of the

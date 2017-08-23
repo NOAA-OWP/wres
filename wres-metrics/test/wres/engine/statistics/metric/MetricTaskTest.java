@@ -9,10 +9,10 @@ import java.util.concurrent.FutureTask;
 
 import org.junit.Test;
 
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.SingleValuedPairs;
 
 /**
  * Tests the {@link MetricTask}.

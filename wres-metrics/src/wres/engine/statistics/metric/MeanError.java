@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * The mean error applies to continuous variables and is the average signed difference between a single-valued

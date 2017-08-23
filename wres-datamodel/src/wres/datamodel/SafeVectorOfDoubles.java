@@ -8,7 +8,7 @@ import java.util.stream.Stream;
  * if the original array is mutated after construction, the clone during construction prevents surprise. Likewise, the
  * clone during get prevents state being leaked to other classes. There does not yet seem to be a performance penalty.
  */
-public class SafeVectorOfDoubles implements VectorOfDoubles
+class SafeVectorOfDoubles implements VectorOfDoubles
 {
     private final double[] doubles;
 

@@ -1,9 +1,9 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.DichotomousPairs;
-import wres.datamodel.metric.MatrixOutput;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.ScalarOutput;
+import wres.datamodel.DichotomousPairs;
+import wres.datamodel.MatrixOutput;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.ScalarOutput;
 
 /**
  * The Probability of False Detection (PoD) measures the fraction of observed non-occurrences that were false alarms.

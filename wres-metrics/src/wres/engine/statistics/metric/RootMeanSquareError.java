@@ -1,9 +1,9 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricConstants.MetricDecompositionGroup;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.SingleValuedPairs;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * As with the MSE, the Root Mean Square Error (RMSE) or Root Mean Square Deviation (RMSD) is a measure of accuracy.

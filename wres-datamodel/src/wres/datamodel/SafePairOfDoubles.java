@@ -2,7 +2,7 @@ package wres.datamodel;
 
 import java.util.Objects;
 
-public class SafePairOfDoubles implements PairOfDoubles
+class SafePairOfDoubles implements PairOfDoubles
 {
     private final double itemOne;
     private final double itemTwo;

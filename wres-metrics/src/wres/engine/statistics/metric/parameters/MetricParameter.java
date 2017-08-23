@@ -1,20 +1,10 @@
 package wres.engine.statistics.metric.parameters;
 
-// WRES dependencies
-import wres.util.DeepCopy;
-
 /**
+ * Metric parameter.
+ * 
  * @author james.brown@hydrosolved.com
  */
-public interface MetricParameter extends DeepCopy<MetricParameter>
+public interface MetricParameter
 {
-
-    /**
-     * Returns a unique identifier associated with the metric parameter.
-     * 
-     * @return a unique identifier
-     */
-
-    int getID();
-
 }

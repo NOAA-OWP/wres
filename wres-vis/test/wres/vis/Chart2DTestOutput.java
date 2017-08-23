@@ -26,30 +26,30 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import ohd.hseb.hefs.utils.tools.FileTools;
 import wres.config.generated.PlotTypeSelection;
-import wres.datamodel.metric.DataFactory;
-import wres.datamodel.metric.DefaultDataFactory;
-import wres.datamodel.metric.MapBiKey;
-import wres.datamodel.metric.MetadataFactory;
-import wres.datamodel.metric.MetricConstants;
-import wres.datamodel.metric.MetricOutputMapByLeadThreshold;
-import wres.datamodel.metric.MetricOutputMetadata;
-import wres.datamodel.metric.MultiVectorOutput;
-import wres.datamodel.metric.QuantileThreshold;
-import wres.datamodel.metric.ScalarOutput;
-import wres.datamodel.metric.Threshold;
-import wres.datamodel.metric.Threshold.Operator;
-import wres.datamodel.metric.VectorOutput;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MapBiKey;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.QuantileThreshold;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.Threshold;
+import wres.datamodel.Threshold.Operator;
+import wres.datamodel.VectorOutput;
 
 /**
- * Tests the construction of a 3D chart of metric outputs.
+ * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit
+ * tests. To compare the images with benchmarks in testinput, YOU MUST EXECUTE THIS CLASS' MAIN!
  * 
  * @author hank.herr
  * @author james.brown@hydrosolved.com
  */
 public class Chart2DTestOutput extends TestCase
 {
-    private static int IMAGE_COMPARISON_SENSITIVITY = 8;
-    
+
     //TODO Note that test1 is within the Chart2DTestInput.java unit tests.  The two unit tests need to either be completely separate
     //(different testoutput, testinput directories) or merged.  
     //
@@ -82,14 +82,6 @@ public class Chart2DTestOutput extends TestCase
 
             //Generate the output file.
             ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
-
-            //Compare against OS specific image benchmark.
-            FileComparisonUtilities.assertImageFileSimilarToBenchmark(outputImageFile,
-                                                                      new File("testinput/chart2DTest/benchmark."
-                                                                          + scenarioName + "_output.png"),
-                                                                      IMAGE_COMPARISON_SENSITIVITY,
-                                                                      true,
-                                                                      false);
         }
         catch(final Throwable t)
         {
@@ -124,14 +116,6 @@ public class Chart2DTestOutput extends TestCase
 
             //Generate the output file.
             ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
-
-            //Compare against OS specific image benchmark.
-            FileComparisonUtilities.assertImageFileSimilarToBenchmark(outputImageFile,
-                                                                      new File("testinput/chart2DTest/benchmark."
-                                                                          + scenarioName + "_output.png"),
-                                                                      IMAGE_COMPARISON_SENSITIVITY,
-                                                                      true,
-                                                                      false);
         }
         catch(final Throwable t)
         {
@@ -186,18 +170,6 @@ public class Chart2DTestOutput extends TestCase
                     + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
 
             }
-
-            //Compare against OS specific image benchmark.
-            for(final Object lead: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + lead
-                    + "h." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + lead + "h." + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
-            }
         }
         catch(final Throwable t)
         {
@@ -246,19 +218,6 @@ public class Chart2DTestOutput extends TestCase
                                                    600);
 
             }
-
-            //Compare against OS specific image benchmark.
-            for(final Object thresh: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/"
-                    + ((Threshold)thresh).getThreshold() + "." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + ((Threshold)thresh).getThreshold() + "."
-                                                                              + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
-            }
         }
         catch(final Throwable t)
         {
@@ -304,18 +263,6 @@ public class Chart2DTestOutput extends TestCase
                     + outputImageFileSuffix), engineMap.get(key).buildChart(), 800, 600);
 
             }
-
-            //Compare against OS specific image benchmark.
-            for(final Object key: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + key + "."
-                    + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + key + "." + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
-            }
         }
         catch(final Throwable t)
         {
@@ -323,7 +270,7 @@ public class Chart2DTestOutput extends TestCase
             fail("Unexpected exception: " + t.getMessage());
         }
     }
-    
+
     public void test7ROCDiagramByLeadTime()
     {
         final String scenarioName = "test7";
@@ -339,7 +286,7 @@ public class Chart2DTestOutput extends TestCase
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
-        
+
         try
         {
             //Get an implementation of the factory to use for testing.
@@ -358,18 +305,6 @@ public class Chart2DTestOutput extends TestCase
                 ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + lead + "h."
                     + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
 
-            }
-
-            //Compare against OS specific image benchmark.
-            for(final Object lead: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + lead
-                    + "h." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + lead + "h." + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
             }
         }
         catch(final Throwable t)
@@ -394,7 +329,7 @@ public class Chart2DTestOutput extends TestCase
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
-        
+
         try
         {
             //Get an implementation of the factory to use for testing.
@@ -417,19 +352,6 @@ public class Chart2DTestOutput extends TestCase
                                                    600);
 
             }
-
-            //Compare against OS specific image benchmark.
-            for(final Object thresh: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/"
-                    + ((Threshold)thresh).getThreshold() + "." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + ((Threshold)thresh).getThreshold() + "."
-                                                                              + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
-            }
         }
         catch(final Throwable t)
         {
@@ -437,6 +359,7 @@ public class Chart2DTestOutput extends TestCase
             fail("Unexpected exception: " + t.getMessage());
         }
     }
+
     public void test9QQDiagramByLeadTime()
     {
         final String scenarioName = "test9";
@@ -452,7 +375,7 @@ public class Chart2DTestOutput extends TestCase
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
-        
+
         try
         {
             //Get an implementation of the factory to use for testing.
@@ -471,18 +394,6 @@ public class Chart2DTestOutput extends TestCase
                 ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + lead + "h."
                     + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
 
-            }
-
-            //Compare against OS specific image benchmark.
-            for(final Object lead: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + lead
-                    + "h." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + lead + "h." + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
             }
         }
         catch(final Throwable t)
@@ -507,7 +418,7 @@ public class Chart2DTestOutput extends TestCase
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
-        
+
         try
         {
             //Get an implementation of the factory to use for testing.
@@ -523,25 +434,9 @@ public class Chart2DTestOutput extends TestCase
             //Generate the output file.
             for(final Object thresh: engineMap.keySet())
             {
-                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/"
-                    + "alldata" + "." + outputImageFileSuffix),
-                                                   engineMap.get(thresh).buildChart(),
-                                                   800,
-                                                   600);
+                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + "alldata" + "."
+                    + outputImageFileSuffix), engineMap.get(thresh).buildChart(), 800, 600);
 
-            }
-
-            //Compare against OS specific image benchmark.
-            for(final Object thresh: engineMap.keySet())
-            {
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/"
-                    + "alldata" + "." + outputImageFileSuffix),
-                                                                          new File("testinput/chart2DTest/benchmark."
-                                                                              + "alldata" + "."
-                                                                              + outputImageFileSuffix),
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          false);
             }
         }
         catch(final Throwable t)
@@ -550,7 +445,7 @@ public class Chart2DTestOutput extends TestCase
             fail("Unexpected exception: " + t.getMessage());
         }
     }
-    
+
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
      * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
@@ -947,7 +842,106 @@ public class Chart2DTestOutput extends TestCase
         //Return the results
         return outputFactory.ofMap(rawData);
     }
+    
+    /**
+     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
+     * Rank Histogram (rank position, which represents the number of gaps between ensemble members plus one) and 
+     * the relative frequency of observations that fall within each gap. The results include various thresholds and 
+     * forecast lead times. Reads the input data from testinput/chart2DTest/getRankHistogramByLeadThreshold.xml.
+     * 
+     * @return an output map of verification scores
+     */
 
+    private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getRankHistogramByLeadThreshold()
+    {
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
+        final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        //Read only selected quantiles
+        final List<QuantileThreshold> allowed = new ArrayList<>();
+        final double[][] allow = new double[][]{{0.1, 858.04}, {0.5, 2707.5}, {0.9, 9647.0}, {0.95, 13685.0}};
+        for(final double[] next: allow)
+        {
+            allowed.add(outputFactory.getQuantileThreshold(next[1], next[0], Operator.GREATER));
+        }
+        try
+        {
+            //Create the input file
+            final File resultFile = new File("testinput/chart2DTest/getRankHistogramByLeadThreshold.xml");
+            final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
+
+            final Iterator<MetricResultKey> d = data.getIterator();
+
+            //Metric output metadata
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
+                                                                            metaFactory.getDimension(),
+                                                                            metaFactory.getDimension("CMS"),
+                                                                            MetricConstants.RANK_HISTOGRAM,
+                                                                            MetricConstants.MAIN,
+                                                                            metaFactory.getDatasetIdentifier("NPTP1",
+                                                                                                             "STREAMFLOW",
+                                                                                                             "HEFS"));
+
+            //Iterate through the lead times.
+            while(d.hasNext())
+            {
+
+                //Set the lead time
+                final double leadTime = (Double)d.next().getKey();
+                final MetricResultByThreshold t = (MetricResultByThreshold)data.getResult(leadTime);
+                final Iterator<MetricResultKey> e = t.getIterator();
+
+                //Iterate through the thresholds
+                while(e.hasNext())
+                {
+                    //Build the quantile
+                    final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
+                    final double[] constants = f.getParValReal().getConstants();
+                    final double[] probConstants = f.getParVal().getConstants();
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0],
+                                                                                   probConstants[0],
+                                                                                   Operator.GREATER);
+                    //Read only selected quantiles
+                    if(allowed.contains(q))
+                    {
+                        final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, q);
+
+                        //Build the result
+                        final MetricResult result = t.getResult(f);
+                        final double[][] rh = ((DoubleMatrix2DResult)result).getResult().toArray();
+
+                        //Ensure missings are NaN by brute force.
+                        for(int i = 0; i < rh.length; i++)
+                        {
+                            for(int j = 0; j < rh[i].length; j++)
+                            {
+                                if(rh[i][j] == -999D)
+                                {
+                                    rh[i][j] = Double.NaN;
+                                }
+                            }
+                        }
+
+                        final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
+                        output.put(MetricConstants.RANK_ORDER, rh[0]); 
+                        output.put(MetricConstants.OBSERVED_RELATIVE_FREQUENCY, rh[1]);
+                        final MultiVectorOutput value = outputFactory.ofMultiVectorOutput(output, meta);
+
+                        //Append result
+                        rawData.put(key, value);
+                    }
+                }
+            }
+        }
+        catch(final Exception e)
+        {
+            e.printStackTrace();
+            Assert.fail("Test failed : " + e.getMessage());
+        }
+        //Return the results
+        return outputFactory.ofMap(rawData);
+    }    
+    
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
      * Quantile-Quantile Diagram (predicted quantiles and observed quantiles) for various thresholds and forecast lead
@@ -979,10 +973,9 @@ public class Chart2DTestOutput extends TestCase
                                                                                                              "PRECIPITATION",
                                                                                                              "HEFS"));
             //Single threshold
-            final QuantileThreshold threshold =
-                                        outputFactory.getQuantileThreshold(Double.NEGATIVE_INFINITY,
-                                                                           Double.NEGATIVE_INFINITY,
-                                                                           Operator.GREATER);
+            final QuantileThreshold threshold = outputFactory.getQuantileThreshold(Double.NEGATIVE_INFINITY,
+                                                                                   Double.NEGATIVE_INFINITY,
+                                                                                   Operator.GREATER);
 
             //Iterate through the lead times.
             while(d.hasNext())
@@ -1011,6 +1004,47 @@ public class Chart2DTestOutput extends TestCase
         }
         //Return the results
         return outputFactory.ofMap(rawData);
+    }
+    
+    /**
+     * The comparison sensitivity.
+     */
+    private static int IMAGE_COMPARISON_SENSITIVITY = 2;
+    
+    /**
+     * Comparison debug output
+     */
+    private static boolean IMAGE_COMPARISON_DEBUG_OUTPUT = false;
+
+    /**
+     * Main line compares images with benchmarks.
+     * 
+     * @param args
+     */
+    public static void main(final String[] args)
+    {
+        for(final File file: FileTools.listFilesWithSuffix(new File("testoutput/chart2DTest/"), ".png"))
+        {
+            final File benchmarkFile = new File("testinput/chart2DTest/benchmark." + file.getName());
+
+            try
+            {
+                System.out.println("");
+                System.out.println("####>> Comparing " + file.getName()
+                    + " ================================================");
+                System.out.println("");
+                FileComparisonUtilities.assertImageFileSimilarToBenchmark(file,
+                                                                          benchmarkFile,
+                                                                          IMAGE_COMPARISON_SENSITIVITY,
+                                                                          true,
+                                                                          IMAGE_COMPARISON_DEBUG_OUTPUT);
+            }
+            catch(final Throwable t)
+            {
+                System.err.println("####>> Comparison failed for " + file.getName() + " and "
+                    + benchmarkFile.getName() + ". Dissimilarity file was created; see debug information for the difference numbers computed.");
+            }
+        }
     }
 
 }
