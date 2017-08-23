@@ -14,7 +14,7 @@ import wres.datamodel.SingleValuedPairs;
  * as a proportion of the degree of variability in the predictions and observations from the average observation. 
  * Originally a quadratic score, different exponents may be used in practice. By default, the absolute errors are 
  * computed with an exponent of one, in order to minimize the influence of extreme errors.</p>  
- * <p>Willmott, C. J. 1981. On the validation of models. <i>Physical Geography</i>, <b>2</b>, 184–194</p>
+ * <p>Willmott, C. J. 1981. On the validation of models. <i>Physical Geography</i>, <b>2</b>, 184-194</p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
