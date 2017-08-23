@@ -119,21 +119,47 @@ public class Control implements Function<String[], Integer>
         final ExecutorService processPairExecutor = new ForkJoinPool( MAX_THREADS );
         final ExecutorService metricExecutor = new ForkJoinPool( MAX_THREADS );
 
+        // The following three are for logging run information to the database.
+        long startTime = System.currentTimeMillis();
+        long endTime;
+        String projectRawConfig = "";
+
         try
         {
             // Iterate through the configurations
             for(final ProjectConfigPlus projectConfigPlus: projectConfiggies)
             {
+                projectRawConfig = projectConfigPlus.getRawConfig();
+
+                startTime = System.currentTimeMillis();
+
                 // Process the next configuration
                 processProjectConfig( projectConfigPlus,
                                       processPairExecutor,
                                       metricExecutor );
+
+                endTime = System.currentTimeMillis();
+
+                Operations.logExecution( String.join(" ", args),
+                                         projectRawConfig,
+                                         Long.toString( startTime ),
+                                         Long.toString( endTime ),
+                                         false );
             }
             return 0;
         }
         catch ( WresProcessingException wpe )
         {
+            endTime = System.currentTimeMillis();
+
             LOGGER.error( "Could not complete project execution:", wpe );
+
+            Operations.logExecution( String.join(" ", args),
+                                     projectRawConfig,
+                                     Long.toString( startTime ),
+                                     Long.toString( endTime ),
+                                     true );
+
             return -1;
         }
         // Shutdown
