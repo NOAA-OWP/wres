@@ -3,12 +3,10 @@
  */
 package wres.io.utilities;
 
-import wres.config.generated.Conditions;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.EnsembleCondition;
-import wres.config.generated.ProjectConfig;
+import wres.config.generated.*;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
+import wres.io.data.caching.ForecastTypes;
 import wres.io.grouping.LabeledScript;
 import wres.util.Internal;
 
@@ -27,18 +25,28 @@ public final class ScriptGenerator
     
     private static final String NEWLINE = System.lineSeparator();
 
-    public static LabeledScript generateFindLastLead(int variableID)
+    public static LabeledScript generateFindLastLead(int variableID, Conditions.Feature feature, ForecastRange range) throws SQLException
     {
         final String label = "last_lead";
         String script = "";
 
         script += "SELECT FV.lead AS " + label + NEWLINE;
-        script += "FROM wres.VariablePosition VP" + NEWLINE;
-        script += "INNER JOIN wres.ForecastEnsemble FE" + NEWLINE;
-        script += "    ON FE.variableposition_id = VP.variableposition_id" + NEWLINE;
+        script += "FROM wres.ForecastEnsemble FE" + NEWLINE;
         script += "INNER JOIN wres.ForecastValue FV" + NEWLINE;
         script += "    ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE;
-        script += "WHERE VP.variable_id = " + variableID + NEWLINE;
+
+        if (range != null && range != ForecastRange.VARIABLE)
+        {
+            script += "INNER JOIN wres.Forecast F" + NEWLINE;
+            script += "     ON FE.forecast_id = F.forecast_id" + NEWLINE;
+        }
+
+        script += "WHERE " + ConfigHelper.getVariablePositionClause(feature, variableID) + NEWLINE;
+
+        if (range != null && range != ForecastRange.VARIABLE)
+        {
+            script += "     AND " + ConfigHelper.getVariablePositionClause(feature, variableID);
+        }
         script += "ORDER BY FV.lead DESC" + NEWLINE;
         script += "LIMIT 1;";
         
@@ -200,6 +208,15 @@ public final class ScriptGenerator
                       .append(NEWLINE);
             }
 
+            if (dataSourceConfig.getRange() != ForecastRange.VARIABLE)
+            {
+                script.append("     AND F.forecasttype_id = ")
+                      .append(ForecastTypes.getForecastTypeId(dataSourceConfig.getRange().value()))
+                      .append("         ")
+                      .append("-- Limit returned values to only those matching the given forecast type")
+                      .append(NEWLINE);
+            }
+
             script.append("GROUP BY F.forecast_date, FV.lead, FE.measurementunit_id")
                   .append("         ")
                   .append("-- Aggregate the forecasted values by grouping them based on their date")
@@ -266,6 +283,7 @@ public final class ScriptGenerator
                       .append(NEWLINE);
             }
         }
+
         script.append(";");
 
         return script.toString();

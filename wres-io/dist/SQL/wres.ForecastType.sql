@@ -19,7 +19,16 @@ ALTER TABLE wres.forecasttype
   OWNER TO wres;
 
  INSERT INTO wres.ForecastType (type_name, timestep, step_count)
- VALUES ('short', 1, 18),
-	('medium', 3, 80),
-	('long', 6, 120),
-	('analysis', 1, 15);
+ SELECT type_name, timestep, step_count
+ FROM (
+	VALUES 	('short', 1, 18),
+		('medium', 3, 80),
+		('long', 6, 120),
+		('analysis', 1, 15),
+		('variable', 1, 1)
+) AS FT (type_name, timestep, step_count)
+WHERE NOT EXISTS (
+	SELECT 1
+	FROM wres.ForecastType F
+	WHERE F.type_name = FT.type_name
+);

@@ -57,8 +57,6 @@ public final class PIXMLReader extends XMLReader
 		return partitionHeader;
 	}
 
-	private static final Object PARTITION_LOCK = new Object();
-
 	/**
 	 * Constructor for a reader that may be for forecasts or observations
 	 * @param filename The path to the file to read
@@ -414,6 +412,7 @@ public final class PIXMLReader extends XMLReader
 	
 		if (isForecast && this.creationDate != null && this.creationTime != null) {
 			this.currentForecast.setCreationDate(this.creationDate + " " + this.creationTime);
+			this.currentForecast.setRange("variable");
 		}
 	}
 
