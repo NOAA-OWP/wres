@@ -45,41 +45,41 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
     private final MetricCollection<DichotomousPairs, ScalarOutput> dichotomousScalar;
 
     @Override
-    public MetricOutputForProjectByLeadThreshold apply(MetricInput<?> input)
+    public MetricOutputForProjectByLeadThreshold apply( MetricInput<?> input )
     {
-        if(!(input instanceof SingleValuedPairs))
+        if ( ! ( input instanceof SingleValuedPairs ) )
         {
-            throw new MetricCalculationException("Expected single-valued pairs for metric processing.");
+            throw new MetricCalculationException( "Expected single-valued pairs for metric processing." );
         }
         Integer leadTime = input.getMetadata().getLeadTimeInHours();
-        Objects.requireNonNull(leadTime, "Expected a non-null forecast lead time in the input metadata.");
+        Objects.requireNonNull( leadTime, "Expected a non-null forecast lead time in the input metadata." );
 
         //Metric futures 
         MetricFuturesByLeadTimeBuilder futures = new MetricFuturesByLeadTimeBuilder();
-        futures.addDataFactory(dataFactory);
+        futures.addDataFactory( dataFactory );
 
         //Process the metrics that consume single-valued pairs
-        if(hasMetrics(MetricInputGroup.SINGLE_VALUED))
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
-            processSingleValuedPairs(leadTime, (SingleValuedPairs)input, futures);
+            processSingleValuedPairs( leadTime, (SingleValuedPairs) input, futures );
         }
-        if(hasMetrics(MetricInputGroup.DICHOTOMOUS))
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
-            processDichotomousPairs(leadTime, (SingleValuedPairs)input, futures);
+            processDichotomousPairs( leadTime, (SingleValuedPairs) input, futures );
         }
 
         // Log
-        if(LOGGER.isInfoEnabled())
+        if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.info("Completed processing of metrics for feature '{}' at lead time {}.",
-                        input.getMetadata().getIdentifier().getGeospatialID(),
-                        input.getMetadata().getLeadTimeInHours());
+            LOGGER.debug( "Completed processing of metrics for feature '{}' at lead time {}.",
+                          input.getMetadata().getIdentifier().getGeospatialID(),
+                          input.getMetadata().getLeadTimeInHours() );
         }
 
         //Process and return the result       
         MetricFuturesByLeadTime futureResults = futures.build();
         //Add for merge with existing futures, if required
-        addToMergeMap(leadTime, futureResults);
+        addToMergeMap( leadTime, futureResults );
         return futureResults.getMetricOutput();
     }
 
@@ -94,20 +94,21 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorSingleValuedPairsByLeadTime(final DataFactory dataFactory,
-                                     final ProjectConfig config,
-                                     final ExecutorService executor,
-                                     final MetricOutputGroup... mergeList) throws MetricConfigurationException
+    MetricProcessorSingleValuedPairsByLeadTime( final DataFactory dataFactory,
+                                                final ProjectConfig config,
+                                                final ExecutorService executor,
+                                                final MetricOutputGroup... mergeList )
+            throws MetricConfigurationException
     {
-        super(dataFactory, config, executor, mergeList);
+        super( dataFactory, config, executor, mergeList );
         //Construct the metrics
-        if(hasMetrics(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR))
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ) )
         {
             dichotomousScalar =
-                              metricFactory.ofDichotomousScalarCollection(executor,
-                                                                          getSelectedMetrics(metrics,
-                                                                                             MetricInputGroup.DICHOTOMOUS,
-                                                                                             MetricOutputGroup.SCALAR));
+                    metricFactory.ofDichotomousScalarCollection( executor,
+                                                                 getSelectedMetrics( metrics,
+                                                                                     MetricInputGroup.DICHOTOMOUS,
+                                                                                     MetricOutputGroup.SCALAR ) );
         }
         else
         {
@@ -126,36 +127,36 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairs(Integer leadTime,
-                                         SingleValuedPairs input,
-                                         MetricFuturesByLeadTimeBuilder futures)
+    private void processDichotomousPairs( Integer leadTime,
+                                          SingleValuedPairs input,
+                                          MetricFuturesByLeadTimeBuilder futures )
     {
 
         //Metric-specific overrides are currently unsupported
         String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
         //Check and obtain the global thresholds by metric group for iteration
-        if(hasMetrics(MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR))
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ) )
         {
             //Deal with global thresholds
-            if(hasGlobalThresholds(MetricInputGroup.DICHOTOMOUS))
+            if ( hasGlobalThresholds( MetricInputGroup.DICHOTOMOUS ) )
             {
-                List<Threshold> global = globalThresholds.get(MetricInputGroup.DICHOTOMOUS);
-                double[] sorted = getSortedClimatology(input, global);
-                global.forEach(threshold -> {
+                List<Threshold> global = globalThresholds.get( MetricInputGroup.DICHOTOMOUS );
+                double[] sorted = getSortedClimatology( input, global );
+                global.forEach( threshold -> {
                     //Only process discrete thresholds
-                    if(threshold.isFinite())
+                    if ( threshold.isFinite() )
                     {
-                        Threshold useMe = getThreshold(threshold, sorted);
-                        futures.addScalarOutput(dataFactory.getMapKey(leadTime, useMe),
-                                                processDichotomousThreshold(useMe, input, dichotomousScalar));
+                        Threshold useMe = getThreshold( threshold, sorted );
+                        futures.addScalarOutput( dataFactory.getMapKey( leadTime, useMe ),
+                                                 processDichotomousThreshold( useMe, input, dichotomousScalar ) );
                     }
-                });
+                } );
             }
             //Deal with metric-local thresholds
             else
             {
                 //Hook for future logic
-                throw new MetricCalculationException(unsupportedException);
+                throw new MetricCalculationException( unsupportedException );
             }
         }
     }
@@ -171,16 +172,18 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
      * @return true if the future was added successfully
      */
 
-    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>> processDichotomousThreshold(Threshold threshold,
-                                                                                                       SingleValuedPairs pairs,
-                                                                                                       MetricCollection<DichotomousPairs, T> collection)
+    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
+            processDichotomousThreshold( Threshold threshold,
+                                         SingleValuedPairs pairs,
+                                         MetricCollection<DichotomousPairs, T> collection )
     {
         //Define a mapper to convert the single-valued pairs to dichotomous pairs
-        Function<PairOfDoubles, PairOfBooleans> mapper = pair -> dataFactory.pairOf(threshold.test(pair.getItemOne()),
-                                                                                    threshold.test(pair.getItemTwo()));
+        Function<PairOfDoubles, PairOfBooleans> mapper =
+                pair -> dataFactory.pairOf( threshold.test( pair.getItemOne() ),
+                                            threshold.test( pair.getItemTwo() ) );
         //Slice the pairs
-        DichotomousPairs transformed = dataFactory.getSlicer().transformPairs(pairs, mapper);
-        return CompletableFuture.supplyAsync(() -> collection.apply(transformed));
+        DichotomousPairs transformed = dataFactory.getSlicer().transformPairs( pairs, mapper );
+        return CompletableFuture.supplyAsync( () -> collection.apply( transformed ) );
     }
 
 }
