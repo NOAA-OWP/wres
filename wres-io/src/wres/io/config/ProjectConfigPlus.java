@@ -3,6 +3,8 @@ package wres.io.config;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -49,17 +51,15 @@ import wres.config.generated.ProjectConfig;
  * as of 2017-07-24 ProjectConfigPlus is anticipated to be used primarily by
  * the control module.
  *
- * Intended to be Thread-safe, and the object is. But no guarantee can be made
- * that the configuration file itself did not change between xml unmarshaling
- * and the reading of graphgen strings. It should be pretty rare. When this
- * occurs in the wild, more logic will need to be added to detect the scenario
- * and throw an exception.
+ * Intended to be Thread-safe, and the object is. Performs one read then uses
+ * and keeps the resulting file in a string.
  */
 public class ProjectConfigPlus
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectConfigPlus.class);
 
     private final Path path;
+    private final String rawConfig;
     private final ProjectConfig projectConfig;
     private final Map<DestinationConfig, String> graphicsStrings;
     private final List<ValidationEvent> validationEvents;
@@ -69,12 +69,14 @@ public class ProjectConfigPlus
 
     private static final String XSD_NAME = "ProjectConfig.xsd";
 
-    private ProjectConfigPlus(Path path,
-                              ProjectConfig projectConfig,
-                              Map<DestinationConfig, String> graphicsStrings,
-                              List<ValidationEvent> validationEvents)
+    private ProjectConfigPlus( Path path,
+                               String rawConfig,
+                               ProjectConfig projectConfig,
+                               Map<DestinationConfig, String> graphicsStrings,
+                               List<ValidationEvent> validationEvents )
     {
         this.path = path;
+        this.rawConfig = rawConfig;
         this.projectConfig = projectConfig;
         this.graphicsStrings = Collections.unmodifiableMap(graphicsStrings);
         List<ValidationEvent> copiedList = new ArrayList<>(validationEvents);
@@ -84,6 +86,11 @@ public class ProjectConfigPlus
     public Path getPath()
     {
         return this.path;
+    }
+
+    public String getRawConfig()
+    {
+        return this.rawConfig;
     }
 
     public ProjectConfig getProjectConfig()
@@ -124,11 +131,26 @@ public class ProjectConfigPlus
             }
         }
 
+        List<String> xmlLines;
+
+        try
+        {
+            xmlLines = Files.readAllLines( path );
+        }
+        catch ( IOException ioe )
+        {
+            String message = "Could not read file " + path;
+            // communicate failure back up the stack
+            throw new IOException( message, ioe );
+        }
+
+        String rawConfig = String.join(System.lineSeparator(), xmlLines);
+
         ProjectConfig projectConfig;
         try
         {
-            File xmlFile = path.toFile();
-            Source xmlSource = new StreamSource(xmlFile);
+            Reader reader = new StringReader( rawConfig );
+            Source xmlSource = new StreamSource( reader );
             JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
 
             // Validate against schema during unmarshaling;
@@ -186,17 +208,6 @@ public class ProjectConfigPlus
             throw new IOException( message, e );
         }
 
-        List<String> xmlLines;
-        try
-        {
-            xmlLines = Files.readAllLines(path);
-        }
-        catch (IOException ioe)
-        {
-            String message = "Could not read file " + path;
-            // communicate failure back up the stack
-            throw new IOException(message, ioe);
-        }
         // To read the xml configuration for vis into a string, we go find the
         // start of each, then find the first occurance of </config> ?
 
@@ -233,6 +244,10 @@ public class ProjectConfigPlus
             }
         }
 
-        return new ProjectConfigPlus(path, projectConfig, visConfigs, events);
+        return new ProjectConfigPlus( path,
+                                      rawConfig,
+                                      projectConfig,
+                                      visConfigs,
+                                      events );
     }
 }
