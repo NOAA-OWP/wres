@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.ForecastRange;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metric.DataFactory;
@@ -11,6 +12,7 @@ import wres.datamodel.metric.DefaultDataFactory;
 import wres.datamodel.metric.MetricInput;
 import wres.io.concurrency.InputRetriever;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.ForecastTypes;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.grouping.LabeledScript;
@@ -95,9 +97,16 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             if (ConfigHelper.isForecast(left))
             {
                 // TODO: This will be a mess if we don't have the ability to select "Assim data" rather than all
-                script.append("SELECT ").append(left.getRollingTimeAggregation().getFunction())
-                      .append("(FV.forecasted_value) AS left_value,")
-                      .append(NEWLINE);
+                script.append("SELECT ");
+                if (left.getRollingTimeAggregation() != null) {
+                    script.append(left.getRollingTimeAggregation().getFunction());
+                }
+                else
+                {
+                    // Default is the average - will not change if there is only one value
+                    script.append("AVG");
+                }
+                script.append("(FV.forecasted_value) AS left_value,").append(NEWLINE);
                 script.append("     FE.measurementunit_id,").append(NEWLINE);
                 script.append("     (F.forecast_date + INTERVAL '1 hour' * FV.lead");
 
@@ -114,6 +123,14 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append("INNER JOIN wres.ForecastValue FV" ).append(NEWLINE);
                 script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(NEWLINE);
                 script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
+
+                if (left.getRange() != ForecastRange.VARIABLE)
+                {
+                    script.append("     AND F.forecasttype_id = ")
+                          .append(ForecastTypes.getForecastTypeId(left.getRange().value()))
+                          .append(NEWLINE);
+                }
+
                 script.append("GROUP BY F.forecast_date + INTERVAL '1 hour' * FV.lead");
 
                 if (timeShift != null)
@@ -205,7 +222,9 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         {
             if (this.lastWindowNumber == null)
             {
-                LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(this.getVariableID());
+                LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(this.getVariableID(),
+                                                                                    this.feature,
+                                                                                    projectConfig.getInputs().getLeft().getRange());
                 this.lastWindowNumber = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
 
                 // If the last window number could not be determined from the database, set it to a number that should

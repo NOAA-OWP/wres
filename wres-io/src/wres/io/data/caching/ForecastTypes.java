@@ -47,6 +47,14 @@ public class ForecastTypes extends Cache<ForecastTypeDetails, String> {
             throw e;
         }
 
+        if (forecastTypeID == null)
+        {
+            ForecastTypeDetails details = new ForecastTypeDetails();
+            details.setDescription(description);
+
+            forecastTypeID = getCache().getID(details);
+        }
+
         return forecastTypeID;
     }
 

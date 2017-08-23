@@ -7,7 +7,7 @@ import wres.util.Internal;
  */
 @Internal(exclusivePackage = "wres.io")
 public class ForecastTypeDetails extends CachedDetail<ForecastTypeDetails, String> {
-    private final String description = null;
+    private String description = null;
     private Integer forecastRangeID = null;
     private int timestep;
 
@@ -41,9 +41,40 @@ public class ForecastTypeDetails extends CachedDetail<ForecastTypeDetails, Strin
         this.forecastRangeID = id;
     }
 
+    public void setDescription(String description)
+    {
+        if (this.description == null || !this.description.equalsIgnoreCase(description))
+        {
+            this.description = description;
+            this.forecastRangeID = null;
+        }
+    }
+
     @Override
     protected String getInsertSelectStatement() {
-        return null;
+        StringBuilder script = new StringBuilder();
+
+        script.append("WITH new_type AS").append(NEWLINE);
+        script.append("(").append(NEWLINE);
+        script.append("     INSERT INTO wres.ForecastType (type_name, timestep, step_count)").append(NEWLINE);
+        script.append("     SELECT '").append(this.description).append("', ").append(this.timestep).append(", 0").append(NEWLINE);
+        script.append("     WHERE NOT EXISTS (").append(NEWLINE);
+        script.append("         SELECT 1").append(NEWLINE);
+        script.append("         FROM wres.ForecastType FT").append(NEWLINE);
+        script.append("         WHERE FT.type_name = '").append(this.description).append("'").append(NEWLINE);
+        script.append("     )").append(NEWLINE);
+        script.append("     RETURNING forecasttype_id").append(NEWLINE);
+        script.append(")").append(NEWLINE);
+        script.append("SELECT forecasttype_id").append(NEWLINE);
+        script.append("FROM new_type").append(NEWLINE);
+        script.append(NEWLINE);
+        script.append("UNION").append(NEWLINE);
+        script.append(NEWLINE);
+        script.append("SELECT forecasttype_id").append(NEWLINE);
+        script.append("FROM wres.ForecastType FT").append(NEWLINE);
+        script.append("WHERE FT.type_name = '").append(this.description).append("';");
+
+        return script.toString();
     }
 
     @Override
