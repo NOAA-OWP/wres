@@ -127,11 +127,11 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         }
 
         // Log
-        if ( LOGGER.isInfoEnabled() )
+        if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.info( "Completed processing of metrics for feature '{}' at lead time {}.",
-                         input.getMetadata().getIdentifier().getGeospatialID(),
-                         input.getMetadata().getLeadTimeInHours() );
+            LOGGER.debug( "Completed processing of metrics for feature '{}' at lead time {}.",
+                          input.getMetadata().getIdentifier().getGeospatialID(),
+                          input.getMetadata().getLeadTimeInHours() );
         }
 
         //Process and return the result       
