@@ -1,6 +1,6 @@
 ﻿-- Table: public.executionlog
 
-DROP TABLE public.executionlog;
+DROP TABLE IF EXISTS public.executionlog;
 
 CREATE TABLE IF NOT EXISTS public.executionlog
 (
