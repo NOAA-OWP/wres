@@ -9,8 +9,9 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.ScalarOutput;
 import wres.engine.statistics.metric.EquitableThreatScore.EquitableThreatScoreBuilder;
 
 /**
@@ -54,7 +55,14 @@ public final class EquitableThreatScoreTest
 
         //Check the results
         final MetricFactory metF = MetricFactory.getInstance(outF);
-        assertTrue(ets.apply(input).equals(outF.ofScalarOutput(0.43768152544513195, m1)));
+        final ScalarOutput actual = ets.apply( input );
+        final ScalarOutput expected = outF.ofScalarOutput( 0.43768152544513195, m1 );
+        assertTrue( "Actual: " + actual.getData().doubleValue()
+                    + ". Expected: "
+                    + expected.getData().doubleValue()
+                    + ".",
+                    actual.equals( expected ) );        
+             
         //Check the parameters
         assertTrue("Unexpected name for the Equitable Threat Score.",
                    ets.getName().equals(metaFac.getMetricName(MetricConstants.EQUITABLE_THREAT_SCORE)));
