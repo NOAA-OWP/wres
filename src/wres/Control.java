@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -26,14 +27,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.config.ProjectConfigException;
 import wres.config.Validation;
 import wres.config.generated.Conditions.Feature;
@@ -316,8 +317,15 @@ public class Control implements Function<String[], Integer>
         }
 
         // Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
-
-        doAllOrException(listOfFutures).join();
+        try
+        {
+            doAllOrException(listOfFutures).join();
+        }
+        catch(final CompletionException e)
+        {
+            LOGGER.error("While processing feature '{}':", feature.getLocation().getLid(), e);
+            throw new WresProcessingException(e.getCause().getMessage());
+        }        
 
         // Generated stored output if available
         if ( processor.hasStoredMetricOutput() )
@@ -914,6 +922,7 @@ public class Control implements Function<String[], Integer>
      *
      * @param futures the futures to compose
      * @return the composed futures
+     * @throws CompletionException if completing exceptionally 
      */
 
     private static CompletableFuture<?> doAllOrException(final List<CompletableFuture<?>> futures)
