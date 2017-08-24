@@ -19,6 +19,7 @@ import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
 import wres.engine.statistics.metric.ContinuousRankedProbabilityScore.CRPSBuilder;
 import wres.engine.statistics.metric.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
+import wres.engine.statistics.metric.FrequencyBias.FrequencyBiasBuilder;
 import wres.engine.statistics.metric.IndexOfAgreement.IndexOfAgreementBuilder;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
@@ -594,6 +595,8 @@ public class MetricFactory
                 return ofProbabilityOfDetection();
             case PROBABILITY_OF_FALSE_DETECTION:
                 return ofProbabilityOfFalseDetection();
+            case FREQUENCY_BIAS:
+                return ofFrequencyBias();                
             default:
                 throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
@@ -1014,6 +1017,17 @@ public class MetricFactory
     RankHistogram ofRankHistogram()
     {
         return (RankHistogram) new RankHistogramBuilder().setOutputFactory( outputFactory ).build();
+    }
+    
+    /**
+     * Return a default {@link FrequencyBias} function.
+     * 
+     * @return a default {@link FrequencyBias} function
+     */
+
+    FrequencyBias ofFrequencyBias()
+    {
+        return (FrequencyBias) new FrequencyBiasBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**

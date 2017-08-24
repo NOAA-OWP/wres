@@ -80,6 +80,12 @@ public enum MetricConstants
     EQUITABLE_THREAT_SCORE( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
 
     /**
+     * Identifier for a Frequency Bias.
+     */
+
+    FREQUENCY_BIAS( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),    
+    
+    /**
      * Identifier for an Index of Agreement.
      */
 

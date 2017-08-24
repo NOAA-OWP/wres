@@ -245,6 +245,8 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "CONTINUOUS RANKED PROBABILITY SCORE";    
             case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
                 return "CONTINUOUS RANKED PROBABILITY SKILL SCORE";
+            case FREQUENCY_BIAS:
+                return "FREQUENCY_BIAS";                
             case INDEX_OF_AGREEMENT:
                 return "INDEX OF AGREEMENT";                
             case MEAN_ERROR:
@@ -306,6 +308,8 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return "CRPS";
             case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
                 return "CRPSS";
+            case FREQUENCY_BIAS:
+                return "FREQUENCY_BIAS";                       
             case INDEX_OF_AGREEMENT:
                 return "INDEX OF AGREEMENT";                       
             case MEAN_ERROR:
