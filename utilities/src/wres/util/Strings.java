@@ -104,67 +104,6 @@ public final class Strings {
 		return hasValue(possibleNumber) && possibleNumber.trim().matches("^[-]?\\d*\\.?\\d+$");
 	}
 	
-	public static String getSystemStats()
-	{          
-	    Runtime runtime = Runtime.getRuntime();
-        
-	    final String newline = System.lineSeparator();
-	    String stats = newline;
-	            
-        /* Total number of processors or cores available to the JVM */
-        stats += "Available processors (cores):\t" + runtime.availableProcessors() + newline;
-
-        Function<Long, String> describeMemory = (Long memory) -> {
-            String memoryUnit = " bytes";
-            Double floatingMemory = memory.doubleValue();
-            
-            // Convert to KB if necessary
-            if (floatingMemory > 1000)
-            {
-                floatingMemory = floatingMemory / 1000.0;
-                memoryUnit = " KB";
-            }
-            
-            // Convert to MB if Necessary
-            if (floatingMemory > 1000)
-            {
-                floatingMemory = floatingMemory / 1000.0;
-                memoryUnit = " MB";
-            }
-            
-            // Convert to GB if necessary
-            if (floatingMemory > 1000)
-            {
-                floatingMemory = floatingMemory / 1000.0;
-                memoryUnit = " GB";
-            }
-            
-            // Convert to TB if necessary
-            if (floatingMemory > 1000)
-            {
-                floatingMemory = floatingMemory / 1000.0;
-                memoryUnit = " TB";
-            }
-            
-            return floatingMemory + memoryUnit;
-        };
-        
-        // Theoretical amount of free memory
-        stats += "Free memory:\t\t\t" + describeMemory.apply(runtime.freeMemory()) + newline;
-        
-        /* This will return Long.MAX_VALUE if there is no preset limit */
-        long maxMemory = runtime.maxMemory();
-        
-        /* Maximum amount of memory the JVM will attempt to use */
-        stats += "Maximum available memory:\t" + (maxMemory == Long.MAX_VALUE ? "no limit" : describeMemory.apply(maxMemory)) + newline;
-        
-        /* Total memory currently in use by the JVM */
-        stats += "Total memory in use:\t\t" + describeMemory.apply(runtime.totalMemory() - runtime.freeMemory()) + newline;
-        stats += newline;
-        
-        return stats;
-	}
-	
 	public static String getStackTrace(Exception error)
 	{
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
