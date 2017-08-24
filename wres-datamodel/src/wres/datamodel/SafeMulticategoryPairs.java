@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.VectorOfDoubles;
-
 /**
  * Immutable store of verification pairs associated with the outcome (true or false) of a multi-category event. The
  * categorical outcomes may be ordered or unordered. For multi-category pairs with <b>more</b> than two possible
@@ -151,21 +148,6 @@ class SafeMulticategoryPairs implements MulticategoryPairs
 
     SafeMulticategoryPairs(final MulticategoryPairsBuilder b)
     {
-        //Bounds checks
-        if(Objects.isNull(b.mainMeta))
-        {
-            throw new MetricInputException("Specify non-null metadata for the metric input.");
-        }
-        if(Objects.isNull(b.mainInput))
-        {
-            throw new MetricInputException("Specify a non-null dataset for the metric input.");
-        }
-        if(Objects.isNull(b.baselineInput) != Objects.isNull(b.baselineMeta))
-        {
-            throw new MetricInputException("Specify a non-null baseline input and associated metadata or leave both "
-                + "null.");
-        }
-        checkNullOrEmptyInputs(b.mainInput, b.baselineInput);
         //Ensure safe types
         DefaultDataFactory factory = (DefaultDataFactory)DefaultDataFactory.getInstance();
         mainInput = factory.safeVectorOfBooleansList(b.mainInput);
@@ -173,19 +155,65 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
         climatology = b.climatology;
+
+        //Validate
+        if ( Objects.isNull( mainMeta ) )
+        {
+            throw new MetricInputException( "Specify non-null metadata for the metric input." );
+        }
+        if ( Objects.isNull( mainInput ) )
+        {
+            throw new MetricInputException( "Specify a non-null dataset for the metric input." );
+        }
+        if ( Objects.isNull( baselineInput ) != Objects.isNull( baselineMeta ) )
+        {
+            throw new MetricInputException( "Specify a non-null baseline input and associated metadata or leave both "
+                                            + "null." );
+        }
+        if ( mainInput.contains( null ) )
+        {
+            throw new MetricInputException( "One or more of the pairs is null." );
+        }
+        if ( mainInput.isEmpty() )
+        {
+            throw new MetricInputException( "Cannot build the paired data with an empty input: add one or more pairs." );
+        }
+        if ( Objects.nonNull( baselineInput ) )
+        {
+            if ( baselineInput.contains( null ) )
+            {
+                throw new MetricInputException( "One or more of the baseline pairs is null." );
+            }
+            if ( baselineInput.isEmpty() )
+            {
+                throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
+                                                + "pairs." );
+            }
+        }
+        if ( Objects.nonNull( climatology ) )
+        {
+            if ( climatology.size() == 0 )
+            {
+                throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
+                                                + "pairs." );
+            }
+        }        
+        //Check contents
+        checkEachPair(mainInput, baselineInput);
+       
     }
 
     /**
-     * Checks for empty or null inputs.
+     * Validates each pair in each input.
      * 
      * @param mainInput the main input
      * @param baselineInput the baseline input
      */
 
-    private void checkNullOrEmptyInputs(List<VectorOfBooleans> mainInput, List<VectorOfBooleans> baselineInput)
+    private void checkEachPair(List<VectorOfBooleans> mainInput, List<VectorOfBooleans> baselineInput)
     {
         final List<Integer> size = new ArrayList<>();
-        mainInput.stream().forEach(t -> {
+        mainInput.forEach(t -> {
             final int count = t.size();
             if(size.isEmpty())
             {
@@ -198,9 +226,9 @@ class SafeMulticategoryPairs implements MulticategoryPairs
             }
             checkPair(t);
         });
-        if(!Objects.isNull(baselineInput))
+        if(Objects.nonNull(baselineInput))
         {
-            baselineInput.stream().forEach(t -> {
+            baselineInput.forEach(t -> {
                 final int count = t.size();
                 if(size.isEmpty())
                 {
