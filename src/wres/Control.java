@@ -798,9 +798,9 @@ public class Control implements Function<String[], Integer>
             try
             {
                 nextInput = input.get();
-                if(LOGGER.isInfoEnabled())
+                if(LOGGER.isDebugEnabled())
                 {
-                    LOGGER.info("Completed processing of pairs for feature '{}' at lead time {}.",
+                    LOGGER.debug("Completed processing of pairs for feature '{}' at lead time {}.",
                                 nextInput.getMetadata().getIdentifier().getGeospatialID(),
                                 nextInput.getMetadata().getLeadTimeInHours());
                 }
