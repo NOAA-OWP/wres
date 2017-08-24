@@ -1,0 +1,82 @@
+package wres.engine.statistics.metric;
+
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.DichotomousPairs;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.ScalarOutput;
+import wres.engine.statistics.metric.FrequencyBias.FrequencyBiasBuilder;
+
+/**
+ * Tests the {@link FrequencyBias}.
+ * 
+ * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
+ */
+public final class FrequencyBiasTest
+{
+
+    /**
+     * Constructs a {@link FrequencyBias} and compares the actual result to the expected result. Also, checks the
+     * parameters of the metric.
+     */
+
+    @Test
+    public void test1FrequencyBias()
+    {
+        //Obtain the factories
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
+        //Generate some data
+        final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
+
+        //Metadata for the output
+        final MetricOutputMetadata m1 =
+                metaFac.getOutputMetadata( input.getData().size(),
+                                           metaFac.getDimension(),
+                                           metaFac.getDimension(),
+                                           MetricConstants.FREQUENCY_BIAS,
+                                           MetricConstants.MAIN,
+                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+
+        //Build the metric
+        final FrequencyBiasBuilder b = new FrequencyBiasBuilder();
+        b.setOutputFactory( outF );
+        final FrequencyBias fb = b.build();
+
+        //Check the results
+        final MetricFactory metF = MetricFactory.getInstance( outF );
+        final ScalarOutput actual = fb.apply( input );
+        final ScalarOutput expected = outF.ofScalarOutput( 1.1428571428571428, m1 );
+        assertTrue( "Actual: " + actual.getData().doubleValue()
+                    + ". Expected: "
+                    + expected.getData().doubleValue()
+                    + ".",
+                    actual.equals( expected ) );
+        //Check the parameters
+        assertTrue( "Unexpected name for the Frequency Bias.",
+                    fb.getName().equals( metaFac.getMetricName( MetricConstants.FREQUENCY_BIAS ) ) );
+        assertTrue( "The Frequency Bias is not decomposable.", !fb.isDecomposable() );
+        assertTrue( "The Frequency Bias is not a skill score.", !fb.isSkillScore() );
+        assertTrue( "The Frequency Bias cannot be decomposed.",
+                    fb.getDecompositionID() == MetricDecompositionGroup.NONE );
+        final String expName = metF.ofContingencyTable().getName();
+        final String actName = metaFac.getMetricName( fb.getCollectionOf() );
+        assertTrue( "The Frequency Bias should be a collection of '" + expName
+                    + "', but is actually a collection of '"
+                    + actName
+                    + "'.",
+                    fb.getCollectionOf() == metF.ofContingencyTable().getID() );
+
+    }
+
+}

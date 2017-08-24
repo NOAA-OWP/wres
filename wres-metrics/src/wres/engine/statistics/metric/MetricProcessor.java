@@ -188,6 +188,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
                 return MetricConstants.CRITICAL_SUCCESS_INDEX;
             case EQUITABLE_THREAT_SCORE:
                 return MetricConstants.EQUITABLE_THREAT_SCORE;
+            case FREQUENCY_BIAS:
+                return MetricConstants.FREQUENCY_BIAS;    
             case MEAN_ABSOLUTE_ERROR:
                 return MetricConstants.MEAN_ABSOLUTE_ERROR;
             case CONTINUOUS_RANKED_PROBABILITY_SCORE:
