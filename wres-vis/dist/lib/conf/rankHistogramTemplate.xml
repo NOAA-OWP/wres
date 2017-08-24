@@ -17,19 +17,6 @@
             <shape>circle</shape>
 		</seriesDrawingParameters>
 	</datasourceDrawingParameters>
-
-    <!-- The diagonal line series has a data source index of 1 for a Q-Q plot.  The createdIndexOfSeriesToModify must be -1. -->
-	<datasourceDrawingParameters sourceIndex="1">
-		<plotter>LineAndScatter</plotter>
-		<seriesDrawingParameters
-			createdIndexOfSeriesToModify="-1">
-            <lineColor alpha="255" blue="128" green="128" red="128"/>
-			<nameInLegend>Perfect</nameInLegend>
-			<showInLegend>true</showInLegend>
-            <shape>none</shape>
-            <lineWidth>2.0</lineWidth>
-		</seriesDrawingParameters>
-	</datasourceDrawingParameters>
 	
 	<!-- Put the legend on the bottom with an appropriate title. -->
     <legend visible="true">
@@ -40,5 +27,12 @@
         </title>
         <borderLineWidth>0.0</borderLineWidth>
     </legend>
+    
+    <!-- Integer tick spacing for LEAD_THRESHOLD plots. -->
+	<domainAxis>
+		<numericAxis>
+			<intOnlyTickSpacing>true</intOnlyTickSpacing>
+		</numericAxis>
+	</domainAxis>
 
 </chartDrawingParameters>
