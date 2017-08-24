@@ -160,7 +160,7 @@
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
-            <xs:element name="rollingTimeAggregation" type="timeAggregation" maxOccurs="1" minOccurs="1"/>
+            <xs:element name="timeAggregation" type="timeAggregation" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="range" type="xs:string" default="variable" />
         <xs:attribute name="label" type="xs:string" />
