@@ -209,7 +209,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
             DataFactory factory = DefaultDataFactory.getInstance();
 
-            if (ConfigHelper.usesProbabilityThresholds(projectConfig))
+            if (futureVector != null)
             {
                 this.leftHandValues = factory.vectorOf(futureVector.toArray(new Double[futureVector.size()]));
             }
