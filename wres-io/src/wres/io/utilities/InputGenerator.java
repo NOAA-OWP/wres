@@ -1,10 +1,20 @@
 package wres.io.utilities;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.ForecastRange;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -19,12 +29,6 @@ import wres.io.grouping.LabeledScript;
 import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.Future;
 
 /**
  * Interprets a project configuration and spawns asynchronous metric input retrieval operations
@@ -124,10 +128,10 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(NEWLINE);
                 script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
 
-                if (left.getRange() != ForecastRange.VARIABLE)
+                if (!left.getRange().equalsIgnoreCase( "variable" ))
                 {
                     script.append("     AND F.forecasttype_id = ")
-                          .append(ForecastTypes.getForecastTypeId(left.getRange().value()))
+                          .append(ForecastTypes.getForecastTypeId(left.getRange()))
                           .append(NEWLINE);
                 }
 
@@ -233,6 +237,9 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 {
                     this.lastWindowNumber = -1;
                 }
+
+                // TODO: This needs a better home
+                ProgressMonitor.setSteps( Long.valueOf( this.lastWindowNumber ) );
             }
             return this.lastWindowNumber;
         }
@@ -281,8 +288,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                                                                     return this.leftHandMap.getOrDefault(date,null);
                                                                     },
                                                               this.leftHandValues);
-                retriever.setOnRun(ProgressMonitor.onThreadStartHandler());
-                retriever.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+
                 nextInput = Database.submit(retriever);
             }
 

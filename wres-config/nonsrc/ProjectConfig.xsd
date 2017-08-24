@@ -13,15 +13,6 @@
             <xs:enumeration value="model outputs" />
         </xs:restriction>
     </xs:simpleType>
-    <xs:simpleType name="ForecastRange">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="short" />
-            <xs:enumeration value="medium" />
-            <xs:enumeration value="long" />
-            <xs:enumeration value="analysis" />
-            <xs:enumeration value="variable" />
-        </xs:restriction>
-    </xs:simpleType>
 
     <xs:simpleType name="format">
         <xs:restriction base="xs:string">
@@ -171,7 +162,7 @@
             </xs:element>
             <xs:element name="rollingTimeAggregation" type="timeAggregation" maxOccurs="1" minOccurs="1"/>
         </xs:sequence>
-        <xs:attribute name="range" type="ForecastRange" default="variable" />
+        <xs:attribute name="range" type="xs:string" default="variable" />
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 

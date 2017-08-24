@@ -1,20 +1,5 @@
 package wres.io.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.config.generated.*;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.Variables;
-import wres.util.Collections;
-import wres.util.Strings;
-import wres.util.Time;
-
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,6 +14,28 @@ import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.config.generated.Conditions;
+import wres.config.generated.Coordinate;
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DatasourceType;
+import wres.config.generated.MetricConfig;
+import wres.config.generated.ObjectFactory;
+import wres.config.generated.ProjectConfig;
+import wres.io.data.caching.Features;
+import wres.io.data.caching.Variables;
+import wres.util.Collections;
+import wres.util.Strings;
+import wres.util.Time;
 
 public class ConfigHelper
 {

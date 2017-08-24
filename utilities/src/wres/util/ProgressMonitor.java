@@ -6,6 +6,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author Christopher Tubbs
  *
@@ -16,7 +19,7 @@ public class ProgressMonitor
     private final ExecutorService ASYNC_UPDATER = Executors.newSingleThreadExecutor();
 
     private static ProgressMonitor MONITOR = new ProgressMonitor();
-
+    private final Logger logger = LoggerFactory.getLogger( this.getClass() );
     public static void deactivate()
     {
         MONITOR.shutdown();
@@ -178,11 +181,19 @@ public class ProgressMonitor
         executeOutput();
     }
     
-    public void setSteps(Long steps) {
-            this.totalSteps = steps;
-            executeOutput();
+    public static void setSteps(Long steps) {
+        synchronized ( MONITOR )
+        {
+            MONITOR.setTotalSteps( steps );
+        }
     }
 
+    public void setTotalSteps(Long steps)
+    {
+        this.completedSteps = 0L;
+        this.totalSteps = steps;
+        this.executeOutput();
+    }
     private void executeOutput()
     {
         if (this.shouldUpdate())
@@ -196,25 +207,25 @@ public class ProgressMonitor
         this.autoReset = reset;
     }
 
-    public void setShowStepDescription(boolean showStepDescription)
+    public static void setShowStepDescription(boolean showStepDescription)
     {
-        this.showStepDescription = showStepDescription;
+        MONITOR.showStepDescription = showStepDescription;
     }
     
     public void reset() {
         this.totalSteps = 0L;
         this.completedSteps = 0L;
         this.startTime = System.currentTimeMillis();
-        if (this.printer != null) {
+        /*if (this.printer != null) {
             this.printMessage("");
             this.printMessage("Progress Monitor has been reset.");
             this.printMessage("");
-        }
+        }*/
     }
     
     private String getProgressMessage() {
         String message = "COULDN'T CREATE UPDATE MESSAGE";
-        String builder = "\r";
+        String builder = "\r  ";
         try
         {
             if (this.showStepDescription)
@@ -223,10 +234,23 @@ public class ProgressMonitor
                 builder += " steps out of ";
                 builder += mainFormat.format(totalSteps);
                 builder += " completed";
+
+                builder += " at an average speed of ";
+                builder += getCompletionSpeed();
             }
-            
-            builder += " at an average speed of ";
-            builder += getCompletionSpeed();
+            else
+            {
+                float completion = ((completedSteps * 1.0F) / (totalSteps * 1.0F)) * 100.0f;
+                builder += String.format("%.2f", completion);
+                builder += "% Completed ";
+
+                for (int i = 0; i < completion; i += 2)
+                {
+                    builder += "=";
+                }
+
+                builder += ">";
+            }
             message = builder;
         }
         catch (Exception e) {
@@ -269,6 +293,11 @@ public class ProgressMonitor
         if (this.printer != null)
         {
             this.printer.print(message);
+        }
+
+        if (logger.isTraceEnabled())
+        {
+            logger.trace( message );
         }
     }
     

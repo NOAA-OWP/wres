@@ -1,19 +1,20 @@
 package wres;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-import wres.io.Operations;
-import wres.util.Collections;
-import wres.util.FormattedStopwatch;
-import wres.util.Strings;
-import wres.util.Time;
-
 import java.lang.management.ManagementFactory;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
+import wres.io.Operations;
+import wres.util.Collections;
+import wres.util.FormattedStopwatch;
+import wres.util.Strings;
+import wres.util.Time;
 
 /**
  * @author Christopher Tubbs
@@ -79,7 +80,7 @@ public class Main {
         }
         catch ( Exception e )
         {
-            LOGGER.error( "Operation {} completed unsuccessfully:", operation, e );
+            LOGGER.error( "Operation {} completed unsuccessfully", operation, e );
         }
 
         if (exitCode == null)

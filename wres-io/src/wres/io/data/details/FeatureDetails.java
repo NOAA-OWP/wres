@@ -1,16 +1,17 @@
 package wres.io.data.details;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.io.utilities.Database;
-import wres.util.Internal;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.io.utilities.Database;
+import wres.util.Internal;
 
 /**
  * Defines the important details of a feature as stored in the database
@@ -40,15 +41,34 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 	{
 		Integer id;
 
+		String script = "";
+
+		script += "WITH new_variableposition_id AS" + NEWLINE;
+		script += "(" + NEWLINE;
+		script += "		INSERT INTO wres.VariablePosition (variable_id, x_position)" + NEWLINE;
+		script += "		SELECT " + String.valueOf(variableID) + ", " + String.valueOf(getId()) + NEWLINE;
+		script += "		WHERE NOT EXISTS (" + NEWLINE;
+		script += "			SELECT 1" + NEWLINE;
+		script += "			FROM wres.VariablePosition VP" + NEWLINE;
+		script += "			WHERE VP.variable_id = " + String.valueOf(variableID) + NEWLINE;
+		script += "				AND VP.x_position = " + String.valueOf(getId()) + NEWLINE;
+		script += "		)" + NEWLINE;
+		script += "		RETURNING variableposition_id" + NEWLINE;
+		script += ")" + NEWLINE;
+		script += "SELECT variableposition_id" + NEWLINE;
+		script += "FROM new_variableposition_id" + NEWLINE + NEWLINE;
+		script += "";
+		script += "UNION" + NEWLINE + NEWLINE;
+		script += "";
+		script += "SELECT variableposition_id" + NEWLINE;
+		script += "FROM wres.VariablePosition VP" + NEWLINE;
+		script += "WHERE VP.variable_id = " + String.valueOf(variableID) + NEWLINE;
+		script += "		AND VP.x_position = " + String.valueOf(getId()) + ";";
+
 		synchronized (POSITION_LOCK) {
 			if (!variablePositions.containsKey(variableID)) {
-				String script = "SELECT wres.get_variableposition_id(" + getId() + ", " + variableID + ") AS variableposition_id;";
-
-				LOGGER.trace("getVariablePositionID - script: {}", script);
 
 				Integer dbResult = Database.getResult(script, "variableposition_id");
-
-				LOGGER.trace("getVariablePositionID - dbResult: {}", dbResult);
 
 				if (dbResult == null) {
 					// TODO: throw an appropriate checked exception instead of RuntimeException

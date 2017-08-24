@@ -9,24 +9,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.ProjectConfigException;
 import wres.config.Validation;
 import wres.config.generated.Conditions.Feature;
@@ -57,6 +60,7 @@ import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
 import wres.io.writing.CommaSeparated;
+import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -116,8 +120,33 @@ public class Control implements Function<String[], Integer>
 
         // Build a processing pipeline
 
-        final ExecutorService processPairExecutor = new ForkJoinPool( MAX_THREADS );
-        final ExecutorService metricExecutor = new ForkJoinPool( MAX_THREADS );
+        ExecutorService processPairExecutor;
+        ExecutorService metricExecutor;
+        if (Runtime.getRuntime().availableProcessors() > 2)
+        {
+            processPairExecutor = new ForkJoinPool( MAX_THREADS );
+            metricExecutor = new ForkJoinPool( MAX_THREADS );
+        }
+        else
+        {
+
+            ThreadFactory factory = runnable -> new Thread( runnable, "Metric Thread");
+            ThreadFactory secondFactory = runnable -> new Thread(runnable, "Secondary Metric Thread");
+            processPairExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
+                                                          SystemSettings.maximumThreadCount(),
+                                                          SystemSettings.poolObjectLifespan(),
+                                                          TimeUnit.MILLISECONDS,
+                                                          new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 ),
+                                                          factory);
+            metricExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
+                                                     SystemSettings.maximumThreadCount(),
+                                                     SystemSettings.poolObjectLifespan(),
+                                                     TimeUnit.MILLISECONDS,
+                                                     new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 ),
+                                                     secondFactory);
+            ((ThreadPoolExecutor)processPairExecutor).setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+            ((ThreadPoolExecutor)metricExecutor).setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        }
 
         try
         {
@@ -160,6 +189,9 @@ public class Control implements Function<String[], Integer>
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
+        ProgressMonitor.setShowStepDescription( true );
+        ProgressMonitor.resetMonitor();
+
         // Need to ingest first
         final boolean ingestResult = Operations.ingest(projectConfig);
 
@@ -174,6 +206,9 @@ public class Control implements Function<String[], Integer>
         // Iterate through the features and process them
         for(final Feature nextFeature: features)
         {
+
+            ProgressMonitor.setShowStepDescription( false );
+            ProgressMonitor.resetMonitor();
             processFeature( nextFeature,
                             projectConfigPlus,
                             processPairExecutor,
@@ -241,7 +276,9 @@ public class Control implements Function<String[], Integer>
                                                              .thenApplyAsync(processor, processPairExecutor)
                                                              .thenAcceptAsync(new IntermediateResultProcessor(feature,
                                                                                                               projectConfigPlus),
-                                                                              processPairExecutor);
+                                                                              processPairExecutor)
+                                                             .thenAccept(
+                                                                         aVoid -> ProgressMonitor.completeStep() );
 
             //Add the future to the list
             listOfFutures.add(c);

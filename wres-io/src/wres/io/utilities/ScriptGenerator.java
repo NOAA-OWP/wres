@@ -3,16 +3,19 @@
  */
 package wres.io.utilities;
 
-import wres.config.generated.*;
+import java.sql.SQLException;
+import java.util.InvalidPropertiesFormatException;
+import java.util.StringJoiner;
+
+import wres.config.generated.Conditions;
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.EnsembleCondition;
+import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.ForecastTypes;
 import wres.io.grouping.LabeledScript;
 import wres.util.Internal;
-
-import java.sql.SQLException;
-import java.util.InvalidPropertiesFormatException;
-import java.util.StringJoiner;
 
 /**
  * @author Christopher Tubbs
@@ -25,7 +28,7 @@ public final class ScriptGenerator
     
     private static final String NEWLINE = System.lineSeparator();
 
-    public static LabeledScript generateFindLastLead(int variableID, Conditions.Feature feature, ForecastRange range) throws SQLException
+    public static LabeledScript generateFindLastLead(int variableID, Conditions.Feature feature, String range) throws SQLException
     {
         final String label = "last_lead";
         String script = "";
@@ -35,7 +38,7 @@ public final class ScriptGenerator
         script += "INNER JOIN wres.ForecastValue FV" + NEWLINE;
         script += "    ON FV.forecastensemble_id = FE.forecastensemble_id" + NEWLINE;
 
-        if (range != null && range != ForecastRange.VARIABLE)
+        if (range != null && !range.equalsIgnoreCase( "variable" ))
         {
             script += "INNER JOIN wres.Forecast F" + NEWLINE;
             script += "     ON FE.forecast_id = F.forecast_id" + NEWLINE;
@@ -43,7 +46,7 @@ public final class ScriptGenerator
 
         script += "WHERE " + ConfigHelper.getVariablePositionClause(feature, variableID) + NEWLINE;
 
-        if (range != null && range != ForecastRange.VARIABLE)
+        if (range != null && !range.equalsIgnoreCase( "variable" ))
         {
             script += "     AND " + ConfigHelper.getVariablePositionClause(feature, variableID);
         }
@@ -208,10 +211,10 @@ public final class ScriptGenerator
                       .append(NEWLINE);
             }
 
-            if (dataSourceConfig.getRange() != ForecastRange.VARIABLE)
+            if (dataSourceConfig.getRange().equalsIgnoreCase( "variable" ))
             {
                 script.append("     AND F.forecasttype_id = ")
-                      .append(ForecastTypes.getForecastTypeId(dataSourceConfig.getRange().value()))
+                      .append(ForecastTypes.getForecastTypeId(dataSourceConfig.getRange()))
                       .append("         ")
                       .append("-- Limit returned values to only those matching the given forecast type")
                       .append(NEWLINE);
