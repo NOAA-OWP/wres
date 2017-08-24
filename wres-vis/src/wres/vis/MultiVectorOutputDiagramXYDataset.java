@@ -14,7 +14,7 @@ import wres.datamodel.MultiVectorOutput;
  */
 public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<MetricOutputMapByLeadThreshold<MultiVectorOutput>, MetricOutputMapByLeadThreshold<MultiVectorOutput>>
 {
-    
+    private static final long serialVersionUID = 4254109136599641286L;
     private final MetricConstants xConstant;
     private final MetricConstants yConstant;
 
@@ -91,4 +91,5 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Met
             return getPlotData().getKey(series).getSecondKey().toString();
         } 
     }
+
 }
