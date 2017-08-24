@@ -3,9 +3,6 @@ package wres.datamodel;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.VectorOfDoubles;
-
 /**
  * Immutable implementation of a store of verification pairs that comprise a single value and an ensemble of values.
  * 
@@ -39,12 +36,12 @@ class SafeEnsemblePairs implements EnsemblePairs
      */
 
     private final Metadata baselineMeta;
-    
+
     /**
      * Climatological dataset. May be null.
      */
-    
-    private VectorOfDoubles climatology;    
+
+    private VectorOfDoubles climatology;
 
     @Override
     public List<PairOfDoubleAndVectorOfDoubles> getData()
@@ -61,7 +58,7 @@ class SafeEnsemblePairs implements EnsemblePairs
     @Override
     public EnsemblePairs getBaselineData()
     {
-        return DefaultDataFactory.getInstance().ofEnsemblePairs(baselineInput, baselineMeta);
+        return DefaultDataFactory.getInstance().ofEnsemblePairs( baselineInput, baselineMeta );
     }
 
     @Override
@@ -75,19 +72,19 @@ class SafeEnsemblePairs implements EnsemblePairs
     {
         return baselineMeta;
     }
-    
+
     @Override
     public int size()
     {
         return mainInput.size();
     }
-    
+
     @Override
     public VectorOfDoubles getClimatology()
     {
         return climatology;
-    }     
-    
+    }
+
     /**
      * A {@link MetricInputBuilder} to build the metric input.
      */
@@ -106,23 +103,23 @@ class SafeEnsemblePairs implements EnsemblePairs
         private List<PairOfDoubleAndVectorOfDoubles> baselineInput;
 
         @Override
-        public EnsemblePairsBuilder setData(final List<PairOfDoubleAndVectorOfDoubles> mainInput)
+        public EnsemblePairsBuilder setData( final List<PairOfDoubleAndVectorOfDoubles> mainInput )
         {
             this.mainInput = mainInput;
             return this;
         }
-        
+
         @Override
-        public EnsemblePairsBuilder setDataForBaseline(final List<PairOfDoubleAndVectorOfDoubles> baselineInput)
+        public EnsemblePairsBuilder setDataForBaseline( final List<PairOfDoubleAndVectorOfDoubles> baselineInput )
         {
             this.baselineInput = baselineInput;
             return this;
-        }   
+        }
 
         @Override
         public SafeEnsemblePairs build()
         {
-            return new SafeEnsemblePairs(this);
+            return new SafeEnsemblePairs( this );
         }
 
     }
@@ -134,37 +131,93 @@ class SafeEnsemblePairs implements EnsemblePairs
      * @throws MetricInputException if the pairs are invalid
      */
 
-    SafeEnsemblePairs(final EnsemblePairsBuilder b)
+    SafeEnsemblePairs( final EnsemblePairsBuilder b )
     {
-        //Bounds checks
-        if(Objects.isNull(b.mainMeta))
-        {
-            throw new MetricInputException("Specify non-null metadata for the metric input.");
-        }
-        if(Objects.isNull(b.mainInput))
-        {
-            throw new MetricInputException("Specify a non-null dataset for the metric input.");
-        }
-        if(Objects.isNull(b.baselineInput) != Objects.isNull(b.baselineMeta))
-        {
-            throw new MetricInputException("Specify a non-null baseline input and associated metadata or leave both null.");
-        }
-        if(b.mainInput.contains(null))
-        {
-            throw new MetricInputException("One or more of the pairs is null.");
-        }
-        if(!Objects.isNull(b.baselineInput) && b.baselineInput.contains(null))
-        {
-            throw new MetricInputException("One or more of the baseline pairs is null.");
-        }
         //Ensure safe types
-        DefaultDataFactory factory = (DefaultDataFactory)DefaultDataFactory.getInstance();
-        mainInput = factory.safePairOfDoubleAndVectorOfDoublesList(b.mainInput);
+        DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
+        mainInput = factory.safePairOfDoubleAndVectorOfDoublesList( b.mainInput );
         baselineInput =
-                      Objects.nonNull(b.baselineInput) ? factory.safePairOfDoubleAndVectorOfDoublesList(b.baselineInput) : null;
+                Objects.nonNull( b.baselineInput ) ? factory.safePairOfDoubleAndVectorOfDoublesList( b.baselineInput )
+                                                   : null;
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
         climatology = b.climatology;
+
+        //Validate
+        if ( Objects.isNull( mainMeta ) )
+        {
+            throw new MetricInputException( "Specify non-null metadata for the metric input." );
+        }
+        if ( Objects.isNull( mainInput ) )
+        {
+            throw new MetricInputException( "Specify a non-null dataset for the metric input." );
+        }
+        if ( Objects.isNull( baselineInput ) != Objects.isNull( baselineMeta ) )
+        {
+            throw new MetricInputException( "Specify a non-null baseline input and associated metadata or leave both "
+                                            + "null." );
+        }
+        if ( mainInput.contains( null ) )
+        {
+            throw new MetricInputException( "One or more of the pairs is null." );
+        }
+        if ( mainInput.isEmpty() )
+        {
+            throw new MetricInputException( "Cannot build the paired data with an empty input: add one or more pairs." );
+        }
+        if ( Objects.nonNull( baselineInput ) )
+        {
+            if ( baselineInput.contains( null ) )
+            {
+                throw new MetricInputException( "One or more of the baseline pairs is null." );
+            }
+            if ( baselineInput.isEmpty() )
+            {
+                throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
+                                                + "pairs." );
+            }
+        }
+        if ( Objects.nonNull( climatology ) )
+        {
+            if ( climatology.size() == 0 )
+            {
+                throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
+                                                + "pairs." );
+            }
+        }
+        //Check contents
+        checkEachPair( mainInput, baselineInput );
+    }
+
+    /**
+     * Validates each pair in each input.
+     * 
+     * @param mainInput the main input
+     * @param baselineInput the baseline input
+     */
+
+    private void checkEachPair( List<PairOfDoubleAndVectorOfDoubles> mainInput,
+                                List<PairOfDoubleAndVectorOfDoubles> baselineInput )
+    {
+        //Main pairs
+        for ( PairOfDoubleAndVectorOfDoubles next : mainInput )
+        {
+            if ( next.getItemTwo().length == 0 )
+            {
+                throw new MetricInputException( "One or more pairs has no ensemble members." );
+            }
+        }
+        //Baseline
+        if ( Objects.nonNull( baselineInput ) )
+        {
+            for ( PairOfDoubleAndVectorOfDoubles next : mainInput )
+            {
+                if ( next.getItemTwo().length == 0 )
+                {
+                    throw new MetricInputException( "One or more pairs in the baseline has no ensemble members." );
+                }
+            }
+        }
     }
 
 }

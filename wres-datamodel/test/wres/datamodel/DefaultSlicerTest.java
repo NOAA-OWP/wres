@@ -12,10 +12,6 @@ import java.util.function.Function;
 
 import org.junit.Test;
 
-import wres.datamodel.PairOfBooleans;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.SafeVectorOfBooleans;
 import wres.datamodel.Threshold.Operator;
 
 /**
@@ -144,12 +140,12 @@ public final class DefaultSlicerTest
 
         //Test null return on baseline
         final List<PairOfDoubles> nullValuesBase = new ArrayList<>();
-        values.add(metIn.pairOf(0, 3.0 / 5.0));
-        values.add(metIn.pairOf(0, 1.0 / 5.0));
-        values.add(metIn.pairOf(0, 2.0 / 5.0));
-        values.add(metIn.pairOf(0, 3.0 / 5.0));
-        values.add(metIn.pairOf(0, 0.0 / 5.0));
-        values.add(metIn.pairOf(0, 1.0 / 5.0));
+        nullValuesBase.add(metIn.pairOf(0, 3.0 / 5.0));
+        nullValuesBase.add(metIn.pairOf(0, 1.0 / 5.0));
+        nullValuesBase.add(metIn.pairOf(0, 2.0 / 5.0));
+        nullValuesBase.add(metIn.pairOf(0, 3.0 / 5.0));
+        nullValuesBase.add(metIn.pairOf(0, 0.0 / 5.0));
+        nullValuesBase.add(metIn.pairOf(0, 1.0 / 5.0));
         SingleValuedPairs pairsNullBase = metIn.ofSingleValuedPairs(values, nullValuesBase, meta, meta, null);
         try
         {
@@ -203,12 +199,12 @@ public final class DefaultSlicerTest
         
         //Test exception on baseline
         final List<PairOfDoubleAndVectorOfDoubles> nullValuesBase = new ArrayList<>();
-        values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
-        values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
-        values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
-        values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
-        values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
-        values.add(metIn.pairOf(0, new double[]{1, 2, 3}));
+        nullValuesBase.add(metIn.pairOf(0, new double[]{1, 2, 3}));
+        nullValuesBase.add(metIn.pairOf(0, new double[]{1, 2, 3}));
+        nullValuesBase.add(metIn.pairOf(0, new double[]{1, 2, 3}));
+        nullValuesBase.add(metIn.pairOf(0, new double[]{1, 2, 3}));
+        nullValuesBase.add(metIn.pairOf(0, new double[]{1, 2, 3}));
+        nullValuesBase.add(metIn.pairOf(0, new double[]{1, 2, 3}));
         EnsemblePairs pairsNullBase = metIn.ofEnsemblePairs(values, nullValuesBase, meta, meta, null);
         try
         {
