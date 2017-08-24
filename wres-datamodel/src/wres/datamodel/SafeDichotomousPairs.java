@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.PairOfBooleans;
-import wres.datamodel.VectorOfBooleans;
-
 /**
  * Immutable store of verification pairs associated with a dichotomous input, i.e. a single event whose outcome is
  * recorded as occurring (true) or not occurring (false). The event is not defined as part of the input. A dichotomous
@@ -23,7 +20,7 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
     public DichotomousPairs getBaselineData()
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        return metIn.ofDichotomousPairs(getDataForBaseline(), getMetadataForBaseline());
+        return metIn.ofDichotomousPairs( getDataForBaseline(), getMetadataForBaseline() );
     }
 
     @Override
@@ -42,7 +39,7 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
         @Override
         public SafeDichotomousPairs build()
         {
-            return new SafeDichotomousPairs(this);
+            return new SafeDichotomousPairs( this );
         }
 
         /**
@@ -52,14 +49,15 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
          * @return the builder
          */
 
-        public MulticategoryPairsBuilder setDataFromAtomic(final List<PairOfBooleans> mainInput)
+        public MulticategoryPairsBuilder setDataFromAtomic( final List<PairOfBooleans> mainInput )
         {
-            if(!Objects.isNull(mainInput))
+            if ( Objects.nonNull( mainInput ) )
             {
                 DataFactory d = DefaultDataFactory.getInstance();
                 List<VectorOfBooleans> mainIn = new ArrayList<>();
-                mainInput.forEach(pair -> mainIn.add(d.vectorOf(new boolean[]{pair.getItemOne(), pair.getItemTwo()})));
-                setData(mainIn);
+                mainInput.forEach( pair -> mainIn.add( d.vectorOf( new boolean[] { pair.getItemOne(),
+                                                                                   pair.getItemTwo() } ) ) );
+                setData( mainIn );
             }
             return this;
         }
@@ -71,15 +69,15 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
          * @return the builder
          */
 
-        public MulticategoryPairsBuilder setDataForBaselineFromAtomic(final List<PairOfBooleans> baselineInput)
+        public MulticategoryPairsBuilder setDataForBaselineFromAtomic( final List<PairOfBooleans> baselineInput )
         {
-            if(!Objects.isNull(baselineInput))
+            if ( Objects.nonNull( baselineInput ) )
             {
                 DataFactory d = DefaultDataFactory.getInstance();
                 List<VectorOfBooleans> baseIn = new ArrayList<>();
-                baselineInput.forEach(pair -> baseIn.add(d.vectorOf(new boolean[]{pair.getItemOne(),
-                    pair.getItemTwo()})));
-                setDataForBaseline(baseIn);
+                baselineInput.forEach( pair -> baseIn.add( d.vectorOf( new boolean[] { pair.getItemOne(),
+                                                                                       pair.getItemTwo() } ) ) );
+                setDataForBaseline( baseIn );
             }
             return this;
         }
@@ -93,12 +91,12 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
      * @throws MetricInputException if the pairs are invalid
      */
 
-    private SafeDichotomousPairs(final DichotomousPairsBuilder b)
+    private SafeDichotomousPairs( final DichotomousPairsBuilder b )
     {
-        super(b);
-        if(super.getCategoryCount() != 2)
+        super( b );
+        if ( super.getCategoryCount() != 2 )
         {
-            throw new MetricInputException("Expected one outcome in the dichotomous input (two or four columns).");
+            throw new MetricInputException( "Expected one outcome in the dichotomous input (two or four columns)." );
         }
     }
 
