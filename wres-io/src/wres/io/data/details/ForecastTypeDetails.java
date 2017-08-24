@@ -33,7 +33,7 @@ public class ForecastTypeDetails extends CachedDetail<ForecastTypeDetails, Strin
 
     @Override
     protected String getIDName() {
-        return "forecastrange_id";
+        return "forecasttype_id";
     }
 
     @Override

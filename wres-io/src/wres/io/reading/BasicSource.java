@@ -1,13 +1,13 @@
 package wres.io.reading;
 
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.List;
+
 import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.io.config.ConfigHelper;
 import wres.util.Internal;
-
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.List;
 
 /**
  * @author ctubbs

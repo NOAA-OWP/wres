@@ -1,27 +1,37 @@
 package wres.io.reading.fews;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.config.generated.Conditions;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.EnsembleCondition;
-import wres.io.concurrency.CopyExecutor;
-import wres.io.config.SystemSettings;
-import wres.io.data.caching.*;
-import wres.io.data.details.ForecastDetails;
-import wres.io.data.details.ForecastEnsembleDetails;
-import wres.io.reading.XMLReader;
-import wres.io.utilities.Database;
-import wres.util.*;
-
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.config.generated.Conditions;
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.EnsembleCondition;
+import wres.io.concurrency.CopyExecutor;
+import wres.io.config.SystemSettings;
+import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Ensembles;
+import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
+import wres.io.data.details.ForecastDetails;
+import wres.io.data.details.ForecastEnsembleDetails;
+import wres.io.reading.XMLReader;
+import wres.io.utilities.Database;
+import wres.util.Collections;
+import wres.util.Internal;
+import wres.util.ProgressMonitor;
+import wres.util.Strings;
+import wres.util.Time;
+import wres.util.XML;
 
 /**
  * @author Christopher Tubbs
@@ -412,7 +422,6 @@ public final class PIXMLReader extends XMLReader
 	
 		if (isForecast && this.creationDate != null && this.creationTime != null) {
 			this.currentForecast.setCreationDate(this.creationDate + " " + this.creationTime);
-			this.currentForecast.setRange("variable");
 		}
 	}
 
@@ -466,6 +475,7 @@ public final class PIXMLReader extends XMLReader
 	 * @throws SQLException Thrown if the forecast could not be retrieved properly
 	 */
 	private int getForecastID() throws SQLException {
+	    this.currentForecast.setRange( this.getSpecifiedScenario() );
 		return currentForecast.getForecastID();
 	}
 	
@@ -799,6 +809,18 @@ public final class PIXMLReader extends XMLReader
     private List<Conditions.Feature> getSpecifiedFeatures()
     {
         return this.specifiedFeatures;
+    }
+
+    private String getSpecifiedScenario()
+    {
+        String scenario = "variable";
+
+        if (this.dataSourceConfig != null)
+        {
+            scenario = this.dataSourceConfig.getRange();
+        }
+
+        return scenario;
     }
 
     private DataSourceConfig dataSourceConfig;
