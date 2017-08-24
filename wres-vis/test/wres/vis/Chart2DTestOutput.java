@@ -62,7 +62,7 @@ public class Chart2DTestOutput extends TestCase
     public void test2ScalarOutput()
     {
         final String scenarioName = "test2";
-        final File outputImageFile = new File("testoutput/chart2DTest/" + scenarioName + "_output.png");
+        final File outputImageFile = new File( "testoutput/chart2DTest/" + scenarioName + "_output.png" );
         outputImageFile.delete();
 
         //Construct some single-valued pairs
@@ -74,19 +74,19 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
-                                                                                              factory,
-                                                                                              PlotTypeSelection.LEAD_THRESHOLD,
-                                                                                              null,
-                                                                                              null);
+            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine( input,
+                                                                                               factory,
+                                                                                               PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                               null,
+                                                                                               null );
 
             //Generate the output file.
-            ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
+            ChartTools.generateOutputImageFile( outputImageFile, engine.buildChart(), 800, 600 );
         }
-        catch(final Throwable t)
+        catch ( final Throwable t )
         {
             t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
+            fail( "Unexpected exception: " + t.getMessage() );
         }
     }
 
@@ -96,7 +96,7 @@ public class Chart2DTestOutput extends TestCase
     public void test3ScalarOutput()
     {
         final String scenarioName = "test3";
-        final File outputImageFile = new File("testoutput/chart2DTest/" + scenarioName + "_output.png");
+        final File outputImageFile = new File( "testoutput/chart2DTest/" + scenarioName + "_output.png" );
         outputImageFile.delete();
 
         //Construct some single-valued pairs
@@ -108,19 +108,19 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(input,
-                                                                                              factory,
-                                                                                              PlotTypeSelection.THRESHOLD_LEAD,
-                                                                                              null,
-                                                                                              null);
+            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine( input,
+                                                                                               factory,
+                                                                                               PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                               null,
+                                                                                               null );
 
             //Generate the output file.
-            ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), 800, 600);
+            ChartTools.generateOutputImageFile( outputImageFile, engine.buildChart(), 800, 600 );
         }
-        catch(final Throwable t)
+        catch ( final Throwable t )
         {
             t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
+            fail( "Unexpected exception: " + t.getMessage() );
         }
     }
 
@@ -134,11 +134,11 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
         }
-        catch(final IOException e)
+        catch ( final IOException e )
         {
-            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getReliabilityDiagramByLeadThreshold();
@@ -157,24 +157,28 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
-                                                                                                            factory,
-                                                                                                            PlotTypeSelection.LEAD_THRESHOLD,
-                                                                                                            null,
-                                                                                                            null);
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
+                                                                                                             factory,
+                                                                                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                             null,
+                                                                                                             null );
 
             //Generate the output file.
-            for(final Object lead: engineMap.keySet())
+            for ( final Object lead : engineMap.keySet() )
             {
-                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + lead + "h."
-                    + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
+                                                              + "h."
+                                                              + outputImageFileSuffix ),
+                                                    engineMap.get( lead ).buildChart(),
+                                                    800,
+                                                    600 );
 
             }
         }
-        catch(final Throwable t)
+        catch ( final Throwable t )
         {
             t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
+            fail( "Unexpected exception: " + t.getMessage() );
         }
     }
 
@@ -187,11 +191,11 @@ public class Chart2DTestOutput extends TestCase
         final String outputImageFileSuffix = scenarioName + "_output.png";
         try
         {
-            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
         }
-        catch(final IOException e)
+        catch ( final IOException e )
         {
-            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getReliabilityDiagramByLeadThreshold();
@@ -202,27 +206,29 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
-                                                                                                            factory,
-                                                                                                            PlotTypeSelection.THRESHOLD_LEAD,
-                                                                                                            null,
-                                                                                                            null);
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
+                                                                                                             factory,
+                                                                                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                             null,
+                                                                                                             null );
 
             //Generate the output file.
-            for(final Object thresh: engineMap.keySet())
+            for ( final Object thresh : engineMap.keySet() )
             {
-                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/"
-                    + ((Threshold)thresh).getThreshold() + "." + outputImageFileSuffix),
-                                                   engineMap.get(thresh).buildChart(),
-                                                   800,
-                                                   600);
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/"
+                                                              + ( (Threshold) thresh ).getThreshold()
+                                                              + "."
+                                                              + outputImageFileSuffix ),
+                                                    engineMap.get( thresh ).buildChart(),
+                                                    800,
+                                                    600 );
 
             }
         }
-        catch(final Throwable t)
+        catch ( final Throwable t )
         {
             t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
+            fail( "Unexpected exception: " + t.getMessage() );
         }
     }
 
@@ -235,11 +241,11 @@ public class Chart2DTestOutput extends TestCase
         final String outputImageFileSuffix = scenarioName + "_output.png";
         try
         {
-            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
         }
-        catch(final IOException e)
+        catch ( final IOException e )
         {
-            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
         //Construct some single-valued pairs
@@ -251,23 +257,27 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final ConcurrentMap<Object, ChartEngine> engineMap = ChartEngineFactory.buildVectorOutputChartEngine(input,
-                                                                                                                 factory,
-                                                                                                                 PlotTypeSelection.LEAD_THRESHOLD,
-                                                                                                                 null,
-                                                                                                                 null);
+            final ConcurrentMap<Object, ChartEngine> engineMap = ChartEngineFactory.buildVectorOutputChartEngine( input,
+                                                                                                                  factory,
+                                                                                                                  PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                                  null,
+                                                                                                                  null );
             //Generate the output file.
-            for(final Object key: engineMap.keySet())
+            for ( final Object key : engineMap.keySet() )
             {
-                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + key + "."
-                    + outputImageFileSuffix), engineMap.get(key).buildChart(), 800, 600);
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
+                                                              + "."
+                                                              + outputImageFileSuffix ),
+                                                    engineMap.get( key ).buildChart(),
+                                                    800,
+                                                    600 );
 
             }
         }
-        catch(final Throwable t)
+        catch ( final Throwable t )
         {
             t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
+            fail( "Unexpected exception: " + t.getMessage() );
         }
     }
 
@@ -278,11 +288,11 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
         }
-        catch(final IOException e)
+        catch ( final IOException e )
         {
-            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
@@ -293,24 +303,28 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
-                                                                                                            factory,
-                                                                                                            PlotTypeSelection.LEAD_THRESHOLD,
-                                                                                                            null,
-                                                                                                            null);
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
+                                                                                                             factory,
+                                                                                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                             null,
+                                                                                                             null );
 
             //Generate the output file.
-            for(final Object lead: engineMap.keySet())
+            for ( final Object lead : engineMap.keySet() )
             {
-                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + lead + "h."
-                    + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
+                                                              + "h."
+                                                              + outputImageFileSuffix ),
+                                                    engineMap.get( lead ).buildChart(),
+                                                    800,
+                                                    600 );
 
             }
         }
-        catch(final Throwable t)
+        catch ( final Throwable t )
         {
             t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
+            fail( "Unexpected exception: " + t.getMessage() );
         }
     }
 
@@ -321,11 +335,11 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
         }
-        catch(final IOException e)
+        catch ( final IOException e )
         {
-            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
@@ -336,27 +350,29 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
-                                                                                                            factory,
-                                                                                                            PlotTypeSelection.THRESHOLD_LEAD,
-                                                                                                            null,
-                                                                                                            null);
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
+                                                                                                             factory,
+                                                                                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                             null,
+                                                                                                             null );
 
             //Generate the output file.
-            for(final Object thresh: engineMap.keySet())
+            for ( final Object thresh : engineMap.keySet() )
             {
-                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/"
-                    + ((Threshold)thresh).getThreshold() + "." + outputImageFileSuffix),
-                                                   engineMap.get(thresh).buildChart(),
-                                                   800,
-                                                   600);
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/"
+                                                              + ( (Threshold) thresh ).getThreshold()
+                                                              + "."
+                                                              + outputImageFileSuffix ),
+                                                    engineMap.get( thresh ).buildChart(),
+                                                    800,
+                                                    600 );
 
             }
         }
-        catch(final Throwable t)
+        catch ( final Throwable t )
         {
             t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
+            fail( "Unexpected exception: " + t.getMessage() );
         }
     }
 
@@ -367,11 +383,11 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
         }
-        catch(final IOException e)
+        catch ( final IOException e )
         {
-            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
@@ -382,24 +398,28 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
-                                                                                                            factory,
-                                                                                                            PlotTypeSelection.LEAD_THRESHOLD,
-                                                                                                            null,
-                                                                                                            null);
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
+                                                                                                             factory,
+                                                                                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                             null,
+                                                                                                             null );
 
             //Generate the output file.
-            for(final Object lead: engineMap.keySet())
+            for ( final Object lead : engineMap.keySet() )
             {
-                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + lead + "h."
-                    + outputImageFileSuffix), engineMap.get(lead).buildChart(), 800, 600);
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
+                                                              + "h."
+                                                              + outputImageFileSuffix ),
+                                                    engineMap.get( lead ).buildChart(),
+                                                    800,
+                                                    600 );
 
             }
         }
-        catch(final Throwable t)
+        catch ( final Throwable t )
         {
             t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
+            fail( "Unexpected exception: " + t.getMessage() );
         }
     }
 
@@ -410,11 +430,11 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-            FileTools.deleteFiles(new File("testoutput/chart2DTest/"), outputImageFileSuffix);
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
         }
-        catch(final IOException e)
+        catch ( final IOException e )
         {
-            fail("Unexpected exception occurred trying to remove files: " + e.getMessage());
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
         final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
@@ -425,24 +445,128 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine(results,
-                                                                                                            factory,
-                                                                                                            PlotTypeSelection.THRESHOLD_LEAD,
-                                                                                                            null,
-                                                                                                            null);
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
+                                                                                                             factory,
+                                                                                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                             null,
+                                                                                                             null );
 
             //Generate the output file.
-            for(final Object thresh: engineMap.keySet())
+            for ( final Object thresh : engineMap.keySet() )
             {
-                ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + "alldata" + "."
-                    + outputImageFileSuffix), engineMap.get(thresh).buildChart(), 800, 600);
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + "alldata"
+                                                              + "."
+                                                              + outputImageFileSuffix ),
+                                                    engineMap.get( thresh ).buildChart(),
+                                                    800,
+                                                    600 );
 
             }
         }
-        catch(final Throwable t)
+        catch ( final Throwable t )
         {
             t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
+            fail( "Unexpected exception: " + t.getMessage() );
+        }
+    }
+
+    public void test11RankHistogramByLeadtime()
+    {
+        final String scenarioName = "test11";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+
+        try
+        {
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        }
+        catch ( final IOException e )
+        {
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
+        }
+
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getRankHistogramByLeadThreshold();
+
+        try
+        {
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
+
+            //Call the factory.
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
+                                                                                                             factory,
+                                                                                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                             null,
+                                                                                                             null );
+
+            //Generate the output file.
+            for ( final Object lead : engineMap.keySet() )
+            {
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
+                                                              + "h."
+                                                              + outputImageFileSuffix ),
+                                                    engineMap.get( lead ).buildChart(),
+                                                    800,
+                                                    600 );
+
+            }
+        }
+        catch ( final Throwable t )
+        {
+            t.printStackTrace();
+            fail( "Unexpected exception: " + t.getMessage() );
+        }
+    }
+
+    public void test12RankHistogramByThreshold()
+    {
+        final String scenarioName = "test12";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+
+        try
+        {
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        }
+        catch ( final IOException e )
+        {
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
+        }
+
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getRankHistogramByLeadThreshold();
+
+        try
+        {
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
+
+            //Call the factory.
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
+                                                                                                             factory,
+                                                                                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                             null,
+                                                                                                             null );
+
+            for ( final Object thresh : engineMap.keySet() )
+            {
+                String thresholdString = (((Threshold) thresh).getThreshold()).toString();
+                if (Double.isInfinite( ((Threshold) thresh).getThreshold() ))
+                {
+                    thresholdString = "alldata";
+                }
+                
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/"
+                                                              + thresholdString
+                                                              + "."
+                                                              + outputImageFileSuffix ),
+                                                    engineMap.get( thresh ).buildChart(),
+                                                    800,
+                                                    600 );
+
+            }
+        }
+        catch ( final Throwable t )
+        {
+            t.printStackTrace();
+            fail( "Unexpected exception: " + t.getMessage() );
         }
     }
 
@@ -459,13 +583,16 @@ public class Chart2DTestOutput extends TestCase
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetricOutputMapByLeadThreshold<ScalarOutput> full = getScalarMetricOutputMapByLeadThreshold();
         final List<MetricOutputMapByLeadThreshold<ScalarOutput>> combine = new ArrayList<>();
-        final double[][] allow = new double[][]{{Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY}, {0.5, 2707.5},
-            {0.95, 13685.0}, {0.99, 26648.0}};
-        for(final double[] next: allow)
+        final double[][] allow =
+                new double[][] { { Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY }, { 0.5, 2707.5 },
+                                 { 0.95, 13685.0 }, { 0.99, 26648.0 } };
+        for ( final double[] next : allow )
         {
-            combine.add(full.sliceByThreshold(outputFactory.getQuantileThreshold(next[1], next[0], Operator.GREATER)));
+            combine.add( full.sliceByThreshold( outputFactory.getQuantileThreshold( next[1],
+                                                                                    next[0],
+                                                                                    Operator.GREATER ) ) );
         }
-        return outputFactory.combine(combine);
+        return outputFactory.combine( combine );
     }
 
     /**
@@ -480,12 +607,12 @@ public class Chart2DTestOutput extends TestCase
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetricOutputMapByLeadThreshold<ScalarOutput> full = getScalarMetricOutputMapByLeadThreshold();
         final List<MetricOutputMapByLeadThreshold<ScalarOutput>> combine = new ArrayList<>();
-        final int[] allow = new int[]{42, 258, 474, 690};
-        for(final int next: allow)
+        final int[] allow = new int[] { 42, 258, 474, 690 };
+        for ( final int next : allow )
         {
-            combine.add(full.sliceByLead(next));
+            combine.add( full.sliceByLead( next ) );
         }
-        return outputFactory.combine(combine);
+        return outputFactory.combine( combine );
     }
 
     /**
@@ -504,58 +631,58 @@ public class Chart2DTestOutput extends TestCase
         try
         {
             //Create the input file
-            final File resultFile = new File("testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml");
-            final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
+            final File resultFile = new File( "testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml" );
+            final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
 
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata: add fake sample sizes as these are not available in the test input file
-            final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
-                                                                            metaFactory.getDimension(),
-                                                                            metaFactory.getDimension("CMS"),
-                                                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                            MetricConstants.MAIN,
-                                                                            metaFactory.getDatasetIdentifier("NPTP1",
-                                                                                                             "STREAMFLOW",
-                                                                                                             "HEFS",
-                                                                                                             "ESP"));
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
+                                                                             metaFactory.getDimension(),
+                                                                             metaFactory.getDimension( "CMS" ),
+                                                                             MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                             MetricConstants.MAIN,
+                                                                             metaFactory.getDatasetIdentifier( "NPTP1",
+                                                                                                               "STREAMFLOW",
+                                                                                                               "HEFS",
+                                                                                                               "ESP" ) );
 
             //Iterate through the lead times
-            while(d.hasNext())
+            while ( d.hasNext() )
             {
                 //Set the lead time
-                final double leadTime = (Double)d.next().getKey();
-                final MetricResultByThreshold t = (MetricResultByThreshold)data.getResult(leadTime);
+                final double leadTime = (Double) d.next().getKey();
+                final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
                 final Iterator<MetricResultKey> e = t.getIterator();
                 //Iterate through the thresholds
-                while(e.hasNext())
+                while ( e.hasNext() )
                 {
                     //Build the quantile
-                    final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
+                    final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0],
-                                                                                   probConstants[0],
-                                                                                   Operator.GREATER);
-                    final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, q);
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold( constants[0],
+                                                                                    probConstants[0],
+                                                                                    Operator.GREATER );
+                    final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
 
                     //Build the scalar result
-                    final MetricResult result = t.getResult(f);
-                    final double[] res = ((DoubleMatrix1DResult)result).getResult().toArray();
-                    final ScalarOutput value = outputFactory.ofScalarOutput(res[0], meta);
+                    final MetricResult result = t.getResult( f );
+                    final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
+                    final ScalarOutput value = outputFactory.ofScalarOutput( res[0], meta );
 
                     //Append result
-                    rawData.put(key, value);
+                    rawData.put( key, value );
                 }
             }
 
         }
-        catch(final Exception e)
+        catch ( final Exception e )
         {
             e.printStackTrace();
-            Assert.fail("Test failed : " + e.getMessage());
+            Assert.fail( "Test failed : " + e.getMessage() );
         }
-        return outputFactory.ofMap(rawData);
+        return outputFactory.ofMap( rawData );
     }
 
     /**
@@ -574,58 +701,58 @@ public class Chart2DTestOutput extends TestCase
         try
         {
             //Create the input file
-            final File resultFile = new File("testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml");
-            final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
+            final File resultFile = new File( "testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml" );
+            final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
 
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata: add fake sample sizes as these are not available in the test input file
-            final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
-                                                                            metaFactory.getDimension(),
-                                                                            metaFactory.getDimension("CMS"),
-                                                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                            MetricConstants.MAIN,
-                                                                            metaFactory.getDatasetIdentifier("NPTP1",
-                                                                                                             "STREAMFLOW",
-                                                                                                             "HEFS",
-                                                                                                             "ESP"));
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
+                                                                             metaFactory.getDimension(),
+                                                                             metaFactory.getDimension( "CMS" ),
+                                                                             MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                             MetricConstants.MAIN,
+                                                                             metaFactory.getDatasetIdentifier( "NPTP1",
+                                                                                                               "STREAMFLOW",
+                                                                                                               "HEFS",
+                                                                                                               "ESP" ) );
 
             //Iterate through the lead times
-            while(d.hasNext())
+            while ( d.hasNext() )
             {
                 //Set the lead time
-                final double leadTime = (Double)d.next().getKey();
-                final MetricResultByThreshold t = (MetricResultByThreshold)data.getResult(leadTime);
+                final double leadTime = (Double) d.next().getKey();
+                final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
                 final Iterator<MetricResultKey> e = t.getIterator();
                 //Iterate through the thresholds
-                while(e.hasNext())
+                while ( e.hasNext() )
                 {
                     //Build the quantile
-                    final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
+                    final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0],
-                                                                                   probConstants[0],
-                                                                                   Operator.GREATER);
-                    final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, q);
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold( constants[0],
+                                                                                    probConstants[0],
+                                                                                    Operator.GREATER );
+                    final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
 
                     //Build the scalar result
-                    final MetricResult result = t.getResult(f);
-                    final double[] res = ((DoubleMatrix1DResult)result).getResult().toArray();
-                    final VectorOutput value = outputFactory.ofVectorOutput(res, meta);
+                    final MetricResult result = t.getResult( f );
+                    final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
+                    final VectorOutput value = outputFactory.ofVectorOutput( res, meta );
 
                     //Append result
-                    rawData.put(key, value);
+                    rawData.put( key, value );
                 }
             }
 
         }
-        catch(final Exception e)
+        catch ( final Exception e )
         {
             e.printStackTrace();
-            Assert.fail("Test failed : " + e.getMessage());
+            Assert.fail( "Test failed : " + e.getMessage() );
         }
-        return outputFactory.ofMap(rawData);
+        return outputFactory.ofMap( rawData );
     }
 
     /**
@@ -643,78 +770,79 @@ public class Chart2DTestOutput extends TestCase
         final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         //Read only selected quantiles
         final List<QuantileThreshold> allowed = new ArrayList<>();
-        final double[][] allow = new double[][]{{0.1, 858.04}, {0.5, 2707.5}, {0.9, 9647.0}, {0.95, 13685.0}};
-        for(final double[] next: allow)
+        final double[][] allow =
+                new double[][] { { 0.1, 858.04 }, { 0.5, 2707.5 }, { 0.9, 9647.0 }, { 0.95, 13685.0 } };
+        for ( final double[] next : allow )
         {
-            allowed.add(outputFactory.getQuantileThreshold(next[1], next[0], Operator.GREATER));
+            allowed.add( outputFactory.getQuantileThreshold( next[1], next[0], Operator.GREATER ) );
         }
         try
         {
             //Create the input file
-            final File resultFile = new File("testinput/chart2DTest/getReliabilityDiagramByLeadThreshold.xml");
-            final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
+            final File resultFile = new File( "testinput/chart2DTest/getReliabilityDiagramByLeadThreshold.xml" );
+            final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
 
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata: add fake sample sizes as these are not available in the test input file
-            final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
-                                                                            metaFactory.getDimension(),
-                                                                            metaFactory.getDimension("CMS"),
-                                                                            MetricConstants.RELIABILITY_DIAGRAM,
-                                                                            MetricConstants.MAIN,
-                                                                            metaFactory.getDatasetIdentifier("NPTP1",
-                                                                                                             "STREAMFLOW",
-                                                                                                             "HEFS"));
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
+                                                                             metaFactory.getDimension(),
+                                                                             metaFactory.getDimension( "CMS" ),
+                                                                             MetricConstants.RELIABILITY_DIAGRAM,
+                                                                             MetricConstants.MAIN,
+                                                                             metaFactory.getDatasetIdentifier( "NPTP1",
+                                                                                                               "STREAMFLOW",
+                                                                                                               "HEFS" ) );
 
             //Iterate through the lead times.
             int count = -1;
-            while(d.hasNext())
+            while ( d.hasNext() )
             {
                 //Hank: I'm going to start with the first and include every six: 0, 6, 12, etc.
                 count++;
-                if(count % 6 != 0)
+                if ( count % 6 != 0 )
                 {
                     d.next();
                     continue;
                 }
 
                 //Set the lead time
-                final double leadTime = (Double)d.next().getKey();
-                final MetricResultByThreshold t = (MetricResultByThreshold)data.getResult(leadTime);
+                final double leadTime = (Double) d.next().getKey();
+                final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
                 final Iterator<MetricResultKey> e = t.getIterator();
                 boolean firstOne = true; //Used to track if this is the first time through the e loop.  See HDH comment below.
 
                 //Iterate through the thresholds
-                while(e.hasNext())
+                while ( e.hasNext() )
                 {
                     //Build the quantile
-                    final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
+                    final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0],
-                                                                                   probConstants[0],
-                                                                                   Operator.GREATER);
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold( constants[0],
+                                                                                    probConstants[0],
+                                                                                    Operator.GREATER );
                     //Read only selected quantiles
-                    if(allowed.contains(q))
+                    if ( allowed.contains( q ) )
                     {
-                        final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, q);
+                        final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
 
                         //Build the result
-                        final MetricResult result = t.getResult(f);
-                        final double[][] res = ((DoubleMatrix2DResult)result).getResult().toArray();
+                        final MetricResult result = t.getResult( f );
+                        final double[][] res = ( (DoubleMatrix2DResult) result ).getResult().toArray();
 
                         //Ensure missings are NaN by brute force.
-                        for(int i = 0; i < res.length; i++)
+                        for ( int i = 0; i < res.length; i++ )
                         {
-                            for(int j = 0; j < res[i].length; j++)
+                            for ( int j = 0; j < res[i].length; j++ )
                             {
-                                if(res[i][j] == -999D)
+                                if ( res[i][j] == -999D )
                                 {
                                     res[i][j] = Double.NaN;
                                 }
 
                                 //HDH (8/15/17): Forcing a NaN in the first time series within the reliability diagram at index 2.
-                                if(firstOne && (i == 0) && (j == 2))
+                                if ( firstOne && ( i == 0 ) && ( j == 2 ) )
                                 {
                                     res[i][j] = Double.NaN;
                                     firstOne = false;
@@ -722,26 +850,26 @@ public class Chart2DTestOutput extends TestCase
                             }
                         }
 
-                        final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
-                        output.put(MetricConstants.FORECAST_PROBABILITY, res[0]); //Forecast probabilities
-                        output.put(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY, res[1]); //Observed | forecast probabilities
-                        output.put(MetricConstants.SAMPLE_SIZE, res[2]); //Observed | forecast probabilities
-                        final MultiVectorOutput value = outputFactory.ofMultiVectorOutput(output, meta);
+                        final Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
+                        output.put( MetricConstants.FORECAST_PROBABILITY, res[0] ); //Forecast probabilities
+                        output.put( MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY, res[1] ); //Observed | forecast probabilities
+                        output.put( MetricConstants.SAMPLE_SIZE, res[2] ); //Observed | forecast probabilities
+                        final MultiVectorOutput value = outputFactory.ofMultiVectorOutput( output, meta );
 
                         //Append result
-                        rawData.put(key, value);
+                        rawData.put( key, value );
                     }
                 }
             }
 
         }
-        catch(final Exception e)
+        catch ( final Exception e )
         {
             e.printStackTrace();
-            Assert.fail("Test failed : " + e.getMessage());
+            Assert.fail( "Test failed : " + e.getMessage() );
         }
         //Return the results
-        return outputFactory.ofMap(rawData);
+        return outputFactory.ofMap( rawData );
     }
 
     /**
@@ -760,89 +888,90 @@ public class Chart2DTestOutput extends TestCase
         final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         //Read only selected quantiles
         final List<QuantileThreshold> allowed = new ArrayList<>();
-        final double[][] allow = new double[][]{{0.1, 858.04}, {0.5, 2707.5}, {0.9, 9647.0}, {0.95, 13685.0}};
-        for(final double[] next: allow)
+        final double[][] allow =
+                new double[][] { { 0.1, 858.04 }, { 0.5, 2707.5 }, { 0.9, 9647.0 }, { 0.95, 13685.0 } };
+        for ( final double[] next : allow )
         {
-            allowed.add(outputFactory.getQuantileThreshold(next[1], next[0], Operator.GREATER));
+            allowed.add( outputFactory.getQuantileThreshold( next[1], next[0], Operator.GREATER ) );
         }
         try
         {
             //Create the input file
-            final File resultFile = new File("testinput/chart2DTest/getROCDiagramByLeadThreshold.xml");
-            final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
+            final File resultFile = new File( "testinput/chart2DTest/getROCDiagramByLeadThreshold.xml" );
+            final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
 
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata
-            final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
-                                                                            metaFactory.getDimension(),
-                                                                            metaFactory.getDimension("CMS"),
-                                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                                            MetricConstants.MAIN,
-                                                                            metaFactory.getDatasetIdentifier("NPTP1",
-                                                                                                             "STREAMFLOW",
-                                                                                                             "HEFS"));
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
+                                                                             metaFactory.getDimension(),
+                                                                             metaFactory.getDimension( "CMS" ),
+                                                                             MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                                             MetricConstants.MAIN,
+                                                                             metaFactory.getDatasetIdentifier( "NPTP1",
+                                                                                                               "STREAMFLOW",
+                                                                                                               "HEFS" ) );
 
             //Iterate through the lead times.
-            while(d.hasNext())
+            while ( d.hasNext() )
             {
 
                 //Set the lead time
-                final double leadTime = (Double)d.next().getKey();
-                final MetricResultByThreshold t = (MetricResultByThreshold)data.getResult(leadTime);
+                final double leadTime = (Double) d.next().getKey();
+                final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
                 final Iterator<MetricResultKey> e = t.getIterator();
 
                 //Iterate through the thresholds
-                while(e.hasNext())
+                while ( e.hasNext() )
                 {
                     //Build the quantile
-                    final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
+                    final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0],
-                                                                                   probConstants[0],
-                                                                                   Operator.GREATER);
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold( constants[0],
+                                                                                    probConstants[0],
+                                                                                    Operator.GREATER );
                     //Read only selected quantiles
-                    if(allowed.contains(q))
+                    if ( allowed.contains( q ) )
                     {
-                        final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, q);
+                        final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
 
                         //Build the result
-                        final MetricResult result = t.getResult(f);
-                        final double[][] roc = ((DoubleMatrix2DResult)result).getResult().toArray();
+                        final MetricResult result = t.getResult( f );
+                        final double[][] roc = ( (DoubleMatrix2DResult) result ).getResult().toArray();
 
                         //Ensure missings are NaN by brute force.
-                        for(int i = 0; i < roc.length; i++)
+                        for ( int i = 0; i < roc.length; i++ )
                         {
-                            for(int j = 0; j < roc[i].length; j++)
+                            for ( int j = 0; j < roc[i].length; j++ )
                             {
-                                if(roc[i][j] == -999D)
+                                if ( roc[i][j] == -999D )
                                 {
                                     roc[i][j] = Double.NaN;
                                 }
                             }
                         }
 
-                        final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
-                        output.put(MetricConstants.PROBABILITY_OF_FALSE_DETECTION, roc[0]); //PoFD
-                        output.put(MetricConstants.PROBABILITY_OF_DETECTION, roc[1]); //PoD
-                        final MultiVectorOutput value = outputFactory.ofMultiVectorOutput(output, meta);
+                        final Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
+                        output.put( MetricConstants.PROBABILITY_OF_FALSE_DETECTION, roc[0] ); //PoFD
+                        output.put( MetricConstants.PROBABILITY_OF_DETECTION, roc[1] ); //PoD
+                        final MultiVectorOutput value = outputFactory.ofMultiVectorOutput( output, meta );
 
                         //Append result
-                        rawData.put(key, value);
+                        rawData.put( key, value );
                     }
                 }
             }
         }
-        catch(final Exception e)
+        catch ( final Exception e )
         {
             e.printStackTrace();
-            Assert.fail("Test failed : " + e.getMessage());
+            Assert.fail( "Test failed : " + e.getMessage() );
         }
         //Return the results
-        return outputFactory.ofMap(rawData);
+        return outputFactory.ofMap( rawData );
     }
-    
+
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
      * Rank Histogram (rank position, which represents the number of gaps between ensemble members plus one) and 
@@ -857,91 +986,87 @@ public class Chart2DTestOutput extends TestCase
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
         final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
-        //Read only selected quantiles
-        final List<QuantileThreshold> allowed = new ArrayList<>();
-        final double[][] allow = new double[][]{{0.1, 858.04}, {0.5, 2707.5}, {0.9, 9647.0}, {0.95, 13685.0}};
-        for(final double[] next: allow)
-        {
-            allowed.add(outputFactory.getQuantileThreshold(next[1], next[0], Operator.GREATER));
-        }
         try
         {
             //Create the input file
-            final File resultFile = new File("testinput/chart2DTest/getRankHistogramByLeadThreshold.xml");
-            final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
+            final File resultFile = new File( "testinput/chart2DTest/getRankHistogramByLeadThreshold.xml" );
+            final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
 
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata
-            final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
-                                                                            metaFactory.getDimension(),
-                                                                            metaFactory.getDimension("CMS"),
-                                                                            MetricConstants.RANK_HISTOGRAM,
-                                                                            MetricConstants.MAIN,
-                                                                            metaFactory.getDatasetIdentifier("NPTP1",
-                                                                                                             "STREAMFLOW",
-                                                                                                             "HEFS"));
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
+                                                                             metaFactory.getDimension(),
+                                                                             metaFactory.getDimension( "CMS" ),
+                                                                             MetricConstants.RANK_HISTOGRAM,
+                                                                             MetricConstants.MAIN,
+                                                                             metaFactory.getDatasetIdentifier( "NPTP1",
+                                                                                                               "STREAMFLOW",
+                                                                                                               "HEFS" ) );
 
             //Iterate through the lead times.
-            while(d.hasNext())
+            while ( d.hasNext() )
             {
 
                 //Set the lead time
-                final double leadTime = (Double)d.next().getKey();
-                final MetricResultByThreshold t = (MetricResultByThreshold)data.getResult(leadTime);
+                final double leadTime = (Double) d.next().getKey();
+                final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
                 final Iterator<MetricResultKey> e = t.getIterator();
 
+                //HDH - Limiting the lead times to 42h and every 4 days thereafter (there are way too many lead times!).
+                if ( ( leadTime - 42.0 ) % 96 != 0 )
+                {
+                    continue;
+                }
+
                 //Iterate through the thresholds
-                while(e.hasNext())
+                while ( e.hasNext() )
                 {
                     //Build the quantile
-                    final DoubleProcedureParameter f = (DoubleProcedureParameter)e.next().getKey();
+                    final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold(constants[0],
-                                                                                   probConstants[0],
-                                                                                   Operator.GREATER);
-                    //Read only selected quantiles
-                    if(allowed.contains(q))
+                    final QuantileThreshold q = outputFactory.getQuantileThreshold( constants[0],
+                                                                                    probConstants[0],
+                                                                                    Operator.GREATER );
+
+                    final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
+
+                    //Build the result
+                    final MetricResult result = t.getResult( f );
+                    final double[][] rh = ( (DoubleMatrix2DResult) result ).getResult().toArray();
+
+                    //Ensure missings are NaN by brute force.
+                    for ( int i = 0; i < rh.length; i++ )
                     {
-                        final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, q);
-
-                        //Build the result
-                        final MetricResult result = t.getResult(f);
-                        final double[][] rh = ((DoubleMatrix2DResult)result).getResult().toArray();
-
-                        //Ensure missings are NaN by brute force.
-                        for(int i = 0; i < rh.length; i++)
+                        for ( int j = 0; j < rh[i].length; j++ )
                         {
-                            for(int j = 0; j < rh[i].length; j++)
+                            if ( rh[i][j] == -999D )
                             {
-                                if(rh[i][j] == -999D)
-                                {
-                                    rh[i][j] = Double.NaN;
-                                }
+                                rh[i][j] = Double.NaN;
                             }
                         }
-
-                        final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
-                        output.put(MetricConstants.RANK_ORDER, rh[0]); 
-                        output.put(MetricConstants.OBSERVED_RELATIVE_FREQUENCY, rh[1]);
-                        final MultiVectorOutput value = outputFactory.ofMultiVectorOutput(output, meta);
-
-                        //Append result
-                        rawData.put(key, value);
                     }
+
+                    final Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
+                    output.put( MetricConstants.RANK_ORDER, rh[0] );
+                    output.put( MetricConstants.OBSERVED_RELATIVE_FREQUENCY, rh[1] );
+                    final MultiVectorOutput value = outputFactory.ofMultiVectorOutput( output, meta );
+
+                    //Append result
+                    rawData.put( key, value );
                 }
             }
         }
-        catch(final Exception e)
+        catch ( final Exception e )
         {
             e.printStackTrace();
-            Assert.fail("Test failed : " + e.getMessage());
+            Assert.fail( "Test failed : " + e.getMessage() );
         }
         //Return the results
-        return outputFactory.ofMap(rawData);
-    }    
-    
+        return outputFactory.ofMap( rawData );
+    }
+
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
      * Quantile-Quantile Diagram (predicted quantiles and observed quantiles) for various thresholds and forecast lead
@@ -958,59 +1083,59 @@ public class Chart2DTestOutput extends TestCase
         try
         {
             //Create the input file
-            final File resultFile = new File("testinput/chart2DTest/getQQDiagramByLeadThreshold.xml");
-            final MetricResultByLeadTime data = ProductFileIO.read(resultFile);
+            final File resultFile = new File( "testinput/chart2DTest/getQQDiagramByLeadThreshold.xml" );
+            final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
 
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata
-            final MetricOutputMetadata meta = metaFactory.getOutputMetadata(1000,
-                                                                            metaFactory.getDimension(),
-                                                                            metaFactory.getDimension("MILLIMETER"),
-                                                                            MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                                                            MetricConstants.MAIN,
-                                                                            metaFactory.getDatasetIdentifier("WGCM8",
-                                                                                                             "PRECIPITATION",
-                                                                                                             "HEFS"));
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
+                                                                             metaFactory.getDimension(),
+                                                                             metaFactory.getDimension( "MILLIMETER" ),
+                                                                             MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
+                                                                             MetricConstants.MAIN,
+                                                                             metaFactory.getDatasetIdentifier( "WGCM8",
+                                                                                                               "PRECIPITATION",
+                                                                                                               "HEFS" ) );
             //Single threshold
-            final QuantileThreshold threshold = outputFactory.getQuantileThreshold(Double.NEGATIVE_INFINITY,
-                                                                                   Double.NEGATIVE_INFINITY,
-                                                                                   Operator.GREATER);
+            final QuantileThreshold threshold = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
+                                                                                    Double.NEGATIVE_INFINITY,
+                                                                                    Operator.GREATER );
 
             //Iterate through the lead times.
-            while(d.hasNext())
+            while ( d.hasNext() )
             {
 
                 //Set the lead time
-                final double leadTime = (Double)d.next().getKey();
-                final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey((int)leadTime, threshold);
-                final DoubleMatrix2DResult t = (DoubleMatrix2DResult)data.getResult(leadTime);
+                final double leadTime = (Double) d.next().getKey();
+                final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, threshold );
+                final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] qq = t.getResult().toArray();
 
-                final Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
-                output.put(MetricConstants.PREDICTED_QUANTILES, qq[0]);
-                output.put(MetricConstants.OBSERVED_QUANTILES, qq[1]);
-                final MultiVectorOutput value = outputFactory.ofMultiVectorOutput(output, meta);
+                final Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
+                output.put( MetricConstants.PREDICTED_QUANTILES, qq[0] );
+                output.put( MetricConstants.OBSERVED_QUANTILES, qq[1] );
+                final MultiVectorOutput value = outputFactory.ofMultiVectorOutput( output, meta );
 
                 //Append result
-                rawData.put(key, value);
+                rawData.put( key, value );
 
             }
         }
-        catch(final Exception e)
+        catch ( final Exception e )
         {
             e.printStackTrace();
-            Assert.fail("Test failed : " + e.getMessage());
+            Assert.fail( "Test failed : " + e.getMessage() );
         }
         //Return the results
-        return outputFactory.ofMap(rawData);
+        return outputFactory.ofMap( rawData );
     }
-    
+
     /**
      * The comparison sensitivity.
      */
     private static int IMAGE_COMPARISON_SENSITIVITY = 2;
-    
+
     /**
      * Comparison debug output
      */
@@ -1021,28 +1146,30 @@ public class Chart2DTestOutput extends TestCase
      * 
      * @param args
      */
-    public static void main(final String[] args)
+    public static void main( final String[] args )
     {
-        for(final File file: FileTools.listFilesWithSuffix(new File("testoutput/chart2DTest/"), ".png"))
+        for ( final File file : FileTools.listFilesWithSuffix( new File( "testoutput/chart2DTest/" ), ".png" ) )
         {
-            final File benchmarkFile = new File("testinput/chart2DTest/benchmark." + file.getName());
+            final File benchmarkFile = new File( "testinput/chart2DTest/benchmark." + file.getName() );
 
             try
             {
-                System.out.println("");
-                System.out.println("####>> Comparing " + file.getName()
-                    + " ================================================");
-                System.out.println("");
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark(file,
-                                                                          benchmarkFile,
-                                                                          IMAGE_COMPARISON_SENSITIVITY,
-                                                                          true,
-                                                                          IMAGE_COMPARISON_DEBUG_OUTPUT);
+                System.out.println( "" );
+                System.out.println( "####>> Comparing " + file.getName()
+                                    + " ================================================" );
+                System.out.println( "" );
+                FileComparisonUtilities.assertImageFileSimilarToBenchmark( file,
+                                                                           benchmarkFile,
+                                                                           IMAGE_COMPARISON_SENSITIVITY,
+                                                                           true,
+                                                                           IMAGE_COMPARISON_DEBUG_OUTPUT );
             }
-            catch(final Throwable t)
+            catch ( final Throwable t )
             {
-                System.err.println("####>> Comparison failed for " + file.getName() + " and "
-                    + benchmarkFile.getName() + ". Dissimilarity file was created; see debug information for the difference numbers computed.");
+                System.err.println( "####>> Comparison failed for " + file.getName()
+                                    + " and "
+                                    + benchmarkFile.getName()
+                                    + ". Dissimilarity file was created; see debug information for the difference numbers computed." );
             }
         }
     }

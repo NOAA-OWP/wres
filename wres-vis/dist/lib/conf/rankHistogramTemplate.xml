@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<chartDrawingParameters>
+
+	<plotTitle>
+        <font family="Dialog" size="12" style="1"/>
+		<text>Rank Histogram for Various Event @plotTitleVariable@
+@locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
+		</text>
+	</plotTitle>
+	
+	<!-- Shapes for all series. -->
+	<datasourceDrawingParameters sourceIndex="0">
+		<plotter>LineAndScatter</plotter>
+		<seriesDrawingParameters
+			createdIndexOfSeriesToModify="-1">
+            <shape>circle</shape>
+		</seriesDrawingParameters>
+	</datasourceDrawingParameters>
+	
+	<!-- Put the legend on the bottom with an appropriate title. -->
+    <legend visible="true">
+        <position>BOTTOM</position>
+        <title>
+            <font family="Dialog" size="12" style="1"/>
+            <text>@legendTitle@@legendUnitsText@:</text>
+        </title>
+        <borderLineWidth>0.0</borderLineWidth>
+    </legend>
+    
+    <!-- Integer tick spacing for LEAD_THRESHOLD plots. -->
+	<domainAxis>
+		<numericAxis>
+			<intOnlyTickSpacing>true</intOnlyTickSpacing>
+		</numericAxis>
+	</domainAxis>
+
+</chartDrawingParameters>

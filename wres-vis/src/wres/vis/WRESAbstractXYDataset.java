@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jfree.chart.JFreeChart;
+import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.jfree.data.xy.AbstractXYDataset;
 import org.jfree.data.xy.XYDataset;
 
@@ -34,7 +35,7 @@ import org.jfree.data.xy.XYDataset;
  *            {@link WRESAbstractXYDataset#WRESAbstractXYDataset(Object)}. Most often, this will be identical to the
  *            plot data generic type.
  */
-public abstract class WRESAbstractXYDataset<T, U> extends AbstractXYDataset
+public abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYDataset
 {
     /**
      * Generic storage container for the data to plot which is derived from the raw data passed into constructor.
@@ -87,5 +88,29 @@ public abstract class WRESAbstractXYDataset<T, U> extends AbstractXYDataset
     public boolean isLegendNameOverridden(final int seriesIndex)
     {
         return overrideLegendNames.get(seriesIndex) != null;
+    }
+    
+    @Override
+    public Number getEndX( int arg0, int arg1 )
+    {
+        return getX(arg0, arg1);
+    }
+
+    @Override
+    public Number getEndY( int arg0, int arg1 )
+    {
+        return getY(arg0, arg1);
+    }
+
+    @Override
+    public Number getStartX( int arg0, int arg1 )
+    {
+        return getX(arg0, arg1);
+    }
+
+    @Override
+    public Number getStartY( int arg0, int arg1 )
+    {
+        return getY(arg0, arg1);
     }
 }

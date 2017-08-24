@@ -57,6 +57,16 @@ extends
         this(orderIndex, input, xConstant, yConstant, domainTitle, rangeTitle);
         getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(subPlotIndex);
     }
+    
+    protected MetricConstants getXConstant()
+    {
+        return xConstant;
+    }
+    
+    protected MetricConstants getYConstant()
+    {
+        return yConstant;
+    }
 
     @Override
     protected MultiVectorOutputDiagramXYChartDataSource instantiateCopyOfDataSource()
