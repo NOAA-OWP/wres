@@ -1,23 +1,38 @@
 package wres.io.reading;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import wres.io.concurrency.*;
+
+import wres.config.generated.DataSourceConfig;
 import wres.io.concurrency.Executor;
+import wres.io.concurrency.ForecastSaver;
+import wres.io.concurrency.ObservationSaver;
+import wres.io.concurrency.WRESRunnable;
+import wres.io.concurrency.ZippedPIXMLIngest;
+import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-
-import java.io.*;
-import java.nio.file.Paths;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.concurrent.*;
 
 /**
  * @author Christopher Tubbs
@@ -192,6 +207,13 @@ public class ZippedSource extends BasicSource {
     {
         String archivedFileName = Paths.get(this.directoryPath, source.getName()).toString();
         SourceType sourceType = ReaderFactory.getFiletype(archivedFileName);
+        DataSourceConfig.Source
+                originalSource = ConfigHelper.findDataSourceByFilename( this.getDataSourceConfig(), this.getAbsoluteFilename() );
+
+        if (originalSource == null || !this.shouldIngest( archivedFileName, originalSource ) )
+        {
+            return;
+        }
 
         byte[] content = new byte[(int)source.getSize()];
         archiveInputStream.read(content, 0, content.length);

@@ -33,7 +33,7 @@
             <column name="variable_name" />
         </createIndex>
         <createIndex tableName="Variable" schemaName="wres" indexName="variable_idx">
-            <column name="variable_id" type="smallint" />
+            <column name="variable_id" />
         </createIndex>
         <comment>
             The wres.Variable table has been added to the database.
