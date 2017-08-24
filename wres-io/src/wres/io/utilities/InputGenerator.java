@@ -102,8 +102,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             {
                 // TODO: This will be a mess if we don't have the ability to select "Assim data" rather than all
                 script.append("SELECT ");
-                if (left.getRollingTimeAggregation() != null) {
-                    script.append(left.getRollingTimeAggregation().getFunction());
+                if (left.getTimeAggregation() != null) {
+                    script.append(left.getTimeAggregation().getFunction());
                 }
                 else
                 {
