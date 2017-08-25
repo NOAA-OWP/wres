@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 public class ProgressMonitor
 {
 
-    private final ExecutorService ASYNC_UPDATER = Executors.newSingleThreadExecutor();
+    private ExecutorService ASYNC_UPDATER = Executors.newSingleThreadExecutor();
 
     private static ProgressMonitor MONITOR = new ProgressMonitor();
     private final Logger logger = LoggerFactory.getLogger( this.getClass() );
@@ -104,9 +104,12 @@ public class ProgressMonitor
 
         this.printer = printer;
         this.outputFunction = (ProgressMonitor monitor) -> {
-            ASYNC_UPDATER.execute(()-> {
-                this.printMessage(getProgressMessage());
-            });
+            if (this.shouldUpdate())
+            {
+                ASYNC_UPDATER.execute(()-> {
+                    this.printMessage(getProgressMessage());
+                });
+            }
         };
         this.startTime = System.currentTimeMillis();
     }
@@ -116,9 +119,12 @@ public class ProgressMonitor
         this.startTime = System.currentTimeMillis();
         this.printer = System.out;
         this.outputFunction = (ProgressMonitor monitor) -> {
-            ASYNC_UPDATER.execute(()-> {
-                this.printMessage(getProgressMessage());
-            });
+            if (this.shouldUpdate())
+            {
+                ASYNC_UPDATER.execute(()-> {
+                    this.printMessage(getProgressMessage());
+                });
+            }
         };
 
         this.totalSteps = 0L;
@@ -150,7 +156,7 @@ public class ProgressMonitor
     
     public void UpdateMonitor() {
 
-        if (this.ASYNC_UPDATER.isShutdown() || this.ASYNC_UPDATER.isTerminated())
+        if (!this.shouldUpdate())
         {
             return;
         }
@@ -167,7 +173,7 @@ public class ProgressMonitor
     
     public void addStep() {
 
-        if (this.ASYNC_UPDATER.isShutdown() || this.ASYNC_UPDATER.isTerminated())
+        if (!this.shouldUpdate())
         {
             return;
         }
@@ -182,6 +188,11 @@ public class ProgressMonitor
     }
     
     public static void setSteps(Long steps) {
+        if (!MONITOR.shouldUpdate())
+        {
+            return;
+        }
+
         synchronized ( MONITOR )
         {
             MONITOR.setTotalSteps( steps );
@@ -264,7 +275,10 @@ public class ProgressMonitor
 
     private boolean shouldUpdate()
     {
-        if (this.ASYNC_UPDATER.isTerminated() || this.ASYNC_UPDATER.isShutdown())
+        if (!ProgressMonitor.UPDATE_MONITOR ||
+            this.ASYNC_UPDATER == null ||
+            this.ASYNC_UPDATER.isTerminated() ||
+            this.ASYNC_UPDATER.isShutdown())
         {
             return false;
         }
@@ -314,12 +328,28 @@ public class ProgressMonitor
     public static void setShouldUpdate(boolean shouldUpdate)
     {
         ProgressMonitor.UPDATE_MONITOR = shouldUpdate;
+
+        if (shouldUpdate)
+        {
+            MONITOR.ASYNC_UPDATER = Executors.newSingleThreadExecutor(
+                    runnable -> new Thread( runnable, "Progress Monitor Thread")
+            );
+        }
+        else
+        {
+            MONITOR.ASYNC_UPDATER = null;
+        }
     }
 
     private void shutdown()
     {
-        this.ASYNC_UPDATER.shutdown();
-        while (!this.ASYNC_UPDATER.isTerminated()){}
+        if (this.ASYNC_UPDATER != null)
+        {
+            this.ASYNC_UPDATER.shutdown();
+            while ( !this.ASYNC_UPDATER.isTerminated() )
+            {
+            }
+        }
     }
 
     public void setOuputFunction (Consumer<ProgressMonitor> outputFunction)
