@@ -12,11 +12,11 @@
       <source format="PI-XML">/media/sf_userprofile/hefs_data/resources/forecasts/</source>
       <!-- web unsupported as of 2017-08-15 <source recursive="false">https://my.data.com/foo</source> -->
       <variable>SQIN</variable>
-      <rollingTimeAggregation>
-        <function>sum</function>
+      <timeAggregation>
+        <function>avg</function>
         <period>1</period>
           <unit>HOUR</unit>
-      </rollingTimeAggregation>
+      </timeAggregation>
     </right>
   </inputs>
   <conditions> <!-- aka filters -->
@@ -29,6 +29,7 @@
     <unit>CMS</unit>
     <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
       <timeAggregation>
+          <function>avg</function>
           <period>1</period>
           <unit>HOUR</unit>
       </timeAggregation>
