@@ -87,11 +87,10 @@ public class Main {
 
         watch.stop();
 
-        if ( LOGGER.isInfoEnabled() )
-        {
-            LOGGER.info( "Detailed logs have been written to {} unless otherwise configured.",
-                         System.getProperty("user.home") + "/wres_logs/wres.log" );
-        }
+        System.out.println( "Log messages have been written to the file "
+                            + System.getProperty("user.home")
+                            + "/wres_logs/wres.log (unless otherwise configured"
+                            + " in lib/conf/logback.xml)." );
 
 		System.exit(exitCode);
 	}
