@@ -370,8 +370,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         {
             case ENSEMBLE_FORECASTS:
                 return MetricInputGroup.ENSEMBLE;
-            case SIMPLE_FORECASTS:
-            case ASSIMILATIONS:
+            case SINGLE_VALUED_FORECASTS:
+            case SIMULATIONS:
                 return MetricInputGroup.SINGLE_VALUED;
             default:
                 throw new MetricConfigurationException( "Unable to interpret the input type '" + type

@@ -8,7 +8,7 @@
       <variable>QINE</variable>
     </left>
     <right label="My Name I want to see on charts">
-      <type>simple forecasts</type>
+      <type>single valued forecasts</type>
       <source format="PI-XML">/media/sf_userprofile/hefs_data/resources/forecasts/</source>
       <source recursive="false">https://my.data.com/foo</source>
       <variable>SQIN</variable>
@@ -18,9 +18,6 @@
           <unit>HOUR</unit>
       </rollingTimeAggregation>
     </right>
-    <baseline>
-      <type>simple forecasts</type>
-    </baseline>
   </inputs>
   <conditions> <!-- aka filters -->
 <!--    <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>--> <!-- optional, default all -->

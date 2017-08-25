@@ -7,10 +7,9 @@
     <xs:simpleType name="datasourceType">
         <xs:restriction base="xs:string">
             <xs:enumeration value="ensemble forecasts" />
-            <xs:enumeration value="simple forecasts" />
+            <xs:enumeration value="single valued forecasts" />
             <xs:enumeration value="observations" />
-            <xs:enumeration value="assimilations" />
-            <xs:enumeration value="model outputs" />
+            <xs:enumeration value="simulations" />
         </xs:restriction>
     </xs:simpleType>
 
