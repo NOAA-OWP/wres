@@ -156,11 +156,6 @@ public class ProgressMonitor
     
     public void UpdateMonitor() {
 
-        if (!this.shouldUpdate())
-        {
-            return;
-        }
-
         if (completedSteps < totalSteps) {
             completedSteps++;
             executeOutput();
@@ -172,11 +167,6 @@ public class ProgressMonitor
     }
     
     public void addStep() {
-
-        if (!this.shouldUpdate())
-        {
-            return;
-        }
 
         if (this.totalSteps == 0)
         {
