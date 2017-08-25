@@ -90,17 +90,6 @@ public class Main {
 
         watch.stop();
 
-        String arguments = Arrays.asList(args)
-                                 .stream()
-                                 .map(Object::toString)
-                                 .collect(Collectors.joining(" "));
-
-        Operations.logExecution(arguments,
-                                MainFunctions.getRawProject(),
-                                watch.getStartTime(),
-                                watch.getStopTime(),
-                                exitCode != MainFunctions.SUCCESS);
-
 		System.exit(exitCode);
 	}
 
