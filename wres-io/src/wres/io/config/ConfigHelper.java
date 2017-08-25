@@ -212,10 +212,9 @@ public class ConfigHelper
     {
         return dataSource != null &&
                 Strings.isOneOf(dataSource.getType().value(),
-                                DatasourceType.ASSIMILATIONS.value(),
-                                DatasourceType.SIMPLE_FORECASTS.value(),
-                                DatasourceType.ENSEMBLE_FORECASTS.value(),
-                                DatasourceType.MODEL_OUTPUTS.value());
+                                DatasourceType.SIMULATIONS.value(),
+                                DatasourceType.SINGLE_VALUED_FORECASTS.value(),
+                                DatasourceType.ENSEMBLE_FORECASTS.value());
     }
 
     public static ProjectConfig read(final String path) throws JAXBException, IOException
