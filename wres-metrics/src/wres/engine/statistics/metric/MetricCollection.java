@@ -251,7 +251,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
                                                                                                        .getCollectionInput(s),
                                                                                                 metricPool);
             //Using the future dependent result, compute a future of each of the independent results
-            x.forEach(y -> metricFutures.add(baseFuture.thenApplyAsync(y::apply)));
+            x.forEach(y -> metricFutures.add(baseFuture.thenApplyAsync(y::apply, metricPool)));
         };
 
         //Compute the collectable metrics    
@@ -321,6 +321,8 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         metrics.stream().filter(p -> !(p instanceof Collectable)).forEach(y -> tasks.add(new MetricTask<>(y, input)));
         //Compute
         final List<Future<T>> results = metricPool.invokeAll(tasks);
+        //Throw one exception per collection
+        Exception throwMe = null;
         for(final Future<T> next: results)
         {
             try
@@ -329,8 +331,12 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
             }
             catch(Exception e)
             {
-                LOGGER.error("While processing metric:", e);
+                throwMe = e;
             }
+        }
+        if(Objects.nonNull( throwMe ))
+        {
+            LOGGER.error("While processing metric:", throwMe);
         }
         return dataFactory.ofMap(m);
     }
