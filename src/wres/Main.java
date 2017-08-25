@@ -87,6 +87,12 @@ public class Main {
 
         watch.stop();
 
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "Detailed logs have been written to {} unless otherwise configured.",
+                         System.getProperty("user.home") + "/wres_logs/wres.log" );
+        }
+
 		System.exit(exitCode);
 	}
 
