@@ -147,8 +147,15 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
                     if ( threshold.isFinite() )
                     {
                         Threshold useMe = getThreshold( threshold, sorted );
-                        futures.addScalarOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                 processDichotomousThreshold( useMe, input, dichotomousScalar ) );
+                        try
+                        {
+                            futures.addScalarOutput( dataFactory.getMapKey( leadTime, useMe ),
+                                                     processDichotomousThreshold( useMe, input, dichotomousScalar ) );
+                        }
+                        catch ( MetricCalculationException e )
+                        {
+                            LOGGER.error( THRESHOLD_ERROR, useMe, e );
+                        }
                     }
                 } );
             }

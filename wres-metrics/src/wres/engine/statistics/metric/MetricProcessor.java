@@ -90,7 +90,13 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     private static final int DECIMALS = 5;
+    
+    /**
+     * Exception message when computing a threshold.
+     */
 
+    static final String THRESHOLD_ERROR = "While computing threshold {}:";
+    
     /**
      * Instance of a {@link MetricFactory}.
      */
