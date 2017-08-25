@@ -45,8 +45,11 @@ implements ProbabilityScore
             DataFactory d = getDataFactory();
             //Bernoulli R.V. with probability p 
             double p = FunctionFactory.mean().applyAsDouble(d.vectorOf(d.getSlicer().getLeftSide(s)));
-            final double[] result = new double[]{
-                FunctionFactory.skill().applyAsDouble(getSumOfSquareError(s) / s.size(), p * (1.0 - p))};
+            double climP = p * (1.0 - p);
+            final double[] result = new double[]{Double.NaN};
+            if(climP>0) {
+                result[0]=FunctionFactory.skill().applyAsDouble(getSumOfSquareError(s) / s.size(), p * (1.0 - p));
+            }            
             //Metadata
             final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.NONE, null);
             return getDataFactory().ofVectorOutput(result, metOut);

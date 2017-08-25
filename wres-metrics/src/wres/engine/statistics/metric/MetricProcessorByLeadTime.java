@@ -348,7 +348,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
                     }
                     catch(MetricInputSliceException e)
                     {
-                        LOGGER.error(e.getMessage(), e);
+                        LOGGER.error(THRESHOLD_ERROR, useMe, e);
                     }
                 });
             }
@@ -376,7 +376,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
                     }
                     catch(MetricInputSliceException e)
                     {
-                        LOGGER.error(e.getMessage(), e);
+                        LOGGER.error(THRESHOLD_ERROR, useMe, e);
                     }
                 });
             }
@@ -406,7 +406,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
                     }
                     catch(MetricInputSliceException e)
                     {
-                        LOGGER.error(e.getMessage(), e);
+                        LOGGER.error(THRESHOLD_ERROR, useMe, e);
                     }
                 });
             }

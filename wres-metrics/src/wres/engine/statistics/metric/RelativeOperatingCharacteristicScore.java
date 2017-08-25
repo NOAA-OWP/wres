@@ -9,10 +9,10 @@ import java.util.stream.Collectors;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOutput;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * <p>
@@ -133,6 +133,10 @@ implements ProbabilityScore
                                                         .collect(Collectors.groupingBy(a -> d.doubleEquals(a.getItemOne(),
                                                                                                            1.0,
                                                                                                            7)));
+        if(mapped.size() !=2)
+        {
+            return Double.NaN;  //Undefined
+        }
         //Get the right side by each outcome
         List<Double> byOccurrence =
                                   mapped.get(true).stream().map(PairOfDoubles::getItemTwo).collect(Collectors.toList());
