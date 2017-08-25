@@ -343,20 +343,11 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
 
     private MetricCollection(final MetricCollectionBuilder<S, T> builder)
     {
-        if(Objects.isNull(builder.dataFactory))
-        {
-            throw new UnsupportedOperationException("Cannot construct the metric collection without a metric output "
-                + "factory.");
-        }
-        if(builder.builderMetrics.isEmpty())
-        {
-            throw new UnsupportedOperationException("Cannot construct a metric collection with an empty list of "
-                + "metrics.");
-        }
+        //Set 
         metrics = new ArrayList<>();
         metrics.addAll(builder.builderMetrics);
         input = builder.builderInput;
-        this.dataFactory = builder.dataFactory;
+        dataFactory = builder.dataFactory;
         if(Objects.isNull(builder.metricPool))
         {
             metricPool = ForkJoinPool.commonPool();
@@ -364,6 +355,17 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         else
         {
             metricPool = builder.metricPool;
+        }
+        //Validate 
+        if(Objects.isNull(dataFactory))
+        {
+            throw new UnsupportedOperationException("Cannot construct the metric collection without a metric output "
+                + "factory.");
+        }
+        if(metrics.isEmpty())
+        {
+            throw new UnsupportedOperationException("Cannot construct a metric collection with an empty list of "
+                + "metrics.");
         }
     }
 

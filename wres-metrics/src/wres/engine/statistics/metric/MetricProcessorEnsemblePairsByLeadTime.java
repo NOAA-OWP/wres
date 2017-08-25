@@ -90,7 +90,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      */
 
     private final BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> toDiscreteProbabilities;
-
+    
     @Override
     public MetricOutputForProjectByLeadThreshold apply( MetricInput<?> input )
     {
@@ -281,9 +281,9 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                         futures.addScalarOutput( dataFactory.getMapKey( leadTime, useMe ),
                                                  processEnsembleThreshold( useMe, input, ensembleScalar ) );
                     }
-                    catch ( MetricInputSliceException e )
+                    catch ( MetricInputSliceException | MetricCalculationException e )
                     {
-                        LOGGER.error( e.getMessage(), e );
+                        LOGGER.error( THRESHOLD_ERROR, useMe, e );
                     }
                 } );
             }
@@ -309,9 +309,9 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                         futures.addVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
                                                  processEnsembleThreshold( useMe, input, ensembleVector ) );
                     }
-                    catch ( MetricInputSliceException e )
+                    catch ( MetricInputSliceException | MetricCalculationException e )
                     {
-                        LOGGER.error( e.getMessage(), e );
+                        LOGGER.error( THRESHOLD_ERROR, useMe, e );
                     }
                 } );
             }
@@ -337,9 +337,9 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                         futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
                                                       processEnsembleThreshold( useMe, input, ensembleMultiVector ) );
                     }
-                    catch ( MetricInputSliceException e )
+                    catch ( MetricInputSliceException | MetricCalculationException e )
                     {
-                        LOGGER.error( e.getMessage(), e );
+                        LOGGER.error( THRESHOLD_ERROR, useMe, e );
                     }
                 } );
             }
@@ -383,10 +383,17 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                     if ( threshold.isFinite() )
                     {
                         Threshold useMe = getThreshold( threshold, sorted );
-                        futures.addVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                 processDiscreteProbabilityThreshold( useMe,
-                                                                                      input,
-                                                                                      discreteProbabilityVector ) );
+                        try
+                        {
+                            futures.addVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
+                                                     processDiscreteProbabilityThreshold( useMe,
+                                                                                          input,
+                                                                                          discreteProbabilityVector ) );
+                        }
+                        catch ( MetricCalculationException e )
+                        {
+                            LOGGER.error( THRESHOLD_ERROR, useMe, e );
+                        }
                     }
                 } );
             }
@@ -409,10 +416,17 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                     if ( threshold.isFinite() )
                     {
                         Threshold useMe = getThreshold( threshold, sorted );
-                        futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                      processDiscreteProbabilityThreshold( useMe,
-                                                                                           input,
-                                                                                           discreteProbabilityMultiVector ) );
+                        try
+                        {
+                            futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
+                                                          processDiscreteProbabilityThreshold( useMe,
+                                                                                               input,
+                                                                                               discreteProbabilityMultiVector ) );
+                        }
+                        catch ( MetricCalculationException e )
+                        {
+                            LOGGER.error( THRESHOLD_ERROR, useMe, e );
+                        }
                     }
                 } );
             }
