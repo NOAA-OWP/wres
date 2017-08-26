@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -90,13 +91,13 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     private static final int DECIMALS = 5;
-    
+
     /**
      * Exception message when computing a threshold.
      */
 
     static final String THRESHOLD_ERROR = "While computing threshold {}:";
-    
+
     /**
      * Instance of a {@link MetricFactory}.
      */
@@ -155,6 +156,12 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     final MetricOutputGroup[] mergeList;
 
     /**
+     * An {@link ExecutorService} used to process the thresholds.
+     */
+
+    final ExecutorService thresholdExecutor;
+
+    /**
      * Default logger.
      */
 
@@ -195,7 +202,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
             case EQUITABLE_THREAT_SCORE:
                 return MetricConstants.EQUITABLE_THREAT_SCORE;
             case FREQUENCY_BIAS:
-                return MetricConstants.FREQUENCY_BIAS;    
+                return MetricConstants.FREQUENCY_BIAS;
             case MEAN_ABSOLUTE_ERROR:
                 return MetricConstants.MEAN_ABSOLUTE_ERROR;
             case CONTINUOUS_RANKED_PROBABILITY_SCORE:
@@ -443,28 +450,15 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     static List<MetricConstants> getAllValidMetricsFromConfig( ProjectConfig config )
             throws MetricConfigurationException
     {
-        List<MetricConstants> returnMe = new ArrayList<>();
+        List<MetricConstants> returnMe;
         MetricInputGroup group = getInputType( config );
         switch ( group )
         {
             case ENSEMBLE:
-            {
-                returnMe.addAll( MetricInputGroup.ENSEMBLE.getMetrics() );
-                returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
-                if ( hasThresholds( config ) )
-                {
-                    returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
-                }
-            }
+                returnMe = getMetricsForEnsembleInput( config );
                 break;
             case SINGLE_VALUED:
-            {
-                returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
-                if ( hasThresholds( config ) )
-                {
-                    returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
-                }
-            }
+                returnMe = getMetricsForSingleValuedInput( config );
                 break;
             default:
                 throw new MetricConfigurationException( "Unexpected input identifier '" + group + "'." );
@@ -512,7 +506,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
-     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()}
+     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()}                    
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
@@ -520,7 +517,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
 
     MetricProcessor( final DataFactory dataFactory,
                      final ProjectConfig config,
-                     final ExecutorService executor,
+                     final ExecutorService thresholdExecutor,
+                     final ExecutorService metricExecutor,
                      final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
@@ -535,7 +533,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) )
         {
             singleValuedScalar =
-                    metricFactory.ofSingleValuedScalarCollection( executor,
+                    metricFactory.ofSingleValuedScalarCollection( metricExecutor,
                                                                   getSelectedMetrics( metrics,
                                                                                       MetricInputGroup.SINGLE_VALUED,
                                                                                       MetricOutputGroup.SCALAR ) );
@@ -547,7 +545,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ) )
         {
             singleValuedVector =
-                    metricFactory.ofSingleValuedVectorCollection( executor,
+                    metricFactory.ofSingleValuedVectorCollection( metricExecutor,
                                                                   getSelectedMetrics( metrics,
                                                                                       MetricInputGroup.SINGLE_VALUED,
                                                                                       MetricOutputGroup.VECTOR ) );
@@ -559,7 +557,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
         {
             singleValuedMultiVector =
-                    metricFactory.ofSingleValuedMultiVectorCollection( executor,
+                    metricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
                                                                        getSelectedMetrics( metrics,
                                                                                            MetricInputGroup.SINGLE_VALUED,
                                                                                            MetricOutputGroup.MULTIVECTOR ) );
@@ -573,6 +571,16 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         globalThresholds = new EnumMap<>( MetricInputGroup.class );
         setThresholds( dataFactory, config );
         this.mergeList = mergeList;
+        //Set the executor
+        if ( Objects.nonNull( thresholdExecutor ) )
+        {
+            this.thresholdExecutor = thresholdExecutor;
+        }
+        else
+        {
+            this.thresholdExecutor = ForkJoinPool.commonPool();
+        }
+
     }
 
     /**
@@ -678,6 +686,44 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     }
 
     /**
+     * Returns valid metrics for {@link MetricInputGroup#ENSEMBLE}
+     * 
+     * @param config the project configuration
+     * @return the valid metrics for {@link MetricInputGroup#ENSEMBLE}
+     */
+
+    private static List<MetricConstants> getMetricsForEnsembleInput( ProjectConfig config )
+    {
+        List<MetricConstants> returnMe = new ArrayList<>();
+        returnMe.addAll( MetricInputGroup.ENSEMBLE.getMetrics() );
+        returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
+        if ( hasThresholds( config ) )
+        {
+            returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
+        }
+        return returnMe;
+    }
+
+    /**
+     * Returns valid metrics for {@link MetricInputGroup#SINGLE_VALUED}
+     * 
+     * @param config the project configuration
+     * @return the valid metrics for {@link MetricInputGroup#SINGLE_VALUED}
+     */
+
+    private static List<MetricConstants> getMetricsForSingleValuedInput( ProjectConfig config )
+    {
+        List<MetricConstants> returnMe = new ArrayList<>();
+        returnMe.addAll( MetricInputGroup.ENSEMBLE.getMetrics() );
+        returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
+        if ( hasThresholds( config ) )
+        {
+            returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
+        }
+        return returnMe;
+    }
+
+    /**
      * Sets the thresholds for each metric in the configuration, including any thresholds that apply globally (to all
      * metrics).
      * 
@@ -696,13 +742,13 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
                                                     + "metrics." );
         }
         //Check for metric-local thresholds and throw an exception if they are defined, as they are currently not supported
-        EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>( MetricConstants.class );
+//        EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>( MetricConstants.class );
         for ( MetricConfig metric : outputs.getMetric() )
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
                 //Obtain metric-local thresholds here
-                List<Threshold> thresholds = new ArrayList<>();
+//                List<Threshold> thresholds = new ArrayList<>();
                 MetricConstants name = fromMetricConfigName( metric.getName() );
                 if ( Objects.nonNull( metric.getProbabilityThresholds() )
                      || Objects.nonNull( metric.getValueThresholds() ) )
@@ -711,17 +757,17 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
                                                             + "', which are not "
                                                             + "currently supported." );
                 }
-                //TODO: implement this when metric-local threshold conditions are available in the configuration
-                if ( !thresholds.isEmpty() )
-                {
-                    localThresholds.put( name, thresholds );
-                }
+                //TODO: store metric-local threshold conditions when they are available in the configuration
+//                if ( !thresholds.isEmpty() )
+//                {
+//                    localThresholds.put( name, thresholds );
+//                }
             }
         }
-        if ( !localThresholds.isEmpty() )
-        {
-            this.localThresholds.putAll( localThresholds );
-        }
+//        if ( !localThresholds.isEmpty() )
+//        {
+//            this.localThresholds.putAll( localThresholds );
+//        }
         //Pool together all probability thresholds and real-valued thresholds in the context of the 
         //outputs configuration. 
         List<Threshold> globalThresholds = new ArrayList<>();
