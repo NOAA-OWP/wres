@@ -34,7 +34,7 @@ class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     {
         Objects.requireNonNull( s, "Specify non-null input for the '" + toString() + "'." );
         //Compute the average observation
-        double oBar = s.getData().stream().mapToDouble( a -> a.getItemOne() ).average().getAsDouble();
+        double oBar = s.getData().stream().mapToDouble( PairOfDoubles::getItemOne ).average().getAsDouble();
         //Compute the score
         double numerator = 0.0;
         double denominator = 0.0;

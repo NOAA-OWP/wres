@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
@@ -88,7 +89,10 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
-     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()}
+     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()} 
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(MetricInput)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
@@ -96,16 +100,17 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
 
     MetricProcessorSingleValuedPairsByLeadTime( final DataFactory dataFactory,
                                                 final ProjectConfig config,
-                                                final ExecutorService executor,
+                                                final ExecutorService thresholdExecutor,
+                                                final ExecutorService metricExecutor,
                                                 final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
-        super( dataFactory, config, executor, mergeList );
+        super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
         //Construct the metrics
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ) )
         {
             dichotomousScalar =
-                    metricFactory.ofDichotomousScalarCollection( executor,
+                    metricFactory.ofDichotomousScalarCollection( metricExecutor,
                                                                  getSelectedMetrics( metrics,
                                                                                      MetricInputGroup.DICHOTOMOUS,
                                                                                      MetricOutputGroup.SCALAR ) );
@@ -147,15 +152,8 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
                     if ( threshold.isFinite() )
                     {
                         Threshold useMe = getThreshold( threshold, sorted );
-                        try
-                        {
-                            futures.addScalarOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                     processDichotomousThreshold( useMe, input, dichotomousScalar ) );
-                        }
-                        catch ( MetricCalculationException e )
-                        {
-                            LOGGER.error( THRESHOLD_ERROR, useMe, e );
-                        }
+                        futures.addScalarOutput( dataFactory.getMapKey( leadTime, useMe ),
+                                                 processDichotomousThreshold( useMe, input, dichotomousScalar ) );
                     }
                 } );
             }
@@ -190,7 +188,7 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
                                             threshold.test( pair.getItemTwo() ) );
         //Slice the pairs
         DichotomousPairs transformed = dataFactory.getSlicer().transformPairs( pairs, mapper );
-        return CompletableFuture.supplyAsync( () -> collection.apply( transformed ) );
+        return CompletableFuture.supplyAsync( () -> collection.apply( transformed ), thresholdExecutor );
     }
 
 }

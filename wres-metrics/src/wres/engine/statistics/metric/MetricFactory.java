@@ -2,6 +2,7 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
@@ -99,7 +100,7 @@ public class MetricFactory
                                                                    final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
-        return getMetricProcessorByLeadTime( config, null, mergeList );
+        return getMetricProcessorByLeadTime( config, null, null, mergeList );
     }
 
     /**
@@ -109,23 +110,35 @@ public class MetricFactory
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
-     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()}
+     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()} 
      * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessor}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
     public MetricProcessorByLeadTime getMetricProcessorByLeadTime( final ProjectConfig config,
-                                                                   final ExecutorService executor,
+                                                                   final ExecutorService thresholdExecutor,
+                                                                   final ExecutorService metricExecutor,
                                                                    final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
         switch ( MetricProcessor.getInputType( config ) )
         {
             case SINGLE_VALUED:
-                return new MetricProcessorSingleValuedPairsByLeadTime( outputFactory, config, executor, mergeList );
+                return new MetricProcessorSingleValuedPairsByLeadTime( outputFactory,
+                                                                       config,
+                                                                       thresholdExecutor,
+                                                                       metricExecutor,
+                                                                       mergeList );
             case ENSEMBLE:
-                return new MetricProcessorEnsemblePairsByLeadTime( outputFactory, config, executor, mergeList );
+                return new MetricProcessorEnsemblePairsByLeadTime( outputFactory,
+                                                                   config,
+                                                                   thresholdExecutor,
+                                                                   metricExecutor,
+                                                                   mergeList );
             default:
                 throw new UnsupportedOperationException( "Unsupported input type in the project configuration '"
                                                          + config
@@ -508,7 +521,7 @@ public class MetricFactory
             case SAMPLE_SIZE:
                 return ofSampleSize();
             case INDEX_OF_AGREEMENT:
-                return ofIndexOfAgreement();    
+                return ofIndexOfAgreement();
             default:
                 throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
@@ -596,7 +609,7 @@ public class MetricFactory
             case PROBABILITY_OF_FALSE_DETECTION:
                 return ofProbabilityOfFalseDetection();
             case FREQUENCY_BIAS:
-                return ofFrequencyBias();                
+                return ofFrequencyBias();
             default:
                 throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
@@ -994,8 +1007,8 @@ public class MetricFactory
     IndexOfAgreement ofIndexOfAgreement()
     {
         return (IndexOfAgreement) new IndexOfAgreementBuilder().setOutputFactory( outputFactory ).build();
-    }    
-    
+    }
+
     /**
      * Return a default {@link SampleSize} function.
      * 
@@ -1018,7 +1031,7 @@ public class MetricFactory
     {
         return (RankHistogram) new RankHistogramBuilder().setOutputFactory( outputFactory ).build();
     }
-    
+
     /**
      * Return a default {@link FrequencyBias} function.
      * 

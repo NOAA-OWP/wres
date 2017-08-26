@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -70,10 +69,7 @@ import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
 
 /**
- * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}. The processing
- * pipeline is constructed with a {@link ForkJoinPool} and uses {@link CompletableFuture} to chain together tasks
- * asynchronously. This allows for work-stealing from I/O tasks that are waiting, and allows for consumers to continue
- * operating as pairs become available, thereby avoiding deadlock and OutOfMemoryException with large datasets.
+ * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
  * 
  * @author james.brown@hydrosolved.com
  * @author jesse
@@ -122,37 +118,39 @@ public class Control implements Function<String[], Integer>
             return 1;
         }
 
-        // Process the configurations with a ForkJoinPool
-
         // Build a processing pipeline
-
-        ExecutorService processPairExecutor;
-        ExecutorService metricExecutor;
-        if (Runtime.getRuntime().availableProcessors() > 2)
-        {
-            processPairExecutor = new ForkJoinPool( MAX_THREADS );
-            metricExecutor = new ForkJoinPool( MAX_THREADS );
-        }
-        else
-        {
-
-            ThreadFactory factory = runnable -> new Thread( runnable, "Metric Thread");
-            ThreadFactory secondFactory = runnable -> new Thread(runnable, "Secondary Metric Thread");
-            processPairExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
-                                                          SystemSettings.maximumThreadCount(),
-                                                          SystemSettings.poolObjectLifespan(),
-                                                          TimeUnit.MILLISECONDS,
-                                                          new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 ),
-                                                          factory);
-            metricExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
-                                                     SystemSettings.maximumThreadCount(),
-                                                     SystemSettings.poolObjectLifespan(),
-                                                     TimeUnit.MILLISECONDS,
-                                                     new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 ),
-                                                     secondFactory);
-            ((ThreadPoolExecutor)processPairExecutor).setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-            ((ThreadPoolExecutor)metricExecutor).setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        }
+        // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO 
+        // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool, 
+        // there is a DEADLOCK probability       
+        ThreadFactory pairFactory = runnable -> new Thread( runnable, "Pair Pool" );
+        ThreadFactory thresholdFactory = runnable -> new Thread( runnable, "Threshold Pool" );
+        ThreadFactory metricFactory = runnable -> new Thread( runnable, "Metric Pool" );
+        //Processes pairs       
+        ExecutorService pairExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
+                                                               SystemSettings.maximumThreadCount(),
+                                                               SystemSettings.poolObjectLifespan(),
+                                                               TimeUnit.MILLISECONDS,
+                                                               new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
+                                                                                         * 5 ),
+                                                               pairFactory );
+        ExecutorService thresholdExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
+                                                                    SystemSettings.maximumThreadCount(),
+                                                                    SystemSettings.poolObjectLifespan(),
+                                                                    TimeUnit.MILLISECONDS,
+                                                                    new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
+                                                                                              * 5 ),
+                                                                    thresholdFactory );
+        ExecutorService metricExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
+                                                                 SystemSettings.maximumThreadCount(),
+                                                                 SystemSettings.poolObjectLifespan(),
+                                                                 TimeUnit.MILLISECONDS,
+                                                                 new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
+                                                                                           * 5 ),
+                                                                 metricFactory );
+        // Set the rejection policy to run in the caller, slowing producers
+        ( (ThreadPoolExecutor) pairExecutor ).setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        ( (ThreadPoolExecutor) thresholdExecutor ).setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        ( (ThreadPoolExecutor) metricExecutor ).setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
 
         // The following three are for logging run information to the database.
         long startTime = System.currentTimeMillis();
@@ -170,7 +168,8 @@ public class Control implements Function<String[], Integer>
 
                 // Process the next configuration
                 processProjectConfig( projectConfigPlus,
-                                      processPairExecutor,
+                                      pairExecutor,
+                                      thresholdExecutor,
                                       metricExecutor );
 
                 endTime = System.currentTimeMillis();
@@ -200,8 +199,9 @@ public class Control implements Function<String[], Integer>
         // Shutdown
         finally
         {
-            shutDownGracefully(processPairExecutor);
             shutDownGracefully(metricExecutor);
+            shutDownGracefully(thresholdExecutor);
+            shutDownGracefully(pairExecutor);
         }
     }
 
@@ -209,14 +209,16 @@ public class Control implements Function<String[], Integer>
      * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService}.
      * 
      * @param projectConfigPlus the project configuration
-     * @param processPairExecutor the {@link ExecutorService}
-     * @param metricExecutor an optional {@link ExecutorService} for processing metrics
+     * @param pairExecutor the {@link ExecutorService} for processing pairs
+     * @param thresholdExecutor the {@link ExecutorService} for processing thresholds
+     * @param metricExecutor the {@link ExecutorService} for processing metrics
      * @throws WresProcessingException when an error occurs during processing
      */
 
     private void   processProjectConfig( final ProjectConfigPlus projectConfigPlus,
-                                         final ExecutorService processPairExecutor,
-                                         final ExecutorService metricExecutor)
+                                         final ExecutorService pairExecutor,
+                                         final ExecutorService thresholdExecutor,
+                                         final ExecutorService metricExecutor )
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -243,7 +245,8 @@ public class Control implements Function<String[], Integer>
             ProgressMonitor.resetMonitor();
             processFeature( nextFeature,
                             projectConfigPlus,
-                            processPairExecutor,
+                            pairExecutor,
+                            thresholdExecutor,
                             metricExecutor );
         }
     }
@@ -253,15 +256,17 @@ public class Control implements Function<String[], Integer>
      * 
      * @param feature the feature to process
      * @param projectConfigPlus the project configuration
-     * @param processPairExecutor the {@link ExecutorService}
-     * @param metricExecutor an optional {@link ExecutorService} for processing metrics
+     * @param pairExecutor the {@link ExecutorService} for processing pairs
+     * @param thresholdExecutor the {@link ExecutorService} for processing thresholds
+     * @param metricExecutor the {@link ExecutorService} for processing metrics
      * @throws WresProcessingException when an error occurs during processing
      */
 
-    private void processFeature(   final Feature feature,
-                                   final ProjectConfigPlus projectConfigPlus,
-                                   final ExecutorService processPairExecutor,
-                                   final ExecutorService metricExecutor)
+    private void   processFeature( final Feature feature,
+                                 final ProjectConfigPlus projectConfigPlus,
+                                 final ExecutorService pairExecutor,
+                                 final ExecutorService thresholdExecutor,
+                                 final ExecutorService metricExecutor )
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -279,6 +284,7 @@ public class Control implements Function<String[], Integer>
         try
         {
             processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessorByLeadTime(projectConfig,
+                                                                                   thresholdExecutor,          
                                                                                    metricExecutor,
                                                                                    MetricOutputGroup.SCALAR,
                                                                                    MetricOutputGroup.VECTOR);
@@ -304,11 +310,11 @@ public class Control implements Function<String[], Integer>
             // 3. Process any intermediate verification results
             final CompletableFuture<Void> c =
                                             CompletableFuture.supplyAsync(new PairsByLeadProcessor(nextInput),
-                                                                          processPairExecutor)
-                                                             .thenApplyAsync(processor, processPairExecutor)
+                                                                          pairExecutor)
+                                                             .thenApplyAsync(processor, pairExecutor)
                                                              .thenAcceptAsync(new IntermediateResultProcessor(feature,
                                                                                                               projectConfigPlus),
-                                                                              processPairExecutor)
+                                                                              pairExecutor)
                                                              .thenAccept(
                                                                          aVoid -> ProgressMonitor.completeStep() );
 
