@@ -146,7 +146,6 @@ public class Control implements Function<String[], Integer>
                                                                     metricFactory );
         // Set the rejection policy to run in the caller, slowing producers
         pairExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        //thresholdExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
 
         // The following three are for logging run information to the database.
@@ -203,7 +202,8 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
-     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService}.
+     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs, 
+     * thresholds and metrics.
      * 
      * @param projectConfigPlus the project configuration
      * @param pairExecutor the {@link ExecutorService} for processing pairs
@@ -249,7 +249,8 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
-     * Processes a {@link ProjectConfigPlus} for a specific {@link Feature} using a prescribed {@link ExecutorService}.
+     * Processes a {@link ProjectConfigPlus} for a specific {@link Feature} using a prescribed {@link ExecutorService}
+     * for each of the pairs, thresholds and metrics.
      * 
      * @param feature the feature to process
      * @param projectConfigPlus the project configuration
