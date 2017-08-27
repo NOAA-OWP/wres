@@ -9,10 +9,10 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.engine.statistics.metric.MeanSquareError.MeanSquareErrorBuilder;
 
 /**
@@ -45,7 +45,7 @@ public final class MeanSquareErrorTest
                                                             metaFac.getDimension(),
                                                             metaFac.getDimension(),
                                                             MetricConstants.MEAN_SQUARE_ERROR,
-                                                            MetricConstants.MAIN);
+                                                            MetricConstants.NONE);
 
         //Build the metric
         final MeanSquareErrorBuilder<SingleValuedPairs> b = new MeanSquareError.MeanSquareErrorBuilder<>();

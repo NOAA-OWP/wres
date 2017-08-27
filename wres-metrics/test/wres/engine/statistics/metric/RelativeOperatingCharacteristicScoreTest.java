@@ -70,7 +70,7 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension(),
                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                  MetricConstants.MAIN);
+                                                                  MetricConstants.NONE);
 
         //Check the results       
         final VectorOutput actual = rocs.apply(input);
@@ -130,7 +130,7 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension(),
                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                  MetricConstants.MAIN);
+                                                                  MetricConstants.NONE);
 
         //Check the results       
         final VectorOutput actual = rocs.apply(input);
@@ -186,7 +186,7 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension(),
                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                  MetricConstants.MAIN);
+                                                                  MetricConstants.NONE);
 
         //Check the results       
         final VectorOutput actual = rocs.apply(input);

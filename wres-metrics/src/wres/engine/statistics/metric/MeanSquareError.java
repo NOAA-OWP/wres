@@ -92,7 +92,7 @@ class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
     {
         double mse = getSumOfSquareError(s)/s.size();
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
+        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.NONE, null);
         return getDataFactory().ofVectorOutput(new double[]{mse}, metOut);
     }
 

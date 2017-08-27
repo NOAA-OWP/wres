@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -122,35 +123,31 @@ public class Control implements Function<String[], Integer>
         // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO 
         // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool, 
         // there is a DEADLOCK probability       
-        ThreadFactory pairFactory = runnable -> new Thread( runnable, "Pair Pool" );
-        ThreadFactory thresholdFactory = runnable -> new Thread( runnable, "Threshold Pool" );
-        ThreadFactory metricFactory = runnable -> new Thread( runnable, "Metric Pool" );
-        //Processes pairs       
-        ExecutorService pairExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
-                                                               SystemSettings.maximumThreadCount(),
-                                                               SystemSettings.poolObjectLifespan(),
-                                                               TimeUnit.MILLISECONDS,
-                                                               new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
-                                                                                         * 5 ),
-                                                               pairFactory );
-        ExecutorService thresholdExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
+        ThreadFactory pairFactory = runnable -> new Thread( runnable, "Pair Thread" );
+        ThreadFactory thresholdFactory = runnable -> new Thread( runnable, "Threshold Dispatch Thread" );
+        ThreadFactory metricFactory = runnable -> new Thread( runnable, "Metric Thread" );
+        // Processes pairs       
+        ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
+                                                                  SystemSettings.maximumThreadCount(),
+                                                                  SystemSettings.poolObjectLifespan(),
+                                                                  TimeUnit.MILLISECONDS,
+                                                                  new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
+                                                                                            * 5 ),
+                                                                  pairFactory );
+        // Dispatches thresholds
+        ExecutorService thresholdExecutor = Executors.newSingleThreadExecutor( thresholdFactory );
+        // Processes metrics
+        ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
                                                                     SystemSettings.maximumThreadCount(),
                                                                     SystemSettings.poolObjectLifespan(),
                                                                     TimeUnit.MILLISECONDS,
                                                                     new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
                                                                                               * 5 ),
-                                                                    thresholdFactory );
-        ExecutorService metricExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
-                                                                 SystemSettings.maximumThreadCount(),
-                                                                 SystemSettings.poolObjectLifespan(),
-                                                                 TimeUnit.MILLISECONDS,
-                                                                 new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
-                                                                                           * 5 ),
-                                                                 metricFactory );
+                                                                    metricFactory );
         // Set the rejection policy to run in the caller, slowing producers
-        ( (ThreadPoolExecutor) pairExecutor ).setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        ( (ThreadPoolExecutor) thresholdExecutor ).setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        ( (ThreadPoolExecutor) metricExecutor ).setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        pairExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        //thresholdExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
 
         // The following three are for logging run information to the database.
         long startTime = System.currentTimeMillis();
@@ -530,8 +527,6 @@ public class Control implements Function<String[], Integer>
                            .append("_")
                            .append(e.getKey().getFirstKey())
                            .append("_")
-                           .append(e.getKey().getSecondKey())
-                           .append("_")
                            .append(projectConfigPlus.getProjectConfig().getInputs().getRight().getVariable().getValue())
                            .append(".png");
                 final Path outputImage = Paths.get(pathBuilder.toString());
@@ -597,8 +592,6 @@ public class Control implements Function<String[], Integer>
                                .append(feature.getLocation().getLid())
                                .append("_")
                                .append(e.getKey().getFirstKey())
-                               .append("_")
-                               .append(e.getKey().getSecondKey())
                                .append("_")
                                .append(projectConfigPlus.getProjectConfig()
                                                         .getInputs()
@@ -674,8 +667,6 @@ public class Control implements Function<String[], Integer>
                                .append(feature.getLocation().getLid())
                                .append("_")
                                .append(e.getKey().getFirstKey())
-                               .append("_")
-                               .append(e.getKey().getSecondKey())
                                .append("_")
                                .append(projectConfigPlus.getProjectConfig()
                                                         .getInputs()

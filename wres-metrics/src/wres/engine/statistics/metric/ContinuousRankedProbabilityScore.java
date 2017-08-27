@@ -53,7 +53,7 @@ class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorScore<Ense
         //Compute the average (implicitly weighted by the number of pairs in each group)
         crps[0] = crps[0] / s.size();
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
         return getDataFactory().ofVectorOutput( crps, metOut );
     }
 
