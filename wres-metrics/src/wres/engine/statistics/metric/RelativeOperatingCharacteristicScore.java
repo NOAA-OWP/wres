@@ -58,7 +58,7 @@ implements ProbabilityScore
         {
             rocScore = 2.0 * getAUCMasonGraham(s) - 1.0;
         }
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
+        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.NONE, null);
         return getDataFactory().ofVectorOutput(new double[]{rocScore}, metOut);
     }
 

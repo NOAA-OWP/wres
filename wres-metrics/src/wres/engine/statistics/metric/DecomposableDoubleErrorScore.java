@@ -74,8 +74,8 @@ implements Score
     DecomposableDoubleErrorScore(final DecomposableDoubleErrorScoreBuilder<S> builder)
     {
         super(builder);
-        Objects.requireNonNull(builder.decompositionID, "Specify a non-null decomposition identifier.");
         this.decompositionID = builder.decompositionID;
+        Objects.requireNonNull(decompositionID, "Specify a non-null decomposition identifier.");
     }
 
 }

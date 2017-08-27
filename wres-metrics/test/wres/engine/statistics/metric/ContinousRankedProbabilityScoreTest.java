@@ -61,7 +61,7 @@ public final class ContinousRankedProbabilityScoreTest
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                           MetricConstants.MAIN );
+                                           MetricConstants.NONE );
         //Check the results       
         final VectorOutput actual = crps.apply( input );
         final VectorOutput expected = outF.ofVectorOutput( new double[] { 6.596666666666667 }, m1 );
@@ -115,7 +115,7 @@ public final class ContinousRankedProbabilityScoreTest
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                           MetricConstants.MAIN );
+                                           MetricConstants.NONE );
         //Check the results       
         final VectorOutput actual = crps.apply( input );
         final VectorOutput expected = outF.ofVectorOutput( new double[] { 8.0493679138322 }, m1 );

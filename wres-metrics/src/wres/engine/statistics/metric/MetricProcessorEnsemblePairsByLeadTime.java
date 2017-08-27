@@ -360,11 +360,11 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                                                   EnsemblePairs input,
                                                   MetricFuturesByLeadTimeBuilder futures )
     {
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
+        if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ) )
         {
             processDiscreteProbabilityThresholds( leadTime, input, futures, MetricOutputGroup.VECTOR );
         }
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
+        if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ) )
         {
             processDiscreteProbabilityThresholds( leadTime, input, futures, MetricOutputGroup.MULTIVECTOR );
         }
@@ -394,20 +394,24 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
             List<Threshold> global = globalThresholds.get( MetricInputGroup.ENSEMBLE );
             double[] sorted = getSortedClimatology( input, global );
             global.forEach( threshold -> {
-                Threshold useMe = getThreshold( threshold, sorted );
-                if ( outGroup == MetricOutputGroup.VECTOR )
+                //Only process discrete thresholds
+                if ( threshold.isFinite() )
                 {
-                    futures.addVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                             processDiscreteProbabilityThreshold( useMe,
-                                                                                  input,
-                                                                                  discreteProbabilityVector ) );
-                }
-                else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
-                {
-                    futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                  processDiscreteProbabilityThreshold( useMe,
-                                                                                       input,
-                                                                                       discreteProbabilityMultiVector ) );
+                    Threshold useMe = getThreshold( threshold, sorted );
+                    if ( outGroup == MetricOutputGroup.VECTOR )
+                    {
+                        futures.addVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
+                                                 processDiscreteProbabilityThreshold( useMe,
+                                                                                      input,
+                                                                                      discreteProbabilityVector ) );
+                    }
+                    else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
+                    {
+                        futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
+                                                      processDiscreteProbabilityThreshold( useMe,
+                                                                                           input,
+                                                                                           discreteProbabilityMultiVector ) );
+                    }
                 }
             } );
         }
