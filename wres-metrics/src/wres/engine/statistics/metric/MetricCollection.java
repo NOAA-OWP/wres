@@ -236,7 +236,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         //Collection of future metric results
         final List<CompletableFuture<T>> metricFutures = new ArrayList<>(metrics.size());
 
-        //Collect the instances of Collectable by their getCollectionOf string, which denotes the superclass that
+        //Collect the instances of Collectable by their getCollectionOf, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
         @SuppressWarnings("unchecked")
         final Map<MetricConstants, List<Collectable<S, MetricOutput<?>, T>>> collectable =
@@ -301,7 +301,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
         }
         //Collection
         final List<T> m = new ArrayList<>(metrics.size());
-        //Collect the instances of Collectable by their getCollectionOf string, which denotes the superclass that
+        //Collect the instances of Collectable by their getCollectionOf, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
         @SuppressWarnings("unchecked")
         final Map<MetricConstants, List<Collectable<S, MetricOutput<?>, T>>> collectable =
