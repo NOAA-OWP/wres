@@ -469,6 +469,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         {
             returnMe.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
         }
+        //Remove rank histogram until fully supported: TODO: remove when implemented
+        returnMe.remove( MetricConstants.KLING_GUPTA_EFFICIENCY );
         return returnMe;
     }
 

@@ -18,19 +18,19 @@ class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
 {
 
     @Override
-    public VectorOutput apply(final SingleValuedPairs s)
+    public VectorOutput apply( final S s )
     {
 
-        switch(getDecompositionID())
+        switch ( getDecompositionID() )
         {
             case NONE:
-                return getMSENoDecomp(s);
+                return getMSENoDecomp( s );
             case CR:
             case LBR:
             case CR_AND_LBR:
             default:
-                throw new UnsupportedOperationException("The Mean Square Error decomposition is not currently "
-                    + "implemented.");
+                throw new UnsupportedOperationException( "The Mean Square Error decomposition is not currently "
+                                                         + "implemented." );
         }
 
     }
@@ -58,27 +58,27 @@ class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
      */
 
     static class MeanSquareErrorBuilder<S extends SingleValuedPairs>
-    extends
-        DecomposableDoubleErrorScoreBuilder<S>
+            extends
+            DecomposableDoubleErrorScoreBuilder<S>
     {
 
         @Override
         protected MeanSquareError<S> build()
         {
-            return new MeanSquareError<>(this);
+            return new MeanSquareError<>( this );
         }
 
-    }    
-    
+    }
+
     /**
      * Hidden constructor.
      * 
      * @param builder the builder
      */
 
-    MeanSquareError(final MeanSquareErrorBuilder<S> builder)
+    MeanSquareError( final MeanSquareErrorBuilder<S> builder )
     {
-        super(builder);
+        super( builder );
     }
 
     /**
@@ -88,12 +88,12 @@ class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
      * @return the mean square error without decomposition
      */
 
-    private VectorOutput getMSENoDecomp(final SingleValuedPairs s)
+    private VectorOutput getMSENoDecomp( final SingleValuedPairs s )
     {
-        double mse = getSumOfSquareError(s)/s.size();
+        double mse = getSumOfSquareError( s ) / s.size();
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.NONE, null);
-        return getDataFactory().ofVectorOutput(new double[]{mse}, metOut);
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
+        return getDataFactory().ofVectorOutput( new double[] { mse }, metOut );
     }
 
 }

@@ -10,12 +10,12 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.Metadata;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Slicer;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * Computes Pearson's product-moment correlation coefficient between the left and right sides of the {SingleValuedPairs}

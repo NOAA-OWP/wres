@@ -40,7 +40,7 @@ class FunctionFactory
 
     public static DoubleErrorFunction absError()
     {
-        return a -> Math.abs(a.getItemOne() - a.getItemTwo());
+        return a -> Math.abs( a.getItemOne() - a.getItemTwo() );
     }
 
     /**
@@ -52,7 +52,7 @@ class FunctionFactory
 
     public static DoubleErrorFunction squareError()
     {
-        return a -> Math.pow(a.getItemOne() - a.getItemTwo(), 2);
+        return a -> Math.pow( a.getItemOne() - a.getItemTwo(), 2 );
     }
 
     /**
@@ -68,23 +68,23 @@ class FunctionFactory
 
     public static DoubleBinaryOperator skill()
     {
-        return (a, b) -> 1.0 - (a / b);
+        return ( a, b ) -> 1.0 - ( a / b );
     }
-    
+
     /**
      * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
      * 
      * @return a function that rounds to a prescribed number of decimal places
      */
 
-    public static BiFunction<Double,Integer,Double> round()
+    public static BiFunction<Double, Integer, Double> round()
     {
-        return (input, digits) -> {        
-            BigDecimal bd = new BigDecimal(Double.toString(input));  //Always use String constructor
-            bd = bd.setScale(digits,BigDecimal.ROUND_HALF_UP);
+        return ( input, digits ) -> {
+            BigDecimal bd = new BigDecimal( Double.toString( input ) ); //Always use String constructor
+            bd = bd.setScale( digits, BigDecimal.ROUND_HALF_UP );
             return bd.doubleValue();
         };
-    }    
+    }
 
     /**
      * <p>
@@ -96,7 +96,7 @@ class FunctionFactory
 
     public static BiPredicate<Double, Double> doubleEquals()
     {
-        return (a, b) -> Math.abs(a - b) < .00000001;
+        return ( a, b ) -> Math.abs( a - b ) < .00000001;
     }
 
     /**
@@ -109,7 +109,26 @@ class FunctionFactory
 
     public static ToDoubleFunction<VectorOfDoubles> mean()
     {
-        return a -> Arrays.stream(a.getDoubles()).average().getAsDouble();
+        return a -> Arrays.stream( a.getDoubles() ).average().getAsDouble();
+    }
+
+    /**
+     * <p>
+     * Return a function that computes the sample standard deviation of a vector of doubles.
+     * </p>
+     * 
+     * @return a function that computes the standard deviation
+     */
+
+    public static ToDoubleFunction<VectorOfDoubles> standardDeviation()
+    {
+        return a -> {
+            double mean = mean().applyAsDouble( a );
+            return Math.sqrt( Arrays.stream( a.getDoubles() )
+                                    .map( d -> Math.pow( d - mean, 2 ) )
+                                    .sum()
+                              / (a.size() - 1.0) );
+        };
     }
 
     /**

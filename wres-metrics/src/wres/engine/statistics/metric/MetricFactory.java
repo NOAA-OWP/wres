@@ -541,7 +541,7 @@ public class MetricFactory
             case MEAN_SQUARE_ERROR:
                 return ofMeanSquareError();
             case MEAN_SQUARE_ERROR_SKILL_SCORE:
-                return ofMeanSquareErrorSkillScore();
+                return ofMeanSquareErrorSkillScore();              
             default:
                 throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
