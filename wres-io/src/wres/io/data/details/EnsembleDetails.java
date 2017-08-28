@@ -1,10 +1,10 @@
 package wres.io.data.details;
 
-import wres.io.data.details.EnsembleDetails.EnsembleKey;
-import wres.util.Internal;
-
 import java.sql.SQLException;
 import java.util.Objects;
+
+import wres.io.data.details.EnsembleDetails.EnsembleKey;
+import wres.util.Internal;
 
 /**
  * Describes basic information used to define an Ensemble from the database
@@ -198,12 +198,37 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
                 equality = this.ensembleName.compareTo(other.getEnsembleName());
             }
 
-            if (equality == 0) {
-                equality = this.memberIndex.compareTo(other.getMemberIndex());
+            if (equality == 0 && !(this.memberIndex == null && other.memberIndex == null)) {
+            	if (this.memberIndex == null && other.memberIndex != null)
+				{
+					equality = -1;
+				}
+				else if (this.memberIndex != null && other.memberIndex == null)
+				{
+					equality = 1;
+				}
+				else
+				{
+					equality =
+							this.memberIndex.compareTo( other.getMemberIndex() );
+				}
             }
-            if (equality == 0)
+
+            if (equality == 0 && !(this.qualifierID == null && other.qualifierID == null))
             {
-                equality = this.qualifierID.compareTo(other.getQualifierID());
+            	if (this.qualifierID == null && other.qualifierID != null)
+				{
+					equality = -1;
+				}
+				else if (this.qualifierID != null && other.qualifierID == null)
+				{
+					equality = 1;
+				}
+				else
+				{
+					equality =
+							this.qualifierID.compareTo( other.getQualifierID() );
+				}
             }
             return equality;
         }
