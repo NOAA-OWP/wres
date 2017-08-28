@@ -327,8 +327,10 @@ public class Control implements Function<String[], Integer>
         }
         catch(final CompletionException e)
         {
-            LOGGER.error("While processing feature '{}':", feature.getLocation().getLid(), e);
-            throw new WresProcessingException(e.getCause().getMessage());
+            String message = "Error while processing feature "
+                             + feature.getLocation().getLid()
+                             + ":";
+            throw new WresProcessingException( message, e );
         }        
 
         // Generated stored output if available
