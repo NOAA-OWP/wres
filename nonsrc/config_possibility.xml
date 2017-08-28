@@ -49,7 +49,7 @@
       <name>correlation pearsons</name>
     </metric>-->
     <metric><name>reliability diagram</name></metric>
-    <destination type="numeric"><path>/home/jesse/</path></destination>
+    <destination type="numeric"><path>testoutput/</path></destination>
     <!--<destination type="graphic"><path>/tmp/</path>
     <graphical width="192" height="108">
       <plotType>lead threshold</plotType>
