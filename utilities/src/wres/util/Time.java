@@ -110,9 +110,9 @@ public final class Time
      * @param milliseconds The amount of milliseconds to convert
      * @return Integer representing the number of hours
      */
-    public static int hoursFromMilliseconds(int milliseconds)
+    public static int hoursFromMilliseconds(long milliseconds)
     {
-        return (milliseconds / 3600000) % 24;
+        return (int)((milliseconds / 3600000)) % 24;
     }
 
     /**

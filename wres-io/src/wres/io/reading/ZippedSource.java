@@ -1,6 +1,7 @@
 package wres.io.reading;
 
 import java.io.BufferedInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -216,7 +217,21 @@ public class ZippedSource extends BasicSource {
         }
 
         byte[] content = new byte[(int)source.getSize()];
-        archiveInputStream.read(content, 0, content.length);
+
+        try
+        {
+            archiveInputStream.read( content, 0, content.length );
+        }
+        catch (EOFException eof)
+        {
+            String message = "The end of the archive entry for: {} was ";
+            message += "reached. Data within the archive may have been ";
+            message += "cut off when creating or moving the archive.";
+            LOGGER.error(message, archivedFileName);
+            LOGGER.error(Strings.getStackTrace( eof ));
+            return;
+        }
+
         WRESRunnable ingest;
 
         if (sourceType == SourceType.PI_XML)

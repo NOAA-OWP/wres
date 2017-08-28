@@ -1,9 +1,9 @@
 package wres.util;
 
-import com.google.common.base.Stopwatch;
-
 import java.time.OffsetDateTime;
 import java.util.concurrent.TimeUnit;
+
+import com.google.common.base.Stopwatch;
 
 /**
  * @author Christopher Tubbs
@@ -51,9 +51,15 @@ public class FormattedStopwatch {
 	    String duration = "";
 		
 		int minutes = 0;
+		int hours = 0;
 		double seconds = 0.0;
 		
-		
+		if (milliseconds >= 3600000)
+		{
+			hours = Time.hoursFromMilliseconds( milliseconds );
+			milliseconds = milliseconds - (3600000 * hours);
+		}
+
 		if (milliseconds > 60000) {
 		    minutes = Time.minutesFromMilliseconds(milliseconds);
 		    milliseconds = milliseconds - (60000 * minutes); 
@@ -62,7 +68,12 @@ public class FormattedStopwatch {
 		if (milliseconds > 1000) {
 		    seconds = milliseconds / 1000.0;
 		}
-		
+
+		if (hours > 0)
+		{
+			duration = hours + "hr ";
+		}
+
 		if (minutes > 0) {
 		    duration = minutes + "m ";		    
 		}

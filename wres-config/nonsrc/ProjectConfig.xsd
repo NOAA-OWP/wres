@@ -405,7 +405,7 @@
 
         <xs:sequence>
             <xs:element name="function" type="timeAggregationFunction" default="avg" />
-            <xs:element name="period" type="duration" minOccurs="1" maxOccurs="unbounded"/>
+            <xs:element name="period" type="duration"/>
             <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
             <xs:element name="unit" type="durationUnit" default="HOUR" minOccurs="1" maxOccurs="1"/>
         </xs:sequence>
