@@ -168,11 +168,10 @@ public class CommaSeparated
                 : output.entrySet() )
         {
             String name = m.getKey().getFirstKey().name();
-            String secondName = m.getKey().getSecondKey().name();
 
             for ( Threshold t : m.getValue().keySetByThreshold() )
             {
-                String column = name + "_" + secondName + "_" + t;
+                String column = name + "_" + t;
                 headerRow.add( column );
 
                 for ( MapBiKey<Integer, Threshold> key
