@@ -1,7 +1,9 @@
 package wres.engine.statistics.metric;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -304,6 +306,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         {
             List<Threshold> global = globalThresholds.get( MetricInputGroup.ENSEMBLE );
             double[] sorted = getSortedClimatology( input, global );
+            Map<Threshold,MetricInputSliceException> failures = new HashMap<>();
             global.forEach( threshold -> {
                 Threshold useMe = getThreshold( threshold, sorted );
                 try
@@ -333,8 +336,9 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                 //Insufficient data for one threshold: log, but allow
                 catch ( MetricInputSliceException e )
                 {
-                    LOGGER.error( THRESHOLD_ERROR, useMe, e );
+                    failures.put( threshold, e );
                 }
+                handleThresholdFailures( failures, global.size() );
             } );
         }
         //Deal with metric-local thresholds
