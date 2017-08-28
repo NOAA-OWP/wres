@@ -122,7 +122,7 @@
         <xs:sequence>
             <xs:element name="type" type="datasourceType" />
 
-            <xs:element name="source" minOccurs="1" maxOccurs="unbounded">
+            <xs:element name="source" minOccurs="0" maxOccurs="unbounded">
                 <xs:complexType>
                     <xs:simpleContent>
                         <xs:extension base="xs:anyURI">
