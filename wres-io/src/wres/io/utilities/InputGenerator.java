@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.TimeAggregationConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricInput;
@@ -29,6 +31,7 @@ import wres.io.grouping.LabeledScript;
 import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
+import wres.util.Time;
 
 /**
  * Interprets a project configuration and spawns asynchronous metric input retrieval operations
@@ -69,8 +72,9 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
     private static final class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     {
         private int windowNumber;
-        private Integer lastWindowNumber;
+        private Integer windowCount;
         private Integer variableID;
+        private Integer lastLead;
 
         private final Conditions.Feature feature;
         private final ProjectConfig projectConfig;
@@ -222,26 +226,60 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             this.createLeftHandCache();
         }
 
-        private Integer getLastWindowNumber() throws SQLException
+        private Integer getWindowCount()
+                throws SQLException, InvalidPropertiesFormatException
         {
-            if (this.lastWindowNumber == null)
+            if ( this.windowCount == null)
+            {
+                // If the last window number could not be determined from the database, set it to a number that should
+                // always yield false on validity checks
+                if ( this.windowCount == null)
+                {
+                    this.windowCount = -1;
+                }
+
+                // TODO: Add validation; throw error if start >= last
+                double start = this.projectConfig.getConditions().getFirstLead();
+                this.windowCount =
+                        ((Double)Math.ceil( (this.getLastLead() - start) / this.getWindowWidth() )).intValue();
+
+
+            }
+            return this.windowCount;
+        }
+
+        private Integer getLastLead()
+                throws SQLException, InvalidPropertiesFormatException
+        {
+            if (this.lastLead == null)
             {
                 LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(this.getVariableID(),
                                                                                     this.feature,
-                                                                                    projectConfig.getInputs().getLeft().getRange());
-                this.lastWindowNumber = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
+                                                                                    projectConfig.getInputs()
+                                                                                                 .getLeft()
+                                                                                                 .getRange());
 
-                // If the last window number could not be determined from the database, set it to a number that should
-                // always yield false on validity checks
-                if (this.lastWindowNumber == null)
+                lastLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
+
+                if (projectConfig.getConditions().getLastLead() < lastLead)
                 {
-                    this.lastWindowNumber = -1;
+                    lastLead = projectConfig.getConditions().getLastLead();
                 }
-
                 // TODO: This needs a better home
-                ProgressMonitor.setSteps( Long.valueOf( this.lastWindowNumber ) );
+                ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) );
             }
-            return this.lastWindowNumber;
+            return this.lastLead;
+        }
+
+        private double getWindowWidth() throws InvalidPropertiesFormatException
+        {
+            TimeAggregationConfig timeAggregation =
+                    this.projectConfig.getPair().getTimeAggregation();
+
+            double hours = Time.unitsToHours(timeAggregation.getUnit()
+                                                            .value(),
+                                             timeAggregation.getPeriod());
+            return hours;
         }
 
         /**
@@ -259,26 +297,29 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
         @Override
         public boolean hasNext () {
-            boolean isNext = false;
-
+            boolean next = false;
             try
             {
-                isNext = ConfigHelper.leadIsValid(projectConfig, this.windowNumber + 1, this.getLastWindowNumber());
+                next =  ConfigHelper.leadIsValid(projectConfig,
+                                                this.windowNumber + 1,
+                                                this.getLastLead());
             }
-            catch (SQLException error)
+            catch ( SQLException e )
             {
-                LOGGER.error("The last window for this project could not be calculated.");
-                LOGGER.error(Strings.getStackTrace(error));
+                e.printStackTrace();
             }
-
-            return isNext;
+            catch ( InvalidPropertiesFormatException e )
+            {
+                e.printStackTrace();
+            }
+            return next;
         }
 
         @Override
         public Future<MetricInput<?>> next () {
             Future<MetricInput<?>> nextInput = null;
 
-            if (ConfigHelper.leadIsValid(this.projectConfig, this.windowNumber + 1, this.lastWindowNumber))
+            if (this.hasNext())
             {
                 this.windowNumber++;
                 InputRetriever retriever = new InputRetriever(this.projectConfig,

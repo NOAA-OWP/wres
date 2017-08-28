@@ -156,13 +156,9 @@ public class ProgressMonitor
     
     public void UpdateMonitor() {
 
-        if (completedSteps < totalSteps) {
+        if (completedSteps <= totalSteps) {
             completedSteps++;
             executeOutput();
-        }
-        
-        if (this.autoReset && totalSteps.equals(completedSteps)) {
-            reset();
         }
     }
     
@@ -203,10 +199,6 @@ public class ProgressMonitor
             this.lastUpdate = System.currentTimeMillis();
         }
     }
-    
-    public void setAutoReset(boolean reset) {
-        this.autoReset = reset;
-    }
 
     public static void setShowStepDescription(boolean showStepDescription)
     {
@@ -217,11 +209,6 @@ public class ProgressMonitor
         this.totalSteps = 0L;
         this.completedSteps = 0L;
         this.startTime = System.currentTimeMillis();
-        /*if (this.printer != null) {
-            this.printMessage("");
-            this.printMessage("Progress Monitor has been reset.");
-            this.printMessage("");
-        }*/
     }
     
     private String getProgressMessage() {
@@ -349,7 +336,6 @@ public class ProgressMonitor
 
     private Long totalSteps;
     private Long completedSteps;
-    private boolean autoReset;
     private boolean showStepDescription = true;
     private Long lastUpdate;
     private Long updateFrequency;

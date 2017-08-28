@@ -158,8 +158,8 @@ public class ConfigHelper
     public static String getLeadQualifier(ProjectConfig projectConfig, int windowNumber) throws InvalidPropertiesFormatException {
         String qualifier;
 
-        if (projectConfig.getPair().getTimeAggregation() != null && projectConfig.getPair().getTimeAggregation().getPeriod().get(0) > 1) {
-            int period = projectConfig.getPair().getTimeAggregation().getPeriod().get(0);
+        if (projectConfig.getPair().getTimeAggregation() != null && projectConfig.getPair().getTimeAggregation().getPeriod() > 1) {
+            int period = projectConfig.getPair().getTimeAggregation().getPeriod();
             Double range = Time.unitsToHours(projectConfig.getPair().getTimeAggregation().getUnit().value(), period);
             qualifier = String.valueOf((int) (windowNumber * range)) + " > lead AND lead >= " + String.valueOf((int) ((windowNumber - 1) * range));
         }
