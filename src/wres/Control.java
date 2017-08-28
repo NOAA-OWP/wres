@@ -223,6 +223,9 @@ public class Control implements Function<String[], Integer>
         ProgressMonitor.setShowStepDescription( true );
         ProgressMonitor.resetMonitor();
 
+        LOGGER.debug( "Beginning ingest for project {}...",
+                      projectConfigPlus.getPath() );
+
         // Need to ingest first
         final boolean ingestResult = Operations.ingest(projectConfig);
 
@@ -230,6 +233,9 @@ public class Control implements Function<String[], Integer>
         {
             throw new WresProcessingException( "Error while attempting to ingest data." );
         }
+
+        LOGGER.debug( "Finished ingest for project {}...",
+                      projectConfigPlus.getPath() );
 
         // Obtain the features
         final List<Feature> features = projectConfig.getConditions().getFeature();
@@ -363,17 +369,26 @@ public class Control implements Function<String[], Integer>
         if ( configNeedsThisTypeOfOutput( projectConfig,
                                           DestinationType.GRAPHIC ) )
         {
+            LOGGER.debug( "Beginning to build charts for feature {}...",
+                          feature.getLocation().getLid() );
+
             processCachedCharts( feature,
                                  projectConfigPlus,
                                  processor,
                                  MetricOutputGroup.SCALAR,
                                  MetricOutputGroup.VECTOR );
+
+            LOGGER.debug( "Finished building charts for feature {}.",
+                          feature.getLocation().getLid() );
         }
 
         //Generate numerical output
         if ( configNeedsThisTypeOfOutput( projectConfig,
                                           DestinationType.NUMERIC ) )
         {
+            LOGGER.debug( "Beginning to write numeric output for feature {}...",
+                          feature.getLocation().getLid() );
+
             try
             {
                 CommaSeparated.writeOutputFiles( projectConfig,
@@ -400,6 +415,9 @@ public class Control implements Function<String[], Integer>
                 throw new WresProcessingException( "While writing output files: ",
                                                    e );
             }
+
+            LOGGER.debug( "Finished writing numeric output for feature {}.",
+                          feature.getLocation().getLid() );
         }
 
         if ( LOGGER.isInfoEnabled() )
