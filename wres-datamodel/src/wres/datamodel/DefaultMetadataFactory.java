@@ -248,7 +248,9 @@ public class DefaultMetadataFactory implements MetadataFactory
             case FREQUENCY_BIAS:
                 return "FREQUENCY_BIAS";                
             case INDEX_OF_AGREEMENT:
-                return "INDEX OF AGREEMENT";                
+                return "INDEX OF AGREEMENT"; 
+            case KLING_GUPTA_EFFICIENCY:
+                return "KLING GUPTA EFFICIENCY";                 
             case MEAN_ERROR:
                 return "MEAN ERROR";
             case MEAN_SQUARE_ERROR:
@@ -311,7 +313,9 @@ public class DefaultMetadataFactory implements MetadataFactory
             case FREQUENCY_BIAS:
                 return "FREQUENCY_BIAS";                       
             case INDEX_OF_AGREEMENT:
-                return "INDEX OF AGREEMENT";                       
+                return "INDEX OF AGREEMENT"; 
+            case KLING_GUPTA_EFFICIENCY:
+                return "KLING GUPTA EFFICIENCY";                
             case MEAN_ERROR:
                 return "MEAN ERROR";
             case MEAN_SQUARE_ERROR:
