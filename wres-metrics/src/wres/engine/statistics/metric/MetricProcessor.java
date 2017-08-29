@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -27,6 +28,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
+import wres.datamodel.MetricInputSliceException;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputForProject;
 import wres.datamodel.MultiVectorOutput;
@@ -91,12 +93,6 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     private static final int DECIMALS = 5;
-
-    /**
-     * Exception message when computing a threshold.
-     */
-
-    static final String THRESHOLD_ERROR = "While computing threshold {}:";
 
     /**
      * Instance of a {@link MetricFactory}.
@@ -209,6 +205,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
                 return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE;
             case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
                 return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
+            case INDEX_OF_AGREEMENT:
+                return MetricConstants.INDEX_OF_AGREEMENT;     
+            case KLING_GUPTA_EFFICIENCY:
+                return MetricConstants.KLING_GUPTA_EFFICIENCY;     
             case MEAN_ERROR:
                 return MetricConstants.MEAN_ERROR;
             case MEAN_SQUARE_ERROR:
@@ -497,6 +497,38 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
             }
         }
         return false;
+    }
+
+    /**
+     * Handles failures at individual thresholds due to insufficient data. Some failures are allowed. However, if all 
+     * thresholds fail, a {@link MetricCalculationException} is thrown to terminate further processing, as this
+     * indicates a serious failure.
+     * 
+     * @param failures a map of failures and associated {@link MetricInputSliceException}
+     * @param thresholdCount the total number of thresholds attempted
+     */
+
+    static void handleThresholdFailures( Map<Threshold, MetricInputSliceException> failures, int thresholdCount )
+    {
+        if ( failures.isEmpty() )
+        {
+            return;
+        }
+        //All failed: not allows
+        if ( failures.size() == thresholdCount )
+        {
+            // Set the first failure as the cause
+            throw new MetricCalculationException( "Failed to compute metrics at all " + thresholdCount
+                                                  + " available "
+                                                  + "thresholds as insufficient data was available.",
+                                                  failures.get( failures.keySet().iterator().next() ) );
+        }
+        else
+        {
+            // Aggregate, and report first instance
+            LOGGER.error( "Failed to compute {} of {} thresholds. First failure reported:", failures.size(), 
+                          thresholdCount, failures.get( failures.keySet().iterator().next() ));
+        }
     }
 
     /**

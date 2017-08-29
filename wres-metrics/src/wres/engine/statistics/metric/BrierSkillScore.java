@@ -23,36 +23,38 @@ import wres.datamodel.VectorOutput;
  * @since 0.1
  */
 class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs>
-implements ProbabilityScore
+        implements ProbabilityScore
 {
 
     @Override
-    public VectorOutput apply(final DiscreteProbabilityPairs s)
+    public VectorOutput apply( final DiscreteProbabilityPairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         //Explicit baseline
-        if(s.hasBaseline())
+        if ( s.hasBaseline() )
         {
             SingleValuedPairs input = s;
-            return super.apply(input);
+            return super.apply( (DiscreteProbabilityPairs) input );
         }
         //Climatological baseline
         else
         {
             DataFactory d = getDataFactory();
             //Bernoulli R.V. with probability p 
-            double p = FunctionFactory.mean().applyAsDouble(d.vectorOf(d.getSlicer().getLeftSide(s)));
-            double climP = p * (1.0 - p);
-            final double[] result = new double[]{Double.NaN};
-            if(climP>0) {
-                result[0]=FunctionFactory.skill().applyAsDouble(getSumOfSquareError(s) / s.size(), p * (1.0 - p));
-            }            
+            double p = FunctionFactory.mean().applyAsDouble( d.vectorOf( d.getSlicer().getLeftSide( s ) ) );
+            double climP = p * ( 1.0 - p );
+            final double[] result = new double[] { Double.NaN };
+            if ( climP > 0 )
+            {
+                result[0] =
+                        FunctionFactory.skill().applyAsDouble( getSumOfSquareError( s ) / s.size(), p * ( 1.0 - p ) );
+            }
             //Metadata
-            final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.NONE, null);
-            return getDataFactory().ofVectorOutput(result, metOut);
+            final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
+            return getDataFactory().ofVectorOutput( result, metOut );
         }
     }
 
@@ -96,13 +98,13 @@ implements ProbabilityScore
         @Override
         protected BrierSkillScore build()
         {
-            return new BrierSkillScore(this);
+            return new BrierSkillScore( this );
         }
 
         @Override
-        protected BrierSkillScoreBuilder setDecompositionID(final MetricDecompositionGroup decompositionID)
+        protected BrierSkillScoreBuilder setDecompositionID( final MetricDecompositionGroup decompositionID )
         {
-            super.setDecompositionID(decompositionID);
+            super.setDecompositionID( decompositionID );
             return this;
         }
 
@@ -114,9 +116,9 @@ implements ProbabilityScore
      * @param builder the builder
      */
 
-    private BrierSkillScore(final BrierSkillScoreBuilder builder)
+    private BrierSkillScore( final BrierSkillScoreBuilder builder )
     {
-        super(builder);
+        super( builder );
     }
 
 }

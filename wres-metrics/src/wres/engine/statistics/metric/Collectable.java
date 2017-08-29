@@ -13,6 +13,9 @@ import wres.datamodel.MetricOutputMetadata;
  * share intermediate outputs between them. There is no value in implementing this interface unless there are two or
  * more metrics that share a common ancestry.
  * 
+ * @param <S> the input type
+ * @param <T> the intermediate output type
+ * @param <U> the final output type
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1

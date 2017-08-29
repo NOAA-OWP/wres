@@ -22,7 +22,7 @@ class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends MeanSquareE
 {
 
     @Override
-    public VectorOutput apply(final SingleValuedPairs s)
+    public VectorOutput apply(final S s)
     {
         Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
