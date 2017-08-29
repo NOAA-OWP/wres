@@ -23,7 +23,7 @@ import wres.datamodel.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-class KlingGuptaEfficiency<S extends SingleValuedPairs> extends MeanSquareError<S>
+class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
 {
 
     /**
@@ -52,7 +52,7 @@ class KlingGuptaEfficiency<S extends SingleValuedPairs> extends MeanSquareError<
     private final double biasWeight;
 
     @Override
-    public VectorOutput apply( final S s )
+    public VectorOutput apply( final SingleValuedPairs s )
     {
         Objects.requireNonNull( s, "Specify non-null input for the '" + toString() + "'." );
 
@@ -103,15 +103,15 @@ class KlingGuptaEfficiency<S extends SingleValuedPairs> extends MeanSquareError<
      * A {@link MetricBuilder} to build the metric.
      */
 
-    static class KlingGuptaEfficiencyBuilder<S extends SingleValuedPairs>
+    static class KlingGuptaEfficiencyBuilder
             extends
-            MeanSquareErrorBuilder<S>
+            MeanSquareErrorBuilder<SingleValuedPairs>
     {
 
         @Override
-        protected KlingGuptaEfficiency<S> build()
+        protected KlingGuptaEfficiency build()
         {
-            return new KlingGuptaEfficiency<>( this );
+            return new KlingGuptaEfficiency( this );
         }
 
     }
@@ -122,7 +122,7 @@ class KlingGuptaEfficiency<S extends SingleValuedPairs> extends MeanSquareError<
      * @param builder the builder
      */
 
-    private KlingGuptaEfficiency( final KlingGuptaEfficiencyBuilder<S> builder )
+    private KlingGuptaEfficiency( final KlingGuptaEfficiencyBuilder builder )
     {
         super( builder );
         rho = MetricFactory.getInstance( getDataFactory() ).ofCorrelationPearsons();

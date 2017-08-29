@@ -205,6 +205,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
                 return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE;
             case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
                 return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
+            case INDEX_OF_AGREEMENT:
+                return MetricConstants.INDEX_OF_AGREEMENT;     
+            case KLING_GUPTA_EFFICIENCY:
+                return MetricConstants.KLING_GUPTA_EFFICIENCY;     
             case MEAN_ERROR:
                 return MetricConstants.MEAN_ERROR;
             case MEAN_SQUARE_ERROR:
@@ -465,8 +469,6 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         {
             returnMe.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
         }
-        //Remove rank histogram until fully supported: TODO: remove when implemented
-        returnMe.remove( MetricConstants.KLING_GUPTA_EFFICIENCY );
         return returnMe;
     }
 
