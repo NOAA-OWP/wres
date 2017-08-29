@@ -22,6 +22,7 @@ import wres.engine.statistics.metric.ContinuousRankedProbabilityScore.CRPSBuilde
 import wres.engine.statistics.metric.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
 import wres.engine.statistics.metric.FrequencyBias.FrequencyBiasBuilder;
 import wres.engine.statistics.metric.IndexOfAgreement.IndexOfAgreementBuilder;
+import wres.engine.statistics.metric.KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.RankHistogram.RankHistogramBuilder;
@@ -541,7 +542,9 @@ public class MetricFactory
             case MEAN_SQUARE_ERROR:
                 return ofMeanSquareError();
             case MEAN_SQUARE_ERROR_SKILL_SCORE:
-                return ofMeanSquareErrorSkillScore();              
+                return ofMeanSquareErrorSkillScore();
+            case KLING_GUPTA_EFFICIENCY:
+                return ofKlingGuptaEfficiency();
             default:
                 throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
@@ -1007,6 +1010,17 @@ public class MetricFactory
     IndexOfAgreement ofIndexOfAgreement()
     {
         return (IndexOfAgreement) new IndexOfAgreementBuilder().setOutputFactory( outputFactory ).build();
+    }
+
+    /**
+     * Return a default {@link KlingGuptaEfficiency} function.
+     * 
+     * @return a default {@link KlingGuptaEfficiency} function
+     */
+
+    KlingGuptaEfficiency ofKlingGuptaEfficiency()
+    {
+        return (KlingGuptaEfficiency) new KlingGuptaEfficiencyBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
