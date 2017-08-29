@@ -222,6 +222,7 @@ public final class Database {
         {
             try {
                 task.get();
+                shouldRefresh = true;
             }
             catch (InterruptedException | ExecutionException e) {
                 LOGGER.error(Strings.getStackTrace(e));
