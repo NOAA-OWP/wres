@@ -1,19 +1,5 @@
 package wres.io.utilities;
 
-import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-import org.postgresql.PGConnection;
-import org.postgresql.copy.CopyManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.io.concurrency.SQLExecutor;
-import wres.io.concurrency.WRESRunnable;
-import wres.io.config.SystemSettings;
-import wres.io.grouping.DualString;
-import wres.util.FormattedStopwatch;
-import wres.util.ProgressMonitor;
-import wres.util.Strings;
-
 import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.StringReader;
@@ -23,14 +9,37 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import com.mchange.v2.c3p0.C3P0ProxyConnection;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.io.concurrency.SQLExecutor;
+import wres.io.concurrency.WRESRunnable;
+import wres.io.config.SystemSettings;
+import wres.io.grouping.DualString;
+import wres.util.FormattedStopwatch;
+import wres.util.ProgressMonitor;
+import wres.util.Strings;
 
 public final class Database {
     
     private Database(){}
-
-    private static final ConcurrentHashMap<String, Map<String, DualString>> SAVED_INDEXES = new ConcurrentHashMap<>();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
@@ -88,7 +97,7 @@ public final class Database {
 		builder.append("INNER JOIN pg_namespace AS NS").append(NEWLINE);
 		builder.append("	ON T.relnamespace = NS.OID").append(NEWLINE);
 		builder.append("WHERE T.relname LIKE '%_idx'").append(NEWLINE);
-		builder.append("	AND ns.nspname = ANY('{partitions, wres}');");
+		builder.append("	AND ns.nspname = 'partitions';");
 
 		Connection connection = null;
 		ResultSet results = null;
@@ -101,10 +110,10 @@ public final class Database {
 
 			while (results.next())
 			{
-				foundIndexes.putIfAbsent(results.getString("table_name"), new TreeMap<String, DualString>());
-				DualString value = new DualString(results.getString("column_names"), results.getString("index_type"));
-				foundIndexes.get(results.getString(("table_name")))
-							.put(results.getString("index_name"), value);
+				Database.saveIndex( results.getString( "table_name" ),
+									results.getString("index_name"),
+									results.getString("column_names"),
+									results.getString( "index_type" ) );
 			}
 		}
 		catch (SQLException error)
@@ -130,81 +139,83 @@ public final class Database {
 				returnConnection(connection);
 			}
 		}
-
-		for (String tableName : foundIndexes.keySet())
-		{
-			builder = new StringBuilder();
-			builder.append("DROP INDEX IF EXISTS ");
-			int indexCount = 0;
-
-			for (String indexName : foundIndexes.get(tableName).keySet())
-			{
-				if (indexCount > 0)
-				{
-					builder.append(", ");
-				}
-
-				builder.append(indexName);
-			}
-
-			builder.append(";");
-
-			try {
-				execute(builder.toString());
-				SAVED_INDEXES.putIfAbsent(tableName, new TreeMap<>());
-
-				for (Map.Entry<String, DualString> indexDefinition : foundIndexes.get(tableName).entrySet())
-				{
-					SAVED_INDEXES.get(tableName)
-								 .put(indexDefinition.getKey(), indexDefinition.getValue());
-				}
-			}
-			catch (SQLException e) {
-			    LOGGER.error("The indexes for %s could not be dropped.", tableName);
-                LOGGER.error(NEWLINE + builder.toString() + NEWLINE);
-				LOGGER.error(Strings.getStackTrace(e));
-			}
-		}
 	}
 
 	public synchronized static void restoreAllIndices()
 	{
-	    if (SAVED_INDEXES.size() == 0)
-        {
-            return;
-        }
 
 		StringBuilder builder;
 
 		boolean shouldRefresh = false;
         LinkedList<Future<?>> indexTasks = new LinkedList<>();
-		LOGGER.info("Restoring Indices...");
+
+        Connection connection = null;
+        ResultSet indexes = null;
+        LOGGER.info("Restoring Indices...");
 
         FormattedStopwatch watch = new FormattedStopwatch();
         watch.start();
-		for (String tableName : SAVED_INDEXES.keySet())
-		{
-		    shouldRefresh = true;
-			Object[] indexNames = SAVED_INDEXES.get(tableName).keySet().toArray();
-			LOGGER.trace("Restoring: {}", tableName);
-			for (int nameIndex = 0; nameIndex < indexNames.length; ++nameIndex)
-			{
-				String indexName = (String)indexNames[nameIndex];
-                DualString definition = SAVED_INDEXES.get(tableName).get(indexName);
-				builder = new StringBuilder();
-				builder.append("CREATE INDEX IF NOT EXISTS ").append(indexName).append(NEWLINE);
-				builder.append("	ON ").append(tableName).append(NEWLINE);
-				builder.append("	USING ").append(definition.getSecond()).append(NEWLINE);
-				builder.append("	").append(definition.getFirst()).append(";");
 
-                LOGGER.trace("Restoring the {} index on {}...", indexName, tableName);
-                WRESRunnable restore = new SQLExecutor(builder.toString());
+        ProgressMonitor.resetMonitor();
+
+        try
+        {
+            connection = Database.getConnection();
+            indexes = Database.getResults( connection,
+                                           "SELECT * FROM public.IndexQueue;" );
+
+            while ( indexes.next())
+            {
+                builder = new StringBuilder(  );
+                builder.append( "CREATE INDEX IF NOT EXISTS " )
+                       .append( indexes.getString( "index_name" ) )
+                       .append( NEWLINE );
+                builder.append("    ON ")
+                       .append(indexes.getString( "table_name" ))
+                       .append(NEWLINE);
+                builder.append("    USING ")
+                       .append(indexes.getString( "method" ))
+                       .append(NEWLINE);
+                builder.append("    ")
+                       .append(indexes.getString( "column_definition" ))
+                       .append(";").append(NEWLINE);
+
+                builder.append("DELETE FROM public.IndexQueue").append(NEWLINE);
+                builder.append("WHERE indexqueue_id = ")
+                       .append(indexes.getInt( "indexqueue_id" ))
+                       .append(";");
+
+                WRESRunnable restore = new SQLExecutor( builder.toString());
                 restore.setOnRun(ProgressMonitor.onThreadStartHandler());
                 restore.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                 indexTasks.add(Database.execute(restore));
-                SAVED_INDEXES.get(tableName).remove(indexName);
-			}
-		}
+            }
+        }
+        catch ( SQLException e )
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            if (indexes != null)
+            {
+                try
+                {
+                    indexes.close();
+                }
+                catch ( SQLException e )
+                {
+                    LOGGER.error("The result set containing the collection of indexes could not be closed");
+                    LOGGER.error( Strings.getStackTrace(e));
+                }
+            }
+
+            if (connection != null)
+            {
+                Database.returnConnection( connection );
+            }
+        }
+
 
 		Future<?> task;
 		while ((task = indexTasks.poll()) != null)
@@ -216,10 +227,9 @@ public final class Database {
                 LOGGER.error(Strings.getStackTrace(e));
             }
         }
+
         watch.stop();
 		LOGGER.trace("It took {} to restore all indexes in the database.", watch.getFormattedDuration());
-
-		SAVED_INDEXES.clear();
 
 		if (shouldRefresh)
         {
@@ -229,26 +239,43 @@ public final class Database {
 
 	public static void saveIndex(String tableName, String indexName, String indexDefinition)
 	{
+		saveIndex( tableName, indexName, indexDefinition, "btree" );
+	}
+
+	public static void saveIndex(String tableName, String indexName, String indexDefinition, String indexType)
+    {
 		if (!indexDefinition.startsWith("("))
 		{
 			indexDefinition = "(" + indexDefinition;
 		}
 
 		if (!indexDefinition.endsWith(")"))
+        {
+            indexDefinition += ")";
+        }
+
+		StringBuilder script = new StringBuilder(  );
+		script.append("INSERT INTO public.IndexQueue (table_name, index_name, column_definition, method)").append(NEWLINE);
+		script.append("VALUES('")
+			  .append(tableName)
+			  .append("', '")
+			  .append(indexName)
+			  .append("', '")
+			  .append(indexDefinition)
+			  .append("', '")
+			  .append(indexType)
+			  .append("');");
+
+		try
 		{
-			indexDefinition += ")";
+			Database.execute( script.toString() );
+		}
+		catch ( SQLException e )
+		{
+			LOGGER.error( "Could not store metadata about the index '{}' in the database", indexName );
+			LOGGER.error(Strings.getStackTrace( e ));
 		}
 
-		SAVED_INDEXES.putIfAbsent(tableName, new TreeMap<>());
-		SAVED_INDEXES.get(tableName)
-					 .put(indexName, new DualString(indexDefinition, "btree"));
-	}
-
-	public static void saveIndex(String tableName, String indexName, String indexDefinition, String indexType)
-    {
-        SAVED_INDEXES.putIfAbsent(tableName, new TreeMap<>());
-        SAVED_INDEXES.get(tableName)
-                     .put(indexName, new DualString(indexDefinition, indexType));
     }
 
 	/**
@@ -709,6 +736,7 @@ public final class Database {
 		Connection connection = null;
 		ResultSet results;
 
+		// TODO: Thread this operation such that each table is analyzed simultaneously
         try {
             connection = getConnection();
 
