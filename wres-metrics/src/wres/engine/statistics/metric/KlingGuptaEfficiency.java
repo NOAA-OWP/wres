@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Slicer;
@@ -54,7 +55,10 @@ class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
     @Override
     public VectorOutput apply( final SingleValuedPairs s )
     {
-        Objects.requireNonNull( s, "Specify non-null input for the '" + toString() + "'." );
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
 
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
         //template as the componentID in the metadata

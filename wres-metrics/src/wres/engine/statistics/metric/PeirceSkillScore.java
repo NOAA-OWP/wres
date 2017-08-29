@@ -1,7 +1,5 @@
 package wres.engine.statistics.metric;
 
-import java.util.Objects;
-
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MatrixOutput;
 import wres.datamodel.MetricConstants;
@@ -30,7 +28,6 @@ class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyTableSco
     @Override
     public ScalarOutput apply(final MatrixOutput output)
     {
-        Objects.requireNonNull(output, "Specify non-null input for the '" + toString() + "'.");
         //Check the input
         isContingencyTable(output, this);
 

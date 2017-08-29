@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric;
 
+import java.util.Objects;
+
 import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricInputException;
@@ -23,6 +25,10 @@ class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProbabilityS
     @Override
     public VectorOutput apply( EnsemblePairs s )
     {
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         if ( !s.hasBaseline() )
         {
             throw new MetricInputException( "Specify a non-null baseline for the '" + this + "'." );

@@ -5,6 +5,7 @@ import java.util.Objects;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.SingleValuedPairs;
@@ -24,7 +25,10 @@ class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends MeanSquareE
     @Override
     public VectorOutput apply(final S s)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
         //template as the componentID in the metadata
         DatasetIdentifier baselineIdentifier = null;

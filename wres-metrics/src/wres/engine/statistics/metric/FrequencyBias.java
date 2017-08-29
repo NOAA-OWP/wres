@@ -1,7 +1,5 @@
 package wres.engine.statistics.metric;
 
-import java.util.Objects;
-
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.MatrixOutput;
 import wres.datamodel.MetricConstants;
@@ -21,7 +19,6 @@ class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
     @Override
     public ScalarOutput apply(final DichotomousPairs s)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         return apply(getCollectionInput(s));
     }
 
