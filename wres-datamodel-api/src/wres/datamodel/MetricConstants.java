@@ -92,6 +92,12 @@ public enum MetricConstants
     INDEX_OF_AGREEMENT( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),    
     
     /**
+     * Identifier for the Kling-Gupta Efficiency index.
+     */
+    
+    KLING_GUPTA_EFFICIENCY( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ), 
+    
+    /**
      * Identifier for a Mean Absolute Error.
      */
 

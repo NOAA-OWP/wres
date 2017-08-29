@@ -1,6 +1,8 @@
 package wres.engine.statistics.metric;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -390,6 +392,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
         {
             List<Threshold> global = globalThresholds.get( MetricInputGroup.SINGLE_VALUED );
             double[] sorted = getSortedClimatology( input, global );
+            Map<Threshold,MetricInputSliceException> failures = new HashMap<>();
             global.forEach( threshold -> {
                 Threshold useMe = getThreshold( threshold, sorted );
                 try
@@ -423,9 +426,10 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
                 //Insufficient data for one threshold: log, but allow
                 catch ( MetricInputSliceException e )
                 {
-                    LOGGER.error( THRESHOLD_ERROR, useMe, e );
+                    failures.put( threshold, e );
                 }
             } );
+            handleThresholdFailures( failures, global.size() );
         }
         //Deal with metric-local thresholds
         else
