@@ -1,4 +1,4 @@
-DO $$
+﻿DO $$
 BEGIN
 	-- WRES
 	DROP TABLE IF EXISTS wres.UnitConversion CASCADE;
@@ -12,29 +12,11 @@ BEGIN
 	DROP TABLE IF EXISTS wres.Variable CASCADE;
 	DROP TABLE IF EXISTS wres.ForecastType CASCADE;
 	DROP TABLE IF EXISTS wres.MeasurementUnit CASCADE;
-    DROP TABLE IF EXISTS wres.ForecastSource CASCADE;
+	DROP TABLE IF EXISTS wres.ForecastSource CASCADE;
 	DROP TABLE IF EXISTS wres.Source CASCADE;
+	DROP TABLE IF EXISTS wres.NetCDFCoordinate CASCADE;
+	DROP TABLE IF EXISTS wres.NetCDFValue CASCADE;
 
-	-- PUBLIC
-	DROP TABLE IF EXISTS public.PolygonWeight CASCADE;
-	DROP TABLE IF EXISTS public.ObservationResult CASCADE;
+	-- Public
 	DROP TABLE IF EXISTS public.nwm_location CASCADE;
-	DROP TABLE IF EXISTS public.ForecastResult CASCADE;
-	DROP TABLE IF EXISTS public.CoordinateIndex CASCADE;
-	DROP TABLE IF EXISTS public.ForecastCoordinate CASCADE;
-	DROP TABLE IF EXISTS public.ObservationCoordinate CASCADE;
-	DROP TABLE IF EXISTS public.NWSLocationCoordinate CASCADE;
-	DROP TABLE IF EXISTS public.USGSLocationCoordinate CASCADE;
-	DROP TABLE IF EXISTS public.FeatureIndex CASCADE;
-	DROP TABLE IF EXISTS public.VariableNetCDFSource CASCADE;
-	DROP TABLE IF EXISTS public.NetCDFSource CASCADE;
-	DROP TABLE IF EXISTS public.Observation CASCADE;
-	DROP TABLE IF EXISTS public.Coordinate CASCADE;
-	DROP TABLE IF EXISTS public.UnitConversion CASCADE;
-	DROP TABLE IF EXISTS public.MeasurementUnit CASCADE;
-	DROP TABLE IF EXISTS public.ObservationLocation CASCADE;
-	DROP TABLE IF EXISTS public.Projection CASCADE;
-	DROP TABLE IF EXISTS public.ForecastRange CASCADE;
-	DROP TABLE IF EXISTS public.Forecast CASCADE;
-	DROP TABLE IF EXISTS public.Variable CASCADE;
 END  $$;

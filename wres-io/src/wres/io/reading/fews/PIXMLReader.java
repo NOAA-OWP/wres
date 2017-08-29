@@ -713,7 +713,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The ID for the Ensemble that is currently being parsed
 	 */
-	private Integer currentEnsembleID = null;
+	private Integer currentEnsembleID;
 	
 	/**
 	 * The ID for the Ensemble for the forecast that is currently being parsed
@@ -817,7 +817,7 @@ public final class PIXMLReader extends XMLReader
 
         if (this.dataSourceConfig != null)
         {
-            scenario = this.dataSourceConfig.getRange();
+            scenario = this.dataSourceConfig.getScenario();
         }
 
         return scenario;

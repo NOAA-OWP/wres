@@ -61,7 +61,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         try {
             iterator =  new MetricInputIterator(this.projectConfig, this.feature);
         }
-        catch (SQLException | NotImplementedException e) {
+        catch (SQLException | NotImplementedException | InvalidPropertiesFormatException e) {
             LOGGER.error("A MetricInputIterator could not be created.");
             LOGGER.error(Strings.getStackTrace(e));
         }
@@ -132,10 +132,10 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(NEWLINE);
                 script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
 
-                if (!left.getRange().equalsIgnoreCase( "variable" ))
+                if (!left.getScenario().equalsIgnoreCase( "variable" ))
                 {
                     script.append("     AND F.forecasttype_id = ")
-                          .append(ForecastTypes.getForecastTypeId(left.getRange()))
+                          .append(ForecastTypes.getForecastTypeId(left.getScenario()))
                           .append(NEWLINE);
                 }
 
@@ -219,11 +219,15 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             }
         }
 
-        public MetricInputIterator(ProjectConfig projectConfig, Conditions.Feature feature) throws SQLException
+        public MetricInputIterator(ProjectConfig projectConfig, Conditions.Feature feature)
+                throws SQLException, InvalidPropertiesFormatException
         {
             this.projectConfig = projectConfig;
             this.feature = feature;
             this.createLeftHandCache();
+
+            // TODO: This needs a better home
+            ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) );
         }
 
         private Integer getWindowCount()
@@ -231,25 +235,17 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         {
             if ( this.windowCount == null)
             {
-                // If the last window number could not be determined from the database, set it to a number that should
-                // always yield false on validity checks
-                if ( this.windowCount == null)
-                {
-                    this.windowCount = -1;
-                }
 
                 // TODO: Add validation; throw error if start >= last
                 double start = this.projectConfig.getConditions().getFirstLead();
                 this.windowCount =
                         ((Double)Math.ceil( (this.getLastLead() - start) / this.getWindowWidth() )).intValue();
 
-
             }
             return this.windowCount;
         }
 
-        private Integer getLastLead()
-                throws SQLException, InvalidPropertiesFormatException
+        private Integer getLastLead() throws SQLException
         {
             if (this.lastLead == null)
             {
@@ -257,7 +253,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                                                                                     this.feature,
                                                                                     projectConfig.getInputs()
                                                                                                  .getLeft()
-                                                                                                 .getRange());
+                                                                                                 .getScenario());
 
                 lastLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
 
@@ -265,8 +261,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 {
                     lastLead = projectConfig.getConditions().getLastLead();
                 }
-                // TODO: This needs a better home
-                ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) );
             }
             return this.lastLead;
         }
@@ -305,10 +299,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                                                 this.getLastLead());
             }
             catch ( SQLException e )
-            {
-                e.printStackTrace();
-            }
-            catch ( InvalidPropertiesFormatException e )
             {
                 e.printStackTrace();
             }

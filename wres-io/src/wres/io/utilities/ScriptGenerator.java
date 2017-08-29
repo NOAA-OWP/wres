@@ -211,10 +211,10 @@ public final class ScriptGenerator
                       .append(NEWLINE);
             }
 
-            if (dataSourceConfig.getRange().equalsIgnoreCase( "variable" ))
+            if (!dataSourceConfig.getScenario().equalsIgnoreCase( "variable" ))
             {
                 script.append("     AND F.forecasttype_id = ")
-                      .append(ForecastTypes.getForecastTypeId(dataSourceConfig.getRange()))
+                      .append(ForecastTypes.getForecastTypeId(dataSourceConfig.getScenario()))
                       .append("         ")
                       .append("-- Limit returned values to only those matching the given forecast type")
                       .append(NEWLINE);
