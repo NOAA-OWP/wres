@@ -4,11 +4,11 @@ import java.util.Objects;
 import java.util.concurrent.atomic.DoubleAdder;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * Computes the mean error of a single-valued prediction as a fraction of the mean observed value.
@@ -30,8 +30,9 @@ class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> implements Sc
         final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
         DoubleAdder left = new DoubleAdder();
         DoubleAdder right = new DoubleAdder();
+        DoubleErrorFunction error = FunctionFactory.error();
         s.getData().forEach(pair -> {
-            left.add(pair.getItemOne()-pair.getItemTwo());
+            left.add(error.applyAsDouble( pair ));
             right.add(pair.getItemOne());
         });
         return getDataFactory().ofScalarOutput(left.sum()/right.sum(), metOut);        

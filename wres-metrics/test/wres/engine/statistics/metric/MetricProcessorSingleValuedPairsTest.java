@@ -64,7 +64,7 @@ public final class MetricProcessorSingleValuedPairsTest
                                                                        .get(MetricConstants.ROOT_MEAN_SQUARE_ERROR);
             //Test contents
             assertTrue("Unexpected difference in " + MetricConstants.BIAS_FRACTION,
-                       bias.getValue(0).getData().equals(-1.6666666666666667));
+                       bias.getValue(0).getData().equals(1.6666666666666667));
             assertTrue("Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
                        cod.getValue(0).getData().equals(1.0));
             assertTrue("Unexpected difference in " + MetricConstants.CORRELATION_PEARSONS,

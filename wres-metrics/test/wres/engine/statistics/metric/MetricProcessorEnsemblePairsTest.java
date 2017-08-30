@@ -72,7 +72,7 @@ public final class MetricProcessorEnsemblePairsTest
 
             //Test contents
             assertTrue( "Unexpected difference in " + MetricConstants.BIAS_FRACTION,
-                        bias.getValue( 0 ).getData().equals( 0.032093836077598345 ) );
+                        bias.getValue( 0 ).getData().equals( -0.032093836077598345 ) );
             assertTrue( "Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
                         cod.getValue( 0 ).getData().equals( 0.7873367083297588 ) );
             assertTrue( "Unexpected difference in " + MetricConstants.CORRELATION_PEARSONS,
@@ -122,27 +122,27 @@ public final class MetricProcessorEnsemblePairsTest
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 0 ),
-                        bias.getValue( 0 ).getData().equals( 0.032093836077598345 ) );
+                        bias.getValue( 0 ).getData().equals( -0.032093836077598345 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 1 ),
-                        bias.getValue( 1 ).getData().equals( 0.032093836077598345 ) );
+                        bias.getValue( 1 ).getData().equals( -0.032093836077598345 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 2 ),
-                        bias.getValue( 2 ).getData().equals( 0.0365931379807274 ) );
+                        bias.getValue( 2 ).getData().equals( -0.0365931379807274 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 3 ),
-                        bias.getValue( 3 ).getData().equals( 0.039706682985140816 ) );
+                        bias.getValue( 3 ).getData().equals( -0.039706682985140816 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 4 ),
-                        bias.getValue( 4 ).getData().equals( 0.0505708024162773 ) );
+                        bias.getValue( 4 ).getData().equals( -0.0505708024162773 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 5 ),
-                        bias.getValue( 5 ).getData().equals( 0.056658160809530816 ) );
+                        bias.getValue( 5 ).getData().equals( -0.056658160809530816 ) );
             //Validate CoD
             MetricOutputMapByLeadThreshold<ScalarOutput> cod =
                     results.get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
@@ -323,27 +323,27 @@ public final class MetricProcessorEnsemblePairsTest
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 0 ),
-                        bias.getValue( 0 ).getData().equals( 0.032093836077598345 ) );
+                        bias.getValue( 0 ).getData().equals( -0.032093836077598345 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 1 ),
-                        bias.getValue( 1 ).getData().equals( 0.032093836077598345 ) );
+                        bias.getValue( 1 ).getData().equals( -0.032093836077598345 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 2 ),
-                        bias.getValue( 2 ).getData().equals( 0.0365931379807274 ) );
+                        bias.getValue( 2 ).getData().equals( -0.0365931379807274 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 3 ),
-                        bias.getValue( 3 ).getData().equals( 0.039706682985140816 ) );
+                        bias.getValue( 3 ).getData().equals( -0.039706682985140816 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 4 ),
-                        bias.getValue( 4 ).getData().equals( 0.0505708024162773 ) );
+                        bias.getValue( 4 ).getData().equals( -0.0505708024162773 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 5 ),
-                        bias.getValue( 5 ).getData().equals( 0.056658160809530816 ) );
+                        bias.getValue( 5 ).getData().equals( -0.056658160809530816 ) );
             //Validate CoD
             MetricOutputMapByLeadThreshold<ScalarOutput> cod =
                     results.get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
