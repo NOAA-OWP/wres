@@ -211,6 +211,7 @@ class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
      * 
      * @param s the metric input
      * @return the output for each metric, contained in a collection
+     * @throws MetricCalculationException if the calculation fails for any reason, with the cause set
      */
 
     private MetricOutputMapByMetric<T> applyParallel( final S s ) throws MetricCalculationException

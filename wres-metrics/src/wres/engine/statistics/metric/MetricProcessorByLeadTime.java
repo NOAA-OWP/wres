@@ -15,6 +15,7 @@ import java.util.concurrent.Future;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MapBiKey;
+import wres.datamodel.Metadata;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInputSliceException;
@@ -347,6 +348,51 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
     }
 
     /**
+     * Handles failures at individual thresholds due to insufficient data. Some failures are allowed, and are logged
+     * as warnings. However, if all thresholds fail, a {@link MetricCalculationException} is thrown to terminate 
+     * further processing, as this indicates a serious failure.
+     * 
+     * @param failures a map of failures and associated {@link MetricInputSliceException}
+     * @param thresholdCount the total number of thresholds attempted
+     * @param meta the {@link Metadata} used to help focus messaging
+     * @param inGroup the {@link MetricInputGroup} consumed by the metrics on which the failure occurred, used to 
+     *            focus messaging
+     * @throws a MetricCalculationException if all thresholds fail
+     */
+
+    static void handleThresholdFailures( Map<Threshold, MetricInputSliceException> failures,
+                                         int thresholdCount,
+                                         Metadata meta,
+                                         MetricInputGroup inGroup )
+    {
+        if ( failures.isEmpty() )
+        {
+            return;
+        }
+        //All failed: not allowed
+        if ( failures.size() == thresholdCount )
+        {
+            // Set the first failure as the cause
+            throw new MetricCalculationException( "Failed to compute metrics at all " + thresholdCount
+                                                  + " available thresholds at lead time '"
+                                                  + meta.getLeadTimeInHours()
+                                                  + "'as insufficient data was available.",
+                                                  failures.get( failures.keySet().iterator().next() ) );
+        }
+        else
+        {
+            // Aggregate, and report first instance
+            LOGGER.warn( "WARN: failed to compute {} of {} thresholds at lead time {} for metrics that consume {} "
+                         + "inputs. " +
+                         failures.get( failures.keySet().iterator().next() ).getMessage(),
+                         failures.size(),
+                         thresholdCount,
+                         meta.getLeadTimeInHours(),
+                         inGroup );
+        }
+    }
+
+    /**
      * Constructor.
      * 
      * @param dataFactory the data factory
@@ -363,7 +409,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
     MetricProcessorByLeadTime( DataFactory dataFactory,
                                ProjectConfig config,
                                ExecutorService thresholdExecutor,
-                               ExecutorService metricExecutor,                               
+                               ExecutorService metricExecutor,
                                MetricOutputGroup[] mergeList )
             throws MetricConfigurationException
     {
@@ -392,7 +438,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
         {
             List<Threshold> global = globalThresholds.get( MetricInputGroup.SINGLE_VALUED );
             double[] sorted = getSortedClimatology( input, global );
-            Map<Threshold,MetricInputSliceException> failures = new HashMap<>();
+            Map<Threshold, MetricInputSliceException> failures = new HashMap<>();
             global.forEach( threshold -> {
                 Threshold useMe = getThreshold( threshold, sorted );
                 try
@@ -429,7 +475,8 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
                     failures.put( threshold, e );
                 }
             } );
-            handleThresholdFailures( failures, global.size() );
+            //Handle any failures
+            handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.SINGLE_VALUED );
         }
         //Deal with metric-local thresholds
         else
@@ -448,7 +495,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
      * @param pairs the pairs
      * @param collection the collection of metrics
      * @return the future result
-     * @throws MetricInputSliceException if the threshold fails to slice any data
+     * @throws MetricInputSliceException if the threshold fails to slice sufficient data to compute the metrics
      */
 
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
@@ -459,6 +506,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
     {
         //Slice the pairs
         SingleValuedPairs subset = dataFactory.getSlicer().sliceByLeft( pairs, threshold );
+        checkSlice( subset, threshold );
         return CompletableFuture.supplyAsync( () -> collection.apply( subset ), thresholdExecutor );
     }
 

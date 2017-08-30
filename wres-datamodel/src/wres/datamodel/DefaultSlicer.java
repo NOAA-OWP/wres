@@ -88,7 +88,7 @@ class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull(input, NULL_INPUT);
         Objects.requireNonNull(threshold, "Specify a non-null threshold.");
-        String sliceFail = "While slicing, the threshold '" + threshold + "' failed to obtain any data.";
+        String sliceFail = "While slicing, the threshold '" + threshold + "' failed to select any data.";
         List<PairOfDoubles> mainPairs = input.getData();
         List<PairOfDoubles> mainPairsSubset = new ArrayList<>();
         mainPairs.forEach(a -> {
@@ -128,7 +128,7 @@ class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull(input, NULL_INPUT);
         Objects.requireNonNull(threshold, "Specify a non-null threshold.");
-        String sliceFail = "While slicing, the threshold '" + threshold + "' failed to obtain any data.";
+        String sliceFail = "While slicing, the threshold '" + threshold + "' failed to select any data.";
         List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
         List<PairOfDoubleAndVectorOfDoubles> mainPairsSubset = new ArrayList<>();
         mainPairs.forEach(a -> {

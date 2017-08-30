@@ -1,6 +1,8 @@
 package wres.engine.statistics.metric;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -14,6 +16,7 @@ import wres.datamodel.DichotomousPairs;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
+import wres.datamodel.MetricInputSliceException;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.MetricOutputMapByMetric;
@@ -147,15 +150,26 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
             {
                 List<Threshold> global = globalThresholds.get( MetricInputGroup.DICHOTOMOUS );
                 double[] sorted = getSortedClimatology( input, global );
+                Map<Threshold, MetricInputSliceException> failures = new HashMap<>();
                 global.forEach( threshold -> {
                     //Only process discrete thresholds
                     if ( threshold.isFinite() )
                     {
-                        Threshold useMe = getThreshold( threshold, sorted );
-                        futures.addScalarOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                 processDichotomousThreshold( useMe, input, dichotomousScalar ) );
+                        try
+                        {
+                            Threshold useMe = getThreshold( threshold, sorted );
+                            futures.addScalarOutput( dataFactory.getMapKey( leadTime, useMe ),
+                                                     processDichotomousThreshold( useMe, input, dichotomousScalar ) );
+                        }
+                        //Insufficient data for one threshold: log, but allow
+                        catch ( MetricInputSliceException e )
+                        {
+                            failures.put( threshold, e );
+                        }
                     }
                 } );
+                //Handle any failures
+                handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.DICHOTOMOUS );
             }
             //Deal with metric-local thresholds
             else
@@ -175,13 +189,17 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
      * @param pairs the pairs
      * @param collection the metric collection
      * @return true if the future was added successfully
+     * @throws MetricInputSliceException if the pairs contain insufficient data to compute the metrics
      */
 
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
             processDichotomousThreshold( Threshold threshold,
                                          SingleValuedPairs pairs,
                                          MetricCollection<DichotomousPairs, T> collection )
+                    throws MetricInputSliceException
     {
+        //Check the data
+        checkSlice( pairs, threshold );
         //Define a mapper to convert the single-valued pairs to dichotomous pairs
         Function<PairOfDoubles, PairOfBooleans> mapper =
                 pair -> dataFactory.pairOf( threshold.test( pair.getItemOne() ),
