@@ -21,14 +21,14 @@ import wres.datamodel.VectorOfDoubles;
 class FunctionFactory
 {
     /**
-     * Return a function that computes the difference between the first and second entries in a {@link PairOfDoubles}.
+     * Return a function that computes the difference between the second and first entries in a {@link PairOfDoubles}.
      * 
      * @return a function that computes the error
      */
 
     public static DoubleErrorFunction error()
     {
-        return a -> a.getItemOne() - a.getItemTwo();
+        return a -> a.getItemTwo() - a.getItemOne();
     }
 
     /**

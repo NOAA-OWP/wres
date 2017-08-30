@@ -13,11 +13,11 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Metadata;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.io.config.ProjectConfigPlus;
 
 /**
@@ -71,7 +71,7 @@ public final class MetricProcessorSingleValuedPairsTest
                        rho.getValue(0).getData().equals(1.0));
             assertTrue("Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
                        mae.getValue(0).getData().equals(5.0));
-            assertTrue("Unexpected difference in " + MetricConstants.MEAN_ERROR, me.getValue(0).getData().equals(-5.0));
+            assertTrue("Unexpected difference in " + MetricConstants.MEAN_ERROR, me.getValue(0).getData().equals(5.0));
             assertTrue("Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
                        rmse.getValue(0).getData().equals(5.0));
 

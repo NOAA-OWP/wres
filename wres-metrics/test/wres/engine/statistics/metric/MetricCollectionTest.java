@@ -62,7 +62,7 @@ public class MetricCollectionTest
         //d.stream().forEach(g -> System.out.println(g.getData()));
 
         //Check them   
-        final Double expectedFirst = -200.55;
+        final Double expectedFirst = 200.55;
         final Double expectedSecond = 201.37;
         final Double expectedThird = 632.4586381732801;
         final Double actualFirst = d.get( MetricConstants.MEAN_ERROR ).getData();
@@ -554,7 +554,7 @@ public class MetricCollectionTest
             final MetricOutputMapByMetric<ScalarOutput> d = collection.call();
             //Check the results
             //Check them   
-            final Double expectedFirst = -200.55;
+            final Double expectedFirst = 200.55;
             final Double actualFirst = d.get( MetricConstants.MEAN_ERROR ).getData();
             final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
             assertTrue( "Expected value: " + expectedFirst
