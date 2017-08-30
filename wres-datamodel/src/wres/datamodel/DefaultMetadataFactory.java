@@ -289,7 +289,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         switch(identifier)
         {
             case BIAS_FRACTION:
-                return "BIAS";
+                return "BIAS FRACTION";
             case BRIER_SCORE:
                 return "BS";
             case BRIER_SKILL_SCORE:
