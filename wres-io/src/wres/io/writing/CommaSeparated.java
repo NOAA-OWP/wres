@@ -8,7 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
+import java.text.DecimalFormat;
+import java.text.Format;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
@@ -56,6 +57,7 @@ public class CommaSeparated
      * @throws IOException when the writing itself fails
      * @throws ProjectConfigException when no output files are specified
      * @throws NullPointerException when any of the arguments are null
+     * @throws IllegalArgumentException when destination has bad decimalFormat
      */
 
     public static void writeOutputFiles( ProjectConfig projectConfig,
@@ -87,6 +89,16 @@ public class CommaSeparated
 
             if ( d.getType() == DestinationType.NUMERIC )
             {
+                DecimalFormat formatter = null;
+                boolean applyCustomFormat = false;
+
+                if ( d.getDecimalFormat() != null
+                     && !d.getDecimalFormat().isEmpty() )
+                {
+                    formatter = new DecimalFormat();
+                    formatter.applyPattern( d.getDecimalFormat() );
+                    applyCustomFormat = true;
+                }
 
                 Path outputDirectory = Paths.get( d.getPath() );
 
@@ -130,10 +142,10 @@ public class CommaSeparated
                 if ( scalarOutput != null )
                 {
                     SortedMap<Integer, StringJoiner> scalars =
-                            CommaSeparated.getScalarRows( scalarOutput );
+                            CommaSeparated.getScalarRows( scalarOutput, formatter );
                     for ( Map.Entry<Integer, StringJoiner> e : scalars.entrySet() )
                     {
-                        rows.put( e.getKey(), e.getValue() );
+                        rows.put ( e.getKey(), e.getValue() );
                     }
                 }
 
@@ -156,8 +168,16 @@ public class CommaSeparated
         }
     }
 
+    /**
+     * Get csv rows by lead time in intermediate format (StringJoiner)
+     *
+     * @param output data to iterate through
+     * @param formatter optional formatter to format doubles with, can be null
+     * @return a SortedMap
+     */
     private static SortedMap<Integer, StringJoiner> getScalarRows(
-            MetricOutputMultiMapByLeadThreshold<ScalarOutput> output )
+            MetricOutputMultiMapByLeadThreshold<ScalarOutput> output,
+            DecimalFormat formatter )
     {
         SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
         StringJoiner headerRow = new StringJoiner( "," );
@@ -186,7 +206,18 @@ public class CommaSeparated
 
                     StringJoiner row = rows.get( key.getFirstKey() );
 
-                    row.add( m.getValue().get( key ).toString() );
+                    if ( formatter != null )
+                    {
+                        row.add( formatter.format( m.getValue()
+                                                    .get( key )
+                                                    .getData() ) );
+                    }
+                    else
+                    {
+                        row.add( m.getValue()
+                                  .get( key )
+                                  .toString() );
+                    }
                 }
             }
         }

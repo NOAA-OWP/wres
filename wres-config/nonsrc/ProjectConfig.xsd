@@ -347,6 +347,7 @@
         </xs:sequence>
 
         <xs:attribute name="type" type="destinationType" default="numeric" />
+        <xs:attribute name="decimalFormat" type="xs:string" />
     </xs:complexType>
 
     <xs:simpleType name="timeAggregationFunction">
