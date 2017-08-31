@@ -28,7 +28,7 @@ public final class Variables extends Cache<VariableDetails, String>
 	private static Variables INTERNAL_CACHE = null;
 	private static final Object CACHE_LOCK = new Object();
 
-	private static final Variables getCache()
+	private static Variables getCache()
 	{
 		synchronized (CACHE_LOCK)
 		{

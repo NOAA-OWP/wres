@@ -1,9 +1,9 @@
 package wres.io.data.details;
 
+import java.sql.SQLException;
+
 import wres.io.utilities.Database;
 import wres.util.Internal;
-
-import java.sql.SQLException;
 
 /**
  * Defines details about an Ensemble linked to a specific forecast
@@ -93,7 +93,7 @@ public final class ForecastEnsembleDetails {
 	 * saved.
 	 * @throws SQLException Thrown if the value could not be loaded from the database
 	 */
-	public void save() throws SQLException
+    private void save() throws SQLException
 	{
 		String script = "";
 		

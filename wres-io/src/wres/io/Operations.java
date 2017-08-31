@@ -1,6 +1,18 @@
 package wres.io;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.transform.TransformerException;
+
 import org.slf4j.LoggerFactory;
+
 import wres.config.generated.Conditions;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
@@ -11,23 +23,12 @@ import wres.io.utilities.Database;
 import wres.io.utilities.InputGenerator;
 import wres.util.Strings;
 
-import javax.xml.stream.XMLStreamException;
-import javax.xml.transform.TransformerException;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
 
     private static final boolean SUCCESS = true;
     private static final boolean FAILURE = false;
-    private static Operations ourInstance = new Operations();
+    private static final Operations ourInstance = new Operations();
 
     public static Operations getInstance () {
         return ourInstance;

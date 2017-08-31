@@ -20,6 +20,7 @@ import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
 import wres.io.concurrency.ObservationSaver;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Scenarios;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
@@ -59,7 +60,8 @@ public class SourceLoader
         return savingFiles;
     }
 
-    private List<Future> loadConfig(DataSourceConfig config) throws IOException {
+    private List<Future> loadConfig(DataSourceConfig config)
+    {
         List<Future> savingFiles = new ArrayList<>();
 
         if (config != null) {
@@ -221,6 +223,18 @@ public class SourceLoader
         script.append("         ON VP.variable_id = V.variable_id").append(NEWLINE);
         script.append("     WHERE S.path = '").append(sourceName).append("'").append(NEWLINE);
         script.append("         AND V.variable_name = '").append(dataSourceConfig.getVariable().getValue()).append("'").append(NEWLINE);
+
+        if (ConfigHelper.isForecast( dataSourceConfig ))
+        {
+            script.append("         AND F.scenario_id = ");
+        }
+        else
+        {
+            script.append("         AND SL.scenario_id = ");
+        }
+
+        script.append( Scenarios.getScenarioID( dataSourceConfig.getScenario(), dataSourceConfig.getType().value()))
+              .append(NEWLINE);
         script.append(");");
         
         return Database.getResult(script.toString(), "exists");

@@ -1,13 +1,13 @@
 package wres.io.data.caching;
 
-import wres.io.data.details.CachedDetail;
-import wres.util.Collections;
-import wres.util.Internal;
-
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import wres.io.data.details.CachedDetail;
+import wres.util.Collections;
+import wres.util.Internal;
 
 /**
  * An collection of details about concepts stored within the database
@@ -17,14 +17,14 @@ import java.util.concurrent.ConcurrentMap;
  */
 @Internal(exclusivePackage = "wres.io")
 abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
-    protected static final String NEWLINE = System.lineSeparator();
+    static final String NEWLINE = System.lineSeparator();
 
 	private LinkedHashMap<U, Integer> keyIndex;
 	private ConcurrentMap<Integer, T> details;
 	private static final Object DETAIL_LOCK = new Object();
 	private static final Object KEY_LOCK = new Object();
 
-	protected final LinkedHashMap<U, Integer> getKeyIndex()
+	final LinkedHashMap<U, Integer> getKeyIndex()
     {
         if (keyIndex == null)
         {
@@ -46,7 +46,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
         return this.keyIndex;
     }
 
-	protected final ConcurrentMap<Integer, T> getDetails()
+	final ConcurrentMap<Integer, T> getDetails()
 	{
 	    synchronized (DETAIL_LOCK) {
             if (this.details == null) {
@@ -87,7 +87,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * @return The ID for the details in the database
 	 * @throws SQLException Thrown if the ID could not be retrieved from the database
 	 */
-	public Integer getID(T detail) throws SQLException
+	Integer getID( T detail ) throws SQLException
 	{
 		U key = detail.getKey();
 		if (!hasID(key)) {
@@ -122,7 +122,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * @throws SQLException Thrown if the ID of the element could not be retrieved or the cache could not be
 	 * updated
 	 */
-	public void addElement(T element) throws SQLException
+	void addElement( T element ) throws SQLException
 	{
 		element.save();
 		add(element.getKey(), element.getId());
@@ -138,7 +138,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * @return The ID of a specific set of details
 	 * @throws SQLException Thrown if the ID could not be retrieved
 	 */
-	public Integer getID(U key) throws SQLException {
+	Integer getID( U key ) throws SQLException {
 		Integer id = null;
 		
 		synchronized (KEY_LOCK)
@@ -163,7 +163,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	    return hasIt;
 	}
 	
-	protected void add(U key, Integer id)
+	void add( U key, Integer id )
 	{
 	    synchronized (KEY_LOCK) {
 	        this.getKeyIndex().put(key, id);

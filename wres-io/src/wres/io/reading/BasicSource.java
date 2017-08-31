@@ -152,7 +152,7 @@ public abstract class BasicSource {
         return missingValue;
     }
 
-    protected boolean shouldIngest(String filePath, DataSourceConfig.Source source)
+    boolean shouldIngest( String filePath, DataSourceConfig.Source source )
     {
         SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
         SourceType pathFormat = ReaderFactory.getFiletype(filePath);

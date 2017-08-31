@@ -75,7 +75,7 @@ public class FormattedStopwatch {
 		}
 
 		if (minutes > 0) {
-		    duration = minutes + "m ";		    
+		    duration += minutes + "m ";
 		}
 		
 		if (seconds > 0) {

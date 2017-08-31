@@ -26,7 +26,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 	private static  MeasurementUnits INTERNAL_CACHE = null;
 	private static final Object CACHE_LOCK = new Object();
 
-    private static final MeasurementUnits getCache()
+    private static MeasurementUnits getCache()
     {
         synchronized (CACHE_LOCK)
         {

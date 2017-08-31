@@ -32,7 +32,6 @@ public final class ScriptGenerator
                                                      Conditions.Feature feature,
                                                      int scenarioID,
                                                      boolean isForecast)
-            throws SQLException
     {
         final String label = "last_lead";
         String script = "";

@@ -1,11 +1,12 @@
 package wres.io.data.details;
 
+import java.sql.SQLException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.io.utilities.Database;
 import wres.util.Internal;
-
-import java.sql.SQLException;
 
 /**
  * Details about a variable as defined in the Database
@@ -19,7 +20,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	public Integer measurementunitId = null;
 	private Integer variable_id = null;
 	private String variablePositionPartitionName;
-	private static Object saveLock = new Object();
+	private static final Object saveLock = new Object();
 
 	/**
 	 * Sets the name of the variable. The ID of the variable is invalidated if its name changes

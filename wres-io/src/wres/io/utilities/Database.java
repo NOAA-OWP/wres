@@ -12,7 +12,6 @@ import java.sql.Statement;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -22,18 +21,16 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.mchange.v2.c3p0.C3P0ProxyConnection;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.SystemSettings;
-import wres.io.grouping.DualString;
 import wres.util.FormattedStopwatch;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -102,7 +99,6 @@ public final class Database {
 
 		Connection connection = null;
 		ResultSet results = null;
-		Map<String, Map<String, DualString>> foundIndexes = new TreeMap<>();
 
 		try
 		{
@@ -463,18 +459,6 @@ public final class Database {
 	
 	public static void copy(final String table_definition, final String values, String delimiter) throws CopyException
 	{
-		if (!SystemSettings.getDatabaseType().equalsIgnoreCase("postgresql"))
-		{
-            try {
-                translateCopyToInsert(table_definition, values, delimiter);
-            }
-            catch (SQLException e) {
-                LOGGER.error("Translating the copy operation to an insert operation failed.");
-                throw new CopyException("Translating the copy operation to an insert operation failed.", e);
-            }
-            return;
-		}
-		
 		Connection connection = null;
 		PushbackReader reader = null;
 		final String copyAPIMethodName = "getCopyAPI";
@@ -552,11 +536,11 @@ public final class Database {
 
 	public static synchronized void buildInstance()
 	{
-		Connection connection = null;
 
 		throw new RuntimeException("Database.buildInstance() is not ready for execution.");
 
-		/*try {
+        /*Connection connection = null;
+		try {
 			connection = Database.getConnection();
 			liquibase.database.Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
 			// TODO: MUEY BAD; there needs to be a better solution than accessing the file via a hardcoded path. Maybe a system setting?
@@ -580,28 +564,6 @@ public final class Database {
 				Database.returnConnection(connection);
 			}
 		}*/
-	}
-	
-	/**
-	 * Take information about information that was supposed to be copied into a Database, convert to insert statements, and execute.
-	 * The only database that supports this copy operation is PostgreSQL, so this will need to be implemented for any other database.
-	 * 
-	 * @param table_definition
-	 * @param values
-	 * @param delimiter
-	 * @return
-	 * @throws SQLException
-	 */
-	private static boolean translateCopyToInsert(final String table_definition, final String values, String delimiter) throws SQLException
-	{
-		boolean success = false;
-		
-		// This script will need to be put together from the table definition and the values picked apart by the delimiter
-		String script = "";
-		
-		execute(script);
-		
-		return success;
 	}
 
 	@SuppressWarnings("unchecked")
