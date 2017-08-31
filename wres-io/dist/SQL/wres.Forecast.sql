@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS wres.Forecast
 (
   forecast_id serial,
   forecast_date TIMESTAMP NOT NULL,
-  forecasttype_id SMALLINT REFERENCES wres.ForecastType (forecasttype_id),
+  scenario_id SMALLINT,
   CONSTRAINT forecast_pk PRIMARY KEY (forecast_id)
 )
 WITH (
@@ -21,3 +21,8 @@ CREATE INDEX IF NOT EXISTS forecast_forecast_date_idx
   ON wres.forecast
   USING btree
   (forecast_date);
+
+CREATE INDEX IF NOT EXISTS forecast_scenario_idx
+  ON wres.Forecast
+  USING btree
+  (scenario_id);

@@ -1,12 +1,12 @@
 package wres.io.data.details;
 
-import wres.io.data.caching.DataSources;
-import wres.io.data.caching.ForecastTypes;
-import wres.io.utilities.Database;
-import wres.util.Internal;
-
 import java.sql.SQLException;
 import java.util.HashMap;
+
+import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Scenarios;
+import wres.io.utilities.Database;
+import wres.util.Internal;
 
 /**
  * Important details about a forecast that predicted values for different variables over some span of time
@@ -25,8 +25,10 @@ public final class ForecastDetails {
 
 	private Integer forecast_id = null;
 	private String creationDate = null;
-	private String range = null;
+	private String scenario = "";
+	private String type = "";
 	private Integer lead = null;
+	private Integer scenarioID = null;
 
 	/**
 	 * The path to the file that contains data for the forecast
@@ -67,13 +69,31 @@ public final class ForecastDetails {
 	    }
 	}
 	
-	public void setRange(String range)
+	public void setScenario(String scenario)
 	{
-	    if (this.range == null || !this.range.equalsIgnoreCase(range))
+	    if (this.scenario == null || !this.scenario.equalsIgnoreCase(scenario))
 	    {
-	        this.range = range;
+	        this.scenario = scenario;
 	        this.forecast_id = null;
 	    }
+	}
+
+	public void setType(String type)
+	{
+		if (this.type == null || !this.type.equalsIgnoreCase( type ))
+		{
+			this.type = type;
+			this.forecast_id = null;
+		}
+	}
+
+	private int getScenarioID() throws SQLException
+	{
+		if (this.scenarioID == null)
+		{
+			this.scenarioID = Scenarios.getScenarioID(this.scenario, this.type);
+		}
+		return this.scenarioID;
 	}
 
 	/**
@@ -99,32 +119,14 @@ public final class ForecastDetails {
 
 		script += "WITH new_forecast AS" + NEWLINE;
 		script += "(" + NEWLINE;
-		script += "		INSERT INTO wres.Forecast(forecast_date, forecasttype_id)" + NEWLINE;
+		script += "		INSERT INTO wres.Forecast(forecast_date, scenario_id)" + NEWLINE;
 		script += "		SELECT '" + this.forecastDate + "', ";
-
-		if (this.range == null)
-        {
-            script += "null" + NEWLINE;
-        }
-        else
-        {
-            script += String.valueOf(ForecastTypes.getForecastTypeId(this.range)) + NEWLINE;
-        }
-
+		script += "			" + this.getScenarioID() + NEWLINE;
 		script += "		WHERE NOT EXISTS (" + NEWLINE;
 		script += "			SELECT 1" + NEWLINE;
 		script += "			FROM wres.Forecast" + NEWLINE;
 		script += "			WHERE forecast_date = '" + this.forecastDate + "'" + NEWLINE;
-		script += "				AND forecasttype_id ";
-
-		if (this.range == null)
-        {
-            script += "is null" + NEWLINE;
-        }
-        else {
-            script += "= '" + String.valueOf(ForecastTypes.getForecastTypeId(this.range)) + "'" + NEWLINE;
-        }
-
+		script += "				AND scenario_id = " + this.getScenarioID();
 		script += "		)" + NEWLINE;
 		script += "		RETURNING forecast_id" + NEWLINE;
 		script += ")" + NEWLINE;
@@ -136,20 +138,9 @@ public final class ForecastDetails {
 		script += "SELECT forecast_id" + NEWLINE;
 		script += "FROM wres.Forecast" + NEWLINE;
 		script += "WHERE forecast_date = '" + this.forecastDate + "'" + NEWLINE;
-		script += "     AND forecasttype_id ";
+		script += "     AND scenario_id = " + this.getScenarioID() + ";";
 
-        if (this.range == null)
-        {
-            script += "is null";
-        }
-        else {
-            script += "= '" + String.valueOf(ForecastTypes.getForecastTypeId(this.range)) + "'";
-        }
-
-        script += ";";
-
-
-		forecast_id = Database.getResult(script, "forecast_id");
+		this.forecast_id = Database.getResult(script, "forecast_id");
 		
 		saveForecastSource();
 	}

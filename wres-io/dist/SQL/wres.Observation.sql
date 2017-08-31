@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS wres.Observation
   observation_time timestamp,
   observed_value FLOAT,
   measurementunit_id INT,
-  source_id INT/*,
+  source_id INT,
+  scenario_id SMALLINT/*,
 
 	FKs are disabled until dynamic removal and reinstatement has been implemented
   
@@ -35,6 +36,7 @@ CREATE INDEX IF NOT EXISTS observation_variableposition_idx
   ON wres.observation
   USING btree
   (variableposition_id);
+ALTER TABLE wres.observation CLUSTER ON observation_variableposition_idx;
 
 DROP INDEX IF EXISTS observation_time_idx;
 

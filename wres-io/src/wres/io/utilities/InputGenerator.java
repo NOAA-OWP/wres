@@ -24,14 +24,13 @@ import wres.datamodel.MetricInput;
 import wres.datamodel.VectorOfDoubles;
 import wres.io.concurrency.InputRetriever;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.ForecastTypes;
+import wres.io.data.caching.Scenarios;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.grouping.LabeledScript;
 import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-import wres.util.Time;
 
 /**
  * Interprets a project configuration and spawns asynchronous metric input retrieval operations
@@ -80,6 +79,29 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private final ProjectConfig projectConfig;
         private Map<String, Double> leftHandMap;
         private VectorOfDoubles leftHandValues;
+        private String zeroDate;
+
+        private DataSourceConfig getLeft()
+        {
+            return this.projectConfig.getInputs().getLeft();
+        }
+
+        private DataSourceConfig getRight()
+        {
+            return this.projectConfig.getInputs().getRight();
+        }
+
+        private DataSourceConfig getBaseline()
+        {
+            DataSourceConfig baseline = null;
+
+            if (ConfigHelper.hasBaseline( this.projectConfig ))
+            {
+                baseline = this.projectConfig.getInputs().getBaseline();
+            }
+
+            return baseline;
+        }
 
         private void createLeftHandCache() throws SQLException
         {
@@ -88,7 +110,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
             String desiredMeasurementUnit = this.projectConfig.getPair().getUnit();
             Integer desiredMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(desiredMeasurementUnit);
-            DataSourceConfig left = this.projectConfig.getInputs().getLeft();
+            DataSourceConfig left = this.getLeft();
 
             StringBuilder script = new StringBuilder();
             Integer leftVariableID = ConfigHelper.getVariableID(left);
@@ -134,8 +156,9 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
                 if (!left.getScenario().equalsIgnoreCase( "variable" ))
                 {
-                    script.append("     AND F.forecasttype_id = ")
-                          .append(ForecastTypes.getForecastTypeId(left.getScenario()))
+                    script.append("     AND F.scenario_id = ")
+                          .append( Scenarios.getScenarioID( left.getScenario(),
+                                                            left.getType().value()))
                           .append(NEWLINE);
                 }
 
@@ -162,6 +185,9 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append("     O.measurementunit_id").append(NEWLINE);
                 script.append("FROM wres.Observation O").append(NEWLINE);
                 script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
+                script.append("     AND O.scenario_id = ")
+                      .append(Scenarios.getScenarioID( left.getScenario(),
+                                                       left.getType().value() ));
             }
 
             script.append(";");
@@ -211,12 +237,45 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             }
             this.leftHandMap = values;
 
-            DataFactory factory = DefaultDataFactory.getInstance();
 
             if (futureVector != null)
             {
+                DataFactory factory = DefaultDataFactory.getInstance();
                 this.leftHandValues = factory.vectorOf(futureVector.toArray(new Double[futureVector.size()]));
             }
+        }
+
+        public String getZeroDate() throws SQLException
+        {
+            if (this.zeroDate == null)
+            {
+
+                DataSourceConfig simulation = this.getSimulation();
+
+                String script = ScriptGenerator.generateZeroDateScript( this.projectConfig,
+                                                                        simulation,
+                                                                        this.feature);
+
+                this.zeroDate = Database.getResult(script, "zero_date");
+            }
+
+            return this.zeroDate;
+        }
+
+        private DataSourceConfig getSimulation()
+        {
+            DataSourceConfig simulation = null;
+
+            if (!ConfigHelper.isForecast( this.getRight()))
+            {
+                simulation = this.getRight();
+            }
+            else if (!ConfigHelper.isForecast( this.getBaseline() ))
+            {
+                simulation = this.getBaseline();
+            }
+
+            return simulation;
         }
 
         public MetricInputIterator(ProjectConfig projectConfig, Conditions.Feature feature)
@@ -233,15 +292,36 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private Integer getWindowCount()
                 throws SQLException, InvalidPropertiesFormatException
         {
-            if ( this.windowCount == null)
+            if ( this.windowCount == null && ConfigHelper.isForecast( this.getRight() ))
             {
 
                 // TODO: Add validation; throw error if start >= last
                 double start = this.projectConfig.getConditions().getFirstLead();
-                this.windowCount =
-                        ((Double)Math.ceil( (this.getLastLead() - start) / this.getWindowWidth() )).intValue();
+                Integer last = this.getLastLead();
 
+                if (last == null)
+                {
+                    throw new IllegalArgumentException( "The final lead time for the data set for: " +
+                                                        this.getRight()
+                                                            .getVariable()
+                                                            .getValue() +
+                                                        " could not be determined.");
+                }
+
+                TimeAggregationConfig timeAggregationConfig =
+                        ConfigHelper.getTimeAggregation( this.getRight() );
+
+                double windowWidth = ConfigHelper.getWindowWidth( timeAggregationConfig );
+                double windowSpan = this.getLastLead() - start;
+
+                this.windowCount =
+                        ((Double)Math.ceil( windowSpan / windowWidth)).intValue();
             }
+            else if (this.windowCount == null)
+            {
+                this.windowCount = 1;
+            }
+
             return this.windowCount;
         }
 
@@ -249,11 +329,12 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         {
             if (this.lastLead == null)
             {
+                int scenarioID = Scenarios.getScenarioID( this.getRight().getScenario(),
+                                                          this.getRight().getType().value() );
                 LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(this.getVariableID(),
                                                                                     this.feature,
-                                                                                    projectConfig.getInputs()
-                                                                                                 .getLeft()
-                                                                                                 .getScenario());
+                                                                                    scenarioID,
+                                                                                    ConfigHelper.isForecast( this.getRight() ));
 
                 lastLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
 
@@ -265,17 +346,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             return this.lastLead;
         }
 
-        private double getWindowWidth() throws InvalidPropertiesFormatException
-        {
-            TimeAggregationConfig timeAggregation =
-                    this.projectConfig.getPair().getTimeAggregation();
-
-            double hours = Time.unitsToHours(timeAggregation.getUnit()
-                                                            .value(),
-                                             timeAggregation.getPeriod());
-            return hours;
-        }
-
         /**
          * @return the id for the variable in the database
          * @throws SQLException
@@ -284,7 +354,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         {
             if (this.variableID == null)
             {
-                this.variableID = ConfigHelper.getVariableID(projectConfig.getInputs().getRight());
+                this.variableID = ConfigHelper.getVariableID(this.getRight());
             }
             return this.variableID;
         }
@@ -294,11 +364,32 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             boolean next = false;
             try
             {
-                next =  ConfigHelper.leadIsValid(projectConfig,
-                                                this.windowNumber + 1,
-                                                this.getLastLead());
+
+                if (ConfigHelper.isForecast( this.getRight() ))
+                {
+                    Double windowWidth = 1.0;
+                    TimeAggregationConfig timeAggregationConfig =
+                            ConfigHelper.getTimeAggregation( this.getRight() );
+                    windowWidth =
+                            ConfigHelper.getWindowWidth( timeAggregationConfig );
+
+                    double beginning = windowWidth * (this.windowNumber + 1);
+
+
+                    next = beginning <= this.getLastLead() &&
+                           beginning <= this.projectConfig.getConditions().getLastLead() &&
+                           beginning >= this.projectConfig.getConditions().getFirstLead();
+                }
+                else
+                {
+                    next = this.windowNumber == 0;
+                }
             }
             catch ( SQLException e )
+            {
+                e.printStackTrace();
+            }
+            catch ( InvalidPropertiesFormatException e )
             {
                 e.printStackTrace();
             }
@@ -319,6 +410,18 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                                                                     return this.leftHandMap.getOrDefault(date,null);
                                                                     },
                                                               this.leftHandValues);
+
+                if (this.getSimulation() != null)
+                {
+                    try
+                    {
+                        retriever.setZeroDate( this.getZeroDate() );
+                    }
+                    catch ( SQLException e )
+                    {
+                        e.printStackTrace();
+                    }
+                }
 
                 nextInput = Database.submit(retriever);
             }
