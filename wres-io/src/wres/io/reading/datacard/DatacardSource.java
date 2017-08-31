@@ -233,9 +233,18 @@ public class DatacardSource extends BasicSource {
 			int    obsValColWidth = 0;
 			int	   lastColIdx     = 0;
 			
+			//TODO Hank (8/31/17): You cannot rely on the $ lines to exist.  Furhter, since they are comment lines,
+			//you cannot depend on them for information.  Instead, the missing data value will need to be provided
+            //through configuration.  And, since multiple values can serve as missing (-998 should be treated as -999,
+			//both being "missing"), you may need to allow for multiple possible values to denote missing.
+			//
+			//In any case, if a user does not specify missing, then it should assume -998 and -999 are both
+			//missing.  I think this could be handled in the config side by supplying a default for whatever 
+			//element is used for the user to specify the missing value.
 			Pattern missing_data_pattern     = Pattern.compile("(?<=SYMBOL FOR MISSING DATA=)[-\\.\\d]*");
 			Pattern accumulated_data_pattern = Pattern.compile("(?<=SYMBOL FOR ACCUMULATED DATA=)[-\\.\\d]*");
-									
+
+			//XXX Hank (8/31/17) Process the comment lines.  
 			while ((line = reader.readLine()) != null && line.startsWith("$"))
 			{
 				Matcher missing_data_matcher = missing_data_pattern.matcher(line);
@@ -251,6 +260,7 @@ public class DatacardSource extends BasicSource {
 				}
 			}
 			
+			//XXX Hank (8/31/17): First non-comment, header line.
 			if (line != null)
 			{
 				set_datatype_code(line.substring(14, 18));
@@ -269,6 +279,7 @@ public class DatacardSource extends BasicSource {
 				throw new IOException(String.format(message, getFilename()));
 			}
 			
+			//XXX Hank (8/31/17): Second non-comment, header line.
 			if ((line = reader.readLine()) != null)
 			{
 				set_first_month(line.substring(0, 2));
@@ -295,13 +306,24 @@ public class DatacardSource extends BasicSource {
 			String         value          = "";
 			
 			datetime = datetime.plusHours(Time.zoneOffsetHours(timeZone));
-						
+            
+			//XXX Hank (8/31/17): Process the lines one at a time.
 			while ((line = reader.readLine()) != null)
 			{
 				for (valIdxInRecord = 0; valIdxInRecord < values_per_record; valIdxInRecord++)
 				{
 					entry_count++;
 					
+					//TODO I don't see any logic in here to handle lines with fewer numbers than values_per_record.
+					//For example:
+					//
+                    //		            1048  19     .000     .000     .000     .000     .000     .048
+                    //		            1048  20     .038     .108     .093     .001     .000     .001
+                    //		            1048  21     .000     .000     .000     .000
+					//the last line has only four entries.  The loop above will assume six.  I don't see
+					//anything here that will identify that there are no more entries (I think the substring
+					//below will fail somehow, but you keep using it as normal).
+
 					//last value in the row/record?
 					if(valIdxInRecord == values_per_record - 1)
 					{
@@ -315,6 +337,14 @@ public class DatacardSource extends BasicSource {
 					
 					datetime = datetime.plusHours(time_interval);
 					
+					//TODO Hank (8/31/17): Again, the missing and accumulated data values are not being handled well.
+					//First, you should do a numerical check, since, with this check, if missing is "-999.0" but the
+					//datacard included a field with "-999", which can happen if someone manually edits the file, you 
+					//will not know it is missing.  You should get float values for missing, convert the ingested 
+					//value to a float and compare.  
+					//
+					//Also, please confirm this is necessary.  What if missing values were just forwarded to the database?
+					//Would that be okay?  Would the database handle it?
 					if (!value.startsWith(missing_data_symbol) && !value.startsWith(accumulated_data_symbol))
 					{
 						try
@@ -399,6 +429,9 @@ public class DatacardSource extends BasicSource {
 		return variable_name;
 	}
 	
+	//TODO Hank (8/31/17): I think this method could check a flag called "testMode" or something similar.  If testing,
+	//it could output the currentScript to a file or something else.  You can then check the resulting script
+	//with a benchmark to see if its what is expected.  
 	private void saveLeftoverObservations()
     {
         if (insertCount > 0)
