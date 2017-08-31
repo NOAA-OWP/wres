@@ -27,7 +27,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 	private Integer feature_id = null;
 	
 	// A concurrent mapping of the feature to its index for a variable
-	private ConcurrentMap<Integer, Integer> variablePositions = new ConcurrentHashMap<>();
+	private final ConcurrentMap<Integer, Integer> variablePositions = new ConcurrentHashMap<>();
 	private static final Object POSITION_LOCK = new Object();
 	
 	/**

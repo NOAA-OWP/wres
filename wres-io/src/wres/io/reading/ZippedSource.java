@@ -44,7 +44,7 @@ public class ZippedSource extends BasicSource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedSource.class);
 
-    private ExecutorService readerService = createReaderService();
+    private final ExecutorService readerService = createReaderService();
 
     private ExecutorService createReaderService()
     {

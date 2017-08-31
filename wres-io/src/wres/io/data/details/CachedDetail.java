@@ -35,7 +35,7 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	 * Sets the ID of the detail as defined in the database
 	 * @param id The ID for the detail in the database
 	 */
-	public abstract void setID(Integer id);
+	protected abstract void setID( Integer id );
 	
 	/**
 	 * @return A script used to select the ID of the detail in the data base and insert it if need be

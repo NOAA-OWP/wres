@@ -40,13 +40,13 @@ public class XMLReader
 	 * @param filename the file name
 	 */
 	@Internal(exclusivePackage = "wres.io")
-	public XMLReader(String filename)
+	protected XMLReader( String filename )
 	{
 	    this(filename, false);
 	}
 
 	@Internal(exclusivePackage = "wres.io")
-	public XMLReader (String fileName, InputStream inputStream)
+	protected XMLReader( String fileName, InputStream inputStream )
 	{
 		this.find_on_classpath = false;
 		this.filename = fileName;
@@ -54,7 +54,7 @@ public class XMLReader
 	}
 
 	@Internal(exclusivePackage = "wres.io")
-	public XMLReader(String filename, boolean find_on_classpath)
+    protected XMLReader( String filename, boolean find_on_classpath )
 	{
 	    this.filename = filename;
 	    this.find_on_classpath = find_on_classpath;
@@ -68,7 +68,7 @@ public class XMLReader
 		return filename;
 	}
 
-	protected InputStream get_file()
+	private InputStream get_file()
 	{
 	    return ClassLoader.getSystemResourceAsStream(filename);
 	}
@@ -120,7 +120,7 @@ public class XMLReader
 		this.filename = filename;
 	}
 	
-	protected XMLStreamReader createReader () throws FileNotFoundException, XMLStreamException
+	private XMLStreamReader createReader() throws FileNotFoundException, XMLStreamException
 	{
 		XMLStreamReader reader = null;
 

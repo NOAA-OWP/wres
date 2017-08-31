@@ -58,6 +58,6 @@ public final class LabeledScript implements Comparable<LabeledScript>
         return equality;
     }
     
-    private String script;
-    private String label;
+    private final String script;
+    private final String label;
 }

@@ -14,5 +14,5 @@ public enum SourceType {
 	NETCDF,
 	PI_XML,
 	ARCHIVE,
-	UNDEFINED;
+	UNDEFINED
 }

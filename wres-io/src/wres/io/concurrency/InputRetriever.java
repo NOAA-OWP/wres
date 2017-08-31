@@ -196,7 +196,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         // To be replaced by non-generic ID from the Project Configuration
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
                                                                                    variableIdentifier,
-                                                                                   sourceConfig.getScenario());
+                                                                                   sourceConfig.getLabel());
 
         return metadataFactory.getMetadata(dim, datasetIdentifier, this.progress);
     }

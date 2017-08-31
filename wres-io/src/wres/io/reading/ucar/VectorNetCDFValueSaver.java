@@ -44,7 +44,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
     private final Path filePath;
     private NetcdfFile source;
     private final Stack<Future<?>> operations = new Stack<>();
-    List<Object[]> valuesToSave;
+    private List<Object[]> valuesToSave;
     private Integer lead;
     private Variable variable;
     private Integer variableID;
@@ -55,7 +55,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
     private Map<Integer, Integer> indexMapping;
 
     private Double missingValue;
-    int forecastID;
+    private int forecastID;
 
     @Internal(exclusivePackage = "wres.io")
     public VectorNetCDFValueSaver(String filename, String variableName)
@@ -375,6 +375,6 @@ class VectorNetCDFValueSaver extends WRESRunnable
 
     @Override
     protected Logger getLogger() {
-        return this.LOGGER;
+        return LOGGER;
     }
 }

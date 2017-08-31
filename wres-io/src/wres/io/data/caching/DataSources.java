@@ -28,7 +28,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
      */
 	private static DataSources INTERNAL_CACHE = null;
 
-	private static final DataSources getCache()
+	private static DataSources getCache()
     {
         synchronized (CACHE_LOCK)
         {

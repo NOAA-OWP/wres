@@ -1,14 +1,5 @@
 package wres.io.data.caching;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.io.data.details.EnsembleDetails;
-import wres.io.data.details.EnsembleDetails.EnsembleKey;
-import wres.io.utilities.Database;
-import wres.util.Collections;
-import wres.util.Internal;
-import wres.util.Strings;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -17,6 +8,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.io.data.details.EnsembleDetails;
+import wres.io.data.details.EnsembleDetails.EnsembleKey;
+import wres.io.utilities.Database;
+import wres.util.Collections;
+import wres.util.Internal;
+import wres.util.Strings;
 
 /**
  * Cached details about Ensembles from the database
@@ -33,7 +34,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
      */
 	private static Ensembles INTERNAL_CACHE = null;
 
-	private static final Ensembles getCache()
+	private static Ensembles getCache()
 	{
 		synchronized (CACHE_LOCK)
 		{
