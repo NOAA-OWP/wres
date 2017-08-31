@@ -16,16 +16,12 @@ import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static wres.io.config.ConfigHelper.getDirectoryFromDestinationConfig;
-
 import wres.config.ProjectConfigException;
 import wres.config.generated.Conditions;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MapBiKey;
 import wres.datamodel.MapKey;
 import wres.datamodel.MetricConstants;
@@ -41,8 +37,6 @@ import wres.io.config.ConfigHelper;
  */
 public class CommaSeparated
 {
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger( CommaSeparated.class );
 
     private CommaSeparated()
     {
@@ -164,30 +158,42 @@ public class CommaSeparated
                 String column = name + "_" + t;
                 headerRow.add( column );
 
-                for ( MapBiKey<Integer, Threshold> key
-                        : m.getValue().sliceByThreshold( t ).keySet() )
+                for ( Integer leadTime : m.getValue().keySetByLead() )
                 {
-                    if ( rows.get( key.getFirstKey() ) == null )
+                    if ( rows.get( leadTime ) == null )
                     {
                         StringJoiner row = new StringJoiner( "," );
-                        row.add( Integer.toString( key.getFirstKey() ) );
-                        rows.put( key.getFirstKey(), row );
+                        row.add( Integer.toString( leadTime ) );
+                        rows.put( leadTime, row );
                     }
 
-                    StringJoiner row = rows.get( key.getFirstKey() );
+                    StringJoiner row = rows.get( leadTime );
 
-                    if ( formatter != null )
+                    // To maintain rectangular CSV output, construct keys using
+                    // both dimensions. If we do not find a value, use NA.
+                    MapBiKey<Integer,Threshold> key =
+                            DefaultDataFactory.getInstance()
+                                              .getMapKey( leadTime, t );
+
+                    ScalarOutput value = m.getValue()
+                                          .get( key );
+
+                    String toWrite = "NA";
+
+                    if ( value != null )
                     {
-                        row.add( formatter.format( m.getValue()
-                                                    .get( key )
-                                                    .getData() ) );
+                        if ( formatter != null )
+                        {
+                            toWrite = formatter.format( value.getData() );
+                        }
+                        else
+                        {
+                            toWrite = value.toString();
+                        }
                     }
-                    else
-                    {
-                        row.add( m.getValue()
-                                  .get( key )
-                                  .toString() );
-                    }
+
+                    row.add( toWrite );
+
                 }
             }
         }
