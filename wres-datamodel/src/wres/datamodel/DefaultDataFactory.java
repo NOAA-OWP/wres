@@ -7,16 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import wres.datamodel.MatrixOfDoubles;
-import wres.datamodel.Pair;
-import wres.datamodel.PairOfBooleans;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
-import wres.datamodel.MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
 import wres.datamodel.SafeMetricOutputMultiMapByLeadThreshold.SafeMetricOutputMultiMapByLeadThresholdBuilder;
 import wres.datamodel.Threshold.Operator;
 
@@ -261,8 +253,7 @@ public class DefaultDataFactory implements DataFactory
         Objects.requireNonNull(input, "Specify a non-null list of inputs.");
         final SafeMetricOutputMapByMetric.Builder<T> builder = new SafeMetricOutputMapByMetric.Builder<>();
         input.forEach(a -> {
-            final MapBiKey<MetricConstants, MetricConstants> key = getMapKey(a.getMetadata().getMetricID(),
-                                                                             a.getMetadata().getMetricComponentID());
+            final MapKey<MetricConstants> key = getMapKey(a.getMetadata().getMetricID());
             builder.put(key, a);
         });
         return builder.build();

@@ -115,7 +115,7 @@ public final class MetricProcessorSingleValuedPairsTest
                 processor.apply(next);
             }
             processor.getStoredMetricOutput().getScalarOutput().forEach((key, value) -> {
-                assertTrue("Expected results at ten forecast lead times for the " + key.getFirstKey(),
+                assertTrue("Expected results at ten forecast lead times for the " + key.getKey(),
                            value.size() == 10);
             });
         }
