@@ -45,7 +45,7 @@ import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.MapBiKey;
+import wres.datamodel.MapKey;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
@@ -62,6 +62,7 @@ import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
 import wres.engine.statistics.metric.MetricProcessorByLeadTime;
 import wres.io.Operations;
+import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
@@ -519,16 +520,17 @@ public class Control implements Function<String[], Integer>
             return;
         }
 
+        ProjectConfig config = projectConfigPlus.getProjectConfig();
+
         // Build charts
         try
         {
-            for(final Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> e: scalarResults.entrySet())
+            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> e: scalarResults.entrySet())
             {
-                final ProjectConfig config = projectConfigPlus.getProjectConfig();
                 final DestinationConfig dest = config.getOutputs().getDestination().get(1);
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
-                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
                 PlotTypeSelection plotType = null;
                 String templateResourceName = null;
                 if(!Objects.isNull(nextConfig))
@@ -542,19 +544,27 @@ public class Control implements Function<String[], Integer>
                                                                                                   templateResourceName,
                                                                                                   graphicsString);
                 //Build the output
-                final StringBuilder pathBuilder = new StringBuilder();
-                pathBuilder.append(dest.getPath())
-                           .append(feature.getLocation().getLid())
-                           .append("_")
-                           .append(e.getKey().getFirstKey())
-                           .append("_")
-                           .append(projectConfigPlus.getProjectConfig().getInputs().getRight().getVariable().getValue())
-                           .append(".png");
-                final Path outputImage = Paths.get(pathBuilder.toString());
+                File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
+                Path outputImage = Paths.get( destDir.toString(),
+                                              feature.getLocation()
+                                                     .getLid()
+                                              + "_"
+                                              + e.getKey()
+                                                 .getKey()
+                                              + "_"
+                                              + config.getInputs()
+                                                      .getRight()
+                                                      .getVariable()
+                                                      .getValue()
+                                              + ".png");
                 writeChart(outputImage, engine, dest);
             }
         }
-        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+        catch( ChartEngineException
+                | GenericXMLReadingHandlerException
+                | XYChartDataSourceException
+                | IOException
+                | ProjectConfigException e )
         {
             throw new WresProcessingException( "Error while generating scalar charts:", e);
         }
@@ -581,16 +591,17 @@ public class Control implements Function<String[], Integer>
             return;
         }
 
+        ProjectConfig config = projectConfigPlus.getProjectConfig();
+
         // Build charts
         try
         {
-            for(final Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
+            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
             {
-                final ProjectConfig config = projectConfigPlus.getProjectConfig();
                 final DestinationConfig dest = config.getOutputs().getDestination().get(1);
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
-                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
                 PlotTypeSelection plotType = null;
                 String templateResourceName = null;
                 if(!Objects.isNull(nextConfig))
@@ -608,26 +619,30 @@ public class Control implements Function<String[], Integer>
                 for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
                 {
                     // Build the output file name
-                    final StringBuilder pathBuilder = new StringBuilder();
-                    pathBuilder.append(dest.getPath())
-                               .append(feature.getLocation().getLid())
-                               .append("_")
-                               .append(e.getKey().getFirstKey())
-                               .append("_")
-                               .append(projectConfigPlus.getProjectConfig()
-                                                        .getInputs()
-                                                        .getRight()
-                                                        .getVariable()
-                                                        .getValue())
-                               .append("_")
-                               .append(nextEntry.getKey())
-                               .append(".png");
-                    final Path outputImage = Paths.get(pathBuilder.toString());
+                    File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
+                    Path outputImage = Paths.get( destDir.toString(),
+                                                  feature.getLocation()
+                                                         .getLid()
+                                                  + "_"
+                                                  + e.getKey()
+                                                     .getKey()
+                                                  + "_"
+                                                  + config.getInputs()
+                                                          .getRight()
+                                                          .getVariable()
+                                                          .getValue()
+                                                  + "_"
+                                                  + nextEntry.getKey()
+                                                  + ".png" );
                     writeChart(outputImage, nextEntry.getValue(), dest);
                 }
             }
         }
-        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+        catch ( ChartEngineException
+                | GenericXMLReadingHandlerException
+                | XYChartDataSourceException
+                | IOException
+                | ProjectConfigException e )
         {
             throw new WresProcessingException( "Error while generating vector charts:", e );
         }
@@ -654,17 +669,18 @@ public class Control implements Function<String[], Integer>
             return;
         }
 
+        ProjectConfig config = projectConfigPlus.getProjectConfig();
+
         // Build charts
         try
         {
             // Build the charts for each metric
-            for(final Map.Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
+            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
             {
-                final ProjectConfig config = projectConfigPlus.getProjectConfig();
                 final DestinationConfig dest = config.getOutputs().getDestination().get(1);
                 final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                 // Build the chart engine
-                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getFirstKey(), config);
+                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
                 PlotTypeSelection plotType = null;
                 String templateResourceName = null;
                 if(!Objects.isNull(nextConfig))
@@ -683,26 +699,30 @@ public class Control implements Function<String[], Integer>
                 for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
                 {
                     // Build the output file name
-                    final StringBuilder pathBuilder = new StringBuilder();
-                    pathBuilder.append(dest.getPath())
-                               .append(feature.getLocation().getLid())
-                               .append("_")
-                               .append(e.getKey().getFirstKey())
-                               .append("_")
-                               .append(projectConfigPlus.getProjectConfig()
-                                                        .getInputs()
-                                                        .getRight()
-                                                        .getVariable()
-                                                        .getValue())
-                               .append("_")
-                               .append(nextEntry.getKey())
-                               .append(".png");
-                    final Path outputImage = Paths.get(pathBuilder.toString());
+                    File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
+                    Path outputImage = Paths.get( destDir.toString(),
+                                                  feature.getLocation()
+                                                         .getLid()
+                                                  + "_"
+                                                  + e.getKey()
+                                                     .getKey()
+                                                  + "_"
+                                                  + config.getInputs()
+                                                          .getRight()
+                                                          .getVariable()
+                                                          .getValue()
+                                                  + "_"
+                                                  + nextEntry.getKey()
+                                                  + ".png" );
                     writeChart(outputImage, nextEntry.getValue(), dest);
                 }
             }
         }
-        catch(ChartEngineException | GenericXMLReadingHandlerException | XYChartDataSourceException | IOException e)
+        catch ( ChartEngineException
+                | GenericXMLReadingHandlerException
+                | XYChartDataSourceException
+                | IOException
+                | ProjectConfigException e)
         {
             throw new WresProcessingException( "Error while generating multi-vector charts:", e );
         }

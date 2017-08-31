@@ -39,7 +39,7 @@ public class WRESChartEngine extends ChartEngine
      *            appearance. Note that such parameters must be defined for the series index -1 (i.e., the default
      *            defining all series index).
      * @param axisToSquareAgainstDomain A string indicating the axes to square. This should be either "left" or "right".
-     * @throws ChartEngineException
+     * @throws ChartEngineException if the {@link ChartEngine} could not be constructed
      */
     public WRESChartEngine(final List<XYChartDataSource> sources,
                            final ArgumentsProcessor arguments,

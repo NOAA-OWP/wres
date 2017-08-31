@@ -62,7 +62,7 @@ public class MetricCollectionTest
         //d.stream().forEach(g -> System.out.println(g.getData()));
 
         //Check them   
-        final Double expectedFirst = -200.55;
+        final Double expectedFirst = 200.55;
         final Double expectedSecond = 201.37;
         final Double expectedThird = 632.4586381732801;
         final Double actualFirst = d.get( MetricConstants.MEAN_ERROR ).getData();
@@ -196,9 +196,9 @@ public class MetricCollectionTest
         //Check them
         final Double expectedFirst = 0.26;
         final Double expectedSecond = 0.11363636363636376;
-        final Double actualFirst = d.get( MetricConstants.BRIER_SCORE, MetricConstants.NONE ).getData().getDoubles()[0];
+        final Double actualFirst = d.get( MetricConstants.BRIER_SCORE ).getData().getDoubles()[0];
         final Double actualSecond =
-                d.get( MetricConstants.BRIER_SKILL_SCORE, MetricConstants.NONE ).getData().getDoubles()[0];
+                d.get( MetricConstants.BRIER_SKILL_SCORE ).getData().getDoubles()[0];
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -248,9 +248,9 @@ public class MetricCollectionTest
         final Double expectedFirst = 400003.929;
         final Double expectedSecond = 0.8007025335093799;
         final Double actualFirst =
-                d.get( MetricConstants.MEAN_SQUARE_ERROR, MetricConstants.NONE ).getData().getDoubles()[0];
+                d.get( MetricConstants.MEAN_SQUARE_ERROR ).getData().getDoubles()[0];
         final Double actualSecond =
-                d.get( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE, MetricConstants.NONE ).getData().getDoubles()[0];
+                d.get( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ).getData().getDoubles()[0];
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -554,7 +554,7 @@ public class MetricCollectionTest
             final MetricOutputMapByMetric<ScalarOutput> d = collection.call();
             //Check the results
             //Check them   
-            final Double expectedFirst = -200.55;
+            final Double expectedFirst = 200.55;
             final Double actualFirst = d.get( MetricConstants.MEAN_ERROR ).getData();
             final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
             assertTrue( "Expected value: " + expectedFirst

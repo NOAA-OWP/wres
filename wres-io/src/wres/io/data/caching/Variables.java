@@ -1,15 +1,16 @@
 package wres.io.data.caching;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.io.data.details.VariableDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 /**
  * @author Christopher Tubbs
@@ -45,7 +46,7 @@ public final class Variables extends Cache<VariableDetails, String>
 	 * @param variableName The short name of the variable
 	 * @param measurementUnit The name of the unit of measurement for the variable
 	 * @return The ID of the variable
-	 * @throws SQLException
+	 * @throws SQLException if the ID could not be retrieved
 	 */
 	public static Integer getVariableID(String variableName, String measurementUnit) throws SQLException {
 		return getCache().getID(variableName, measurementUnit);
@@ -79,7 +80,7 @@ public final class Variables extends Cache<VariableDetails, String>
 	 * @param variableName The short name of the variable
 	 * @param measurementUnit The name of the unit of measurement for the variable
 	 * @return The ID of the variable
-	 * @throws SQLException
+     * @throws SQLException if the ID could not be added to the cache
 	 */
 	public Integer getID(String variableName, String measurementUnit) throws SQLException {
 		if (!getKeyIndex().containsKey(variableName)) {

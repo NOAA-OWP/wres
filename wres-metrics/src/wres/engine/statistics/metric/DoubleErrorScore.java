@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
@@ -57,7 +58,10 @@ abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, S
     @Override
     public ScalarOutput apply(final S s)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         Objects.requireNonNull(f, "Override or specify a non-null error function for the '" + toString() + "'.");
         
         //Metadata

@@ -8,10 +8,10 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.engine.statistics.metric.MeanError.MeanErrorBuilder;
 
 /**
@@ -52,7 +52,7 @@ public final class MeanErrorTest
 
         //Check the results
         final ScalarOutput actual = me.apply(input);
-        final ScalarOutput expected = outF.ofScalarOutput(-200.55, m1);
+        final ScalarOutput expected = outF.ofScalarOutput(200.55, m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));
 

@@ -1,8 +1,8 @@
 package wres.io.config;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -14,23 +14,18 @@ import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.Conditions;
 import wres.config.generated.Coordinate;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.DestinationConfig;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.MetricConfig;
-import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
@@ -51,8 +46,9 @@ public class ConfigHelper
     /**
      * Given a config, generate feature IDs and return a sql string of them.
      *
-     * @param config the project config.
+     * @param config the project config
      * @return sql string useful in a where clause
+     * @throws IOException if the feature ID could not be retrieved or added
      */
     public static String getFeatureIdsAndPutIfAbsent(ProjectConfig config)
     throws IOException
@@ -242,23 +238,11 @@ public class ConfigHelper
                                 DatasourceType.ENSEMBLE_FORECASTS.value());
     }
 
-    public static ProjectConfig read(final String path) throws JAXBException, IOException
+    public static ProjectConfig read(final String path) throws IOException
     {
-        ProjectConfig projectConfig;
-
-        File xmlFile = new File(path);
-        if (!xmlFile.exists())
-        {
-            throw new FileNotFoundException("A project configuration file does not exist at " + path);
-        }
-        Source xmlSource = new StreamSource(xmlFile);
-        JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
-        Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-
-        JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
-        projectConfig = wrappedConfig.getValue();
-
-        return projectConfig;
+        Path actualPath = Paths.get( path );
+        ProjectConfigPlus configPlus = ProjectConfigPlus.from( actualPath );
+        return configPlus.getProjectConfig();
     }
 
     public static DataSourceConfig.Source findDataSourceByFilename(DataSourceConfig dataSourceConfig, String filename)
@@ -283,7 +267,7 @@ public class ConfigHelper
 
     /**
      * Returns the "earliest" datetime from given ProjectConfig Conditions
-     * @param config
+     * @param config the project configuration
      * @return the most narrow "earliest" date, null otherwise
      */
     public static LocalDateTime getEarliestDateTimeFromDataSources(ProjectConfig config)
@@ -329,7 +313,7 @@ public class ConfigHelper
      * Returns the earlier of any "latest" date specified in left or right datasource.
      * If only one date is specified, that one is returned.
      * If no dates for "latest" are specified, null is returned.
-     * @param config
+     * @param config the project configuration
      * @return the most narrow "latest" date, null otherwise.
      */
     public static LocalDateTime getLatestDateTimeFromDataSources(ProjectConfig config)
@@ -447,5 +431,53 @@ public class ConfigHelper
         }
 
         return description;
+    }
+
+    /**
+     * Convert a DestinationConfig into a directory to write to.
+     *
+     * @param d the destination configuration element to read
+     * @return a File referring to a directory to write to
+     * @throws ProjectConfigException when the path inside d is null
+     * @throws NullPointerException when d is null
+     */
+    public static File getDirectoryFromDestinationConfig( DestinationConfig d )
+            throws ProjectConfigException
+    {
+        Path outputDirectory = Paths.get( d.getPath() );
+
+        if ( outputDirectory == null )
+        {
+            String message = "Destination path " + d.getPath() +
+                             " could not be found.";
+            throw new ProjectConfigException( d, message );
+        }
+        else
+        {
+            File outputLocation = outputDirectory.toFile();
+            if ( outputLocation.isDirectory() )
+            {
+                return outputLocation;
+            }
+            else if ( outputLocation.isFile() )
+            {
+                // Use parent directory, warn user
+                LOGGER.warn( "Using parent directory {} for output instead of "
+                             + "{} because there may be more than one file to "
+                             + "write.",
+                             outputDirectory.getParent(),
+                             outputDirectory);
+
+                return outputDirectory.getParent().toFile();
+            }
+            else
+            {
+                // If we have neither a file nor a directory, is issue.
+                String message = "Destination path " + d.getPath()
+                                 + " needs to be changed to a directory"
+                                 + " that can be written to.";
+                throw new ProjectConfigException( d, message );
+            }
+        }
     }
 }

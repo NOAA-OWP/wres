@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.SingleValuedPairs;
@@ -34,7 +35,10 @@ class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVectorOutpu
     @Override
     public MultiVectorOutput apply(SingleValuedPairs s)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         DataFactory d = getDataFactory();
         Slicer slicer = d.getSlicer();
         //Determine the number of order statistics to compute

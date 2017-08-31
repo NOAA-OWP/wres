@@ -10,6 +10,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputMapByMetric;
 import wres.datamodel.MetricOutputMetadata;
@@ -53,7 +54,10 @@ extends
 
     MultiVectorOutput getROC(final DiscreteProbabilityPairs s, int points)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         //Determine the empirical ROC. 
         //For each classifier, derive the pairs of booleans and compute the PoD and PoFD from the
         //2x2 contingency table, using a metric collection to compute the table only once

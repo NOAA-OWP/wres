@@ -10,6 +10,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOutput;
@@ -45,7 +46,10 @@ implements ProbabilityScore
     @Override
     public VectorOutput apply(final DiscreteProbabilityPairs s)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         //Obtain the AUC for the main prediction and, if available, the baseline.
         double rocScore;
         if(s.hasBaseline())

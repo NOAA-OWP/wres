@@ -105,8 +105,8 @@ public class Validation
             result = false;
         }
 
-        // Validate numeric outputs portion
-        result = result && isNumericOutputPortionOfProjectValid( projectConfigPlus );
+        // Validate outputs are writeable directories
+        result = result && areAllOutputPathsWriteableDirectories( projectConfigPlus );
         // Validate graphics portion
         result = result && isGraphicsPortionOfProjectValid( projectConfigPlus );
 
@@ -115,14 +115,14 @@ public class Validation
 
 
     /**
-     * Validates numeric outputs portion of project config.
+     * Validates outputs portion of project config have writeable directories.
      *
      * @param projectConfigPlus the project configuration
-     * @return true if the numeric outputs portion is valid, false otherwise
+     * @return true if all have writeable directories, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
      */
 
-    private static boolean isNumericOutputPortionOfProjectValid( ProjectConfigPlus projectConfigPlus )
+    private static boolean areAllOutputPathsWriteableDirectories( ProjectConfigPlus projectConfigPlus )
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL);
 
@@ -141,43 +141,45 @@ public class Validation
             return false;
         }
 
+        final String PLEASE_UPDATE = "Please update the project configuration "
+                                     + "with an existing writeable directory "
+                                     + "or create the directory already "
+                                     + "specified.";
+
         for ( DestinationConfig d : projectConfigPlus.getProjectConfig()
                                                      .getOutputs()
                                                      .getDestination() )
         {
-
-            // Only validating numeric output clauses here.
-            if ( d.getType() == DestinationType.NUMERIC )
+            Path destinationPath;
+            try
             {
-                Path destinationPath;
-                try
-                {
-                    destinationPath = Paths.get( d.getPath() );
-                }
-                catch ( InvalidPathException ipe )
-                {
-                    LOGGER.warn( "In file {}, near line {} and column {}, "
-                                 + "the path {} could not be found.",
-                                 projectConfigPlus.getPath(),
-                                 d.sourceLocation().getLineNumber(),
-                                 d.sourceLocation().getColumnNumber(),
-                                 d.getPath() );
-                    result = false;
-                    continue;
-                }
+                destinationPath = Paths.get( d.getPath() );
+            }
+            catch ( InvalidPathException ipe )
+            {
+                LOGGER.warn( "In file {}, near line {} and column {}, "
+                             + "the path {} could not be found. "
+                             + PLEASE_UPDATE,
+                             projectConfigPlus.getPath(),
+                             d.sourceLocation().getLineNumber(),
+                             d.sourceLocation().getColumnNumber(),
+                             d.getPath() );
+                result = false;
+                continue;
+            }
 
-                File destinationFile = destinationPath.toFile();
+            File destinationFile = destinationPath.toFile();
 
-                if ( !destinationFile.canWrite() )
-                {
-                    LOGGER.warn( "In file {}, near line {} and column {}, "
-                                 + "the path {} was not a writeable location.",
-                                 projectConfigPlus.getPath(),
-                                 d.sourceLocation().getLineNumber(),
-                                 d.sourceLocation().getColumnNumber(),
-                                 d.getPath() );
-                    result = false;
-                }
+            if ( !destinationFile.canWrite() || !destinationFile.isDirectory() )
+            {
+                LOGGER.warn( "In file {}, near line {} and column {}, "
+                             + "the path {} was not a writeable directory. "
+                             + PLEASE_UPDATE,
+                             projectConfigPlus.getPath(),
+                             d.sourceLocation().getLineNumber(),
+                             d.sourceLocation().getColumnNumber(),
+                             d.getPath() );
+                result = false;
             }
         }
 

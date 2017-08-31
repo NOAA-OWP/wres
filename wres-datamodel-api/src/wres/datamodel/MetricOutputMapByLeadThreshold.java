@@ -12,7 +12,7 @@ import java.util.Set;
  */
 
 public interface MetricOutputMapByLeadThreshold<T extends MetricOutput<?>>
-extends MetricOutputMapWithBiKey<Integer, Threshold, T>
+        extends MetricOutputMapWithBiKey<Integer, Threshold, T>
 {
 
     /**
@@ -22,9 +22,9 @@ extends MetricOutputMapWithBiKey<Integer, Threshold, T>
      * @return the submap
      */
 
-    default MetricOutputMapByLeadThreshold<T> sliceByLead(final Integer leadTime)
+    default MetricOutputMapByLeadThreshold<T> sliceByLead( final Integer leadTime )
     {
-        return (MetricOutputMapByLeadThreshold<T>)sliceByFirst(leadTime);
+        return (MetricOutputMapByLeadThreshold<T>) sliceByFirst( leadTime );
     }
 
     /**
@@ -34,9 +34,9 @@ extends MetricOutputMapWithBiKey<Integer, Threshold, T>
      * @return the submap
      */
 
-    default MetricOutputMapByLeadThreshold<T> sliceByThreshold(final Threshold threshold)
+    default MetricOutputMapByLeadThreshold<T> sliceByThreshold( final Threshold threshold )
     {
-        return (MetricOutputMapByLeadThreshold<T>)sliceBySecond(threshold);
+        return (MetricOutputMapByLeadThreshold<T>) sliceBySecond( threshold );
     }
 
     /**
@@ -69,7 +69,7 @@ extends MetricOutputMapWithBiKey<Integer, Threshold, T>
 
     default boolean hasQuantileThresholds()
     {
-        return keySetByThreshold().stream().anyMatch(QuantileThreshold.class::isInstance);
+        return keySetByThreshold().stream().anyMatch( QuantileThreshold.class::isInstance );
     }
 
     /**

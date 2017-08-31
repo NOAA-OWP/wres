@@ -35,7 +35,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 	 * added if there is not one for this pair of variable and feature
 	 * @param variableID The ID of the variable to look for
 	 * @return The id of the variable position mapping the feature to the variable
-	 * @throws SQLException 
+	 * @throws SQLException if the attempt to find the position fails
 	 */
 	public Integer getVariablePositionID(Integer variableID) throws SQLException
 	{

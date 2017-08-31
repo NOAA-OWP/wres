@@ -1,8 +1,11 @@
 package wres.engine.statistics.metric;
 
+import java.util.Objects;
+
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricInput;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.ScalarOutput;
 
 /**
@@ -18,6 +21,10 @@ class SampleSize<S extends MetricInput<?>> extends Metric<S, ScalarOutput> imple
     @Override
     public ScalarOutput apply( S s )
     {
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         return getDataFactory().ofScalarOutput( s.size(), getMetadata( s, s.size(), MetricConstants.MAIN, null ) );
     }
 

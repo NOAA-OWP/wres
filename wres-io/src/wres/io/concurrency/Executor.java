@@ -1,9 +1,13 @@
 package wres.io.concurrency;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+
 import wres.io.config.SystemSettings;
 import wres.util.Internal;
-
-import java.util.concurrent.*;
 
 /**
  * The static thread executor 
@@ -37,6 +41,7 @@ public final class Executor {
 	
 	/**
 	 * Submits the passed in callable thread for execution
+	 * @param <U> the result type
 	 * @param task The thread whose task to call
 	 * @return An object containing the value returned in the future
 	 */

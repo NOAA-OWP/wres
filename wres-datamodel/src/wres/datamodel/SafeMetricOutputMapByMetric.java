@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.StringJoiner;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 /**
  * Immutable map of {@link MetricOutput} stored by unique metric identifier.
@@ -26,28 +25,28 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
      * Underlying store.
      */
 
-    private final TreeMap<MapBiKey<MetricConstants, MetricConstants>, T> store;
+    private final TreeMap<MapKey<MetricConstants>, T> store;
 
     /**
      * Internal array of map keys.
      */
 
-    private final List<MapBiKey<MetricConstants, MetricConstants>> internal;
+    private final List<MapKey<MetricConstants>> internal;
 
     @Override
-    public T get(final MapBiKey<MetricConstants, MetricConstants> key)
+    public T get(final MapKey<MetricConstants> key)
     {
         return store.get(key);
     }
 
     @Override
-    public T get(final MetricConstants metricID, final MetricConstants componentID)
+    public T get(final MetricConstants metricID)
     {
-        return get(DefaultDataFactory.getInstance().getMapKey(metricID, componentID));
+        return get(DefaultDataFactory.getInstance().getMapKey(metricID));
     }
 
     @Override
-    public MapBiKey<MetricConstants, MetricConstants> getKey(final int index)
+    public MapKey<MetricConstants> getKey(final int index)
     {
         return internal.get(index);
     }
@@ -59,7 +58,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
     }
 
     @Override
-    public boolean containsKey(final MapBiKey<MetricConstants, MetricConstants> key)
+    public boolean containsKey(final MapKey<MetricConstants> key)
     {
         return store.containsKey(key);
     }
@@ -77,31 +76,15 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
     }
 
     @Override
-    public Set<MapBiKey<MetricConstants, MetricConstants>> keySet()
+    public Set<MapKey<MetricConstants>> keySet()
     {
         return Collections.unmodifiableSet(store.keySet());
     }
 
     @Override
-    public Set<Entry<MapBiKey<MetricConstants, MetricConstants>, T>> entrySet()
+    public Set<Entry<MapKey<MetricConstants>, T>> entrySet()
     {
         return Collections.unmodifiableSet(store.entrySet());
-    }
-
-    @Override
-    public Set<MetricConstants> keySetByFirstKey()
-    {
-        final Set<MetricConstants> returnMe = new TreeSet<>();
-        store.keySet().forEach(a -> returnMe.add(a.getFirstKey()));
-        return Collections.unmodifiableSet(returnMe);
-    }
-
-    @Override
-    public Set<MetricConstants> keySetBySecondKey()
-    {
-        final Set<MetricConstants> returnMe = new TreeSet<>();
-        store.keySet().forEach(a -> returnMe.add(a.getSecondKey()));
-        return Collections.unmodifiableSet(returnMe);
     }
 
     @Override
@@ -111,71 +94,35 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
     }
 
     @Override
-    public SortedMap<MapBiKey<MetricConstants, MetricConstants>, T> subMap(MapBiKey<MetricConstants, MetricConstants> fromKey,
-                                                                           MapBiKey<MetricConstants, MetricConstants> toKey)
+    public SortedMap<MapKey<MetricConstants>, T> subMap(MapKey<MetricConstants> fromKey,
+                                                                           MapKey<MetricConstants> toKey)
     {
-        return (SortedMap<MapBiKey<MetricConstants, MetricConstants>, T>)Collections.unmodifiableMap(store.subMap(fromKey,
+        return (SortedMap<MapKey<MetricConstants>, T>)Collections.unmodifiableMap(store.subMap(fromKey,
                                                                                                                   toKey));
     }
 
     @Override
-    public SortedMap<MapBiKey<MetricConstants, MetricConstants>, T> headMap(MapBiKey<MetricConstants, MetricConstants> toKey)
+    public SortedMap<MapKey<MetricConstants>, T> headMap(MapKey<MetricConstants> toKey)
     {
-        return (SortedMap<MapBiKey<MetricConstants, MetricConstants>, T>)Collections.unmodifiableMap(store.headMap(toKey));
+        return (SortedMap<MapKey<MetricConstants>, T>)Collections.unmodifiableMap(store.headMap(toKey));
     }
 
     @Override
-    public SortedMap<MapBiKey<MetricConstants, MetricConstants>, T> tailMap(MapBiKey<MetricConstants, MetricConstants> fromKey)
+    public SortedMap<MapKey<MetricConstants>, T> tailMap(MapKey<MetricConstants> fromKey)
     {
-        return (SortedMap<MapBiKey<MetricConstants, MetricConstants>, T>)Collections.unmodifiableMap(store.tailMap(fromKey));
+        return (SortedMap<MapKey<MetricConstants>, T>)Collections.unmodifiableMap(store.tailMap(fromKey));
     }
 
     @Override
-    public MapBiKey<MetricConstants, MetricConstants> firstKey()
+    public MapKey<MetricConstants> firstKey()
     {
         return store.firstKey();
     }
 
     @Override
-    public MapBiKey<MetricConstants, MetricConstants> lastKey()
+    public MapKey<MetricConstants> lastKey()
     {
         return store.lastKey();
-    }
-
-    @Override
-    public MetricOutputMapWithBiKey<MetricConstants, MetricConstants, T> sliceByFirst(final MetricConstants first)
-    {
-        Objects.requireNonNull(first, "Specify a non-null threshold by which to slice the map.");
-        final Builder<T> b = new Builder<>();
-        store.forEach((key, value) -> {
-            if(first.equals(key.getFirstKey()))
-            {
-                b.put(key, value);
-            }
-        });
-        if(b.store.isEmpty())
-        {
-            throw new IllegalArgumentException("No metric outputs match the specified criteria on forecast lead time.");
-        }
-        return b.build();
-    }
-
-    @Override
-    public MetricOutputMapWithBiKey<MetricConstants, MetricConstants, T> sliceBySecond(final MetricConstants second)
-    {
-        Objects.requireNonNull(second, "Specify a non-null threshold by which to slice the map.");
-        final Builder<T> b = new Builder<>();
-        store.forEach((key, value) -> {
-            if(second.equals(key.getSecondKey()))
-            {
-                b.put(key, value);
-            }
-        });
-        if(b.store.isEmpty())
-        {
-            throw new IllegalArgumentException("No metric outputs match the specified criteria on threshold value.");
-        }
-        return b.build();
     }
 
     /**
@@ -187,7 +134,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
     protected static class Builder<T extends MetricOutput<?>>
     {
 
-        private final TreeMap<MapBiKey<MetricConstants, MetricConstants>, T> store = new TreeMap<>();
+        private final TreeMap<MapKey<MetricConstants>, T> store = new TreeMap<>();
 
         /**
          * Adds a mapping to the store.
@@ -197,7 +144,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
          * @return the builder
          */
 
-        protected Builder<T> put(final MapBiKey<MetricConstants, MetricConstants> key, final T value)
+        protected Builder<T> put(final MapKey<MetricConstants> key, final T value)
         {
             store.put(key, value);
             return this;

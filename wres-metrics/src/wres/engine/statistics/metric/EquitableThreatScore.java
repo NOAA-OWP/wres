@@ -5,6 +5,7 @@ import java.util.Objects;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.MatrixOutput;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.ScalarOutput;
 
 /**
@@ -21,13 +22,16 @@ class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs>
     @Override
     public ScalarOutput apply(final DichotomousPairs s)
     {
-        Objects.requireNonNull(s, "Specify non-null input for the '" + toString() + "'.");
         return apply(getCollectionInput(s));
     }
 
     @Override
     public ScalarOutput apply(final MatrixOutput output)
     {
+        if(Objects.isNull(output))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         is2x2ContingencyTable(output, this);
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();

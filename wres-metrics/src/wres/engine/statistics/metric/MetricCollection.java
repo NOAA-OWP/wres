@@ -1,20 +1,19 @@
 package wres.engine.statistics.metric;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -54,15 +53,9 @@ import wres.datamodel.MetricOutputMapByMetric;
  */
 
 class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
-implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMetric<T>>
+        implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMetric<T>>
 {
 
-    /**
-     * Default logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(MetricCollection.class);    
-    
     /**
      * Instance of a {@link DataFactory} for constructing a {@link MetricOutput}.
      */
@@ -88,15 +81,15 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
     private final ExecutorService metricPool;
 
     @Override
-    public MetricOutputMapByMetric<T> call() throws InterruptedException
+    public MetricOutputMapByMetric<T> call() throws InterruptedException, ExecutionException
     {
         return callInternal();
     }
 
     @Override
-    public MetricOutputMapByMetric<T> apply(final S input)
+    public MetricOutputMapByMetric<T> apply( final S input )
     {
-        return applyParallel(input);
+        return applyParallel( input );
     }
 
     /**
@@ -150,10 +143,10 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
          * @return the builder
          */
 
-        protected MetricCollectionBuilder<S, T> add(final Metric<S, T> metric)
+        protected MetricCollectionBuilder<S, T> add( final Metric<S, T> metric )
         {
-            Objects.requireNonNull(metric, "Add a non-null metric to the collection.");
-            builderMetrics.add(metric);
+            Objects.requireNonNull( metric, "Add a non-null metric to the collection." );
+            builderMetrics.add( metric );
             return this;
         }
 
@@ -164,9 +157,9 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
          * @return the builder
          */
 
-        protected MetricCollectionBuilder<S, T> setMetricInput(final Future<S> input)
+        protected MetricCollectionBuilder<S, T> setMetricInput( final Future<S> input )
         {
-            Objects.requireNonNull(input, "Add a non-null metric input to the collection.");
+            Objects.requireNonNull( input, "Add a non-null metric input to the collection." );
             builderInput = input;
             return this;
         }
@@ -178,7 +171,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
          * @return the builder
          */
 
-        protected MetricCollectionBuilder<S, T> setExecutorService(final ExecutorService metricPool)
+        protected MetricCollectionBuilder<S, T> setExecutorService( final ExecutorService metricPool )
         {
             this.metricPool = metricPool;
             return this;
@@ -191,7 +184,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
          * @return the builder
          */
 
-        protected MetricCollectionBuilder<S, T> setOutputFactory(final DataFactory dataFactory)
+        protected MetricCollectionBuilder<S, T> setOutputFactory( final DataFactory dataFactory )
         {
             this.dataFactory = dataFactory;
             return this;
@@ -205,7 +198,7 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
 
         protected MetricCollection<S, T> build()
         {
-            return new MetricCollection<>(this);
+            return new MetricCollection<>( this );
         }
 
     }
@@ -218,69 +211,71 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
      * 
      * @param s the metric input
      * @return the output for each metric, contained in a collection
+     * @throws MetricCalculationException if the calculation fails for any reason, with the cause set
      */
 
-    private MetricOutputMapByMetric<T> applyParallel(final S s) throws MetricCalculationException
+    private MetricOutputMapByMetric<T> applyParallel( final S s ) throws MetricCalculationException
     {
         //Bounds checks
-        if(!Objects.isNull(this.input))
+        if ( !Objects.isNull( this.input ) )
         {
-            throw new MetricCalculationException("The collection has already been constructed with a fixed input.");
+            throw new MetricCalculationException( "The collection has already been constructed with a fixed input." );
         }
-        
-        if(Objects.isNull(s))
+
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricCalculationException("Specify non-null input to the metric collection.");
+            throw new MetricCalculationException( "Specify non-null input to the metric collection." );
         }
 
         //Collection of future metric results
-        final List<CompletableFuture<T>> metricFutures = new ArrayList<>(metrics.size());
+        final Map<MetricConstants, CompletableFuture<T>> metricFutures = new EnumMap<>( MetricConstants.class );
 
         //Collect the instances of Collectable by their getCollectionOf, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         final Map<MetricConstants, List<Collectable<S, MetricOutput<?>, T>>> collectable =
-                                                                                         metrics.stream()
-                                                                                                .filter(Collectable.class::isInstance)
-                                                                                                .map(p -> (Collectable<S, MetricOutput<?>, T>)p)
-                                                                                                .collect(Collectors.groupingBy(Collectable::getCollectionOf));
+                metrics.stream()
+                       .filter( Collectable.class::isInstance )
+                       .map( p -> (Collectable<S, MetricOutput<?>, T>) p )
+                       .collect( Collectors.groupingBy( Collectable::getCollectionOf ) );
         //Consumer that computes the intermediate output once and applies it to all grouped instances of Collectable
         final Consumer<List<Collectable<S, MetricOutput<?>, T>>> c = x -> {
             final CompletableFuture<MetricOutput<?>> baseFuture = CompletableFuture.supplyAsync(
-                                                                                                () -> x.get(0)
-                                                                                                       .getCollectionInput(s),
-                                                                                                metricPool);
+                                                                                                 () -> x.get( 0 )
+                                                                                                        .getCollectionInput( s ),
+                                                                                                 metricPool );
             //Using the future dependent result, compute a future of each of the independent results
-            x.forEach(y -> metricFutures.add(baseFuture.thenApplyAsync(y::apply, metricPool)));
+            x.forEach( y -> metricFutures.put( y.getID(), baseFuture.thenApplyAsync( y::apply, metricPool ) ) );
         };
 
         //Compute the collectable metrics    
-        collectable.values().forEach(c);
+        collectable.values().forEach( c );
 
         //Pool all the future results from the non-collectable metrics into the collection
         //When the collection completes, aggregate the results and return them
         metrics.stream()
-               .filter(p -> !(p instanceof Collectable)) //Only work with non-collectable metrics here
-               .forEach(y -> metricFutures.add(CompletableFuture.supplyAsync(() -> y.apply(s), metricPool)));
+               .filter( p -> ! ( p instanceof Collectable ) ) //Only work with non-collectable metrics here
+               .forEach( y -> metricFutures.put( y.getID(),
+                                                 CompletableFuture.supplyAsync( () -> y.apply( s ), metricPool ) ) );
         List<T> returnMe = new ArrayList<>();
-        //Throw one exception per collection
-        Exception throwMe = null;
-        for(CompletableFuture<T> nextResult: metricFutures)
+        //Compute the results
+        for ( Map.Entry<MetricConstants, CompletableFuture<T>> nextResult : metricFutures.entrySet() )
         {
             try
-            {
-                returnMe.add(nextResult.get()); //This is blocking
+            { 
+                returnMe.add( nextResult.getValue().get() ); //This is blocking
             }
-            catch(Exception e)
+            catch ( ExecutionException e )
             {
-                throwMe = e;
+                throw new MetricCalculationException( "While processing metric '" + nextResult.getKey() + "'.", e );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                throw new MetricCalculationException( "While processing metric '" + nextResult.getKey() + "'.", e );
             }
         }
-        if(Objects.nonNull( throwMe ))
-        {
-            LOGGER.error("While processing metric:", throwMe);
-        }
-        return dataFactory.ofMap(returnMe);
+        return dataFactory.ofMap( returnMe );
     }
 
     /**
@@ -292,53 +287,42 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
      * @throws InterruptedException if the calculation is interrupted
      */
 
-    private MetricOutputMapByMetric<T> callInternal() throws InterruptedException
+    private MetricOutputMapByMetric<T> callInternal() throws ExecutionException, InterruptedException
     {
-        if(Objects.isNull(input))
+        if ( Objects.isNull( input ) )
         {
-            throw new MetricCalculationException("No metric input from which to compute the metric collection: "
-                + "construct the metric collection with an input.");
+            throw new MetricCalculationException( "No metric input from which to compute the metric collection: "
+                                                  + "construct the metric collection with an input." );
         }
         //Collection
-        final List<T> m = new ArrayList<>(metrics.size());
+        final List<T> m = new ArrayList<>( metrics.size() );
         //Collect the instances of Collectable by their getCollectionOf, which denotes the superclass that
         //provides the intermediate result for all metrics of that superclass
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         final Map<MetricConstants, List<Collectable<S, MetricOutput<?>, T>>> collectable =
-                                                                                         metrics.stream()
-                                                                                                .filter(Collectable.class::isInstance)
-                                                                                                .map(p -> (Collectable<S, MetricOutput<?>, T>)p)
-                                                                                                .collect(Collectors.groupingBy(Collectable::getCollectionOf));
+                metrics.stream()
+                       .filter( Collectable.class::isInstance )
+                       .map( p -> (Collectable<S, MetricOutput<?>, T>) p )
+                       .collect( Collectors.groupingBy( Collectable::getCollectionOf ) );
         //For each group of Collectable, create a task       
         final ArrayList<Callable<T>> tasks = new ArrayList<>();
-        collectable.forEach((a, b) -> {
-            final Callable<MetricOutput<?>> intermediate = getCollectableTask(b.get(0));
-            final Future<MetricOutput<?>> result = metricPool.submit(intermediate); //Compute once
-            b.forEach(c -> tasks.add(new CollectableTask<>(c, result)));
-        });
+        collectable.forEach( ( a, b ) -> {
+            final Callable<MetricOutput<?>> intermediate = getCollectableTask( b.get( 0 ) );
+            final Future<MetricOutput<?>> result = metricPool.submit( intermediate ); //Compute once
+            b.forEach( c -> tasks.add( new CollectableTask<>( c, result ) ) );
+        } );
 
         //For each non-Collectable metric, add a task
-        metrics.stream().filter(p -> !(p instanceof Collectable)).forEach(y -> tasks.add(new MetricTask<>(y, input)));
-        //Compute
-        final List<Future<T>> results = metricPool.invokeAll(tasks);
-        //Throw one exception per collection
-        Exception throwMe = null;
-        for(final Future<T> next: results)
+        metrics.stream()
+               .filter( p -> ! ( p instanceof Collectable ) )
+               .forEach( y -> tasks.add( new MetricTask<>( y, input ) ) );
+        //Compute the results
+        final List<Future<T>> results = metricPool.invokeAll( tasks );
+        for ( final Future<T> next : results )
         {
-            try
-            {
-                m.add(next.get());
-            }
-            catch(Exception e)
-            {
-                throwMe = e;
-            }
+            m.add( next.get() );
         }
-        if(Objects.nonNull( throwMe ))
-        {
-            LOGGER.error("While processing metric:", throwMe);
-        }
-        return dataFactory.ofMap(m);
+        return dataFactory.ofMap( m );
     }
 
     /**
@@ -347,14 +331,14 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
      * @param builder the builder
      */
 
-    private MetricCollection(final MetricCollectionBuilder<S, T> builder)
+    private MetricCollection( final MetricCollectionBuilder<S, T> builder )
     {
         //Set 
         metrics = new ArrayList<>();
-        metrics.addAll(builder.builderMetrics);
+        metrics.addAll( builder.builderMetrics );
         input = builder.builderInput;
         dataFactory = builder.dataFactory;
-        if(Objects.isNull(builder.metricPool))
+        if ( Objects.isNull( builder.metricPool ) )
         {
             metricPool = ForkJoinPool.commonPool();
         }
@@ -363,15 +347,15 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
             metricPool = builder.metricPool;
         }
         //Validate 
-        if(Objects.isNull(dataFactory))
+        if ( Objects.isNull( dataFactory ) )
         {
-            throw new UnsupportedOperationException("Cannot construct the metric collection without a metric output "
-                + "factory.");
+            throw new UnsupportedOperationException( "Cannot construct the metric collection without a metric output "
+                                                     + "factory." );
         }
-        if(metrics.isEmpty())
+        if ( metrics.isEmpty() )
         {
-            throw new UnsupportedOperationException("Cannot construct a metric collection with an empty list of "
-                + "metrics.");
+            throw new UnsupportedOperationException( "Cannot construct a metric collection with an empty list of "
+                                                     + "metrics." );
         }
     }
 
@@ -383,14 +367,14 @@ implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMe
      * @return a future metric output
      */
 
-    private Callable<MetricOutput<?>> getCollectableTask(final Collectable<S, MetricOutput<?>, T> metric)
+    private Callable<MetricOutput<?>> getCollectableTask( final Collectable<S, MetricOutput<?>, T> metric )
     {
         return new Callable<MetricOutput<?>>()
         {
             @Override
             public MetricOutput<?> call() throws Exception
             {
-                return metric.getCollectionInput(input.get());
+                return metric.getCollectionInput( input.get() );
             }
         };
     }

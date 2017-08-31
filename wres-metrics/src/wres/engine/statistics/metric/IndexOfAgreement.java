@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.ScalarOutput;
@@ -32,7 +33,10 @@ class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     @Override
     public ScalarOutput apply( final SingleValuedPairs s )
     {
-        Objects.requireNonNull( s, "Specify non-null input for the '" + toString() + "'." );
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         //Compute the average observation
         double oBar = s.getData().stream().mapToDouble( PairOfDoubles::getItemOne ).average().getAsDouble();
         //Compute the score

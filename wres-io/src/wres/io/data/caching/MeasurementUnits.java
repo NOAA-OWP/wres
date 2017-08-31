@@ -1,15 +1,16 @@
 package wres.io.data.caching;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.io.data.details.MeasurementDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 /**
  * Caches details mapping units of measurements to their IDs
@@ -53,7 +54,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 	 * Returns the ID of a unit of measurement from the global cache based on the name of the measurement
 	 * @param unit The name of the unit of measurement
 	 * @return The ID of the unit of measurement
-	 * @throws SQLException
+	 * @throws SQLException Thrown if the ID could not be retrieved from the database 
 	 */
 	public static Integer getMeasurementUnitID(String unit) throws SQLException {
         Integer ID = null;

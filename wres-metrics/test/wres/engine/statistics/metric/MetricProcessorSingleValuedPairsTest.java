@@ -13,11 +13,11 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Metadata;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.io.config.ProjectConfigPlus;
 
 /**
@@ -64,14 +64,14 @@ public final class MetricProcessorSingleValuedPairsTest
                                                                        .get(MetricConstants.ROOT_MEAN_SQUARE_ERROR);
             //Test contents
             assertTrue("Unexpected difference in " + MetricConstants.BIAS_FRACTION,
-                       bias.getValue(0).getData().equals(-1.6666666666666667));
+                       bias.getValue(0).getData().equals(1.6666666666666667));
             assertTrue("Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
                        cod.getValue(0).getData().equals(1.0));
             assertTrue("Unexpected difference in " + MetricConstants.CORRELATION_PEARSONS,
                        rho.getValue(0).getData().equals(1.0));
             assertTrue("Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
                        mae.getValue(0).getData().equals(5.0));
-            assertTrue("Unexpected difference in " + MetricConstants.MEAN_ERROR, me.getValue(0).getData().equals(-5.0));
+            assertTrue("Unexpected difference in " + MetricConstants.MEAN_ERROR, me.getValue(0).getData().equals(5.0));
             assertTrue("Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
                        rmse.getValue(0).getData().equals(5.0));
 
@@ -115,7 +115,7 @@ public final class MetricProcessorSingleValuedPairsTest
                 processor.apply(next);
             }
             processor.getStoredMetricOutput().getScalarOutput().forEach((key, value) -> {
-                assertTrue("Expected results at ten forecast lead times for the " + key.getFirstKey(),
+                assertTrue("Expected results at ten forecast lead times for the " + key.getKey(),
                            value.size() == 10);
             });
         }

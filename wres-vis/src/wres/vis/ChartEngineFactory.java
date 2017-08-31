@@ -122,6 +122,8 @@ public abstract class ChartEngineFactory
     }
 
     /**
+     * @param metricId the metric identifier
+     * @param plotType the plot type
      * @return {@link PlotTypeInformation} for the provided {@link MetricConstants} metric id and
      *         {@link PlotTypeSelection}. This will throw an {@link IllegalArgumentException} if the combination is not
      *         yet supported in the {@link #multiVectorOutputPlotTypeInfoTable}.
@@ -561,9 +563,9 @@ public abstract class ChartEngineFactory
      *            chart construction. May be null to use default template identified in static maps.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
-     * @return
-     * @throws ChartEngineException
-     * @throws GenericXMLReadingHandlerException
+     * @return a map of {@link ChartEngine} containing the plots
+     * @throws ChartEngineException if the ChartEngine fails to construct
+     * @throws GenericXMLReadingHandlerException if the override XML cannot be parsed.
      */
     public static ConcurrentMap<Object, ChartEngine>
             buildVectorOutputChartEngine( final MetricOutputMapByLeadThreshold<VectorOutput> input,

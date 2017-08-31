@@ -587,7 +587,8 @@ final class MainFunctions
                     projectConfig = ConfigHelper.read(PROJECT_PATH);
                     Operations.ingest(projectConfig);
                 }
-                catch (JAXBException | IOException e) {
+                catch ( IOException e )
+                {
                     LOGGER.error(Strings.getStackTrace(e));
                 }
             }
