@@ -3,6 +3,7 @@ package wres.io.config;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -25,10 +26,12 @@ import javax.xml.transform.stream.StreamSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.Conditions;
 import wres.config.generated.Coordinate;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.DestinationConfig;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
@@ -424,5 +427,53 @@ public class ConfigHelper
         }
 
         return description;
+    }
+
+    /**
+     * Convert a DestinationConfig into a directory to write to.
+     *
+     * @param d the destination configuration element to read
+     * @return a File referring to a directory to write to
+     * @throws ProjectConfigException when the path inside d is null
+     * @throws NullPointerException when d is null
+     */
+    public static File getDirectoryFromDestinationConfig( DestinationConfig d )
+            throws ProjectConfigException
+    {
+        Path outputDirectory = Paths.get( d.getPath() );
+
+        if ( outputDirectory == null )
+        {
+            String message = "Destination path " + d.getPath() +
+                             " could not be found.";
+            throw new ProjectConfigException( d, message );
+        }
+        else
+        {
+            File outputLocation = outputDirectory.toFile();
+            if ( outputLocation.isDirectory() )
+            {
+                return outputLocation;
+            }
+            else if ( outputLocation.isFile() )
+            {
+                // Use parent directory, warn user
+                LOGGER.warn( "Using parent directory {} for output instead of "
+                             + "{} because there may be more than one file to "
+                             + "write.",
+                             outputDirectory.getParent(),
+                             outputDirectory);
+
+                return outputDirectory.getParent().toFile();
+            }
+            else
+            {
+                // If we have neither a file nor a directory, is issue.
+                String message = "Destination path " + d.getPath()
+                                 + " needs to be changed to a directory"
+                                 + " that can be written to.";
+                throw new ProjectConfigException( d, message );
+            }
+        }
     }
 }

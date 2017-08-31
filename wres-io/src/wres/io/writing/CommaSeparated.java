@@ -19,6 +19,8 @@ import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.io.config.ConfigHelper.getDirectoryFromDestinationConfig;
+
 import wres.config.ProjectConfigException;
 import wres.config.generated.Conditions;
 import wres.config.generated.DestinationConfig;
@@ -32,6 +34,7 @@ import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
+import wres.io.config.ConfigHelper;
 
 /**
  * Helps write Comma Separated files.
@@ -90,49 +93,14 @@ public class CommaSeparated
             if ( d.getType() == DestinationType.NUMERIC )
             {
                 DecimalFormat formatter = null;
-                boolean applyCustomFormat = false;
 
                 if ( d.getDecimalFormat() != null
                      && !d.getDecimalFormat().isEmpty() )
                 {
                     formatter = new DecimalFormat();
                     formatter.applyPattern( d.getDecimalFormat() );
-                    applyCustomFormat = true;
                 }
 
-                Path outputDirectory = Paths.get( d.getPath() );
-
-                if ( outputDirectory == null )
-                {
-                    String message = "Destination path " + d.getPath() +
-                                     " could not be found.";
-                    throw new ProjectConfigException( d, message );
-                }
-                else
-                {
-                    File outputLocation = outputDirectory.toFile();
-                    if ( outputLocation.isDirectory() )
-                    {
-                        // good to go, best case
-                    }
-                    else if ( outputLocation.isFile() )
-                    {
-                        // Use parent directory, warn user
-                        outputDirectory = outputDirectory.getParent();
-                        LOGGER.warn( "Using parent directory {} for CSV output "
-                                     + "because there will be a file for each "
-                                     + "feature.",
-                                     outputDirectory.toString() );
-                    }
-                    else
-                    {
-                        // If we have neither a file nor a directory, is issue.
-                        String message = "Destination path " + d.getPath()
-                                         + " needs to be changed to a directory"
-                                         + " that can be written to.";
-                        throw new ProjectConfigException( d, message );
-                    }
-                }
 
                 SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
 
@@ -149,8 +117,10 @@ public class CommaSeparated
                     }
                 }
 
-                Path outputPath = Paths.get( outputDirectory + "/"
-                                             + feature.getLocation().getLid()
+                File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( d );
+
+                Path outputPath = Paths.get( outputDirectory.toString(),
+                                             feature.getLocation().getLid()
                                              + ".csv" );
 
                 try ( BufferedWriter w = Files.newBufferedWriter( outputPath,
