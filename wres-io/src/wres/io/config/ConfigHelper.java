@@ -222,23 +222,11 @@ public class ConfigHelper
                                 DatasourceType.ENSEMBLE_FORECASTS.value());
     }
 
-    public static ProjectConfig read(final String path) throws JAXBException, IOException
+    public static ProjectConfig read(final String path) throws IOException
     {
-        ProjectConfig projectConfig;
-
-        File xmlFile = new File(path);
-        if (!xmlFile.exists())
-        {
-            throw new FileNotFoundException("A project configuration file does not exist at " + path);
-        }
-        Source xmlSource = new StreamSource(xmlFile);
-        JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
-        Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-
-        JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
-        projectConfig = wrappedConfig.getValue();
-
-        return projectConfig;
+        Path actualPath = Paths.get( path );
+        ProjectConfigPlus configPlus = ProjectConfigPlus.from( actualPath );
+        return configPlus.getProjectConfig();
     }
 
     public static DataSourceConfig.Source findDataSourceByFilename(DataSourceConfig dataSourceConfig, String filename)
