@@ -26,9 +26,9 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
      * @return the mapping or null
      */
 
-    default MetricOutputMapByLeadThreshold<S> get(final MapKey<MetricConstants> key)
+    default MetricOutputMapByLeadThreshold<S> get( final MapKey<MetricConstants> key )
     {
-        return get(key.getKey());
+        return get( key.getKey() );
     }
 
     /**
@@ -37,11 +37,11 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
      * @param consumer the consumer
      */
 
-    default void forEach(BiConsumer<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>> consumer)
+    default void forEach( BiConsumer<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>> consumer )
     {
-        for(Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>> entry: entrySet())
+        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>> entry : entrySet() )
         {
-            consumer.accept(entry.getKey(), entry.getValue());
+            consumer.accept( entry.getKey(), entry.getValue() );
         }
     }
 
@@ -52,7 +52,7 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
      * @return the mapping or null
      */
 
-    MetricOutputMapByLeadThreshold<S> get(MetricConstants metricID);
+    MetricOutputMapByLeadThreshold<S> get( MetricConstants metricID );
 
     /**
      * Returns a view of the entries in the map for iteration.
@@ -69,7 +69,7 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
      * @return true if the map contains the value, false otherwise
      */
 
-    boolean containsValue(MetricOutputMapByLeadThreshold<S> value);
+    boolean containsValue( MetricOutputMapByLeadThreshold<S> value );
 
     /**
      * Returns a collection view of the values in the map.
@@ -86,7 +86,7 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
      */
 
     interface MetricOutputMultiMapByLeadThresholdBuilder<S extends MetricOutput<?>>
-    extends MetricOutputMultiMap.Builder<S>
+            extends MetricOutputMultiMap.Builder<S>
     {
 
         /**
@@ -97,10 +97,10 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
          * @return the builder
          */
 
-        default MetricOutputMultiMapByLeadThresholdBuilder<S> put(MapBiKey<Integer, Threshold> key,
-                                                                  MetricOutputMapByMetric<S> result)
+        default MetricOutputMultiMapByLeadThresholdBuilder<S> put( MapBiKey<Integer, Threshold> key,
+                                                                   MetricOutputMapByMetric<S> result )
         {
-            put(key.getFirstKey(), key.getSecondKey(), result);
+            put( key.getFirstKey(), key.getSecondKey(), result );
             return this;
         }
 
@@ -113,9 +113,9 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
          * @return the builder
          */
 
-        MetricOutputMultiMapByLeadThresholdBuilder<S> put(int leadTime,
-                                                          Threshold threshold,
-                                                          MetricOutputMapByMetric<S> result);
+        MetricOutputMultiMapByLeadThresholdBuilder<S> put( int leadTime,
+                                                           Threshold threshold,
+                                                           MetricOutputMapByMetric<S> result );
 
         /**
          * Adds a new result to the internal store.
@@ -125,8 +125,8 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
          * @return the builder
          */
 
-        MetricOutputMultiMapByLeadThresholdBuilder<S> put(MapKey<MetricConstants> key,
-                                                          MetricOutputMapByLeadThreshold<S> result);
+        MetricOutputMultiMapByLeadThresholdBuilder<S> put( MapKey<MetricConstants> key,
+                                                           MetricOutputMapByLeadThreshold<S> result );
 
     }
 

@@ -48,67 +48,67 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     private final List<MapBiKey<Integer, Threshold>> internal;
 
     @Override
-    public T get(final MapBiKey<Integer, Threshold> key)
+    public T get( final MapBiKey<Integer, Threshold> key )
     {
-        return store.get(key);
+        return store.get( key );
     }
 
     @Override
-    public MapBiKey<Integer, Threshold> getKey(final int index)
+    public MapBiKey<Integer, Threshold> getKey( final int index )
     {
-        return internal.get(index);
+        return internal.get( index );
     }
 
     @Override
-    public T getValue(final int index)
+    public T getValue( final int index )
     {
-        return get(getKey(index));
+        return get( getKey( index ) );
     }
 
     @Override
-    public boolean containsKey(final MapBiKey<Integer, Threshold> key)
+    public boolean containsKey( final MapBiKey<Integer, Threshold> key )
     {
-        return store.containsKey(key);
+        return store.containsKey( key );
     }
 
     @Override
-    public boolean containsValue(T value)
+    public boolean containsValue( T value )
     {
-        return store.containsValue(value);
+        return store.containsValue( value );
     }
 
     @Override
     public Collection<T> values()
     {
-        return Collections.unmodifiableCollection(store.values());
+        return Collections.unmodifiableCollection( store.values() );
     }
 
     @Override
     public Set<MapBiKey<Integer, Threshold>> keySet()
     {
-        return Collections.unmodifiableSet(store.keySet());
+        return Collections.unmodifiableSet( store.keySet() );
     }
 
     @Override
     public Set<Entry<MapBiKey<Integer, Threshold>, T>> entrySet()
     {
-        return Collections.unmodifiableSet(store.entrySet());
+        return Collections.unmodifiableSet( store.entrySet() );
     }
 
     @Override
     public Set<Integer> keySetByFirstKey()
     {
         final Set<Integer> returnMe = new TreeSet<>();
-        store.keySet().forEach(a -> returnMe.add(a.getFirstKey()));
-        return Collections.unmodifiableSet(returnMe);
+        store.keySet().forEach( a -> returnMe.add( a.getFirstKey() ) );
+        return Collections.unmodifiableSet( returnMe );
     }
 
     @Override
     public Set<Threshold> keySetBySecondKey()
     {
         final Set<Threshold> returnMe = new TreeSet<>();
-        store.keySet().forEach(a -> returnMe.add(a.getSecondKey()));
-        return Collections.unmodifiableSet(returnMe);
+        store.keySet().forEach( a -> returnMe.add( a.getSecondKey() ) );
+        return Collections.unmodifiableSet( returnMe );
     }
 
     @Override
@@ -118,22 +118,23 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     }
 
     @Override
-    public SortedMap<MapBiKey<Integer, Threshold>, T> subMap(MapBiKey<Integer, Threshold> fromKey,
-                                                             MapBiKey<Integer, Threshold> toKey)
+    public SortedMap<MapBiKey<Integer, Threshold>, T> subMap( MapBiKey<Integer, Threshold> fromKey,
+                                                              MapBiKey<Integer, Threshold> toKey )
     {
-        return (SortedMap<MapBiKey<Integer, Threshold>, T>)Collections.unmodifiableMap(store.subMap(fromKey, toKey));
+        return (SortedMap<MapBiKey<Integer, Threshold>, T>) Collections.unmodifiableMap( store.subMap( fromKey,
+                                                                                                       toKey ) );
     }
 
     @Override
-    public SortedMap<MapBiKey<Integer, Threshold>, T> headMap(MapBiKey<Integer, Threshold> toKey)
+    public SortedMap<MapBiKey<Integer, Threshold>, T> headMap( MapBiKey<Integer, Threshold> toKey )
     {
-        return (SortedMap<MapBiKey<Integer, Threshold>, T>)Collections.unmodifiableMap(store.headMap(toKey));
+        return (SortedMap<MapBiKey<Integer, Threshold>, T>) Collections.unmodifiableMap( store.headMap( toKey ) );
     }
 
     @Override
-    public SortedMap<MapBiKey<Integer, Threshold>, T> tailMap(MapBiKey<Integer, Threshold> fromKey)
+    public SortedMap<MapBiKey<Integer, Threshold>, T> tailMap( MapBiKey<Integer, Threshold> fromKey )
     {
-        return (SortedMap<MapBiKey<Integer, Threshold>, T>)Collections.unmodifiableMap(store.tailMap(fromKey));
+        return (SortedMap<MapBiKey<Integer, Threshold>, T>) Collections.unmodifiableMap( store.tailMap( fromKey ) );
     }
 
     @Override
@@ -147,53 +148,56 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     {
         return store.lastKey();
     }
-    
-    @Override
-    public boolean equals(Object o) {
-        if(! (o instanceof SafeMetricOutputMapByLeadThreshold)) {
-            return false;
-        }
-        SafeMetricOutputMapByLeadThreshold<?> in = (SafeMetricOutputMapByLeadThreshold<?>)o;
-        return in.metadata.equals(metadata) && in.store.equals(store);     
-    }
-    
-    @Override
-    public int hashCode() {
-        return metadata.hashCode() + store.hashCode();     
-    }    
 
     @Override
-    public MetricOutputMapWithBiKey<Integer, Threshold, T> sliceByFirst(final Integer first)
+    public boolean equals( Object o )
     {
-        Objects.requireNonNull(first, "Specify a non-null threshold by which to slice the map.");
-        final Builder<T> b = new Builder<>();
-        store.forEach((key, value) -> {
-            if(first.equals(key.getFirstKey()))
-            {
-                b.put(key, value);
-            }
-        });
-        if(b.store.isEmpty())
+        if ( ! ( o instanceof SafeMetricOutputMapByLeadThreshold ) )
         {
-            throw new IllegalArgumentException("No metric outputs match the specified criteria on forecast lead time.");
+            return false;
+        }
+        SafeMetricOutputMapByLeadThreshold<?> in = (SafeMetricOutputMapByLeadThreshold<?>) o;
+        return in.metadata.equals( metadata ) && in.store.equals( store );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return metadata.hashCode() + store.hashCode();
+    }
+
+    @Override
+    public MetricOutputMapWithBiKey<Integer, Threshold, T> sliceByFirst( final Integer first )
+    {
+        Objects.requireNonNull( first, "Specify a non-null threshold by which to slice the map." );
+        final Builder<T> b = new Builder<>();
+        store.forEach( ( key, value ) -> {
+            if ( first.equals( key.getFirstKey() ) )
+            {
+                b.put( key, value );
+            }
+        } );
+        if ( b.store.isEmpty() )
+        {
+            throw new IllegalArgumentException( "No metric outputs match the specified criteria on forecast lead time." );
         }
         return b.build();
     }
 
     @Override
-    public MetricOutputMapWithBiKey<Integer, Threshold, T> sliceBySecond(final Threshold second)
+    public MetricOutputMapWithBiKey<Integer, Threshold, T> sliceBySecond( final Threshold second )
     {
-        Objects.requireNonNull(second, "Specify a non-null threshold by which to slice the map.");
+        Objects.requireNonNull( second, "Specify a non-null threshold by which to slice the map." );
         final Builder<T> b = new Builder<>();
-        store.forEach((key, value) -> {
-            if(second.equals(key.getSecondKey()))
+        store.forEach( ( key, value ) -> {
+            if ( second.equals( key.getSecondKey() ) )
             {
-                b.put(key, value);
+                b.put( key, value );
             }
-        });
-        if(b.store.isEmpty())
+        } );
+        if ( b.store.isEmpty() )
         {
-            throw new IllegalArgumentException("No metric outputs match the specified criteria on threshold value.");
+            throw new IllegalArgumentException( "No metric outputs match the specified criteria on threshold value." );
         }
         return b.build();
     }
@@ -208,16 +212,16 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     public String toString()
     {
         StringBuilder b = new StringBuilder();
-        forEach((key, value) -> b.append("[")
-                                 .append(key.getFirstKey())
-                                 .append(", ")
-                                 .append(key.getSecondKey())
-                                 .append(", ")
-                                 .append(value)
-                                 .append("]")
-                                 .append(NEWLINE));
+        forEach( ( key, value ) -> b.append( "[" )
+                                    .append( key.getFirstKey() )
+                                    .append( ", " )
+                                    .append( key.getSecondKey() )
+                                    .append( ", " )
+                                    .append( value )
+                                    .append( "]" )
+                                    .append( NEWLINE ) );
         int lines = b.length();
-        b.delete(lines - NEWLINE.length(), lines);
+        b.delete( lines - NEWLINE.length(), lines );
         return b.toString();
     }
 
@@ -242,13 +246,13 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
          * @return the builder
          */
 
-        protected Builder<T> put(final MapBiKey<Integer, Threshold> key, final T value)
+        protected Builder<T> put( final MapBiKey<Integer, Threshold> key, final T value )
         {
-            if(Objects.isNull(referenceMetadata))
+            if ( Objects.isNull( referenceMetadata ) )
             {
                 referenceMetadata = value.getMetadata();
             }
-            store.put(key, value);
+            store.put( key, value );
             return this;
         }
 
@@ -259,7 +263,7 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
          * @return the builder
          */
 
-        protected Builder<T> setOverrideMetadata(final MetricOutputMetadata overrideMeta)
+        protected Builder<T> setOverrideMetadata( final MetricOutputMetadata overrideMeta )
         {
             this.overrideMeta = overrideMeta;
             return this;
@@ -273,7 +277,7 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
 
         protected MetricOutputMapByLeadThreshold<T> build()
         {
-            return new SafeMetricOutputMapByLeadThreshold<>(this);
+            return new SafeMetricOutputMapByLeadThreshold<>( this );
         }
 
     }
@@ -284,37 +288,37 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
      * @param builder the builder
      */
 
-    private SafeMetricOutputMapByLeadThreshold(final Builder<T> builder)
+    private SafeMetricOutputMapByLeadThreshold( final Builder<T> builder )
     {
         //Bounds checks
-        if(builder.store.isEmpty())
+        if ( builder.store.isEmpty() )
         {
-            throw new UnsupportedOperationException("Specify one or more <key,value> mappings to build the map.");
+            throw new UnsupportedOperationException( "Specify one or more <key,value> mappings to build the map." );
         }
         final MetricOutputMetadata checkAgainst = builder.referenceMetadata;
-        builder.store.forEach((key, value) -> {
-            if(Objects.isNull(key))
+        builder.store.forEach( ( key, value ) -> {
+            if ( Objects.isNull( key ) )
             {
-                throw new UnsupportedOperationException("Cannot prescribe a null key for the input map.");
+                throw new UnsupportedOperationException( "Cannot prescribe a null key for the input map." );
             }
-            if(Objects.isNull(value))
+            if ( Objects.isNull( value ) )
             {
-                throw new UnsupportedOperationException("Cannot prescribe a null value for the input map.");
+                throw new UnsupportedOperationException( "Cannot prescribe a null value for the input map." );
             }
             //Check metadata
-            if(!value.getMetadata().minimumEquals(checkAgainst))
+            if ( !value.getMetadata().minimumEquals( checkAgainst ) )
             {
-                throw new UnsupportedOperationException("Cannot construct the map from inputs that comprise "
-                    + "inconsistent metadata.");
+                throw new UnsupportedOperationException( "Cannot construct the map from inputs that comprise "
+                                                         + "inconsistent metadata." );
             }
-        });
+        } );
         //Set the metadata
-        if(!Objects.isNull(builder.overrideMeta))
+        if ( !Objects.isNull( builder.overrideMeta ) )
         {
-            if(!builder.overrideMeta.minimumEquals(checkAgainst))
+            if ( !builder.overrideMeta.minimumEquals( checkAgainst ) )
             {
-                throw new UnsupportedOperationException("Cannot construct the map. The override metadata is "
-                    + "inconsistent with the metadata of the stored outputs.");
+                throw new UnsupportedOperationException( "Cannot construct the map. The override metadata is "
+                                                         + "inconsistent with the metadata of the stored outputs." );
             }
             metadata = builder.overrideMeta;
         }
@@ -323,8 +327,8 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
             metadata = checkAgainst;
         }
         store = new TreeMap<>();
-        store.putAll(builder.store);
-        internal = new ArrayList<>(store.keySet());
+        store.putAll( builder.store );
+        internal = new ArrayList<>( store.keySet() );
     }
 
 }

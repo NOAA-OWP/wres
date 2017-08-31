@@ -38,7 +38,7 @@ public class DefaultDataFactory implements DataFactory
 
     public static DataFactory getInstance()
     {
-        if(Objects.isNull(instance))
+        if ( Objects.isNull( instance ) )
         {
             instance = new DefaultDataFactory();
         }
@@ -58,279 +58,285 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public DichotomousPairs ofDichotomousPairs(List<VectorOfBooleans> pairs,
-                                               List<VectorOfBooleans> basePairs,
-                                               Metadata mainMeta,
-                                               Metadata baselineMeta,
-                                               VectorOfDoubles climatology)
+    public DichotomousPairs ofDichotomousPairs( List<VectorOfBooleans> pairs,
+                                                List<VectorOfBooleans> basePairs,
+                                                Metadata mainMeta,
+                                                Metadata baselineMeta,
+                                                VectorOfDoubles climatology )
     {
         final SafeDichotomousPairs.DichotomousPairsBuilder b = new SafeDichotomousPairs.DichotomousPairsBuilder();
-        return (DichotomousPairs)b.setData(pairs)
-                                  .setMetadata(mainMeta)
-                                  .setDataForBaseline(basePairs)
-                                  .setMetadataForBaseline(baselineMeta)
-                                  .setClimatology(climatology)
-                                  .build();
-    }
-
-    @Override
-    public DichotomousPairs ofDichotomousPairsFromAtomic(List<PairOfBooleans> pairs,
-                                                         List<PairOfBooleans> basePairs,
-                                                         Metadata mainMeta,
-                                                         Metadata baselineMeta,
-                                                         VectorOfDoubles climatology)
-    {
-        final SafeDichotomousPairs.DichotomousPairsBuilder b = new SafeDichotomousPairs.DichotomousPairsBuilder();
-        b.setDataFromAtomic(pairs).setMetadata(mainMeta).setClimatology(climatology);
-        return (DichotomousPairs)b.setDataForBaselineFromAtomic(basePairs).setMetadataForBaseline(baselineMeta).build();
-    }
-
-    @Override
-    public MulticategoryPairs ofMulticategoryPairs(List<VectorOfBooleans> pairs,
-                                                   List<VectorOfBooleans> basePairs,
-                                                   Metadata mainMeta,
-                                                   Metadata baselineMeta,
-                                                   VectorOfDoubles climatology)
-    {
-        final SafeMulticategoryPairs.MulticategoryPairsBuilder b =
-                                                                 new SafeMulticategoryPairs.MulticategoryPairsBuilder();
-        return (MulticategoryPairs)b.setData(pairs)
-                                    .setMetadata(mainMeta)
-                                    .setDataForBaseline(basePairs)
-                                    .setMetadataForBaseline(baselineMeta)
-                                    .setClimatology(climatology)
-                                    .build();
-    }
-
-    @Override
-    public DiscreteProbabilityPairs ofDiscreteProbabilityPairs(final List<PairOfDoubles> pairs,
-                                                               final List<PairOfDoubles> basePairs,
-                                                               final Metadata mainMeta,
-                                                               final Metadata baselineMeta,
-                                                               VectorOfDoubles climatology)
-    {
-        final SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
-                                                                             new SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
-        return (DiscreteProbabilityPairs)b.setData(pairs)
-                                          .setMetadata(mainMeta)
-                                          .setDataForBaseline(basePairs)
-                                          .setMetadataForBaseline(baselineMeta)
-                                          .setClimatology(climatology)
-                                          .build();
-    }
-
-    @Override
-    public SingleValuedPairs ofSingleValuedPairs(final List<PairOfDoubles> pairs,
-                                                 final List<PairOfDoubles> basePairs,
-                                                 final Metadata mainMeta,
-                                                 final Metadata baselineMeta,
-                                                 VectorOfDoubles climatology)
-    {
-        final SafeSingleValuedPairs.SingleValuedPairsBuilder b = new SafeSingleValuedPairs.SingleValuedPairsBuilder();
-        return (SingleValuedPairs)b.setMetadata(mainMeta)
-                                   .setData(pairs)
-                                   .setDataForBaseline(basePairs)
-                                   .setMetadataForBaseline(baselineMeta)
-                                   .setClimatology(climatology)
+        return (DichotomousPairs) b.setData( pairs )
+                                   .setMetadata( mainMeta )
+                                   .setDataForBaseline( basePairs )
+                                   .setMetadataForBaseline( baselineMeta )
+                                   .setClimatology( climatology )
                                    .build();
     }
 
     @Override
-    public EnsemblePairs ofEnsemblePairs(final List<PairOfDoubleAndVectorOfDoubles> pairs,
-                                         final List<PairOfDoubleAndVectorOfDoubles> basePairs,
-                                         final Metadata mainMeta,
-                                         final Metadata baselineMeta,
-                                         VectorOfDoubles climatology)
+    public DichotomousPairs ofDichotomousPairsFromAtomic( List<PairOfBooleans> pairs,
+                                                          List<PairOfBooleans> basePairs,
+                                                          Metadata mainMeta,
+                                                          Metadata baselineMeta,
+                                                          VectorOfDoubles climatology )
+    {
+        final SafeDichotomousPairs.DichotomousPairsBuilder b = new SafeDichotomousPairs.DichotomousPairsBuilder();
+        b.setDataFromAtomic( pairs ).setMetadata( mainMeta ).setClimatology( climatology );
+        return (DichotomousPairs) b.setDataForBaselineFromAtomic( basePairs )
+                                   .setMetadataForBaseline( baselineMeta )
+                                   .build();
+    }
+
+    @Override
+    public MulticategoryPairs ofMulticategoryPairs( List<VectorOfBooleans> pairs,
+                                                    List<VectorOfBooleans> basePairs,
+                                                    Metadata mainMeta,
+                                                    Metadata baselineMeta,
+                                                    VectorOfDoubles climatology )
+    {
+        final SafeMulticategoryPairs.MulticategoryPairsBuilder b =
+                new SafeMulticategoryPairs.MulticategoryPairsBuilder();
+        return (MulticategoryPairs) b.setData( pairs )
+                                     .setMetadata( mainMeta )
+                                     .setDataForBaseline( basePairs )
+                                     .setMetadataForBaseline( baselineMeta )
+                                     .setClimatology( climatology )
+                                     .build();
+    }
+
+    @Override
+    public DiscreteProbabilityPairs ofDiscreteProbabilityPairs( final List<PairOfDoubles> pairs,
+                                                                final List<PairOfDoubles> basePairs,
+                                                                final Metadata mainMeta,
+                                                                final Metadata baselineMeta,
+                                                                VectorOfDoubles climatology )
+    {
+        final SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
+                new SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
+        return (DiscreteProbabilityPairs) b.setData( pairs )
+                                           .setMetadata( mainMeta )
+                                           .setDataForBaseline( basePairs )
+                                           .setMetadataForBaseline( baselineMeta )
+                                           .setClimatology( climatology )
+                                           .build();
+    }
+
+    @Override
+    public SingleValuedPairs ofSingleValuedPairs( final List<PairOfDoubles> pairs,
+                                                  final List<PairOfDoubles> basePairs,
+                                                  final Metadata mainMeta,
+                                                  final Metadata baselineMeta,
+                                                  VectorOfDoubles climatology )
+    {
+        final SafeSingleValuedPairs.SingleValuedPairsBuilder b = new SafeSingleValuedPairs.SingleValuedPairsBuilder();
+        return (SingleValuedPairs) b.setMetadata( mainMeta )
+                                    .setData( pairs )
+                                    .setDataForBaseline( basePairs )
+                                    .setMetadataForBaseline( baselineMeta )
+                                    .setClimatology( climatology )
+                                    .build();
+    }
+
+    @Override
+    public EnsemblePairs ofEnsemblePairs( final List<PairOfDoubleAndVectorOfDoubles> pairs,
+                                          final List<PairOfDoubleAndVectorOfDoubles> basePairs,
+                                          final Metadata mainMeta,
+                                          final Metadata baselineMeta,
+                                          VectorOfDoubles climatology )
     {
         final SafeEnsemblePairs.EnsemblePairsBuilder b = new SafeEnsemblePairs.EnsemblePairsBuilder();
-        return (EnsemblePairs)b.setMetadata(mainMeta)
-                               .setData(pairs)
-                               .setDataForBaseline(basePairs)
-                               .setMetadataForBaseline(baselineMeta)
-                               .setClimatology(climatology)
-                               .build();
+        return (EnsemblePairs) b.setMetadata( mainMeta )
+                                .setData( pairs )
+                                .setDataForBaseline( basePairs )
+                                .setMetadataForBaseline( baselineMeta )
+                                .setClimatology( climatology )
+                                .build();
     }
 
     @Override
-    public PairOfDoubles pairOf(final double left, final double right)
+    public PairOfDoubles pairOf( final double left, final double right )
     {
-        return SafePairOfDoubles.of(left, right);
+        return SafePairOfDoubles.of( left, right );
     }
 
     @Override
-    public PairOfBooleans pairOf(final boolean left, final boolean right)
+    public PairOfBooleans pairOf( final boolean left, final boolean right )
     {
-        return new SafePairOfBooleans(left, right);
+        return new SafePairOfBooleans( left, right );
     }
 
     @Override
-    public PairOfDoubleAndVectorOfDoubles pairOf(final double left, final double[] right)
+    public PairOfDoubleAndVectorOfDoubles pairOf( final double left, final double[] right )
     {
-        return SafePairOfDoubleAndVectorOfDoubles.of(left, right);
+        return SafePairOfDoubleAndVectorOfDoubles.of( left, right );
     }
 
     @Override
-    public PairOfDoubleAndVectorOfDoubles pairOf(final Double left, final Double[] right)
+    public PairOfDoubleAndVectorOfDoubles pairOf( final Double left, final Double[] right )
     {
-        return SafePairOfDoubleAndVectorOfDoubles.of(left, right);
+        return SafePairOfDoubleAndVectorOfDoubles.of( left, right );
     }
 
     @Override
-    public Pair<VectorOfDoubles, VectorOfDoubles> pairOf(final double[] left, final double[] right)
+    public Pair<VectorOfDoubles, VectorOfDoubles> pairOf( final double[] left, final double[] right )
     {
         return new Pair<VectorOfDoubles, VectorOfDoubles>()
         {
             @Override
             public VectorOfDoubles getItemOne()
             {
-                return SafeVectorOfDoubles.of(left);
+                return SafeVectorOfDoubles.of( left );
             }
 
             @Override
             public VectorOfDoubles getItemTwo()
             {
-                return SafeVectorOfDoubles.of(right);
+                return SafeVectorOfDoubles.of( right );
             }
         };
     }
 
     @Override
-    public VectorOfDoubles vectorOf(final double[] vec)
+    public VectorOfDoubles vectorOf( final double[] vec )
     {
-        return SafeVectorOfDoubles.of(vec);
+        return SafeVectorOfDoubles.of( vec );
     }
 
     @Override
-    public VectorOfDoubles vectorOf(final Double[] vec)
+    public VectorOfDoubles vectorOf( final Double[] vec )
     {
-        return SafeVectorOfDoubles.of(vec);
+        return SafeVectorOfDoubles.of( vec );
     }
 
     @Override
-    public VectorOfBooleans vectorOf(final boolean[] vec)
+    public VectorOfBooleans vectorOf( final boolean[] vec )
     {
-        return SafeVectorOfBooleans.of(vec);
+        return SafeVectorOfBooleans.of( vec );
     }
 
     @Override
-    public MatrixOfDoubles matrixOf(final double[][] vec)
+    public MatrixOfDoubles matrixOf( final double[][] vec )
     {
-        return SafeMatrixOfDoubles.of(vec);
+        return SafeMatrixOfDoubles.of( vec );
     }
 
     @Override
-    public ScalarOutput ofScalarOutput(final double output, final MetricOutputMetadata meta)
+    public ScalarOutput ofScalarOutput( final double output, final MetricOutputMetadata meta )
     {
-        return new SafeScalarOutput(output, meta);
+        return new SafeScalarOutput( output, meta );
     }
 
     @Override
-    public VectorOutput ofVectorOutput(final double[] output,
-                                       final MetricDecompositionGroup template,
-                                       final MetricOutputMetadata meta)
+    public VectorOutput ofVectorOutput( final double[] output,
+                                        final MetricDecompositionGroup template,
+                                        final MetricOutputMetadata meta )
     {
-        return new SafeVectorOutput(vectorOf(output), template, meta);
+        return new SafeVectorOutput( vectorOf( output ), template, meta );
     }
 
     @Override
-    public MultiVectorOutput ofMultiVectorOutput(final Map<MetricConstants, double[]> output,
-                                                 final MetricOutputMetadata meta)
+    public MultiVectorOutput ofMultiVectorOutput( final Map<MetricConstants, double[]> output,
+                                                  final MetricOutputMetadata meta )
     {
-        EnumMap<MetricConstants, VectorOfDoubles> map = new EnumMap<>(MetricConstants.class);
-        output.forEach((key, value) -> map.put(key, vectorOf(value)));
-        return new SafeMultiVectorOutput(map, meta);
+        EnumMap<MetricConstants, VectorOfDoubles> map = new EnumMap<>( MetricConstants.class );
+        output.forEach( ( key, value ) -> map.put( key, vectorOf( value ) ) );
+        return new SafeMultiVectorOutput( map, meta );
     }
 
     @Override
-    public MatrixOutput ofMatrixOutput(final double[][] output, final MetricOutputMetadata meta)
+    public MatrixOutput ofMatrixOutput( final double[][] output, final MetricOutputMetadata meta )
     {
-        return new SafeMatrixOutput(matrixOf(output), meta);
+        return new SafeMatrixOutput( matrixOf( output ), meta );
     }
 
     @Override
-    public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap(final List<T> input)
+    public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( final List<T> input )
     {
-        Objects.requireNonNull(input, "Specify a non-null list of inputs.");
+        Objects.requireNonNull( input, "Specify a non-null list of inputs." );
         final SafeMetricOutputMapByMetric.Builder<T> builder = new SafeMetricOutputMapByMetric.Builder<>();
-        input.forEach(a -> {
-            final MapKey<MetricConstants> key = getMapKey(a.getMetadata().getMetricID());
-            builder.put(key, a);
-        });
+        input.forEach( a -> {
+            final MapKey<MetricConstants> key = getMapKey( a.getMetadata().getMetricID() );
+            builder.put( key, a );
+        } );
         return builder.build();
     }
 
     @Override
-    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> ofMap(final Map<MapBiKey<Integer, Threshold>, T> input)
+    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T>
+            ofMap( final Map<MapBiKey<Integer, Threshold>, T> input )
     {
-        Objects.requireNonNull(input, "Specify a non-null map of inputs by lead time and threshold.");
+        Objects.requireNonNull( input, "Specify a non-null map of inputs by lead time and threshold." );
         final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
-                                                                    new SafeMetricOutputMapByLeadThreshold.Builder<>();
-        input.forEach(builder::put);
+                new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        input.forEach( builder::put );
         return builder.build();
     }
 
     @Override
-    public <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold<T> ofMultiMap(final Map<MapBiKey<Integer, Threshold>, MetricOutputMapByMetric<T>> input)
+    public <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold<T>
+            ofMultiMap( final Map<MapBiKey<Integer, Threshold>, MetricOutputMapByMetric<T>> input )
     {
-        Objects.requireNonNull(input, "Specify a non-null map of inputs by threshold.");
+        Objects.requireNonNull( input, "Specify a non-null map of inputs by threshold." );
         final SafeMetricOutputMultiMapByLeadThresholdBuilder<T> builder =
-                                                                        new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
-        input.forEach(builder::put);
+                new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
+        input.forEach( builder::put );
         return builder.build();
     }
 
     @Override
-    public <S extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder<S> ofMultiMap()
+    public <S extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder<S>
+            ofMultiMap()
     {
         return new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
     }
 
     @Override
-    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T> combine(final List<MetricOutputMapByLeadThreshold<T>> input)
+    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T>
+            combine( final List<MetricOutputMapByLeadThreshold<T>> input )
     {
-        Objects.requireNonNull(input, "Specify a non-null map of inputs to combine.");
+        Objects.requireNonNull( input, "Specify a non-null map of inputs to combine." );
         final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
-                                                                    new SafeMetricOutputMapByLeadThreshold.Builder<>();
-        input.forEach(a -> a.forEach(builder::put));
-        builder.setOverrideMetadata(input.get(0).getMetadata());
+                new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        input.forEach( a -> a.forEach( builder::put ) );
+        builder.setOverrideMetadata( input.get( 0 ).getMetadata() );
         return builder.build();
     }
 
     @Override
-    public <S extends Comparable<S>> MapKey<S> getMapKey(final S key)
+    public <S extends Comparable<S>> MapKey<S> getMapKey( final S key )
     {
-        return new DefaultMapKey<>(key);
+        return new DefaultMapKey<>( key );
     }
 
     @Override
-    public <S extends Comparable<S>, T extends Comparable<T>> MapBiKey<S, T> getMapKey(final S firstKey,
-                                                                                       final T secondKey)
+    public <S extends Comparable<S>, T extends Comparable<T>> MapBiKey<S, T> getMapKey( final S firstKey,
+                                                                                        final T secondKey )
     {
-        return new DefaultMapBiKey<>(firstKey, secondKey);
+        return new DefaultMapBiKey<>( firstKey, secondKey );
     }
 
     @Override
-    public Threshold getThreshold(final Double threshold, final Double thresholdUpper, final Operator condition)
+    public Threshold getThreshold( final Double threshold, final Double thresholdUpper, final Operator condition )
     {
-        return new SafeThreshold(threshold, thresholdUpper, condition);
+        return new SafeThreshold( threshold, thresholdUpper, condition );
     }
 
     @Override
-    public ProbabilityThreshold getProbabilityThreshold(final Double threshold,
-                                                        final Double thresholdUpper,
-                                                        final Operator condition)
+    public ProbabilityThreshold getProbabilityThreshold( final Double threshold,
+                                                         final Double thresholdUpper,
+                                                         final Operator condition )
     {
-        return new SafeProbabilityThreshold(threshold, thresholdUpper, condition);
+        return new SafeProbabilityThreshold( threshold, thresholdUpper, condition );
     }
 
     @Override
-    public QuantileThreshold getQuantileThreshold(final Double threshold,
-                                                  final Double thresholdUpper,
-                                                  final Double probability,
-                                                  final Double probabilityUpper,
-                                                  final Operator condition)
+    public QuantileThreshold getQuantileThreshold( final Double threshold,
+                                                   final Double thresholdUpper,
+                                                   final Double probability,
+                                                   final Double probabilityUpper,
+                                                   final Operator condition )
     {
-        return new SafeQuantileThreshold(threshold, thresholdUpper, probability, probabilityUpper, condition);
+        return new SafeQuantileThreshold( threshold, thresholdUpper, probability, probabilityUpper, condition );
     }
 
     @Override
@@ -340,9 +346,9 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public boolean doubleEquals(double first, double second, int digits)
+    public boolean doubleEquals( double first, double second, int digits )
     {
-        return Math.abs(first - second) < 1.0 / digits;
+        return Math.abs( first - second ) < 1.0 / digits;
     }
 
     /**
@@ -352,22 +358,22 @@ public class DefaultDataFactory implements DataFactory
      * @return the immutable output
      */
 
-    List<PairOfDoubles> safePairOfDoublesList(List<PairOfDoubles> input)
+    List<PairOfDoubles> safePairOfDoublesList( List<PairOfDoubles> input )
     {
-        Objects.requireNonNull(input,
-                               "Specify a non-null list of single-valued pairs from which to create a safe type.");
+        Objects.requireNonNull( input,
+                                "Specify a non-null list of single-valued pairs from which to create a safe type." );
         List<PairOfDoubles> returnMe = new ArrayList<>();
-        input.forEach(value -> {
-            if(value instanceof SafePairOfDoubles)
+        input.forEach( value -> {
+            if ( value instanceof SafePairOfDoubles )
             {
-                returnMe.add(value);
+                returnMe.add( value );
             }
             else
             {
-                returnMe.add(SafePairOfDoubles.of(value.getItemOne(), value.getItemTwo()));
+                returnMe.add( SafePairOfDoubles.of( value.getItemOne(), value.getItemTwo() ) );
             }
-        });
-        return Collections.unmodifiableList(returnMe);
+        } );
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**
@@ -377,21 +383,22 @@ public class DefaultDataFactory implements DataFactory
      * @return the immutable output
      */
 
-    List<PairOfDoubleAndVectorOfDoubles> safePairOfDoubleAndVectorOfDoublesList(List<PairOfDoubleAndVectorOfDoubles> input)
+    List<PairOfDoubleAndVectorOfDoubles>
+            safePairOfDoubleAndVectorOfDoublesList( List<PairOfDoubleAndVectorOfDoubles> input )
     {
-        Objects.requireNonNull(input, "Specify a non-null list of ensemble pairs from which to create a safe type.");
+        Objects.requireNonNull( input, "Specify a non-null list of ensemble pairs from which to create a safe type." );
         List<PairOfDoubleAndVectorOfDoubles> returnMe = new ArrayList<>();
-        input.forEach(value -> {
-            if(value instanceof SafePairOfDoubleAndVectorOfDoubles)
+        input.forEach( value -> {
+            if ( value instanceof SafePairOfDoubleAndVectorOfDoubles )
             {
-                returnMe.add(value);
+                returnMe.add( value );
             }
             else
             {
-                returnMe.add(SafePairOfDoubleAndVectorOfDoubles.of(value.getItemOne(), value.getItemTwo()));
+                returnMe.add( SafePairOfDoubleAndVectorOfDoubles.of( value.getItemOne(), value.getItemTwo() ) );
             }
-        });
-        return Collections.unmodifiableList(returnMe);
+        } );
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**
@@ -401,22 +408,22 @@ public class DefaultDataFactory implements DataFactory
      * @return the immutable output
      */
 
-    List<VectorOfBooleans> safeVectorOfBooleansList(List<VectorOfBooleans> input)
+    List<VectorOfBooleans> safeVectorOfBooleansList( List<VectorOfBooleans> input )
     {
-        Objects.requireNonNull(input,
-                               "Specify a non-null list of dichotomous inputs from which to create a safe type.");
+        Objects.requireNonNull( input,
+                                "Specify a non-null list of dichotomous inputs from which to create a safe type." );
         List<VectorOfBooleans> returnMe = new ArrayList<>();
-        input.forEach(value -> {
-            if(value instanceof SafeVectorOfBooleans)
+        input.forEach( value -> {
+            if ( value instanceof SafeVectorOfBooleans )
             {
-                returnMe.add(value);
+                returnMe.add( value );
             }
             else
             {
-                returnMe.add(SafeVectorOfBooleans.of(value.getBooleans()));
+                returnMe.add( SafeVectorOfBooleans.of( value.getBooleans() ) );
             }
-        });
-        return Collections.unmodifiableList(returnMe);
+        } );
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**
@@ -426,13 +433,13 @@ public class DefaultDataFactory implements DataFactory
      * @return a safe implementation of the input
      */
 
-    VectorOfDoubles safeVectorOf(VectorOfDoubles input)
+    VectorOfDoubles safeVectorOf( VectorOfDoubles input )
     {
-        if(input instanceof SafeVectorOfDoubles)
+        if ( input instanceof SafeVectorOfDoubles )
         {
             return input;
         }
-        return SafeVectorOfDoubles.of(input.getDoubles());
+        return SafeVectorOfDoubles.of( input.getDoubles() );
     }
 
     /**
@@ -442,13 +449,13 @@ public class DefaultDataFactory implements DataFactory
      * @return a safe implementation of the input
      */
 
-    MatrixOfDoubles safeMatrixOf(MatrixOfDoubles input)
+    MatrixOfDoubles safeMatrixOf( MatrixOfDoubles input )
     {
-        if(input instanceof SafeMatrixOfDoubles)
+        if ( input instanceof SafeMatrixOfDoubles )
         {
             return input;
         }
-        return SafeMatrixOfDoubles.of(input.getDoubles());
+        return SafeMatrixOfDoubles.of( input.getDoubles() );
     }
 
     /**
@@ -467,7 +474,7 @@ public class DefaultDataFactory implements DataFactory
          * @param right the right
          */
 
-        private SafePairOfBooleans(boolean left, boolean right)
+        private SafePairOfBooleans( boolean left, boolean right )
         {
             this.left = left;
             this.right = right;
@@ -486,20 +493,20 @@ public class DefaultDataFactory implements DataFactory
         }
 
         @Override
-        public boolean equals(Object o)
+        public boolean equals( Object o )
         {
-            if(!(o instanceof SafePairOfBooleans))
+            if ( ! ( o instanceof SafePairOfBooleans ) )
             {
                 return false;
             }
-            SafePairOfBooleans b = (SafePairOfBooleans)o;
+            SafePairOfBooleans b = (SafePairOfBooleans) o;
             return b.getItemOne() == getItemOne() && b.getItemTwo() == getItemTwo();
         }
 
         @Override
         public int hashCode()
         {
-            return Boolean.hashCode(getItemOne()) + Boolean.hashCode(getItemTwo());
+            return Boolean.hashCode( getItemOne() ) + Boolean.hashCode( getItemTwo() );
         }
 
     };
@@ -517,18 +524,18 @@ public class DefaultDataFactory implements DataFactory
 
         private final S key;
 
-        DefaultMapKey(S key)
+        DefaultMapKey( S key )
         {
-            Objects.requireNonNull(key, "Specify a non-null map key.");
+            Objects.requireNonNull( key, "Specify a non-null map key." );
             this.key = key;
         }
 
         @Override
-        public int compareTo(final MapKey<S> o)
+        public int compareTo( final MapKey<S> o )
         {
             //Compare the keys
-            Objects.requireNonNull(o, "Specify a non-null map key for comparison.");
-            return getKey().compareTo(o.getKey());
+            Objects.requireNonNull( o, "Specify a non-null map key for comparison." );
+            return getKey().compareTo( o.getKey() );
         }
 
         @Override
@@ -555,8 +562,8 @@ public class DefaultDataFactory implements DataFactory
          * The first map key.
          */
 
-        private final S firstKey;        
-        
+        private final S firstKey;
+
         /**
          * The second map key.
          */
@@ -570,32 +577,32 @@ public class DefaultDataFactory implements DataFactory
          * @param secondKey the second key
          */
 
-        DefaultMapBiKey(S firstKey, T secondKey)
+        DefaultMapBiKey( S firstKey, T secondKey )
         {
-            Objects.requireNonNull(secondKey, "Specify a non-null first map key.");
-            Objects.requireNonNull(secondKey, "Specify a non-null second map key.");
+            Objects.requireNonNull( secondKey, "Specify a non-null first map key." );
+            Objects.requireNonNull( secondKey, "Specify a non-null second map key." );
             this.firstKey = firstKey;
             this.secondKey = secondKey;
         }
 
         @Override
-        public int compareTo(final MapBiKey<S,T> o)
+        public int compareTo( final MapBiKey<S, T> o )
         {
-            Objects.requireNonNull(o, "Specify a non-null map key for comparison.");
-            int returnMe = getFirstKey().compareTo(o.getFirstKey());
-            if(returnMe != 0)
+            Objects.requireNonNull( o, "Specify a non-null map key for comparison." );
+            int returnMe = getFirstKey().compareTo( o.getFirstKey() );
+            if ( returnMe != 0 )
             {
                 return returnMe;
             }
-            return getSecondKey().compareTo(o.getSecondKey());
+            return getSecondKey().compareTo( o.getSecondKey() );
         }
 
         @Override
         public S getFirstKey()
         {
             return firstKey;
-        }        
-        
+        }
+
         @Override
         public T getSecondKey()
         {

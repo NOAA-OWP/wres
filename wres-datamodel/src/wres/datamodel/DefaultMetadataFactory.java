@@ -219,6 +219,7 @@ public class DefaultMetadataFactory implements MetadataFactory
     }
 
     @Override
+    @SuppressWarnings("all")
     public String getMetricName(final MetricConstants identifier)
     {
         switch(identifier)

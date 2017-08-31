@@ -42,7 +42,7 @@ public interface MetricOutputMultiMap<T extends MetricOutput<?>>
      * @return true if the map contains the key, false otherwise
      */
 
-    boolean containsKey(MapKey<MetricConstants> key);
+    boolean containsKey( MapKey<MetricConstants> key );
 
     /**
      * Returns a view of the keys in the map for iteration.
