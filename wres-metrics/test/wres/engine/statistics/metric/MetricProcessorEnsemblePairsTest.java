@@ -68,7 +68,7 @@ public final class MetricProcessorEnsemblePairsTest
                                                                        .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
             MetricOutputMapByLeadThreshold<VectorOutput> crps =
                     results.getVectorOutput()
-                           .get( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE, MetricConstants.NONE );
+                           .get( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
 
             //Test contents
             assertTrue( "Unexpected difference in " + MetricConstants.BIAS_FRACTION,

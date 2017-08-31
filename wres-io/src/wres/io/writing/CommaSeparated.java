@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
-import java.text.Format;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
@@ -26,6 +25,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MapBiKey;
+import wres.datamodel.MapKey;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
@@ -183,11 +183,11 @@ public class CommaSeparated
         StringJoiner headerRow = new StringJoiner( "," );
 
         headerRow.add( "LEAD_TIME" );
-        for ( Map.Entry<MapBiKey<MetricConstants, MetricConstants>,
+        for ( Map.Entry<MapKey<MetricConstants>,
                 MetricOutputMapByLeadThreshold<ScalarOutput>> m
                 : output.entrySet() )
         {
-            String name = m.getKey().getFirstKey().name();
+            String name = m.getKey().getKey().name();
 
             for ( Threshold t : m.getValue().keySetByThreshold() )
             {

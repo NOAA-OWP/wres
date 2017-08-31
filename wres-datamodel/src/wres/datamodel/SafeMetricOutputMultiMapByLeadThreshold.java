@@ -9,8 +9,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-import wres.datamodel.MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
-
 /**
  * Default implementation of a safe map that contains {@link MetricOutputMapByLeadThreshold} for several metrics.
  * 
@@ -33,7 +31,7 @@ implements MetricOutputMultiMapByLeadThreshold<S>
      * The store of results.
      */
 
-    private final TreeMap<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<S>> store;
+    private final TreeMap<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>> store;
 
     @Override
     public SafeMetricOutputMultiMapByLeadThresholdBuilder<S> builder()
@@ -42,13 +40,13 @@ implements MetricOutputMultiMapByLeadThreshold<S>
     }
 
     @Override
-    public MetricOutputMapByLeadThreshold<S> get(final MetricConstants metricID, final MetricConstants componentID)
+    public MetricOutputMapByLeadThreshold<S> get(final MetricConstants metricID)
     {
-        return store.get(dataFactory.getMapKey(metricID, componentID));
+        return store.get(dataFactory.getMapKey(metricID));
     }
 
     @Override
-    public boolean containsKey(MapBiKey<MetricConstants, MetricConstants> key)
+    public boolean containsKey(MapKey<MetricConstants> key)
     {
         return store.containsKey(key);
     }
@@ -72,13 +70,13 @@ implements MetricOutputMultiMapByLeadThreshold<S>
     }
 
     @Override
-    public Set<MapBiKey<MetricConstants, MetricConstants>> keySet()
+    public Set<MapKey<MetricConstants>> keySet()
     {
         return Collections.unmodifiableSet(store.keySet());
     }
 
     @Override
-    public Set<Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<S>>> entrySet()
+    public Set<Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>>> entrySet()
     {
         return Collections.unmodifiableSet(store.entrySet());
     }
@@ -89,9 +87,7 @@ implements MetricOutputMultiMapByLeadThreshold<S>
         String newLine = System.getProperty("line.separator");
         StringBuilder b = new StringBuilder();
         store.forEach((key, value) -> {
-            b.append(key.getFirstKey());
-            b.append(": ");
-            b.append(key.getSecondKey());
+            b.append(key.getKey());
             b.append(newLine);
             b.append(value);
             b.append(newLine);
@@ -106,8 +102,7 @@ implements MetricOutputMultiMapByLeadThreshold<S>
          * Thread safe map.
          */
 
-        final ConcurrentMap<MapBiKey<MetricConstants, MetricConstants>, SafeMetricOutputMapByLeadThreshold.Builder<S>> internal =
-                                                                                                                                new ConcurrentSkipListMap<>();
+        final ConcurrentMap<MapKey<MetricConstants>, SafeMetricOutputMapByLeadThreshold.Builder<S>> internal = new ConcurrentSkipListMap<>();
 
         @Override
         public SafeMetricOutputMultiMapByLeadThreshold<S> build()
@@ -121,9 +116,8 @@ implements MetricOutputMultiMapByLeadThreshold<S>
             Objects.requireNonNull(result, "Specify a non-null metric result.");
             result.forEach((key, value) -> {
                 final MetricOutputMetadata d = value.getMetadata();
-                final MapBiKey<MetricConstants, MetricConstants> check =
-                                                                       dataFactory.getMapKey(d.getMetricID(),
-                                                                                             d.getMetricComponentID());
+                final MapKey<MetricConstants> check =
+                                                                       dataFactory.getMapKey(d.getMetricID());
                 //Safe put
                 final SafeMetricOutputMapByLeadThreshold.Builder<S> addMe =
                                                                           new SafeMetricOutputMapByLeadThreshold.Builder<>();
@@ -139,7 +133,7 @@ implements MetricOutputMultiMapByLeadThreshold<S>
         }
 
         @Override
-        public MetricOutputMultiMapByLeadThresholdBuilder<S> put(MapBiKey<MetricConstants, MetricConstants> key, MetricOutputMapByLeadThreshold<S> result)
+        public MetricOutputMultiMapByLeadThresholdBuilder<S> put(MapKey<MetricConstants> key, MetricOutputMapByLeadThreshold<S> result)
         {
             Objects.requireNonNull(result, "Specify a non-null metric result.");
             //Safe put
