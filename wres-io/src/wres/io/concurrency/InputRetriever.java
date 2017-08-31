@@ -1,18 +1,5 @@
 package wres.io.concurrency;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.config.generated.Conditions;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.ProjectConfig;
-import wres.datamodel.*;
-import wres.io.config.ConfigHelper;
-import wres.io.data.caching.UnitConversions;
-import wres.io.utilities.Database;
-import wres.io.utilities.ScriptGenerator;
-import wres.util.Internal;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,6 +7,29 @@ import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.function.Function;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.config.generated.Conditions;
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DatasourceType;
+import wres.config.generated.ProjectConfig;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Dimension;
+import wres.datamodel.Metadata;
+import wres.datamodel.MetadataFactory;
+import wres.datamodel.MetricInput;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.PairOfDoubles;
+import wres.datamodel.VectorOfDoubles;
+import wres.io.config.ConfigHelper;
+import wres.io.data.caching.UnitConversions;
+import wres.io.utilities.Database;
+import wres.io.utilities.ScriptGenerator;
+import wres.util.Internal;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -31,7 +41,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
     @Internal(exclusivePackage = "wres.io")
-    public InputRetriever (ProjectConfig projectConfig, Conditions.Feature feature, int progress, Function<String, Double> getLeftValue, VectorOfDoubles climatology)
+    public InputRetriever (ProjectConfig projectConfig,
+                           Conditions.Feature feature,
+                           int progress,
+                           Function<String, Double> getLeftValue,
+                           VectorOfDoubles climatology)
     {
         this.projectConfig = projectConfig;
         this.feature = feature;
@@ -50,6 +64,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         }
 
         return createInput();
+    }
+
+    public void setZeroDate(String zeroDate)
+    {
+        this.zeroDate = zeroDate;
     }
 
     private MetricInput<?> createInput()
@@ -99,14 +118,21 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         return input;
     }
 
+    private String getLoadScript(DataSourceConfig dataSourceConfig)
+            throws SQLException, InvalidPropertiesFormatException
+    {
+        return ScriptGenerator.generateLoadDatasourceScript( this.projectConfig,
+                                                             dataSourceConfig,
+                                                             this.feature,
+                                                             this.progress,
+                                                             this.zeroDate);
+    }
+
     private List<PairOfDoubleAndVectorOfDoubles> createPairs(DataSourceConfig dataSourceConfig)
             throws InvalidPropertiesFormatException, SQLException
     {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
-        String loadScript = ScriptGenerator.generateLoadDatasourceScript(this.projectConfig,
-                                                                         dataSourceConfig,
-                                                                         this.feature,
-                                                                         this.progress);
+        String loadScript = getLoadScript( dataSourceConfig );
 
         Connection connection = null;
         ResultSet resultSet = null;
@@ -170,7 +196,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         // To be replaced by non-generic ID from the Project Configuration
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
                                                                                    variableIdentifier,
-                                                                                   sourceConfig.getLabel());
+                                                                                   sourceConfig.getScenario());
 
         return metadataFactory.getMetadata(dim, datasetIdentifier, this.progress);
     }
@@ -183,6 +209,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private List<PairOfDoubleAndVectorOfDoubles> primaryPairs;
     private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;
     private Boolean hasBaseline;
+    private String zeroDate;
 
     private Boolean baselineExists()
     {
