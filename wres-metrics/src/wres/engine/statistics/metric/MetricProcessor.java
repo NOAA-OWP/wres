@@ -736,11 +736,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     private static List<MetricConstants> getMetricsForSingleValuedInput( ProjectConfig config )
     {
         List<MetricConstants> returnMe = new ArrayList<>();
-        returnMe.addAll( MetricInputGroup.ENSEMBLE.getMetrics() );
         returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
         if ( hasThresholds( config ) )
         {
-            returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
+            returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
         }
         return returnMe;
     }
