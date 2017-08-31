@@ -72,6 +72,7 @@ public abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYData
      * corresponding {@link WRESAbstractXYDataset}) from the raw data provided (the same data passed into the
      * constructor {@link WRESAbstractXYDataset#WRESAbstractXYDataset(Object)}). It must then call
      * {@link #setPlotData(Object)} so that it is stored herein.
+     * @param rawData the raw data 
      */
     protected abstract void preparePlotData(U rawData);
 
