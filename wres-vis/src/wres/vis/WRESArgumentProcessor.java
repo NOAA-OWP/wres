@@ -25,6 +25,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     /**
      * Convenience wrapper on {@link UniqueGenericParameterList#addParameter(String, String)} for the return of
      * {@link #getArguments()}.
+     * 
+     * @param key the argument key
+     * @param value the argument value
      */
     public void addArgument(final String key, final String value)
     {
