@@ -14,6 +14,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
@@ -47,8 +48,9 @@ public class ConfigHelper
     /**
      * Given a config, generate feature IDs and return a sql string of them.
      *
-     * @param config the project config.
+     * @param config the project config
      * @return sql string useful in a where clause
+     * @throws IOException if the feature ID could not be retrieved or added
      */
     public static String getFeatureIdsAndPutIfAbsent(ProjectConfig config)
     throws IOException
@@ -124,10 +126,10 @@ public class ConfigHelper
 
     /**
      *
-     * @param config
-     * @param currentLead
-     * @param finalLead
-     * @return
+     * @param config the project configuration
+     * @param currentLead the current lead time
+     * @param finalLead the final lead time
+     * @return true if the lead time is valid, false otherwise
      */
     public static boolean leadIsValid(ProjectConfig config, int currentLead, int finalLead)
     {
@@ -258,7 +260,7 @@ public class ConfigHelper
 
     /**
      * Returns the "earliest" datetime from given ProjectConfig Conditions
-     * @param config
+     * @param config the project configuration
      * @return the most narrow "earliest" date, null otherwise
      */
     public static LocalDateTime getEarliestDateTimeFromDataSources(ProjectConfig config)
@@ -304,7 +306,7 @@ public class ConfigHelper
      * Returns the earlier of any "latest" date specified in left or right datasource.
      * If only one date is specified, that one is returned.
      * If no dates for "latest" are specified, null is returned.
-     * @param config
+     * @param config the project configuration
      * @return the most narrow "latest" date, null otherwise.
      */
     public static LocalDateTime getLatestDateTimeFromDataSources(ProjectConfig config)

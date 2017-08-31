@@ -7,12 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
-
-//import concurrency.DatacardResultSaver;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.*;
-
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -22,11 +16,16 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.io.concurrency.CopyExecutor;
+import wres.io.data.caching.DataSources;
+//import concurrency.DatacardResultSaver;
+import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
 import wres.io.utilities.Database;
-
-import wres.io.concurrency.CopyExecutor;
-import wres.util.*;
+import wres.util.ProgressMonitor;
+import wres.util.Time;
 
 /**
  * @author ctubbs
@@ -39,6 +38,7 @@ public class DatacardSource extends BasicSource {
     
 	/**
 	 * 
+	 * @param filename the file name
 	 */
 	public DatacardSource(String filename) {
 		// TODO: Remove hard coding for variable name

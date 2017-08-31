@@ -1,10 +1,10 @@
 package wres.io.data.details;
 
+import java.util.Objects;
+
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.util.Internal;
 import wres.util.Time;
-
-import java.util.Objects;
 
 /**
  * Details about a source of observation or forecast data
@@ -49,7 +49,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 	
 	/**
 	 * Sets the time that the file was generated
-	 * @param outputTime
+	 * @param outputTime the time that the file was generated
 	 */
 	public void setOutputTime(String outputTime) {
 		this.outputTime = outputTime;

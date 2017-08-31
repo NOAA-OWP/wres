@@ -22,12 +22,13 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mchange.v2.c3p0.C3P0ProxyConnection;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESRunnable;
@@ -332,6 +333,7 @@ public final class Database {
 	/**
 	 * Submits the passed in runnable task for execution
 	 * @param task The thread whose task to execute
+	 * @return the result of the execution wrapped in a {@link Future}
 	 */
 	public static Future<?> execute(Runnable task)
 	{

@@ -10,6 +10,8 @@ public final class LabeledScript implements Comparable<LabeledScript>
 {
     /**
      * Creates the immutable pair of two values
+     * @param label the label
+     * @param script the script
      */
     public LabeledScript(String label, String script) {
         this.label = label;

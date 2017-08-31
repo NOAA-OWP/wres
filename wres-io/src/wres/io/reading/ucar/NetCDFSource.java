@@ -1,7 +1,11 @@
 package wres.io.reading.ucar;
 
+import java.io.IOException;
+import java.sql.SQLException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
@@ -10,10 +14,11 @@ import wres.io.concurrency.WRESRunnable;
 import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
 import wres.io.utilities.Database;
-import wres.util.*;
-
-import java.io.IOException;
-import java.sql.SQLException;
+import wres.util.Internal;
+import wres.util.NetCDF;
+import wres.util.NotImplementedException;
+import wres.util.ProgressMonitor;
+import wres.util.Strings;
 
 /**
  * @author ctubbs
@@ -25,6 +30,7 @@ public class NetCDFSource extends BasicSource {
 
 	/**
 	 * 
+	 * @param filename the file name
 	 */
 	@Internal(exclusivePackage = "wres.io")
 	public NetCDFSource(String filename) {

@@ -1,7 +1,18 @@
 package wres.io.reading;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Future;
+import java.util.stream.Stream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
@@ -12,16 +23,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.stream.Stream;
 
 /**
  * @author Christopher Tubbs
@@ -35,7 +36,7 @@ public class SourceLoader
     private static final String NEWLINE = System.lineSeparator();
 
     /**
-     *
+     * @param projectConfig the project configuration
      */
     @Internal(exclusivePackage = "wres.io")
     public SourceLoader (ProjectConfig projectConfig) {

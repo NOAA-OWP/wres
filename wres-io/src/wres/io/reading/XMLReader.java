@@ -1,8 +1,10 @@
 package wres.io.reading;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.util.Internal;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -13,7 +15,11 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.*;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.util.Internal;
 
 /**
  * @author Tubbs
@@ -31,6 +37,7 @@ public class XMLReader
 
 	/**
 	 * 
+	 * @param filename the file name
 	 */
 	@Internal(exclusivePackage = "wres.io")
 	public XMLReader(String filename)
