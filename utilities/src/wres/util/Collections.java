@@ -18,10 +18,12 @@ public final class Collections
     
     /**
      * Creates a new array without the value at the indicated index
+     * 
+     * @param <T> the type of object in the array
      * @param array The array to remove the element from
      * @param index The index of the element to remove
      * @return A new array without the item at the given index
-     * 
+     * @throws IndexOutOfBoundsException if the index is out of bounds
      * TODO: Modify to take advantage of Arrays.copyOfRange to copy the
      * array from before and after and combine the two
      */
@@ -56,6 +58,7 @@ public final class Collections
     
     /**
      * Combines two arrays
+     * @param <U> the type of object in the array
      * @param left The array to place on the left
      * @param right The array to place on the right
      * @return An array containing the values from the two passed in arrays
@@ -105,6 +108,8 @@ public final class Collections
     
     /**
      * Finds the first element in the array that is acceptable by the passed in expression
+     * 
+     * @param <U> the type of object in the source array
      * @param source An array of objects to search through
      * @param expression An expression that will find a matching element
      * @return The first found object
@@ -124,6 +129,7 @@ public final class Collections
     
     /**
      * Filters a list based on the passed in function
+     * @param <U> the type of object
      * @param source The list to filter
      * @param expression The expression used to determine what should be in the list
      * @return A new list containing  all elements that passed through the filter
@@ -140,6 +146,7 @@ public final class Collections
     
     /**
      * Finds an object in the passed in the collection based on the passed in expression
+     * @param <U> the type of object
      * @param source The collection to search through
      * @param expression The expression used to test elements against
      * @return The found value. Null if nothing was found
@@ -180,6 +187,7 @@ public final class Collections
      * Determines if the passed in array contains the indicated value
      * 
      * Equality is determined by using o.equals rather than ==
+     * @param <U> the type of object in the array
      * @param array The array to search
      * @param value The value to find
      * @return Boolean indicating whether or not the indicated value exists within the
