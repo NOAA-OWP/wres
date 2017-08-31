@@ -44,6 +44,9 @@ public final class Time
         mapping.put("hour", 1.0);
         mapping.put("day", 24.0);
         mapping.put("minute", 1/60.0);
+        mapping.put("s", 1/3600.0);
+        mapping.put("hr", 1.0);
+        mapping.put("min", 1/60.0);
         
         return mapping;
     }

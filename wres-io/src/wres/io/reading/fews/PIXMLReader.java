@@ -21,6 +21,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Scenarios;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ForecastDetails;
 import wres.io.data.details.ForecastEnsembleDetails;
@@ -53,7 +54,8 @@ public final class PIXMLReader extends XMLReader
 																			  "observation_time, " +
 																			  "observed_value, " +
 																			  "measurementunit_id, " +
-																			  "source_id)";
+																			  "source_id, " +
+                                                                              "scenario_id)";
 
 	private static String createForecastValuePartition(Integer leadTime) throws SQLException {
 
@@ -252,6 +254,8 @@ public final class PIXMLReader extends XMLReader
 		currentScript.append(String.valueOf(getMeasurementID()));
 		currentScript.append(delimiter);
 		currentScript.append(String.valueOf(getSourceID()));
+		currentScript.append(delimiter);
+		currentScript.append(this.getScenarioID());
 		
 		insertCount++;
 	}
@@ -336,14 +340,14 @@ public final class PIXMLReader extends XMLReader
 					//	If we are at the tag for the name of the station, save it to the location
 					currentStationName = XML.getXMLText(reader);
 				}
-				else if(localName.equalsIgnoreCase("ensembleId"))
+				else if(this.isForecast && localName.equalsIgnoreCase("ensembleId"))
 				{
 				    currentForecastEnsembleID = null;
 					currentEnsembleID = null;
 					//	If we are at the tag for the name of the ensemble, save it to the ensemble
 					currentEnsembleName = XML.getXMLText(reader);
 				}
-				else if(localName.equalsIgnoreCase("qualifierId"))
+				else if(this.isForecast && localName.equalsIgnoreCase("qualifierId"))
 				{
 				    currentForecastEnsembleID = null;
 					currentEnsembleID = null;
@@ -352,7 +356,7 @@ public final class PIXMLReader extends XMLReader
 					//current_ensemble.qualifierID = tag_value(reader);
 					currentQualifierID = XML.getXMLText(reader);
 				}
-				else if(localName.equalsIgnoreCase("ensembleMemberIndex"))
+				else if(this.isForecast && localName.equalsIgnoreCase("ensembleMemberIndex"))
 				{
 				    currentForecastEnsembleID = null;
 					currentEnsembleID = null;
@@ -360,7 +364,7 @@ public final class PIXMLReader extends XMLReader
 					//	If we are at the tag for the ensemble member, save it to the ensemble
 					currentEnsembleMemberID = XML.getXMLText(reader);
 				}
-				else if(localName.equalsIgnoreCase("forecastDate"))
+				else if(this.isForecast && localName.equalsIgnoreCase("forecastDate"))
 				{
 					//	If we are at the tag for the forecast date, save it to the forecast
 					currentForecast.setForecastDate(parseDateTime(reader));
@@ -414,7 +418,8 @@ public final class PIXMLReader extends XMLReader
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
 					currentVariableName = XML.getXMLText(reader);
-					currentVariableID = Variables.getVariableID(currentVariableName, currentMeasurementUnitID);
+					currentVariableID = Variables.getVariableID(currentVariableName,
+																currentMeasurementUnitID);
 				}
 			}
 			reader.next();
@@ -458,7 +463,9 @@ public final class PIXMLReader extends XMLReader
 	 */
 	private int getEnsembleID() throws SQLException {
 		if (currentEnsembleID == null) {
-			currentEnsembleID = Ensembles.getEnsembleID(currentEnsembleName, currentEnsembleMemberID, currentQualifierID);
+			currentEnsembleID = Ensembles.getEnsembleID(currentEnsembleName,
+														currentEnsembleMemberID,
+														currentQualifierID);
 		}
 		return currentEnsembleID;
 	}
@@ -475,7 +482,8 @@ public final class PIXMLReader extends XMLReader
 	 * @throws SQLException Thrown if the forecast could not be retrieved properly
 	 */
 	private int getForecastID() throws SQLException {
-	    this.currentForecast.setRange( this.getSpecifiedScenario() );
+	    this.currentForecast.setScenario( this.getSpecifiedScenario() );
+        this.currentForecast.setType( this.dataSourceConfig.getType().value() );
 		return currentForecast.getForecastID();
 	}
 	
@@ -485,7 +493,9 @@ public final class PIXMLReader extends XMLReader
 	 */
 	private int getVariablePositionID() throws SQLException {
 		if (currentVariablePositionID == null) {
-			currentVariablePositionID = Features.getVariablePositionID(currentLID, currentStationName, getVariableID());
+			currentVariablePositionID = Features.getVariablePositionID(currentLID,
+                                                                       currentStationName,
+                                                                       getVariableID());
 		}
 		return currentVariablePositionID;
 	}
@@ -513,7 +523,8 @@ public final class PIXMLReader extends XMLReader
 	private int getVariableID() throws SQLException {
 		if (currentVariableID == null)
 		{
-			this.currentVariableID = Variables.getVariableID(currentVariableName, currentMeasurementUnit);
+			this.currentVariableID = Variables.getVariableID(currentVariableName,
+                                                             currentMeasurementUnit);
 		}
 		return this.currentVariableID;
 	}
@@ -539,6 +550,18 @@ public final class PIXMLReader extends XMLReader
 		}
 		return currentSourceID;
 	}
+
+	private Integer getScenarioID() throws SQLException
+    {
+        if (this.scenarioID == null)
+        {
+            this.scenarioID = Scenarios.getScenarioID( this.getSpecifiedScenario(),
+                                                       this.dataSourceConfig
+                                                               .getType()
+                                                               .value() );
+        }
+        return this.scenarioID;
+    }
     
     private boolean variableIsApproved (String name) {
 	    boolean approved = true;
@@ -764,6 +787,11 @@ public final class PIXMLReader extends XMLReader
 	 * The name of the variable whose values are currently being parsed 
 	 */
 	private String currentVariableName = null;
+
+    /**
+     * The ID of the scenario for the data
+     */
+    private Integer scenarioID = null;
 
 	private void incrementLead() {
 		this.currentLeadTime += this.timeStep;

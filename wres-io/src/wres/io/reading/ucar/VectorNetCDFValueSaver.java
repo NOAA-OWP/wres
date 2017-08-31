@@ -1,10 +1,23 @@
 package wres.io.reading.ucar;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Stack;
+import java.util.TreeMap;
+import java.util.concurrent.Future;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
+
+import wres.config.generated.DatasourceType;
 import wres.io.concurrency.StatementRunner;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.SystemSettings;
@@ -17,13 +30,6 @@ import wres.util.Internal;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.Future;
 
 @Internal(exclusivePackage = "wres.io")
 class VectorNetCDFValueSaver extends WRESRunnable
@@ -299,7 +305,25 @@ class VectorNetCDFValueSaver extends WRESRunnable
             details.setCreationDate(NetCDF.getInitializedTime(this.getSource()));
             details.setForecastDate(NetCDF.getValidTime(this.getSource()));
             details.setLead(this.getLead());
-            details.setRange(NetCDF.getNWMRange(this.getSource()));
+            String range = NetCDF.getNWMRange( this.getSource() );
+
+            DatasourceType datasourceType;
+            if (range.equalsIgnoreCase( "analysis" ))
+            {
+                datasourceType = DatasourceType.SIMULATIONS;
+            }
+            else if (range.equalsIgnoreCase( "long" ))
+            {
+                datasourceType = DatasourceType.ENSEMBLE_FORECASTS;
+            }
+            else
+            {
+                datasourceType = DatasourceType.SINGLE_VALUED_FORECASTS;
+            }
+
+            details.setType( datasourceType.value() );
+            details.setScenario( range );
+
             this.forecastID = details.getForecastID();
         }
 

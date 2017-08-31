@@ -15,8 +15,8 @@ else
     psql -U $1 -d $3 -h $2 -f wres.Variable.sql >/dev/null
 
     echo ''
-    echo 'Adding wres.ForecastType...'
-    psql -U $1 -d $3 -h $2 -f wres.ForecastType.sql >/dev/null
+    echo 'Adding wres.Scenario...'
+    psql -U $1 -d $3 -h $2 -f wres.Scenario.sql >/dev/null
 
     echo ''
     echo 'Adding wres.Source...'

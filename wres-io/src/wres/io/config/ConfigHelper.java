@@ -28,9 +28,13 @@ import wres.config.generated.Conditions;
 import wres.config.generated.Coordinate;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.DurationUnit;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.TimeAggregationConfig;
+import wres.config.generated.TimeAggregationFunction;
+import wres.config.generated.TimeAggregationMode;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.util.Collections;
@@ -100,13 +104,14 @@ public class ConfigHelper
 
     /**
      *
-     * @param projectConfig
+     * @param dataSourceConfig
      * @param currentLead
      * @return
      * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
      */
-    private static int getLead(ProjectConfig projectConfig, int currentLead) throws InvalidPropertiesFormatException {
-        return Time.unitsToHours(projectConfig.getPair().getTimeAggregation().getUnit().name(),
+    private static int getLead(DataSourceConfig dataSourceConfig, int currentLead) throws InvalidPropertiesFormatException {
+        TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( dataSourceConfig );
+        return Time.unitsToHours(timeAggregationConfig.getUnit().name(),
                                  currentLead).intValue();
     }
 
@@ -122,14 +127,7 @@ public class ConfigHelper
                 !projectConfig.getInputs().getBaseline().getSource().isEmpty();
     }
 
-    /**
-     *
-     * @param config
-     * @param currentLead
-     * @param finalLead
-     * @return
-     */
-    public static boolean leadIsValid(ProjectConfig config, int currentLead, int finalLead)
+    /*public static boolean leadIsValid(ProjectConfig config, int currentLead, int finalLead)
     {
         Integer lead = null;
 
@@ -144,28 +142,50 @@ public class ConfigHelper
                 lead <= finalLead &&
                 lead <= config.getConditions().getLastLead() &&
                 lead >= config.getConditions().getFirstLead();
+    }*/
+
+    public static TimeAggregationConfig getTimeAggregation(DataSourceConfig dataSourceConfig)
+    {
+        TimeAggregationConfig timeAggregationConfig = dataSourceConfig.getTimeAggregation();
+
+        if (timeAggregationConfig == null)
+        {
+            timeAggregationConfig = new TimeAggregationConfig( TimeAggregationFunction.AVG,
+                                                               1,
+                                                               null,
+                                                               DurationUnit.HOUR,
+                                                               "",
+                                                               TimeAggregationMode.BACK_TO_BACK);
+        }
+
+        return timeAggregationConfig;
     }
 
     /**
      *
-     * @param projectConfig The configuration that controls how windows are calculated
+     * @param dataSourceConfig The configuration that controls how windows are calculated
      * @param windowNumber The indicator of the window whose lead description needs.  In the simplest case, the first
      *                     window could represent 'lead = 1' while the third 'lead = 3'. In more complicated cases,
      *                     the first window could be '40 &gt; lead AND lead &ge; 1' and the second '80 &gt; lead AND lead &ge; 40'
      * @return A description of what a window number means in terms of lead times
      * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
      */
-    public static String getLeadQualifier(ProjectConfig projectConfig, int windowNumber) throws InvalidPropertiesFormatException {
+    public static String getLeadQualifier(DataSourceConfig dataSourceConfig,
+                                          int windowNumber)
+            throws InvalidPropertiesFormatException
+    {
         String qualifier;
 
-        if (projectConfig.getPair().getTimeAggregation() != null && projectConfig.getPair().getTimeAggregation().getPeriod() > 1) {
-            int period = projectConfig.getPair().getTimeAggregation().getPeriod();
-            Double range = Time.unitsToHours(projectConfig.getPair().getTimeAggregation().getUnit().value(), period);
-            qualifier = String.valueOf((int) (windowNumber * range)) + " > lead AND lead >= " + String.valueOf((int) ((windowNumber - 1) * range));
+        TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( dataSourceConfig );
+
+        if (timeAggregationConfig.getPeriod() > 1) {
+            qualifier = String.valueOf(getLead(dataSourceConfig, windowNumber)) +
+                        " > lead AND lead >= " +
+                        String.valueOf(getLead(dataSourceConfig, windowNumber - 1 ));
         }
         else
         {
-            qualifier = "lead = " + getLead(projectConfig, windowNumber);
+            qualifier = "lead = " + getLead(dataSourceConfig, windowNumber);
         }
 
         return qualifier;
@@ -208,11 +228,16 @@ public class ConfigHelper
         return clause.toString();
     }
 
+    public static double getWindowWidth( TimeAggregationConfig timeAggregationConfig)
+            throws InvalidPropertiesFormatException
+    {
+        return Time.unitsToHours(timeAggregationConfig.getUnit().value(), timeAggregationConfig.getPeriod());
+    }
+
     public static boolean isForecast(DataSourceConfig dataSource)
     {
         return dataSource != null &&
                 Strings.isOneOf(dataSource.getType().value(),
-                                DatasourceType.SIMULATIONS.value(),
                                 DatasourceType.SINGLE_VALUED_FORECASTS.value(),
                                 DatasourceType.ENSEMBLE_FORECASTS.value());
     }
