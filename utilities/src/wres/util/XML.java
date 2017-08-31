@@ -19,7 +19,7 @@ public final class XML
      * <b>The stream will attempt to move forward within the source</b>
      * @param reader The reader for the XML data
      * @return The trimed text within the xml node. Null is returned if no text is found
-     * @throws XMLStreamException
+     * @throws XMLStreamException if there is an error processing the underlying XML source
      */
     public static String getXMLText(XMLStreamReader reader) throws XMLStreamException {
         String value = null;

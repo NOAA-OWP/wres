@@ -306,7 +306,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         {
             List<Threshold> global = globalThresholds.get( MetricInputGroup.ENSEMBLE );
             double[] sorted = getSortedClimatology( input, global );
-            Map<Threshold,MetricInputSliceException> failures = new HashMap<>();
+            Map<Threshold, MetricInputSliceException> failures = new HashMap<>();
             global.forEach( threshold -> {
                 Threshold useMe = getThreshold( threshold, sorted );
                 try
@@ -338,8 +338,9 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                 {
                     failures.put( threshold, e );
                 }
-                handleThresholdFailures( failures, global.size() );
             } );
+            //Handle any failures
+            handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.ENSEMBLE );
         }
         //Deal with metric-local thresholds
         else
@@ -397,27 +398,38 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         {
             List<Threshold> global = globalThresholds.get( MetricInputGroup.ENSEMBLE );
             double[] sorted = getSortedClimatology( input, global );
+            Map<Threshold, MetricInputSliceException> failures = new HashMap<>();
             global.forEach( threshold -> {
                 //Only process discrete thresholds
                 if ( threshold.isFinite() )
                 {
-                    Threshold useMe = getThreshold( threshold, sorted );
-                    if ( outGroup == MetricOutputGroup.VECTOR )
+                    try
                     {
-                        futures.addVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                 processDiscreteProbabilityThreshold( useMe,
-                                                                                      input,
-                                                                                      discreteProbabilityVector ) );
+                        Threshold useMe = getThreshold( threshold, sorted );
+                        if ( outGroup == MetricOutputGroup.VECTOR )
+                        {
+                            futures.addVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
+                                                     processDiscreteProbabilityThreshold( useMe,
+                                                                                          input,
+                                                                                          discreteProbabilityVector ) );
+                        }
+                        else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
+                        {
+                            futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
+                                                          processDiscreteProbabilityThreshold( useMe,
+                                                                                               input,
+                                                                                               discreteProbabilityMultiVector ) );
+                        }
                     }
-                    else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
+                    //Insufficient data for one threshold: log, but allow
+                    catch ( MetricInputSliceException e )
                     {
-                        futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                      processDiscreteProbabilityThreshold( useMe,
-                                                                                           input,
-                                                                                           discreteProbabilityMultiVector ) );
+                        failures.put( threshold, e );
                     }
                 }
             } );
+            //Handle any failures
+            handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.DISCRETE_PROBABILITY );
         }
         //Deal with metric-local thresholds
         else
@@ -436,14 +448,17 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * @param pairs the pairs
      * @param collection the metric collection
      * @return the future result
+     * @throws MetricInputSliceException if the pairs contain insufficient data to compute the metrics
      */
 
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
             processDiscreteProbabilityThreshold( Threshold threshold,
                                                  EnsemblePairs pairs,
                                                  MetricCollection<DiscreteProbabilityPairs, T> collection )
+                    throws MetricInputSliceException
     {
         //Slice the pairs
+        checkSlice( pairs, threshold ); //check before transform
         DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
                                                           .transformPairs( pairs, threshold, toDiscreteProbabilities );
         return CompletableFuture.supplyAsync( () -> collection.apply( transformed ), thresholdExecutor );
@@ -458,7 +473,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * @param pairs the pairs
      * @param collection the metric collection
      * @return the future result
-     * @throws MetricInputSliceException if the threshold fails to slice any data
+     * @throws MetricInputSliceException if the threshold fails to slice sufficient data to compute the metrics
      */
 
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
@@ -469,6 +484,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
     {
         //Slice the pairs
         EnsemblePairs subset = dataFactory.getSlicer().sliceByLeft( pairs, threshold );
+        checkSlice( subset, threshold );
         return CompletableFuture.supplyAsync( () -> collection.apply( subset ), thresholdExecutor );
     }
 

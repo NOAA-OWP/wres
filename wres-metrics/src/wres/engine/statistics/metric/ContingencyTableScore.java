@@ -6,11 +6,11 @@ import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MatrixOutput;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MulticategoryPairs;
 import wres.datamodel.ScalarOutput;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.engine.statistics.metric.ContingencyTable.ContingencyTableBuilder;
 
 /**

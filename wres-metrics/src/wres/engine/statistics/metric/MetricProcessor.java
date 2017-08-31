@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -89,10 +88,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
 {
 
     /**
-     * The number of decimal places to use when rounding.
+     * Default logger.
      */
 
-    private static final int DECIMALS = 5;
+    static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessor.class );    
 
     /**
      * Instance of a {@link MetricFactory}.
@@ -156,12 +155,18 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     final ExecutorService thresholdExecutor;
-
+    
     /**
-     * Default logger.
+     * The minimum sample size to use when computing metrics.
+     */
+    
+    final int minimumSampleSize;
+    
+    /**
+     * The number of decimal places to use when rounding.
      */
 
-    static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessor.class );
+    private static final int DECIMALS = 5;    
 
     /**
      * Maps between metric identifiers in {@link MetricConfigName} and those in {@link MetricConstants}. Returns a
@@ -500,38 +505,6 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     }
 
     /**
-     * Handles failures at individual thresholds due to insufficient data. Some failures are allowed. However, if all 
-     * thresholds fail, a {@link MetricCalculationException} is thrown to terminate further processing, as this
-     * indicates a serious failure.
-     * 
-     * @param failures a map of failures and associated {@link MetricInputSliceException}
-     * @param thresholdCount the total number of thresholds attempted
-     */
-
-    static void handleThresholdFailures( Map<Threshold, MetricInputSliceException> failures, int thresholdCount )
-    {
-        if ( failures.isEmpty() )
-        {
-            return;
-        }
-        //All failed: not allows
-        if ( failures.size() == thresholdCount )
-        {
-            // Set the first failure as the cause
-            throw new MetricCalculationException( "Failed to compute metrics at all " + thresholdCount
-                                                  + " available "
-                                                  + "thresholds as insufficient data was available.",
-                                                  failures.get( failures.keySet().iterator().next() ) );
-        }
-        else
-        {
-            // Aggregate, and report first instance
-            LOGGER.error( "Failed to compute {} of {} thresholds. First failure reported:", failures.size(), 
-                          thresholdCount, failures.get( failures.keySet().iterator().next() ));
-        }
-    }
-
-    /**
      * Constructor.
      * 
      * @param dataFactory the data factory
@@ -610,7 +583,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         {
             this.thresholdExecutor = ForkJoinPool.commonPool();
         }
-
+        //Set the minimum sample size for computing metrics
+        minimumSampleSize = 2;
     }
 
     /**
@@ -715,6 +689,24 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         return useMe;
     }
 
+    /**
+     * Validates the inputs and throws a {@link MetricInputSliceException} if the input contains fewer samples than
+     * {@link #minimumSampleSize}.
+     * 
+     * @param subset the data to validate
+     * @param threshold the threshold
+     * @throws MetricInputSliceException if the input contains insufficient data for metric calculation 
+     */
+    
+    void checkSlice(MetricInput<?> subset, Threshold threshold) throws MetricInputSliceException
+    {
+        if(subset.size() < minimumSampleSize)
+        {
+            throw new MetricInputSliceException("Failed to compute some metrics at threshold '"+threshold+"', as the "
+                    + "sample size was smaller than the minimum allowed ("+minimumSampleSize+").");
+        }
+    }    
+    
     /**
      * Returns valid metrics for {@link MetricInputGroup#ENSEMBLE}
      * 

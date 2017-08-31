@@ -13,6 +13,7 @@ import java.util.stream.IntStream;
 import wres.datamodel.DataFactory;
 import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -45,7 +46,10 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
     @Override
     public MultiVectorOutput apply( EnsemblePairs s )
     {
-        Objects.requireNonNull( s, "Specify non-null input for the '" + toString() + "'." );
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         DataFactory d = getDataFactory();
         Slicer slicer = d.getSlicer();
         //Acquire subsets in case of missing data

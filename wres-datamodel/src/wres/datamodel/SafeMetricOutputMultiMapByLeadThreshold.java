@@ -9,8 +9,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-import wres.datamodel.MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
-
 /**
  * Default implementation of a safe map that contains {@link MetricOutputMapByLeadThreshold} for several metrics.
  * 
@@ -20,7 +18,7 @@ import wres.datamodel.MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapBy
  */
 
 class SafeMetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>>
-implements MetricOutputMultiMapByLeadThreshold<S>
+        implements MetricOutputMultiMapByLeadThreshold<S>
 {
 
     /**
@@ -33,7 +31,7 @@ implements MetricOutputMultiMapByLeadThreshold<S>
      * The store of results.
      */
 
-    private final TreeMap<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<S>> store;
+    private final TreeMap<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>> store;
 
     @Override
     public SafeMetricOutputMultiMapByLeadThresholdBuilder<S> builder()
@@ -42,27 +40,27 @@ implements MetricOutputMultiMapByLeadThreshold<S>
     }
 
     @Override
-    public MetricOutputMapByLeadThreshold<S> get(final MetricConstants metricID, final MetricConstants componentID)
+    public MetricOutputMapByLeadThreshold<S> get( final MetricConstants metricID )
     {
-        return store.get(dataFactory.getMapKey(metricID, componentID));
+        return store.get( dataFactory.getMapKey( metricID ) );
     }
 
     @Override
-    public boolean containsKey(MapBiKey<MetricConstants, MetricConstants> key)
+    public boolean containsKey( MapKey<MetricConstants> key )
     {
-        return store.containsKey(key);
+        return store.containsKey( key );
     }
 
     @Override
-    public boolean containsValue(MetricOutputMapByLeadThreshold<S> value)
+    public boolean containsValue( MetricOutputMapByLeadThreshold<S> value )
     {
-        return store.containsValue(value);
+        return store.containsValue( value );
     }
 
     @Override
     public Collection<MetricOutputMapByLeadThreshold<S>> values()
     {
-        return Collections.unmodifiableCollection(store.values());
+        return Collections.unmodifiableCollection( store.values() );
     }
 
     @Override
@@ -72,84 +70,84 @@ implements MetricOutputMultiMapByLeadThreshold<S>
     }
 
     @Override
-    public Set<MapBiKey<MetricConstants, MetricConstants>> keySet()
+    public Set<MapKey<MetricConstants>> keySet()
     {
-        return Collections.unmodifiableSet(store.keySet());
+        return Collections.unmodifiableSet( store.keySet() );
     }
 
     @Override
-    public Set<Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<S>>> entrySet()
+    public Set<Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>>> entrySet()
     {
-        return Collections.unmodifiableSet(store.entrySet());
+        return Collections.unmodifiableSet( store.entrySet() );
     }
 
     @Override
     public String toString()
     {
-        String newLine = System.getProperty("line.separator");
+        String newLine = System.getProperty( "line.separator" );
         StringBuilder b = new StringBuilder();
-        store.forEach((key, value) -> {
-            b.append(key.getFirstKey());
-            b.append(": ");
-            b.append(key.getSecondKey());
-            b.append(newLine);
-            b.append(value);
-            b.append(newLine);
-        });
+        store.forEach( ( key, value ) -> {
+            b.append( key.getKey() );
+            b.append( newLine );
+            b.append( value );
+            b.append( newLine );
+        } );
         return b.toString();
     }
 
-    protected static class SafeMetricOutputMultiMapByLeadThresholdBuilder<S extends MetricOutput<?>> implements MetricOutputMultiMapByLeadThresholdBuilder<S>
+    protected static class SafeMetricOutputMultiMapByLeadThresholdBuilder<S extends MetricOutput<?>>
+            implements MetricOutputMultiMapByLeadThresholdBuilder<S>
     {
 
         /**
          * Thread safe map.
          */
 
-        final ConcurrentMap<MapBiKey<MetricConstants, MetricConstants>, SafeMetricOutputMapByLeadThreshold.Builder<S>> internal =
-                                                                                                                                new ConcurrentSkipListMap<>();
+        final ConcurrentMap<MapKey<MetricConstants>, SafeMetricOutputMapByLeadThreshold.Builder<S>> internal =
+                new ConcurrentSkipListMap<>();
 
         @Override
         public SafeMetricOutputMultiMapByLeadThreshold<S> build()
         {
-            return new SafeMetricOutputMultiMapByLeadThreshold<>(this);
+            return new SafeMetricOutputMultiMapByLeadThreshold<>( this );
         }
 
         @Override
-        public MetricOutputMultiMapByLeadThresholdBuilder<S> put(final int leadTime, final Threshold threshold, final MetricOutputMapByMetric<S> result)
+        public MetricOutputMultiMapByLeadThresholdBuilder<S>
+                put( final int leadTime, final Threshold threshold, final MetricOutputMapByMetric<S> result )
         {
-            Objects.requireNonNull(result, "Specify a non-null metric result.");
-            result.forEach((key, value) -> {
+            Objects.requireNonNull( result, "Specify a non-null metric result." );
+            result.forEach( ( key, value ) -> {
                 final MetricOutputMetadata d = value.getMetadata();
-                final MapBiKey<MetricConstants, MetricConstants> check =
-                                                                       dataFactory.getMapKey(d.getMetricID(),
-                                                                                             d.getMetricComponentID());
+                final MapKey<MetricConstants> check =
+                        dataFactory.getMapKey( d.getMetricID() );
                 //Safe put
                 final SafeMetricOutputMapByLeadThreshold.Builder<S> addMe =
-                                                                          new SafeMetricOutputMapByLeadThreshold.Builder<>();
-                addMe.put(dataFactory.getMapKey(leadTime, threshold), value);
-                final SafeMetricOutputMapByLeadThreshold.Builder<S> checkMe = internal.putIfAbsent(check, addMe);
+                        new SafeMetricOutputMapByLeadThreshold.Builder<>();
+                addMe.put( dataFactory.getMapKey( leadTime, threshold ), value );
+                final SafeMetricOutputMapByLeadThreshold.Builder<S> checkMe = internal.putIfAbsent( check, addMe );
                 //Add if already exists 
-                if(!Objects.isNull(checkMe))
+                if ( !Objects.isNull( checkMe ) )
                 {
-                    checkMe.put(dataFactory.getMapKey(leadTime, threshold), value);
+                    checkMe.put( dataFactory.getMapKey( leadTime, threshold ), value );
                 }
-            });
+            } );
             return this;
         }
 
         @Override
-        public MetricOutputMultiMapByLeadThresholdBuilder<S> put(MapBiKey<MetricConstants, MetricConstants> key, MetricOutputMapByLeadThreshold<S> result)
+        public MetricOutputMultiMapByLeadThresholdBuilder<S> put( MapKey<MetricConstants> key,
+                                                                  MetricOutputMapByLeadThreshold<S> result )
         {
-            Objects.requireNonNull(result, "Specify a non-null metric result.");
+            Objects.requireNonNull( result, "Specify a non-null metric result." );
             //Safe put
             final SafeMetricOutputMapByLeadThreshold.Builder<S> addMe =
-                                                                      new SafeMetricOutputMapByLeadThreshold.Builder<>();
-            final SafeMetricOutputMapByLeadThreshold.Builder<S> checkMe = internal.putIfAbsent(key, addMe);
+                    new SafeMetricOutputMapByLeadThreshold.Builder<>();
+            final SafeMetricOutputMapByLeadThreshold.Builder<S> checkMe = internal.putIfAbsent( key, addMe );
             //Add if already exists 
-            if(!Objects.isNull(checkMe))
+            if ( !Objects.isNull( checkMe ) )
             {
-                result.forEach(checkMe::put);
+                result.forEach( checkMe::put );
             }
             return this;
         }
@@ -160,28 +158,28 @@ implements MetricOutputMultiMapByLeadThreshold<S>
      * 
      * @param builder the builder
      */
-    private SafeMetricOutputMultiMapByLeadThreshold(final SafeMetricOutputMultiMapByLeadThresholdBuilder<S> builder)
+    private SafeMetricOutputMultiMapByLeadThreshold( final SafeMetricOutputMultiMapByLeadThresholdBuilder<S> builder )
     {
         //Bounds checks
-        if(builder.internal.isEmpty())
+        if ( builder.internal.isEmpty() )
         {
-            throw new UnsupportedOperationException("Specify one or more <key,value> mappings to build the map.");
+            throw new UnsupportedOperationException( "Specify one or more <key,value> mappings to build the map." );
         }
         //Bounds checks
-        builder.internal.forEach((key, value) -> {
-            if(Objects.isNull(key))
+        builder.internal.forEach( ( key, value ) -> {
+            if ( Objects.isNull( key ) )
             {
-                throw new UnsupportedOperationException("Cannot prescribe a null key for the input map.");
+                throw new UnsupportedOperationException( "Cannot prescribe a null key for the input map." );
             }
-            if(Objects.isNull(value))
+            if ( Objects.isNull( value ) )
             {
-                throw new UnsupportedOperationException("Cannot prescribe a null value for the input map.");
+                throw new UnsupportedOperationException( "Cannot prescribe a null value for the input map." );
             }
-        });
+        } );
         //Initialize
         store = new TreeMap<>();
         //Build
-        builder.internal.forEach((key, value) -> store.put(key, value.build()));
+        builder.internal.forEach( ( key, value ) -> store.put( key, value.build() ) );
     }
 
 }

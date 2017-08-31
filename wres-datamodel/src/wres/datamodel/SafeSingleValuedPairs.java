@@ -175,13 +175,10 @@ class SafeSingleValuedPairs implements SingleValuedPairs
                                                 + "pairs." );
             }
         }
-        if ( Objects.nonNull( climatology ) )
+        if ( Objects.nonNull( climatology ) && climatology.size() == 0 )
         {
-            if ( climatology.size() == 0 )
-            {
-                throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
+            throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
                                                 + "pairs." );
-            }
         }
         
     }

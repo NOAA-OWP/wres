@@ -32,7 +32,7 @@ public final class FunctionFactoryTest
         assertTrue("Failure on absolute error function.",
                    testMe.test(FunctionFactory.absError().applyAsDouble(metIn.pairOf(-1, 1)), 2.0));
         assertTrue("Failure on error function.",
-                   testMe.test(FunctionFactory.error().applyAsDouble(metIn.pairOf(-1, 1)), -2.0));
+                   testMe.test(FunctionFactory.error().applyAsDouble(metIn.pairOf(-1, 1)), 2.0));
         assertTrue("Failure on square error function.",
                    testMe.test(FunctionFactory.squareError().applyAsDouble(metIn.pairOf(-5, 5)), 100.0));
         assertTrue("Failure on skill function.", testMe.test(FunctionFactory.skill().applyAsDouble(1.0, 2.0), 0.5));

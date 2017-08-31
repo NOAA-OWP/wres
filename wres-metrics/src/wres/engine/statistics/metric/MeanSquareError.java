@@ -1,6 +1,9 @@
 package wres.engine.statistics.metric;
 
+import java.util.Objects;
+
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
@@ -20,7 +23,10 @@ class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
     @Override
     public VectorOutput apply( final S s )
     {
-
+        if(Objects.isNull(s))
+        {
+            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+        }
         switch ( getDecompositionID() )
         {
             case NONE:

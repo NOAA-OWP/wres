@@ -1,12 +1,12 @@
 package wres.config;
 
-import wres.config.generated.ProbabilityThresholdConfig;
-import wres.config.generated.ValueThresholdConfig;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import wres.config.generated.ProbabilityThresholdConfig;
+import wres.config.generated.ValueThresholdConfig;
 
 /**
  * Provides static methods that help with ProjectConfig and its children.
@@ -69,7 +69,7 @@ public class ProjectConfigs
      *
      * @param v the value threshold configuration to parse and validate
      * @return the list of Doubles found in the tag containing values
-     * @throws ProjectConfigException
+     * @throws ProjectConfigException if the values could not be parsed as {@link Double}
      * @throws NullPointerException when v is null
      */
     public static List<Double> parseValues( ValueThresholdConfig v )

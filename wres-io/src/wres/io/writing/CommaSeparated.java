@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
+import java.text.DecimalFormat;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
@@ -19,18 +19,22 @@ import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.io.config.ConfigHelper.getDirectoryFromDestinationConfig;
+
 import wres.config.ProjectConfigException;
 import wres.config.generated.Conditions;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MapBiKey;
+import wres.datamodel.MapKey;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
+import wres.io.config.ConfigHelper;
 
 /**
  * Helps write Comma Separated files.
@@ -56,6 +60,7 @@ public class CommaSeparated
      * @throws IOException when the writing itself fails
      * @throws ProjectConfigException when no output files are specified
      * @throws NullPointerException when any of the arguments are null
+     * @throws IllegalArgumentException when destination has bad decimalFormat
      */
 
     public static void writeOutputFiles( ProjectConfig projectConfig,
@@ -87,40 +92,15 @@ public class CommaSeparated
 
             if ( d.getType() == DestinationType.NUMERIC )
             {
+                DecimalFormat formatter = null;
 
-                Path outputDirectory = Paths.get( d.getPath() );
+                if ( d.getDecimalFormat() != null
+                     && !d.getDecimalFormat().isEmpty() )
+                {
+                    formatter = new DecimalFormat();
+                    formatter.applyPattern( d.getDecimalFormat() );
+                }
 
-                if ( outputDirectory == null )
-                {
-                    String message = "Destination path " + d.getPath() +
-                                     " could not be found.";
-                    throw new ProjectConfigException( d, message );
-                }
-                else
-                {
-                    File outputLocation = outputDirectory.toFile();
-                    if ( outputLocation.isDirectory() )
-                    {
-                        // good to go, best case
-                    }
-                    else if ( outputLocation.isFile() )
-                    {
-                        // Use parent directory, warn user
-                        outputDirectory = outputDirectory.getParent();
-                        LOGGER.warn( "Using parent directory {} for CSV output "
-                                     + "because there will be a file for each "
-                                     + "feature.",
-                                     outputDirectory.toString() );
-                    }
-                    else
-                    {
-                        // If we have neither a file nor a directory, is issue.
-                        String message = "Destination path " + d.getPath()
-                                         + " needs to be changed to a directory"
-                                         + " that can be written to.";
-                        throw new ProjectConfigException( d, message );
-                    }
-                }
 
                 SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
 
@@ -130,15 +110,17 @@ public class CommaSeparated
                 if ( scalarOutput != null )
                 {
                     SortedMap<Integer, StringJoiner> scalars =
-                            CommaSeparated.getScalarRows( scalarOutput );
+                            CommaSeparated.getScalarRows( scalarOutput, formatter );
                     for ( Map.Entry<Integer, StringJoiner> e : scalars.entrySet() )
                     {
-                        rows.put( e.getKey(), e.getValue() );
+                        rows.put ( e.getKey(), e.getValue() );
                     }
                 }
 
-                Path outputPath = Paths.get( outputDirectory + "/"
-                                             + feature.getLocation().getLid()
+                File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( d );
+
+                Path outputPath = Paths.get( outputDirectory.toString(),
+                                             feature.getLocation().getLid()
                                              + ".csv" );
 
                 try ( BufferedWriter w = Files.newBufferedWriter( outputPath,
@@ -156,18 +138,26 @@ public class CommaSeparated
         }
     }
 
+    /**
+     * Get csv rows by lead time in intermediate format (StringJoiner)
+     *
+     * @param output data to iterate through
+     * @param formatter optional formatter to format doubles with, can be null
+     * @return a SortedMap
+     */
     private static SortedMap<Integer, StringJoiner> getScalarRows(
-            MetricOutputMultiMapByLeadThreshold<ScalarOutput> output )
+            MetricOutputMultiMapByLeadThreshold<ScalarOutput> output,
+            DecimalFormat formatter )
     {
         SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
         StringJoiner headerRow = new StringJoiner( "," );
 
         headerRow.add( "LEAD_TIME" );
-        for ( Map.Entry<MapBiKey<MetricConstants, MetricConstants>,
+        for ( Map.Entry<MapKey<MetricConstants>,
                 MetricOutputMapByLeadThreshold<ScalarOutput>> m
                 : output.entrySet() )
         {
-            String name = m.getKey().getFirstKey().name();
+            String name = m.getKey().getKey().name();
 
             for ( Threshold t : m.getValue().keySetByThreshold() )
             {
@@ -186,7 +176,18 @@ public class CommaSeparated
 
                     StringJoiner row = rows.get( key.getFirstKey() );
 
-                    row.add( m.getValue().get( key ).toString() );
+                    if ( formatter != null )
+                    {
+                        row.add( formatter.format( m.getValue()
+                                                    .get( key )
+                                                    .getData() ) );
+                    }
+                    else
+                    {
+                        row.add( m.getValue()
+                                  .get( key )
+                                  .toString() );
+                    }
                 }
             }
         }

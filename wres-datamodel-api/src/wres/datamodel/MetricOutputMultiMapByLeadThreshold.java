@@ -26,22 +26,9 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
      * @return the mapping or null
      */
 
-    default MetricOutputMapByLeadThreshold<S> get(final MapBiKey<MetricConstants, MetricConstants> key)
+    default MetricOutputMapByLeadThreshold<S> get( final MapKey<MetricConstants> key )
     {
-        return get(key.getFirstKey(), key.getSecondKey());
-    }
-
-    /**
-     * Convenience method that returns the {@link MetricOutputMapByLeadThreshold} associated with the specified metric
-     * identifier and {@link MetricConstants#MAIN} for the metric component identifier.
-     * 
-     * @param metricID the metric identifier
-     * @return the output for the specified key or null
-     */
-
-    default MetricOutputMapByLeadThreshold<S> get(final MetricConstants metricID)
-    {
-        return get(metricID, MetricConstants.MAIN);
+        return get( key.getKey() );
     }
 
     /**
@@ -50,11 +37,11 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
      * @param consumer the consumer
      */
 
-    default void forEach(BiConsumer<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<S>> consumer)
+    default void forEach( BiConsumer<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>> consumer )
     {
-        for(Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<S>> entry: entrySet())
+        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>> entry : entrySet() )
         {
-            consumer.accept(entry.getKey(), entry.getValue());
+            consumer.accept( entry.getKey(), entry.getValue() );
         }
     }
 
@@ -62,11 +49,10 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
      * Returns a {@link MetricOutputMap} corresponding to the input identifiers or null
      * 
      * @param metricID the metric identifier
-     * @param componentID the metric component identifier
      * @return the mapping or null
      */
 
-    MetricOutputMapByLeadThreshold<S> get(MetricConstants metricID, MetricConstants componentID);
+    MetricOutputMapByLeadThreshold<S> get( MetricConstants metricID );
 
     /**
      * Returns a view of the entries in the map for iteration.
@@ -74,7 +60,7 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
      * @return a view of the map entries
      */
 
-    Set<Entry<MapBiKey<MetricConstants, MetricConstants>, MetricOutputMapByLeadThreshold<S>>> entrySet();
+    Set<Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>>> entrySet();
 
     /**
      * Returns true if the mapping contains the specified value, false otherwise.
@@ -83,7 +69,7 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
      * @return true if the map contains the value, false otherwise
      */
 
-    boolean containsValue(MetricOutputMapByLeadThreshold<S> value);
+    boolean containsValue( MetricOutputMapByLeadThreshold<S> value );
 
     /**
      * Returns a collection view of the values in the map.
@@ -100,7 +86,7 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
      */
 
     interface MetricOutputMultiMapByLeadThresholdBuilder<S extends MetricOutput<?>>
-    extends MetricOutputMultiMap.Builder<S>
+            extends MetricOutputMultiMap.Builder<S>
     {
 
         /**
@@ -111,10 +97,10 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
          * @return the builder
          */
 
-        default MetricOutputMultiMapByLeadThresholdBuilder<S> put(MapBiKey<Integer, Threshold> key,
-                                                                  MetricOutputMapByMetric<S> result)
+        default MetricOutputMultiMapByLeadThresholdBuilder<S> put( MapBiKey<Integer, Threshold> key,
+                                                                   MetricOutputMapByMetric<S> result )
         {
-            put(key.getFirstKey(), key.getSecondKey(), result);
+            put( key.getFirstKey(), key.getSecondKey(), result );
             return this;
         }
 
@@ -127,9 +113,9 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
          * @return the builder
          */
 
-        MetricOutputMultiMapByLeadThresholdBuilder<S> put(int leadTime,
-                                                          Threshold threshold,
-                                                          MetricOutputMapByMetric<S> result);
+        MetricOutputMultiMapByLeadThresholdBuilder<S> put( int leadTime,
+                                                           Threshold threshold,
+                                                           MetricOutputMapByMetric<S> result );
 
         /**
          * Adds a new result to the internal store.
@@ -139,8 +125,8 @@ public interface MetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>> 
          * @return the builder
          */
 
-        MetricOutputMultiMapByLeadThresholdBuilder<S> put(MapBiKey<MetricConstants, MetricConstants> key,
-                                                          MetricOutputMapByLeadThreshold<S> result);
+        MetricOutputMultiMapByLeadThresholdBuilder<S> put( MapKey<MetricConstants> key,
+                                                           MetricOutputMapByLeadThreshold<S> result );
 
     }
 

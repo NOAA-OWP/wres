@@ -1,16 +1,17 @@
 package wres.io.data.caching;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 /**
  * Caches information about the source of forecast and observation data
@@ -44,6 +45,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	 * Gets the ID of source metadata from the global cache based on a file path and the date of its output
 	 * @param path The path to the file on the file system
 	 * @param outputTime The time in which the information was generated
+	 * @param lead the lead time
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */
@@ -67,6 +69,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	 * Gets the ID of source metadata from the instanced cache based on a file path and the date of its output
 	 * @param path The path to the file on the file system
 	 * @param outputTime The time in which the information was generation
+	 * @param lead the lead time
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */

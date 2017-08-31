@@ -23,6 +23,10 @@ extends
      * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
      *            such as the rendering order, legend order, and so forth.
      * @param input The data for which to display a chart.
+     * @param xConstant the first metric identifier
+     * @param yConstant the second metric identifier
+     * @param domainTitle the domain axis title
+     * @param rangeTitle the range axis title
      */
     public MultiVectorOutputDiagramXYChartDataSource(final int orderIndex,
                                                final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
@@ -45,6 +49,11 @@ extends
      * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
      *            such as the rendering order, legend order, and so forth.
      * @param input The data for which to display a chart.
+     * @param xConstant the first metric identifier
+     * @param yConstant the second metric identifier
+     * @param domainTitle the domain axis title
+     * @param rangeTitle the range axis title
+     * @param subPlotIndex the index for the sub-plot
      */
     public MultiVectorOutputDiagramXYChartDataSource(final int orderIndex,
                                                final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
