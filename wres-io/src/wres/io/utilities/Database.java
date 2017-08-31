@@ -115,6 +115,12 @@ public final class Database {
 									results.getString("index_name"),
 									results.getString("column_names"),
 									results.getString( "index_type" ) );
+
+				builder = new StringBuilder(  );
+				builder.append("DROP INDEX IF EXISTS ")
+                       .append(results.getString( "index_name" ))
+                       .append(";");
+				Database.execute( builder.toString() );
 			}
 		}
 		catch (SQLException error)
@@ -419,6 +425,13 @@ public final class Database {
 	{	
 		Connection connection = null;
 		Statement statement = null;
+
+        if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace( "" );
+            LOGGER.trace(query);
+            LOGGER.trace("");
+        }
 		
 		try
 		{
@@ -599,6 +612,13 @@ public final class Database {
 		ResultSet results = null;
 		T result = null;
 
+        if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace( "" );
+            LOGGER.trace(query);
+            LOGGER.trace("");
+        }
+
         try {
             connection = getConnection();
 
@@ -645,6 +665,13 @@ public final class Database {
             throw new NullPointerException("The collection passed into 'populateCollection' was null.");
         }
 
+        if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace( "" );
+            LOGGER.trace(query);
+            LOGGER.trace("");
+        }
+
 		try
 		{
             connection = Database.getConnection();
@@ -685,6 +712,12 @@ public final class Database {
                                               String keyName,
                                               String valueName) throws SQLException
     {
+        if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace( "" );
+            LOGGER.trace(script);
+            LOGGER.trace("");
+        }
         Connection connection = null;
         ResultSet results = null;
 
@@ -800,7 +833,14 @@ public final class Database {
      */
     public static ResultSet getResults(final Connection connection, String query) throws SQLException
     {
-        ResultSet results = null;
+        if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace( "" );
+            LOGGER.trace(query);
+            LOGGER.trace("");
+        }
+
+        ResultSet results;
         Statement statement = connection.createStatement();
         // statement is purposely left open so that the returned ResultSet is
         // not closed. We count on c3p0 to magically take care of closing any
