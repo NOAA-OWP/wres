@@ -1,9 +1,6 @@
 package wres.io.data.details;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -174,56 +171,5 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		script += "WHERE lid = '" + lid + "'" + NEWLINE;
 		script += "LIMIT 1;";
 		return script;
-	}
-
-	/**
-	 * Loads all variable positions from the database and stores them in the store of all positions mapped to IDs of variables
-	 * @throws SQLException Thrown if the database cannot adequately load values from the database
-	 */
-	public void loadVariablePositionIDs() throws SQLException {
-        Connection connection = null;
-        Statement loadQuery = null;
-        ResultSet variablePositions = null;
-
-		try
-		{
-		    connection = Database.getHighPriorityConnection();
-		    loadQuery = connection.createStatement();
-		    loadQuery.setFetchSize(100);
-
-    		String loadScript = "SELECT VP.variable_id, VP.variableposition_id" + System.lineSeparator();
-    		loadScript += "FROM wres.FeaturePosition FP" + System.lineSeparator();
-    		loadScript += "INNER JOIN wres.VariablePosition VP" + System.lineSeparator();
-    		loadScript += "	ON VP.variableposition_id = FP.variableposition_id" + System.lineSeparator();
-    		loadScript += "WHERE FP.feature_id = " + this.getId();
-    		
-    		variablePositions = loadQuery.executeQuery(loadScript);
-    		
-    		while (variablePositions.next()) {
-    			this.variablePositions.put(variablePositions.getInt("variable_id"), variablePositions.getInt("variableposition_id"));
-    		}
-		}
-        catch (SQLException error)
-		{
-            LOGGER.error("An error was encountered when trying to populate the FeatureDetails cache. ", error);
-            throw error;
-        }
-		finally
-		{
-		    if (variablePositions != null)
-		    {
-		        variablePositions.close();
-		    }
-
-            if (loadQuery != null)
-            {
-                loadQuery.close();
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection(connection);
-            }
-		}
 	}
 }

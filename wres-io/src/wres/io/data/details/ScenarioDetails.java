@@ -21,11 +21,6 @@ public class ScenarioDetails extends CachedDetail<ScenarioDetails, DualString> {
         this.scenarioType = scenarioType;
     }
 
-    public String getScenarioType()
-    {
-        return this.scenarioType;
-    }
-
     @Override
     public DualString getKey() {
         if (this.key == null)
@@ -62,31 +57,35 @@ public class ScenarioDetails extends CachedDetail<ScenarioDetails, DualString> {
 
     @Override
     protected String getInsertSelectStatement() {
-        StringBuilder script = new StringBuilder();
+        String script = "WITH new_scenario AS" + NEWLINE +
+                        "(" + NEWLINE +
+                        "     INSERT INTO wres.Scenario (scenario_name, scenario_type)"
+                        + NEWLINE +
+                        "     SELECT '" + this.scenarioName + "', '"
+                        + this.scenarioType + "'" + NEWLINE +
+                        "     WHERE NOT EXISTS (" + NEWLINE +
+                        "         SELECT 1" + NEWLINE +
+                        "         FROM wres.Scenario S" + NEWLINE +
+                        "         WHERE S.scenario_name = '" + this.scenarioName
+                        + "'" + NEWLINE +
+                        "             AND S.scenario_type = '"
+                        + this.scenarioType + "'" + NEWLINE +
+                        "     )" + NEWLINE +
+                        "     RETURNING scenario_id" + NEWLINE +
+                        ")" + NEWLINE +
+                        "SELECT scenario_id" + NEWLINE +
+                        "FROM new_scenario" + NEWLINE +
+                        NEWLINE +
+                        "UNION" + NEWLINE +
+                        NEWLINE +
+                        "SELECT scenario_id" + NEWLINE +
+                        "FROM wres.Scenario S" + NEWLINE +
+                        "WHERE S.scenario_name = '" + this.scenarioName + "'"
+                        + NEWLINE +
+                        "     AND S.scenario_type = '" + this.scenarioType + "'"
+                        + NEWLINE;
 
-        script.append("WITH new_scenario AS").append(NEWLINE);
-        script.append("(").append(NEWLINE);
-        script.append("     INSERT INTO wres.Scenario (scenario_name, scenario_type)").append(NEWLINE);
-        script.append("     SELECT '").append(this.scenarioName ).append( "', '").append( this.scenarioType).append( "'").append( NEWLINE);
-        script.append("     WHERE NOT EXISTS (").append(NEWLINE);
-        script.append("         SELECT 1").append(NEWLINE);
-        script.append("         FROM wres.Scenario S").append(NEWLINE);
-        script.append("         WHERE S.scenario_name = '").append(this.scenarioName ).append( "'").append( NEWLINE);
-        script.append("             AND S.scenario_type = '").append(this.scenarioType ).append("'").append(NEWLINE);
-        script.append("     )").append(NEWLINE);
-        script.append("     RETURNING scenario_id").append(NEWLINE);
-        script.append(")").append(NEWLINE);
-        script.append("SELECT scenario_id").append(NEWLINE);
-        script.append("FROM new_scenario").append(NEWLINE);
-        script.append(NEWLINE);
-        script.append("UNION").append(NEWLINE);
-        script.append(NEWLINE);
-        script.append("SELECT scenario_id").append(NEWLINE);
-        script.append("FROM wres.Scenario S").append(NEWLINE);
-        script.append("WHERE S.scenario_name = '").append(this.scenarioName ).append( "'").append(NEWLINE);
-        script.append("     AND S.scenario_type = '").append(this.scenarioType).append("'").append(NEWLINE);
-
-        return script.toString();
+        return script;
     }
 
     @Override
@@ -140,12 +139,9 @@ public class ScenarioDetails extends CachedDetail<ScenarioDetails, DualString> {
     @Override
     public boolean equals( Object obj )
     {
-        if (obj == null)
-        {
-            return false;
-        }
-
-        return this.hashCode() == obj.hashCode();
+        return obj != null &&
+               obj instanceof ScenarioDetails &&
+               this.hashCode() == obj.hashCode();
     }
 
     @Override

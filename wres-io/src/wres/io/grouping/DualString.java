@@ -5,7 +5,8 @@ import java.util.Objects;
 /**
  * Created by ctubbs on 7/10/17.
  */
-public class DualString implements Comparable<DualString>, Cloneable {
+public class DualString implements Comparable<DualString>
+{
 
     public DualString(String first, String second)
     {
@@ -69,11 +70,6 @@ public class DualString implements Comparable<DualString>, Cloneable {
 
 
         return comparison;
-    }
-
-    @Override
-    protected Object clone () throws CloneNotSupportedException {
-        return new DualString(this.first, this.second);
     }
 
     @Override

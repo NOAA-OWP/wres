@@ -49,7 +49,6 @@ class VectorNetCDFValueSaver extends WRESRunnable
     private Variable variable;
     private Integer variableID;
     private String variablePositionPartitionName;
-    private String forecastValuePartitionName;
 
     // Used to map feature indices to forecast ensembles (used for forecasts)
     private Map<Integer, Integer> indexMapping;
@@ -76,15 +75,13 @@ class VectorNetCDFValueSaver extends WRESRunnable
 
     private String getForecastInsertScript() throws IOException, SQLException {
         if (this.forecastInsertScript == null) {
-            StringBuilder script = new StringBuilder();
+            String script = "INSERT INTO " +
+                            ForecastDetails.getForecastValueParitionName( this.getLead() ) +
+                            "(forecastensemble_id, lead, forecasted_value)" +
+                            NEWLINE +
+                            "VALUES (?, ?, ?);";
 
-            script.append("INSERT INTO ").
-                    append(ForecastDetails.getForecastValueParitionName(this.getLead()))
-                  .append("(forecastensemble_id, lead, forecasted_value)")
-                  .append(NEWLINE);
-            script.append("VALUES (?, ?, ?);");
-
-            this.forecastInsertScript = script.toString();
+            this.forecastInsertScript = script;
         }
         return this.forecastInsertScript;
     }
@@ -104,10 +101,8 @@ class VectorNetCDFValueSaver extends WRESRunnable
             this.addForecastEnsembles();
             this.read();
         }
-        catch (SQLException e) {
-            LOGGER.error(Strings.getStackTrace(e));
-        }
-        catch (IOException e) {
+        catch (SQLException | IOException e)
+        {
             LOGGER.error(Strings.getStackTrace(e));
         }
         finally
@@ -276,21 +271,23 @@ class VectorNetCDFValueSaver extends WRESRunnable
     private Map<Integer, Integer> getIndexMapping() throws IOException, SQLException {
         if (this.indexMapping == null)
         {
-            StringBuilder script = new StringBuilder();
-
-            script.append("SELECT F.nwm_index, FE.forecastensemble_id").append(NEWLINE);
-            script.append("FROM wres.ForecastEnsemble FE").append(NEWLINE);
-            script.append("INNER JOIN ").append(this.getVariablePositionPartitionName()).append(" VP").append(NEWLINE);
-            script.append("     ON VP.variableposition_id = FE.variableposition_id").append(NEWLINE);
-            script.append("INNER JOIN wres.Feature F").append(NEWLINE);
-            script.append("     ON F.feature_id = VP.x_position").append(NEWLINE);
-            script.append("WHERE FE.forecast_id = ").append(this.getForecastID()).append(NEWLINE);
-            script.append("     AND VP.variable_id = ").append(this.getVariableID()).append(NEWLINE);
-            script.append("     AND F.nwm_index IS NOT NULL;");
+            String script =
+                    "SELECT F.nwm_index, FE.forecastensemble_id" + NEWLINE +
+                    "FROM wres.ForecastEnsemble FE" + NEWLINE +
+                    "INNER JOIN " + this.getVariablePositionPartitionName()
+                    + " VP" + NEWLINE +
+                    "     ON VP.variableposition_id = FE.variableposition_id"
+                    + NEWLINE +
+                    "INNER JOIN wres.Feature F" + NEWLINE +
+                    "     ON F.feature_id = VP.x_position" + NEWLINE +
+                    "WHERE FE.forecast_id = " + this.getForecastID() + NEWLINE +
+                    "     AND VP.variable_id = " + this.getVariableID()
+                    + NEWLINE +
+                    "     AND F.nwm_index IS NOT NULL;";
 
             this.indexMapping = new TreeMap<>();
             Database.populateMap(this.indexMapping,
-                                 script.toString(),
+                                 script,
                                  "nwm_index",
                                  "forecastensemble_id");
         }

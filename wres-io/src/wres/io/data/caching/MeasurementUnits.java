@@ -40,17 +40,6 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
     }
 	
 	/**
-	 * Return the ID of a unit of measurement from the global cache based on the specification of the measurement
-	 * details
-	 * @param detail The specification for the unit of measurement
-	 * @return The ID for the unit of measurement
-	 * @throws Exception Thrown if the ID could not be retrieved from the database 
-	 */
-	public static Integer getMeasurementUnitID(MeasurementDetails detail) throws Exception {
-		return getCache().getID(detail);
-	}
-	
-	/**
 	 * Returns the ID of a unit of measurement from the global cache based on the name of the measurement
 	 * @param unit The name of the unit of measurement
 	 * @return The ID of the unit of measurement
@@ -62,17 +51,15 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
         {
             ID = getCache().getID(unit.toLowerCase());
         }
+
+        if (ID == null)
+        {
+            MeasurementDetails details = new MeasurementDetails();
+            details.setUnit( unit );
+            ID = getCache().getID(details);
+        }
+
 	    return ID;
-	}
-	
-	/**
-	 * Returns the name of the unit of measurement from the global cache based on its ID
-	 * @param measurementunitID The ID of the unit of measurement from the database
-	 * @return The name of the unit of measurement
-	 */
-	public static String getUnit(Integer measurementunitID)
-	{
-		return getCache().getKey(measurementunitID);
 	}
 
 	@Override

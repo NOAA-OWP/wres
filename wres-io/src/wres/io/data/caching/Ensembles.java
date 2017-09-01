@@ -48,16 +48,6 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	}
 	
 	/**
-	 * Returns the ID of an Ensemble from the global cache
-	 * @param detail Specifications about an ensemble to retrieve
-	 * @return The ID of the specified ensemble
-	 * @throws SQLException Thrown if the ID could not be retrieved from the database
-	 */
-	public static Integer getEnsembleID(EnsembleDetails detail) throws SQLException {
-		return getCache().getID(detail);
-	}
-	
-	/**
 	 * Returns the ID of an ensemble from the global cache on its name
 	 * @param name The name of the ensemble whose ID to retrieve
 	 * @return The ID of the Ensemble in question
@@ -65,17 +55,6 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	 */
 	public static Integer getEnsembleID(String name) throws SQLException {
 		return getCache().getID(name);
-	}
-	
-	/**
-	 * Returns the ID of an Ensemble from the global cache based on its name and member ID
-	 * @param name The name of the Ensemble to retrieve
-	 * @param memberID The Member ID of the Ensemble to retrieve
-	 * @return The ID of the Ensemble
-	 * @throws SQLException Thrown if the ID could not be retrieved from the database
-	 */
-	public static Integer getEnsembleID(String name, String memberID) throws SQLException {
-		return getCache().getID(name, memberID);
 	}
 	
 	/**
@@ -88,17 +67,6 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	 */
 	public static Integer getEnsembleID(String name, String memberID, String qualifierID) throws SQLException {
 		return getCache().getID(name, memberID, qualifierID);
-	}
-	
-	/**
-	 * Returns the ID of the Ensemble from the global cache based on its cached key
-	 * @param grouping The key for the Ensemble in the cache
-	 * @return The ID of the Ensemble
-	 * @throws SQLException Thrown if the ID could not be retrieved from the database
-	 */
-	public static Integer getEnsembleID(EnsembleKey grouping) throws SQLException
-	{
-		return getCache().getID(grouping);
 	}
 	
 	@Override
@@ -116,20 +84,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	{
 		return getID(EnsembleDetails.createKey(name, null, null));
 	}
-    
-    /**
-     * Returns the ID of an Ensemble from the instanced cache based on its name and member ID
-     * @param name The name of the Ensemble to retrieve
-     * @param memberID The Member ID of the Ensemble to retrieve
-     * @return The ID of the Ensemble
-     * @throws SQLException Thrown if the ID could not be retrieved from the database
-     */
-	public Integer getID(String name, String memberID) throws SQLException
-	{
-		return getID(EnsembleDetails.createKey(name, null, memberID));
-	}
-    
-    /**
+
+	/**
      * Returns the ID of an Ensemble from the instanced cache based on the combination of 
      * its name, member ID, and qualifier
      * @param name The name of the Ensemble to retrieve

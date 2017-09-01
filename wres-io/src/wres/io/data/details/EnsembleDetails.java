@@ -1,6 +1,5 @@
 package wres.io.data.details;
 
-import java.sql.SQLException;
 import java.util.Objects;
 
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
@@ -49,21 +48,6 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 			this.ensembleMemberID = ensembleMemberID;
 			this.ensembleID = null;
 		}
-	}
-	
-	/**
-	 * Retrieves the id of this particular ensemble. If it doesn't exist, it is generated.
-	 * @return The serial id of the ensemble
-	 * @throws SQLException Throws SQLException if the ID generation fails
-	 */
-	public int getEnsembleId() throws SQLException
-	{
-		if (ensembleID == null)
-		{
-			save();
-		}
-		
-		return ensembleID;
 	}
 	
 	/**

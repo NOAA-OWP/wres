@@ -9,7 +9,6 @@ import wres.util.Internal;
 @Internal(exclusivePackage = "wres.io")
 public enum SourceType {
 	ASCII,
-	ASCII_RASTER,
 	DATACARD,
 	NETCDF,
 	PI_XML,

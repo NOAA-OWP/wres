@@ -1,7 +1,6 @@
 package wres.io;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
@@ -28,11 +27,6 @@ public final class Operations {
 
     private static final boolean SUCCESS = true;
     private static final boolean FAILURE = false;
-    private static final Operations ourInstance = new Operations();
-
-    public static Operations getInstance () {
-        return ourInstance;
-    }
 
     private Operations ()
     {
@@ -40,7 +34,7 @@ public final class Operations {
 
     public static boolean ingest(ProjectConfig projectConfig)
     {
-        boolean completedSmoothly = FAILURE;
+        boolean completedSmoothly;
 
         SourceLoader loader = new SourceLoader(projectConfig);
         try {
@@ -69,12 +63,6 @@ public final class Operations {
             Database.completeAllIngestTasks();
 
             completedSmoothly = SUCCESS;
-        }
-        catch (IOException e)
-        {
-            LOGGER.error("");
-            LOGGER.error(Strings.getStackTrace(e));
-            LOGGER.error("");
         }
         finally
         {
@@ -165,28 +153,27 @@ public final class Operations {
             }
 
 
-            StringBuilder script = new StringBuilder();
+            String script = "INSERT INTO ExecutionLog(" +
+                            "arguments, " +
+                            "system_settings, " +
+                            "project, " +
+                            "username, " +
+                            "address, " +
+                            "start_time, " +
+                            "run_time, " +
+                            "failed) " +
+                            "VALUES (" +
+                            "'" + arguments + "', " +
+                            "'" + systemConfiguration + "', " +
+                            project + ", " +
+                            "'" + username + "', " +
+                            "'" + address + "', " +
+                            "'" + start + "'::timestamp, " +
+                            "'" + stop + "'::timestamp - '" + start
+                            + "'::timestamp" +
+                            ", " + String.valueOf( failed ) + ");";
 
-            script.append("INSERT INTO ExecutionLog(")
-                  .append("arguments, ")
-                  .append("system_settings, ")
-                  .append("project, ")
-                  .append("username, ")
-                  .append("address, ")
-                  .append("start_time, ")
-                  .append("run_time, ")
-                  .append("failed) ");
-            script.append("VALUES (")
-                  .append("'").append(arguments).append("', ")
-                  .append("'").append(systemConfiguration).append("', ")
-                  .append(project).append(", ")
-                  .append("'").append(username).append("', ")
-                  .append("'").append(address).append("', ")
-                  .append("'").append(start).append("'::timestamp, ")
-                  .append("'").append(stop).append("'::timestamp - '").append(start).append("'::timestamp")
-                  .append(", ").append(String.valueOf(failed)).append(");");
-
-            Database.execute(script.toString());
+            Database.execute( script );
         }
         catch (FileNotFoundException | XMLStreamException | TransformerException e)
         {

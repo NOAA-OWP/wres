@@ -54,17 +54,6 @@ public final class Variables extends Cache<VariableDetails, String>
 	
 	/**
 	 * Returns the ID of a variable from the global cache
-	 * @param detail Detailed specification for a variable
-	 * @return The ID of the variable
-	 * @throws SQLException Thrown if an error was encountered while interacting with the database or storing
-	 * the result in the cache
-	 */
-	public static Integer getVariableID(VariableDetails detail) throws SQLException {
-		return getCache().getID(detail);
-	}
-	
-	/**
-	 * Returns the ID of a variable from the global cache
 	 * @param variableName The short name of the variable
 	 * @param measurementUnitID The ID of the unit of measurement belonging to the variable
 	 * @return The ID of the variable
