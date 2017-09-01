@@ -31,28 +31,25 @@ public class ChartWriter
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ChartWriter.class);
-    
+    private static final Logger LOGGER = LoggerFactory.getLogger( ChartWriter.class );
+
     /**
      * Writes an output chart to a specified path.
      * 
      * @param outputImage the path to the output image
      * @param engine the chart engine
      * @param dest the destination configuration
-     * @throws XYChartDataSourceException if the chart data could not be constructed
-     * @throws ChartEngineException if the chart could not be constructed
-     * @throws IOException if the chart could not be written
+     * @throws ChartWritingException if the chart could not be written
      */
 
-    public static void writeChart(final Path outputImage,
+    public static void writeChart( final Path outputImage,
                                    final ChartEngine engine,
-                                   final DestinationConfig dest) throws IOException,
-                                                                 ChartEngineException,
-                                                                 XYChartDataSourceException
+                                   final DestinationConfig dest )
+            throws ChartWritingException
     {
-        if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
+        if ( LOGGER.isWarnEnabled() && outputImage.toFile().exists() )
         {
-            LOGGER.warn("File {} already existed and is being overwritten.", outputImage);
+            LOGGER.warn( "File {} already exists and is being overwritten.", outputImage );
         }
 
         final File outputImageFile = outputImage.toFile();
@@ -60,22 +57,43 @@ public class ChartWriter
         int width = SystemSettings.getDefaultChartWidth();
         int height = SystemSettings.getDefaultChartHeight();
 
-        if(dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
+        if ( dest.getGraphical() != null && dest.getGraphical().getWidth() != null )
         {
             width = dest.getGraphical().getWidth();
         }
-        if(dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
+        if ( dest.getGraphical() != null && dest.getGraphical().getHeight() != null )
         {
             height = dest.getGraphical().getHeight();
         }
-        ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
-    }    
+        try
+        {
+            ChartTools.generateOutputImageFile( outputImageFile, engine.buildChart(), width, height );
+        }
+        catch ( IOException | ChartEngineException | XYChartDataSourceException e )
+        {
+            throw new ChartWritingException( "Error while writing chart:", e );
+        }
+    }
+
+    /**
+     * A checked exception that indicates a failure to write a chart.
+     */
     
+    public static class ChartWritingException extends Exception
+    {
+        private static final long serialVersionUID = 53171488252609294L;
+
+        ChartWritingException( String message, Throwable cause )
+        {
+            super( message, cause );
+        }
+    }
+
     /**
      * Prevent construction.
      */
-    
+
     private ChartWriter()
-    {       
+    {
     }
 }
