@@ -114,7 +114,7 @@ public class WRESChartEngine extends ChartEngine
             final SeriesDrawingParameters diagonalDrawingParametrs = subplotIndexToParameters.get(subPlotIndex);
             final BasicStroke stroke = new BasicStroke(diagonalDrawingParametrs.getLineWidth());
             
-            //This will draw to the edge.  If the chart is to be viewed and zoomed, we may want to select arbitrarily
+            //This will draw  to the edge.  If the chart is to be viewed and zoomed, we may want to select arbitrarily
             //larger bounds or redraw the diagonal with every chart resize.
             ChartTools.addDiagonalLineToEdge(chart, subPlotIndex, stroke, diagonalDrawingParametrs.getLineColor());
         }
