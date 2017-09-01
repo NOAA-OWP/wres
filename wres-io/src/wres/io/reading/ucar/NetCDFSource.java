@@ -5,10 +5,9 @@ import java.sql.SQLException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
+
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.data.caching.Variables;
@@ -46,16 +45,10 @@ public class NetCDFSource extends BasicSource {
 	@Override
 	public void saveForecast() throws IOException
 	{
-		NetcdfFile source = getSource();
-
-		Attribute attr = source.findGlobalAttributeIgnoreCase("missing_value");
-		if (attr != null)
+		try (NetcdfFile source = getSource())
 		{
-			this.missingValue = attr.getNumericValue().doubleValue();
+			save( source );
 		}
-
-		save(source);
-        source.close();
 	}
 	
 	private void save(NetcdfFile source)
@@ -95,10 +88,4 @@ public class NetCDFSource extends BasicSource {
 	}
 	
 	private NetcdfFile source = null;
-
-    private Double getMissingValue()
-    {
-        return this.missingValue;
-    }
-	private Double missingValue = null;
 }
