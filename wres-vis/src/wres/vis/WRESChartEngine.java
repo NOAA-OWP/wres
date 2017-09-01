@@ -113,7 +113,10 @@ public class WRESChartEngine extends ChartEngine
         {
             final SeriesDrawingParameters diagonalDrawingParametrs = subplotIndexToParameters.get(subPlotIndex);
             final BasicStroke stroke = new BasicStroke(diagonalDrawingParametrs.getLineWidth());
-            ChartTools.addDiagonalLine(chart, subPlotIndex, 1000d, stroke, diagonalDrawingParametrs.getLineColor());
+            
+            //This will draw to the edge.  If the chart is to be viewed and zoomed, we may want to select arbitrarily
+            //larger bounds or redraw the diagonal with every chart resize.
+            ChartTools.addDiagonalLineToEdge(chart, subPlotIndex, stroke, diagonalDrawingParametrs.getLineColor());
         }
 
         //square the axes.
