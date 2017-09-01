@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
-import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import wres.config.ProjectConfigException;
 import wres.config.Validation;
@@ -66,6 +65,7 @@ import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
 import wres.io.writing.ChartWriter;
+import wres.io.writing.ChartWriter.ChartWritingException;
 import wres.io.writing.CommaSeparated;
 import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
@@ -562,8 +562,7 @@ public class Control implements Function<String[], Integer>
         }
         catch( ChartEngineException
                 | GenericXMLReadingHandlerException
-                | XYChartDataSourceException
-                | IOException
+                | ChartWritingException
                 | ProjectConfigException e )
         {
             throw new WresProcessingException( "Error while generating scalar charts:", e);
@@ -640,8 +639,7 @@ public class Control implements Function<String[], Integer>
         }
         catch ( ChartEngineException
                 | GenericXMLReadingHandlerException
-                | XYChartDataSourceException
-                | IOException
+                | ChartWritingException
                 | ProjectConfigException e )
         {
             throw new WresProcessingException( "Error while generating vector charts:", e );
@@ -720,8 +718,7 @@ public class Control implements Function<String[], Integer>
         }
         catch ( ChartEngineException
                 | GenericXMLReadingHandlerException
-                | XYChartDataSourceException
-                | IOException
+                | ChartWritingException
                 | ProjectConfigException e)
         {
             throw new WresProcessingException( "Error while generating multi-vector charts:", e );
@@ -895,10 +892,9 @@ public class Control implements Function<String[], Integer>
         }
     }
 
-
     /**
      * An exception representing that execution of a step failed.
-     * Needed because ForkJoinPool and/or the Java 8 Function world does not
+     * Needed because Java 8 Function world does not
      * deal kindly with checked Exceptions.
      */
     private static class WresProcessingException extends RuntimeException
