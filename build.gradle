@@ -190,8 +190,8 @@ project(':wres-io')
     {
         compile project(':utilities')
         compile project(':wres-datamodel-api')
-        compile project(':wres-datamodel')
         compile project(':wres-config')
+	compile project(':wres-vis')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
 
