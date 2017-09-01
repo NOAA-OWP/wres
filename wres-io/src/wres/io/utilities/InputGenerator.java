@@ -64,7 +64,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             LOGGER.error("A MetricInputIterator could not be created.");
             LOGGER.error(Strings.getStackTrace(e));
         }
-
         return iterator;
     }
 
@@ -367,7 +366,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
                 if (ConfigHelper.isForecast( this.getRight() ))
                 {
-                    Double windowWidth = 1.0;
+                    Double windowWidth;
                     TimeAggregationConfig timeAggregationConfig =
                             ConfigHelper.getTimeAggregation( this.getRight() );
                     windowWidth =
@@ -385,13 +384,9 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                     next = this.windowNumber == 0;
                 }
             }
-            catch ( SQLException e )
+            catch ( SQLException | InvalidPropertiesFormatException e )
             {
-                e.printStackTrace();
-            }
-            catch ( InvalidPropertiesFormatException e )
-            {
-                e.printStackTrace();
+                LOGGER.error(Strings.getStackTrace( e ));
             }
             return next;
         }

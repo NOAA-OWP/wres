@@ -2,9 +2,6 @@ package wres.io.data.details;
 
 import java.sql.SQLException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.io.utilities.Database;
 import wres.util.Internal;
 
@@ -13,9 +10,8 @@ import wres.util.Internal;
  * @author Christopher Tubbs
  */
 @Internal(exclusivePackage = "wres.io")
-public final class VariableDetails extends CachedDetail<VariableDetails, String>{
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(VariableDetails.class);
+public final class VariableDetails extends CachedDetail<VariableDetails, String>
+{
 	private String variable_name = null;
 	public Integer measurementunitId = null;
 	private Integer variable_id = null;
@@ -33,20 +29,6 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 			this.variable_id = null;
 		}
         this.variable_name = variable_name;
-	}
-	
-	/**
-	 * @return The ID of the variable in the database
-	 * @throws SQLException Thrown if the ID could not be retrieved from the database
-	 */
-	public Integer getVariableID() throws SQLException
-	{
-		if (variable_id == null)
-		{
-			save();
-		}
-		
-		return variable_id;
 	}
 
 	public String getVariablePositionPartitionName()

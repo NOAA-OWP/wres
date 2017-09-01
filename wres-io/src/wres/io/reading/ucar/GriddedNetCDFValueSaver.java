@@ -1,11 +1,19 @@
 package wres.io.reading.ucar;
 
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.time.OffsetDateTime;
+import java.util.Stack;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
+
 import wres.io.concurrency.CopyExecutor;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESRunnable;
@@ -17,13 +25,6 @@ import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.time.OffsetDateTime;
-import java.util.Stack;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * Executes the database copy operation for every value in the passed in string
@@ -50,7 +51,7 @@ class GriddedNetCDFValueSaver extends WRESRunnable
     private final Stack<Future<?>> operations = new Stack<>();
 
     @Internal(exclusivePackage = "wres.io")
-	public GriddedNetCDFValueSaver (String fileName, int variableID, Double invalidValue)
+	public GriddedNetCDFValueSaver (String fileName, int variableID)
 	{
 		this.fileName = fileName;
 		this.variableID = variableID;

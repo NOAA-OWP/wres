@@ -27,11 +27,6 @@ public final class LabeledScript implements Comparable<LabeledScript>
         return this.script;
     }
     
-    public LabeledScript copy() 
-    {
-        return new LabeledScript(this.label, this.script);
-    }
-    
     @Override
     public String toString()
     {

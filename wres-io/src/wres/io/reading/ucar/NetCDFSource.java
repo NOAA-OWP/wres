@@ -68,8 +68,7 @@ public class NetCDFSource extends BasicSource {
                 WRESRunnable saver;
                 if (NetCDF.isGridded(var)) {
                     saver = new GriddedNetCDFValueSaver(this.getFilename(),
-                                                        Variables.getVariableID(var.getShortName(), var.getUnitsString()),
-                                                        this.getMissingValue());
+                                                        Variables.getVariableID(var.getShortName(), var.getUnitsString()));
                 }
                 else
                 {

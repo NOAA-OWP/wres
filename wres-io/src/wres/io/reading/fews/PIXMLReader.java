@@ -43,7 +43,6 @@ import wres.util.XML;
 public final class PIXMLReader extends XMLReader 
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PIXMLReader.class);
-	private static final int PARTITION_HOURS = 80;
 
     /**
      * Alias for the system agnostic newline separator

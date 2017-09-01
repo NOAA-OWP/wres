@@ -55,17 +55,6 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	}
 	
 	/**
-	 * Gets the ID of source metadata from the global cache based on basic source specifications
-	 * @param detail A basic specification for a data source
-	 * @return The ID of the source in the database
-	 * @throws SQLException Thrown when interaction with the database failed
-	 */
-	public static Integer getSourceID(SourceDetails detail) throws SQLException
-    {
-		return getCache().getID(detail);
-	}	
-	
-	/**
 	 * Gets the ID of source metadata from the instanced cache based on a file path and the date of its output
 	 * @param path The path to the file on the file system
 	 * @param outputTime The time in which the information was generation
@@ -87,17 +76,6 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 
 	    return super.getID(key);
 	}
-
-	public static String getPath(int sourceID)
-    {
-        String path = null;
-        SourceKey key = getCache().getKey(sourceID);
-        if (key != null)
-        {
-            path = key.getSourcePath();
-        }
-        return path;
-    }
 
 	@Override
 	protected int getMaxDetails() {

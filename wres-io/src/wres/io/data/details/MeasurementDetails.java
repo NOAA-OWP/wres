@@ -1,9 +1,9 @@
 package wres.io.data.details;
 
+import java.sql.SQLException;
+
 import wres.io.utilities.Database;
 import wres.util.Internal;
-
-import java.sql.SQLException;
 
 /**
  * Details defining a unit of measurement within the database (i.e. CFS (cubic feet per second),
@@ -14,7 +14,7 @@ import java.sql.SQLException;
 public final class MeasurementDetails extends CachedDetail<MeasurementDetails, String> {	
 	private String unit = null;
 	private Integer measurementunit_id = null;
-	
+
 	/**
 	 * Sets the name of the unit of measurement
 	 * @param unit The new name of the unit of measurement
@@ -26,19 +26,6 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 			this.unit = unit.toLowerCase();
 			this.measurementunit_id = null;
 		}
-	}
-	
-	/**
-	 * @return The ID for this particular unit of measurement
-	 * @throws SQLException Thrown if the ID could not be retrieved from the database
-	 */
-	public int getMeasurementUnitID() throws SQLException
-	{
-		if (measurementunit_id == null)
-		{
-			save();
-		}
-		return measurementunit_id;
 	}
 
 	@Override

@@ -49,7 +49,7 @@ public class SourceLoader
      * @return List of Future file ingest results
      * @throws IOException but swallows SQLException
      */
-    public List<Future> load() throws IOException
+    public List<Future> load()
     {
         List<Future> savingFiles = new ArrayList<>();
 

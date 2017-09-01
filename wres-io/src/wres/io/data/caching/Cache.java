@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import wres.io.data.details.CachedDetail;
-import wres.util.Collections;
 import wres.util.Internal;
 
 /**
@@ -96,24 +95,8 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 		
 		return getID(key);
 	}
-	
-	/**
-	 * Retrieves the key for details in the instance cache based on its ID from the database
-	 * @param id The ID of the key to retrieve
-	 * @return The key tied to the ID. Returns <b>null</b> if the key doesn't exist within the cache
-	 */
-    U getKey (int id) {
-		U key;
-		
-		synchronized (KEY_LOCK)
-		{
-		    key = Collections.getKeyByValue(getKeyIndex(), id);
-		}
 
-		return key;
-	}
-	
-	/**
+    /**
 	 * Adds the details to the instance cache. If the details don't exist in the database, they are added.
 	 * <br><br>
 	 * Since only a limited amount of data is stored within the instanced cache, the least recently used item from the

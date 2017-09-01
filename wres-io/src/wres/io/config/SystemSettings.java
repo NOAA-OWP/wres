@@ -1,19 +1,20 @@
 package wres.io.config;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.io.reading.XMLReader;
-import wres.util.ProgressMonitor;
-import wres.util.Strings;
-import wres.util.XML;
-
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.TransformerException;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.io.reading.XMLReader;
+import wres.util.ProgressMonitor;
+import wres.util.Strings;
+import wres.util.XML;
 
 /**
  * The cache for all configured system settings
@@ -168,11 +169,6 @@ public final class SystemSettings extends XMLReader
         return INSTANCE.updateFrequency;
     }
 
-    public static boolean shouldUpdateProgressMonitor()
-	{
-		return INSTANCE.updateProgressMonitor;
-	}
-
 	public static String getRemoteNetcdfURL()
 	{
 		return INSTANCE.remoteNetCDFURL;
@@ -229,19 +225,6 @@ public final class SystemSettings extends XMLReader
 	public static int getDefaultChartHeight()
 	{
 		return INSTANCE.defaultChartHeight;
-	}
-
-	/**
-	 * @return The type of database to build queries for
-	 * <br><br>
-	 * <b>Acceptable Values are:</b>
-	 * <ul>
-	 *     <li>PostgreSQL</li>
-	 *     <li>MySQL</li>
-	 * </ul>
-	 */
-	public static String getDatabaseType() {
-	    return INSTANCE.databaseConfiguration.getDatabaseType();
 	}
 
 	/**

@@ -68,7 +68,7 @@ public class XMLReader
 		return filename;
 	}
 
-	private InputStream get_file()
+	private InputStream getFile()
 	{
 	    return ClassLoader.getSystemResourceAsStream(filename);
 	}
@@ -115,11 +115,6 @@ public class XMLReader
 	
 	protected void completeParsing(){}
 	
-	protected void set_filename(String filename)
-	{
-		this.filename = filename;
-	}
-	
 	private XMLStreamReader createReader() throws FileNotFoundException, XMLStreamException
 	{
 		XMLStreamReader reader = null;
@@ -133,7 +128,7 @@ public class XMLReader
 		{
 			if (find_on_classpath)
 			{
-				return factory.createXMLStreamReader(get_file());
+				return factory.createXMLStreamReader( getFile());
 			}
 		}
 		catch (XMLStreamException error)
