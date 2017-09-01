@@ -10,6 +10,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -24,6 +25,7 @@ import wres.config.generated.Coordinate;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.ProjectConfig;
@@ -480,4 +482,36 @@ public class ConfigHelper
             }
         }
     }
+
+    /**
+     * Get all the graphical destinations from a configuration.
+     *
+     * @param config the config to search through
+     * @return a list of graphical destinations
+     * @throws NullPointerException when config is null
+     */
+    public static List<DestinationConfig> getGraphicalDestinations( ProjectConfig config )
+    {
+        Objects.requireNonNull( config, "Config must not be null." );
+
+        List<DestinationConfig> result = new ArrayList<>();
+
+        if ( config.getOutputs() == null
+             || config.getOutputs().getDestination() == null )
+        {
+            LOGGER.debug( "No destinations specified for config {}", config );
+            return java.util.Collections.unmodifiableList( result );
+        }
+
+        for ( DestinationConfig d : config.getOutputs().getDestination() )
+        {
+            if ( d.getType() == DestinationType.GRAPHIC )
+            {
+                result.add( d );
+            }
+        }
+
+        return java.util.Collections.unmodifiableList( result );
+    }
+
 }
