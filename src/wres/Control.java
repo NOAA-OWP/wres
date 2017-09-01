@@ -32,8 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
-import ohd.hseb.charter.ChartTools;
-import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import wres.config.ProjectConfigException;
 import wres.config.Validation;
@@ -66,6 +64,8 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
+import wres.io.writing.ChartWriter;
+import wres.io.writing.ChartWriter.ChartWritingException;
 import wres.io.writing.CommaSeparated;
 import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
@@ -557,13 +557,12 @@ public class Control implements Function<String[], Integer>
                                                       .getVariable()
                                                       .getValue()
                                               + ".png");
-                writeChart(outputImage, engine, dest);
+                ChartWriter.writeChart(outputImage, engine, dest);
             }
         }
         catch( ChartEngineException
                 | GenericXMLReadingHandlerException
-                | XYChartDataSourceException
-                | IOException
+                | ChartWritingException
                 | ProjectConfigException e )
         {
             throw new WresProcessingException( "Error while generating scalar charts:", e);
@@ -634,14 +633,13 @@ public class Control implements Function<String[], Integer>
                                                   + "_"
                                                   + nextEntry.getKey()
                                                   + ".png" );
-                    writeChart(outputImage, nextEntry.getValue(), dest);
+                    ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
                 }
             }
         }
         catch ( ChartEngineException
                 | GenericXMLReadingHandlerException
-                | XYChartDataSourceException
-                | IOException
+                | ChartWritingException
                 | ProjectConfigException e )
         {
             throw new WresProcessingException( "Error while generating vector charts:", e );
@@ -714,56 +712,17 @@ public class Control implements Function<String[], Integer>
                                                   + "_"
                                                   + nextEntry.getKey()
                                                   + ".png" );
-                    writeChart(outputImage, nextEntry.getValue(), dest);
+                    ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
                 }
             }
         }
         catch ( ChartEngineException
                 | GenericXMLReadingHandlerException
-                | XYChartDataSourceException
-                | IOException
+                | ChartWritingException
                 | ProjectConfigException e)
         {
             throw new WresProcessingException( "Error while generating multi-vector charts:", e );
         }
-    }
-
-    /**
-     * Writes an output chart to a specified path.
-     * 
-     * @param outputImage the path to the output image
-     * @param engine the chart engine
-     * @param dest the destination configuration
-     * @throws XYChartDataSourceException if the chart data could not be constructed
-     * @throws ChartEngineException if the chart could not be constructed
-     * @throws IOException if the chart could not be written
-     */
-
-    private static void writeChart(final Path outputImage,
-                                   final ChartEngine engine,
-                                   final DestinationConfig dest) throws IOException,
-                                                                 ChartEngineException,
-                                                                 XYChartDataSourceException
-    {
-        if(LOGGER.isWarnEnabled() && outputImage.toFile().exists())
-        {
-            LOGGER.warn("File {} already existed and is being overwritten.", outputImage);
-        }
-
-        final File outputImageFile = outputImage.toFile();
-
-        int width = SystemSettings.getDefaultChartWidth();
-        int height = SystemSettings.getDefaultChartHeight();
-
-        if(dest.getGraphical() != null && dest.getGraphical().getWidth() != null)
-        {
-            width = dest.getGraphical().getWidth();
-        }
-        if(dest.getGraphical() != null && dest.getGraphical().getHeight() != null)
-        {
-            height = dest.getGraphical().getHeight();
-        }
-        ChartTools.generateOutputImageFile(outputImageFile, engine.buildChart(), width, height);
     }
 
     /**
@@ -933,10 +892,9 @@ public class Control implements Function<String[], Integer>
         }
     }
 
-
     /**
      * An exception representing that execution of a step failed.
-     * Needed because ForkJoinPool and/or the Java 8 Function world does not
+     * Needed because Java 8 Function world does not
      * deal kindly with checked Exceptions.
      */
     private static class WresProcessingException extends RuntimeException
