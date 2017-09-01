@@ -47,7 +47,6 @@ public class SourceLoader
     /**
      * Ingest data
      * @return List of Future file ingest results
-     * @throws IOException but swallows SQLException
      */
     public List<Future> load()
     {
