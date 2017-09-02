@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
@@ -91,7 +92,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * Default logger.
      */
 
-    static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessor.class );    
+    static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessor.class );
 
     /**
      * Instance of a {@link MetricFactory}.
@@ -155,18 +156,18 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     final ExecutorService thresholdExecutor;
-    
+
     /**
      * The minimum sample size to use when computing metrics.
      */
-    
+
     final int minimumSampleSize;
-    
+
     /**
      * The number of decimal places to use when rounding.
      */
 
-    private static final int DECIMALS = 5;    
+    private static final int DECIMALS = 5;
 
     /**
      * Maps between metric identifiers in {@link MetricConfigName} and those in {@link MetricConstants}. Returns a
@@ -211,9 +212,9 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
             case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
                 return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
             case INDEX_OF_AGREEMENT:
-                return MetricConstants.INDEX_OF_AGREEMENT;     
+                return MetricConstants.INDEX_OF_AGREEMENT;
             case KLING_GUPTA_EFFICIENCY:
-                return MetricConstants.KLING_GUPTA_EFFICIENCY;     
+                return MetricConstants.KLING_GUPTA_EFFICIENCY;
             case MEAN_ERROR:
                 return MetricConstants.MEAN_ERROR;
             case MEAN_SQUARE_ERROR:
@@ -697,16 +698,19 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @param threshold the threshold
      * @throws MetricInputSliceException if the input contains insufficient data for metric calculation 
      */
-    
-    void checkSlice(MetricInput<?> subset, Threshold threshold) throws MetricInputSliceException
+
+    void checkSlice( MetricInput<?> subset, Threshold threshold ) throws MetricInputSliceException
     {
-        if(subset.size() < minimumSampleSize)
+        if ( subset.size() < minimumSampleSize )
         {
-            throw new MetricInputSliceException("Failed to compute some metrics at threshold '"+threshold+"', as the "
-                    + "sample size was smaller than the minimum allowed ("+minimumSampleSize+").");
+            throw new MetricInputSliceException( "Failed to compute some metrics at threshold '" + threshold
+                                                 + "', as the "
+                                                 + "sample size was smaller than the minimum allowed ("
+                                                 + minimumSampleSize
+                                                 + ")." );
         }
-    }    
-    
+    }
+
     /**
      * Returns valid metrics for {@link MetricInputGroup#ENSEMBLE}
      * 
@@ -761,6 +765,26 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         {
             throw new MetricConfigurationException( "Thresholds are required by one or more of the configured "
                                                     + "metrics." );
+        }
+        //Check that probability thresholds are configured for left       
+        if ( Objects.nonNull( outputs.getProbabilityThresholds() )
+             && outputs.getProbabilityThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
+        {
+            throw new MetricConfigurationException( "Attempted to apply probability thresholds to '"
+                                                    + outputs.getProbabilityThresholds().getApplyTo()
+                                                    + "': this is not currently supported. Use '"
+                                                    + LeftOrRightOrBaseline.LEFT
+                                                    + "' instead." );
+        }
+        //Check that value thresholds are configured for left  
+        if ( Objects.nonNull( outputs.getValueThresholds() )
+             && outputs.getValueThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
+        {
+            throw new MetricConfigurationException( "Attempted to apply value thresholds to '"
+                                                    + outputs.getValueThresholds().getApplyTo()
+                                                    + "': this is not currently supported. Use '"
+                                                    + LeftOrRightOrBaseline.LEFT
+                                                    + "' instead." );
         }
         //Check for metric-local thresholds and throw an exception if they are defined, as they are currently not supported
 //        EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>( MetricConstants.class );
