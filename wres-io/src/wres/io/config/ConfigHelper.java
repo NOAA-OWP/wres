@@ -45,6 +45,11 @@ public class ConfigHelper
     private static final ConcurrentMap<ProjectConfig, ConcurrentSkipListSet<String>> messages
             = new ConcurrentHashMap<>();
 
+    public static boolean isRight(DataSourceConfig dataSourceConfig, ProjectConfig projectConfig)
+    {
+        return dataSourceConfig == projectConfig.getInputs().getRight();
+    }
+
     /**
      * Given a config, generate feature IDs and return a sql string of them.
      *

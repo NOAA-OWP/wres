@@ -36,6 +36,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricInput;
 import wres.io.Operations;
 import wres.io.concurrency.Downloader;
+import wres.io.concurrency.InputRetriever;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
@@ -163,6 +164,7 @@ final class MainFunctions
 		prototypes.put("loadfeatures", loadFeatures());
 		prototypes.put("killconnections", killWRESConnections());
 		prototypes.put("testchecksum", testChecksum());
+		prototypes.put( "savepairs", savePairs() );
 
 		return prototypes;
 	}
@@ -274,6 +276,57 @@ final class MainFunctions
 			return result;
 		};
 	}
+
+	private static Function<String[], Integer> savePairs()
+    {
+        return (final String[] args) -> {
+            Integer result = FAILURE;
+
+            if (args.length >= 2)
+            {
+                try
+                {
+                    ProjectConfig projectConfig = ProjectConfigPlus.from( Paths.get( args[0] ) ).getProjectConfig();
+                    MainFunctions.setProjectPath( args[0] );
+                    for (Conditions.Feature feature : projectConfig.getConditions().getFeature())
+                    {
+                        InputGenerator generator = Operations.getInputs(projectConfig, feature);
+                        generator.setSavePairData( true );
+
+                        List<Future<MetricInput<?>>> futures = new ArrayList<>(  );
+
+                        for (Future<MetricInput<?>> inputFuture : generator)
+                        {
+                            futures.add( inputFuture );
+                        }
+
+                        futures.forEach( metricInputFuture -> {
+                            try
+                            {
+                                metricInputFuture.get();
+                            }
+                            catch ( InterruptedException | ExecutionException e )
+                            {
+                                LOGGER.error( Strings.getStackTrace( e ) );
+                            }
+                        } );
+                    }
+
+                    InputRetriever.outputSavedPairs( args[1] );
+                    result = SUCCESS;
+                }
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                }
+            }
+            else
+            {
+                LOGGER.error( "usage: savePairs <path to project> <csv name>" );
+            }
+            return result;
+        };
+    }
 
 	private static Function<String[], Integer> refreshTestData () {
 		return (final String[] args) -> {
