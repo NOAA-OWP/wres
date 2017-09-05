@@ -211,11 +211,6 @@ public class ZippedSource extends BasicSource {
         DataSourceConfig.Source
                 originalSource = ConfigHelper.findDataSourceByFilename( this.getDataSourceConfig(), this.getAbsoluteFilename() );
 
-        if (originalSource == null || !this.shouldIngest( archivedFileName, originalSource ) )
-        {
-            return;
-        }
-
         byte[] content = new byte[(int)source.getSize()];
 
         try
@@ -229,6 +224,12 @@ public class ZippedSource extends BasicSource {
             message += "cut off when creating or moving the archive.";
             LOGGER.error(message, archivedFileName);
             LOGGER.error(Strings.getStackTrace( eof ));
+            return;
+        }
+
+        if (originalSource == null || !this.shouldIngest( archivedFileName, originalSource, content ) )
+        {
+            LOGGER.trace( "'{}' is not being ingested because its data already exists within the database." );
             return;
         }
 

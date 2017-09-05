@@ -1,11 +1,14 @@
 package wres.io.reading.fews;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
@@ -29,6 +32,7 @@ import wres.io.reading.XMLReader;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Internal;
+import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.Time;
@@ -74,17 +78,19 @@ public final class PIXMLReader extends XMLReader
 	 * @param isForecast Whether or not the reader is for forecast data
 	 */
     @Internal(exclusivePackage = "wres.io")
-	public PIXMLReader(String filename, boolean isForecast)
+	public PIXMLReader(String filename, boolean isForecast, Future<String> futureHash)
 	{
 		super(filename);
 		this.isForecast = isForecast;
+		this.futureHash = futureHash;
 	}
 
     @Internal(exclusivePackage = "wres.io")
-	public PIXMLReader(String filename, InputStream inputStream, boolean isForecast)
+	public PIXMLReader(String filename, InputStream inputStream, boolean isForecast, Future<String> futureHash)
 	{
 		super(filename, inputStream);
 		this.isForecast = isForecast;
+		this.futureHash = futureHash;
 	}
 	
 	@Override
@@ -107,9 +113,11 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * Interprets information within PIXML "series" tags
 	 * @param reader The XML reader, positioned at a "series" tag
-	 * @throws Exception Thrown if the XML could not be properly read or interpreted
 	 */
-	private void parseSeries(XMLStreamReader reader) throws XMLStreamException, SQLException, InvalidPropertiesFormatException {
+	private void parseSeries(XMLStreamReader reader)
+            throws XMLStreamException, SQLException, IOException,
+            ExecutionException, InterruptedException
+    {
 		//	If the current tag is the series tag itself, move on to the next tag
 		if (reader.isStartElement() && reader.getLocalName().equalsIgnoreCase("series"))
 		{
@@ -156,9 +164,11 @@ public final class PIXMLReader extends XMLReader
 	 * Removes information about a measurement from an "event" tag. If a sufficient number of events have been
 	 * parsed, they are sent to the database to be saved.
 	 * @param reader The reader containing the current event tag
-	 * @throws Exception Any possible error thrown while attempting to read the database
 	 */
-	private void parseEvent(XMLStreamReader reader) throws SQLException {
+	private void parseEvent(XMLStreamReader reader)
+            throws SQLException, IOException, ExecutionException,
+            InterruptedException
+    {
 		this.incrementLead();
 		Float value = null;
 		StringBuilder time = new StringBuilder();
@@ -233,7 +243,10 @@ public final class PIXMLReader extends XMLReader
 	 * @param observedValue The value retrieved from the XML
 	 * @throws SQLException Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
 	 */
-	private void addObservedEvent(String observedTime, Float observedValue) throws SQLException {
+	private void addObservedEvent(String observedTime, Float observedValue)
+            throws SQLException, IOException, ExecutionException,
+            InterruptedException
+    {
 		if (insertCount > 0)
 		{
 			currentScript.append(NEWLINE);
@@ -480,9 +493,18 @@ public final class PIXMLReader extends XMLReader
 	 * @return The ID of the forecast that is currently being parsed
 	 * @throws SQLException Thrown if the forecast could not be retrieved properly
 	 */
-	private int getForecastID() throws SQLException {
+	private int getForecastID()
+            throws SQLException, IOException, ExecutionException,
+            InterruptedException
+    {
 	    this.currentForecast.setScenario( this.getSpecifiedScenario() );
         this.currentForecast.setType( this.dataSourceConfig.getType().value() );
+
+        if (this.currentForecast.getHash() == null)
+        {
+            this.currentForecast.setHash( this.getHash());
+        }
+
 		return currentForecast.getForecastID();
 	}
 	
@@ -504,7 +526,10 @@ public final class PIXMLReader extends XMLReader
 	 * @throws SQLException Thrown if intermediary values could not be loaded from their own caches or if interaction
 	 * with the database failed.
 	 */
-	private int getForecastEnsembleID() throws SQLException {
+	private int getForecastEnsembleID()
+            throws SQLException, IOException, ExecutionException,
+            InterruptedException
+    {
 		if (currentForecastEnsembleID == null) {
 			currentForecastEnsemble.setEnsembleID(getEnsembleID());
 			currentForecastEnsemble.setForecastID(getForecastID());
@@ -532,7 +557,10 @@ public final class PIXMLReader extends XMLReader
 	 * @return A valid ID for the source of this PIXML file from the database
 	 * @throws SQLException Thrown if an ID could not be retrieved from the database
 	 */
-	private int getSourceID() throws SQLException {
+	private int getSourceID()
+            throws SQLException, IOException, ExecutionException,
+            InterruptedException
+    {
 		if (currentSourceID == null)
 		{
 			String output_time;
@@ -545,7 +573,10 @@ public final class PIXMLReader extends XMLReader
 			else {
 				output_time = startDate;
 			}
-			currentSourceID = DataSources.getSourceID(getFilename(), output_time, null);
+			currentSourceID = DataSources.getSourceID(getFilename(),
+													  output_time,
+													  null,
+													  this.getHash());
 		}
 		return currentSourceID;
 	}
@@ -788,9 +819,40 @@ public final class PIXMLReader extends XMLReader
 	private String currentVariableName = null;
 
     /**
+     * The hash code for the source file
+     */
+	private String hash;
+
+    /**
+     * The operation started prior to parsing used to generate a hash for the file
+     */
+	private final Future<String> futureHash;
+
+    /**
      * The ID of the scenario for the data
      */
     private Integer scenarioID = null;
+
+    private String getHash() throws ExecutionException, InterruptedException
+    {
+        if (this.hash == null)
+        {
+            if (this.futureHash != null)
+            {
+                this.hash = this.futureHash.get();
+            }
+            else
+            {
+                String message = "No hash operation was set during ingestion. ";
+                message += "A hash for the source could not be determined.";
+                LOGGER.error( message );
+                throw new NotImplementedException( message );
+
+            }
+        }
+
+        return this.hash;
+    }
 
 	private void incrementLead() {
 		this.currentLeadTime += this.timeStep;

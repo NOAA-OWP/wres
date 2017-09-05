@@ -1,11 +1,11 @@
 package wres.io.reading;
 
+import java.io.IOException;
+
 import wres.config.generated.Format;
 import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.ucar.NetCDFSource;
 import wres.util.Internal;
-
-import java.io.IOException;
 
 /**
  * @author ctubbs

@@ -17,13 +17,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Function;
-import javax.xml.bind.JAXBException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,6 +162,7 @@ final class MainFunctions
 		prototypes.put("ingest", ingest());
 		prototypes.put("loadfeatures", loadFeatures());
 		prototypes.put("killconnections", killWRESConnections());
+		prototypes.put("testchecksum", testChecksum());
 
 		return prototypes;
 	}
@@ -186,6 +187,35 @@ final class MainFunctions
             catch (SQLException e) {
                 LOGGER.error("Orphaned WRES connections to the WRES database could not be canceled.");
                 LOGGER.error(Strings.getStackTrace(e));
+            }
+
+            return result;
+        };
+    }
+
+    private static Function<String[], Integer> testChecksum()
+    {
+        return (final String[] args) -> {
+            int result = FAILURE;
+
+            if (args.length >= 1)
+            {
+                try
+                {
+                    LOGGER.info( Strings.getMD5Checksum( args[0] ) );
+                }
+                catch ( IOException e )
+                {
+                    LOGGER.error(Strings.getStackTrace( e ));
+                }
+            }
+            else
+            {
+                LOGGER.info("Performing checksum on random data...");
+                byte[] raw = new byte[4096];
+                Random random = new Random(  );
+                random.nextBytes( raw );
+                LOGGER.info(Strings.getMD5Checksum( raw ));
             }
 
             return result;

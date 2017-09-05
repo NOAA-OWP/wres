@@ -34,6 +34,7 @@ public class NetCDFSource extends BasicSource {
 	@Internal(exclusivePackage = "wres.io")
 	public NetCDFSource(String filename) {
 		this.setFilename(filename);
+		this.setHash();
 	}
 	
 	@Override
@@ -61,11 +62,11 @@ public class NetCDFSource extends BasicSource {
                 WRESRunnable saver;
                 if (NetCDF.isGridded(var)) {
                     saver = new GriddedNetCDFValueSaver(this.getFilename(),
-                                                        Variables.getVariableID(var.getShortName(), var.getUnitsString()));
+                                                        Variables.getVariableID(var.getShortName(), var.getUnitsString()), this.getFutureHash());
                 }
                 else
                 {
-                    saver = new VectorNetCDFValueSaver(this.getFilename(), var.getShortName());
+                    saver = new VectorNetCDFValueSaver(this.getFilename(), var.getShortName(), this.getFutureHash());
                 }
 
                 saver.setOnRun(ProgressMonitor.onThreadStartHandler());

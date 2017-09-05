@@ -1,9 +1,9 @@
 package wres.io.reading.fews;
 
+import java.io.IOException;
+
 import wres.io.reading.BasicSource;
 import wres.util.Internal;
-
-import java.io.IOException;
 
 /**
  * @author Christopher Tubbs
@@ -20,11 +20,12 @@ public class FEWSSource extends BasicSource {
 	public FEWSSource(String filename)
 	{
 		this.setFilename(filename);
+		this.setHash();
 	}
 
 	@Override
 	public void saveForecast() throws IOException {
-		PIXMLReader sourceReader = new PIXMLReader(this.getFilename(), true);
+		PIXMLReader sourceReader = new PIXMLReader(this.getFilename(), true, this.getFutureHash());
 		sourceReader.setDataSourceConfig(this.getDataSourceConfig());
 		sourceReader.setSpecifiedFeatures(this.getSpecifiedFeatures());
 		sourceReader.parse();
@@ -32,7 +33,7 @@ public class FEWSSource extends BasicSource {
 
 	@Override
 	public void saveObservation() throws IOException {
-		PIXMLReader sourceReader = new PIXMLReader(this.getAbsoluteFilename(), false);
+		PIXMLReader sourceReader = new PIXMLReader(this.getAbsoluteFilename(), false, this.getFutureHash());
 		sourceReader.setDataSourceConfig(this.getDataSourceConfig());
 		sourceReader.setSpecifiedFeatures(this.getSpecifiedFeatures());
 		sourceReader.parse();

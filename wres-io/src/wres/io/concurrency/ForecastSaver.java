@@ -1,15 +1,16 @@
 package wres.io.concurrency;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
 import wres.util.Internal;
 import wres.util.Strings;
-
-import java.util.List;
 
 /**
  * Saves the forecast at the indicated path asynchronously
@@ -22,7 +23,9 @@ public class ForecastSaver extends WRESRunnable
 	private static final Logger LOGGER = LoggerFactory.getLogger(ForecastSaver.class);
 
     @Internal(exclusivePackage = "wres.io")
-	public ForecastSaver(String filepath, DataSourceConfig dataSourceConfig, List<Conditions.Feature> specifiedFeatures)
+	public ForecastSaver(String filepath,
+						 DataSourceConfig dataSourceConfig,
+						 List<Conditions.Feature> specifiedFeatures)
     {
         this.dataSourceConfig = dataSourceConfig;
         this.filepath = filepath;

@@ -1,6 +1,7 @@
 package wres.io.concurrency;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
@@ -20,6 +21,8 @@ public final class Executor {
 	// The underlying thread executor
 	private static ThreadPoolExecutor SERVICE = createService();
 
+	private static ExecutorService HIGH_PRIORITY_TASKS = createHighPriorityService();
+
     private Executor()
     {
         // prevent direct construction
@@ -37,6 +40,29 @@ public final class Executor {
 
 		ThreadFactory factory = runnable -> new Thread(runnable, "Executor Thread");
 		return (ThreadPoolExecutor)Executors.newFixedThreadPool(SystemSettings.maximumThreadCount(), factory);
+	}
+
+	private static ExecutorService createHighPriorityService()
+	{
+		if (HIGH_PRIORITY_TASKS != null)
+		{
+			HIGH_PRIORITY_TASKS.shutdown();
+			while (!HIGH_PRIORITY_TASKS.isTerminated());
+		}
+
+		ThreadFactory factory = runnable -> new Thread(runnable, "High Priority Database Thread");
+		ExecutorService executor = Executors.newFixedThreadPool(10, factory);
+		return executor;
+	}
+
+	public static <V> Future<V> submitHighPriorityTask(Callable<V> task)
+	{
+		if (HIGH_PRIORITY_TASKS == null || HIGH_PRIORITY_TASKS.isShutdown())
+		{
+			HIGH_PRIORITY_TASKS = createHighPriorityService();
+		}
+
+		return HIGH_PRIORITY_TASKS.submit( task );
 	}
 	
 	/**
