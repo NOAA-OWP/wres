@@ -1,11 +1,18 @@
 package wres.io.concurrency;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
+import java.util.Map;
+import java.util.StringJoiner;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -38,6 +45,44 @@ import wres.util.Internal;
 public final class InputRetriever extends WRESCallable<MetricInput<?>>
 {
 
+    /**
+     * Used to save off sets of metric input data without storing them within
+     * a MetricInput object (where we don't have a clean way of accessing the
+     * data within
+     */
+    private static class InputPair
+    {
+        public InputPair(Integer window, double left, Double[] right)
+        {
+            this.window = window;
+            this.right = right;
+            this.left = left;
+        }
+
+        public double getLeft()
+        {
+            return this.left;
+        }
+
+        public Double[] getRight()
+        {
+            return this.right;
+        }
+
+        public Integer getWindow()
+        {
+            return this.window;
+        }
+
+        private final Integer window;
+        private final double left;
+        private final Double[] right;
+    }
+
+
+    private static final ConcurrentHashMap<Conditions.Feature, Map<String, List<InputPair>>>
+            savedPairing = new ConcurrentHashMap<>(  );
+
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
     @Internal(exclusivePackage = "wres.io")
@@ -52,6 +97,94 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         this.progress = progress;
         this.getLeftValue = getLeftValue;
         this.climatology = climatology;
+    }
+
+    /**
+     * Writes any and all saved pair data to the specified location as CSV data
+     * @param destination The place to save the data to. The CSV extension
+     *                    will be added if it isn't present.
+     */
+    public static void outputSavedPairs(String destination)
+    {
+        if (!destination.endsWith( ".csv" ))
+        {
+            destination += ".csv";
+        }
+
+        try ( BufferedWriter writer = new BufferedWriter( new FileWriter( destination, false ) ))
+        {
+            writer.write( "Feature,Date,Window,Left,Right" );
+            writer.newLine();
+            writer.flush();
+
+            // Create a line in the CSV for every set of primary pairs
+            // pertaining to every window for every location
+            for ( Map.Entry<Conditions.Feature, Map<String, List<InputPair>>> featureMapEntry : savedPairing.entrySet())
+            {
+                for (Map.Entry<String, List<InputPair>> pairing : featureMapEntry.getValue().entrySet())
+                {
+
+                    for(InputPair inputPair : pairing.getValue())
+                    {
+                        StringJoiner line = new StringJoiner( "," );
+                        StringJoiner arrayJoiner =
+                                new StringJoiner( ",", "\"[", "]\"" );
+
+                        // Add the location information
+                        line.add( ConfigHelper.getFeatureDescription(
+                                featureMapEntry.getKey() ) );
+
+                        // Add the date
+                        line.add( pairing.getKey().toString() );
+
+                        // Add the window number
+                        line.add(String.valueOf( inputPair.getWindow() ));
+
+                        // Add the left hand value
+                        line.add(String.valueOf(inputPair.getLeft()));
+
+                        for (int rightIndex = 0; rightIndex < inputPair.getRight().length; ++rightIndex)
+                        {
+                            arrayJoiner.add( String.valueOf( inputPair.getRight()[rightIndex] ));
+                        }
+
+                        // Add the array representation
+                        line.add(arrayJoiner.toString());
+
+                        // Append the new line to the file
+                        writer.write( line.toString() );
+                        writer.newLine();
+                        writer.flush();
+                    }
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Save data into a persistent collection of data about what was paired
+     * @param feature
+     * @param date
+     * @param window
+     * @param left
+     * @param right
+     */
+    private static void savePairInfo( Conditions.Feature feature,
+                                     String date,
+                                     Integer window,
+                                     double left,
+                                     Double[] right)
+    {
+        synchronized (savedPairing)
+        {
+            savedPairing.putIfAbsent( feature, new TreeMap<>() );
+            savedPairing.get( feature ).putIfAbsent( date, new ArrayList<>() );
+            savedPairing.get( feature ).get( date ).add( new InputPair( window, left, right ) );
+        }
     }
 
     @Override
@@ -69,6 +202,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     public void setZeroDate(String zeroDate)
     {
         this.zeroDate = zeroDate;
+    }
+
+    public void setSavePairData(boolean savePairData)
+    {
+        this.savePairData = savePairData;
     }
 
     private MetricInput<?> createInput()
@@ -168,6 +306,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                                              this.projectConfig.getPair().getUnit());
                 }
 
+                if (this.savePairData && ConfigHelper.isRight( dataSourceConfig, this.projectConfig ))
+                {
+                    InputRetriever.savePairInfo( this.feature, date, this.progress, leftValue, measurements );
+                }
+
                 pairs.add(factory.pairOf(leftValue, measurements));
             }
         }
@@ -214,6 +357,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;
     private Boolean hasBaseline;
     private String zeroDate;
+    private boolean savePairData;
 
     private Boolean baselineExists()
     {

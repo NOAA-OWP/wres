@@ -52,6 +52,12 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
     private final ProjectConfig projectConfig;
     private final Conditions.Feature feature;
+    private boolean savePairData;
+
+    public void setSavePairData(boolean savePairData)
+    {
+        this.savePairData = savePairData;
+    }
 
     @Override
     public Iterator<Future<MetricInput<?>>> iterator()
@@ -59,6 +65,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         MetricInputIterator iterator = null;
         try {
             iterator =  new MetricInputIterator(this.projectConfig, this.feature);
+            iterator.setSavePairData( this.savePairData );
         }
         catch (SQLException | NotImplementedException | InvalidPropertiesFormatException e) {
             LOGGER.error("A MetricInputIterator could not be created.");
@@ -79,6 +86,12 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private Map<String, Double> leftHandMap;
         private VectorOfDoubles leftHandValues;
         private String zeroDate;
+        private boolean savePairData;
+
+        public void setSavePairData(boolean savePairData)
+        {
+            this.savePairData = savePairData;
+        }
 
         private DataSourceConfig getLeft()
         {
@@ -421,6 +434,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                         e.printStackTrace();
                     }
                 }
+
+                retriever.setSavePairData( this.savePairData );
 
                 nextInput = Database.submit(retriever);
             }
