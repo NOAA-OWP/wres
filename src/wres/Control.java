@@ -527,37 +527,42 @@ public class Control implements Function<String[], Integer>
         {
             for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> e: scalarResults.entrySet())
             {
-                final DestinationConfig dest = config.getOutputs().getDestination().get(1);
-                final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-                // Build the chart engine
-                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
-                PlotTypeSelection plotType = null;
-                String templateResourceName = null;
-                if(!Objects.isNull(nextConfig))
+                List<DestinationConfig> destinations =
+                        ConfigHelper.getGraphicalDestinations( config );
+
+                for ( DestinationConfig dest : destinations )
                 {
-                    plotType = nextConfig.getPlotType();
-                    templateResourceName = nextConfig.getTemplateResourceName();
+                    final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+                    // Build the chart engine
+                    final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
+                    PlotTypeSelection plotType = null;
+                    String templateResourceName = null;
+                    if(!Objects.isNull(nextConfig))
+                    {
+                        plotType = nextConfig.getPlotType();
+                        templateResourceName = nextConfig.getTemplateResourceName();
+                    }
+                    final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
+                                                                                                      DATA_FACTORY,
+                                                                                                      plotType,
+                                                                                                      templateResourceName,
+                                                                                                      graphicsString);
+                    //Build the output
+                    File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
+                    Path outputImage = Paths.get( destDir.toString(),
+                                                  feature.getLocation()
+                                                  .getLid()
+                                                  + "_"
+                                                  + e.getKey()
+                                                  .getKey()
+                                                  + "_"
+                                                  + config.getInputs()
+                                                  .getRight()
+                                                  .getVariable()
+                                                  .getValue()
+                                                  + ".png");
+                    ChartWriter.writeChart(outputImage, engine, dest);
                 }
-                final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
-                                                                                                  DATA_FACTORY,
-                                                                                                  plotType,
-                                                                                                  templateResourceName,
-                                                                                                  graphicsString);
-                //Build the output
-                File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
-                Path outputImage = Paths.get( destDir.toString(),
-                                              feature.getLocation()
-                                                     .getLid()
-                                              + "_"
-                                              + e.getKey()
-                                                 .getKey()
-                                              + "_"
-                                              + config.getInputs()
-                                                      .getRight()
-                                                      .getVariable()
-                                                      .getValue()
-                                              + ".png");
-                ChartWriter.writeChart(outputImage, engine, dest);
             }
         }
         catch( ChartEngineException
@@ -597,43 +602,48 @@ public class Control implements Function<String[], Integer>
         {
             for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
             {
-                final DestinationConfig dest = config.getOutputs().getDestination().get(1);
-                final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-                // Build the chart engine
-                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
-                PlotTypeSelection plotType = null;
-                String templateResourceName = null;
-                if(!Objects.isNull(nextConfig))
+                List<DestinationConfig> destinations =
+                        ConfigHelper.getGraphicalDestinations( config );
+
+                for ( DestinationConfig dest : destinations )
                 {
-                    plotType = nextConfig.getPlotType();
-                    templateResourceName = nextConfig.getTemplateResourceName();
-                }
-                final Map<Object, ChartEngine> engines =
-                                                       ChartEngineFactory.buildVectorOutputChartEngine(e.getValue(),
-                                                                                                       DATA_FACTORY,
-                                                                                                       plotType,
-                                                                                                       templateResourceName,
-                                                                                                       graphicsString);
-                // Build the outputs
-                for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
-                {
-                    // Build the output file name
-                    File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
-                    Path outputImage = Paths.get( destDir.toString(),
-                                                  feature.getLocation()
-                                                         .getLid()
-                                                  + "_"
-                                                  + e.getKey()
-                                                     .getKey()
-                                                  + "_"
-                                                  + config.getInputs()
-                                                          .getRight()
-                                                          .getVariable()
-                                                          .getValue()
-                                                  + "_"
-                                                  + nextEntry.getKey()
-                                                  + ".png" );
-                    ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
+                    final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+                    // Build the chart engine
+                    final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
+                    PlotTypeSelection plotType = null;
+                    String templateResourceName = null;
+                    if(!Objects.isNull(nextConfig))
+                    {
+                        plotType = nextConfig.getPlotType();
+                        templateResourceName = nextConfig.getTemplateResourceName();
+                    }
+                    final Map<Object, ChartEngine> engines =
+                        ChartEngineFactory.buildVectorOutputChartEngine(e.getValue(),
+                                                                        DATA_FACTORY,
+                                                                        plotType,
+                                                                        templateResourceName,
+                                                                        graphicsString);
+                    // Build the outputs
+                    for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
+                    {
+                        // Build the output file name
+                        File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
+                        Path outputImage = Paths.get( destDir.toString(),
+                                                      feature.getLocation()
+                                                      .getLid()
+                                                      + "_"
+                                                      + e.getKey()
+                                                      .getKey()
+                                                      + "_"
+                                                      + config.getInputs()
+                                                      .getRight()
+                                                      .getVariable()
+                                                      .getValue()
+                                                      + "_"
+                                                      + nextEntry.getKey()
+                                                      + ".png" );
+                        ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
+                    }
                 }
             }
         }
@@ -675,44 +685,49 @@ public class Control implements Function<String[], Integer>
             // Build the charts for each metric
             for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
             {
-                final DestinationConfig dest = config.getOutputs().getDestination().get(1);
-                final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-                // Build the chart engine
-                final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
-                PlotTypeSelection plotType = null;
-                String templateResourceName = null;
-                if(!Objects.isNull(nextConfig))
-                {
-                    plotType = nextConfig.getPlotType();
-                    templateResourceName = nextConfig.getTemplateResourceName();
-                }
+                List<DestinationConfig> destinations =
+                        ConfigHelper.getGraphicalDestinations( config );
 
-                final Map<Object, ChartEngine> engines =
-                                                       ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
-                                                                                                            DATA_FACTORY,
-                                                                                                            plotType,
-                                                                                                            templateResourceName,
-                                                                                                            graphicsString);
-                // Build the outputs
-                for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
+                for ( DestinationConfig dest : destinations )
                 {
-                    // Build the output file name
-                    File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
-                    Path outputImage = Paths.get( destDir.toString(),
-                                                  feature.getLocation()
-                                                         .getLid()
-                                                  + "_"
-                                                  + e.getKey()
-                                                     .getKey()
-                                                  + "_"
-                                                  + config.getInputs()
-                                                          .getRight()
-                                                          .getVariable()
-                                                          .getValue()
-                                                  + "_"
-                                                  + nextEntry.getKey()
-                                                  + ".png" );
-                    ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
+                    final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+                    // Build the chart engine
+                    final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
+                    PlotTypeSelection plotType = null;
+                    String templateResourceName = null;
+                    if(!Objects.isNull(nextConfig))
+                    {
+                        plotType = nextConfig.getPlotType();
+                        templateResourceName = nextConfig.getTemplateResourceName();
+                    }
+
+                    final Map<Object, ChartEngine> engines =
+                        ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
+                                                                             DATA_FACTORY,
+                                                                             plotType,
+                                                                             templateResourceName,
+                                                                             graphicsString);
+                    // Build the outputs
+                    for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
+                    {
+                        // Build the output file name
+                        File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
+                        Path outputImage = Paths.get( destDir.toString(),
+                                                      feature.getLocation()
+                                                      .getLid()
+                                                      + "_"
+                                                      + e.getKey()
+                                                      .getKey()
+                                                      + "_"
+                                                      + config.getInputs()
+                                                      .getRight()
+                                                      .getVariable()
+                                                      .getValue()
+                                                      + "_"
+                                                      + nextEntry.getKey()
+                                                      + ".png" );
+                        ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
+                    }
                 }
             }
         }
