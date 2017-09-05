@@ -55,10 +55,6 @@ else
     psql -U $1 -d $3 -h $2 -f Features.sql >/dev/null
 
     echo ''
-    echo 'Adding wres.FeaturePosition...'
-    psql -U $1 -d $3 -h $2 -f wres.FeaturePosition.sql >/dev/null
-
-    echo ''
     echo 'Adding wres.ForecastValue...'
     psql -U $1 -d $3 -h $2 -f wres.ForecastValue.sql >/dev/null
 
