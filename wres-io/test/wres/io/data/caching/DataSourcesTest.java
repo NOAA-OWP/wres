@@ -1,21 +1,5 @@
 package wres.io.data.caching;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import ru.yandex.qatools.embed.postgresql.EmbeddedPostgres;
-import wres.io.config.SystemSettings;
-import wres.io.utilities.Database;
-
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -29,10 +13,27 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.yandex.qatools.embed.postgresql.EmbeddedPostgres;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static ru.yandex.qatools.embed.postgresql.EmbeddedPostgres.cachedRuntimeConfig;
 import static ru.yandex.qatools.embed.postgresql.distribution.Version.Main.V9_6;
+
+import wres.io.config.SystemSettings;
+import wres.io.utilities.Database;
 
 @Ignore
 @RunWith(PowerMockRunner.class)
@@ -269,12 +270,12 @@ java.lang.NullPointerException
         final String path = "/this/is/just/a/test";
         final String time = "2017-06-16 11:13:00";
 
-        Integer result = DataSources.getSourceID(path, time, null);
+        Integer result = DataSources.getSourceID(path, time, null, "test");
 
         assertTrue("The id should be an integer greater than zero.",
                    result > 0);
 
-        Integer result2 = DataSources.getSourceID(path, time, null);
+        Integer result2 = DataSources.getSourceID(path, time, null, "test");
 
         assertEquals("Getting an id with the same path and time should yield the same result.",
                      result2, result);
@@ -305,12 +306,12 @@ java.lang.NullPointerException
         sc.init();
         final String path = "/this/is/just/a/test";
         final String time = "2017-06-20 16:55:00";
-        Integer firstId = sc.getID(path, time, null);
+        Integer firstId = sc.getID(path, time, null, "test");
 
         // Initialize a second cache, it should find the same data already present
         DataSources scTwo = new DataSources();
         scTwo.init();
-        Integer secondId = scTwo.getID(path, time, null);
+        Integer secondId = scTwo.getID(path, time, null, "test");
 
         assertEquals("Second cache should find id in database from first cache",
                     firstId, secondId);
