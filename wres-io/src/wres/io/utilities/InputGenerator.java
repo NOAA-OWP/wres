@@ -337,6 +337,10 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
                 lastLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
 
+                if (this.lastLead == null)
+                {
+                    throw new IllegalStateException( "No data could be found to generate pairs for." );
+                }
                 if (projectConfig.getConditions().getLastLead() < lastLead)
                 {
                     lastLead = projectConfig.getConditions().getLastLead();
