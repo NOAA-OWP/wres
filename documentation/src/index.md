@@ -60,3 +60,7 @@ the total size of this directory will be trimmed daily to a couple hundred megs.
 ## Setting up a project
 
 See [Project Configuration](projectconfig.html)
+
+## Advanced changes to system behavior (unnecessary for operation)
+
+See [Advanced Alterations of System Behavior](advanced.html)
