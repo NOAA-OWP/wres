@@ -6,6 +6,7 @@ import wres.config.generated.Format;
 import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.ucar.NetCDFSource;
 import wres.util.Internal;
+import wres.util.Strings;
 
 /**
  * @author ctubbs
@@ -63,7 +64,7 @@ public class ReaderFactory {
 		{
 			type = SourceType.NETCDF;
 		}
-		else if (filename.endsWith(".xml"))
+		else if ( filename.endsWith(".xml") || Strings.contains(filename, ".+\\.\\d+$"))
 		{
 			type = SourceType.PI_XML;
 		}

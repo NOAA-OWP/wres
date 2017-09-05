@@ -82,6 +82,17 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         Metadata metadata = this.buildMetadata(factory, this.projectConfig.getInputs().getRight());
         Metadata baselineMetadata = null;
 
+        if (this.primaryPairs.size() == 0)
+        {
+            throw new IllegalStateException( "No data could be retrieved for Metric calculation for window " +
+                                             this.progress +
+                                             " for " +
+                                             this.projectConfig.getInputs()
+                                                               .getRight()
+                                                               .getVariable()
+                                                               .getValue() );
+        }
+
         if (this.baselineExists())
         {
             baselineMetadata = this.buildMetadata(factory, this.projectConfig.getInputs().getBaseline());
@@ -106,13 +117,6 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                 metadata,
                                                 baselineMetadata,
                                                 this.climatology);
-        }
-
-        if (this.primaryPairs.size() == 0)
-        {
-            LOGGER.error("");
-            LOGGER.error("THERE IS NO DATA FOR THE INPUT RETRIEVER FOR WINDOW {}", this.progress);
-            LOGGER.error("");
         }
 
         return input;

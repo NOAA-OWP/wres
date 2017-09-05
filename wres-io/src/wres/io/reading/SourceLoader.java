@@ -67,7 +67,13 @@ public class SourceLoader
             for (DataSourceConfig.Source source : config.getSource()) {
                 Path sourcePath = Paths.get(source.getValue());
 
-                if (Files.exists(sourcePath) && Files.isDirectory(sourcePath)) {
+                if (!Files.exists( sourcePath ))
+                {
+                    throw new IllegalStateException( "The path: '" +
+                                                     source.getValue() +
+                                                     "' is not a valid source of data.");
+                }
+                else if (Files.isDirectory(sourcePath)) {
 
                     List<Future> tasks = loadDirectory(sourcePath, source, config);
 
@@ -76,7 +82,7 @@ public class SourceLoader
                         savingFiles.addAll(tasks);
                     }
                 }
-                else if (Files.exists(sourcePath) && Files.isRegularFile(sourcePath)) {
+                else if (Files.isRegularFile(sourcePath)) {
                     Future task = saveFile(sourcePath, source, config);
 
                     if (task != null)
@@ -104,6 +110,13 @@ public class SourceLoader
             files = Files.list(directory);
 
             files.forEach((Path path) -> {
+                if (Files.notExists(path))
+                {
+                    throw new IllegalArgumentException( "The source path of" +
+                                                        path.toAbsolutePath().toString() +
+                                                        " does not exist and is therefore not a valid source.");
+                }
+
                 if (Files.isDirectory(path) && source.isRecursive())
                 {
                     List<Future> tasks = loadDirectory(path, source, dataSourceConfig);
