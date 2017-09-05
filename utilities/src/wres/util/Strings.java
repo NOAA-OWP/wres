@@ -1,8 +1,13 @@
 package wres.util;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -136,5 +141,84 @@ public final class Strings {
     public static String getFileName(String path)
     {
         return Paths.get(path).getFileName().toString();
+    }
+
+    public static String getMD5Checksum(String filename) throws IOException
+    {
+        byte[] buffer = new byte[1024];
+        MessageDigest complete = getMD5Algorithm();
+        int numRead;
+
+        try ( InputStream fis = new FileInputStream( filename ) )
+        {
+            do
+            {
+                numRead = fis.read( buffer );
+                if ( numRead > 0 )
+                {
+                    complete.update( buffer, 0, numRead );
+                }
+            } while ( numRead != -1 );
+        }
+
+        return getMD5Checksum( complete.digest() );
+	}
+
+	public static String getMD5Checksum(byte[] checksum)
+    {
+		if (checksum == null)
+		{
+			return null;
+		}
+
+		if (checksum.length > 16)
+        {
+            MessageDigest complete = getMD5Algorithm();
+            complete.update( checksum );
+            checksum = complete.digest();
+        }
+
+		/*final byte[] hexTable = {
+				(byte)'0', (byte)'1', (byte)'2', (byte)'3',
+				(byte)'4', (byte)'5', (byte)'6', (byte)'7',
+				(byte)'8', (byte)'9', (byte)'a', (byte)'b',
+				(byte)'c', (byte)'d', (byte)'e', (byte)'f'
+		};*/
+
+		final String hexes = "0123456789ABCDEF";
+
+		final StringBuilder hex = new StringBuilder( 2 * checksum.length );
+		//int index = 0;
+		//byte[] hex = new byte[2 * checksum.length];
+
+		for (byte b : checksum)
+		{
+			hex.append(hexes.charAt((b & 0xF0) >> 4))
+			   .append(hexes.charAt( b & 0x0F ));
+			//int v = b & 0xFF;
+			//hex[index++] = hexTable[v >>> 4];
+			//hex[index++] = hexTable[v & 0xF];
+		}
+
+		return hex.toString(); //new String(hex, "ASCII");
+	}
+
+	private static MessageDigest getMD5Algorithm()
+    {
+        MessageDigest algorithm;
+
+        try
+        {
+            algorithm = MessageDigest.getInstance( "MD5" );
+        }
+        catch ( NoSuchAlgorithmException e )
+        {
+            e.printStackTrace();
+            throw new RuntimeException(
+                    "Something went wrong when trying to generate the MD5 algorithm",
+                    e );
+        }
+
+        return algorithm;
     }
 }

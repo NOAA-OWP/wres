@@ -2,6 +2,7 @@ package wres.io.reading.ucar;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Stack;
 import java.util.concurrent.ExecutionException;
@@ -23,6 +24,7 @@ import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Internal;
+import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
@@ -49,12 +51,15 @@ class GriddedNetCDFValueSaver extends WRESRunnable
     private int yLength = Integer.MIN_VALUE;
     private int rank = Integer.MIN_VALUE;
     private final Stack<Future<?>> operations = new Stack<>();
+    private String hash;
+    private final Future<String> futureHash;
 
     @Internal(exclusivePackage = "wres.io")
-	public GriddedNetCDFValueSaver (String fileName, int variableID)
+	public GriddedNetCDFValueSaver (String fileName, int variableID, Future<String> futureHash)
 	{
 		this.fileName = fileName;
 		this.variableID = variableID;
+		this.futureHash = futureHash;
 	}
 
 	@Override
@@ -207,6 +212,27 @@ class GriddedNetCDFValueSaver extends WRESRunnable
         }
     }
 
+    private String getHash() throws ExecutionException, InterruptedException
+    {
+        if (this.hash == null)
+        {
+            if (this.futureHash != null)
+            {
+                this.hash = this.futureHash.get();
+            }
+            else
+            {
+                String message = "No hash operation was set during ingestion. ";
+                message += "A hash for the source could not be determined.";
+                LOGGER.error( message );
+                throw new NotImplementedException( message );
+
+            }
+        }
+
+        return this.hash;
+    }
+
     private Variable getVariable() throws IOException {
         final String nameToFind = Variables.getName(this.variableID);
 
@@ -236,7 +262,9 @@ class GriddedNetCDFValueSaver extends WRESRunnable
     }
 
 	private void addLine(int xPosition, Integer yPosition, double value)
-	{
+            throws IOException, SQLException, ExecutionException,
+            InterruptedException
+    {
 		if (isValueValid(value))
 		{
 			if (builder == null)
@@ -276,7 +304,7 @@ class GriddedNetCDFValueSaver extends WRESRunnable
 
                 this.getLogger().trace("Sending NetCDF values to the database executor to copy...");
                 this.operations.push(Database.execute(copier));
-            } catch (ExecutionException | InterruptedException e) {
+            } catch (ExecutionException | InterruptedException | SQLException | IOException e) {
                 LOGGER.error(Strings.getStackTrace(e));
             }
             builder = new StringBuilder();
@@ -307,7 +335,10 @@ class GriddedNetCDFValueSaver extends WRESRunnable
         return this.invalidValue;
     }
 
-	private String getTableDefinition() throws ExecutionException, InterruptedException {
+	private String getTableDefinition()
+            throws ExecutionException, InterruptedException, IOException,
+            SQLException
+    {
 		if (this.tableDefinition == null)
 		{
 		    String tableName = "NetCDFValue_Source_";
@@ -393,6 +424,8 @@ class GriddedNetCDFValueSaver extends WRESRunnable
     }
 
     private int getSourceID()
+            throws IOException, SQLException, ExecutionException,
+            InterruptedException
     {
         if (this.sourceID == Integer.MIN_VALUE)
         {
@@ -432,11 +465,10 @@ class GriddedNetCDFValueSaver extends WRESRunnable
                 outputTime = wres.util.Time.convertDateToString(originalAssimTime);
             }
 
-            try {
-                this.sourceID = DataSources.getSourceID(this.fileName, outputTime, lead);
-            } catch (Exception e) {
-                LOGGER.error(Strings.getStackTrace(e));
-            }
+            this.sourceID = DataSources.getSourceID(this.fileName,
+                                                    outputTime,
+                                                    lead,
+                                                    this.getHash());
         }
         return this.sourceID;
     }

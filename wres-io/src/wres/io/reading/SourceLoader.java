@@ -177,9 +177,12 @@ public class SourceLoader
         SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
         SourceType pathFormat = ReaderFactory.getFiletype(filePath);
 
-        boolean ingest = specifiedFormat == SourceType.UNDEFINED || specifiedFormat.equals(pathFormat);
+        boolean ingest = specifiedFormat == SourceType.UNDEFINED ||
+                         specifiedFormat == SourceType.ARCHIVE ||
+                         specifiedFormat.equals(pathFormat);
 
-        if (ingest)
+        // Archives perform their own ingest verification
+        if (ingest && specifiedFormat != SourceType.ARCHIVE)
         {
             try {
                 ingest = !dataExists(filePath, dataSourceConfig);
@@ -220,7 +223,20 @@ public class SourceLoader
         script.append("         ON S.source_id = SL.source_id").append(NEWLINE);
         script.append("     INNER JOIN wres.Variable V").append(NEWLINE);
         script.append("         ON VP.variable_id = V.variable_id").append(NEWLINE);
-        script.append("     WHERE S.path = '").append(sourceName).append("'").append(NEWLINE);
+
+        try
+        {
+            script.append("     WHERE S.hash = '")
+                  .append(Strings.getMD5Checksum( sourceName ))
+                  .append("'")
+                  .append(NEWLINE);
+        }
+        catch ( IOException e )
+        {
+            LOGGER.error("The filesystem is reporting that the found source doesn't exist.");
+            throw new RuntimeException( "The filesystem is reporting that the found source doesn't exist.", e );
+        }
+
         script.append("         AND V.variable_name = '").append(dataSourceConfig.getVariable().getValue()).append("'").append(NEWLINE);
 
         if (ConfigHelper.isForecast( dataSourceConfig ))

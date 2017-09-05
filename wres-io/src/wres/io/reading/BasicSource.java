@@ -4,12 +4,20 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
+import org.slf4j.Logger;
 
 import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
+import wres.io.concurrency.Executor;
+import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.utilities.Database;
 import wres.util.Internal;
+import wres.util.NotImplementedException;
+import wres.util.Strings;
 
 /**
  * @author ctubbs
@@ -72,6 +80,8 @@ public abstract class BasicSource {
     }
 
 	private String filename = "";
+	private String hash;
+	private Future<String> futureHash;
 	private String absoluteFilename;
 
 	protected String getSpecifiedVariableName()
@@ -152,7 +162,7 @@ public abstract class BasicSource {
         return missingValue;
     }
 
-    boolean shouldIngest( String filePath, DataSourceConfig.Source source )
+    boolean shouldIngest( String filePath, DataSourceConfig.Source source, byte[] contents )
     {
         SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
         SourceType pathFormat = ReaderFactory.getFiletype(filePath);
@@ -162,10 +172,9 @@ public abstract class BasicSource {
         if (ingest)
         {
             try {
-                ingest = !dataExists(filePath);
+                ingest = !dataExists(filePath, contents);
             }
             catch (SQLException e) {
-                //this.getLogger().error( Strings.getStackTrace( e));
                 ingest = false;
             }
         }
@@ -173,7 +182,80 @@ public abstract class BasicSource {
         return ingest;
     }
 
-    private boolean dataExists(String sourceName) throws SQLException {
+    protected String getHash() throws ExecutionException, InterruptedException
+    {
+        if (this.hash == null)
+        {
+            if (this.futureHash != null)
+            {
+                this.hash = this.futureHash.get();
+            }
+            else
+            {
+                throw new NotImplementedException(
+                        "No hashing operation was created during file ingestion. No hash could be retrieved."
+                );
+            }
+        }
+        return this.hash;
+    }
+
+    protected Future<String> getFutureHash()
+    {
+        return this.futureHash;
+    }
+
+    protected void setHash(byte[] contents)
+    {
+        WRESCallable<String> hasher = new WRESCallable<String>() {
+            @Override
+            protected String execute() throws Exception
+            {
+                return Strings.getMD5Checksum( this.contentsToHash );
+            }
+
+            @Override
+            protected Logger getLogger()
+            {
+                return null;
+            }
+
+            private byte[] contentsToHash;
+            public WRESCallable init(byte[] contentsToHash)
+            {
+                this.contentsToHash = contentsToHash;
+                return this;
+            }
+        }.init( contents );
+        this.futureHash = Executor.submitHighPriorityTask( hasher );
+    }
+
+    protected void setHash()
+    {
+        WRESCallable<String> hasher = new WRESCallable<String>() {
+            @Override
+            protected String execute() throws Exception
+            {
+                return Strings.getMD5Checksum( this.fileNameToHash );
+            }
+
+            @Override
+            protected Logger getLogger()
+            {
+                return null;
+            }
+
+            private String fileNameToHash;
+            public WRESCallable<String> init(String fileNameToHash)
+            {
+                this.fileNameToHash = fileNameToHash;
+                return this;
+            }
+        }.init( this.getFilename() );
+        this.futureHash = Executor.submitHighPriorityTask( hasher );
+    }
+
+    private boolean dataExists(String sourceName, byte[] contents) throws SQLException {
         StringBuilder script = new StringBuilder();
 
         script.append("SELECT EXISTS (").append(NEWLINE);
@@ -200,7 +282,19 @@ public abstract class BasicSource {
         script.append("         ON S.source_id = SL.source_id").append(NEWLINE);
         script.append("     INNER JOIN wres.Variable V").append(NEWLINE);
         script.append("         ON VP.variable_id = V.variable_id").append(NEWLINE);
-        script.append("     WHERE S.path = '").append(sourceName).append("'").append(NEWLINE);
+
+        if (contents != null)
+        {
+            script.append("     WHERE S.hash = '")
+                  .append( Strings.getMD5Checksum( contents ) )
+                  .append("'")
+                  .append(NEWLINE);
+        }
+        else
+        {
+            script.append("     WHERE S.path = '").append(sourceName).append("'").append(NEWLINE);
+        }
+
         script.append("         AND V.variable_name = '")
               .append(this.dataSourceConfig.getVariable().getValue())
               .append("'")

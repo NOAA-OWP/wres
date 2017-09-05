@@ -25,6 +25,7 @@ import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
 import wres.io.utilities.Database;
 import wres.util.ProgressMonitor;
+import wres.util.Strings;
 import wres.util.Time;
 
 /**
@@ -518,7 +519,10 @@ public class DatacardSource extends BasicSource {
 				this.creationDateTime = getFileCreationDateTime();
 			}
 						
-			currentSourceID = DataSources.getSourceID(getFilename(), this.creationDateTime, null);
+			currentSourceID = DataSources.getSourceID( getFilename(),
+													   this.creationDateTime,
+													   null,
+													   Strings.getMD5Checksum(getFilename()));
 		}
 		
 		return currentSourceID;

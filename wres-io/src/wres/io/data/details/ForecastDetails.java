@@ -22,6 +22,7 @@ public final class ForecastDetails {
 	
 	private String sourcePath = null;
 	private String forecastDate = null;
+	private String hash = null;
 
 	private Integer forecast_id = null;
 	private String creationDate = null;
@@ -87,6 +88,15 @@ public final class ForecastDetails {
 		}
 	}
 
+	public void setHash(String hash)
+	{
+		if (this.hash == null || !this.hash.equalsIgnoreCase( hash ))
+		{
+			this.hash = hash;
+			this.forecast_id = null;
+		}
+	}
+
 	private int getScenarioID() throws SQLException
 	{
 		if (this.scenarioID == null)
@@ -95,6 +105,11 @@ public final class ForecastDetails {
 		}
 		return this.scenarioID;
 	}
+
+	public String getHash()
+    {
+        return this.hash;
+    }
 
 	/**
 	 * @return The ID of the forecast stored in the database
@@ -164,9 +179,9 @@ public final class ForecastDetails {
 	 * Links the forecast the information about the source of its data in the database
 	 * @throws SQLException Thrown if the Forecast and its source could not be properly linked
 	 */
-	private void saveForecastSource() throws SQLException {
-
-        int sourceID = DataSources.getSourceID(sourcePath, getSourceDate(), this.lead);
+	private void saveForecastSource() throws SQLException
+    {
+        int sourceID = DataSources.getSourceID(sourcePath, getSourceDate(), this.lead, this.hash);
 
         String script = "";
         script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + NEWLINE;

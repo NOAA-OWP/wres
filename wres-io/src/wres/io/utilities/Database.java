@@ -183,12 +183,18 @@ public final class Database {
                        .append(indexes.getString( "column_definition" ))
                        .append(";").append(NEWLINE);
 
+                WRESRunnable restore = new SQLExecutor( builder.toString(), false);
+                restore.setOnRun(ProgressMonitor.onThreadStartHandler());
+                restore.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                indexTasks.add(Database.execute(restore));
+
+                builder = new StringBuilder(  );
                 builder.append("DELETE FROM public.IndexQueue").append(NEWLINE);
                 builder.append("WHERE indexqueue_id = ")
                        .append(indexes.getInt( "indexqueue_id" ))
                        .append(";");
 
-                WRESRunnable restore = new SQLExecutor( builder.toString());
+                restore = new SQLExecutor( builder.toString());
                 restore.setOnRun(ProgressMonitor.onThreadStartHandler());
                 restore.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                 indexTasks.add(Database.execute(restore));

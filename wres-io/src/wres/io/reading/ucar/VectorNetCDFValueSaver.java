@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -28,6 +29,7 @@ import wres.io.data.details.ForecastDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.NetCDF;
+import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
@@ -49,6 +51,8 @@ class VectorNetCDFValueSaver extends WRESRunnable
     private Variable variable;
     private Integer variableID;
     private String variablePositionPartitionName;
+    private final Future<String> futureHash;
+    private String hash;
 
     // Used to map feature indices to forecast ensembles (used for forecasts)
     private Map<Integer, Integer> indexMapping;
@@ -57,7 +61,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
     private int forecastID;
 
     @Internal(exclusivePackage = "wres.io")
-    public VectorNetCDFValueSaver(String filename, String variableName)
+    public VectorNetCDFValueSaver(String filename, String variableName, Future<String> futureHash)
     {
         if (filename == null || filename.isEmpty())
         {
@@ -67,9 +71,14 @@ class VectorNetCDFValueSaver extends WRESRunnable
         {
             throw new IllegalArgumentException("The passed in variable name is either null or empty.");
         }
+        else if(futureHash == null)
+        {
+            throw new IllegalArgumentException( "No hash creation operation was passed to the ingestor." );
+        }
 
         this.filePath = Paths.get(filename);
         this.variableName = variableName;
+        this.futureHash = futureHash;
     }
 
 
@@ -101,7 +110,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
             this.addForecastEnsembles();
             this.read();
         }
-        catch (SQLException | IOException e)
+        catch (SQLException | IOException | InterruptedException | ExecutionException e)
         {
             LOGGER.error(Strings.getStackTrace(e));
         }
@@ -167,6 +176,27 @@ class VectorNetCDFValueSaver extends WRESRunnable
         }
 
         return this.missingValue;
+    }
+
+    private String getHash() throws ExecutionException, InterruptedException
+    {
+        if (this.hash == null)
+        {
+            if (this.futureHash != null)
+            {
+                this.hash = this.futureHash.get();
+            }
+            else
+            {
+                String message = "No hash operation was set during ingestion. ";
+                message += "A hash for the source could not be determined.";
+                LOGGER.error( message );
+                throw new NotImplementedException( message );
+
+            }
+        }
+
+        return this.hash;
     }
 
     private boolean measurementIsValid(Double measurement)
@@ -239,7 +269,9 @@ class VectorNetCDFValueSaver extends WRESRunnable
         }
     }
 
-    private void addForecastEnsembles() throws IOException, SQLException
+    private void addForecastEnsembles()
+            throws IOException, SQLException, ExecutionException,
+            InterruptedException
     {
         StringBuilder script = new StringBuilder();
 
@@ -268,7 +300,10 @@ class VectorNetCDFValueSaver extends WRESRunnable
         return Ensembles.getEnsembleID(NetCDF.getEnsemble(this.getSource()));
     }
 
-    private Map<Integer, Integer> getIndexMapping() throws IOException, SQLException {
+    private Map<Integer, Integer> getIndexMapping()
+            throws IOException, SQLException, ExecutionException,
+            InterruptedException
+    {
         if (this.indexMapping == null)
         {
             String script =
@@ -295,7 +330,10 @@ class VectorNetCDFValueSaver extends WRESRunnable
         return this.indexMapping;
     }
 
-    private int getForecastID() throws SQLException, IOException {
+    private int getForecastID()
+            throws SQLException, IOException, ExecutionException,
+            InterruptedException
+    {
         if (this.forecastID <= 0)
         {
             ForecastDetails details = new ForecastDetails(this.filePath.toAbsolutePath().toString());
@@ -303,6 +341,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
             details.setForecastDate(NetCDF.getValidTime(this.getSource()));
             details.setLead(this.getLead());
             String range = NetCDF.getNWMRange( this.getSource() );
+            details.setHash( this.getHash() );
 
             DatasourceType datasourceType;
             if (range.equalsIgnoreCase( "analysis" ))
@@ -352,7 +391,9 @@ class VectorNetCDFValueSaver extends WRESRunnable
         return this.source;
     }
 
-    private void read() throws IOException, SQLException {
+    private void read() throws IOException, SQLException, ExecutionException,
+            InterruptedException
+    {
         Variable var = NetCDF.getVariable(this.getSource(), this.variableName);
         double scaleFactor = NetCDF.getScaleFactor(var);
 

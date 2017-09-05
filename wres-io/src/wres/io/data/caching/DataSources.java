@@ -49,9 +49,9 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */
-	public static Integer getSourceID(String path, String outputTime, Integer lead) throws SQLException
+	public static Integer getSourceID(String path, String outputTime, Integer lead, String hash) throws SQLException
     {
-		return getCache().getID(path, outputTime, lead);
+		return getCache().getID(path, outputTime, lead, hash);
 	}
 	
 	/**
@@ -62,9 +62,9 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */
-	public Integer getID(String path, String outputTime, Integer lead) throws SQLException
+	public Integer getID(String path, String outputTime, Integer lead, String hash) throws SQLException
     {
-		return this.getID(SourceDetails.createKey(path, outputTime, lead));
+		return this.getID(SourceDetails.createKey(path, outputTime, lead, hash));
 	}
 	
 	@Override
@@ -96,7 +96,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
         try
         {
             connection = Database.getHighPriorityConnection();
-            String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time" + System.lineSeparator();
+            String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time, hash" + System.lineSeparator();
             loadScript += "FROM wres.Source" + System.lineSeparator();
             loadScript += "LIMIT " + getMaxDetails();
             
@@ -107,6 +107,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
                 detail = new SourceDetails();
                 detail.setOutputTime(sources.getString("output_time"));
                 detail.setSourcePath(sources.getString("path"));
+                detail.setHash( sources.getString( "hash" ) );
                 
                 this.getKeyIndex().put(detail.getKey(), sources.getInt("source_id"));
             }

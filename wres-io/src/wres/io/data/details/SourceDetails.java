@@ -17,7 +17,9 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 	private String outputTime = null;
 	private Integer lead = null;
 	private Integer sourceID = null;
-	
+	private String hash = null;
+	private SourceKey key = null;
+
 	/**
 	 * Constructor
 	 */
@@ -25,6 +27,8 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 		this.setSourcePath(null);
 		this.setOutputTime(null);
 		this.setID(null);
+		this.setHash( null );
+
 	}
 
 	/**
@@ -36,6 +40,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 		this.setSourcePath(key.getSourcePath());
 		this.setOutputTime(key.getSourceTime());
 		this.setLead(key.getLead());
+		this.setHash( key.getHash() );
 		this.setID(null);
 	}
 	
@@ -60,7 +65,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 	{
 		this.lead = lead;
 	}
-	
+
+	public void setHash(String hash)
+    {
+        this.hash = hash;
+    }
 	@Override
 	public int compareTo(SourceDetails other) {
 		Integer id = this.sourceID;
@@ -74,7 +83,14 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 
 	@Override
 	public SourceKey getKey() {
-		return new SourceKey(this.sourcePath, this.outputTime, this.lead);
+	    if (this.key == null)
+        {
+            this.key = new SourceKey( this.sourcePath,
+                                      this.outputTime,
+                                      this.lead,
+                                      this.hash );
+        }
+        return this.key;
 	}
 
 	@Override
@@ -94,19 +110,23 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 
 	@Override
 	protected String getInsertSelectStatement() {
+	    if (this.hash == null)
+        {
+            throw new RuntimeException( "Could not save '" + this.sourcePath + "'; there was no file hash." );
+        }
+
 		String script = "";
 		script += "WITH new_source AS" + NEWLINE;
 		script += "(" + NEWLINE;
-		script += "		INSERT INTO wres.Source (path, output_time, lead)" + NEWLINE;
+		script += "		INSERT INTO wres.Source (path, output_time, lead, hash)" + NEWLINE;
 		script += "		SELECT '" + this.sourcePath + "'," + NEWLINE;
 		script += "				'" + this.outputTime + "'," + NEWLINE;
-		script += "             " + String.valueOf(this.lead) + NEWLINE;
+		script += "             " + String.valueOf(this.lead) + "," + NEWLINE;
+		script += "             '" + this.hash + "'" + NEWLINE;
 		script += "		WHERE NOT EXISTS (" + NEWLINE;
 		script += "			SELECT 1" + NEWLINE;
 		script += "			FROM wres.Source" + NEWLINE;
-		script += "			WHERE path = '" + this.sourcePath + "'" + NEWLINE;
-		script += "				AND output_time = '" + this.outputTime + "'" + NEWLINE;
-		script += "             AND lead = " + this.lead + NEWLINE;
+		script += "			WHERE hash = '" + this.hash + "'" + NEWLINE;
 		script += "		)" + NEWLINE;
 		script += "		RETURNING source_id" + NEWLINE;
 		script += ")" + NEWLINE;
@@ -117,32 +137,31 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 		script += "";
 		script += "SELECT source_id" + NEWLINE;
 		script += "FROM wres.Source" + NEWLINE;
-		script += "WHERE path = '" + this.sourcePath + "'" + NEWLINE;
-		script += "		AND output_time = '" + this.outputTime + "'" + NEWLINE;
-		script += "     AND lead = " + String.valueOf(this.lead) + ";";
+		script += "WHERE hash = '" + this.hash + "';" + NEWLINE;
 
 		return script;
 	}
 
-	public static SourceKey createKey(String sourcePath, String sourceTime, Integer lead)
+	public static SourceKey createKey(String sourcePath, String sourceTime, Integer lead, String hash)
 	{
-	    return new SourceKey(sourcePath, Time.normalize(sourceTime), lead);
+	    return new SourceKey(sourcePath, Time.normalize(sourceTime), lead, hash);
 	}
 
 	public static class SourceKey implements Comparable<SourceKey>
 	{
-	    public SourceKey(String sourcePath, String sourceTime, Integer lead)
+	    public SourceKey(String sourcePath, String sourceTime, Integer lead, String hash)
 	    {
 	        this.sourcePath = sourcePath;
 	        this.sourceTime = sourceTime;
 	        this.lead = lead;
+	        this.hash = hash;
 	    }
 	    
         @Override
         public int compareTo(SourceKey other)
         {
 
-            int equality = 0;
+            int equality;
 
             if (this.getSourcePath() == null && other.getSourcePath() == null)
             {
@@ -201,6 +220,26 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
                 }
             }
 
+            if (equality == 0)
+			{
+				if (this.getHash() == null && other.getHash() == null)
+				{
+					equality = 0;
+				}
+				else if (this.getHash() != null && other.getHash() == null)
+				{
+					equality = 1;
+				}
+				else if (this.getHash() == null && other.getHash() != null)
+				{
+					equality = -1;
+				}
+				else
+				{
+					equality = this.getHash().compareTo( other.getHash() );
+				}
+			}
+
             return equality;
         }
         
@@ -219,25 +258,29 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
             return this.lead;
         }
 
+        public String getHash()
+		{
+			return this.hash;
+		}
+
 		@Override
 		public boolean equals(Object obj) {
-	        boolean equivalent = false;
-
-	        if (obj instanceof SourceKey)
-            {
-                equivalent = this.compareTo((SourceKey)obj) == 0;
-            }
-
-			return equivalent;
+	        return obj != null &&
+				   obj instanceof SourceKey &&
+				   obj.hashCode() == this.hashCode();
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(this.sourcePath, this.sourceTime, this.getLead());
+			return Objects.hash(this.sourcePath,
+								this.sourceTime,
+								this.getLead(),
+								this.getHash());
 		}
 
 		private final String sourcePath;
 	    private final String sourceTime;
 	    private final Integer lead;
+	    private final String hash;
 	}
 }
