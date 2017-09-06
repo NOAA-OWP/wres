@@ -115,7 +115,7 @@ public class ConfigHelper
     private static int getLead(DataSourceConfig dataSourceConfig, int currentLead) throws InvalidPropertiesFormatException {
         TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( dataSourceConfig );
         return Time.unitsToHours(timeAggregationConfig.getUnit().name(),
-                                 currentLead).intValue();
+                                 currentLead * timeAggregationConfig.getPeriod()).intValue();
     }
 
     public static Integer getVariableID(DataSourceConfig dataSourceConfig) throws SQLException
@@ -129,23 +129,6 @@ public class ConfigHelper
         return projectConfig.getInputs().getBaseline() != null &&
                 !projectConfig.getInputs().getBaseline().getSource().isEmpty();
     }
-
-    /*public static boolean leadIsValid(ProjectConfig config, int currentLead, int finalLead)
-    {
-        Integer lead = null;
-
-        try {
-            lead = getLead(config, currentLead);
-        }
-        catch (InvalidPropertiesFormatException e) {
-            LOGGER.error(Strings.getStackTrace(e));
-        }
-
-        return lead != null &&
-                lead <= finalLead &&
-                lead <= config.getConditions().getLastLead() &&
-                lead >= config.getConditions().getFirstLead();
-    }*/
 
     public static TimeAggregationConfig getTimeAggregation(DataSourceConfig dataSourceConfig)
     {
@@ -181,10 +164,21 @@ public class ConfigHelper
 
         TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( dataSourceConfig );
 
-        if (timeAggregationConfig.getPeriod() > 1) {
-            qualifier = String.valueOf(getLead(dataSourceConfig, windowNumber)) +
-                        " > lead AND lead >= " +
-                        String.valueOf(getLead(dataSourceConfig, windowNumber - 1 ));
+        if (!(timeAggregationConfig.getPeriod() == 1 && timeAggregationConfig.getUnit() == DurationUnit.HOUR)) {
+            int beginning = getLead( dataSourceConfig, windowNumber - 1 );
+            int end = getLead( dataSourceConfig, windowNumber );
+            qualifier = String.valueOf(end) +
+                        " >= lead AND lead >";
+
+            if (beginning == 0)
+            {
+                qualifier += "= ";
+            }
+            else
+            {
+                qualifier += " ";
+            }
+            qualifier += String.valueOf(beginning);
         }
         else
         {

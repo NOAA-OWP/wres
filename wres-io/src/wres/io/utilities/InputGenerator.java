@@ -376,12 +376,12 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                     windowWidth =
                             ConfigHelper.getWindowWidth( timeAggregationConfig );
 
-                    double beginning = windowWidth * (this.windowNumber + 1);
-
+                    double beginning = windowWidth * this.windowNumber;
+                    double end = windowWidth * (this.windowNumber + 1);
 
                     next = beginning <= this.getLastLead() &&
-                           beginning <= this.projectConfig.getConditions().getLastLead() &&
-                           beginning >= this.projectConfig.getConditions().getFirstLead();
+                           beginning < this.projectConfig.getConditions().getLastLead() &&
+                           end >= this.projectConfig.getConditions().getFirstLead();
                 }
                 else
                 {
