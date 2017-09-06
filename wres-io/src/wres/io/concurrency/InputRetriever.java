@@ -39,40 +39,6 @@ import wres.util.ProgressMonitor;
 public final class InputRetriever extends WRESCallable<MetricInput<?>>
 {
 
-    /**
-     * Used to save off sets of metric input data without storing them within
-     * a MetricInput object (where we don't have a clean way of accessing the
-     * data within
-     */
-    private static class InputPair
-    {
-        public InputPair(Integer window, double left, Double[] right)
-        {
-            this.window = window;
-            this.right = right;
-            this.left = left;
-        }
-
-        public double getLeft()
-        {
-            return this.left;
-        }
-
-        public Double[] getRight()
-        {
-            return this.right;
-        }
-
-        public Integer getWindow()
-        {
-            return this.window;
-        }
-
-        private final Integer window;
-        private final double left;
-        private final Double[] right;
-    }
-
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
     @Internal(exclusivePackage = "wres.io")
