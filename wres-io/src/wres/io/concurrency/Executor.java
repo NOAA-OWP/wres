@@ -106,5 +106,11 @@ public final class Executor {
 			SERVICE.shutdown();
 			while (!SERVICE.isTerminated());
 		}
+
+		if (!HIGH_PRIORITY_TASKS.isShutdown())
+		{
+			HIGH_PRIORITY_TASKS.shutdown();
+			while (!HIGH_PRIORITY_TASKS.isTerminated());
+		}
 	}
 }

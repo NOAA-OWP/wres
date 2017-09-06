@@ -1,10 +1,11 @@
 package wres.io.concurrency;
 
+import java.util.function.Consumer;
+
 import org.slf4j.Logger;
+
 import wres.util.Internal;
 import wres.util.Strings;
-
-import java.util.function.Consumer;
 
 /**
  * @author Christopher Tubbs
@@ -25,6 +26,17 @@ public abstract class WRESTask
 
     protected abstract Logger getLogger ();
 
+    protected boolean validate()
+    {
+        if (this.getLogger() != null)
+        {
+            this.getLogger().trace( "{} in: '{}' has been validated.",
+                                    this.getClass().getName(),
+                                    this.getThreadName()  );
+        }
+        return true;
+    }
+
     protected void executeOnComplete() {
         if (this.onComplete != null) {
             this.onComplete.accept(this);
@@ -33,6 +45,7 @@ public abstract class WRESTask
     
     protected void executeOnRun() {
         this.setThreadName();
+        this.validate();
         if (this.onRun != null) {
             this.onRun.accept(this);
         }
@@ -40,21 +53,30 @@ public abstract class WRESTask
 
     private void setThreadName()
     {
-        String threadName = Thread.currentThread().getName();
-        String newName = " -> #" + String.valueOf(Thread.currentThread().getId());
-
-        if (Strings.contains(threadName, "\\s->\\s#\\d+"))
-        {
-            threadName = threadName.replace("\\s->\\s#\\d+", newName);
-        }
-        else
-        {
-            threadName += newName;
-        }
-
-        Thread.currentThread().setName(threadName);
+        Thread.currentThread().setName(this.getThreadName());
     }
 
+    private String getThreadName()
+    {
+        if (this.threadName == null)
+        {
+            this.threadName = Thread.currentThread().getName();
+            String newName =
+                    " -> #" + String.valueOf( Thread.currentThread().getId() );
+
+            if ( Strings.contains( threadName, "\\s->\\s#\\d+" ) )
+            {
+                threadName = threadName.replace( "\\s->\\s#\\d+", newName );
+            }
+            else
+            {
+                threadName += newName;
+            }
+        }
+        return this.threadName;
+    }
+
+    private String threadName;
     private Consumer<Object> onComplete;
     private Consumer<Object> onRun;
 }
