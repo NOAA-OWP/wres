@@ -500,8 +500,8 @@
                 <xs:element name="outputs">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="probabilityThresholds" type="probabilityThreshold" minOccurs="0" maxOccurs="1"/>
                             <xs:element name="valueThresholds" type="valueThreshold" minOccurs="0" maxOccurs="1"/>
+                            <xs:element name="probabilityThresholds" type="probabilityThreshold" minOccurs="0" maxOccurs="1"/>
                             <xs:element name="metric" type="metric" minOccurs="1" maxOccurs="unbounded"/>
                             <xs:element name="destination" type="destination" maxOccurs="unbounded"/>
                         </xs:sequence>
