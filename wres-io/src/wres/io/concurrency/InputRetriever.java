@@ -1,18 +1,11 @@
 package wres.io.concurrency;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
-import java.util.Map;
-import java.util.StringJoiner;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -37,6 +30,7 @@ import wres.io.data.caching.UnitConversions;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.Internal;
+import wres.util.ProgressMonitor;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -79,10 +73,6 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         private final Double[] right;
     }
 
-
-    private static final ConcurrentHashMap<Conditions.Feature, Map<String, List<InputPair>>>
-            savedPairing = new ConcurrentHashMap<>(  );
-
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
     @Internal(exclusivePackage = "wres.io")
@@ -97,94 +87,6 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         this.progress = progress;
         this.getLeftValue = getLeftValue;
         this.climatology = climatology;
-    }
-
-    /**
-     * Writes any and all saved pair data to the specified location as CSV data
-     * @param destination The place to save the data to. The CSV extension
-     *                    will be added if it isn't present.
-     */
-    public static void outputSavedPairs(String destination)
-    {
-        if (!destination.endsWith( ".csv" ))
-        {
-            destination += ".csv";
-        }
-
-        try ( BufferedWriter writer = new BufferedWriter( new FileWriter( destination, false ) ))
-        {
-            writer.write( "Feature,Date,Window,Left,Right" );
-            writer.newLine();
-            writer.flush();
-
-            // Create a line in the CSV for every set of primary pairs
-            // pertaining to every window for every location
-            for ( Map.Entry<Conditions.Feature, Map<String, List<InputPair>>> featureMapEntry : savedPairing.entrySet())
-            {
-                for (Map.Entry<String, List<InputPair>> pairing : featureMapEntry.getValue().entrySet())
-                {
-
-                    for(InputPair inputPair : pairing.getValue())
-                    {
-                        StringJoiner line = new StringJoiner( "," );
-                        StringJoiner arrayJoiner =
-                                new StringJoiner( ",", "\"[", "]\"" );
-
-                        // Add the location information
-                        line.add( ConfigHelper.getFeatureDescription(
-                                featureMapEntry.getKey() ) );
-
-                        // Add the date
-                        line.add( pairing.getKey().toString() );
-
-                        // Add the window number
-                        line.add(String.valueOf( inputPair.getWindow() ));
-
-                        // Add the left hand value
-                        line.add(String.valueOf(inputPair.getLeft()));
-
-                        for (int rightIndex = 0; rightIndex < inputPair.getRight().length; ++rightIndex)
-                        {
-                            arrayJoiner.add( String.valueOf( inputPair.getRight()[rightIndex] ));
-                        }
-
-                        // Add the array representation
-                        line.add(arrayJoiner.toString());
-
-                        // Append the new line to the file
-                        writer.write( line.toString() );
-                        writer.newLine();
-                        writer.flush();
-                    }
-                }
-            }
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Save data into a persistent collection of data about what was paired
-     * @param feature
-     * @param date
-     * @param window
-     * @param left
-     * @param right
-     */
-    private static void savePairInfo( Conditions.Feature feature,
-                                     String date,
-                                     Integer window,
-                                     double left,
-                                     Double[] right)
-    {
-        synchronized (savedPairing)
-        {
-            savedPairing.putIfAbsent( feature, new TreeMap<>() );
-            savedPairing.get( feature ).putIfAbsent( date, new ArrayList<>() );
-            savedPairing.get( feature ).get( date ).add( new InputPair( window, left, right ) );
-        }
     }
 
     @Override
@@ -202,11 +104,6 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     public void setZeroDate(String zeroDate)
     {
         this.zeroDate = zeroDate;
-    }
-
-    public void setSavePairData(boolean savePairData)
-    {
-        this.savePairData = savePairData;
     }
 
     private MetricInput<?> createInput()
@@ -306,9 +203,22 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                                              this.projectConfig.getPair().getUnit());
                 }
 
-                if (this.savePairData && ConfigHelper.isRight( dataSourceConfig, this.projectConfig ))
+                if ( this.projectConfig.getPair().isSaveToDisk() &&
+                     ConfigHelper.isRight( dataSourceConfig, this.projectConfig ))
                 {
-                    InputRetriever.savePairInfo( this.feature, date, this.progress, leftValue, measurements );
+
+                    PairWriter saver = new PairWriter();
+                    saver.setFileDestination( this.projectConfig.getPair().getSaveLocation() );
+                    saver.setFeatureDescription( ConfigHelper.getFeatureDescription( this.feature ) );
+                    saver.setDate( date );
+                    saver.setWindowNum( this.progress );
+                    saver.setLeft( leftValue );
+                    saver.setRight( measurements );
+
+                    saver.setOnRun( ProgressMonitor.onThreadStartHandler() );
+                    saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+
+                    Executor.submitHighPriorityTask(saver);
                 }
 
                 pairs.add(factory.pairOf(leftValue, measurements));
@@ -338,14 +248,19 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         String geospatialIdentifier = ConfigHelper.getFeatureDescription(this.feature);
         String variableIdentifier = sourceConfig.getVariable().getValue();
 
-        // TODO: need to add scenario IDs for the main data and any baseline. Also need to use a general identifier for
-        // the left/right variable rather than projectConfig.getInputs().getRight().getVariable().getValue()
-        // To be replaced by non-generic ID from the Project Configuration
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
                                                                                    variableIdentifier,
                                                                                    sourceConfig.getLabel());
 
-        return metadataFactory.getMetadata(dim, datasetIdentifier, this.progress);
+        int windowNumber = this.progress;
+
+        // If this is a simulation, there are no windows, so set to 0
+        if ( sourceConfig.getType() == DatasourceType.SIMULATIONS)
+        {
+            windowNumber = 0;
+        }
+
+        return metadataFactory.getMetadata(dim, datasetIdentifier, windowNumber);
     }
 
     private final int progress;
@@ -357,7 +272,6 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;
     private Boolean hasBaseline;
     private String zeroDate;
-    private boolean savePairData;
 
     private Boolean baselineExists()
     {
