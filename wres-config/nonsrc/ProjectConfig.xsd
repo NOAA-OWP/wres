@@ -288,9 +288,10 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="numeric" />
             <xs:enumeration value="graphic" />
+            <xs:enumeration value="rawPairs" />
         </xs:restriction>
     </xs:simpleType>
-    
+
     <!-- Possibilities for the graphical plotType element. -->
     <xs:simpleType name="plotTypeSelection">
         <xs:restriction base="xs:string">
