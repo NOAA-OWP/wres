@@ -1,5 +1,6 @@
 package wres.io.concurrency;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,9 +12,11 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
@@ -136,7 +139,8 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private List<PairOfDoubleAndVectorOfDoubles> createPairs(DataSourceConfig dataSourceConfig)
-            throws InvalidPropertiesFormatException, SQLException
+            throws InvalidPropertiesFormatException, SQLException,
+            ProjectConfigException
     {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         String loadScript = getLoadScript( dataSourceConfig );
@@ -171,12 +175,17 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                                              this.projectConfig.getPair().getUnit());
                 }
 
-                if ( this.projectConfig.getPair().isSaveToDisk() &&
-                     ConfigHelper.isRight( dataSourceConfig, this.projectConfig ))
+                List<DestinationConfig> destinationConfigs =
+                        ConfigHelper.getPairDestinations( this.projectConfig );
+
+                for ( DestinationConfig dest : destinationConfigs )
                 {
 
                     PairWriter saver = new PairWriter();
-                    saver.setFileDestination( this.projectConfig.getPair().getSaveLocation() );
+                    File directoryLocation =
+                            ConfigHelper.getDirectoryFromDestinationConfig( dest );
+                    saver.setFileDestination( directoryLocation.toString()
+                                              + "/pairs.csv" );
                     saver.setFeatureDescription( ConfigHelper.getFeatureDescription( this.feature ) );
                     saver.setDate( date );
                     saver.setWindowNum( this.progress );

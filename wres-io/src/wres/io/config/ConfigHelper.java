@@ -483,15 +483,18 @@ public class ConfigHelper
     }
 
     /**
-     * Get all the graphical destinations from a configuration.
-     *
+     * Get all the destinations from a configuration for a particular type.
      * @param config the config to search through
-     * @return a list of graphical destinations
-     * @throws NullPointerException when config is null
+     * @param type the type to look for
+     * @return a list of destinations with the type specified
+     * @throws NullPointerException when config or type is null
      */
-    public static List<DestinationConfig> getGraphicalDestinations( ProjectConfig config )
+
+    public static List<DestinationConfig> getDestinationsOfType( ProjectConfig config,
+                                                                 DestinationType type )
     {
         Objects.requireNonNull( config, "Config must not be null." );
+        Objects.requireNonNull( type, "Type must not be null." );
 
         List<DestinationConfig> result = new ArrayList<>();
 
@@ -504,7 +507,7 @@ public class ConfigHelper
 
         for ( DestinationConfig d : config.getOutputs().getDestination() )
         {
-            if ( d.getType() == DestinationType.GRAPHIC )
+            if ( d.getType() == type )
             {
                 result.add( d );
             }
@@ -513,4 +516,29 @@ public class ConfigHelper
         return java.util.Collections.unmodifiableList( result );
     }
 
+    /**
+     * Get all the graphical destinations from a configuration.
+     *
+     * @param config the config to search through
+     * @return a list of graphical destinations
+     * @throws NullPointerException when config is null
+     */
+
+    public static List<DestinationConfig> getGraphicalDestinations( ProjectConfig config )
+    {
+        return getDestinationsOfType( config, DestinationType.GRAPHIC );
+    }
+
+    /**
+     * Get all the pair destinations from a configuration.
+     *
+     * @param config the config to search through
+     * @return a list of pair destinations
+     * @throws NullPointerException when config is null
+     */
+
+    public static List<DestinationConfig> getPairDestinations( ProjectConfig config )
+    {
+        return getDestinationsOfType( config, DestinationType.PAIRS );
+    }
 }
