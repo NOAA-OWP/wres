@@ -681,21 +681,25 @@ public final class PIXMLReader extends XMLReader
 
         if (!ensembleApproved)
         {
-            LOGGER.debug( "The encounted ensemble is not approved for this ingest." );
+            LOGGER.debug( "The encounted ensemble (ID: {}, Member: {}) is not approved for this ingest.",
+                          String.valueOf( this.currentEnsembleName),
+                          String.valueOf( this.currentEnsembleMemberID ));
         }
-        
+
         boolean featureApproved = this.featureIsApproved(this.currentLID);
 
         if (!featureApproved)
         {
-            LOGGER.debug( "The encountered feature is not approved for this ingest." );
+            LOGGER.debug( "The encountered feature ('{}') is not approved for this ingest.",
+                          String.valueOf( this.currentLID));
         }
 
         boolean variableApproved = this.variableIsApproved(currentVariableName);
 
         if (!variableApproved)
         {
-            LOGGER.debug( "The encountered variable is not approved for this ingest." );
+            LOGGER.debug( "The encountered variable ('{}') is not approved for this ingest.",
+                          String.valueOf(this.currentVariableName));
         }
         
         return featureApproved && variableApproved && ensembleApproved;
