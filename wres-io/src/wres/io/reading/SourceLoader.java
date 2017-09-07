@@ -191,11 +191,18 @@ public class SourceLoader
         SourceType pathFormat = ReaderFactory.getFiletype(filePath);
 
         boolean ingest = specifiedFormat == SourceType.UNDEFINED ||
-                         specifiedFormat == SourceType.ARCHIVE ||
+                         pathFormat == SourceType.ARCHIVE ||
                          specifiedFormat.equals(pathFormat);
 
         // Archives perform their own ingest verification
-        if (ingest && specifiedFormat != SourceType.ARCHIVE)
+        if (pathFormat == SourceType.ARCHIVE)
+        {
+            LOGGER.debug( "The file at '{}' will be ingested because it has " +
+                          "determined that it is an archive that will need to " +
+                          "be further evaluated.",
+                          filePath);
+        }
+        else if (ingest)
         {
             try {
                 ingest = !dataExists(filePath, dataSourceConfig);
@@ -204,6 +211,23 @@ public class SourceLoader
                 LOGGER.error(Strings.getStackTrace(e));
                 ingest = false;
             }
+
+            if (!ingest)
+            {
+                LOGGER.debug( "The file at '{}' will not be ingested because " +
+                              "the data is already registered as being in " +
+                              "the system.",
+                              filePath);
+            }
+        }
+        else
+        {
+            LOGGER.debug( "The file at '{}' will not be ingested because it " +
+                          "does not match the specified required format. " +
+                          "(specified: {}, encountered: {})",
+                          filePath,
+                          specifiedFormat.toString(),
+                          pathFormat.toString());
         }
 
         return ingest;
