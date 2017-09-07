@@ -251,7 +251,7 @@ public class ZippedSource extends BasicSource {
         if (sourceType == SourceType.PI_XML)
         {
             ingest = new ZippedPIXMLIngest(archivedFileName, content, this.getDataSourceConfig(), this.getSpecifiedFeatures());
-            //ingest.setOnRun(ProgressMonitor.onThreadStartHandler());
+
             ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
             ProgressMonitor.increment();
             this.addIngestTask(ingest);
@@ -272,7 +272,6 @@ public class ZippedSource extends BasicSource {
                     ingest = new ObservationSaver(archivedFileName, this.getDataSourceConfig(), this.getSpecifiedFeatures());
                 }
 
-                //ingest.setOnRun(ProgressMonitor.onThreadStartHandler());
                 ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 
                 ProgressMonitor.increment();
