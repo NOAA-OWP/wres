@@ -232,6 +232,19 @@ public class ZippedSource extends BasicSource {
             LOGGER.trace( "'{}' is not being ingested because its data already exists within the database." );
             return;
         }
+        else
+        {
+            String message = "The file '{}' will now be ingested as a set of ";
+            if (isForecast)
+            {
+                message += "forecasts.";
+            }
+            else
+            {
+                message += "observations.";
+            }
+            LOGGER.debug( message, archivedFileName );
+        }
 
         WRESRunnable ingest;
 
