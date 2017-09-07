@@ -91,7 +91,9 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                              this.projectConfig.getInputs()
                                                                .getRight()
                                                                .getVariable()
-                                                               .getValue() );
+                                                               .getValue() +
+                                             " at " +
+                                             ConfigHelper.getFeatureDescription( this.feature ) );
         }
 
         if (this.baselineExists())
