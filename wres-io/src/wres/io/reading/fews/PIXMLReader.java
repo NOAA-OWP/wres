@@ -146,6 +146,7 @@ public final class PIXMLReader extends XMLReader
 				{
 					parseHeader(reader);
 					if (!seriesIsApproved()) {
+					    LOGGER.debug( "The encountered time series is not approved by the specifications. Moving on." );
 					    XML.skipToEndTag(reader, "series");
 					    break;
 					}
@@ -677,8 +678,25 @@ public final class PIXMLReader extends XMLReader
     
     private boolean seriesIsApproved () {
         boolean ensembleApproved = this.ensembleIsApproved(this.currentEnsembleName, this.currentEnsembleMemberID);
+
+        if (!ensembleApproved)
+        {
+            LOGGER.debug( "The encounted ensemble is not approved for this ingest." );
+        }
+        
         boolean featureApproved = this.featureIsApproved(this.currentLID);
+
+        if (!featureApproved)
+        {
+            LOGGER.debug( "The encountered feature is not approved for this ingest." );
+        }
+
         boolean variableApproved = this.variableIsApproved(currentVariableName);
+
+        if (!variableApproved)
+        {
+            LOGGER.debug( "The encountered variable is not approved for this ingest." );
+        }
         
         return featureApproved && variableApproved && ensembleApproved;
     }
