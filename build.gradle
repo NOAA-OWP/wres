@@ -347,7 +347,8 @@ project(':wres-config')
     // Also, when the plugin fixes
     // https://github.com/rackerlabs/gradle-jaxb-plugin/issues/6 we should get
     // the latest version (this seems to happen on each build)
-    task copyGenerated(type:Copy, dependsOn: xjc) {
+    task copyGenerated(type:Copy, dependsOn: xjc, group: 'Parse') {
+        description = 'Ensures generated code is created and available in src.'
         destinationDir = file("${project.projectDir}/src")
         delete fileTree(dir: destinationDir).include('**/generated/*.java')
         from fileTree("${generatedIntermediateDir}")
