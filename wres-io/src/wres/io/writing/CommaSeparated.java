@@ -30,6 +30,7 @@ import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
+import wres.datamodel.VectorOutput;
 import wres.io.config.ConfigHelper;
 
 /**
@@ -37,11 +38,11 @@ import wres.io.config.ConfigHelper;
  */
 public class CommaSeparated
 {
-
     private CommaSeparated()
     {
         // Prevent construction.
     }
+
 
     /**
      * Write numerical outputs to CSV files.
@@ -82,8 +83,6 @@ public class CommaSeparated
         for ( DestinationConfig d : projectConfig.getOutputs()
                                                  .getDestination() )
         {
-
-
             if ( d.getType() == DestinationType.NUMERIC )
             {
                 DecimalFormat formatter = null;
@@ -101,11 +100,22 @@ public class CommaSeparated
                 MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarOutput =
                         storedMetricOutput.getScalarOutput();
 
-                if ( scalarOutput != null )
+                MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorOutput =
+                        storedMetricOutput.getVectorOutput();
+
+                if ( scalarOutput != null ) // currently requiring some scalar output
                 {
-                    SortedMap<Integer, StringJoiner> scalars =
+                    SortedMap<Integer, StringJoiner> intermediate =
                             CommaSeparated.getScalarRows( scalarOutput, formatter );
-                    for ( Map.Entry<Integer, StringJoiner> e : scalars.entrySet() )
+
+                    if ( vectorOutput != null )
+                    {
+                        CommaSeparated.appendVectorColumns( intermediate,
+                                                            vectorOutput,
+                                                            formatter );
+                    }
+
+                    for ( Map.Entry<Integer, StringJoiner> e : intermediate.entrySet() )
                     {
                         rows.put ( e.getKey(), e.getValue() );
                     }
@@ -132,6 +142,7 @@ public class CommaSeparated
         }
     }
 
+
     /**
      * Get csv rows by lead time in intermediate format (StringJoiner)
      *
@@ -139,6 +150,7 @@ public class CommaSeparated
      * @param formatter optional formatter to format doubles with, can be null
      * @return a SortedMap
      */
+
     private static SortedMap<Integer, StringJoiner> getScalarRows(
             MetricOutputMultiMapByLeadThreshold<ScalarOutput> output,
             DecimalFormat formatter )
@@ -207,5 +219,86 @@ public class CommaSeparated
         }
 
         return result;
+    }
+
+
+    /**
+     * Mutate existing intermediate rows by appending additional columns of
+     * vector metric outputs.
+     *
+     * @param existingRows the existing rows to mutate - side effecting!
+     * @param output the vectoroutput data to append
+     * @param formatter the format to use for doubles
+     */
+
+    private static void appendVectorColumns(
+            SortedMap<Integer, StringJoiner> existingRows,
+            MetricOutputMultiMapByLeadThreshold<VectorOutput> output,
+            DecimalFormat formatter )
+    {
+        StringJoiner headerRow = existingRows.get( Integer.MIN_VALUE );
+
+        for ( Map.Entry<MapKey<MetricConstants>,
+                MetricOutputMapByLeadThreshold<VectorOutput>> m
+                : output.entrySet() )
+        {
+            String name = m.getKey().getKey().name();
+
+            for ( Threshold t : m.getValue().keySetByThreshold() )
+            {
+                String column = name + "_" + t;
+                headerRow.add( column );
+
+                for ( Integer leadTime : m.getValue().keySetByLead() )
+                {
+                    StringJoiner row = existingRows.get( leadTime );
+
+                    if ( row == null )
+                    {
+                        String message = "Expected MetricOutput to have "
+                                         + "consistent dimensions between the "
+                                         + "vector and scalar outputs. When "
+                                         + "looking for leadtime " + leadTime
+                                         + ", could not find it in scalar output.";
+                        throw new IllegalStateException( message );
+                    }
+
+                    // To maintain rectangular CSV output, construct keys using
+                    // both dimensions. If we do not find a value, use NA.
+                    MapBiKey<Integer,Threshold> key =
+                            DefaultDataFactory.getInstance()
+                                              .getMapKey( leadTime, t );
+
+                    VectorOutput value = m.getValue()
+                                          .get( key );
+
+                    String toWrite = "NA";
+
+                    if ( value != null
+                         && value.getData() != null
+                         && value.getData().getDoubles() != null)
+                    {
+                        StringJoiner listOfValues = new StringJoiner( ",", "\"[", "]\"" );
+                        double[] values = value.getData().getDoubles();
+
+                        for ( double innerValue : values )
+                        {
+                            if ( formatter != null )
+                            {
+                                String toAdd = formatter.format( innerValue );
+                                listOfValues.add( toAdd );
+                            }
+                            else
+                            {
+                                listOfValues.add( String.valueOf( innerValue ) );
+                            }
+                        }
+                        toWrite = listOfValues.toString();
+                    }
+
+                    row.add( toWrite );
+                }
+            }
+        }
     }
 }
