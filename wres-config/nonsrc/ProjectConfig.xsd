@@ -288,7 +288,7 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="numeric" />
             <xs:enumeration value="graphic" />
-            <xs:enumeration value="rawPairs" />
+            <xs:enumeration value="pairs" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -456,8 +456,6 @@
             <xs:element name="timeAggregation" type="timeAggregation" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
-        <xs:attribute name="saveToDisk" type="xs:boolean" default="false" />
-        <xs:attribute name="saveLocation" type="xs:string" default="pairs.csv" />
     </xs:complexType>
 
     <xs:complexType name="dragons">

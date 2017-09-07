@@ -818,22 +818,12 @@ public class Control implements Function<String[], Integer>
             try
             {
                 nextInput = input.get();
-
-                if (nextInput.size() == 0)
-                {
-                    String message = "No values could be retrieved. ";
-                    message += "Metrics could not be calculated.";
-                    LOGGER.error( message );
-                    throw new IllegalStateException( message );
-                }
                 if(LOGGER.isDebugEnabled())
                 {
                     LOGGER.debug("Completed processing of pairs for feature '{}' at lead time {}.",
                                 nextInput.getMetadata().getIdentifier().getGeospatialID(),
                                 nextInput.getMetadata().getLeadTimeInHours());
                 }
-
-
             }
             catch(final InterruptedException e)
             {
