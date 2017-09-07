@@ -324,7 +324,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             return this.windowCount;
         }
 
-        private Integer getLastLead() throws SQLException
+        private Integer getLastLead()
+                throws SQLException, InvalidPropertiesFormatException
         {
             if (this.lastLead == null)
             {
@@ -379,7 +380,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                     double beginning = windowWidth * this.windowNumber;
                     double end = windowWidth * (this.windowNumber + 1);
 
-                    next = beginning <= this.getLastLead() &&
+                    next = beginning < this.getLastLead() &&
                            beginning < this.projectConfig.getConditions().getLastLead() &&
                            end >= this.projectConfig.getConditions().getFirstLead();
                 }
