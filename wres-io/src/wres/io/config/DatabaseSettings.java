@@ -1,8 +1,11 @@
 package wres.io.config;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.jfree.ui.about.SystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
 
@@ -71,6 +74,7 @@ final class DatabaseSettings {
 					reader.next();
 				}
 			}
+			this.applySystemPropertyOverrides();
 			testConnection();
 		} catch (Exception e) {
 		    throw new ExceptionInInitializerError(e);
@@ -82,6 +86,7 @@ final class DatabaseSettings {
 	 */
 	DatabaseSettings()
 	{
+		this.applySystemPropertyOverrides();
 	}
 
 	private void testConnection() throws Exception {
@@ -340,4 +345,30 @@ final class DatabaseSettings {
 		return string_rep;
 	}
 
+	private void applySystemPropertyOverrides()
+	{
+		String username = System.getProperty( "wres.username" );
+		if ( username != null )
+		{
+			this.username = username;
+		}
+
+		String password = System.getProperty( "wres.password" );
+		if ( password != null )
+		{
+			this.password = password;
+		}
+
+		String databaseName = System.getProperty( "wres.databaseName" );
+		if ( databaseName != null )
+		{
+			this.databaseName = databaseName;
+		}
+
+		String url = System.getProperty( "wres.url" );
+		if ( url != null )
+		{
+			this.url = url;
+		}
+	}
 }
