@@ -301,10 +301,6 @@ public final class ScriptGenerator
         return script.toString();
     }
 
-
-
-
-
     private static String constructEnsembleClause(DataSourceConfig source) throws SQLException {
 
         StringBuilder script = new StringBuilder();

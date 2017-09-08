@@ -114,7 +114,23 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             StringBuilder script = new StringBuilder();
             Integer leftVariableID = ConfigHelper.getVariableID(left);
 
+            String earliestDate = null;
+            String latestDate = null;
+
             Integer timeShift = null;
+
+            if (projectConfig.getConditions().getDates() != null)
+            {
+                if (projectConfig.getConditions().getDates().getEarliest() != null)
+                {
+                    earliestDate = "'" + projectConfig.getConditions().getDates().getEarliest() + "'";
+                }
+
+                if (projectConfig.getConditions().getDates().getLatest() != null)
+                {
+                    latestDate = "'" + projectConfig.getConditions().getDates().getLatest() + "'";
+                }
+            }
 
             String variablepositionClause = ConfigHelper.getVariablePositionClause(this.feature, leftVariableID);
 
@@ -187,6 +203,30 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append("     AND O.scenario_id = ")
                       .append(Scenarios.getScenarioID( left.getScenario(),
                                                        left.getType().value() ));
+
+                if (earliestDate != null)
+                {
+                    script.append("     AND O.observation_time");
+
+                    if (timeShift != null)
+                    {
+                        script.append(" + INTERVAL '1 hour' * ").append(timeShift);
+                    }
+
+                    script.append(" >= ").append(earliestDate).append(NEWLINE);
+                }
+
+                if (latestDate != null)
+                {
+                    script.append("     AND O.observation_time");
+
+                    if (timeShift != null)
+                    {
+                        script.append(" + INTERVAL '1 hour' * ").append(timeShift);
+                    }
+
+                    script.append(" <= ").append(latestDate).append(NEWLINE);
+                }
             }
 
             script.append(";");
@@ -199,6 +239,22 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 connection = Database.getHighPriorityConnection();
                 resultSet = Database.getResults(connection, script.toString());
 
+                Double minimumValue = -Double.MAX_VALUE;
+                Double maximumValue = Double.MAX_VALUE;
+
+                if (projectConfig.getConditions().getValues() != null)
+                {
+                    if (projectConfig.getConditions().getValues().getMinimum() != null)
+                    {
+                        minimumValue = projectConfig.getConditions().getValues().getMinimum();
+                    }
+
+                    if (projectConfig.getConditions().getValues().getMaximum() != null)
+                    {
+                        maximumValue = projectConfig.getConditions().getValues().getMaximum();
+                    }
+                }
+
                 while(resultSet.next())
                 {
                     String date = resultSet.getString("left_date");
@@ -210,7 +266,10 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                         value = UnitConversions.convert(value, unitID, desiredMeasurementUnit);
                     }
 
-                    values.put(date, value);
+                    if (value >= minimumValue && value <= maximumValue)
+                    {
+                        values.put( date, value );
+                    }
 
                     if (ConfigHelper.usesProbabilityThresholds(projectConfig))
                     {

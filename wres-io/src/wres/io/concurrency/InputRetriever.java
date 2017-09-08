@@ -34,6 +34,7 @@ import wres.io.utilities.Database;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
+import wres.util.Strings;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -237,7 +238,27 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             windowNumber = 0;
         }
 
-        return metadataFactory.getMetadata(dim, datasetIdentifier, windowNumber);
+        if (sourceConfig.getTimeAggregation() == null)
+        {
+            sourceConfig = this.projectConfig.getInputs().getRight();
+        }
+
+        Double windowWidth = 1.0;
+
+        try
+        {
+            windowWidth = ConfigHelper.getWindowWidth( ConfigHelper.getTimeAggregation( sourceConfig ) );
+        }
+        catch ( InvalidPropertiesFormatException e )
+        {
+            LOGGER.error( Strings.getStackTrace(e) );
+            LOGGER.error("The width of the standard window for this project could not be determined.");
+        }
+
+        Double lastLead = (windowNumber + 1) * windowWidth;
+        return metadataFactory.getMetadata(dim,
+                                           datasetIdentifier,
+                                           lastLead.intValue());
     }
 
     private final int progress;

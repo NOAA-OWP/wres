@@ -55,8 +55,7 @@ public class PairWriter extends WRESCallable<Boolean>
                 }
 
                 StringJoiner line = new StringJoiner( DELIMITER );
-                StringJoiner arrayJoiner =
-                        new StringJoiner( DELIMITER, "\"{", "}\"" );
+                StringJoiner arrayJoiner = new StringJoiner( DELIMITER );
 
                 line.add( this.featureDescription );
                 line.add( this.date );
