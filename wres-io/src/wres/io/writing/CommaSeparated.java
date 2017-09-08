@@ -252,8 +252,8 @@ public class CommaSeparated
             for ( Map.Entry<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> e
                     : helper.entrySet() )
             {
-                String name = outerName + e.getKey()
-                                           .toString();
+                String name = outerName + "_" + e.getKey()
+                                                 .toString();
 
                 for ( Threshold t : m.getValue().keySetByThreshold() )
                 {
