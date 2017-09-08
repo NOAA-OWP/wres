@@ -242,61 +242,66 @@ public class CommaSeparated
                 MetricOutputMapByLeadThreshold<VectorOutput>> m
                 : output.entrySet() )
         {
-            String name = m.getKey().getKey().name();
+            Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> helper
+                    = DefaultDataFactory.getInstance()
+                                        .getSlicer()
+                                        .sliceByMetricComponent( m.getValue() );
 
-            for ( Threshold t : m.getValue().keySetByThreshold() )
+            String outerName = m.getKey().getKey().name();
+
+            for ( Map.Entry<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> e
+                    : helper.entrySet() )
             {
-                String column = name + "_" + t;
-                headerRow.add( column );
+                String name = outerName + e.getKey()
+                                           .toString();
 
-                for ( Integer leadTime : m.getValue().keySetByLead() )
+                for ( Threshold t : m.getValue().keySetByThreshold() )
                 {
-                    StringJoiner row = existingRows.get( leadTime );
+                    String column = name + "_" + t;
+                    headerRow.add( column );
 
-                    if ( row == null )
+                    for ( Integer leadTime : m.getValue().keySetByLead() )
                     {
-                        String message = "Expected MetricOutput to have "
-                                         + "consistent dimensions between the "
-                                         + "vector and scalar outputs. When "
-                                         + "looking for leadtime " + leadTime
-                                         + ", could not find it in scalar output.";
-                        throw new IllegalStateException( message );
-                    }
+                        StringJoiner row = existingRows.get( leadTime );
 
-                    // To maintain rectangular CSV output, construct keys using
-                    // both dimensions. If we do not find a value, use NA.
-                    MapBiKey<Integer,Threshold> key =
-                            DefaultDataFactory.getInstance()
-                                              .getMapKey( leadTime, t );
-
-                    VectorOutput value = m.getValue()
-                                          .get( key );
-
-                    String toWrite = "NA";
-
-                    if ( value != null
-                         && value.getData() != null
-                         && value.getData().getDoubles() != null)
-                    {
-                        StringJoiner listOfValues = new StringJoiner( ",", "\"[", "]\"" );
-                        double[] values = value.getData().getDoubles();
-
-                        for ( double innerValue : values )
+                        if ( row == null )
                         {
+                            String message = "Expected MetricOutput to have "
+                                             + "consistent dimensions between the "
+                                             + "vector and scalar outputs. When "
+                                             + "looking for leadtime "
+                                             + leadTime
+                                             + ", could not find it in scalar output.";
+                            throw new IllegalStateException( message );
+                        }
+
+                        // To maintain rectangular CSV output, construct keys using
+                        // both dimensions. If we do not find a value, use NA.
+                        MapBiKey<Integer, Threshold> key =
+                                DefaultDataFactory.getInstance()
+                                                  .getMapKey( leadTime, t );
+
+                        ScalarOutput value = e.getValue()
+                                              .get( key );
+
+                        String toWrite = "NA";
+
+                        if ( value != null
+                             && value.getData() != null )
+                        {
+
                             if ( formatter != null )
                             {
-                                String toAdd = formatter.format( innerValue );
-                                listOfValues.add( toAdd );
+                                toWrite = formatter.format( value.getData() );
                             }
                             else
                             {
-                                listOfValues.add( String.valueOf( innerValue ) );
+                                toWrite = value.toString();
                             }
                         }
-                        toWrite = listOfValues.toString();
-                    }
 
-                    row.add( toWrite );
+                        row.add( toWrite );
+                    }
                 }
             }
         }
