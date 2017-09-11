@@ -33,9 +33,76 @@ configuration file and asking WRES to execute that project.
         <metric>correlation_coefficient</metric>
         <metric>brier_skill_score</metric>
         <destination type="graphic"><path>/tmp/</path>
-          <graphical width="1920" height="1080">
-            <plotType>LEAD_THRESHOLD</plotType>
+          <graphical width="800" height="600">
+            <plotType>lead threshold</plotType>
             </graphical>
         </destination>
       </outputs>
     </project>
+
+## Project
+
+The contents of &lt;project&gt; declare everything the WRES tool needs to be
+able to run a verification on data. The order of the declarations in the project
+do not necessarily correspond to the order of execution in the tool. The reasons
+for this are to avoid duplication and to allow the system leeway for performance
+optimizations. In other words, the &lt;project&gt; declares concrete goals as
+well as anything else the tool needs in order to correctly compute those goals.
+
+A project consists of inputs, conditions, pairs, and outputs. For the WRES tool
+to successfully read the &lt;project&gt;, the order of the elements in the file
+must be consistent. In other words, inputs come first, then conditions, then
+pairs, then outputs. The same is true for all elements (e.g. &lt;anElement&gt;)
+and attributes (e.g. name="value" inside elements). Despite the format of the
+project requiring exact ordering of xml elements, the full project is a single
+declaration of desired output and the order of the tags in the project do not
+necessarily correspond to order of execution.
+
+### Inputs
+
+The contents of &lt;inputs&gt; declares the universes of input data that the
+WRES tool works with to produce the desired outputs.
+
+As of 2017-09-11, the data sources handled by WRES are files and directories
+accessible from where the tool is run.
+
+There are two required data sources and one optional. The &lt;left&gt; and
+&lt;right&gt; are required, and &lt;baseline&gt; is optional. Left and right
+typically correspond to observations and forecasts, respectively (but there is
+no restriction on the type of data in any of the three data sources). The
+reason for the names "left" and "right" is these are the names typically given
+to the sides of a pair.
+
+One can explicitly specify all files with one &lt;source&gt; per file, or for
+convenience, one &lt;source&gt; per directory. Warning: if the contents of a
+file or directory change, the outcomes of a run of the project will change. In
+the case where the inputs do not change at all, the performance of a run of the
+project should improve on the second run.
+
+### Conditions
+
+The contents of &lt;conditions&gt; declares the conditions desired for pairing.
+The pairs that have metrics applied to them will already have been filtered by
+these conditions.
+
+### Pairs
+
+The contents of &lt;pair&gt; declares what the the pairs should look like before
+metrics are applied to the pairs. The &lt;unit&gt; is required. This is the
+desired unit that pairs will have. Both the left and the right data will be
+converted to the unit declared, so that the metrics performed are performed
+using this unit. The &lt;timeAggregation&gt; is required. This is the desired
+timestep that pairs will have as well as the way to aggregate to reach this
+timestep when needed.
+
+### Outputs
+
+The contents of &lt;outputs&gt; declares the kinds and formats of outputs that
+should be created. At least one &lt;metric&gt; is required, and at least one
+&lt;destination&gt;. The WRES tool supports a number of metrics which are
+specified by &lt;name&gt;. A &lt;destination&gt; as of 2017-09-11 must declare
+a &lt;path&gt; which is a writeable directory. As of 2017-09-11, the default
+destination will be numeric CSV files by feature. When &lt;graphical&gt;
+destinations are specified, make sure to use the type="graphical" attribute in
+the destination element and then specify the &lt;graphical&gt; after the
+&lt;path&gt;.
