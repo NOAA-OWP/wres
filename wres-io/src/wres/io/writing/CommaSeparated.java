@@ -159,12 +159,12 @@ public class CommaSeparated
         SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
         StringJoiner headerRow = new StringJoiner( "," );
 
-        headerRow.add( "LEAD_TIME" );
+        headerRow.add( "LEAD" + HEADER_DELIMITER + "TIME" );
         for ( Map.Entry<MapKey<MetricConstants>,
                 MetricOutputMapByLeadThreshold<ScalarOutput>> m
                 : output.entrySet() )
         {
-            String name = m.getKey().getKey().name();
+            String name = m.getKey().getKey().toString();
 
             for ( Threshold t : m.getValue().keySetByThreshold() )
             {
