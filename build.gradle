@@ -1,6 +1,7 @@
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
+import java.nio.file.StandardCopyOption
 
 /* used by sonarqube static analysis and git versioning */
 buildscript
@@ -411,7 +412,7 @@ task(buildDocs, group: 'Documentation')
 
     doFirst {
         // in case a source was removed, get rid of all html files.
-        delete fileTree(dir: destDir).include('**/*.html')
+        delete fileTree(dir: destDir).include('**/*.html').include('**/*.css')
     }
 
     doLast {
@@ -421,17 +422,37 @@ task(buildDocs, group: 'Documentation')
         def parser = org.commonmark.parser.Parser.builder().build()
         def renderer = org.commonmark.renderer.html.HtmlRenderer.builder().build()
         inputs.files.each {
-            // yuck, but I haven't found the better way yet
-            def srcIdx =  it.path.indexOf(srcDir)
-            def basePath = Paths.get(it.path).getFileName().toString()
-            def baseFileName = basePath.substring(0, basePath.length() - 3)
+            def basePath = Paths.get( it.path )
+                                .getFileName()
+                                .toString()
 
-            // The meat - using commonmark to transform md to html
-            def document = parser.parseReader(new FileReader(it))
-            def output = renderer.render(document)
+            if ( it.path.endsWith( ".md" ) )
+            {
+                // yuck, but I haven't found the better way yet
+                def srcIdx =  it.path.indexOf( srcDir )
+                def baseFileName = basePath.substring( 0, basePath.length() - 3 )
 
-            def outputPath = Paths.get(destDir, baseFileName + '.html')
-            Files.write(outputPath, output.getBytes(), StandardOpenOption.CREATE)
+                // The meat - using commonmark to transform md to html
+                def document = parser.parseReader( new FileReader( it ) )
+                def innerOutput = renderer.render( document )
+                def header = "<!DOCTYPE html>\r\n"
+                header += "<html><head>\r\n"
+                header += "    <link rel='stylesheet' type='text/css' href='style.css' />\r\n"
+                header += "</head>\r\n<body>\r\n"
+                def footer = "</body>\r\n</html>\r\n"
+                def output = header + innerOutput + footer
+                def outputPath = Paths.get( destDir, baseFileName + '.html' )
+                Files.write( outputPath,
+                             output.getBytes(),
+                             StandardOpenOption.CREATE )
+            }
+            else
+            {
+                def outputPath = Paths.get( destDir, basePath )
+                Files.copy( it.toPath(),
+                            outputPath,
+                            StandardCopyOption.REPLACE_EXISTING )
+            }
         }
     }
 }
