@@ -436,6 +436,17 @@ public enum MetricConstants
                            || a.outGroup != outGroup );
         return all;
     }
+    
+    /**
+     * Returns a pretty string representation.
+     * 
+     * @return a pretty string representation
+     */
+    
+    public String toPrettyString() 
+    {
+        return toString().replaceAll( "_", " " );
+    }
 
     /**
      * Type of metric input.
