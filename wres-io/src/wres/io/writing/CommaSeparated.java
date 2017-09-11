@@ -43,6 +43,7 @@ public class CommaSeparated
         // Prevent construction.
     }
 
+    private static final String HEADER_DELIMITER = " ";
 
     /**
      * Write numerical outputs to CSV files.
@@ -167,7 +168,7 @@ public class CommaSeparated
 
             for ( Threshold t : m.getValue().keySetByThreshold() )
             {
-                String column = name + "_" + t;
+                String column = name + HEADER_DELIMITER + t;
                 headerRow.add( column );
 
                 for ( Integer leadTime : m.getValue().keySetByLead() )
@@ -247,17 +248,17 @@ public class CommaSeparated
                                         .getSlicer()
                                         .sliceByMetricComponent( m.getValue() );
 
-            String outerName = m.getKey().getKey().name();
+            String outerName = m.getKey().getKey().toString();
 
             for ( Map.Entry<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> e
                     : helper.entrySet() )
             {
-                String name = outerName + "_" + e.getKey()
-                                                 .toString();
+                String name = outerName + HEADER_DELIMITER + e.getKey()
+                                                              .toString();
 
                 for ( Threshold t : m.getValue().keySetByThreshold() )
                 {
-                    String column = name + "_" + t;
+                    String column = name + HEADER_DELIMITER + t;
                     headerRow.add( column );
 
                     for ( Integer leadTime : m.getValue().keySetByLead() )
