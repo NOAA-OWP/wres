@@ -554,7 +554,7 @@ public class Control implements Function<String[], Integer>
                                                   .getLid()
                                                   + "_"
                                                   + e.getKey()
-                                                  .getKey()
+                                                  .getKey().name()
                                                   + "_"
                                                   + config.getInputs()
                                                   .getRight()
@@ -633,14 +633,14 @@ public class Control implements Function<String[], Integer>
                                                       .getLid()
                                                       + "_"
                                                       + e.getKey()
-                                                      .getKey()
+                                                      .getKey().name()
                                                       + "_"
                                                       + config.getInputs()
                                                       .getRight()
                                                       .getVariable()
                                                       .getValue()
                                                       + "_"
-                                                      + nextEntry.getKey()
+                                                      + ((MetricConstants)nextEntry.getKey()).name()
                                                       + ".png" );
                         ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
                     }
@@ -717,7 +717,7 @@ public class Control implements Function<String[], Integer>
                                                       .getLid()
                                                       + "_"
                                                       + e.getKey()
-                                                      .getKey()
+                                                      .getKey().name()
                                                       + "_"
                                                       + config.getInputs()
                                                       .getRight()
