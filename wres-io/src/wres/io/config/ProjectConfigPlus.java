@@ -152,7 +152,7 @@ public class ProjectConfigPlus
             Source xmlSource = new StreamSource( reader );
             JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
 
-            // Validate against schema during unmarshaling;
+            // Validate against schema during unmarshaling
             InputStream schemaStream = ClassLoader.getSystemResourceAsStream( XSD_NAME );
             Source schemaSource = new StreamSource( schemaStream );
             SchemaFactory schemaFactory =
