@@ -406,12 +406,7 @@ public class Control implements Function<String[], Integer>
                                                    + "</destination>",
                                                    pce );
             }
-            catch ( final InterruptedException ie )
-            {
-                LOGGER.warn( "Interrupted while writing output files." );
-                Thread.currentThread().interrupt();
-            }
-            catch ( IOException | ExecutionException e )
+            catch ( IOException e )
             {
                 throw new WresProcessingException( "While writing output files: ",
                                                    e );
