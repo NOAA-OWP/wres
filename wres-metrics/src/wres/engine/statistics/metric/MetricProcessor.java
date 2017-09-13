@@ -32,8 +32,6 @@ import wres.datamodel.MetricInputSliceException;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputForProject;
 import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.ProbabilityThreshold;
-import wres.datamodel.QuantileThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Threshold;
@@ -53,8 +51,8 @@ import wres.datamodel.VectorOutput;
  * <li>That a global set of {@link Threshold} is defined for all {@link Metric} within a {@link ProjectConfig} and hence
  * {@link MetricCollection}. Using metric-specific thresholds will require additional logic to disaggregate a
  * {@link MetricCollection} into {@link Metric} for which common thresholds are defined.</li>
- * <li>If the {@link Threshold} are {@link ProbabilityThreshold}, the corresponding {@link QuantileThreshold} are
- * derived from the observations associated with the {@link MetricInput} at runtime, i.e. upon calling
+ * <li>If the {@link Threshold#hasProbabilityValues()}, the corresponding quantiles are derived from the 
+ * observations associated with the {@link MetricInput} at runtime, i.e. upon calling
  * {@link #apply(Object)}</li>
  * </ol>
  * <p>
@@ -597,14 +595,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
 
     boolean hasProbabilityThreshold( List<Threshold> check )
     {
-        for ( Threshold next : check )
-        {
-            if ( next instanceof ProbabilityThreshold )
-            {
-                return true;
-            }
-        }
-        return false;
+        return check.stream().anyMatch( Threshold::hasProbabilityValues );
     }
 
     /**
@@ -641,8 +632,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     }
 
     /**
-     * Helper that returns a sorted set of values from the left side of the input pairs if any of the thresholds are
-     * {@link ProbabilityThreshold}.
+     * Helper that returns a sorted set of values from the left side of the input pairs if any of the thresholds have
+     * probabilities associated with them.
      * 
      * @param input the inputs pairs
      * @param thresholds the thresholds to test
@@ -661,13 +652,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     }
 
     /**
-     * Returns the input {@link Threshold} or a {@link QuantileThreshold} if the input is a
-     * {@link ProbabilityThreshold}. The {@link QuantileThreshold} is obtained from the prescribed, sorted,
-     * observations.
+     * Sets the quantile values associated with the input threshold if the threshold contains probability values.
      * 
      * @param threshold the input threshold
-     * @param sorted a sorted set of values from which to determine {@link QuantileThreshold} where the input
-     *            {@link Threshold} is a {@link ProbabilityThreshold}.
+     * @param sorted a sorted set of values from which to determine the quantiles
      * @return the threshold
      * @throws MetricCalculationException if the sorted array is null and quantiles are required
      */
@@ -676,14 +664,15 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     {
         Threshold useMe = threshold;
         //Quantile required: need to determine real-value from probability
-        if ( threshold instanceof ProbabilityThreshold )
+        if ( threshold.hasProbabilityValues() )
         {
             if ( Objects.isNull( sorted ) )
             {
                 throw new MetricCalculationException( "Unable to determine quantile threshold from probability "
-                                                      + "threshold: no climatological observations were available in the input." );
+                                                      + "threshold: no climatological observations were available in "
+                                                      + "the input." );
             }
-            useMe = dataFactory.getSlicer().getQuantileFromProbability( (ProbabilityThreshold) useMe,
+            useMe = dataFactory.getSlicer().getQuantileFromProbability( useMe,
                                                                         sorted,
                                                                         DECIMALS );
         }
@@ -849,7 +838,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * 
      * @param inputString the comma-separated input string
      * @param oper the operator
-     * @param areProbs is true to generate {@link ProbabilityThreshold}, false for {@link Threshold}
+     * @param areProbs is true to generate probability thresholds, false for ordinary thresholds
      * @return the thresholds
      * @throws MetricConfigurationException if the thresholds are configured incorrectly
      */
