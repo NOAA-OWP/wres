@@ -1,11 +1,9 @@
 package wres.io.config;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import org.jfree.ui.about.SystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
 
@@ -347,28 +345,28 @@ final class DatabaseSettings {
 
 	private void applySystemPropertyOverrides()
 	{
-		String username = System.getProperty( "wres.username" );
-		if ( username != null )
+		String usernameOverride = System.getProperty( "wres.username" );
+		if ( usernameOverride != null )
 		{
-			this.username = username;
+			this.username = usernameOverride;
 		}
 
-		String password = System.getProperty( "wres.password" );
-		if ( password != null )
+		String passwordOverride = System.getProperty( "wres.password" );
+		if ( passwordOverride != null )
 		{
-			this.password = password;
+			this.password = passwordOverride;
 		}
 
-		String databaseName = System.getProperty( "wres.databaseName" );
-		if ( databaseName != null )
+		String databaseNameOverride = System.getProperty( "wres.databaseName" );
+		if ( databaseNameOverride != null )
 		{
-			this.databaseName = databaseName;
+			this.databaseName = databaseNameOverride;
 		}
 
-		String url = System.getProperty( "wres.url" );
-		if ( url != null )
+		String urlOverride = System.getProperty( "wres.url" );
+		if ( urlOverride != null )
 		{
-			this.url = url;
+			this.url = urlOverride;
 		}
 	}
 }
