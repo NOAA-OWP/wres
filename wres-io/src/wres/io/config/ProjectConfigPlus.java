@@ -207,6 +207,28 @@ public class ProjectConfigPlus
             throw new IOException( message, e );
         }
 
+        Map<DestinationConfig, String> visConfigs =
+                ProjectConfigPlus.getVisConfigs( projectConfig,
+                                                 xmlLines );
+
+        return new ProjectConfigPlus( path,
+                                      rawConfig,
+                                      projectConfig,
+                                      visConfigs,
+                                      events );
+    }
+
+
+    /**
+     * Get wres-vis graphical configuration xml strings mapped to Destinations
+     * @param projectConfig the config containing the destinations
+     * @param xmlLines the raw xml lines that were parsed to produce projectConfig
+     * @return a Map of DestinationConfig to graphical configuration xml
+     */
+
+    private static Map<DestinationConfig, String> getVisConfigs( ProjectConfig projectConfig,
+                                                                 List<String> xmlLines )
+    {
         // To read the xml configuration for vis into a string, we go find the
         // start of each, then find the first occurance of </config> ?
 
@@ -229,7 +251,8 @@ public class ProjectConfigPlus
 
                 for (int i = lineNum; !result.contains(GFX_END_TAG); i++)
                 {
-                    config.append(result + System.lineSeparator());
+                    config.append( result );
+                    config.append( System.lineSeparator() );
                     result = xmlLines.get(i);
                 }
 
@@ -243,10 +266,6 @@ public class ProjectConfigPlus
             }
         }
 
-        return new ProjectConfigPlus( path,
-                                      rawConfig,
-                                      projectConfig,
-                                      visConfigs,
-                                      events );
+        return visConfigs;
     }
 }
