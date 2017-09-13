@@ -49,7 +49,7 @@ public final class SystemSettings extends XMLReader
     private int fetchSize = 100;
     private int maximumInserts = 5000;
     private int maximumCopies = 200;
-    private Long updateFrequency = new Long(5000);
+    private long updateFrequency = 5000;
     private boolean updateProgressMonitor = true;
     private int defaultChartWidth = 800;
     private int defaultChartHeight = 600;
