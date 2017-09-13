@@ -51,8 +51,6 @@ public class CommaSeparated
      * @param projectConfig the project configuration
      * @param feature the feature
      * @param storedMetricOutput the stored output
-     * @throws InterruptedException when the thread is interrupted
-     * @throws ExecutionException when a dependent task failed
      * @throws IOException when the writing itself fails
      * @throws ProjectConfigException when no output files are specified
      * @throws NullPointerException when any of the arguments are null
