@@ -62,8 +62,7 @@ public class CommaSeparated
     public static void writeOutputFiles( ProjectConfig projectConfig,
                                          Conditions.Feature feature,
                                          MetricOutputForProjectByLeadThreshold storedMetricOutput )
-            throws InterruptedException, ExecutionException, IOException,
-            ProjectConfigException
+            throws IOException, ProjectConfigException
     {
         Objects.requireNonNull( storedMetricOutput,
                                 "Metric outputs must not be null." );
@@ -86,41 +85,9 @@ public class CommaSeparated
         {
             if ( d.getType() == DestinationType.NUMERIC )
             {
-                DecimalFormat formatter = null;
 
-                if ( d.getDecimalFormat() != null
-                     && !d.getDecimalFormat().isEmpty() )
-                {
-                    formatter = new DecimalFormat();
-                    formatter.applyPattern( d.getDecimalFormat() );
-                }
-
-
-                SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
-
-                MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarOutput =
-                        storedMetricOutput.getScalarOutput();
-
-                MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorOutput =
-                        storedMetricOutput.getVectorOutput();
-
-                if ( scalarOutput != null ) // currently requiring some scalar output
-                {
-                    SortedMap<Integer, StringJoiner> intermediate =
-                            CommaSeparated.getScalarRows( scalarOutput, formatter );
-
-                    if ( vectorOutput != null )
-                    {
-                        CommaSeparated.appendVectorColumns( intermediate,
-                                                            vectorOutput,
-                                                            formatter );
-                    }
-
-                    for ( Map.Entry<Integer, StringJoiner> e : intermediate.entrySet() )
-                    {
-                        rows.put ( e.getKey(), e.getValue() );
-                    }
-                }
+                SortedMap<Integer, StringJoiner> rows =
+                        CommaSeparated.getNumericRows( d, storedMetricOutput );
 
                 File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( d );
 
@@ -143,6 +110,68 @@ public class CommaSeparated
         }
     }
 
+
+    /**
+     * Get numeric rows for a DestinationConfig
+     * @param d the config to build intermediate rows from
+     * @param storedMetricOutput the output to use to build rows
+     * @return the rows in order
+     * @throws IOException when retrieval from storedMetricOutput fails
+     */
+
+    private static SortedMap<Integer, StringJoiner> getNumericRows(
+            DestinationConfig d,
+            MetricOutputForProjectByLeadThreshold storedMetricOutput )
+            throws IOException
+    {
+        DecimalFormat formatter = null;
+
+        if ( d.getDecimalFormat() != null
+             && !d.getDecimalFormat().isEmpty() )
+        {
+            formatter = new DecimalFormat();
+            formatter.applyPattern( d.getDecimalFormat() );
+        }
+
+        SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
+
+        MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarOutput = null;
+        MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorOutput = null;
+
+        try
+        {
+            scalarOutput = storedMetricOutput.getScalarOutput();
+            vectorOutput = storedMetricOutput.getVectorOutput();
+        }
+        catch ( InterruptedException ie )
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            throw new IOException( "While getting numeric output", ee );
+        }
+
+        if ( scalarOutput != null ) // currently requiring some scalar output
+        {
+            SortedMap<Integer, StringJoiner> intermediate =
+                    CommaSeparated.getScalarRows( scalarOutput, formatter );
+
+            if ( vectorOutput != null )
+            {
+                CommaSeparated.appendVectorColumns( intermediate,
+                                                    vectorOutput,
+                                                    formatter );
+            }
+
+            for ( Map.Entry<Integer, StringJoiner> e : intermediate.entrySet() )
+            {
+                rows.put ( e.getKey(), e.getValue() );
+            }
+        }
+
+        return rows;
+    }
 
     /**
      * Get csv rows by lead time in intermediate format (StringJoiner)
