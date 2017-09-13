@@ -10,12 +10,12 @@ configuration file and asking WRES to execute that project.
       <inputs>
         <left>
           <type>observations</type>
-          <source recursive="true" all="true" format="PI-XML">/media/sf_userprofile/hefs_data/resources/DRRC2SQIN.xml</source>
+          <source recursive="true" all="true" format="PI-XML">c:/resources/DRRC2SQIN.xml</source>
           <variable>QINE</variable>
         </left>
         <right>
           <type>ensemble forecasts</type>
-          <source format="PI-XML">/media/sf_userprofile/hefs_data/resources/forecasts/</source>
+          <source format="PI-XML">c:/resources/forecasts/</source>
           <variable>SQIN</variable>
         </right>
       </inputs>
@@ -79,6 +79,11 @@ file or directory change, the outcomes of a run of the project will change. In
 the case where the inputs do not change at all, the performance of a run of the
 project should improve on the second run.
 
+The inputs section is primarily descriptive, in other words, it describes the
+input data as it is, rather than prescribing any transformations on the data.
+In cases when the data format does not aptly describe the data, this is where
+the user must fill in the gaps, so to speak.
+
 ### Conditions
 
 The contents of &lt;conditions&gt; declares the conditions desired for pairing.
@@ -92,8 +97,8 @@ metrics are applied to the pairs. The &lt;unit&gt; is required. This is the
 desired unit that pairs will have. Both the left and the right data will be
 converted to the unit declared, so that the metrics performed are performed
 using this unit. The &lt;timeAggregation&gt; is required. This is the desired
-timestep that pairs will have as well as the way to aggregate to reach this
-timestep when needed.
+time step that pairs will have as well as the way to aggregate to reach this
+time step when needed.
 
 ### Outputs
 
