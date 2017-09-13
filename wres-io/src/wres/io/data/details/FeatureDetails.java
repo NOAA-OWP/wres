@@ -4,9 +4,6 @@ import java.sql.SQLException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.io.utilities.Database;
 import wres.util.Internal;
 
@@ -17,7 +14,6 @@ import wres.util.Internal;
 @Internal(exclusivePackage = "wres.io")
 public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDetails.class);
 
 	private String lid = null;
 	public String station_name = null;
