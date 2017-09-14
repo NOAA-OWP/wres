@@ -255,7 +255,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             LOGGER.error("The width of the standard window for this project could not be determined.");
         }
 
-        Double lastLead = (windowNumber + 1) * windowWidth;
+        Double lastLead = windowNumber * windowWidth;
         return metadataFactory.getMetadata(dim,
                                            datasetIdentifier,
                                            lastLead.intValue());
