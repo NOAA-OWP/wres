@@ -179,8 +179,7 @@
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
-            <!-- TODO: Remove timeAggregation element from data sources -->
-            <xs:element name="timeAggregation" type="timeAggregation" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="timeAggregationDescription" type="timeAggregation" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
@@ -378,6 +377,10 @@
             <xs:enumeration value="max" />
             <xs:enumeration value="min" />
             <xs:enumeration value="median" />
+            <!-- Instantaneous only makes sense for describing existing, will
+                 need to validate at application level that it is not used for
+                 prescribing an aggregation. -->
+            <xs:enumeration value="instantaneous" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -473,7 +476,7 @@
         <xs:sequence>
             <xs:element name="unit" type="xs:string" />
             <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
-            <xs:element name="timeAggregation" type="timeAggregation" />
+            <xs:element name="timeAggregationPrescription" type="timeAggregation" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
