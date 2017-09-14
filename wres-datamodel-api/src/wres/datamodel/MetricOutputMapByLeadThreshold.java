@@ -62,14 +62,14 @@ public interface MetricOutputMapByLeadThreshold<T extends MetricOutput<?>>
     }
 
     /**
-     * Returns true if the map contains one or more {@link QuantileThreshold}, false otherwise.
+     * Returns true if the map contains one or more quantile thresholds, false otherwise.
      * 
-     * @return true if the store contains one or more {@link QuantileThreshold}, false otherwise
+     * @return true if the store contains one or more quantile thresholds, false otherwise
      */
 
     default boolean hasQuantileThresholds()
     {
-        return keySetByThreshold().stream().anyMatch( QuantileThreshold.class::isInstance );
+        return keySetByThreshold().stream().anyMatch( Threshold::isQuantile );
     }
 
     /**

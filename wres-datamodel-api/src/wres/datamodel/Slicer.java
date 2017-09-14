@@ -17,17 +17,17 @@ public interface Slicer
 {
 
     /**
-     * Returns a {@link QuantileThreshold} for the prescribed {@link ProbabilityThreshold}, where the quantiles are
-     * mapped using {@link #getQuantile(double, double[])}.
+     * Returns a {@link Threshold} with quantiles defined from the prescribed {@link Threshold} with probabilities, 
+     * where the quantiles are mapped using {@link #getQuantile(double, double[])}.
      * 
      * @param sorted the sorted input array
-     * @param threshold the {@link ProbabilityThreshold} from which the {@link QuantileThreshold} is determined
-     * @return the {@link QuantileThreshold}
+     * @param threshold the probability threshold from which the quantile is determined
+     * @return the quantile threshold
      */
 
-    default QuantileThreshold getQuantileFromProbability(ProbabilityThreshold threshold, double[] sorted)
+    default Threshold getQuantileFromProbability( Threshold threshold, double[] sorted )
     {
-        return getQuantileFromProbability(threshold, sorted, null);
+        return getQuantileFromProbability( threshold, sorted, null );
     }
 
     /**
@@ -37,7 +37,7 @@ public interface Slicer
      * @return the left side
      */
 
-    double[] getLeftSide(SingleValuedPairs input);
+    double[] getLeftSide( SingleValuedPairs input );
 
     /**
      * Returns the right side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
@@ -46,7 +46,7 @@ public interface Slicer
      * @return the right side
      */
 
-    double[] getRightSide(SingleValuedPairs input);
+    double[] getRightSide( SingleValuedPairs input );
 
     /**
      * Returns the left side of {@link EnsemblePairs#getData()} as a primitive array of doubles.
@@ -55,7 +55,7 @@ public interface Slicer
      * @return the left side
      */
 
-    double[] getLeftSide(EnsemblePairs input);
+    double[] getLeftSide( EnsemblePairs input );
 
     /**
      * Returns a subset of pairs where the {@link Threshold} is met on the left side or null for the empty subset.
@@ -66,7 +66,7 @@ public interface Slicer
      * @throws MetricInputSliceException if the slice contains no elements
      */
 
-    SingleValuedPairs sliceByLeft(SingleValuedPairs input, Threshold threshold) throws MetricInputSliceException;
+    SingleValuedPairs sliceByLeft( SingleValuedPairs input, Threshold threshold ) throws MetricInputSliceException;
 
     /**
      * Returns a subset of pairs where the {@link Threshold} is met on the left side or null for the empty subset.
@@ -77,7 +77,7 @@ public interface Slicer
      * @throws MetricInputSliceException if the slice contains no elements
      */
 
-    EnsemblePairs sliceByLeft(EnsemblePairs input, Threshold threshold) throws MetricInputSliceException;
+    EnsemblePairs sliceByLeft( EnsemblePairs input, Threshold threshold ) throws MetricInputSliceException;
 
     /**
      * Returns as many lists of {@link PairOfDoubleAndVectorOfDoubles} as groups of atomic pairs in the input with an
@@ -89,7 +89,7 @@ public interface Slicer
      * @return as many subsets of {@link PairOfDoubleAndVectorOfDoubles} as groups of pairs in the input of equal size
      */
 
-    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliceByRight(List<PairOfDoubleAndVectorOfDoubles> input);
+    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliceByRight( List<PairOfDoubleAndVectorOfDoubles> input );
 
     /**
      * Returns a map of {@link ScalarOutput} for each component in the input map of {@link VectorOutput}. The slices are
@@ -99,7 +99,8 @@ public interface Slicer
      * @return the input map sliced by component identifier
      */
 
-    Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> sliceByMetricComponent(MetricOutputMapByLeadThreshold<VectorOutput> input);
+    Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>>
+            sliceByMetricComponent( MetricOutputMapByLeadThreshold<VectorOutput> input );
 
     /**
      * Produces a {@link List} of {@link PairOfDoubles} from a {@link List} of {@link PairOfDoubleAndVectorOfDoubles}
@@ -110,8 +111,8 @@ public interface Slicer
      * @return the {@link SingleValuedPairs}
      */
 
-    List<PairOfDoubles> transformPairs(List<PairOfDoubleAndVectorOfDoubles> input,
-                                       Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper);
+    List<PairOfDoubles> transformPairs( List<PairOfDoubleAndVectorOfDoubles> input,
+                                        Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper );
 
     /**
      * Produces {@link DichotomousPairs} from a {@link SingleValuedPairs} by applying a mapper function to the input.
@@ -121,7 +122,7 @@ public interface Slicer
      * @return the {@link DichotomousPairs}
      */
 
-    DichotomousPairs transformPairs(SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper);
+    DichotomousPairs transformPairs( SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper );
 
     /**
      * Produces {@link SingleValuedPairs} from a {@link EnsemblePairs} by applying a mapper function to the input.
@@ -131,8 +132,8 @@ public interface Slicer
      * @return the {@link SingleValuedPairs}
      */
 
-    SingleValuedPairs transformPairs(EnsemblePairs input,
-                                     Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper);
+    SingleValuedPairs transformPairs( EnsemblePairs input,
+                                      Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper );
 
     /**
      * Produces {@link DiscreteProbabilityPairs} from a {@link EnsemblePairs} by applying a mapper function to the input
@@ -144,9 +145,9 @@ public interface Slicer
      * @return the {@link DiscreteProbabilityPairs}
      */
 
-    DiscreteProbabilityPairs transformPairs(EnsemblePairs input,
-                                            Threshold threshold,
-                                            BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper);
+    DiscreteProbabilityPairs transformPairs( EnsemblePairs input,
+                                             Threshold threshold,
+                                             BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper );
 
     /**
      * Converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} that contains the probabilities that
@@ -158,7 +159,7 @@ public interface Slicer
      * @return the transformed pair
      */
 
-    PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair, Threshold threshold);
+    PairOfDoubles transformPair( PairOfDoubleAndVectorOfDoubles pair, Threshold threshold );
 
     /**
      * Converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} by retrieving the first element of
@@ -168,7 +169,7 @@ public interface Slicer
      * @return the transformed pair
      */
 
-    PairOfDoubles transformPair(PairOfDoubleAndVectorOfDoubles pair);
+    PairOfDoubles transformPair( PairOfDoubleAndVectorOfDoubles pair );
 
     /**
      * Returns a value from the sorted array that corresponds to the input non-exceedence probability (p). This method
@@ -185,18 +186,18 @@ public interface Slicer
      * @return the threshold
      */
 
-    double getQuantile(double probability, double[] sorted);
+    double getQuantile( double probability, double[] sorted );
 
     /**
-     * Returns a {@link QuantileThreshold} for the prescribed {@link ProbabilityThreshold}, where the quantiles are
-     * mapped using {@link #getQuantile(double, double[])}.
+     * Returns a {@link Threshold} with quantiles defined from a prescribed {@link Threshold} with probabilities, 
+     * where the quantiles are mapped using {@link #getQuantile(double, double[])}.
      * 
      * @param sorted the sorted input array
-     * @param threshold the {@link ProbabilityThreshold} from which the {@link QuantileThreshold} is determined
+     * @param threshold the probability threshold from which the quantile threshold is determined
      * @param decimals an optional number of decimal places to which the threshold will be rounded up (may be null)
-     * @return the {@link QuantileThreshold}
+     * @return the probability threshold
      */
 
-    QuantileThreshold getQuantileFromProbability(ProbabilityThreshold threshold, double[] sorted, Integer decimals);
+    Threshold getQuantileFromProbability( Threshold threshold, double[] sorted, Integer decimals );
 
 }

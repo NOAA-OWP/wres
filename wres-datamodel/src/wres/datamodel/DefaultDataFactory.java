@@ -318,25 +318,36 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public Threshold getThreshold( final Double threshold, final Double thresholdUpper, final Operator condition )
     {
-        return new SafeThreshold( threshold, thresholdUpper, condition );
+        return new SafeThreshold.ThresholdBuilder().setThreshold( threshold )
+                                                   .setThresholdUpper( thresholdUpper )
+                                                   .setCondition( condition )
+                                                   .build();
     }
 
     @Override
-    public ProbabilityThreshold getProbabilityThreshold( final Double threshold,
-                                                         final Double thresholdUpper,
-                                                         final Operator condition )
+    public Threshold getProbabilityThreshold( final Double threshold,
+                                              final Double thresholdUpper,
+                                              final Operator condition )
     {
-        return new SafeProbabilityThreshold( threshold, thresholdUpper, condition );
+        return new SafeThreshold.ThresholdBuilder().setThresholdProbability( threshold )
+                                                   .setThresholdProbabilityUpper( thresholdUpper )
+                                                   .setCondition( condition )
+                                                   .build();
     }
 
     @Override
-    public QuantileThreshold getQuantileThreshold( final Double threshold,
-                                                   final Double thresholdUpper,
-                                                   final Double probability,
-                                                   final Double probabilityUpper,
-                                                   final Operator condition )
+    public Threshold getQuantileThreshold( final Double threshold,
+                                           final Double thresholdUpper,
+                                           final Double probability,
+                                           final Double probabilityUpper,
+                                           final Operator condition )
     {
-        return new SafeQuantileThreshold( threshold, thresholdUpper, probability, probabilityUpper, condition );
+        return new SafeThreshold.ThresholdBuilder().setThreshold( threshold )
+                                                   .setThresholdUpper( thresholdUpper )
+                                                   .setThresholdProbability( probability )
+                                                   .setThresholdProbabilityUpper( probabilityUpper )
+                                                   .setCondition( condition )
+                                                   .build();
     }
 
     @Override

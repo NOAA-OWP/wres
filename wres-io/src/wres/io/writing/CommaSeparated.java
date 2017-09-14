@@ -43,6 +43,7 @@ public class CommaSeparated
         // Prevent construction.
     }
 
+    private static final String HEADER_DELIMITER = " ";
 
     /**
      * Write numerical outputs to CSV files.
@@ -50,8 +51,6 @@ public class CommaSeparated
      * @param projectConfig the project configuration
      * @param feature the feature
      * @param storedMetricOutput the stored output
-     * @throws InterruptedException when the thread is interrupted
-     * @throws ExecutionException when a dependent task failed
      * @throws IOException when the writing itself fails
      * @throws ProjectConfigException when no output files are specified
      * @throws NullPointerException when any of the arguments are null
@@ -61,8 +60,7 @@ public class CommaSeparated
     public static void writeOutputFiles( ProjectConfig projectConfig,
                                          Feature feature,
                                          MetricOutputForProjectByLeadThreshold storedMetricOutput )
-            throws InterruptedException, ExecutionException, IOException,
-            ProjectConfigException
+            throws IOException, ProjectConfigException
     {
         Objects.requireNonNull( storedMetricOutput,
                                 "Metric outputs must not be null." );
@@ -85,41 +83,9 @@ public class CommaSeparated
         {
             if ( d.getType() == DestinationType.NUMERIC )
             {
-                DecimalFormat formatter = null;
 
-                if ( d.getDecimalFormat() != null
-                     && !d.getDecimalFormat().isEmpty() )
-                {
-                    formatter = new DecimalFormat();
-                    formatter.applyPattern( d.getDecimalFormat() );
-                }
-
-
-                SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
-
-                MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarOutput =
-                        storedMetricOutput.getScalarOutput();
-
-                MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorOutput =
-                        storedMetricOutput.getVectorOutput();
-
-                if ( scalarOutput != null ) // currently requiring some scalar output
-                {
-                    SortedMap<Integer, StringJoiner> intermediate =
-                            CommaSeparated.getScalarRows( scalarOutput, formatter );
-
-                    if ( vectorOutput != null )
-                    {
-                        CommaSeparated.appendVectorColumns( intermediate,
-                                                            vectorOutput,
-                                                            formatter );
-                    }
-
-                    for ( Map.Entry<Integer, StringJoiner> e : intermediate.entrySet() )
-                    {
-                        rows.put ( e.getKey(), e.getValue() );
-                    }
-                }
+                SortedMap<Integer, StringJoiner> rows =
+                        CommaSeparated.getNumericRows( d, storedMetricOutput );
 
                 File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( d );
 
@@ -144,6 +110,68 @@ public class CommaSeparated
 
 
     /**
+     * Get numeric rows for a DestinationConfig
+     * @param d the config to build intermediate rows from
+     * @param storedMetricOutput the output to use to build rows
+     * @return the rows in order
+     * @throws IOException when retrieval from storedMetricOutput fails
+     */
+
+    private static SortedMap<Integer, StringJoiner> getNumericRows(
+            DestinationConfig d,
+            MetricOutputForProjectByLeadThreshold storedMetricOutput )
+            throws IOException
+    {
+        DecimalFormat formatter = null;
+
+        if ( d.getDecimalFormat() != null
+             && !d.getDecimalFormat().isEmpty() )
+        {
+            formatter = new DecimalFormat();
+            formatter.applyPattern( d.getDecimalFormat() );
+        }
+
+        SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
+
+        MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarOutput = null;
+        MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorOutput = null;
+
+        try
+        {
+            scalarOutput = storedMetricOutput.getScalarOutput();
+            vectorOutput = storedMetricOutput.getVectorOutput();
+        }
+        catch ( InterruptedException ie )
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            throw new IOException( "While getting numeric output", ee );
+        }
+
+        if ( scalarOutput != null ) // currently requiring some scalar output
+        {
+            SortedMap<Integer, StringJoiner> intermediate =
+                    CommaSeparated.getScalarRows( scalarOutput, formatter );
+
+            if ( vectorOutput != null )
+            {
+                CommaSeparated.appendVectorColumns( intermediate,
+                                                    vectorOutput,
+                                                    formatter );
+            }
+
+            for ( Map.Entry<Integer, StringJoiner> e : intermediate.entrySet() )
+            {
+                rows.put ( e.getKey(), e.getValue() );
+            }
+        }
+
+        return rows;
+    }
+
+    /**
      * Get csv rows by lead time in intermediate format (StringJoiner)
      *
      * @param output data to iterate through
@@ -158,16 +186,16 @@ public class CommaSeparated
         SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
         StringJoiner headerRow = new StringJoiner( "," );
 
-        headerRow.add( "LEAD_TIME" );
+        headerRow.add( "LEAD" + HEADER_DELIMITER + "TIME" );
         for ( Map.Entry<MapKey<MetricConstants>,
                 MetricOutputMapByLeadThreshold<ScalarOutput>> m
                 : output.entrySet() )
         {
-            String name = m.getKey().getKey().name();
+            String name = m.getKey().getKey().toString();
 
             for ( Threshold t : m.getValue().keySetByThreshold() )
             {
-                String column = name + "_" + t;
+                String column = name + HEADER_DELIMITER + t;
                 headerRow.add( column );
 
                 for ( Integer leadTime : m.getValue().keySetByLead() )
@@ -242,61 +270,66 @@ public class CommaSeparated
                 MetricOutputMapByLeadThreshold<VectorOutput>> m
                 : output.entrySet() )
         {
-            String name = m.getKey().getKey().name();
+            Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> helper
+                    = DefaultDataFactory.getInstance()
+                                        .getSlicer()
+                                        .sliceByMetricComponent( m.getValue() );
 
-            for ( Threshold t : m.getValue().keySetByThreshold() )
+            String outerName = m.getKey().getKey().toString();
+
+            for ( Map.Entry<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> e
+                    : helper.entrySet() )
             {
-                String column = name + "_" + t;
-                headerRow.add( column );
+                String name = outerName + HEADER_DELIMITER + e.getKey()
+                                                              .toString();
 
-                for ( Integer leadTime : m.getValue().keySetByLead() )
+                for ( Threshold t : m.getValue().keySetByThreshold() )
                 {
-                    StringJoiner row = existingRows.get( leadTime );
+                    String column = name + HEADER_DELIMITER + t;
+                    headerRow.add( column );
 
-                    if ( row == null )
+                    for ( Integer leadTime : m.getValue().keySetByLead() )
                     {
-                        String message = "Expected MetricOutput to have "
-                                         + "consistent dimensions between the "
-                                         + "vector and scalar outputs. When "
-                                         + "looking for leadtime " + leadTime
-                                         + ", could not find it in scalar output.";
-                        throw new IllegalStateException( message );
-                    }
+                        StringJoiner row = existingRows.get( leadTime );
 
-                    // To maintain rectangular CSV output, construct keys using
-                    // both dimensions. If we do not find a value, use NA.
-                    MapBiKey<Integer,Threshold> key =
-                            DefaultDataFactory.getInstance()
-                                              .getMapKey( leadTime, t );
-
-                    VectorOutput value = m.getValue()
-                                          .get( key );
-
-                    String toWrite = "NA";
-
-                    if ( value != null
-                         && value.getData() != null
-                         && value.getData().getDoubles() != null)
-                    {
-                        StringJoiner listOfValues = new StringJoiner( ",", "\"[", "]\"" );
-                        double[] values = value.getData().getDoubles();
-
-                        for ( double innerValue : values )
+                        if ( row == null )
                         {
+                            String message = "Expected MetricOutput to have "
+                                             + "consistent dimensions between the "
+                                             + "vector and scalar outputs. When "
+                                             + "looking for leadtime "
+                                             + leadTime
+                                             + ", could not find it in scalar output.";
+                            throw new IllegalStateException( message );
+                        }
+
+                        // To maintain rectangular CSV output, construct keys using
+                        // both dimensions. If we do not find a value, use NA.
+                        MapBiKey<Integer, Threshold> key =
+                                DefaultDataFactory.getInstance()
+                                                  .getMapKey( leadTime, t );
+
+                        ScalarOutput value = e.getValue()
+                                              .get( key );
+
+                        String toWrite = "NA";
+
+                        if ( value != null
+                             && value.getData() != null )
+                        {
+
                             if ( formatter != null )
                             {
-                                String toAdd = formatter.format( innerValue );
-                                listOfValues.add( toAdd );
+                                toWrite = formatter.format( value.getData() );
                             }
                             else
                             {
-                                listOfValues.add( String.valueOf( innerValue ) );
+                                toWrite = value.toString();
                             }
                         }
-                        toWrite = listOfValues.toString();
-                    }
 
-                    row.add( toWrite );
+                        row.add( toWrite );
+                    }
                 }
             }
         }

@@ -83,20 +83,20 @@ public enum MetricConstants
      * Identifier for a Frequency Bias.
      */
 
-    FREQUENCY_BIAS( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),    
-    
+    FREQUENCY_BIAS( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
+
     /**
      * Identifier for an Index of Agreement.
      */
 
-    INDEX_OF_AGREEMENT( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),    
-    
+    INDEX_OF_AGREEMENT( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+
     /**
      * Identifier for the Kling-Gupta Efficiency index.
      */
-    
-    KLING_GUPTA_EFFICIENCY( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ), 
-    
+
+    KLING_GUPTA_EFFICIENCY( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ),
+
     /**
      * Identifier for a Mean Absolute Error.
      */
@@ -150,7 +150,7 @@ public enum MetricConstants
      */
 
     RANK_HISTOGRAM( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ),
-    
+
     /**
      * Identifier for the Relative Operating Characteristic.
      */
@@ -276,14 +276,14 @@ public enum MetricConstants
      * Identifier for the observed relative frequency with which an event occurs.
      */
 
-    OBSERVED_RELATIVE_FREQUENCY,    
-    
+    OBSERVED_RELATIVE_FREQUENCY,
+
     /**
      * Identifier for a rank ordering.
      */
-    
+
     RANK_ORDER,
-    
+
     /**
      * Identifier for predicted quantiles.
      */
@@ -438,6 +438,18 @@ public enum MetricConstants
     }
 
     /**
+     * Returns a string representation.
+     * 
+     * @return a string representation
+     */
+
+    @Override
+    public String toString()
+    {
+        return name().replaceAll( "_", " " );
+    }
+
+    /**
      * Type of metric input.
      */
 
@@ -558,7 +570,7 @@ public enum MetricConstants
         }
 
     }
-
+    
     /**
      * Type of metric decomposition.
      */
@@ -609,8 +621,8 @@ public enum MetricConstants
         public List<MetricConstants> getMetricComponents()
         {
             List<MetricConstants> all = new ArrayList<>( EnumSet.allOf( MetricConstants.class ) );
-            //Remove constants with the same string trace across MetricConstants and MetricDecompositionGroup
-            all.removeIf( a -> Objects.isNull( a.decGroup ) || a.toString().equals( toString() )
+            //Remove constants with the same name across MetricConstants and MetricDecompositionGroup
+            all.removeIf( a -> Objects.isNull( a.decGroup ) || a.name().equals( name() )
                                || !Arrays.asList( a.decGroup ).contains( this ) );
             return all;
         }

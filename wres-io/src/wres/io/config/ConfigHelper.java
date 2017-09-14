@@ -291,12 +291,32 @@ public class ConfigHelper
 
         String earliest = "";
 
-        try
+        if ( config.getConditions().getDates() != null
+             && config.getConditions().getDates().getEarliest() != null )
         {
-            earliest = config.getConditions().getDates().getEarliest();
-            return LocalDateTime.parse(earliest);
+            try
+            {
+                earliest = config.getConditions().getDates().getEarliest();
+                return LocalDateTime.parse( earliest );
+            }
+            catch ( DateTimeParseException dtpe )
+            {
+                String messageId = "date_parse_exception_earliest_date";
+                if ( LOGGER.isWarnEnabled()
+                     && ConfigHelper.messageSendPutIfAbsent( config,
+                                                             messageId ) )
+                {
+                    LOGGER.warn( "Correct the date \"{}\" near line {} column "
+                                 + "{} to ISO8601 format such as "
+                                 + "\"2017-06-27T16:16\"",
+                                earliest,
+                                config.getConditions().getDates().sourceLocation().getLineNumber(),
+                                config.getConditions().getDates().sourceLocation().getColumnNumber() );
+                }
+                return null;
+            }
         }
-        catch (NullPointerException npe)
+        else
         {
             String messageId = "no_earliest_date";
             if (LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent(config, messageId))
@@ -304,18 +324,6 @@ public class ConfigHelper
                 LOGGER.info("No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-07-06T11:35\" /> under <conditions> (near line {} column {} of project file) to specify an earliest date.",
                             config.getConditions().sourceLocation().getLineNumber(),
                             config.getConditions().sourceLocation().getColumnNumber());
-            }
-            return null;
-        }
-        catch (DateTimeParseException dtpe)
-        {
-            String messageId = "date_parse_exception_earliest_date";
-            if (LOGGER.isWarnEnabled() && ConfigHelper.messageSendPutIfAbsent(config, messageId))
-            {
-                LOGGER.warn("Correct the date \"{}\" near line {} column {} to ISO8601 format such as \"2017-06-27T16:16\"",
-                            earliest,
-                            config.getConditions().getDates().sourceLocation().getLineNumber(),
-                            config.getConditions().getDates().sourceLocation().getColumnNumber());
             }
             return null;
         }
@@ -337,12 +345,32 @@ public class ConfigHelper
 
         String latest = "";
 
-        try
+        if ( config.getConditions().getDates() != null
+             && config.getConditions().getDates().getLatest() != null )
         {
-            latest = config.getConditions().getDates().getLatest();
-            return LocalDateTime.parse(latest);
+            try
+            {
+                latest = config.getConditions().getDates().getLatest();
+                return LocalDateTime.parse( latest );
+            }
+            catch ( DateTimeParseException dtpe )
+            {
+                String messageId = "date_parse_exception_latest_date";
+                if ( LOGGER.isWarnEnabled()
+                     && ConfigHelper.messageSendPutIfAbsent( config,
+                                                             messageId ) )
+                {
+                    LOGGER.warn( "Correct the date \"{}\" after line {} col {} "
+                                 + "to ISO8601 format such as "
+                                 + "\"2017-06-27T16:16\"",
+                                latest,
+                                config.getConditions().getDates().sourceLocation().getLineNumber(),
+                                config.getConditions().getDates().sourceLocation().getColumnNumber() );
+                }
+                return null;
+            }
         }
-        catch (NullPointerException npe)
+        else
         {
             String messageId = "no_latest_date";
             if (LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent(config, messageId))
@@ -351,18 +379,6 @@ public class ConfigHelper
                             config.getConditions().sourceLocation().getLineNumber(),
                             config.getConditions().sourceLocation().getColumnNumber());
 
-            }
-            return null;
-        }
-        catch (DateTimeParseException dtpe)
-        {
-            String messageId = "date_parse_exception_latest_date";
-            if (LOGGER.isWarnEnabled() && ConfigHelper.messageSendPutIfAbsent(config, messageId))
-            {
-                LOGGER.warn("Correct the date \"{}\" after line {} col {} to ISO8601 format such as \"2017-06-27T16:16\"",
-                            latest,
-                            config.getConditions().getDates().sourceLocation().getLineNumber(),
-                            config.getConditions().getDates().sourceLocation().getColumnNumber());
             }
             return null;
         }

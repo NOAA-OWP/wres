@@ -22,9 +22,22 @@
           <pattern>%d{YYYY-MM-dd'T'HH:mm:ss.SSSZ} %X{pid} [%thread] %level %logger - %msg%n%exception{full}</pattern>
         </encoder>
     </appender>
+
     <!-- some prefer the message to be printed as formatted in the code -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+
+        <!-- To allow DEBUG in FILE but only INFO on STDOUT, uncomment the
+             following filter, then set the root level to be DEBUG (either by
+             editing the root appender below or by setting
+             -Dwres.logLevel=debug at runtime) -->
+        <!--
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        -->
+
         <encoder>
+
           <!-- %nopexception: suppress stacktrace here -->
           <!-- %exception{short}: just the first line for each exception -->
           <pattern>%msg%n%exception{short}</pattern>
@@ -36,8 +49,8 @@
         <level value="warn" />
     </logger>
 
-    <!-- Allow -DlogLevel to set logging level, otherwise info. -->
-    <root level="${logLevel:-info}">
+    <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
+    <root level="${wres.logLevel:-info}">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />
     </root>
