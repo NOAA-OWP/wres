@@ -1,5 +1,6 @@
 package wres.util;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -149,7 +150,7 @@ public final class Strings {
         MessageDigest complete = getMD5Algorithm();
         int numRead;
 
-        try ( InputStream fis = new FileInputStream( filename ) )
+        try ( InputStream fis = new BufferedInputStream( new FileInputStream( filename ) ))
         {
             do
             {
@@ -178,29 +179,17 @@ public final class Strings {
             checksum = complete.digest();
         }
 
-		/*final byte[] hexTable = {
-				(byte)'0', (byte)'1', (byte)'2', (byte)'3',
-				(byte)'4', (byte)'5', (byte)'6', (byte)'7',
-				(byte)'8', (byte)'9', (byte)'a', (byte)'b',
-				(byte)'c', (byte)'d', (byte)'e', (byte)'f'
-		};*/
-
 		final String hexes = "0123456789ABCDEF";
 
 		final StringBuilder hex = new StringBuilder( 2 * checksum.length );
-		//int index = 0;
-		//byte[] hex = new byte[2 * checksum.length];
 
 		for (byte b : checksum)
 		{
 			hex.append(hexes.charAt((b & 0xF0) >> 4))
 			   .append(hexes.charAt( b & 0x0F ));
-			//int v = b & 0xFF;
-			//hex[index++] = hexTable[v >>> 4];
-			//hex[index++] = hexTable[v & 0xF];
 		}
 
-		return hex.toString(); //new String(hex, "ASCII");
+		return hex.toString();
 	}
 
 	private static MessageDigest getMD5Algorithm()

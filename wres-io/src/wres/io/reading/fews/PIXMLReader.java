@@ -8,31 +8,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
+import wres.config.generated.Feature;
+import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Scenarios;
+import wres.io.data.caching.Projects;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ForecastDetails;
 import wres.io.data.details.ForecastEnsembleDetails;
+import wres.io.data.details.ProjectDetails;
 import wres.io.reading.XMLReader;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Internal;
-import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.Time;
@@ -57,8 +57,7 @@ public final class PIXMLReader extends XMLReader
 																			  "observation_time, " +
 																			  "observed_value, " +
 																			  "measurementunit_id, " +
-																			  "source_id, " +
-                                                                              "scenario_id)";
+																			  "source_id)";
 
 	private static String createForecastValuePartition(Integer leadTime) throws SQLException {
 
@@ -78,19 +77,21 @@ public final class PIXMLReader extends XMLReader
 	 * @param isForecast Whether or not the reader is for forecast data
 	 */
     @Internal(exclusivePackage = "wres.io")
-	public PIXMLReader(String filename, boolean isForecast, Future<String> futureHash)
+	public PIXMLReader(String filename, boolean isForecast, String hash, ProjectDetails projectDetails)
 	{
 		super(filename);
 		this.isForecast = isForecast;
-		this.futureHash = futureHash;
+		this.hash = hash;
+		this.projectDetails = projectDetails;
 	}
 
     @Internal(exclusivePackage = "wres.io")
-	public PIXMLReader(String filename, InputStream inputStream, boolean isForecast, Future<String> futureHash)
+	public PIXMLReader(String filename, InputStream inputStream, boolean isForecast, String hash, ProjectDetails projectDetails)
 	{
 		super(filename, inputStream);
 		this.isForecast = isForecast;
-		this.futureHash = futureHash;
+		this.hash = hash;
+		this.projectDetails = projectDetails;
 	}
 	
 	@Override
@@ -110,7 +111,20 @@ public final class PIXMLReader extends XMLReader
 		}
 	}
 
-	/**
+    @Override
+    protected void completeParsing()
+    {
+        try
+        {
+            this.projectDetails.addSource( this.hash, this.dataSourceConfig );
+        }
+        catch ( SQLException e )
+        {
+            LOGGER.error( Strings.getStackTrace( e ) );
+        }
+    }
+
+    /**
 	 * Interprets information within PIXML "series" tags
 	 * @param reader The XML reader, positioned at a "series" tag
 	 */
@@ -258,7 +272,7 @@ public final class PIXMLReader extends XMLReader
 			currentScript = new StringBuilder();
 		}
 		
-		currentScript.append(Features.getVariablePositionID(currentLID, currentStationName, getVariableID()));
+		currentScript.append(this.getVariablePositionID());
 		currentScript.append(delimiter);
 		currentScript.append("'").append(observedTime).append("'");
 		currentScript.append(delimiter);
@@ -267,8 +281,6 @@ public final class PIXMLReader extends XMLReader
 		currentScript.append(String.valueOf(getMeasurementID()));
 		currentScript.append(delimiter);
 		currentScript.append(String.valueOf(getSourceID()));
-		currentScript.append(delimiter);
-		currentScript.append(this.getScenarioID());
 		
 		insertCount++;
 	}
@@ -338,15 +350,17 @@ public final class PIXMLReader extends XMLReader
 				if (localName.equalsIgnoreCase("locationId"))
 				{
 					//	If we are at the tag for the location id, save it to the location metadata
-					currentLID = XML.getXMLText(reader);
+					this.currentLID = XML.getXMLText(reader);
 
-                    // TODO: Add FCST to the model
-					// LIDs have a length of 5. If it is greater, it is of the form of LID+FCST
-					if (currentLID.length() > 5)
+					/*if (currentLID.length() > 5)
 					{
-					    //currentFCST = currentLID.substring(5, currentLID.length());
-					    currentLID = currentLID.substring(0, 5);
-					}
+					    String shortendID = currentLID.substring(0, 5);
+
+					    if (Features.exists( shortendID ))
+						{
+							this.currentLID = shortendID;
+						}
+					}*/
 				}
 				else if (localName.equalsIgnoreCase("stationName"))
 				{
@@ -498,7 +512,7 @@ public final class PIXMLReader extends XMLReader
             throws SQLException, IOException, ExecutionException,
             InterruptedException
     {
-	    this.currentForecast.setScenario( this.getSpecifiedScenario() );
+	    this.currentForecast.setProject( this.getProjectName() );
         this.currentForecast.setType( this.dataSourceConfig.getType().value() );
 
         if (this.currentForecast.getHash() == null)
@@ -582,14 +596,11 @@ public final class PIXMLReader extends XMLReader
 		return currentSourceID;
 	}
 
-	private Integer getScenarioID() throws SQLException
+	private Integer getProjectID() throws SQLException
     {
         if (this.scenarioID == null)
         {
-            this.scenarioID = Scenarios.getScenarioID( this.getSpecifiedScenario(),
-                                                       this.dataSourceConfig
-                                                               .getType()
-                                                               .value() );
+            this.scenarioID = Projects.getProjectID( this.getProjectName());
         }
         return this.scenarioID;
     }
@@ -660,13 +671,13 @@ public final class PIXMLReader extends XMLReader
     private boolean featureIsApproved (final String lid) {
 	    boolean approved = true;
 
-	    boolean hasLocations = Collections.exists(this.getSpecifiedFeatures(), (Conditions.Feature feature) -> {
+	    boolean hasLocations = Collections.exists(this.getSpecifiedFeatures(), (Feature feature) -> {
             return feature.getLocation() != null && feature.getLocation().getLid() != null;
         });
 
 	    if (hasLocations)
         {
-            approved = Collections.exists(this.getSpecifiedFeatures(), (Conditions.Feature feature) -> {
+            approved = Collections.exists(this.getSpecifiedFeatures(), (Feature feature) -> {
                 return feature.getLocation() !=  null &&
                         feature.getLocation().getLid() != null &&
                         feature.getLocation().getLid().equalsIgnoreCase(lid);
@@ -848,7 +859,9 @@ public final class PIXMLReader extends XMLReader
     /**
      * The operation started prior to parsing used to generate a hash for the file
      */
-	private final Future<String> futureHash;
+	//private final Future<String> futureHash;
+
+	private final ProjectDetails projectDetails;
 
     /**
      * The ID of the scenario for the data
@@ -857,7 +870,7 @@ public final class PIXMLReader extends XMLReader
 
     private String getHash() throws ExecutionException, InterruptedException
     {
-        if (this.hash == null)
+        /*if (this.hash == null)
         {
             if (this.futureHash != null)
             {
@@ -871,7 +884,7 @@ public final class PIXMLReader extends XMLReader
                 throw new NotImplementedException( message );
 
             }
-        }
+        }*/
 
         return this.hash;
     }
@@ -912,30 +925,31 @@ public final class PIXMLReader extends XMLReader
 		return this.dataSourceConfig;
 	}
 
-	public void setSpecifiedFeatures(List<Conditions.Feature> specifiedFeatures)
+	public void setSpecifiedFeatures(List<Feature> specifiedFeatures)
     {
         this.specifiedFeatures = specifiedFeatures;
     }
 
-    private List<Conditions.Feature> getSpecifiedFeatures()
+    private List<Feature> getSpecifiedFeatures()
     {
         return this.specifiedFeatures;
     }
 
-    private String getSpecifiedScenario()
+    private String getProjectName()
     {
-        String scenario = "variable";
+        String name = "UNNAMED";
 
-        if (this.dataSourceConfig != null)
+        if (this.projectConfig != null)
         {
-            scenario = this.dataSourceConfig.getScenario();
+            name = this.projectConfig.getName();
         }
 
-        return scenario;
+        return name;
     }
 
+    private ProjectConfig projectConfig;
     private DataSourceConfig dataSourceConfig;
-    private List<Conditions.Feature> specifiedFeatures;
+    private List<Feature> specifiedFeatures;
 
     private static final Map<Integer, StringBuilder> builderMap = new TreeMap<>();
     private static final Map<Integer, String> headerMap = new TreeMap<>();

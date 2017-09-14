@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS wres.feature
   latitude real,
   longitude real,
   nwm_index int,
+  parent_feature_id int,
   CONSTRAINT feature_pkey PRIMARY KEY (feature_id)
 )
 WITH (
@@ -52,4 +53,9 @@ CREATE INDEX IF NOT EXISTS feature_lid_idx
   ON wres.feature
   USING btree
   (lid COLLATE pg_catalog."default");
+
+DROP INDEX IF EXISTS wres.parent_feature_idx;
+  ON wres.Feature
+  USING btree
+  (parent_feature_id);
 

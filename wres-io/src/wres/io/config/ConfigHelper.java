@@ -20,13 +20,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
-import wres.config.generated.Conditions;
 import wres.config.generated.Coordinate;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
+import wres.config.generated.Feature;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
@@ -45,11 +45,6 @@ public class ConfigHelper
     private static final ConcurrentMap<ProjectConfig, ConcurrentSkipListSet<String>> messages
             = new ConcurrentHashMap<>();
 
-    public static boolean isRight(DataSourceConfig dataSourceConfig, ProjectConfig projectConfig)
-    {
-        return dataSourceConfig == projectConfig.getInputs().getRight();
-    }
-
     /**
      * Given a config, generate feature IDs and return a sql string of them.
      *
@@ -61,7 +56,7 @@ public class ConfigHelper
     throws IOException
     {
         if (config.getConditions() == null
-            || config.getConditions().getFeature() == null)
+            || config.getConditions().getFeatures() == null)
         {
             return "";
         }
@@ -71,7 +66,7 @@ public class ConfigHelper
         try
         {
             // build a sql string of feature_ids, using cache to populate as needed
-            for (Conditions.Feature feature : Collections.where(config.getConditions().getFeature(), feature -> {
+            for (Feature feature : Collections.where(config.getConditions().getFeatures(), feature -> {
                 return feature.getLocation() != null && !feature.getLocation().getLid().isEmpty();
             }))
             {
@@ -188,7 +183,7 @@ public class ConfigHelper
         return qualifier;
     }
 
-    public static String getVariablePositionClause(Conditions.Feature feature, int variableId)
+    public static String getVariablePositionClause( Feature feature, int variableId)
     {
         StringBuilder clause = new StringBuilder();
 
@@ -264,6 +259,22 @@ public class ConfigHelper
         }
 
         return source;
+    }
+
+    public static boolean isLeft(DataSourceConfig dataSourceConfig, ProjectConfig projectConfig)
+    {
+        return projectConfig.getInputs().getLeft().equals( dataSourceConfig );
+    }
+
+    public static boolean isRight(DataSourceConfig dataSourceConfig, ProjectConfig projectConfig)
+    {
+        return projectConfig.getInputs().getRight().equals( dataSourceConfig );
+    }
+
+    public static boolean isBaseline(DataSourceConfig dataSourceConfig, ProjectConfig projectConfig)
+    {
+        return projectConfig.getInputs().getBaseline() != null &&
+               projectConfig.getInputs().getBaseline().equals( dataSourceConfig );
     }
 
     /**
@@ -392,7 +403,7 @@ public class ConfigHelper
         return theSet.add(message);
     }
 
-    public static String getFeatureDescription(Conditions.Feature feature)
+    public static String getFeatureDescription(Feature feature)
     {
         String description = null;
 
@@ -415,20 +426,19 @@ public class ConfigHelper
         }
         else if (feature.getPolygon() != null && feature.getPolygon().getPoint().size() >= 3)
         {
-            description = "Within: (";
+            description = "Within_";
             List<String> coordinates = new ArrayList<>();
 
             for (Coordinate coordinate : feature.getPolygon().getPoint())
             {
-                coordinates.add("{" + String.valueOf(coordinate.getX()) + "," + String.valueOf(coordinate.getY()) + "}");
+                coordinates.add(String.valueOf(coordinate.getX()) + "," + String.valueOf(coordinate.getY()));
             }
 
-            description += String.join(", ", coordinates);
-            description += ")";
+            description += String.join("_", coordinates);
         }
         else if (feature.getPoint() != null)
         {
-            description = "{" + String.valueOf(feature.getPoint().getX()) + "," + String.valueOf(feature.getPoint().getY()) + "}";
+            description = String.valueOf(feature.getPoint().getX()) + "," + String.valueOf(feature.getPoint().getY());
         }
 
         return description;

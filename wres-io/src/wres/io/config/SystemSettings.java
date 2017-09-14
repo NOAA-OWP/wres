@@ -84,7 +84,7 @@ public final class SystemSettings extends XMLReader
 	{
 		try
 		{
-			String value = null;
+			String value;
 
 			if (reader.getEventType() == XMLStreamConstants.START_ELEMENT)
 			{

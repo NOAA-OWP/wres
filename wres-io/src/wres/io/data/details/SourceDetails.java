@@ -70,6 +70,12 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
     {
         this.hash = hash;
     }
+
+    public String getHash()
+	{
+		return this.hash;
+	}
+
 	@Override
 	public int compareTo(SourceDetails other) {
 		Integer id = this.sourceID;
@@ -160,87 +166,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
         @Override
         public int compareTo(SourceKey other)
         {
-
-            int equality;
-
-            if (this.getSourcePath() == null && other.getSourcePath() == null)
-            {
-                equality = 0;
-            }
-            else if (this.getSourcePath() != null && other.getSourcePath() == null)
-            {
-                equality = 1;
-            }
-            else if (this.getSourcePath() == null && other.getSourcePath() != null)
-            {
-                equality = -1;
-            }
-            else
-            {
-                equality = this.getSourcePath().toLowerCase().compareTo(other.getSourcePath().toLowerCase());
-            }
-
-            if (equality == 0)
-            {
-                if (this.getSourceTime() == null && other.getSourceTime() == null)
-                {
-                    equality = 0;
-                }
-                else if (this.getSourceTime() != null && other.getSourceTime() == null)
-                {
-                    equality = 1;
-                }
-                else if (this.getSourceTime() == null && other.getSourceTime() != null)
-                {
-                    equality = -1;
-                }
-                else
-                {
-                    equality = this.getSourceTime().toLowerCase().compareTo(other.getSourceTime().toLowerCase());
-                }
-            }
-
-            if (equality == 0)
-            {
-                if (this.getLead() == null && other.getLead() == null)
-                {
-                    equality = 0;
-                }
-                else if (this.getLead() != null && other.getLead() == null)
-                {
-                    equality = 1;
-                }
-                else if (this.getLead() == null && other.getLead() != null)
-                {
-                    equality = -1;
-                }
-                else
-                {
-                    equality = this.getLead().compareTo(other.getLead());
-                }
-            }
-
-            if (equality == 0)
-			{
-				if (this.getHash() == null && other.getHash() == null)
-				{
-					equality = 0;
-				}
-				else if (this.getHash() != null && other.getHash() == null)
-				{
-					equality = 1;
-				}
-				else if (this.getHash() == null && other.getHash() != null)
-				{
-					equality = -1;
-				}
-				else
-				{
-					equality = this.getHash().compareTo( other.getHash() );
-				}
-			}
-
-            return equality;
+			return this.hash.compareTo( other.hash );
         }
         
         public String getSourcePath()
@@ -272,10 +198,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(this.sourcePath,
-								this.sourceTime,
-								this.getLead(),
-								this.getHash());
+			return Objects.hash(this.getHash());
 		}
 
 		private final String sourcePath;

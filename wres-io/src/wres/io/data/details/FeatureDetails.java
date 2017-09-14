@@ -99,7 +99,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 	 */
 	private String stationName()
 	{
-		String name = null;
+		String name;
 		
 		if (station_name == null)
 		{
@@ -151,9 +151,14 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 		
 		script += "WITH new_feature AS" + NEWLINE;
 		script += "(" + NEWLINE;
-		script += "		INSERT INTO wres.Feature (lid, feature_name)" + NEWLINE;
+		script += "		INSERT INTO wres.Feature (lid, feature_name, parent_feature_id)" + NEWLINE;
 		script += "		SELECT '" + lid + "'," + NEWLINE;
-		script += "			" + stationName() + NEWLINE;
+		script += "			" + stationName() + "," + NEWLINE;
+		script += "			(" + NEWLINE;
+		script += "				SELECT feature_id" + NEWLINE;
+		script += "				FROM wres.Feature F" + NEWLINE;
+		script += "				WHERE '" + this.lid + "' LIKE F.lid || '%'" + NEWLINE;
+		script += "			)" + NEWLINE;
 		script += "		WHERE NOT EXISTS (" + NEWLINE;
 		script += "			SELECT 1" + NEWLINE;
 		script += "			FROM wres.Feature" + NEWLINE;

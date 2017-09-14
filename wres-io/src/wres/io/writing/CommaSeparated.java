@@ -17,9 +17,9 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 
 import wres.config.ProjectConfigException;
-import wres.config.generated.Conditions;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
+import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MapBiKey;
@@ -59,7 +59,7 @@ public class CommaSeparated
      */
 
     public static void writeOutputFiles( ProjectConfig projectConfig,
-                                         Conditions.Feature feature,
+                                         Feature feature,
                                          MetricOutputForProjectByLeadThreshold storedMetricOutput )
             throws InterruptedException, ExecutionException, IOException,
             ProjectConfigException

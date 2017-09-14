@@ -29,7 +29,7 @@ public class DualString implements Comparable<DualString>
 
     @Override
     public int compareTo (final DualString other) {
-        int comparison = -1;
+        int comparison;
 
         if (this.getFirst() == null && other.getFirst() == null)
         {

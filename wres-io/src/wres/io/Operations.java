@@ -12,7 +12,7 @@ import javax.xml.transform.TransformerException;
 
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.Conditions;
+import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.SystemSettings;
@@ -72,9 +72,12 @@ public final class Operations {
         return completedSmoothly;
     }
 
-    public static InputGenerator getInputs(ProjectConfig projectConfig, Conditions.Feature feature)
+    public static InputGenerator getInputs(ProjectConfig projectConfig,
+                                           Feature leftFeature,
+                                           Feature rightFeature,
+                                           Feature baselineFeature)
     {
-        return new InputGenerator(projectConfig, feature);
+        return new InputGenerator(projectConfig, leftFeature, rightFeature, baselineFeature);
     }
 
     public static void install()

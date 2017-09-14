@@ -13,14 +13,15 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
 import wres.io.concurrency.ObservationSaver;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Scenarios;
+import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Projects;
+import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
@@ -50,6 +51,15 @@ public class SourceLoader
      */
     public List<Future> load()
     {
+        try
+        {
+            this.projectDetails = Projects.getProject( this.projectConfig );
+        }
+        catch ( SQLException e )
+        {
+            e.printStackTrace();
+        }
+
         List<Future> savingFiles = new ArrayList<>();
 
         savingFiles.addAll(loadConfig(getLeftSource()));
@@ -168,11 +178,17 @@ public class SourceLoader
 
             if (ConfigHelper.isForecast(dataSourceConfig)) {
                 LOGGER.trace("Loading {} as forecast data...", absolutePath);
-                task = Executor.execute(new ForecastSaver(absolutePath, dataSourceConfig, this.getSpecifiedFeatures()));
+                task = Executor.execute(new ForecastSaver(absolutePath,
+                                                          this.projectDetails,
+                                                          dataSourceConfig,
+                                                          dataSourceConfig.getFeatures()));
             }
             else {
                 LOGGER.trace("Loading {} as Observation data...");
-                task = Executor.execute(new ObservationSaver(absolutePath, dataSourceConfig, this.getSpecifiedFeatures()));
+                task = Executor.execute(new ObservationSaver(absolutePath,
+                                                             this.projectDetails,
+                                                             dataSourceConfig,
+                                                             dataSourceConfig.getFeatures()));
             }
         }
         else
@@ -187,12 +203,13 @@ public class SourceLoader
 
     private boolean shouldIngest(String filePath, DataSourceConfig.Source source, DataSourceConfig dataSourceConfig)
     {
+        if (this.projectDetails.isEmpty())
+        {
+            return true;
+        }
+
         SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
         SourceType pathFormat = ReaderFactory.getFiletype(filePath);
-
-        boolean ingest = specifiedFormat == SourceType.UNDEFINED ||
-                         pathFormat == SourceType.ARCHIVE ||
-                         specifiedFormat.equals(pathFormat);
 
         // Archives perform their own ingest verification
         if (pathFormat == SourceType.ARCHIVE)
@@ -201,8 +218,13 @@ public class SourceLoader
                           "determined that it is an archive that will need to " +
                           "be further evaluated.",
                           filePath);
+            return true;
         }
-        else if (ingest)
+
+        boolean ingest = specifiedFormat == SourceType.UNDEFINED ||
+                         specifiedFormat.equals(pathFormat);
+
+        if (ingest)
         {
             try {
                 ingest = !dataExists(filePath, dataSourceConfig);
@@ -233,63 +255,38 @@ public class SourceLoader
         return ingest;
     }
 
-    private boolean dataExists(String sourceName, DataSourceConfig dataSourceConfig) throws SQLException {
-        StringBuilder script = new StringBuilder();
-        
-        script.append("SELECT EXISTS (").append(NEWLINE);
-        script.append("     SELECT 1").append(NEWLINE);
-        
-        if (ConfigHelper.isForecast(dataSourceConfig))
-        {
-            script.append("     FROM wres.Forecast F").append(NEWLINE);
-            script.append("     INNER JOIN wres.ForecastSource SL").append(NEWLINE);
-            script.append("         ON SL.forecast_id = F.forecast_id").append(NEWLINE);
-            script.append("     INNER JOIN wres.ForecastEnsemble FE").append(NEWLINE);
-            script.append("         ON FE.forecast_id = F.forecast_id").append(NEWLINE);
-            script.append("     INNER JOIN wres.VariablePosition VP").append(NEWLINE);
-            script.append("         ON VP.variableposition_id = FE.variableposition_id").append(NEWLINE);
-        }
-        else
-        {
-            script.append("     FROM wres.Observation SL").append(NEWLINE);
-            script.append("     INNER JOIN wres.VariablePosition VP").append(NEWLINE);
-            script.append("         ON VP.variableposition_id = SL.variableposition_id").append(NEWLINE);
-        }
-        
-        script.append("     INNER JOIN wres.Source S").append(NEWLINE);
-        script.append("         ON S.source_id = SL.source_id").append(NEWLINE);
-        script.append("     INNER JOIN wres.Variable V").append(NEWLINE);
-        script.append("         ON VP.variable_id = V.variable_id").append(NEWLINE);
+    private boolean dataExists(String sourceName, DataSourceConfig dataSourceConfig) throws SQLException
+    {
+        boolean exists;
 
         try
         {
-            script.append("     WHERE S.hash = '")
-                  .append(Strings.getMD5Checksum( sourceName ))
-                  .append("'")
-                  .append(NEWLINE);
+
+            String hash = Strings.getMD5Checksum( sourceName );
+
+            // Check to see if the file has already been ingested for this project
+            exists = this.projectDetails.hasSource( hash, dataSourceConfig);
+
+            if (!exists)
+            {
+                // Check to see if some other project has ingested this data
+                exists = DataSources.hasSource(hash);
+
+                // If the data was ingested by another project...
+                if (exists)
+                {
+                    // Add that source to this project
+                    this.projectDetails.addSource( hash, dataSourceConfig);
+                }
+            }
         }
         catch ( IOException e )
         {
             LOGGER.error("The filesystem is reporting that the found source doesn't exist.");
             throw new RuntimeException( "The filesystem is reporting that the found source doesn't exist.", e );
         }
-
-        script.append("         AND V.variable_name = '").append(dataSourceConfig.getVariable().getValue()).append("'").append(NEWLINE);
-
-        if (ConfigHelper.isForecast( dataSourceConfig ))
-        {
-            script.append("         AND F.scenario_id = ");
-        }
-        else
-        {
-            script.append("         AND SL.scenario_id = ");
-        }
-
-        script.append( Scenarios.getScenarioID( dataSourceConfig.getScenario(), dataSourceConfig.getType().value()))
-              .append(NEWLINE);
-        script.append(");");
         
-        return Database.getResult(script.toString(), "exists");
+        return exists;
     }
 
     private DataSourceConfig getLeftSource()
@@ -328,18 +325,7 @@ public class SourceLoader
         return source;
     }
 
-    private List<Conditions.Feature> getSpecifiedFeatures()
-    {
-        List<Conditions.Feature> specifiedFeatures = null;
-
-        if (this.projectConfig != null && this.projectConfig.getConditions() != null)
-        {
-            specifiedFeatures = this.projectConfig.getConditions().getFeature();
-        }
-
-        return specifiedFeatures;
-    }
-
     private final ProjectConfig projectConfig;
     private boolean alreadySuspendedIndexes;
+    private ProjectDetails projectDetails;
 }

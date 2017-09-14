@@ -1,16 +1,17 @@
 package wres.io.concurrency;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.config.generated.Conditions;
-import wres.config.generated.DataSourceConfig;
-import wres.io.reading.BasicSource;
-import wres.io.reading.ReaderFactory;
-import wres.util.FormattedStopwatch;
-import wres.util.Internal;
-
 import java.io.IOException;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.Feature;
+import wres.io.data.details.ProjectDetails;
+import wres.io.reading.BasicSource;
+import wres.io.reading.ReaderFactory;
+import wres.util.Internal;
 
 /**
  * Saves the observation at the given location
@@ -25,10 +26,12 @@ public class ObservationSaver extends WRESRunnable {
 
     @Internal(exclusivePackage = "wres.io")
 	public ObservationSaver(String filepath,
+                            ProjectDetails projectDetails,
                             DataSourceConfig dataSourceConfig,
-                            List<Conditions.Feature> specifiedFeatures)
+                            List<Feature> specifiedFeatures)
     {
         this.dataSourceConfig = dataSourceConfig;
+        this.projectDetails = projectDetails;
         this.specifiedFeatures = specifiedFeatures;
         this.filepath = filepath;
     }
@@ -42,31 +45,13 @@ public class ObservationSaver extends WRESRunnable {
 
 		try {
 			source = ReaderFactory.getReader(this.filepath);
-			FormattedStopwatch watch = new FormattedStopwatch();
-            if (this.getLogger().isDebugEnabled())
-            {
-                watch.start();
-				this.getLogger().debug("Attempting to save '" + this.filepath +"' to the database...");
-            }
 
-            if (this.dataSourceConfig != null)
-            {
-                source.setDataSourceConfig(this.dataSourceConfig);
-            }
+            source.setDataSourceConfig(this.dataSourceConfig);
 
-            if (this.specifiedFeatures != null)
-            {
-                source.setSpecifiedFeatures(this.specifiedFeatures);
-            }
+            source.setSpecifiedFeatures( this.dataSourceConfig.getFeatures() );
 
+            source.setProjectDetails( this.projectDetails );
 			source.saveObservation();
-
-            if (this.getLogger().isDebugEnabled())
-            {
-                watch.stop();
-				this.getLogger().debug("'" + this.filepath+ "' attempt to save to the database took "
-                                     + watch.getFormattedDuration());
-            }
 		}
         catch (IOException ioe)
         {
@@ -75,9 +60,10 @@ public class ObservationSaver extends WRESRunnable {
         }
 	}
 
-	private String filepath = null;
-	private final List<Conditions.Feature> specifiedFeatures;
+	private final String filepath;
+	private final List<Feature> specifiedFeatures;
 	private final DataSourceConfig dataSourceConfig;
+	private final ProjectDetails projectDetails;
 
 	@Override
 	protected Logger getLogger () {

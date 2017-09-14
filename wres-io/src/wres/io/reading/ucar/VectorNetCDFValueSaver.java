@@ -358,7 +358,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
             }
 
             details.setType( datasourceType.value() );
-            details.setScenario( range );
+            details.setProject( range );
 
             this.forecastID = details.getForecastID();
         }

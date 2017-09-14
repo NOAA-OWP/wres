@@ -54,18 +54,7 @@
                 </xs:complexType>
             </xs:element>
 
-            <xs:element name="feature" minOccurs="1" maxOccurs="unbounded">
-                <xs:complexType>
-                    <xs:choice>
-                        <xs:element name="polygon" type="polygon"/>
-                        <xs:element name="point" type="coordinate"/>
-                        <xs:element name="location" type="location"/>
-                        <xs:element name="index" type="variableIndex" />
-                    </xs:choice>
-                    <xs:attribute name="label" type="xs:string" />
-                    <xs:attribute name="exclude" type="xs:boolean" default="false" />
-                </xs:complexType>
-            </xs:element>
+            <xs:element name="features" type="feature" minOccurs="1" maxOccurs="unbounded"/>
 
             <!-- idea here is mask is a WKT, or optionally a filename,
                  so you could do either:
@@ -84,6 +73,17 @@
         </xs:sequence>
         <xs:attribute name="firstLead" type="xs:int" default="1"/>
         <xs:attribute name="lastLead" type="xs:int" default="2147483647" />
+    </xs:complexType>
+
+    <xs:complexType name="feature">
+        <xs:choice>
+            <xs:element name="polygon" type="polygon"/>
+            <xs:element name="point" type="coordinate"/>
+            <xs:element name="location" type="location"/>
+            <xs:element name="index" type="variableIndex" />
+        </xs:choice>
+        <xs:attribute name="label" type="xs:string" />
+        <xs:attribute name="exclude" type="xs:boolean" default="false" />
     </xs:complexType>
 
     <xs:complexType name="location">
@@ -148,7 +148,7 @@
                     </xs:simpleContent>
                 </xs:complexType>
             </xs:element>
-
+            <xs:element name="features" maxOccurs="unbounded" type="feature" />
             <xs:element name="ensemble" type="ensembleCondition" minOccurs="0" maxOccurs="unbounded" />
             <xs:element name="arbitraryFunctionToApplyToValues" type="xs:string" minOccurs="0" maxOccurs="1" />
             <xs:element name="timeShift" minOccurs="0" maxOccurs="1">
@@ -161,7 +161,6 @@
             </xs:element>
             <xs:element name="timeAggregation" type="timeAggregation" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
-        <xs:attribute name="scenario" type="xs:string" default="variable" />
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
@@ -513,6 +512,7 @@
             </xs:sequence>
 
             <xs:attribute name="label" type="xs:string" />
+            <xs:attribute name="name" type="xs:string" use="required" />
 
         </xs:complexType>
     </xs:element>
