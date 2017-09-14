@@ -115,18 +115,6 @@
         <xs:attribute name="y" type="xs:int" />
     </xs:complexType>
 
-    <!-- In order to avoid inappropriate aggregations, we need to know the
-         underlying class of the data collected. This is different from
-         prescribing an aggregation in the course of processing data. This enum
-         is for describing data, not prescribing transformations. -->
-    <xs:simpleType name="accumulationType">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="instantaneous" />
-            <xs:enumeration value="average" />
-            <xs:enumeration value="accumulation" />
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:complexType name="datasource">
 
         <!-- for class naming using xjc-->
@@ -144,7 +132,6 @@
                     <xs:simpleContent>
                         <xs:extension base="xs:anyURI">
                             <xs:attribute name="format" type="format" />
-                            <xs:attribute name="accumulationType" type="accumulationType" />
                             <!-- Can we remove unit below? Shouldn't the unit of
                                  the variable suffice? -Jesse -->
                             <xs:attribute name="unit" type="xs:string" default="" />
