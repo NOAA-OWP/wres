@@ -34,7 +34,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.QuantileThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
@@ -661,9 +660,9 @@ public class Chart2DTestOutput extends TestCase
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold( constants[0],
-                                                                                    probConstants[0],
-                                                                                    Operator.GREATER );
+                    final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                                                                            probConstants[0],
+                                                                            Operator.GREATER );
                     final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
 
                     //Build the scalar result
@@ -731,9 +730,9 @@ public class Chart2DTestOutput extends TestCase
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold( constants[0],
-                                                                                    probConstants[0],
-                                                                                    Operator.GREATER );
+                    final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                                                                            probConstants[0],
+                                                                            Operator.GREATER );
                     final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
 
                     //Build the scalar result
@@ -769,7 +768,7 @@ public class Chart2DTestOutput extends TestCase
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
         final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         //Read only selected quantiles
-        final List<QuantileThreshold> allowed = new ArrayList<>();
+        final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
                 new double[][] { { 0.1, 858.04 }, { 0.5, 2707.5 }, { 0.9, 9647.0 }, { 0.95, 13685.0 } };
         for ( final double[] next : allow )
@@ -819,9 +818,9 @@ public class Chart2DTestOutput extends TestCase
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold( constants[0],
-                                                                                    probConstants[0],
-                                                                                    Operator.GREATER );
+                    final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                                                                            probConstants[0],
+                                                                            Operator.GREATER );
                     //Read only selected quantiles
                     if ( allowed.contains( q ) )
                     {
@@ -887,7 +886,7 @@ public class Chart2DTestOutput extends TestCase
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
         final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         //Read only selected quantiles
-        final List<QuantileThreshold> allowed = new ArrayList<>();
+        final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
                 new double[][] { { 0.1, 858.04 }, { 0.5, 2707.5 }, { 0.9, 9647.0 }, { 0.95, 13685.0 } };
         for ( final double[] next : allow )
@@ -928,9 +927,9 @@ public class Chart2DTestOutput extends TestCase
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold( constants[0],
-                                                                                    probConstants[0],
-                                                                                    Operator.GREATER );
+                    final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                                                                            probConstants[0],
+                                                                            Operator.GREATER );
                     //Read only selected quantiles
                     if ( allowed.contains( q ) )
                     {
@@ -1026,9 +1025,9 @@ public class Chart2DTestOutput extends TestCase
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final QuantileThreshold q = outputFactory.getQuantileThreshold( constants[0],
-                                                                                    probConstants[0],
-                                                                                    Operator.GREATER );
+                    final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                                                                            probConstants[0],
+                                                                            Operator.GREATER );
 
                     final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
 
@@ -1098,9 +1097,9 @@ public class Chart2DTestOutput extends TestCase
                                                                                                                "PRECIPITATION",
                                                                                                                "HEFS" ) );
             //Single threshold
-            final QuantileThreshold threshold = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
-                                                                                    Double.NEGATIVE_INFINITY,
-                                                                                    Operator.GREATER );
+            final Threshold threshold = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
+                                                                            Double.NEGATIVE_INFINITY,
+                                                                            Operator.GREATER );
 
             //Iterate through the lead times.
             while ( d.hasNext() )

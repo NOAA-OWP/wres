@@ -31,17 +31,17 @@ location or any file name, absolute or relative.
 ### Optional
 
 Standard java parameters you wish to pass in for troubleshooting can be set in
-JAVA_OPTS. Additionally, a system property named logLevel will set the amount
-of logging that occurs during a run. As an example, to increase verbosity to
-the debug level:
+JAVA_OPTS. Additionally, a system property named wres.logLevel will set the
+amount of logging that occurs during a run. As an example, to increase verbosity
+to the debug level:
 
 #### Unix
 
-        JAVA_OPTS="-DlogLevel=debug" bin/wres execute project.xml
+        JAVA_OPTS="-Dwres.logLevel=debug" bin/wres execute project.xml
 
 #### Windows
 
-        set JAVA_OPTS="-DlogLevel=debug" && bin\wres.bat execute project.xml
+        set JAVA_OPTS="-Dwres.logLevel=debug" && bin\wres.bat execute project.xml
 
 ### Viewing log files
 

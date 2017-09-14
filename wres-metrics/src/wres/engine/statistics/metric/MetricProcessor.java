@@ -32,8 +32,6 @@ import wres.datamodel.MetricInputSliceException;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputForProject;
 import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.ProbabilityThreshold;
-import wres.datamodel.QuantileThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Threshold;
@@ -53,8 +51,8 @@ import wres.datamodel.VectorOutput;
  * <li>That a global set of {@link Threshold} is defined for all {@link Metric} within a {@link ProjectConfig} and hence
  * {@link MetricCollection}. Using metric-specific thresholds will require additional logic to disaggregate a
  * {@link MetricCollection} into {@link Metric} for which common thresholds are defined.</li>
- * <li>If the {@link Threshold} are {@link ProbabilityThreshold}, the corresponding {@link QuantileThreshold} are
- * derived from the observations associated with the {@link MetricInput} at runtime, i.e. upon calling
+ * <li>If the {@link Threshold#hasProbabilityValues()}, the corresponding quantiles are derived from the 
+ * observations associated with the {@link MetricInput} at runtime, i.e. upon calling
  * {@link #apply(Object)}</li>
  * </ol>
  * <p>
@@ -479,22 +477,22 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     }
 
     /**
-     * Returns true if the input {@link ProjectConfig} has thresholds configured, false otherwise.
+     * Returns true if the input {@link Outputs} has thresholds configured, false otherwise.
      * 
-     * @param config the {@link ProjectConfig}
+     * @param outputs the {@link Outputs} configuration
      * @return true if the project configuration has thresholds configured, false otherwise
      */
 
-    static boolean hasThresholds( ProjectConfig config )
+    static boolean hasThresholds( Outputs outputs )
     {
         //Global thresholds
-        if ( Objects.nonNull( config.getOutputs().getProbabilityThresholds() )
-             || Objects.nonNull( config.getOutputs().getValueThresholds() ) )
+        if ( Objects.nonNull( outputs.getProbabilityThresholds() )
+             || Objects.nonNull( outputs.getValueThresholds() ) )
         {
             return true;
         }
         //Local thresholds
-        for ( MetricConfig metric : config.getOutputs().getMetric() )
+        for ( MetricConfig metric : outputs.getMetric() )
         {
             if ( Objects.nonNull( metric.getProbabilityThresholds() )
                  || Objects.nonNull( metric.getValueThresholds() ) )
@@ -597,14 +595,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
 
     boolean hasProbabilityThreshold( List<Threshold> check )
     {
-        for ( Threshold next : check )
-        {
-            if ( next instanceof ProbabilityThreshold )
-            {
-                return true;
-            }
-        }
-        return false;
+        return check.stream().anyMatch( Threshold::hasProbabilityValues );
     }
 
     /**
@@ -641,8 +632,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     }
 
     /**
-     * Helper that returns a sorted set of values from the left side of the input pairs if any of the thresholds are
-     * {@link ProbabilityThreshold}.
+     * Helper that returns a sorted set of values from the left side of the input pairs if any of the thresholds have
+     * probabilities associated with them.
      * 
      * @param input the inputs pairs
      * @param thresholds the thresholds to test
@@ -661,13 +652,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     }
 
     /**
-     * Returns the input {@link Threshold} or a {@link QuantileThreshold} if the input is a
-     * {@link ProbabilityThreshold}. The {@link QuantileThreshold} is obtained from the prescribed, sorted,
-     * observations.
+     * Sets the quantile values associated with the input threshold if the threshold contains probability values.
      * 
      * @param threshold the input threshold
-     * @param sorted a sorted set of values from which to determine {@link QuantileThreshold} where the input
-     *            {@link Threshold} is a {@link ProbabilityThreshold}.
+     * @param sorted a sorted set of values from which to determine the quantiles
      * @return the threshold
      * @throws MetricCalculationException if the sorted array is null and quantiles are required
      */
@@ -676,14 +664,15 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     {
         Threshold useMe = threshold;
         //Quantile required: need to determine real-value from probability
-        if ( threshold instanceof ProbabilityThreshold )
+        if ( threshold.hasProbabilityValues() )
         {
             if ( Objects.isNull( sorted ) )
             {
                 throw new MetricCalculationException( "Unable to determine quantile threshold from probability "
-                                                      + "threshold: no climatological observations were available in the input." );
+                                                      + "threshold: no climatological observations were available in "
+                                                      + "the input." );
             }
-            useMe = dataFactory.getSlicer().getQuantileFromProbability( (ProbabilityThreshold) useMe,
+            useMe = dataFactory.getSlicer().getQuantileFromProbability( useMe,
                                                                         sorted,
                                                                         DECIMALS );
         }
@@ -723,7 +712,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         List<MetricConstants> returnMe = new ArrayList<>();
         returnMe.addAll( MetricInputGroup.ENSEMBLE.getMetrics() );
         returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
-        if ( hasThresholds( config ) )
+        if ( hasThresholds( config.getOutputs() ) )
         {
             returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
         }
@@ -741,7 +730,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     {
         List<MetricConstants> returnMe = new ArrayList<>();
         returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
-        if ( hasThresholds( config ) )
+        if ( hasThresholds( config.getOutputs() ) )
         {
             returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
         }
@@ -759,50 +748,18 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
 
     private void setThresholds( DataFactory dataFactory, ProjectConfig config ) throws MetricConfigurationException
     {
-        //Throw an exception if no thresholds are configured alongside metrics that require thresholds
+        //Validate the configuration
         Outputs outputs = config.getOutputs();
-        if ( hasThresholdMetrics() && !hasThresholds( config ) )
-        {
-            throw new MetricConfigurationException( "Thresholds are required by one or more of the configured "
-                                                    + "metrics." );
-        }
-        //Check that probability thresholds are configured for left       
-        if ( Objects.nonNull( outputs.getProbabilityThresholds() )
-             && outputs.getProbabilityThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
-        {
-            throw new MetricConfigurationException( "Attempted to apply probability thresholds to '"
-                                                    + outputs.getProbabilityThresholds().getApplyTo()
-                                                    + "': this is not currently supported. Use '"
-                                                    + LeftOrRightOrBaseline.LEFT
-                                                    + "' instead." );
-        }
-        //Check that value thresholds are configured for left  
-        if ( Objects.nonNull( outputs.getValueThresholds() )
-             && outputs.getValueThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
-        {
-            throw new MetricConfigurationException( "Attempted to apply value thresholds to '"
-                                                    + outputs.getValueThresholds().getApplyTo()
-                                                    + "': this is not currently supported. Use '"
-                                                    + LeftOrRightOrBaseline.LEFT
-                                                    + "' instead." );
-        }
+        validateOutputsConfig( outputs );
         //Check for metric-local thresholds and throw an exception if they are defined, as they are currently not supported
 //        EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>( MetricConstants.class );
+//      TODO: store metric-local threshold conditions when they are available in the configuration
         for ( MetricConfig metric : outputs.getMetric() )
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
-                //Obtain metric-local thresholds here
+//                //Obtain metric-local thresholds here
 //                List<Threshold> thresholds = new ArrayList<>();
-                MetricConstants name = fromMetricConfigName( metric.getName() );
-                if ( Objects.nonNull( metric.getProbabilityThresholds() )
-                     || Objects.nonNull( metric.getValueThresholds() ) )
-                {
-                    throw new MetricConfigurationException( "Found metric-local thresholds for '" + name
-                                                            + "', which are not "
-                                                            + "currently supported." );
-                }
-                //TODO: store metric-local threshold conditions when they are available in the configuration
 //                if ( !thresholds.isEmpty() )
 //                {
 //                    localThresholds.put( name, thresholds );
@@ -844,12 +801,64 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     }
 
     /**
+     * Validates the outputs configuration and throws a {@link MetricConfigurationException} if the validation fails
+     * 
+     * @param output the output configuration
+     * @throws MetricConfigurationException if thresholds are configured incorrectly
+     */
+
+    private void validateOutputsConfig( Outputs outputs ) throws MetricConfigurationException
+    {
+        if ( hasThresholdMetrics() && !hasThresholds( outputs ) )
+        {
+            throw new MetricConfigurationException( "Thresholds are required by one or more of the configured "
+                                                    + "metrics." );
+        }
+        //Check that probability thresholds are configured for left       
+        if ( Objects.nonNull( outputs.getProbabilityThresholds() )
+             && outputs.getProbabilityThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
+        {
+            throw new MetricConfigurationException( "Attempted to apply probability thresholds to '"
+                                                    + outputs.getProbabilityThresholds().getApplyTo()
+                                                    + "': this is not currently supported. Use '"
+                                                    + LeftOrRightOrBaseline.LEFT
+                                                    + "' instead." );
+        }
+        //Check that value thresholds are configured for left  
+        if ( Objects.nonNull( outputs.getValueThresholds() )
+             && outputs.getValueThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
+        {
+            throw new MetricConfigurationException( "Attempted to apply value thresholds to '"
+                                                    + outputs.getValueThresholds().getApplyTo()
+                                                    + "': this is not currently supported. Use '"
+                                                    + LeftOrRightOrBaseline.LEFT
+                                                    + "' instead." );
+        }
+        //Check for metric-local thresholds and throw an exception if they are defined, as they are currently 
+        //not supported
+        for ( MetricConfig metric : outputs.getMetric() )
+        {
+            if ( metric.getName() != MetricConfigName.ALL_VALID )
+            {
+                MetricConstants name = fromMetricConfigName( metric.getName() );
+                if ( Objects.nonNull( metric.getProbabilityThresholds() )
+                     || Objects.nonNull( metric.getValueThresholds() ) )
+                {
+                    throw new MetricConfigurationException( "Found metric-local thresholds for '" + name
+                                                            + "', which are not "
+                                                            + "currently supported." );
+                }
+            }
+        }
+    }
+
+    /**
      * Returns a list of {@link Threshold} from a comma-separated string. Specify the type of {@link Threshold}
      * required.
      * 
      * @param inputString the comma-separated input string
      * @param oper the operator
-     * @param areProbs is true to generate {@link ProbabilityThreshold}, false for {@link Threshold}
+     * @param areProbs is true to generate probability thresholds, false for ordinary thresholds
      * @return the thresholds
      * @throws MetricConfigurationException if the thresholds are configured incorrectly
      */
