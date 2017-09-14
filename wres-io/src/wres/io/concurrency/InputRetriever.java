@@ -13,10 +13,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
-import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
@@ -45,15 +45,18 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
+    // TODO: Gross! Cut down to an init function. >3 parameters = no bueno.
     @Internal(exclusivePackage = "wres.io")
     public InputRetriever (ProjectConfig projectConfig,
-                           Conditions.Feature feature,
+                           Feature rightFeature,
+                           Feature baselineFeature,
                            int progress,
                            Function<String, Double> getLeftValue,
                            VectorOfDoubles climatology)
     {
         this.projectConfig = projectConfig;
-        this.feature = feature;
+        this.rightFeature = rightFeature;
+        this.baselineFeature = baselineFeature;
         this.progress = progress;
         this.getLeftValue = getLeftValue;
         this.climatology = climatology;
@@ -97,7 +100,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                                .getVariable()
                                                                .getValue() +
                                              " at " +
-                                             ConfigHelper.getFeatureDescription( this.feature ) );
+                                             ConfigHelper.getFeatureDescription( this.rightFeature ) );
         }
 
         if (this.baselineExists())
@@ -134,7 +137,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     {
         return ScriptGenerator.generateLoadDatasourceScript( this.projectConfig,
                                                              dataSourceConfig,
-                                                             this.feature,
+                                                             this.getFeature( dataSourceConfig ),
                                                              this.progress,
                                                              this.zeroDate);
     }
@@ -148,6 +151,8 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
         Connection connection = null;
         ResultSet resultSet = null;
+
+        Feature feature = this.getFeature( dataSourceConfig );
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
@@ -187,7 +192,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                             ConfigHelper.getDirectoryFromDestinationConfig( dest );
                     saver.setFileDestination( directoryLocation.toString()
                                               + "/pairs.csv" );
-                    saver.setFeatureDescription( ConfigHelper.getFeatureDescription( this.feature ) );
+                    saver.setFeatureDescription( ConfigHelper.getFeatureDescription( feature ) );
                     saver.setDate( date );
                     saver.setWindowNum( this.progress );
                     saver.setLeft( leftValue );
@@ -220,10 +225,12 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
     private Metadata buildMetadata (DataFactory dataFactory, DataSourceConfig sourceConfig)
     {
+        Feature feature = this.getFeature( sourceConfig );
+
         MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
         Dimension dim = metadataFactory.getDimension(String.valueOf(this.projectConfig.getPair().getUnit()));
 
-        String geospatialIdentifier = ConfigHelper.getFeatureDescription(this.feature);
+        String geospatialIdentifier = ConfigHelper.getFeatureDescription(feature);
         String variableIdentifier = sourceConfig.getVariable().getValue();
 
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
@@ -255,30 +262,41 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             LOGGER.error("The width of the standard window for this project could not be determined.");
         }
 
-        Double lastLead = (windowNumber + 1) * windowWidth;
+        Double lastLead = windowNumber  * windowWidth;
         return metadataFactory.getMetadata(dim,
                                            datasetIdentifier,
                                            lastLead.intValue());
     }
 
+    private Feature getFeature(DataSourceConfig dataSourceConfig)
+    {
+        Feature feature;
+
+        if ( ConfigHelper.isRight( dataSourceConfig, this.projectConfig ))
+        {
+            feature = this.rightFeature;
+        }
+        else
+        {
+            feature = this.baselineFeature;
+        }
+
+        return feature;
+    }
+
     private final int progress;
     private final ProjectConfig projectConfig;
-    private final Conditions.Feature feature;
+    private final Feature rightFeature;
+    private final Feature baselineFeature;
     private final Function<String, Double> getLeftValue;
     private final VectorOfDoubles climatology;
     private List<PairOfDoubleAndVectorOfDoubles> primaryPairs;
     private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;
-    private Boolean hasBaseline;
     private String zeroDate;
 
     private Boolean baselineExists()
     {
-        if (this.hasBaseline == null)
-        {
-            this.hasBaseline = ConfigHelper.hasBaseline(projectConfig);
-        }
-
-        return this.hasBaseline;
+        return this.baselineFeature != null;
     }
 
     @Override

@@ -110,7 +110,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 		Map<Integer, List<EnsembleKey>> possibleKeys = new TreeMap<>();
 		
 		// Listing of keys with the same amount of similarities
-		List<EnsembleKey> similarKeys = null;		
+		List<EnsembleKey> similarKeys;
 
 		// The closest existing key to what we are trying to retrieve
 		EnsembleKey mostSimilar = null;
@@ -208,7 +208,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
             
             ensembles = ensembleQuery.executeQuery(loadScript);
             
-            EnsembleDetails detail = null;
+            EnsembleDetails detail;
             
             while (ensembles.next()) {
                 detail = new EnsembleDetails();

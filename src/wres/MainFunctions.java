@@ -7,11 +7,9 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,7 +29,7 @@ import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
-import wres.config.generated.Conditions;
+import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricInput;
 import wres.io.Operations;
@@ -153,7 +151,6 @@ final class MainFunctions
 		prototypes.put("--help", printCommands());
 		prototypes.put("-h", printCommands());
 		prototypes.put("cleandatabase", cleanDatabase());
-		prototypes.put("getpairs", getPairs());
 		prototypes.put("execute", new Control());
 		prototypes.put("downloadtestdata", refreshTestData());
 		prototypes.put("refreshdatabase", refreshDatabase());
@@ -287,28 +284,37 @@ final class MainFunctions
                 {
                     ProjectConfig projectConfig = ProjectConfigPlus.from( Paths.get( args[0] ) ).getProjectConfig();
                     MainFunctions.setProjectPath( args[0] );
-                    for (Conditions.Feature feature : projectConfig.getConditions().getFeature())
+                    Feature leftFeature = projectConfig.getInputs().getLeft().getFeatures().get( 0 );
+                    Feature rightFeature = projectConfig.getInputs().getRight().getFeatures().get( 0 );
+                    Feature baselineFeature = null;
+
+                    if (projectConfig.getInputs().getBaseline() != null)
                     {
-                        InputGenerator generator = Operations.getInputs(projectConfig, feature);
-
-                        List<Future<MetricInput<?>>> futures = new ArrayList<>(  );
-
-                        for (Future<MetricInput<?>> inputFuture : generator)
-                        {
-                            futures.add( inputFuture );
-                        }
-
-                        futures.forEach( metricInputFuture -> {
-                            try
-                            {
-                                metricInputFuture.get();
-                            }
-                            catch ( InterruptedException | ExecutionException e )
-                            {
-                                LOGGER.error( Strings.getStackTrace( e ) );
-                            }
-                        } );
+                        baselineFeature = projectConfig.getInputs().getBaseline().getFeatures().get( 0 );
                     }
+
+                    InputGenerator generator = Operations.getInputs(projectConfig,
+                                                                    leftFeature,
+                                                                    rightFeature,
+                                                                    baselineFeature);
+
+                    List<Future<MetricInput<?>>> futures = new ArrayList<>(  );
+
+                    for (Future<MetricInput<?>> inputFuture : generator)
+                    {
+                        futures.add( inputFuture );
+                    }
+
+                    futures.forEach( metricInputFuture -> {
+                        try
+                        {
+                            metricInputFuture.get();
+                        }
+                        catch ( InterruptedException | ExecutionException e )
+                        {
+                            LOGGER.error( Strings.getStackTrace( e ) );
+                        }
+                    } );
 
                     result = SUCCESS;
                 }
@@ -587,68 +593,6 @@ final class MainFunctions
             }
             return result;
 		};
-	}
-
-	private static Function<String[], Integer> getPairs()
-	{
-	    return (final String[] args) -> {
-			Integer result = FAILURE;
-	        if (args.length >= 1)
-	        {
-                try
-                {
-                    PROJECT_PATH = args[0];
-                    LOGGER.info("The project is from: {}", PROJECT_PATH);
-
-                    final ProjectConfig foundProject = ProjectConfigPlus.from(Paths.get(PROJECT_PATH)).getProjectConfig();
-                    Map<Conditions.Feature, LinkedList<Future<MetricInput<?>>>> featureInputs = new HashMap<>();
-
-                    for (Conditions.Feature feature : foundProject.getConditions().getFeature())
-                    {
-                        LinkedList<Future<MetricInput<?>>> inputs = new LinkedList<>();
-
-                        InputGenerator inputGenerator = Operations.getInputs(foundProject, feature);
-
-                        inputGenerator.forEach(inputs::add);
-
-                        featureInputs.put(feature, inputs);
-                    }
-                    LOGGER.info("All pair jobs have been dispatched ({}).", OffsetDateTime.now());
-                    for (Map.Entry<Conditions.Feature, LinkedList<Future<MetricInput<?>>>> featureInput : featureInputs.entrySet())
-                    {
-                        Future<MetricInput<?>> input;
-
-                        while ((input = featureInput.getValue().poll()) != null)
-                        {
-                            try
-                            {
-                                input.get();
-                            }
-                            catch (InterruptedException e) {
-                                LOGGER.error("MetricInput generation was interupted.");
-                                LOGGER.error(Strings.getStackTrace(e));
-                            }
-                            catch (ExecutionException e) {
-                                LOGGER.error("MetricInput generation was aborted due to a thrown error.");
-                                LOGGER.error(Strings.getStackTrace(e));
-                            }
-                        }
-                    }
-
-					result = SUCCESS;
-                }
-                catch(final Exception e)
-                {
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-	        }
-	        else
-	        {
-	            LOGGER.error("There are not enough arguments to run 'getProjectPairs'");
-	            LOGGER.error("usage: getProjectPairs <project name> <metric name>");
-	        }
-	        return result;
-	    };
 	}
 
     private static Function<String[], Integer> ingest ()

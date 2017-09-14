@@ -882,8 +882,18 @@ public final class Database {
 		builder.append("TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Variable RESTART IDENTITY CASCADE;").append(NEWLINE);
+		builder.append("DELETE FROM wres.VariablePosition VP").append(NEWLINE);
+		builder.append("WHERE EXISTS(").append(NEWLINE);
+		builder.append("    SELECT 1").append(NEWLINE);
+		builder.append("    FROM wres.Feature F").append(NEWLINE);
+		builder.append("    WHERE F.feature_id = VP.x_position").append(NEWLINE);
+		builder.append(");").append(NEWLINE);
+		builder.append("DELETE FROM wres.Feature WHERE parent_feature_id IS NOT NULL;").append(NEWLINE);
+		builder.append("TRUNCATE wres.Project RESTART IDENTITY CASCADE;").append(NEWLINE);
+		builder.append("TRUNCATE wres.ProjectSource RESTART IDENTITY CASCADE;").append(NEWLINE);
 
-		try {
+		try
+        {
 			Database.execute(builder.toString());
 		}
 		catch (final SQLException e) {

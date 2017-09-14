@@ -5,8 +5,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.Feature;
+import wres.io.data.details.ProjectDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
 import wres.util.Internal;
@@ -24,12 +25,14 @@ public class ForecastSaver extends WRESRunnable
 
     @Internal(exclusivePackage = "wres.io")
 	public ForecastSaver(String filepath,
+						 ProjectDetails projectDetails,
 						 DataSourceConfig dataSourceConfig,
-						 List<Conditions.Feature> specifiedFeatures)
+						 List<Feature> specifiedFeatures)
     {
         this.dataSourceConfig = dataSourceConfig;
         this.filepath = filepath;
         this.specifiedFeatures = specifiedFeatures;
+        this.projectDetails = projectDetails;
     }
 
 	/* (non-Javadoc)
@@ -45,18 +48,22 @@ public class ForecastSaver extends WRESRunnable
 
 			source.setSpecifiedFeatures(this.specifiedFeatures);
 
+			source.setProjectDetails( this.projectDetails );
+
 			source.saveForecast();
 		}
 		catch (Exception e)
 		{
-			this.getLogger().error("A forecast for the data at '" + this.filepath + "' could not be saved to the database.");
+			this.getLogger().error("A forecast for the data at '{}' could not be saved to the database.",
+                                   this.filepath);
             this.getLogger().error(Strings.getStackTrace(e));
 		}
 	}
 
-	private String filepath = null;
+	private final String filepath;
 	private final DataSourceConfig dataSourceConfig;
-	private final List<Conditions.Feature> specifiedFeatures;
+	private final List<Feature> specifiedFeatures;
+	private final ProjectDetails projectDetails;
 
     @Override
     protected Logger getLogger () {

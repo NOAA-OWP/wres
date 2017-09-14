@@ -53,6 +53,38 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
     {
 		return getCache().getID(path, outputTime, lead, hash);
 	}
+
+	public static boolean hasSource(String hash) throws SQLException
+    {
+        return DataSources.getActiveSourceID( hash ) != null;
+    }
+
+    public static String getHash(Integer sourceID)
+    {
+        String hash = null;
+        SourceDetails source = DataSources.getCache().get( sourceID );
+
+        if (source != null)
+        {
+            hash = source.getHash();
+        }
+
+        return hash;
+    }
+
+    public static Integer getActiveSourceID(String hash) throws SQLException
+    {
+        Integer id = null;
+
+        SourceKey key = new SourceKey( null, null, null, hash );
+
+        if (DataSources.getCache().hasID( key ))
+        {
+            id = DataSources.getCache().getID( key );
+        }
+
+        return id;
+    }
 	
 	/**
 	 * Gets the ID of source metadata from the instanced cache based on a file path and the date of its output

@@ -1,12 +1,14 @@
 package wres.io.data.caching;
 
+import java.sql.SQLException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.io.data.details.FeatureDetails;
+import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
-
-import java.sql.SQLException;
 
 /**
  * Caches details about Features
@@ -35,6 +37,26 @@ public class Features extends Cache<FeatureDetails, String>
 			}
 			return INTERNAL_CACHE;
 		}
+	}
+
+	public static boolean exists(String locationId) throws SQLException
+	{
+		LOGGER.trace( "Checking if a location named '{}' has been defined...", locationId );
+		boolean exists = getCache().hasID( locationId );
+
+		if (!exists)
+		{
+            String script = "SELECT EXISTS (" + NEWLINE +
+                            "		SELECT 1" + NEWLINE +
+                            "		FROM wres.Feature" + NEWLINE +
+                            "		WHERE lid = '" + locationId + "'" + NEWLINE
+                            +
+                            ");";
+
+            exists = Database.getResult( script, "exists");
+		}
+
+		return exists;
 	}
 	
 	/**

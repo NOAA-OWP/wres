@@ -70,11 +70,9 @@ public class PairWriter extends WRESCallable<Boolean>
                     line.add( String.valueOf( this.left ) );
                 }
 
-                for ( int rightIndex = 0;
-                      rightIndex < this.right.length;
-                      ++rightIndex )
+                for ( Double rightValue : this.right )
                 {
-                    arrayJoiner.add( String.valueOf( this.right[rightIndex] ) );
+                    arrayJoiner.add( String.valueOf( rightValue ) );
                 }
 
                 line.add( arrayJoiner.toString() );

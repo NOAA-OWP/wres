@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.StringJoiner;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -70,7 +71,7 @@ public final class Collections
 
         System.arraycopy(left, 0, result, 0, left.length);
 
-        System.arraycopy(right, 0, result, 0 + left.length, right.length);
+        System.arraycopy(right, 0, result, left.length, right.length);
         
         return result;
     }
@@ -241,4 +242,15 @@ public final class Collections
         return key;
     }
 
+    public static <U> String formAnyStatement(Collection<U> items)
+    {
+        StringJoiner anyJoiner = new StringJoiner( ",", "ANY('{", "}')" );
+
+        for (U item : items)
+        {
+            anyJoiner.add( String.valueOf(item) );
+        }
+
+        return anyJoiner.toString();
+    }
 }

@@ -9,11 +9,12 @@ import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 
-import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.Feature;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
+import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.NotImplementedException;
@@ -69,12 +70,12 @@ public abstract class BasicSource {
 		return this.dataSourceConfig;
 	}
 
-	public void setSpecifiedFeatures(List<Conditions.Feature> specifiedFeatures)
+	public void setSpecifiedFeatures(List<Feature> specifiedFeatures)
     {
         this.specifiedFeatures = specifiedFeatures;
     }
 
-    protected List<Conditions.Feature> getSpecifiedFeatures()
+    protected List<Feature> getSpecifiedFeatures()
     {
         return this.specifiedFeatures;
     }
@@ -83,6 +84,17 @@ public abstract class BasicSource {
 	private String hash;
 	private Future<String> futureHash;
 	private String absoluteFilename;
+	private ProjectDetails projectDetails;
+
+	public void setProjectDetails(ProjectDetails projectDetails)
+    {
+        this.projectDetails = projectDetails;
+    }
+
+    protected ProjectDetails getProjectDetails()
+    {
+        return this.projectDetails;
+    }
 
 	protected String getSpecifiedVariableName()
     {
@@ -174,7 +186,7 @@ public abstract class BasicSource {
             try {
                 ingest = !dataExists(filePath, contents);
             }
-            catch (SQLException e) {
+            catch (SQLException | InterruptedException | ExecutionException e) {
                 ingest = false;
             }
         }
@@ -221,7 +233,7 @@ public abstract class BasicSource {
             }
 
             private byte[] contentsToHash;
-            public WRESCallable init(byte[] contentsToHash)
+            public WRESCallable<String> init(byte[] contentsToHash)
             {
                 this.contentsToHash = contentsToHash;
                 return this;
@@ -255,7 +267,9 @@ public abstract class BasicSource {
         this.futureHash = Executor.submitHighPriorityTask( hasher );
     }
 
-    private boolean dataExists(String sourceName, byte[] contents) throws SQLException {
+    private boolean dataExists(String sourceName, byte[] contents)
+            throws SQLException, ExecutionException, InterruptedException
+    {
         StringBuilder script = new StringBuilder();
 
         script.append("SELECT EXISTS (").append(NEWLINE);
@@ -305,5 +319,5 @@ public abstract class BasicSource {
     }
 
 	private DataSourceConfig dataSourceConfig;
-	private List<Conditions.Feature> specifiedFeatures;
+	private List<Feature> specifiedFeatures;
 }

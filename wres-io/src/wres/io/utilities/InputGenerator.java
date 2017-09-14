@@ -14,8 +14,8 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
 import wres.datamodel.DataFactory;
@@ -24,10 +24,11 @@ import wres.datamodel.MetricInput;
 import wres.datamodel.VectorOfDoubles;
 import wres.io.concurrency.InputRetriever;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Scenarios;
 import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Projects;
 import wres.io.data.caching.UnitConversions;
 import wres.io.grouping.LabeledScript;
+import wres.util.Collections;
 import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -39,26 +40,29 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
     private static final String NEWLINE = System.lineSeparator();
     private static final Logger LOGGER = LoggerFactory.getLogger(InputGenerator.class);
-    /**
-     * Constructor
-     * @param projectConfig The project configuration that will guide input creation
-     * @param feature The geographic feature configuration that describes the area for the data to retrieve
-     */
-    public InputGenerator (ProjectConfig projectConfig, Conditions.Feature feature)
+
+    public InputGenerator (ProjectConfig projectConfig, Feature leftFeature, Feature rightFeature, Feature baselineFeature)
     {
         this.projectConfig = projectConfig;
-        this.feature = feature;
+        this.leftFeature = leftFeature;
+        this.rightFeature = rightFeature;
+        this.baselineFeature = baselineFeature;
     }
 
     private final ProjectConfig projectConfig;
-    private final Conditions.Feature feature;
+    private final Feature leftFeature;
+    private final Feature rightFeature;
+    private final Feature baselineFeature;
 
     @Override
     public Iterator<Future<MetricInput<?>>> iterator()
     {
         MetricInputIterator iterator = null;
         try {
-            iterator =  new MetricInputIterator(this.projectConfig, this.feature);
+            iterator =  new MetricInputIterator(this.projectConfig,
+                                                this.leftFeature,
+                                                this.rightFeature,
+                                                this.baselineFeature);
         }
         catch (SQLException | NotImplementedException | InvalidPropertiesFormatException e) {
             LOGGER.error("A MetricInputIterator could not be created.");
@@ -74,7 +78,10 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private Integer variableID;
         private Integer lastLead;
 
-        private final Conditions.Feature feature;
+        private final Feature leftFeature;
+        private final Feature rightFeature;
+        private final Feature baselineFeature;
+
         private final ProjectConfig projectConfig;
         private Map<String, Double> leftHandMap;
         private VectorOfDoubles leftHandValues;
@@ -109,6 +116,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
             String desiredMeasurementUnit = this.projectConfig.getPair().getUnit();
             Integer desiredMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(desiredMeasurementUnit);
+            Integer projectID = Projects.getProjectID( this.projectConfig.getName() );
             DataSourceConfig left = this.getLeft();
 
             StringBuilder script = new StringBuilder();
@@ -132,7 +140,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 }
             }
 
-            String variablepositionClause = ConfigHelper.getVariablePositionClause(this.feature, leftVariableID);
+            String variablepositionClause = ConfigHelper.getVariablePositionClause(left.getFeatures().get( 0 ), leftVariableID);
 
             if (left.getTimeShift() != null && left.getTimeShift().getWidth() != 0)
             {
@@ -168,14 +176,11 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append("INNER JOIN wres.ForecastValue FV" ).append(NEWLINE);
                 script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(NEWLINE);
                 script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
-
-                if (!left.getScenario().equalsIgnoreCase( "variable" ))
-                {
-                    script.append("     AND F.scenario_id = ")
-                          .append( Scenarios.getScenarioID( left.getScenario(),
-                                                            left.getType().value()))
-                          .append(NEWLINE);
-                }
+                script.append("     AND F.forecast_id = ")
+                      .append(Collections.formAnyStatement(
+                              Projects.getProject( projectConfig.getName() )
+                                      .getLeftForecastIDs() ))
+                      .append(NEWLINE);
 
                 script.append("GROUP BY F.forecast_date + INTERVAL '1 hour' * FV.lead");
 
@@ -200,9 +205,10 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append("     O.measurementunit_id").append(NEWLINE);
                 script.append("FROM wres.Observation O").append(NEWLINE);
                 script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
-                script.append("     AND O.scenario_id = ")
-                      .append(Scenarios.getScenarioID( left.getScenario(),
-                                                       left.getType().value() ));
+                script.append("     AND O.source_id = ")
+                      .append( Collections.formAnyStatement( Projects.getProject( this.projectConfig )
+                                                                     .getLeftSources() ))
+                      .append(NEWLINE);
 
                 if (earliestDate != null)
                 {
@@ -293,6 +299,15 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                     Database.returnHighPriorityConnection(connection);
                 }
             }
+
+            if (values.size() == 0)
+            {
+                LOGGER.error( "Statement for left hand data retrieval:" );
+                LOGGER.error( script.toString() );
+                throw new IllegalStateException( "No data for the left hand side of the evaluation could be loaded. Please check your specifications." );
+
+            }
+
             this.leftHandMap = values;
 
 
@@ -311,8 +326,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 DataSourceConfig simulation = this.getSimulation();
 
                 String script = ScriptGenerator.generateZeroDateScript( this.projectConfig,
-                                                                        simulation,
-                                                                        this.feature);
+                                                                        simulation);
 
                 this.zeroDate = Database.getResult(script, "zero_date");
             }
@@ -336,11 +350,14 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             return simulation;
         }
 
-        public MetricInputIterator(ProjectConfig projectConfig, Conditions.Feature feature)
+        public MetricInputIterator(ProjectConfig projectConfig, Feature leftFeature, Feature rightFeature, Feature baselineFeature)
                 throws SQLException, InvalidPropertiesFormatException
         {
             this.projectConfig = projectConfig;
-            this.feature = feature;
+            this.leftFeature = leftFeature;
+            this.rightFeature = rightFeature;
+            this.baselineFeature = baselineFeature;
+
             this.createLeftHandCache();
 
             // TODO: This needs a better home
@@ -388,11 +405,10 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         {
             if (this.lastLead == null)
             {
-                int scenarioID = Scenarios.getScenarioID( this.getRight().getScenario(),
-                                                          this.getRight().getType().value() );
+                int projectID = Projects.getProjectID( this.projectConfig.getName());
                 LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(this.getVariableID(),
-                                                                                    this.feature,
-                                                                                    scenarioID,
+                                                                                    this.rightFeature,
+                                                                                    projectID,
                                                                                     ConfigHelper.isForecast( this.getRight() ));
 
                 lastLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
@@ -463,7 +479,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             {
                 this.windowNumber++;
                 InputRetriever retriever = new InputRetriever(this.projectConfig,
-                                                              this.feature,
+                                                              this.rightFeature,
+                                                              this.baselineFeature,
                                                               this.windowNumber,
                                                               (String date) -> {
                                                                     return this.leftHandMap.getOrDefault(date,null);

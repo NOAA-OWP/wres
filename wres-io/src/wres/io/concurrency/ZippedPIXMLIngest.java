@@ -3,15 +3,19 @@ package wres.io.concurrency;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.DataSources;
+import wres.io.data.details.ProjectDetails;
 import wres.io.reading.fews.PIXMLReader;
 import wres.util.Internal;
 import wres.util.Strings;
@@ -26,20 +30,23 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
 
     private final byte[] content;
     private final String fileName;
-    private final List<Conditions.Feature> specifiedFeatures;
+    private final List<Feature> specifiedFeatures;
     private final DataSourceConfig dataSourceConfig;
     private final Future<String> futureHash;
+    private final ProjectDetails projectDetails;
 
     @Internal(exclusivePackage = "wres.io")
-    public ZippedPIXMLIngest (final String fileName,
-                              final byte[] content,
-                              final DataSourceConfig dataSourceConfig,
-                              final List<Conditions.Feature> specifiedFeatures)
+    public ZippedPIXMLIngest ( final String fileName,
+                               final byte[] content,
+                               final DataSourceConfig dataSourceConfig,
+                               final List<Feature> specifiedFeatures,
+                               final ProjectDetails projectDetails)
     {
         this.fileName = fileName;
         this.content = content;
         this.dataSourceConfig = dataSourceConfig;
         this.specifiedFeatures = specifiedFeatures;
+        this.projectDetails = projectDetails;
 
         WRESCallable<String> hasher = new WRESCallable<String>()
         {
@@ -70,20 +77,37 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
     @Override
     public void execute ()
     {
-        try (InputStream input = new ByteArrayInputStream(this.content))
+        try
         {
-            PIXMLReader reader = new PIXMLReader(this.fileName,
-                                                 input,
-                                                 ConfigHelper.isForecast(this.dataSourceConfig),
-                                                 this.futureHash);
+            String hash = this.futureHash.get();
 
-            reader.setSpecifiedFeatures(this.specifiedFeatures);
-            reader.setDataSourceConfig(this.dataSourceConfig);
-            reader.parse();
+            if ( !DataSources.hasSource(hash))
+            {
+                try (InputStream input = new ByteArrayInputStream(this.content))
+                {
+                    PIXMLReader reader = new PIXMLReader(this.fileName,
+                                                         input,
+                                                         ConfigHelper.isForecast(this.dataSourceConfig),
+                                                         hash,
+                                                         this.projectDetails);
+
+                    reader.setSpecifiedFeatures(this.specifiedFeatures);
+                    reader.setDataSourceConfig(this.dataSourceConfig);
+                    reader.parse();
+                }
+                catch (IOException e)
+                {
+                    LOGGER.error(Strings.getStackTrace(e));
+                }
+            }
+            else
+            {
+                this.projectDetails.addSource( hash, this.dataSourceConfig );
+            }
         }
-        catch (IOException e)
+        catch ( InterruptedException | ExecutionException | SQLException e )
         {
-            LOGGER.error(Strings.getStackTrace(e));
+            LOGGER.error(Strings.getStackTrace( e ));
         }
     }
 

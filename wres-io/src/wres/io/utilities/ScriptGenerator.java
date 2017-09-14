@@ -5,16 +5,19 @@ package wres.io.utilities;
 
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
+import java.util.List;
 import java.util.StringJoiner;
 
-import wres.config.generated.Conditions;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
+import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Scenarios;
+import wres.io.data.caching.Projects;
+import wres.io.data.details.ProjectDetails;
 import wres.io.grouping.LabeledScript;
+import wres.util.Collections;
 import wres.util.Internal;
 
 /**
@@ -29,8 +32,8 @@ public final class ScriptGenerator
     private static final String NEWLINE = System.lineSeparator();
 
     public static LabeledScript generateFindLastLead(int variableID,
-                                                     Conditions.Feature feature,
-                                                     int scenarioID,
+                                                     Feature feature,
+                                                     int projectID,
                                                      boolean isForecast)
     {
         final String label = "last_lead";
@@ -49,8 +52,6 @@ public final class ScriptGenerator
             script += "WHERE " +
                       ConfigHelper.getVariablePositionClause( feature, variableID ) +
                       NEWLINE;
-
-            script += "     AND F.scenario_id = " + scenarioID + NEWLINE;
             script += "ORDER BY FV.lead DESC" + NEWLINE;
             script += "LIMIT 1;";
         }
@@ -59,7 +60,6 @@ public final class ScriptGenerator
             script += "SELECT COUNT(*)::int AS " + label + NEWLINE;
             script += "FROM wres.Observation O" + NEWLINE;
             script += "WHERE " + ConfigHelper.getVariablePositionClause( feature, variableID ) + NEWLINE;
-            script += "     AND O.scenario_id = " + scenarioID + ";";
         }
         
         return new LabeledScript(label, script);
@@ -67,9 +67,11 @@ public final class ScriptGenerator
 
     public static String generateLoadDatasourceScript(final ProjectConfig projectConfig,
                                                       final DataSourceConfig dataSourceConfig,
-                                                      final Conditions.Feature feature,
+                                                      final Feature feature,
                                                       final int progress,
-                                                      final String zeroDate) throws SQLException, InvalidPropertiesFormatException {
+                                                      final String zeroDate)
+            throws SQLException, InvalidPropertiesFormatException
+    {
         StringBuilder script = new StringBuilder();
         Integer variableID = ConfigHelper.getVariableID(dataSourceConfig);
 
@@ -80,9 +82,10 @@ public final class ScriptGenerator
         String earliestIssueDate = null;
         String latestIssueDate = null;
 
+        // TODO: Because of differential locations, we need a better setup than passing around
+        // a single feature
         String variablePositionClause = ConfigHelper.getVariablePositionClause(feature, variableID);
-        int scenarioID = Scenarios.getScenarioID( dataSourceConfig.getScenario(),
-                                                  dataSourceConfig.getType().value());
+        ProjectDetails projectDetails = Projects.getProject( projectConfig.getName() );
 
         Integer timeShift = null;
 
@@ -134,6 +137,21 @@ public final class ScriptGenerator
         {
             script.append("SELECT (F.forecast_date + INTERVAL '1 HOUR' * lead");
 
+            List<Integer> forecastIds;
+
+            if ( ConfigHelper.isLeft( dataSourceConfig, projectConfig ))
+            {
+                forecastIds = projectDetails.getLeftForecastIDs();
+            }
+            else if (ConfigHelper.isRight( dataSourceConfig, projectConfig ))
+            {
+                forecastIds = projectDetails.getRightForecastIDs();
+            }
+            else
+            {
+                forecastIds = projectDetails.getBaselineForecastIDs();
+            }
+
             if (timeShift != null)
             {
                 script.append(" + INTERVAL '1 HOUR' * ").append(timeShift);
@@ -147,13 +165,11 @@ public final class ScriptGenerator
             script.append("     ON FE.forecast_id = F.forecast_id").append(NEWLINE);
             script.append("INNER JOIN wres.ForecastValue FV").append(NEWLINE);
             script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(NEWLINE);
-            script.append("WHERE ").append(ConfigHelper.getLeadQualifier(dataSourceConfig, progress)).append(NEWLINE);
-            script.append("     AND ").append(variablePositionClause).append(NEWLINE);
-            script.append("     AND F.scenario_id = ")
-                  .append( scenarioID)
-                  .append("         ")
-                  .append("-- Limit returned values to only those matching the given scenario")
+            script.append("WHERE F.forecast_id = ")
+                  .append( Collections.formAnyStatement( forecastIds ))
                   .append(NEWLINE);
+            script.append("     AND ").append(ConfigHelper.getLeadQualifier(dataSourceConfig, progress)).append(NEWLINE);
+            script.append("     AND ").append(variablePositionClause).append(NEWLINE);
 
             String ensembleClause = constructEnsembleClause(dataSourceConfig);
 
@@ -235,6 +251,21 @@ public final class ScriptGenerator
         }
         else
         {
+            List<Integer> sourceIds;
+
+            if (ConfigHelper.isLeft( dataSourceConfig, projectConfig ))
+            {
+                sourceIds = projectDetails.getLeftSources();
+            }
+            else if ( ConfigHelper.isRight( dataSourceConfig, projectConfig ))
+            {
+                sourceIds = projectDetails.getRightSources();
+            }
+            else
+            {
+                sourceIds = projectDetails.getBaselineSources();
+            }
+
             script.append("SELECT ARRAY[O.observed_value] AS measurements,").append(NEWLINE);
             script.append("     (O.observation_time");
 
@@ -247,10 +278,8 @@ public final class ScriptGenerator
             script.append("     O.measurementunit_id").append(NEWLINE);
             script.append("FROM wres.Observation O").append(NEWLINE);
             script.append("WHERE ").append(variablePositionClause).append(NEWLINE);
-            script.append("     AND O.scenario_id = ")
-                  .append(scenarioID)
-                  .append("         ")
-                  .append("-- Only retrieve values for this scenario")
+            script.append("     AND O.source_id = ")
+                  .append(Collections.formAnyStatement( sourceIds ))
                   .append(NEWLINE);
             script.append("     AND '")
                   .append(zeroDate)
@@ -349,15 +378,17 @@ public final class ScriptGenerator
     }
 
     public static String generateZeroDateScript(ProjectConfig projectConfig,
-                                                DataSourceConfig simulation,
-                                                Conditions.Feature feature)
+                                                DataSourceConfig simulation)
             throws SQLException
     {
 
-        if (simulation == null || feature == null)
+        if (simulation == null)
         {
             return null;
         }
+
+        // TODO: This will need to evolve once we get multiple locations involved
+        Feature feature = simulation.getFeatures().get( 0 );
 
         String earliestDate = null;
         String latestDate = null;
