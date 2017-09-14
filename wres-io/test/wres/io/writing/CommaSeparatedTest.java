@@ -1,17 +1,6 @@
 package wres.io.writing;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.powermock.api.mockito.PowerMockito.whenNew;
-
-import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.nio.Buffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,19 +10,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+
+import static org.junit.Assert.assertTrue;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.Conditions;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
+import wres.config.generated.Feature;
 import wres.config.generated.Location;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
@@ -178,14 +163,14 @@ public class CommaSeparatedTest
                                           null,
                                           null );
 
-        Conditions.Feature feature = new Conditions.Feature( null,
-                                                             null,
-                                                             location,
-                                                             null,
-                                                             null,
-                                                             null );
+        Feature feature = new Feature( null,
+                                       null,
+                                       location,
+                                       null,
+                                       null,
+                                       null );
 
-        List<Conditions.Feature> features = new ArrayList<>();
+        List<Feature> features = new ArrayList<>();
         features.add( feature );
         Conditions conditions = new Conditions( null,
                                                 null,
@@ -200,7 +185,8 @@ public class CommaSeparatedTest
                                                          null,
                                                          outputsConfig,
                                                          null,
-                                                         null );
+                                                         null,
+                                                         "test");
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparated.writeOutputFiles( projectConfig, feature, output );
