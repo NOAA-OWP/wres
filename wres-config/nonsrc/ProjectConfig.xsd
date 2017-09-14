@@ -18,6 +18,10 @@
             <xs:enumeration value="PI-XML" />
             <xs:enumeration value="netCDF" />
             <xs:enumeration value="datacard" />
+            <!-- Neither "archive" nor "all" make sense to me. The idea is to
+                 help describe the actual format of the data when it is not
+                 obvious from examining it. Filtering/conditioning is in another
+                 section of the config. -Jesse -->
             <xs:enumeration value="archive" />
             <xs:enumeration value="all" />
         </xs:restriction>
@@ -94,6 +98,7 @@
         <xs:attribute name="name" type="xs:string" />
     </xs:complexType>
 
+    <!-- A mask may suffice to replace coordinate and polygon. -Jesse -->
     <xs:complexType name="coordinate">
         <xs:attribute name="x" type="xs:double" />
         <xs:attribute name="y" type="xs:double" />
@@ -109,6 +114,17 @@
         <xs:attribute name="x" type="xs:int" />
         <xs:attribute name="y" type="xs:int" />
     </xs:complexType>
+
+    <!-- In order to avoid inappropriate aggregations, we need to know the
+         underlying class of the data collected. This is different from
+         prescribing an aggregation in the course of processing data. This enum
+         is for describing data, not prescribing transformations. -->
+    <xs:simpleType name="accumulationType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="instantaneous" />
+            <xs:enumeration value="accumulation" />
+        </xs:restriction>
+    </xs:simpleType>
 
     <xs:complexType name="datasource">
 
@@ -127,6 +143,9 @@
                     <xs:simpleContent>
                         <xs:extension base="xs:anyURI">
                             <xs:attribute name="format" type="format" />
+                            <xs:attribute name="accumulationType" type="accumulationType" />
+                            <!-- Can we remove unit below? Shouldn't the unit of
+                                 the variable suffice? -Jesse -->
                             <xs:attribute name="unit" type="xs:string" default="" />
                             <xs:attribute name="location" type="xs:string" default="" />
                             <xs:attribute name="zoneOffset" type="xs:string" default="0" />
@@ -159,6 +178,7 @@
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
+            <!-- TODO: Remove timeAggregation element from data sources -->
             <xs:element name="timeAggregation" type="timeAggregation" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="scenario" type="xs:string" default="variable" />
