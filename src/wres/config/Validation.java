@@ -288,10 +288,11 @@ public class Validation
         PairConfig pairConfig = projectConfig.getPair();
 
         TimeAggregationConfig aggregationConfig =
-                pairConfig.getTimeAggregationPrescription();
+                pairConfig.getDesiredTimeAggregation();
 
-        if ( aggregationConfig.getFunction() ==
-             TimeAggregationFunction.INSTANTANEOUS )
+        if ( aggregationConfig != null
+             && aggregationConfig.getFunction() ==
+                TimeAggregationFunction.INSTANTANEOUS )
         {
             String msg = FILE_LINE_COLUMN_BOILERPLATE
                          + " In the pair configuration, the aggregation "
