@@ -170,13 +170,17 @@ public class Validation
             }
             catch ( InvalidPathException ipe )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The path {} could not be found. "
-                             + PLEASE_UPDATE,
-                             projectConfigPlus.getPath(),
-                             d.sourceLocation().getLineNumber(),
-                             d.sourceLocation().getColumnNumber(),
-                             d.getPath() );
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " The path {} could not be found. "
+                                 + PLEASE_UPDATE,
+                                 projectConfigPlus.getPath(),
+                                 d.sourceLocation().getLineNumber(),
+                                 d.sourceLocation().getColumnNumber(),
+                                 d.getPath() );
+                }
+
                 result = false;
                 continue;
             }
@@ -185,13 +189,17 @@ public class Validation
 
             if ( !destinationFile.canWrite() || !destinationFile.isDirectory() )
             {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The path {} was not a writeable directory. "
-                             + PLEASE_UPDATE,
-                             projectConfigPlus.getPath(),
-                             d.sourceLocation().getLineNumber(),
-                             d.sourceLocation().getColumnNumber(),
-                             d.getPath() );
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " The path {} was not a writeable directory."
+                                 + " " + PLEASE_UPDATE,
+                                 projectConfigPlus.getPath(),
+                                 d.sourceLocation().getLineNumber(),
+                                 d.sourceLocation().getColumnNumber(),
+                                 d.getPath() );
+                }
+
                 result = false;
             }
         }
@@ -208,10 +216,6 @@ public class Validation
 
     private static boolean isGraphicsPortionOfProjectValid( ProjectConfigPlus projectConfigPlus )
     {
-        final String BEGIN_TAG = "<chartDrawingParameters>";
-        final String END_TAG = "</chartDrawingParameters>";
-        final String BEGIN_COMMENT = "<!--";
-        final String END_COMMENT = "-->";
 
         boolean result = true;
 
@@ -225,59 +229,111 @@ public class Validation
 
             if ( customString != null )
             {
-                // For to give a helpful message, find closeby tag without NPE
-                Locatable nearbyTag;
-                if ( d.getGraphical() != null
-                     && d.getGraphical().getConfig() != null )
-                {
-                    // Best case
-                    nearbyTag = d.getGraphical().getConfig();
-                }
-                else if ( d.getGraphical() != null )
-                {
-                    // Not as targeted but close
-                    nearbyTag = d.getGraphical();
-                }
-                else
-                {
-                    // Destination tag.
-                    nearbyTag = d;
-                }
-
-                // If a custom vis config was provided, make sure string either
-                // starts with the correct tag or starts with a comment.
-                String trimmedCustomString = customString.trim();
-
-                if( !trimmedCustomString.startsWith( BEGIN_TAG )
-                    && !trimmedCustomString.startsWith( BEGIN_COMMENT ) )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " If custom graphics configuration is "
-                                 + "provided, please start it with "
-                                 + BEGIN_TAG,
-                                 projectConfigPlus.getPath(),
-                                 nearbyTag.sourceLocation().getLineNumber(),
-                                 nearbyTag.sourceLocation().getColumnNumber() );
-                    result = false;
-                }
-
-                if( !trimmedCustomString.endsWith( END_TAG )
-                    && !trimmedCustomString.endsWith( END_COMMENT ) )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " If custom graphics configuration is "
-                                 + "provided, please end it with "
-                                 + END_TAG,
-                                 projectConfigPlus.getPath(),
-                                 nearbyTag.sourceLocation().getLineNumber(),
-                                 nearbyTag.sourceLocation().getColumnNumber() );
-                    result = false;
-                }
+                result = Validation.isCustomGraphicsStringValid( projectConfigPlus,
+                                                                 d,
+                                                                 customString )
+                         && result;
             }
         }
 
         return result;
     }
+
+
+    /**
+     * Validates a single custom graphics string from a given destination config
+     * @param projectConfigPlus the project configuration
+     * @param d the destination config we are validating
+     * @param customString the non-null string we have already gotten from d
+     * @return true if the string is valid, false otherwise
+     * @throws NullPointerException when any args are null
+     */
+
+    private static boolean isCustomGraphicsStringValid( ProjectConfigPlus projectConfigPlus,
+                                                        DestinationConfig d,
+                                                        String customString )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL);
+        Objects.requireNonNull( d, NON_NULL);
+        Objects.requireNonNull( customString, NON_NULL);
+
+        boolean result = true;
+
+        final String BEGIN_TAG = "<chartDrawingParameters>";
+        final String END_TAG = "</chartDrawingParameters>";
+        final String BEGIN_COMMENT = "<!--";
+        final String END_COMMENT = "-->";
+
+        // For to give a helpful message, find closeby tag without NPE
+        Locatable nearbyTag = Validation.getNearbyTag( d );
+
+        // If a custom vis config was provided, make sure string either
+        // starts with the correct tag or starts with a comment.
+        String trimmedCustomString = customString.trim();
+
+        if( !trimmedCustomString.startsWith( BEGIN_TAG )
+            && !trimmedCustomString.startsWith( BEGIN_COMMENT ) )
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " If custom graphics configuration is "
+                             + "provided, please start it with "
+                             + BEGIN_TAG,
+                             projectConfigPlus.getPath(),
+                             nearbyTag.sourceLocation().getLineNumber(),
+                             nearbyTag.sourceLocation()
+                                      .getColumnNumber() );
+            }
+
+            result = false;
+        }
+
+        if( !trimmedCustomString.endsWith( END_TAG )
+            && !trimmedCustomString.endsWith( END_COMMENT ) )
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " If custom graphics configuration is "
+                             + "provided, please end it with "
+                             + END_TAG,
+                             projectConfigPlus.getPath(),
+                             nearbyTag.sourceLocation().getLineNumber(),
+                             nearbyTag.sourceLocation()
+                                      .getColumnNumber() );
+            }
+
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static Locatable getNearbyTag( DestinationConfig d )
+    {
+        Locatable nearbyTag;
+
+        if ( d.getGraphical() != null
+             && d.getGraphical().getConfig() != null )
+        {
+            // Best case
+            nearbyTag = d.getGraphical().getConfig();
+        }
+        else if ( d.getGraphical() != null )
+        {
+            // Not as targeted but close
+            nearbyTag = d.getGraphical();
+        }
+        else
+        {
+            // Destination tag.
+            nearbyTag = d;
+        }
+
+        return nearbyTag;
+    }
+
 
     private static boolean isPairConfigValid( ProjectConfigPlus projectConfigPlus )
     {
@@ -294,15 +350,22 @@ public class Validation
              && aggregationConfig.getFunction() ==
                 TimeAggregationFunction.INSTANTANEOUS )
         {
-            String msg = FILE_LINE_COLUMN_BOILERPLATE
-                         + " In the pair configuration, the aggregation "
-                         + "function provided for pairing is prescriptive so it"
-                         + " cannot be 'instantaneous' it needs to be one of "
-                         + "the other aggregation functions such as 'sum'.";
-            LOGGER.warn ( msg,
-                          projectConfigPlus.getPath(),
-                          aggregationConfig.sourceLocation().getLineNumber(),
-                          aggregationConfig.sourceLocation().getColumnNumber() );
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " In the pair configuration, the aggregation "
+                             + "function provided for pairing is prescriptive "
+                             + "so it cannot be 'instantaneous' it needs to be "
+                             + "one of the other aggregation functions such as "
+                             + "'sum'.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getPath(),
+                             aggregationConfig.sourceLocation().getLineNumber(),
+                             aggregationConfig.sourceLocation()
+                                              .getColumnNumber() );
+            }
+
             result = false;
         }
 
