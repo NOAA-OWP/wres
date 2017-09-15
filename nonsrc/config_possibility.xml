@@ -1,38 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project label="ExampleProject">
+<project label="ExampleProject" name="myIsolatedProject">
   <inputs>
     <left label="My Desired Name For Graphics">
       <type>observations</type>
-      <!--<source recursive="true" all="true" format="PI-XML">/media/sf_userprofile/hefs_data/resources/DRRC2SQIN.xml</source>-->
-      <!-- web unsupported as of 2017-08-15 <source recursive="false" format="netCDF">https://my.observations.com/bar/some.nc</source> -->
+      <source recursive="true" all="true" format="PI-XML">c:/resources/DRRC2SQIN.xml</source>
       <variable>QINE</variable>
+    <features>
+      <location lid="DRRC2" name="DOLORES - RICO, BLO"/>
+    </features>
     </left>
     <right label="My Name I want to see on charts">
       <type>ensemble forecasts</type>
-      <!--<source format="PI-XML">/media/sf_userprofile/hefs_data/resources/forecasts/</source>-->
-      <!-- web unsupported as of 2017-08-15 <source recursive="false">https://my.data.com/foo</source> -->
+      <source format="PI-XML">c:/resources/forecasts/</source>
       <variable>SQIN</variable>
-      <timeAggregation>
-        <function>avg</function>
+      <features>
+        <location lid="DRRC2" name="DOLORES - RICO, BLO"/>
+      </features>
+      <timeAggregationDescription>
+        <function>instantaneous</function>
         <period>1</period>
           <unit>HOUR</unit>
-      </timeAggregation>
+      </timeAggregationDescription>
     </right>
   </inputs>
   <conditions> <!-- aka filters -->
 <!--    <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>--> <!-- optional, default all -->
-    <feature>
+    <features>
         <location lid="DRRC2" name="DOLORES - RICO, BLO"/>
-    </feature>
+    </features>
   </conditions>
   <pair label="Pairs by location and lead time"> <!-- required for unit -->
     <unit>CMS</unit>
     <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
-      <timeAggregation>
+      <timeAggregationPrescription>
           <function>avg</function>
           <period>1</period>
           <unit>HOUR</unit>
-      </timeAggregation>
+      </timeAggregationPrescription>
   </pair>
   <outputs>
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
