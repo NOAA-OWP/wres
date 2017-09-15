@@ -127,7 +127,7 @@ public class ConfigHelper
 
     public static TimeAggregationConfig getTimeAggregation(DataSourceConfig dataSourceConfig)
     {
-        TimeAggregationConfig timeAggregationConfig = dataSourceConfig.getTimeAggregation();
+        TimeAggregationConfig timeAggregationConfig = dataSourceConfig.getTimeAggregationDescription();
 
         if (timeAggregationConfig == null)
         {
