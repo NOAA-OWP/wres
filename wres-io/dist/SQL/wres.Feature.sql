@@ -55,6 +55,8 @@ CREATE INDEX IF NOT EXISTS feature_lid_idx
   (lid COLLATE pg_catalog."default");
 
 DROP INDEX IF EXISTS wres.parent_feature_idx;
+
+CREATE INDEX IF NOT EXISTS parent_feature_idx
   ON wres.Feature
   USING btree
   (parent_feature_id);
