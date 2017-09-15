@@ -3,9 +3,12 @@ package wres.config;
 import com.sun.xml.bind.Locatable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.TimeAggregationConfig;
+import wres.config.generated.TimeAggregationFunction;
 import wres.io.config.ProjectConfigPlus;
 
 import javax.xml.bind.ValidationEvent;
@@ -104,6 +107,9 @@ public class Validation
             // Any validation event means we fail.
             result = false;
         }
+
+        // Validate pair section
+        result = result && Validation.isPairConfigValid( projectConfigPlus );
 
         // Validate outputs are writeable directories
         result = result && areAllOutputPathsWriteableDirectories( projectConfigPlus );
@@ -288,4 +294,32 @@ public class Validation
         return true;
     }
 
+    private static boolean isPairConfigValid( ProjectConfigPlus projectConfigPlus )
+    {
+        boolean result = true;
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        PairConfig pairConfig = projectConfig.getPair();
+
+        TimeAggregationConfig aggregationConfig =
+                pairConfig.getTimeAggregationPrescription();
+
+        if ( aggregationConfig.getFunction() ==
+             TimeAggregationFunction.INSTANTANEOUS )
+        {
+            String msg = "In file {}, near line {} and column {}, WRES found an"
+                         + " issue with the pair config. The aggregation "
+                         + "function provided for pairing is prescriptive so it"
+                         + " cannot be 'instantaneous' it needs to be one of "
+                         + "the other aggregation functions such as 'sum'.";
+            LOGGER.warn ( msg,
+                          projectConfigPlus.getPath(),
+                          aggregationConfig.sourceLocation().getLineNumber(),
+                          aggregationConfig.sourceLocation().getColumnNumber() );
+            result = false;
+        }
+
+        return result;
+    }
 }
