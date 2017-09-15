@@ -17,7 +17,7 @@
         <location lid="DRRC2HSF" name="DOLORES - RICO, BLO"/>
       </features>
       <existingTimeAggregation>
-        <function>instantaneous</function>
+        <function>avg</function>
         <period>1</period>
           <unit>HOUR</unit>
       </existingTimeAggregation>
