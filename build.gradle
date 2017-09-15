@@ -13,7 +13,7 @@ buildscript
     dependencies
     {
         // for static analysis tool sonarqube:
-        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.4'
+        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.5'
         // For markdown -> html
         classpath 'com.atlassian.commonmark:commonmark:0.9.0'
     }
