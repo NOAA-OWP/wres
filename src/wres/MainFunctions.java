@@ -43,6 +43,7 @@ import wres.io.reading.ReaderFactory;
 import wres.io.reading.SourceType;
 import wres.io.utilities.Database;
 import wres.io.utilities.InputGenerator;
+import wres.io.utilities.NoDataException;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -614,6 +615,10 @@ final class MainFunctions
                 catch ( IOException e )
                 {
                     LOGGER.error(Strings.getStackTrace(e));
+                }
+                catch ( NoDataException e )
+                {
+                    LOGGER.error(Strings.getStackTrace( e ));
                 }
             }
             else

@@ -64,6 +64,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
+import wres.io.utilities.NoDataException;
 import wres.io.writing.ChartWriter;
 import wres.io.writing.ChartWriter.ChartWritingException;
 import wres.io.writing.CommaSeparated;
@@ -179,7 +180,7 @@ public class Control implements Function<String[], Integer>
             }
             return 0;
         }
-        catch ( WresProcessingException wpe )
+        catch ( WresProcessingException | NoDataException wpe )
         {
             endTime = System.currentTimeMillis();
 
@@ -217,6 +218,7 @@ public class Control implements Function<String[], Integer>
                                          final ExecutorService pairExecutor,
                                          final ExecutorService thresholdExecutor,
                                          final ExecutorService metricExecutor )
+            throws NoDataException
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();

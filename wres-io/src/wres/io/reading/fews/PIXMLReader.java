@@ -116,7 +116,16 @@ public final class PIXMLReader extends XMLReader
     {
         try
         {
-            this.projectDetails.addSource( this.hash, this.dataSourceConfig );
+        	if (!Strings.hasValue( this.hash ))
+			{
+				this.projectDetails.addSource( this.hash,
+											   this.dataSourceConfig );
+			}
+			else
+			{
+				LOGGER.debug( "No data could be ingested from '{}'.",
+							  this.getFilename());
+			}
         }
         catch ( SQLException e )
         {

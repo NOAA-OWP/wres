@@ -68,6 +68,12 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             LOGGER.error("A MetricInputIterator could not be created.");
             LOGGER.error(Strings.getStackTrace(e));
         }
+        catch ( NoDataException e )
+        {
+            LOGGER.error("A MetricInputIterator could not be created. " + ""
+                         + "There's no data to iterate over.");
+            LOGGER.error(Strings.getStackTrace( e ));
+        }
         return iterator;
     }
 
@@ -109,16 +115,15 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             return baseline;
         }
 
-        private void createLeftHandCache() throws SQLException
+        private void createLeftHandCache() throws SQLException, NoDataException
         {
             Map<String, Double> values = new HashMap<>();
             List<Double> futureVector = null;
 
             String desiredMeasurementUnit = this.projectConfig.getPair().getUnit();
             Integer desiredMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(desiredMeasurementUnit);
-            Integer projectID = Projects.getProjectID( this.projectConfig.getName() );
-            DataSourceConfig left = this.getLeft();
 
+            DataSourceConfig left = this.getLeft();
             StringBuilder script = new StringBuilder();
             Integer leftVariableID = ConfigHelper.getVariableID(left);
 
@@ -140,7 +145,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 }
             }
 
-            String variablepositionClause = ConfigHelper.getVariablePositionClause(left.getFeatures().get( 0 ), leftVariableID);
+            String variablepositionClause = ConfigHelper.getVariablePositionClause(leftFeature, leftVariableID);
 
             if (left.getTimeShift() != null && left.getTimeShift().getWidth() != 0)
             {
@@ -149,6 +154,17 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
             if (ConfigHelper.isForecast(left))
             {
+                List<Integer> forecastIDs = Projects.getProject( this.projectConfig.getName() ).getLeftForecastIDs();
+
+                if (forecastIDs.size() == 0)
+                {
+                    throw new NoDataException("There is no forecast data that " +
+                                              "can be loaded for comparison " +
+                                              "purposes. Please supply new " +
+                                              "data or adjust the project " +
+                                              "specifications.");
+                }
+
                 // TODO: This will be a mess if we don't have the ability to select "Assim data" rather than all
                 script.append("SELECT ");
                 if (left.getTimeAggregationDescription() != null) {
@@ -193,6 +209,17 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             }
             else
             {
+                List<Integer> leftSources = Projects.getProject( this.projectConfig ).getLeftSources();
+
+                if (leftSources.size() == 0)
+                {
+                    throw new NoDataException( "There are no observation data "
+                                               + "pair with. Please ensure "
+                                               + "data exists that can be "
+                                               + "ingested and that the project "
+                                               + "is properly configured." );
+                }
+
                 script.append("SELECT (O.observation_time");
 
                 if (timeShift != null)
@@ -304,7 +331,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             {
                 LOGGER.error( "Statement for left hand data retrieval:" );
                 LOGGER.error( script.toString() );
-                throw new IllegalStateException( "No data for the left hand side of the evaluation could be loaded. Please check your specifications." );
+                throw new NoDataException( "No data for the left hand side of the evaluation could be loaded. Please check your specifications." );
 
             }
 
@@ -351,7 +378,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         }
 
         public MetricInputIterator(ProjectConfig projectConfig, Feature leftFeature, Feature rightFeature, Feature baselineFeature)
-                throws SQLException, InvalidPropertiesFormatException
+                throws SQLException, InvalidPropertiesFormatException,
+                NoDataException
         {
             this.projectConfig = projectConfig;
             this.leftFeature = leftFeature;
@@ -365,7 +393,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         }
 
         private Integer getWindowCount()
-                throws SQLException, InvalidPropertiesFormatException
+                throws SQLException, InvalidPropertiesFormatException,
+                NoDataException
         {
             if ( this.windowCount == null && ConfigHelper.isForecast( this.getRight() ))
             {
@@ -401,7 +430,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         }
 
         private Integer getLastLead()
-                throws SQLException, InvalidPropertiesFormatException
+                throws SQLException, InvalidPropertiesFormatException,
+                NoDataException
         {
             if (this.lastLead == null)
             {
@@ -415,7 +445,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
                 if (this.lastLead == null)
                 {
-                    throw new IllegalStateException( "No data could be found to generate pairs for." );
+                    throw new NoDataException( "No data could be found to generate pairs for." );
                 }
                 if (projectConfig.getConditions().getLastLead() < lastLead)
                 {
@@ -467,6 +497,12 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             catch ( SQLException | InvalidPropertiesFormatException e )
             {
                 LOGGER.error(Strings.getStackTrace( e ));
+            }
+            catch ( NoDataException e )
+            {
+                LOGGER.error("The last lead time for pairing could not be " +
+                             "determined; There is no data to pair and " +
+                             "iterate over.");
             }
             return next;
         }

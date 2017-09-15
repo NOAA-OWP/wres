@@ -20,6 +20,7 @@ import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
 import wres.io.utilities.InputGenerator;
+import wres.io.utilities.NoDataException;
 import wres.util.Strings;
 
 public final class Operations {
@@ -33,6 +34,7 @@ public final class Operations {
     }
 
     public static boolean ingest(ProjectConfig projectConfig)
+            throws NoDataException
     {
         boolean completedSmoothly;
 
@@ -63,6 +65,11 @@ public final class Operations {
             Database.completeAllIngestTasks();
 
             completedSmoothly = SUCCESS;
+        }
+        catch ( NoDataException e )
+        {
+            LOGGER.error( "No data could be ingested." );
+            throw e;
         }
         finally
         {
