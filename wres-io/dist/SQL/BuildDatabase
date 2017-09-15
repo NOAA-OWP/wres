@@ -23,6 +23,10 @@ else
     psql -U $1 -d $3 -h $2 -f wres.Source.sql >/dev/null
 
     echo ''
+    echo 'Adding wres.Project...'
+    psql -U $1 -d $3 -h $2 -f wres.Project.sql >/dev/null
+
+    echo ''
     echo 'Adding operating_member...'
     psql -U $1 -d $3 -h $2 -f operating_member.sql >/dev/null
 
