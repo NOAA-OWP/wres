@@ -33,6 +33,11 @@ public class Validation
     /** A message to display for programmers when null project config occurs */
     private static final String NON_NULL = "The ProjectConfigPlus must not be null";
 
+    /** The warning message boilerplate for logger (includes 3 placeholders) */
+    private static final String FILE_LINE_COLUMN_BOILERPLATE =
+            "In file {}, near line {} and column {}, WRES found an issue with "
+            + "the project configuration.";
+
     private Validation()
     {
         // prevent construction.
@@ -85,9 +90,8 @@ public class Validation
             {
                 if ( ve.getLocator() != null )
                 {
-                    LOGGER.warn( "In file {}, near line {} and column {}, WRES "
-                                 + "found an issue with the project "
-                                 + "configuration. The parser said: {}",
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " The parser said: {}",
                                  projectConfigPlus.getPath(),
                                  ve.getLocator().getLineNumber(),
                                  ve.getLocator().getColumnNumber(),
@@ -109,12 +113,15 @@ public class Validation
         }
 
         // Validate pair section
-        result = result && Validation.isPairConfigValid( projectConfigPlus );
+        result = Validation.isPairConfigValid( projectConfigPlus ) && result;
 
         // Validate outputs are writeable directories
-        result = result && areAllOutputPathsWriteableDirectories( projectConfigPlus );
+        result = Validation.areAllOutputPathsWriteableDirectories( projectConfigPlus )
+                 && result;
+
         // Validate graphics portion
-        result = result && isGraphicsPortionOfProjectValid( projectConfigPlus );
+        result = Validation.isGraphicsPortionOfProjectValid( projectConfigPlus )
+                 && result;
 
         return result;
     }
@@ -163,8 +170,8 @@ public class Validation
             }
             catch ( InvalidPathException ipe )
             {
-                LOGGER.warn( "In file {}, near line {} and column {}, "
-                             + "the path {} could not be found. "
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The path {} could not be found. "
                              + PLEASE_UPDATE,
                              projectConfigPlus.getPath(),
                              d.sourceLocation().getLineNumber(),
@@ -178,8 +185,8 @@ public class Validation
 
             if ( !destinationFile.canWrite() || !destinationFile.isDirectory() )
             {
-                LOGGER.warn( "In file {}, near line {} and column {}, "
-                             + "the path {} was not a writeable directory. "
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The path {} was not a writeable directory. "
                              + PLEASE_UPDATE,
                              projectConfigPlus.getPath(),
                              d.sourceLocation().getLineNumber(),
@@ -240,58 +247,36 @@ public class Validation
                 // If a custom vis config was provided, make sure string either
                 // starts with the correct tag or starts with a comment.
                 String trimmedCustomString = customString.trim();
-                result = result && checkTrimmedString( projectConfigPlus,
-                                                       trimmedCustomString,
-                                                       BEGIN_TAG,
-                                                       BEGIN_COMMENT,
-                                                       nearbyTag );
-                result = result && checkTrimmedString( projectConfigPlus,
-                                                       trimmedCustomString,
-                                                       END_TAG,
-                                                       END_COMMENT,
-                                                       nearbyTag );
+
+                if( !trimmedCustomString.startsWith( BEGIN_TAG )
+                    && !trimmedCustomString.startsWith( BEGIN_COMMENT ) )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " If custom graphics configuration is "
+                                 + "provided, please start it with "
+                                 + BEGIN_TAG,
+                                 projectConfigPlus.getPath(),
+                                 nearbyTag.sourceLocation().getLineNumber(),
+                                 nearbyTag.sourceLocation().getColumnNumber() );
+                    result = false;
+                }
+
+                if( !trimmedCustomString.endsWith( END_TAG )
+                    && !trimmedCustomString.endsWith( END_COMMENT ) )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " If custom graphics configuration is "
+                                 + "provided, please end it with "
+                                 + END_TAG,
+                                 projectConfigPlus.getPath(),
+                                 nearbyTag.sourceLocation().getLineNumber(),
+                                 nearbyTag.sourceLocation().getColumnNumber() );
+                    result = false;
+                }
             }
         }
 
         return result;
-    }
-
-
-    /**
-     * Checks a trimmed string in the graphics configuration.
-     *
-     * @param projectConfigPlus the configuration
-     * @param trimmedCustomString the trimmed string
-     * @param tag the tag
-     * @param comment the comment
-     * @param nearbyTag a nearby tag
-     * @return true if the tag is valid, false otherwise
-     */
-
-    private static boolean checkTrimmedString( ProjectConfigPlus projectConfigPlus,
-                                               String trimmedCustomString,
-                                               String tag,
-                                               String comment,
-                                               Locatable nearbyTag )
-    {
-        if( !trimmedCustomString.endsWith( tag )
-            && !trimmedCustomString.endsWith( comment ) )
-        {
-            final String msg = "In file {}, near line {} and column {}, "
-                               + "WRES found an issue with the project "
-                               + " configuration in the area of custom "
-                               + "graphics configuration. If customization is "
-                               + "provided, please end it with " + tag;
-
-            LOGGER.warn( msg,
-                         projectConfigPlus.getPath(),
-                         nearbyTag.sourceLocation().getLineNumber(),
-                         nearbyTag.sourceLocation().getColumnNumber() );
-
-            return false;
-        }
-
-        return true;
     }
 
     private static boolean isPairConfigValid( ProjectConfigPlus projectConfigPlus )
@@ -308,8 +293,8 @@ public class Validation
         if ( aggregationConfig.getFunction() ==
              TimeAggregationFunction.INSTANTANEOUS )
         {
-            String msg = "In file {}, near line {} and column {}, WRES found an"
-                         + " issue with the pair config. The aggregation "
+            String msg = FILE_LINE_COLUMN_BOILERPLATE
+                         + " In the pair configuration, the aggregation "
                          + "function provided for pairing is prescriptive so it"
                          + " cannot be 'instantaneous' it needs to be one of "
                          + "the other aggregation functions such as 'sum'.";
