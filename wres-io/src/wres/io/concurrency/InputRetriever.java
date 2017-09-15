@@ -31,6 +31,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
@@ -71,7 +72,18 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             this.baselinePairs = this.createPairs(this.projectConfig.getInputs().getBaseline());
         }
 
-        return createInput();
+        MetricInput<?> input = null;
+
+        try
+        {
+            input = createInput();
+        }
+        catch ( Exception error )
+        {
+            LOGGER.error( Strings.getStackTrace( error ) );
+            throw error;
+        }
+        return input;
     }
 
     public void setZeroDate(String zeroDate)
@@ -79,7 +91,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         this.zeroDate = zeroDate;
     }
 
-    private MetricInput<?> createInput()
+    private MetricInput<?> createInput() throws NoDataException
     {
         MetricInput<?> input;
 
@@ -92,15 +104,15 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if (this.primaryPairs.size() == 0)
         {
-            throw new IllegalStateException( "No data could be retrieved for Metric calculation for window " +
-                                             this.progress +
-                                             " for " +
-                                             this.projectConfig.getInputs()
+            throw new NoDataException( "No data could be retrieved for Metric calculation for window " +
+                                       this.progress +
+                                       " for " +
+                                       this.projectConfig.getInputs()
                                                                .getRight()
                                                                .getVariable()
                                                                .getValue() +
-                                             " at " +
-                                             ConfigHelper.getFeatureDescription( this.rightFeature ) );
+                                       " at " +
+                                       ConfigHelper.getFeatureDescription( this.rightFeature ) );
         }
 
         if (this.baselineExists())

@@ -109,6 +109,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
     public void addSource( String hash, DataSourceConfig dataSourceConfig)
             throws SQLException
     {
+        if (!Strings.hasValue( hash ))
+        {
+            throw new IllegalArgumentException( "Attempting to save " +
+                                                "a non-existent set of " +
+                                                "data to a project is " +
+                                                "not a valid operation." );
+        }
+
         String member;
 
         if ( ConfigHelper.isLeft( dataSourceConfig, projectConfig ))
@@ -147,6 +155,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
                                                 " is not a valid member for source data." );
         }
 
+        if (sourceID == null)
+        {
+            throw new IllegalArgumentException( "Attempting to add a " +
+                                                "non-existant source to a " +
+                                                "project is not a valid operation." );
+        }
+
         String script =
                 "INSERT INTO wres.ProjectSource (project_id, source_id, member)"
                 + NEWLINE +
@@ -171,6 +186,15 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
     public void addObservationSource(String hash, String member) throws SQLException
     {
         Integer sourceID = DataSources.getActiveSourceID( hash );
+
+        if (sourceID == null)
+        {
+            LOGGER.warn( "Source data could not be attached to '{}' " +
+                         "as {} data because no data was ever ingested for it.",
+                         this.projectName );
+            return;
+        }
+
         this.addSource( sourceID, member );
 
         if (member.equalsIgnoreCase( ProjectDetails.LEFT_MEMBER ))
@@ -193,6 +217,15 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
     public void addForecastSource(String hash, String member) throws SQLException
     {
         Integer sourceID = DataSources.getActiveSourceID( hash );
+
+        if (sourceID == null)
+        {
+            LOGGER.warn( "Source data could not be attached to '{}' " +
+                         "as {} data because no data was ever ingested for it.",
+                         this.projectName );
+            return;
+        }
+
         this.addSource( sourceID, member );
 
         String script = "SELECT FS.forecast_id" + NEWLINE +

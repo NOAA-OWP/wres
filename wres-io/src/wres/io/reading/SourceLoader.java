@@ -23,6 +23,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Projects;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
 import wres.util.Internal;
 import wres.util.Strings;
 
@@ -49,7 +50,7 @@ public class SourceLoader
      * Ingest data
      * @return List of Future file ingest results
      */
-    public List<Future> load()
+    public List<Future> load() throws NoDataException
     {
         try
         {
@@ -70,6 +71,7 @@ public class SourceLoader
     }
 
     private List<Future> loadConfig(DataSourceConfig config)
+            throws NoDataException
     {
         List<Future> savingFiles = new ArrayList<>();
 
@@ -79,9 +81,9 @@ public class SourceLoader
 
                 if (!Files.exists( sourcePath ))
                 {
-                    throw new IllegalStateException( "The path: '" +
-                                                     source.getValue() +
-                                                     "' is not a valid source of data.");
+                    throw new NoDataException( "The path: '" +
+                                               source.getValue() +
+                                               "' is not a valid source of data.");
                 }
                 else if (Files.isDirectory(sourcePath)) {
 
