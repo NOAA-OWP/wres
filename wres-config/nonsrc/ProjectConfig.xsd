@@ -166,7 +166,7 @@
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
-            <xs:element name="timeAggregationDescription" type="timeAggregation" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="existingTimeAggregation" type="timeAggregation" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
@@ -463,7 +463,7 @@
         <xs:sequence>
             <xs:element name="unit" type="xs:string" />
             <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
-            <xs:element name="timeAggregationPrescription" type="timeAggregation" />
+            <xs:element name="desiredTimeAggregation" type="timeAggregation" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
