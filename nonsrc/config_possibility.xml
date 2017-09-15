@@ -3,40 +3,40 @@
   <inputs>
     <left label="My Desired Name For Graphics">
       <type>observations</type>
-      <source recursive="true" all="true" format="PI-XML">c:/resources/DRRC2SQIN.xml</source>
+      <source recursive="true" all="true" format="PI-XML">/media/sf_userprofile/hefs_data/resources/DRRC2SQIN.xml</source>
       <variable>QINE</variable>
     <features>
-      <location lid="DRRC2" name="DOLORES - RICO, BLO"/>
+      <location lid="DRRC2HLF" name="DOLORES - RICO, BLO"/>
     </features>
     </left>
     <right label="My Name I want to see on charts">
       <type>ensemble forecasts</type>
-      <source format="PI-XML">c:/resources/forecasts/</source>
+      <source format="PI-XML">/media/sf_userprofile/hefs_data/resources/forecasts/</source>
       <variable>SQIN</variable>
       <features>
-        <location lid="DRRC2" name="DOLORES - RICO, BLO"/>
+        <location lid="DRRC2HSF" name="DOLORES - RICO, BLO"/>
       </features>
-      <timeAggregationDescription>
+      <existingTimeAggregation>
         <function>instantaneous</function>
         <period>1</period>
           <unit>HOUR</unit>
-      </timeAggregationDescription>
+      </existingTimeAggregation>
     </right>
   </inputs>
   <conditions> <!-- aka filters -->
 <!--    <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>--> <!-- optional, default all -->
-    <features>
-        <location lid="DRRC2" name="DOLORES - RICO, BLO"/>
-    </features>
+<features>
+  <location lid="DRRC2*" />
+</features>
   </conditions>
   <pair label="Pairs by location and lead time"> <!-- required for unit -->
     <unit>CMS</unit>
     <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
-      <timeAggregationPrescription>
+      <desiredTimeAggregation>
           <function>avg</function>
           <period>1</period>
           <unit>HOUR</unit>
-      </timeAggregationPrescription>
+      </desiredTimeAggregation>
   </pair>
   <outputs>
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->

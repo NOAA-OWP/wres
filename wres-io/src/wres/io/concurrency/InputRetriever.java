@@ -257,7 +257,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             windowNumber = 0;
         }
 
-        if (sourceConfig.getTimeAggregationDescription() == null)
+        if (sourceConfig.getExistingTimeAggregation() == null)
         {
             sourceConfig = this.projectConfig.getInputs().getRight();
         }
