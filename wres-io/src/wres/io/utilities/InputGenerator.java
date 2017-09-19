@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.TimeAggregationConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricInput;
@@ -83,6 +82,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private Integer windowCount;
         private Integer variableID;
         private Integer lastLead;
+        private Integer leadOffset;
 
         private final Feature leftFeature;
         private final Feature rightFeature;
@@ -145,7 +145,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 }
             }
 
-            String variablepositionClause = ConfigHelper.getVariablePositionClause(leftFeature, leftVariableID);
+            String variablepositionClause = ConfigHelper.getVariablePositionClause(leftFeature, leftVariableID, "");
 
             if (left.getTimeShift() != null && left.getTimeShift().getWidth() != 0)
             {
@@ -195,7 +195,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append("     AND F.forecast_id = ")
                       .append(Collections.formAnyStatement(
                               Projects.getProject( projectConfig.getName() )
-                                      .getLeftForecastIDs() ))
+                                      .getLeftForecastIDs(),
+                              "int" ))
                       .append(NEWLINE);
 
                 script.append("GROUP BY F.forecast_date + INTERVAL '1 hour' * FV.lead");
@@ -209,7 +210,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             }
             else
             {
-                List<Integer> leftSources = Projects.getProject( this.projectConfig ).getLeftSources();
+                List<Integer> leftSources = Projects.getProject( this.projectConfig.getName() ).getLeftSources();
 
                 if (leftSources.size() == 0)
                 {
@@ -234,7 +235,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
                 script.append("     AND O.source_id = ")
                       .append( Collections.formAnyStatement( Projects.getProject( this.projectConfig )
-                                                                     .getLeftSources() ))
+                                                                     .getLeftSources(), "int" ))
                       .append(NEWLINE);
 
                 if (earliestDate != null)
@@ -389,7 +390,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             this.createLeftHandCache();
 
             // TODO: This needs a better home
-            ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) );
+            // x2; 1 step for retrieval, 1 step for calculation
+            ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) * 2 );
         }
 
         private Integer getWindowCount()
@@ -400,7 +402,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             {
 
                 // TODO: Add validation; throw error if start >= last
-                double start = this.projectConfig.getConditions().getFirstLead();
+                int start = this.getFirstLeadInWindow();
                 Integer last = this.getLastLead();
 
                 if (last == null)
@@ -412,10 +414,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                                                         " could not be determined.");
                 }
 
-                TimeAggregationConfig timeAggregationConfig =
-                        ConfigHelper.getTimeAggregation( this.getRight() );
-
-                double windowWidth = ConfigHelper.getWindowWidth( timeAggregationConfig );
+                double windowWidth = ConfigHelper.getWindowWidth( this.projectConfig );
                 double windowSpan = this.getLastLead() - start;
 
                 this.windowCount =
@@ -455,6 +454,19 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             return this.lastLead;
         }
 
+        private int getLeadOffset() throws NoDataException, SQLException,
+                InvalidPropertiesFormatException
+        {
+            if (this.leadOffset == null)
+            {
+                this.leadOffset = ConfigHelper.getLeadOffset( this.projectConfig,
+                                                              leftFeature,
+                                                              rightFeature);
+            }
+
+            return this.leadOffset;
+        }
+
         /**
          * @return the id for the variable in the database
          * @throws SQLException
@@ -468,6 +480,22 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             return this.variableID;
         }
 
+        private int getFirstLeadInWindow()
+                throws InvalidPropertiesFormatException, NoDataException,
+                SQLException
+        {
+            return (this.windowNumber * ConfigHelper.getWindowWidth( this.projectConfig ).intValue()) +
+                   this.getLeadOffset();
+        }
+
+        private int getLastLeadInWindow()
+                throws InvalidPropertiesFormatException, NoDataException,
+                SQLException
+        {
+            return ((this.windowNumber + 1) * ConfigHelper.getWindowWidth( this.projectConfig ).intValue()) +
+                   this.getLeadOffset();
+        }
+
         @Override
         public boolean hasNext () {
             boolean next = false;
@@ -476,14 +504,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
                 if (ConfigHelper.isForecast( this.getRight() ))
                 {
-                    Double windowWidth;
-                    TimeAggregationConfig timeAggregationConfig =
-                            ConfigHelper.getTimeAggregation( this.getRight() );
-                    windowWidth =
-                            ConfigHelper.getWindowWidth( timeAggregationConfig );
-
-                    double beginning = windowWidth * this.windowNumber;
-                    double end = windowWidth * (this.windowNumber + 1);
+                    double beginning = this.getFirstLeadInWindow();
+                    double end = this.getLastLeadInWindow();
 
                     next = beginning < this.getLastLead() &&
                            beginning < this.projectConfig.getConditions().getLastLead() &&
@@ -515,13 +537,15 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             {
                 this.windowNumber++;
                 InputRetriever retriever = new InputRetriever(this.projectConfig,
-                                                              this.rightFeature,
-                                                              this.baselineFeature,
-                                                              this.windowNumber,
                                                               (String date) -> {
                                                                     return this.leftHandMap.getOrDefault(date,null);
-                                                                    },
-                                                              this.leftHandValues);
+                                                                    });
+                retriever.setRightFeature( this.rightFeature );
+                retriever.setBaselineFeature( this.baselineFeature );
+                retriever.setClimatology( this.leftHandValues );
+                retriever.setProgress( this.windowNumber );
+                retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
+                retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
 
                 if (this.getSimulation() != null)
                 {

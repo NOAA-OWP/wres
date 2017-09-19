@@ -5,7 +5,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -242,13 +244,18 @@ public final class Collections
         return key;
     }
 
-    public static <U> String formAnyStatement(Collection<U> items)
+    public static <U> String formAnyStatement(Collection<U> items, String typeName)
     {
-        StringJoiner anyJoiner = new StringJoiner( ",", "ANY('{", "}')" );
+        StringJoiner anyJoiner = new StringJoiner( ",", "ANY('{", "}'::" + typeName + "[])" );
+        Set<U> foundKeys = new TreeSet<>(  );
 
         for (U item : items)
         {
-            anyJoiner.add( String.valueOf(item) );
+            if (!foundKeys.contains( item ))
+            {
+                anyJoiner.add( String.valueOf( item ) );
+                foundKeys.add( item );
+            }
         }
 
         return anyJoiner.toString();
