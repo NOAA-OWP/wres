@@ -450,6 +450,29 @@
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
+    <!-- To support mapping of ad-hoc feature aliases to a feature name.
+         As of 2017-09-19 the name can at least be a handbook5 lid, but maybe
+         things will get more complex later. -->
+    <xs:complexType name="featureAliasType">
+
+        <!-- For class naming using xjc: -->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="FeatureAliasConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <!-- These may not really be identifiers, thus the use of the term
+             name. For a project, it should identify the thing we are using
+             for evaluation. An example:
+             <name>DRRC2</name><alias>DRRC2HAF</alias><alias>DRRC2HSF</alias>-->
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" />
+            <xs:element name="alias" type="xs:string" minOccurs="1" maxOccurs="unbounded" />
+        </xs:sequence>
+        <xs:attribute name="label" type="xs:string" />
+    </xs:complexType>
+
     <xs:complexType name="pair">
 
         <!-- for class naming using xjc-->
@@ -463,6 +486,7 @@
             <xs:element name="unit" type="xs:string" />
             <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
             <xs:element name="desiredTimeAggregation" type="timeAggregation" />
+            <xs:element name="featureAliases" type="featureAliasType" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
