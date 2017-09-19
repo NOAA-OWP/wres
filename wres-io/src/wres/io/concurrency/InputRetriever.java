@@ -43,24 +43,39 @@ import wres.util.Strings;
 @Internal(exclusivePackage = "wres.io")
 public final class InputRetriever extends WRESCallable<MetricInput<?>>
 {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
-    // TODO: Gross! Cut down to an init function. >3 parameters = no bueno.
     @Internal(exclusivePackage = "wres.io")
     public InputRetriever (ProjectConfig projectConfig,
-                           Feature rightFeature,
-                           Feature baselineFeature,
-                           int progress,
-                           Function<String, Double> getLeftValue,
-                           VectorOfDoubles climatology)
+                           Function<String, Double> getLeftValue)
     {
         this.projectConfig = projectConfig;
-        this.rightFeature = rightFeature;
-        this.baselineFeature = baselineFeature;
-        this.progress = progress;
         this.getLeftValue = getLeftValue;
+    }
+
+    public void setRightFeature(Feature rightFeature)
+    {
+        this.rightFeature = rightFeature;
+    }
+
+    public void setBaselineFeature(Feature baselineFeature)
+    {
+        this.baselineFeature = baselineFeature;
+    }
+
+    public void setProgress(int progress)
+    {
+        this.progress = progress;
+    }
+
+    public void setClimatology(VectorOfDoubles climatology)
+    {
         this.climatology = climatology;
+    }
+
+    public void setLeadOffset(int leadOffset)
+    {
+        this.leadOffset = leadOffset;
     }
 
     @Override
@@ -151,7 +166,8 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                              dataSourceConfig,
                                                              this.getFeature( dataSourceConfig ),
                                                              this.progress,
-                                                             this.zeroDate);
+                                                             this.zeroDate,
+                                                             this.leadOffset);
     }
 
     private List<PairOfDoubleAndVectorOfDoubles> createPairs(DataSourceConfig dataSourceConfig)
@@ -185,12 +201,39 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                 }
 
                 Double[] measurements = (Double[])resultSet.getArray("measurements").getArray();
+                List<Double> convertedMeasurements = new ArrayList<>(  );
+
+                double minimum = Double.MAX_VALUE * -1.0;
+                double maximum = Double.MAX_VALUE;
+
+                if (this.projectConfig.getConditions().getValues() != null)
+                {
+                    if (this.projectConfig.getConditions().getValues().getMinimum() != null)
+                    {
+                        minimum = this.projectConfig.getConditions().getValues().getMinimum();
+                    }
+
+                    if (this.projectConfig.getConditions().getValues().getMaximum() != null)
+                    {
+                        maximum = this.projectConfig.getConditions().getValues().getMaximum();
+                    }
+                }
 
                 for (int measurementIndex = 0; measurementIndex < measurements.length; ++measurementIndex)
                 {
-                    measurements[measurementIndex] = UnitConversions.convert(measurements[measurementIndex],
+                    double convertedMeasurement = UnitConversions.convert(measurements[measurementIndex],
                                                                              resultSet.getInt("measurementunit_id"),
                                                                              this.projectConfig.getPair().getUnit());
+
+                    if (convertedMeasurement >= minimum && maximum >= convertedMeasurement)
+                    {
+                        convertedMeasurements.add( convertedMeasurement );
+                    }
+                }
+
+                if (convertedMeasurements.size() == 0)
+                {
+                    continue;
                 }
 
                 List<DestinationConfig> destinationConfigs =
@@ -208,7 +251,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                     saver.setDate( date );
                     saver.setWindowNum( this.progress );
                     saver.setLeft( leftValue );
-                    saver.setRight( measurements );
+                    saver.setRight( convertedMeasurements.toArray(new Double[convertedMeasurements.size()]) );
 
                     saver.setOnRun( ProgressMonitor.onThreadStartHandler() );
                     saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
@@ -216,7 +259,8 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                     Executor.submitHighPriorityTask(saver);
                 }
 
-                pairs.add(factory.pairOf(leftValue, measurements));
+                pairs.add(factory.pairOf(leftValue,
+                                         convertedMeasurements.toArray(new Double[convertedMeasurements.size()])));
             }
         }
         finally
@@ -257,16 +301,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             windowNumber = 0;
         }
 
-        if (sourceConfig.getExistingTimeAggregation() == null)
-        {
-            sourceConfig = this.projectConfig.getInputs().getRight();
-        }
-
         Double windowWidth = 1.0;
 
         try
         {
-            windowWidth = ConfigHelper.getWindowWidth( ConfigHelper.getTimeAggregation( sourceConfig ) );
+            windowWidth = ConfigHelper.getWindowWidth( this.projectConfig );
         }
         catch ( InvalidPropertiesFormatException e )
         {
@@ -296,12 +335,13 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         return feature;
     }
 
-    private final int progress;
+    private int leadOffset;
+    private int progress;
     private final ProjectConfig projectConfig;
-    private final Feature rightFeature;
-    private final Feature baselineFeature;
+    private Feature rightFeature;
+    private Feature baselineFeature;
     private final Function<String, Double> getLeftValue;
-    private final VectorOfDoubles climatology;
+    private VectorOfDoubles climatology;
     private List<PairOfDoubleAndVectorOfDoubles> primaryPairs;
     private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;
     private String zeroDate;

@@ -31,6 +31,7 @@ public final class ScriptGenerator
     
     private static final String NEWLINE = System.lineSeparator();
 
+    // TODO: This does not consider the ramifacations of project configurations
     public static LabeledScript generateFindLastLead(int variableID,
                                                      Feature feature,
                                                      int projectID,
@@ -50,7 +51,7 @@ public final class ScriptGenerator
             script += "INNER JOIN wres.Forecast F" + NEWLINE;
             script += "     ON FE.forecast_id = F.forecast_id" + NEWLINE;
             script += "WHERE " +
-                      ConfigHelper.getVariablePositionClause( feature, variableID ) +
+                      ConfigHelper.getVariablePositionClause( feature, variableID, "FE" ) +
                       NEWLINE;
             script += "ORDER BY FV.lead DESC" + NEWLINE;
             script += "LIMIT 1;";
@@ -59,7 +60,7 @@ public final class ScriptGenerator
         {
             script += "SELECT COUNT(*)::int AS " + label + NEWLINE;
             script += "FROM wres.Observation O" + NEWLINE;
-            script += "WHERE " + ConfigHelper.getVariablePositionClause( feature, variableID ) + NEWLINE;
+            script += "WHERE " + ConfigHelper.getVariablePositionClause( feature, variableID, "O" ) + NEWLINE;
         }
         
         return new LabeledScript(label, script);
@@ -69,7 +70,8 @@ public final class ScriptGenerator
                                                       final DataSourceConfig dataSourceConfig,
                                                       final Feature feature,
                                                       final int progress,
-                                                      final String zeroDate)
+                                                      final String zeroDate,
+                                                      final int leadOffset)
             throws SQLException, InvalidPropertiesFormatException
     {
         StringBuilder script = new StringBuilder();
@@ -84,7 +86,7 @@ public final class ScriptGenerator
 
         // TODO: Because of differential locations, we need a better setup than passing around
         // a single feature
-        String variablePositionClause = ConfigHelper.getVariablePositionClause(feature, variableID);
+        String variablePositionClause = ConfigHelper.getVariablePositionClause(feature, variableID, "");
         ProjectDetails projectDetails = Projects.getProject( projectConfig.getName() );
 
         Integer timeShift = null;
@@ -166,9 +168,9 @@ public final class ScriptGenerator
             script.append("INNER JOIN wres.ForecastValue FV").append(NEWLINE);
             script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(NEWLINE);
             script.append("WHERE F.forecast_id = ")
-                  .append( Collections.formAnyStatement( forecastIds ))
+                  .append( Collections.formAnyStatement( forecastIds, "int" ))
                   .append(NEWLINE);
-            script.append("     AND ").append(ConfigHelper.getLeadQualifier(dataSourceConfig, progress)).append(NEWLINE);
+            script.append("     AND ").append(ConfigHelper.getLeadQualifier(dataSourceConfig, progress, leadOffset)).append(NEWLINE);
             script.append("     AND ").append(variablePositionClause).append(NEWLINE);
 
             String ensembleClause = constructEnsembleClause(dataSourceConfig);
@@ -279,7 +281,7 @@ public final class ScriptGenerator
             script.append("FROM wres.Observation O").append(NEWLINE);
             script.append("WHERE ").append(variablePositionClause).append(NEWLINE);
             script.append("     AND O.source_id = ")
-                  .append(Collections.formAnyStatement( sourceIds ))
+                  .append(Collections.formAnyStatement( sourceIds, "int" ))
                   .append(NEWLINE);
             script.append("     AND '")
                   .append(zeroDate)
@@ -412,7 +414,8 @@ public final class ScriptGenerator
         script.append("FROM wres.Observation O").append(NEWLINE);
         script.append("WHERE ")
               .append(ConfigHelper.getVariablePositionClause( feature,
-                                                              ConfigHelper.getVariableID( simulation ) ))
+                                                              ConfigHelper.getVariableID( simulation ),
+                                                              "O"))
               .append(NEWLINE);
 
         if (earliestDate != null)

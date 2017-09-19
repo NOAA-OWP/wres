@@ -99,6 +99,8 @@ public class Projects extends Cache<ProjectDetails, String> {
 
     @Override
     protected void init() {
+        this.getDetails();
+
         Connection connection = null;
         ResultSet projects = null;
 

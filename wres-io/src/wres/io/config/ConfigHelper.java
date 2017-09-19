@@ -33,7 +33,10 @@ import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
 import wres.config.generated.TimeAggregationMode;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.Projects;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Strings;
 import wres.util.Time;
@@ -152,7 +155,8 @@ public class ConfigHelper
      * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
      */
     public static String getLeadQualifier(DataSourceConfig dataSourceConfig,
-                                          int windowNumber)
+                                          int windowNumber,
+                                          int offset)
             throws InvalidPropertiesFormatException
     {
         String qualifier;
@@ -160,9 +164,11 @@ public class ConfigHelper
         TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( dataSourceConfig );
 
         if (!(timeAggregationConfig.getPeriod() == 1 && timeAggregationConfig.getUnit() == DurationUnit.HOUR)) {
+
+            // We perform -1 on beginning and not +1 on end because this is 1s indexed, which throws us off
             int beginning = getLead( dataSourceConfig, windowNumber - 1 );
             int end = getLead( dataSourceConfig, windowNumber );
-            qualifier = String.valueOf(end) +
+            qualifier = String.valueOf(end) + " + " + String.valueOf( offset ) +
                         " >= lead AND lead >";
 
             if (beginning == 0)
@@ -173,7 +179,7 @@ public class ConfigHelper
             {
                 qualifier += " ";
             }
-            qualifier += String.valueOf(beginning);
+            qualifier += String.valueOf(beginning) + " + " + String.valueOf( offset );
         }
         else
         {
@@ -183,7 +189,7 @@ public class ConfigHelper
         return qualifier;
     }
 
-    public static String getVariablePositionClause( Feature feature, int variableId)
+    public static String getVariablePositionClause( Feature feature, int variableId, String alias)
     {
         StringBuilder clause = new StringBuilder();
 
@@ -191,12 +197,19 @@ public class ConfigHelper
         {
             try
             {
+                // TODO: This only works when a) a location is specified and b) an lid is specified
+                // TODO: This needs to work with all other identifiers
                 Integer variablePositionId = Features.getVariablePositionID(feature.getLocation().getLid(),
                                                                             feature.getLocation().getName(),
                                                                             variableId);
 
                 if (variablePositionId != null)
                 {
+                    if (Strings.hasValue( alias ))
+                    {
+                        clause.append(alias).append(".");
+                    }
+
                     clause.append("variableposition_id = ").append(variablePositionId);
                 }
             }
@@ -220,10 +233,74 @@ public class ConfigHelper
         return clause.toString();
     }
 
-    public static double getWindowWidth( TimeAggregationConfig timeAggregationConfig)
+    public static Double getWindowWidth( ProjectConfig projectConfig )
             throws InvalidPropertiesFormatException
     {
-        return Time.unitsToHours(timeAggregationConfig.getUnit().value(), timeAggregationConfig.getPeriod());
+        TimeAggregationConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeAggregation();
+        return Time.unitsToHours( timeAggregationConfig.getUnit().value(),
+                                  timeAggregationConfig.getPeriod() );
+    }
+
+    public static Integer getLeadOffset( ProjectConfig projectConfig, Feature left, Feature right )
+            throws InvalidPropertiesFormatException, SQLException
+    {
+        Integer offset;
+        String newline = System.lineSeparator();
+        double width = getWindowWidth( projectConfig );
+
+        DataSourceConfig leftSource = projectConfig.getInputs().getLeft();
+        DataSourceConfig rightSource = projectConfig.getInputs().getRight();
+
+        ProjectDetails projectDetails = Projects.getProject( projectConfig );
+        List<Integer> forecastIDs = projectDetails.getRightForecastIDs();
+
+        String leftVariablepositionClause;
+        String rightVariablepositionClause;
+
+        Integer leftVariableID = Variables.getVariableID( leftSource.getVariable().getValue(), leftSource.getVariable().getUnit() );
+        Integer rightVariableID = Variables.getVariableID( rightSource.getVariable().getValue(), rightSource.getVariable().getUnit() );;
+
+        leftVariablepositionClause = ConfigHelper.getVariablePositionClause( left, leftVariableID, "O" );
+        rightVariablepositionClause = ConfigHelper.getVariablePositionClause( right, rightVariableID, "FE" );
+
+        StringBuilder script = new StringBuilder(  );
+
+        script.append("SELECT FV.lead AS offset").append(newline);
+        script.append("FROM wres.Forecast F").append(newline);
+        script.append("INNER JOIN wres.ForecastEnsemble FE").append(newline);
+        script.append("     ON FE.forecast_id = F.forecast_id").append(newline);
+        script.append("INNER JOIN wres.ForecastValue FV").append(newline);
+        script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(newline);
+        script.append("INNER JOIN wres.Observation O").append(newline);
+        script.append("     ON O.observation_time = F.forecast_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
+        script.append("WHERE ").append(leftVariablepositionClause).append(newline);
+        script.append("     AND ").append(rightVariablepositionClause).append(newline);
+        script.append("     AND F.forecast_id = ").append(Collections.formAnyStatement( forecastIDs, "int" )).append(newline);
+
+        if (projectConfig.getConditions().getFirstLead() > 1)
+        {
+            script.append("     AND FV.lead >= ").append(projectConfig.getConditions().getFirstLead()).append(newline);
+        }
+
+        if (projectConfig.getConditions().getDates() != null)
+        {
+            if (Strings.hasValue(projectConfig.getConditions().getDates().getEarliest()))
+            {
+                script.append("     AND F.forecast_date >= ").append(newline);
+            }
+
+            if (Strings.hasValue( projectConfig.getConditions().getDates().getLatest()))
+            {
+                script.append("     AND F.forecast_date <= ").append(newline);
+            }
+        }
+
+        script.append("ORDER BY FV.lead").append(newline);
+        script.append("LIMIT 1;");
+
+        offset = Database.getResult(script.toString(), "offset");
+
+        return offset;
     }
 
     public static boolean isForecast(DataSourceConfig dataSource)

@@ -116,7 +116,7 @@ public final class PIXMLReader extends XMLReader
     {
         try
         {
-        	if (!Strings.hasValue( this.hash ))
+        	if (Strings.hasValue( this.hash ))
 			{
 				this.projectDetails.addSource( this.hash,
 											   this.dataSourceConfig );
@@ -361,7 +361,7 @@ public final class PIXMLReader extends XMLReader
 					//	If we are at the tag for the location id, save it to the location metadata
 					this.currentLID = XML.getXMLText(reader);
 
-					/*if (currentLID.length() > 5)
+					if (currentLID.length() > 5)
 					{
 					    String shortendID = currentLID.substring(0, 5);
 
@@ -369,7 +369,7 @@ public final class PIXMLReader extends XMLReader
 						{
 							this.currentLID = shortendID;
 						}
-					}*/
+					}
 				}
 				else if (localName.equalsIgnoreCase("stationName"))
 				{
