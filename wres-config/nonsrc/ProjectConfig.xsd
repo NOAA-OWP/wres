@@ -23,7 +23,6 @@
                  obvious from examining it. Filtering/conditioning is in another
                  section of the config. -Jesse -->
             <xs:enumeration value="archive" />
-            <xs:enumeration value="all" />
         </xs:restriction>
     </xs:simpleType>
 
