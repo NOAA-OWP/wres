@@ -486,7 +486,7 @@
             <xs:element name="unit" type="xs:string" />
             <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
             <xs:element name="desiredTimeAggregation" type="timeAggregation" />
-            <xs:element name="featureAliases" type="featureAliasType" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="featureAlias" type="featureAliasType" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
