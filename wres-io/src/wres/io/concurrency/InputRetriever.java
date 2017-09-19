@@ -162,12 +162,35 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private String getLoadScript(DataSourceConfig dataSourceConfig)
             throws SQLException, InvalidPropertiesFormatException
     {
-        return ScriptGenerator.generateLoadDatasourceScript( this.projectConfig,
-                                                             dataSourceConfig,
-                                                             this.getFeature( dataSourceConfig ),
-                                                             this.progress,
-                                                             this.zeroDate,
-                                                             this.leadOffset);
+        String loadScript;
+
+        if (ConfigHelper.isRight( dataSourceConfig, this.projectConfig ))
+        {
+            if (this.rightLoadScript == null)
+            {
+                this.rightLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectConfig,
+                                                                                     dataSourceConfig,
+                                                                                     this.getFeature( dataSourceConfig ),
+                                                                                     this.progress,
+                                                                                     this.zeroDate,
+                                                                                     this.leadOffset);
+            }
+            loadScript = this.rightLoadScript;
+        }
+        else
+        {
+            if (this.baselineLoadScript == null)
+            {
+                this.baselineLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectConfig,
+                                                                                        dataSourceConfig,
+                                                                                        this.getFeature( dataSourceConfig ),
+                                                                                        this.progress,
+                                                                                        this.zeroDate,
+                                                                                        this.leadOffset);
+            }
+            loadScript = this.baselineLoadScript;
+        }
+        return loadScript;
     }
 
     private List<PairOfDoubleAndVectorOfDoubles> createPairs(DataSourceConfig dataSourceConfig)
@@ -335,6 +358,8 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         return feature;
     }
 
+    private String baselineLoadScript;
+    private String rightLoadScript;
     private int leadOffset;
     private int progress;
     private final ProjectConfig projectConfig;

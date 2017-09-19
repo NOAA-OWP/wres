@@ -34,7 +34,6 @@ public final class ScriptGenerator
     // TODO: This does not consider the ramifacations of project configurations
     public static LabeledScript generateFindLastLead(int variableID,
                                                      Feature feature,
-                                                     int projectID,
                                                      boolean isForecast)
     {
         final String label = "last_lead";
@@ -66,6 +65,7 @@ public final class ScriptGenerator
         return new LabeledScript(label, script);
     }
 
+    // TODO: Convert function to its own class
     public static String generateLoadDatasourceScript(final ProjectConfig projectConfig,
                                                       final DataSourceConfig dataSourceConfig,
                                                       final Feature feature,
@@ -77,32 +77,15 @@ public final class ScriptGenerator
         StringBuilder script = new StringBuilder();
         Integer variableID = ConfigHelper.getVariableID(dataSourceConfig);
 
-        Double minimumValue = null;
-        Double maximumValue = null;
         String earliestDate = null;
         String latestDate = null;
         String earliestIssueDate = null;
         String latestIssueDate = null;
 
-        // TODO: Because of differential locations, we need a better setup than passing around
-        // a single feature
         String variablePositionClause = ConfigHelper.getVariablePositionClause(feature, variableID, "");
         ProjectDetails projectDetails = Projects.getProject( projectConfig.getName() );
 
         Integer timeShift = null;
-
-        if (projectConfig.getConditions().getValues() != null)
-        {
-            if (projectConfig.getConditions().getValues().getMinimum() != null)
-            {
-                minimumValue = projectConfig.getConditions().getValues().getMinimum();
-            }
-
-            if (projectConfig.getConditions().getValues().getMaximum() != null)
-            {
-                maximumValue = projectConfig.getConditions().getValues().getMaximum();
-            }
-        }
 
         if (projectConfig.getConditions().getDates() != null)
         {
@@ -170,7 +153,7 @@ public final class ScriptGenerator
             script.append("WHERE F.forecast_id = ")
                   .append( Collections.formAnyStatement( forecastIds, "int" ))
                   .append(NEWLINE);
-            script.append("     AND ").append(ConfigHelper.getLeadQualifier(dataSourceConfig, progress, leadOffset)).append(NEWLINE);
+            script.append("     AND ").append(ConfigHelper.getLeadQualifier(projectConfig, progress, leadOffset)).append(NEWLINE);
             script.append("     AND ").append(variablePositionClause).append(NEWLINE);
 
             String ensembleClause = constructEnsembleClause(dataSourceConfig);
@@ -225,24 +208,6 @@ public final class ScriptGenerator
                 script.append(" <= ").append(latestDate)
                       .append("         ")
                       .append("-- Limit the forecasts to values on or before this date")
-                      .append(NEWLINE);
-            }
-
-            if (minimumValue != null)
-            {
-                script.append("     AND FV.forecasted_value >= ")
-                      .append(minimumValue)
-                      .append("         ")
-                      .append("-- Limit the forecasted values to those greater than or equal to the given value")
-                      .append(NEWLINE);
-            }
-
-            if (maximumValue != null)
-            {
-                script.append("     AND FV.forecasted_value <= ")
-                      .append(maximumValue)
-                      .append("         ")
-                      .append("-- Limit the forecasted values to those greater than or equal to the given value")
                       .append(NEWLINE);
             }
 
@@ -306,23 +271,6 @@ public final class ScriptGenerator
                 script.append(" <= ").append(latestDate)
                       .append("            ")
                       .append("-- Only retrieve observations on or before this date")
-                      .append(NEWLINE);
-            }
-
-            if (minimumValue != null)
-            {
-                script.append("     AND O.observed_value >= ").append(minimumValue)
-                      .append("         ")
-                      .append("-- Limit observed values to those greater than or equal to the indicated value")
-                      .append(NEWLINE);
-            }
-
-            if (maximumValue != null)
-            {
-                script.append("     AND O.observed_value <= ")
-                      .append(maximumValue)
-                      .append("         ")
-                      .append("-- Limit the observed values to those less than or equal to the indicated value")
                       .append(NEWLINE);
             }
         }

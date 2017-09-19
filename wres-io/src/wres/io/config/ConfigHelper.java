@@ -105,13 +105,13 @@ public class ConfigHelper
 
     /**
      *
-     * @param dataSourceConfig
+     * @param projectConfig
      * @param currentLead
      * @return
      * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
      */
-    private static int getLead(DataSourceConfig dataSourceConfig, int currentLead) throws InvalidPropertiesFormatException {
-        TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( dataSourceConfig );
+    private static int getLead(ProjectConfig projectConfig, int currentLead) throws InvalidPropertiesFormatException {
+        TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( projectConfig );
         return Time.unitsToHours(timeAggregationConfig.getUnit().name(),
                                  currentLead * timeAggregationConfig.getPeriod()).intValue();
     }
@@ -128,9 +128,9 @@ public class ConfigHelper
                 !projectConfig.getInputs().getBaseline().getSource().isEmpty();
     }
 
-    public static TimeAggregationConfig getTimeAggregation(DataSourceConfig dataSourceConfig)
+    public static TimeAggregationConfig getTimeAggregation(ProjectConfig projectConfig)
     {
-        TimeAggregationConfig timeAggregationConfig = dataSourceConfig.getExistingTimeAggregation();
+        TimeAggregationConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeAggregation();
 
         if (timeAggregationConfig == null)
         {
@@ -147,43 +147,35 @@ public class ConfigHelper
 
     /**
      *
-     * @param dataSourceConfig The configuration that controls how windows are calculated
+     * @param projectConfig The configuration that controls how windows are calculated
      * @param windowNumber The indicator of the window whose lead description needs.  In the simplest case, the first
      *                     window could represent 'lead = 1' while the third 'lead = 3'. In more complicated cases,
      *                     the first window could be '40 &gt; lead AND lead &ge; 1' and the second '80 &gt; lead AND lead &ge; 40'
      * @return A description of what a window number means in terms of lead times
      * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
      */
-    public static String getLeadQualifier(DataSourceConfig dataSourceConfig,
+    public static String getLeadQualifier(ProjectConfig projectConfig,
                                           int windowNumber,
                                           int offset)
             throws InvalidPropertiesFormatException
     {
         String qualifier;
 
-        TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( dataSourceConfig );
+        TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( projectConfig );
 
         if (!(timeAggregationConfig.getPeriod() == 1 && timeAggregationConfig.getUnit() == DurationUnit.HOUR)) {
 
             // We perform -1 on beginning and not +1 on end because this is 1s indexed, which throws us off
-            int beginning = getLead( dataSourceConfig, windowNumber - 1 );
-            int end = getLead( dataSourceConfig, windowNumber );
-            qualifier = String.valueOf(end) + " + " + String.valueOf( offset ) +
-                        " >= lead AND lead >";
+            int beginning = getLead( projectConfig, windowNumber - 1 );
+            int end = getLead( projectConfig, windowNumber );
 
-            if (beginning == 0)
-            {
-                qualifier += "= ";
-            }
-            else
-            {
-                qualifier += " ";
-            }
-            qualifier += String.valueOf(beginning) + " + " + String.valueOf( offset );
+            qualifier = String.valueOf(end + offset);
+            qualifier += " >= lead AND lead > ";
+            qualifier += String.valueOf(beginning + offset);
         }
         else
         {
-            qualifier = "lead = " + getLead(dataSourceConfig, windowNumber);
+            qualifier = "lead = " + getLead(projectConfig, windowNumber);
         }
 
         return qualifier;
