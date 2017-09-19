@@ -510,6 +510,8 @@ public class Validation
                                  featureAliasConfig.sourceLocation().getLineNumber(),
                                  featureAliasConfig.sourceLocation().getColumnNumber() );
                 }
+
+                result = false;
             }
         }
 
