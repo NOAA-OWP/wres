@@ -1,7 +1,9 @@
 package wres.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -259,5 +261,132 @@ public final class Collections
         }
 
         return anyJoiner.toString();
+    }
+
+    public static Double median(Collection<Double> values)
+    {
+        Double median = null;
+
+        if (values.size() > 0)
+        {
+            List<Double> sortedValues = new ArrayList<>();
+
+            for ( Double value : values )
+            {
+                sortedValues.add( value );
+            }
+
+            sortedValues.sort( Comparator.naturalOrder() );
+
+            if (sortedValues.size() % 2 == 0)
+            {
+                int mid = sortedValues.size() / 2;
+                median = (sortedValues.get( mid - 1 ) + sortedValues.get(mid)) / 2.0;
+            }
+            else
+            {
+                median = sortedValues.get( sortedValues.size() / 2 );
+            }
+        }
+
+        return median;
+    }
+
+    public static Double min(Collection<Double> values)
+    {
+        Double min = null;
+
+        for (Double value : values)
+        {
+            if (min == null)
+            {
+                min = value;
+            }
+            else
+            {
+                min = Math.min( min, value );
+            }
+        }
+
+        return min;
+    }
+
+    public static Double mean(Collection<Double> values)
+    {
+        Double mean = null;
+
+        if (values.size() > 0)
+        {
+            Double sum = sum( values );
+            mean = sum / values.size();
+        }
+
+        return mean;
+    }
+
+    public static Double sum(Collection<Double> values)
+    {
+        Double sum = null;
+
+        for (Double value : values)
+        {
+            if (sum == null)
+            {
+                sum = value;
+            }
+            else
+            {
+                sum += value;
+            }
+        }
+
+        return sum;
+    }
+
+    public static Double max(Collection<Double> values)
+    {
+        Double max = null;
+
+        for (Double value : values)
+        {
+            if (max == null)
+            {
+                max = value;
+            }
+            else
+            {
+                max = Math.max( max, value );
+            }
+        }
+
+        return max;
+    }
+
+    public static Double aggregate(final Collection<Double> values, String function)
+    {
+        function = function.trim().toLowerCase();
+
+        Double aggregatedValue = null;
+
+        switch ( function )
+        {
+            case "avg":
+                aggregatedValue = mean( values );
+                break;
+            case "median":
+                aggregatedValue = median( values );
+                break;
+            case "max":
+                aggregatedValue = max(values);
+                break;
+            case "min":
+                aggregatedValue = min( values );
+                break;
+            case "sum":
+                aggregatedValue = sum(values);
+                break;
+        }
+
+        return aggregatedValue;
     }
 }

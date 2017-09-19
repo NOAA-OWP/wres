@@ -434,10 +434,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         {
             if (this.lastLead == null)
             {
-                int projectID = Projects.getProjectID( this.projectConfig.getName());
                 LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(this.getVariableID(),
                                                                                     this.rightFeature,
-                                                                                    projectID,
                                                                                     ConfigHelper.isForecast( this.getRight() ));
 
                 lastLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
@@ -508,8 +506,11 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
                 if (ConfigHelper.isForecast( this.getRight() ))
                 {
-                    double beginning = this.getFirstLeadInWindow();
-                    double end = this.getLastLeadInWindow();
+                    // We don't use getLastLeadInWindow or getFiretleadInWindow because we want know the conditions in the future
+                    double beginning = ((this.windowNumber + 1) * ConfigHelper.getWindowWidth( this.projectConfig ).intValue()) +
+                                       this.getLeadOffset();
+                    double end = ((this.windowNumber + 2) * ConfigHelper.getWindowWidth( this.projectConfig ).intValue()) +
+                                 this.getLeadOffset();
 
                     next = beginning < this.getLastLead() &&
                            beginning < this.projectConfig.getConditions().getLastLead() &&
