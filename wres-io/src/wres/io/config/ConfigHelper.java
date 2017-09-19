@@ -311,6 +311,12 @@ public class ConfigHelper
                                 DatasourceType.ENSEMBLE_FORECASTS.value());
     }
 
+    public static boolean isSimulation(DataSourceConfig dataSourceConfig)
+    {
+        return dataSourceConfig != null
+                && dataSourceConfig.getType() == DatasourceType.SIMULATIONS;
+    }
+
     public static ProjectConfig read(final String path) throws IOException
     {
         Path actualPath = Paths.get( path );
