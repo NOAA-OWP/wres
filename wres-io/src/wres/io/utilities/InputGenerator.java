@@ -457,7 +457,11 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private int getLeadOffset() throws NoDataException, SQLException,
                 InvalidPropertiesFormatException
         {
-            if (this.leadOffset == null)
+            if ( this.leadOffset == null && ConfigHelper.isSimulation( this.getRight() ))
+            {
+                this.leadOffset = 0;
+            }
+            else if (this.leadOffset == null)
             {
                 this.leadOffset = ConfigHelper.getLeadOffset( this.projectConfig,
                                                               leftFeature,
@@ -536,30 +540,39 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             if (this.hasNext())
             {
                 this.windowNumber++;
-                InputRetriever retriever = new InputRetriever(this.projectConfig,
-                                                              (String date) -> {
-                                                                    return this.leftHandMap.getOrDefault(date,null);
-                                                                    });
-                retriever.setRightFeature( this.rightFeature );
-                retriever.setBaselineFeature( this.baselineFeature );
-                retriever.setClimatology( this.leftHandValues );
-                retriever.setProgress( this.windowNumber );
-                retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
-                retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-
-                if (this.getSimulation() != null)
+                try
                 {
-                    try
-                    {
-                        retriever.setZeroDate( this.getZeroDate() );
-                    }
-                    catch ( SQLException e )
-                    {
-                        e.printStackTrace();
-                    }
-                }
+                    InputRetriever retriever = new InputRetriever(this.projectConfig,
+                                                                  (String date) -> {
+                                                                      return this.leftHandMap.getOrDefault(date,null);
+                                                                  });
+                    retriever.setRightFeature( this.rightFeature );
+                    retriever.setBaselineFeature( this.baselineFeature );
+                    retriever.setClimatology( this.leftHandValues );
+                    retriever.setProgress( this.windowNumber );
+                    retriever.setLeadOffset( this.getLeadOffset() );
+                    retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
+                    retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
 
-                nextInput = Database.submit(retriever);
+                    if (this.getSimulation() != null)
+                    {
+                        try
+                        {
+                            retriever.setZeroDate( this.getZeroDate() );
+                        }
+                        catch ( SQLException e )
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    nextInput = Database.submit(retriever);
+                }
+                catch ( NoDataException | SQLException | InvalidPropertiesFormatException e )
+                {
+                    LOGGER.error( Strings.getStackTrace( e ) );
+                    e.printStackTrace();
+                }
             }
 
             return nextInput;
