@@ -23,7 +23,6 @@
                  obvious from examining it. Filtering/conditioning is in another
                  section of the config. -Jesse -->
             <xs:enumeration value="archive" />
-            <xs:enumeration value="all" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -364,10 +363,6 @@
             <xs:enumeration value="max" />
             <xs:enumeration value="min" />
             <xs:enumeration value="median" />
-            <!-- Instantaneous only makes sense for describing existing, will
-                 need to validate at application level that it is not used for
-                 prescribing an aggregation. -->
-            <xs:enumeration value="instantaneous" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -376,9 +371,13 @@
     </xs:simpleType>
     <xs:simpleType name="durationUnit">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="MIN" />
-            <xs:enumeration value="HOUR" />
-            <xs:enumeration value="DAY" />
+            <!-- Instantaneous only makes sense for describing existing, will
+                 need to validate at application level that it is not used for
+                 prescribing an aggregation. Also no more than 1 instant. -->
+            <xs:enumeration value="instant" />
+            <xs:enumeration value="minute" />
+            <xs:enumeration value="hour" />
+            <xs:enumeration value="day" />
         </xs:restriction>
     </xs:simpleType>
     
@@ -421,7 +420,7 @@
             <xs:element name="function" type="timeAggregationFunction" default="avg" />
             <xs:element name="period" type="duration"/>
             <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="unit" type="durationUnit" default="HOUR" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="unit" type="durationUnit" default="hour" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="mode" type="timeAggregationMode" />
