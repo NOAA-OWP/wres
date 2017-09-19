@@ -4,7 +4,9 @@ import com.sun.xml.bind.Locatable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DurationUnit;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
@@ -111,6 +113,10 @@ public class Validation
             // Any validation event means we fail.
             result = false;
         }
+
+        // Validate data sources
+        result = Validation.areDataSourceConfigsValid( projectConfigPlus )
+                 && result;
 
         // Validate pair section
         result = Validation.isPairConfigValid( projectConfigPlus ) && result;
@@ -334,7 +340,6 @@ public class Validation
         return nearbyTag;
     }
 
-
     private static boolean isPairConfigValid( ProjectConfigPlus projectConfigPlus )
     {
         boolean result = true;
@@ -347,17 +352,15 @@ public class Validation
                 pairConfig.getDesiredTimeAggregation();
 
         if ( aggregationConfig != null
-             && aggregationConfig.getFunction() ==
-                TimeAggregationFunction.INSTANTANEOUS )
+             && aggregationConfig.getUnit() == DurationUnit.INSTANT )
         {
             if ( LOGGER.isWarnEnabled() )
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
                              + " In the pair configuration, the aggregation "
-                             + "function provided for pairing is prescriptive "
-                             + "so it cannot be 'instantaneous' it needs to be "
-                             + "one of the other aggregation functions such as "
-                             + "'sum'.";
+                             + "duration provided for pairing is prescriptive "
+                             + "so it cannot be 'instant' it needs to be "
+                             + "one of the other time units such as 'hour'.";
 
                 LOGGER.warn( msg,
                              projectConfigPlus.getPath(),
@@ -367,6 +370,74 @@ public class Validation
             }
 
             result = false;
+        }
+
+        return result;
+    }
+
+    private static boolean areDataSourceConfigsValid( ProjectConfigPlus projectConfigPlus )
+    {
+        boolean result = true;
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        DataSourceConfig left = projectConfig.getInputs().getLeft();
+        DataSourceConfig right = projectConfig.getInputs().getRight();
+        DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
+
+        result = Validation.isDataSourceConfigValid( projectConfigPlus,
+                                                     left )
+                 && result;
+
+        result = Validation.isDataSourceConfigValid( projectConfigPlus,
+                                                     right )
+                 && result;
+
+        if ( baseline != null )
+        {
+            result = Validation.isDataSourceConfigValid( projectConfigPlus,
+                                                         baseline )
+                     && result;
+        }
+
+        return result;
+    }
+
+    private static boolean isDataSourceConfigValid( ProjectConfigPlus projectConfigPlus,
+                                                    DataSourceConfig dataSourceConfig )
+    {
+        boolean result = true;
+
+        TimeAggregationConfig timeAggregation = dataSourceConfig.getExistingTimeAggregation();
+
+        if ( timeAggregation != null
+             && timeAggregation.getUnit() == DurationUnit.INSTANT )
+        {
+            boolean instantMakesSense = true;
+
+            if ( timeAggregation.getPeriod() != 1 )
+            {
+                instantMakesSense = false;
+            }
+
+            if ( timeAggregation.getFrequency() != null
+                 && timeAggregation.getFrequency() != 1 )
+            {
+                instantMakesSense = false;
+            }
+
+            // The message is the same whether for period or duration
+            if ( !instantMakesSense && LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " When using 'instant' duration, the period (and"
+                             + " frequency, if specified) must be 1.",
+                             projectConfigPlus.getPath(),
+                             timeAggregation.sourceLocation().getLineNumber(),
+                             timeAggregation.sourceLocation().getColumnNumber() );
+            }
+
+            result = instantMakesSense && result;
         }
 
         return result;
