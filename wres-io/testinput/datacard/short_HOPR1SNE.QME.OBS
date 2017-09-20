@@ -1,0 +1,19 @@
+$ OH Datacard Time Series created at 09-20-2011 09:43:29 from web application
+$ Data source: usgs  01118000
+$ Data type: discharge
+$ 
+$ Symbol for missing data = -999.0 
+$ Symbol for accumulated data = -998.0 
+$ 
+datacard      QME  L3   CFSD 24   WODR1SNE        WOOD R- HOPE VALLEY
+ 1  1960  6   2010  1   f10.2
+01118000    0160   1    201.00
+01118000    0160   2    181.00
+01118000    0160   3    243.00
+01118000    0160   4    409.00
+01118000    0160   5    364.00
+01118000    0160   6    306.00
+01118000    0160   7    268.00
+01118000    0160   8    240.00
+01118000    0160   9    220.00
+01118000    0160  10    198.00

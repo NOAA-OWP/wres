@@ -1,5 +1,15 @@
 package wres.config;
 
+import java.io.File;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Objects;
+import java.util.SortedSet;
+import java.util.concurrent.ConcurrentSkipListSet;
+import javax.xml.bind.ValidationEvent;
+
 import com.sun.xml.bind.Locatable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,19 +17,11 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DurationUnit;
+import wres.config.generated.FeatureAliasConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
-import wres.config.generated.TimeAggregationFunction;
 import wres.io.config.ProjectConfigPlus;
-
-import javax.xml.bind.ValidationEvent;
-import java.io.File;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Objects;
 
 
 /**
@@ -370,6 +372,147 @@ public class Validation
             }
 
             result = false;
+        }
+
+        result = Validation.areFeatureAliasesValid( projectConfigPlus,
+                                                    pairConfig )
+                 && result;
+
+        return result;
+    }
+
+    private static boolean areFeatureAliasesValid( ProjectConfigPlus projectConfigPlus,
+                                                   PairConfig pairConfig )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+        Objects.requireNonNull( pairConfig, NON_NULL );
+
+        boolean result = true;
+
+        if ( pairConfig.getFeatureAlias() != null )
+        {
+            SortedSet<String> alreadyUsed = new ConcurrentSkipListSet<>();
+            for ( FeatureAliasConfig f : pairConfig.getFeatureAlias() )
+            {
+                result = Validation.isFeatureAliasValid( projectConfigPlus,
+                                                         f,
+                                                         alreadyUsed )
+                         && result;
+
+                if ( f.getName() != null )
+                {
+                    alreadyUsed.add( f.getName() );
+                }
+
+                if ( f.getAlias() != null )
+                {
+                    alreadyUsed.addAll( f.getAlias() );
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Validates a given feature alias from a projectconfig.
+     *
+     * Expects caller to create a set of names already existing. If the name of
+     * featureAliasConfig is present in that list, consider it invalid.
+     *
+     * @param projectConfigPlus the project config
+     * @param featureAliasConfig the feature alias to validate
+     * @param stuffAlreadyUsed set of strings already-used as names or aliases
+     * @return true when valid
+     * @throws NullPointerException when any argument is null
+     */
+
+    private static boolean isFeatureAliasValid( ProjectConfigPlus projectConfigPlus,
+                                                FeatureAliasConfig featureAliasConfig,
+                                                SortedSet<String> stuffAlreadyUsed )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+        Objects.requireNonNull( featureAliasConfig, NON_NULL );
+        Objects.requireNonNull( stuffAlreadyUsed, NON_NULL );
+
+        boolean result = true;
+
+        final String ALREADY_USED = " The name or alias {} was already used as "
+                                    + "a name or alias earlier. Any and all "
+                                    + "aliases for a name must be specified in "
+                                    + "one stanza, e.g. <featureAlias><name>{}"
+                                    + "</name><alias>{}ONE</alias><alias>{}TWO"
+                                    + "</alias>.";
+
+        String name = featureAliasConfig.getName();
+        List<String> aliases = featureAliasConfig.getAlias();
+
+        if ( name.length() > 0 )
+        {
+            if ( stuffAlreadyUsed.contains( name ) )
+            {
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + ALREADY_USED,
+                                 projectConfigPlus.getPath(),
+                                 featureAliasConfig.sourceLocation().getLineNumber(),
+                                 featureAliasConfig.sourceLocation().getColumnNumber(),
+                                 name, name, name, name );
+                }
+
+                result = false;
+            }
+        }
+        else
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The name represents the name of a location "
+                             + " within the actual data. It cannot be missing. "
+                             + "Please use the name found in data, e.g. <name>"
+                             + "DRRC2</name>.",
+                             projectConfigPlus.getPath(),
+                             featureAliasConfig.sourceLocation().getLineNumber(),
+                             featureAliasConfig.sourceLocation().getColumnNumber() );
+            }
+
+            result = false;
+        }
+
+        for ( String alias : aliases )
+        {
+            if ( stuffAlreadyUsed.contains( alias ) )
+            {
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + ALREADY_USED,
+                                 projectConfigPlus.getPath(),
+                                 featureAliasConfig.sourceLocation().getLineNumber(),
+                                 featureAliasConfig.sourceLocation().getColumnNumber(),
+                                 alias, name, name, name );
+                }
+
+                result = false;
+            }
+
+            if ( alias.length() <= 0 )
+            {
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " At least one non-empty <alias> must be "
+                                 + "specified in each <featureAlias>. (Feature "
+                                 + "aliases as a whole are optional.)",
+                                 projectConfigPlus.getPath(),
+                                 featureAliasConfig.sourceLocation().getLineNumber(),
+                                 featureAliasConfig.sourceLocation().getColumnNumber() );
+                }
+
+                result = false;
+            }
         }
 
         return result;
