@@ -10,15 +10,13 @@ import java.nio.file.attribute.FileTime;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DataSourceConfig;
 import wres.io.concurrency.CopyExecutor;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
-//import concurrency.DatacardResultSaver;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
@@ -35,189 +33,147 @@ import wres.util.Time;
 @SuppressWarnings("deprecation")
 public class DatacardSource extends BasicSource {
 
-    private static final int MAX_INSERTS = 100;
-    
+     
 	/**
 	 * 
 	 * @param filename the file name
 	 */
 	public DatacardSource(String filename) {
-		// TODO: Remove hard coding for variable name
-		set_variable_name("precipitation");
 		setFilename(filename);
-		//set_source_type(SourceType.DATACARD);
 	}
 	
-	public String get_datatype_code()
+	public String getDatatypeCode()
 	{
-		return datatype_code;
+		return datatypeCode;
 	}
 	
-	public void set_datatype_code(String code)
+	public void setDatatypeCode(String code)
 	{
-		datatype_code = code.trim();
+		datatypeCode = code.trim();
 	}
 	
-	public int get_time_interval()
+	public int getTimeInterval()
 	{
-		return time_interval;
+		return timeInterval;
 	}
 	
-	public void set_time_interval(int interval)
+	public void setTimeInterval(int interval)
 	{
-		time_interval = interval;
+		timeInterval = interval;
 	}
 	
-	public void set_time_interval(String interval)
+	public void setTimeInterval(String interval)
 	{
-		interval = interval.trim();
-		set_time_interval(Integer.parseInt(interval));
+		setTimeInterval(Integer.parseInt(interval.trim()));
 	}
 	
-	public String get_series_description()
+	public String getSeriesDescription()
 	{
-		return series_description;
+		return seriesDescription;
 	}
 	
-	public void set_series_description(String description)
+	public void setSeriesDescription(String description)
 	{
-		series_description = description.trim();
+		seriesDescription = description.trim();
 	}
 	
-	public int get_first_month()
+	public int getFirstMonth()
 	{
-		return first_month;
+		return firstMonth;
 	}
 	
-	public void set_first_month(int month)
+	public void setFirstMonth(int month)
 	{
-		first_month = month;
+		firstMonth = month;
 	}
 	
-	public void set_first_month(String month_number)
+	public void setFirstMonth(String monthNumber)
 	{
-		month_number = month_number.trim();
-		set_first_month(Integer.parseInt(month_number));
+	    setFirstMonth(Integer.parseInt(monthNumber.trim()));
 	}
 	
-	public int get_first_year()
+	public int getFirstYear()
 	{
-		return first_year;
+		return firstYear;
 	}
 	
-	public void set_first_year(int year)
+	public void setFirstYear(int year)
 	{
-		first_year = year;
+		firstYear = year;
 	}
 	
-	public void set_first_year(String year)
+	public void setFirstYear(String year)
 	{
 		year = year.trim();
-		set_first_year(Integer.parseInt(year));
+		setFirstYear(Integer.parseInt(year));
 	}
 	
-	public int get_last_month()
+	public int getLastMonth()
 	{
-		return last_month;
+		return lastMonth;
 	}
 	
-	public void set_last_month(int month)
+	public void setLastMonth(int month)
 	{
-		last_month = month;
+		lastMonth = month;
 	}
 	
-	public void set_last_month(String month_number)
+	public void setLastMonth(String monthNumber)
 	{
-		month_number = month_number.trim();
-		set_last_month(Integer.parseInt(month_number));
+	    setLastMonth(Integer.parseInt(monthNumber.trim()));
 	}
 	
-	public int get_last_year()
+	public int getLastYear()
 	{
-		return last_year;
+		return lastYear;
 	}
 	
-	public void set_last_year(int year)
+	public void setLastYear(int year)
 	{
-		last_year = year;
+		lastYear = year;
 	}
 	
-	public void set_last_year(String year)
+	public void setLastYear(String year)
 	{
-		year = year.trim();
-		set_last_year(Integer.parseInt(year));
+	    setLastYear(Integer.parseInt(year.trim()));
 	}
 	
-	public int get_values_per_record()
+	public int getValuesPerRecord()
 	{
-		return values_per_record;
+		return valuesPerRecord;
 	}
 	
-	public void set_values_per_record(String amount)
+	public void setValuesPerRecord(String amount)
 	{
-		amount = amount.trim();
-		values_per_record = Integer.parseInt(amount);
+		valuesPerRecord = Integer.parseInt(amount.trim());
 	}
-	
-	public String get_missing_data_symbol()
+		
+	public String getTimeSeriesIdentifier()
 	{
-		return missing_data_symbol;
+		return timeSeriesIdentifier;
 	}
 	
-	public void set_missing_data_symbol(String symbol)
+	public void setTimeSeriesIdentifier(String identifier)
 	{
-		missing_data_symbol = symbol;
+		timeSeriesIdentifier = identifier.trim();
 	}
-	
-	public String get_accumulated_data_symbol()
+		
+	public String getMeasurementUnit()
 	{
-		return accumulated_data_symbol;
+		return measurementUnit;
 	}
 	
-	public void set_accumulated_data_symbol(String symbol)
+	public void setMeasurementUnit(String unit)
 	{
-		accumulated_data_symbol = symbol.trim();
+		measurementUnit = unit;
 	}
 	
-	public String get_time_series_identifier()
-	{
-		return time_series_identifier;
-	}
-	
-	public void set_time_series_identifier(String identifier)
-	{
-		time_series_identifier = identifier.trim();
-	}
-	
-	
-	private Integer get_variable_id() throws SQLException
-	{
-		return Variables.getVariableID(get_variable_name(), get_measurement_unit());
-	}
-	
-	public String get_measurement_unit()
-	{
-		return measuremnt_unit;
-	}
-	
-	public void set_measurement_unit(String unit)
-	{
-		measuremnt_unit = unit;
-	}
-	
-	public int get_measurement_unit_id()
+	public int getMeasurementUnitId() throws SQLException 
 	{
 		int id = -1;
 		
-		try 
-		{
-			id = MeasurementUnits.getMeasurementUnitID(measuremnt_unit);
-		}
-		catch(SQLException ex)
-		{
-			ex.printStackTrace();
-		}
-		
+		id = MeasurementUnits.getMeasurementUnitID(measurementUnit);
+				
 		return id;
 	}
 
@@ -226,7 +182,7 @@ public class DatacardSource extends BasicSource {
 		Path path = Paths.get(getFilename());
 		
 		currentVariableName = getSpecifiedVariableName();
-		measuremnt_unit     = getSpecifiedVariableUnit();
+		measurementUnit     = getSpecifiedVariableUnit();
 										
 		try (BufferedReader reader = Files.newBufferedReader(path))
 		{
@@ -234,44 +190,23 @@ public class DatacardSource extends BasicSource {
 			int    obsValColWidth = 0;
 			int	   lastColIdx     = 0;
 			
-			//TODO Hank (8/31/17): You cannot rely on the $ lines to exist.  Furhter, since they are comment lines,
-			//you cannot depend on them for information.  Instead, the missing data value will need to be provided
-            //through configuration.  And, since multiple values can serve as missing (-998 should be treated as -999,
-			//both being "missing"), you may need to allow for multiple possible values to denote missing.
-			//
-			//In any case, if a user does not specify missing, then it should assume -998 and -999 are both
-			//missing.  I think this could be handled in the config side by supplying a default for whatever 
-			//element is used for the user to specify the missing value.
-			Pattern missing_data_pattern     = Pattern.compile("(?<=SYMBOL FOR MISSING DATA=)[-\\.\\d]*");
-			Pattern accumulated_data_pattern = Pattern.compile("(?<=SYMBOL FOR ACCUMULATED DATA=)[-\\.\\d]*");
-
-			//XXX Hank (8/31/17) Process the comment lines.  
-			while ((line = reader.readLine()) != null && line.startsWith("$"))
+			//Process the comment lines. 
+		    while ((line = reader.readLine()) != null && line.startsWith(getCommentLnSymbol()))
 			{
-				Matcher missing_data_matcher = missing_data_pattern.matcher(line);
-				if (missing_data_matcher.find())
-				{
-					missing_data_symbol = missing_data_matcher.group();
-				}
-
-				Matcher accumulated_data_matcher = accumulated_data_pattern.matcher(line);
-				if (accumulated_data_matcher.find())
-				{
-					accumulated_data_symbol = accumulated_data_matcher.group();
-				}
+				//skip comment lines
 			}
 			
-			//XXX Hank (8/31/17): First non-comment, header line.
+			//First non-comment, header line.
 			if (line != null)
 			{
-				set_datatype_code(line.substring(14, 18));
-				set_time_interval(line.substring(29, 31));
-				set_time_series_identifier(line.substring(34, 46));
+				setDatatypeCode(line.substring(14, 18));
+				setTimeInterval(line.substring(29, 31));
+				setTimeSeriesIdentifier(line.substring(34, 46));
 				lastColIdx = Math.min(69, line.length() - 1);
 				
 				if(lastColIdx > 49)
 				{
-					set_series_description(line.substring(49, lastColIdx));
+					setSeriesDescription(line.substring(49, lastColIdx));
 				}
 			}
 			else
@@ -280,14 +215,14 @@ public class DatacardSource extends BasicSource {
 				throw new IOException(String.format(message, getFilename()));
 			}
 			
-			//XXX Hank (8/31/17): Second non-comment, header line.
+			//Second non-comment, header line.
 			if ((line = reader.readLine()) != null)
 			{
-				set_first_month(line.substring(0, 2));
-				set_first_year(line.substring(4, 8));
-				set_last_month(line.substring(9, 11));
-				set_last_year(line.substring(14, 18));
-				set_values_per_record(line.substring(19, 21));
+				setFirstMonth(line.substring(0, 2));
+				setFirstYear(line.substring(4, 8));
+				setLastMonth(line.substring(9, 11));
+				setLastYear(line.substring(14, 18));
+				setValuesPerRecord(line.substring(19, 21));
 				lastColIdx = Math.min(32, line.length() - 1);
 				
 				if(lastColIdx > 24)
@@ -301,141 +236,87 @@ public class DatacardSource extends BasicSource {
 				throw new IOException(String.format(message, getFilename()));
 			}					
 			
-			OffsetDateTime datetime       = OffsetDateTime.of(get_first_year(), get_first_month(), 1, 0, 0, 0, 0, ZoneOffset.UTC);
+			OffsetDateTime datetime       = OffsetDateTime.of(getFirstYear(), getFirstMonth(), 1, 0, 0, 0, 0, ZoneOffset.UTC);
 			String         timeZone       = getSpecifiedTimeZone();
 			int            valIdxInRecord = 0;
 			String         value          = "";
 			
+			int    startIdx   = 0;
+			int    endIdx     = 0;
+				
 			datetime = datetime.plusHours(Time.zoneOffsetHours(timeZone));
             
-			//XXX Hank (8/31/17): Process the lines one at a time.
+			//Process the lines one at a time.
 			while ((line = reader.readLine()) != null)
 			{
-				for (valIdxInRecord = 0; valIdxInRecord < values_per_record; valIdxInRecord++)
+				line = Strings.rtrim(line);
+				
+				// loop through all values in one line
+				for (valIdxInRecord = 0; valIdxInRecord < valuesPerRecord; valIdxInRecord++)
 				{
-					entry_count++;
+					value = "";
+					startIdx = FIRST_OBS_VALUE_START_POS + valIdxInRecord * obsValColWidth;
 					
-					//TODO I don't see any logic in here to handle lines with fewer numbers than values_per_record.
-					//For example:
-					//
-                    //		            1048  19     .000     .000     .000     .000     .000     .048
-                    //		            1048  20     .038     .108     .093     .001     .000     .001
-                    //		            1048  21     .000     .000     .000     .000
-					//the last line has only four entries.  The loop above will assume six.  I don't see
-					//anything here that will identify that there are no more entries (I think the substring
-					//below will fail somehow, but you keep using it as normal).
-
-					//last value in the row/record?
-					if(valIdxInRecord == values_per_record - 1)
+					//Have all values in the line been processed?
+					if (line.length() > startIdx)
 					{
-						value = line.substring(FIRST_OBS_VALUE_START_POS + valIdxInRecord * obsValColWidth);
+						//last value in the row/record?
+						if(valIdxInRecord == valuesPerRecord - 1 || 
+						  (FIRST_OBS_VALUE_START_POS + (valIdxInRecord + 1) * obsValColWidth >= line.length()))
+						{
+							value = line.substring(startIdx);
+					    }
+						else
+						{
+							endIdx = Math.min(startIdx + obsValColWidth + 1, line.length());
+							value = line.substring(startIdx, endIdx);
+						}
+						
+						datetime = datetime.plusHours(timeInterval);
+						
+						//TODO Hank (8/31/17): Again, the missing and accumulated data values are not being handled well.
+						//First, you should do a numerical check, since, with this check, if missing is "-999.0" but the
+						//datacard included a field with "-999", which can happen if someone manually edits the file, you 
+						//will not know it is missing.  You should get float values for missing, convert the ingested 
+						//value to a float and compare.  
+						//
+						//Also, please confirm this is necessary.  What if missing values were just forwarded to the database?
+						//Would that be okay?  Would the database handle it?
+						if (dateIsApproved(datetime.toString()) && valueIsApproved(value))
+						{
+							try
+							{
+								addObservedEvent(datetime.toString(), Float.parseFloat(value));
+								entryCount++;
+							}
+							catch (Exception e) 
+							{
+								LOGGER.warn(String.valueOf(entryCount) + "th value:" + value + "in datacard file not saved to database");
+		                    }
+						}
 					}
 					else
 					{
-						value = line.substring(FIRST_OBS_VALUE_START_POS + valIdxInRecord * obsValColWidth,
-										   	   FIRST_OBS_VALUE_START_POS + (valIdxInRecord + 1)* obsValColWidth+ 1);
+						//This line has less values. The last value of the line has been processed.
+						break;
 					}
-					
-					datetime = datetime.plusHours(time_interval);
-					
-					//TODO Hank (8/31/17): Again, the missing and accumulated data values are not being handled well.
-					//First, you should do a numerical check, since, with this check, if missing is "-999.0" but the
-					//datacard included a field with "-999", which can happen if someone manually edits the file, you 
-					//will not know it is missing.  You should get float values for missing, convert the ingested 
-					//value to a float and compare.  
-					//
-					//Also, please confirm this is necessary.  What if missing values were just forwarded to the database?
-					//Would that be okay?  Would the database handle it?
-					if (!value.startsWith(missing_data_symbol) && !value.startsWith(accumulated_data_symbol))
-					{
-						try
-						{
-							addObservedEvent(datetime.toString(), Float.parseFloat(value));
-						}
-						catch (Exception e) 
-						{
-							e.printStackTrace();
-	                    }
-					}
-				}
-			}
+				} //end of loop for one value line 
+			} //end of loop for all value lines
 			
 			saveLeftoverObservations();
 		}
-		catch (IOException exception)
-		{
-			System.err.format("IOException: %s%n", exception);
-			throw exception;
-		}
-		catch (Exception exception)
-		{
-			System.err.format("Exception: %s%n", exception);
-			throw exception;
-		}	
 		finally
 		{
 			 if (LOGGER.isInfoEnabled())
 	         {
-				 LOGGER.info(String.valueOf(entry_count) + " values of datacardsource saved to database");
+				 LOGGER.info(String.valueOf(entryCount) + " values of datacardsource saved to database");
 	         }
 		}
 	}
-	
-	private String createObservation() throws SQLException
-	{
-		int observation_id = 0;
-		String save_script = get_save_observation_script();
-		
-		try {
-			clearStaleObservations();
-			observation_id = Database.getResult(save_script, "observation_id");
-		}
-		catch (SQLException error)
-		{
-			System.out.println("\nA forecast could not be created. Here is the script:\n");
-			System.out.println(save_script);
-			throw error;
-		}
-
-		return String.valueOf(observation_id);
-	}
-	
-	private void clearStaleObservations() throws SQLException
-	{
-		String clear_script = "DELETE FROM Observation WHERE source = '" + getAbsoluteFilename() + "';";
-		Database.execute(clear_script);
-	}
-	
-	/**
-	 * Returns a specialized script used to save the observation
-	 * @return The script to save the observation
-	 * @throws SQLException
-	 */
-	private String get_save_observation_script() throws SQLException
-	{
-		//TODO: Stop hard coding the measurement unit id
-		return String.format(save_observation_script, 
-							 getAbsoluteFilename(),
-							 get_variable_id(),
-							 1);
-	}
-	
-	private void set_variable_name(String variable_name)
-	{
-		this.variable_name = variable_name;
-	}
-	
-	private String get_variable_name() 
-	{
-		return variable_name;
-	}
-	
-	//TODO Hank (8/31/17): I think this method could check a flag called "testMode" or something similar.  If testing,
-	//it could output the currentScript to a file or something else.  You can then check the resulting script
-	//with a benchmark to see if its what is expected.  
+				
 	private void saveLeftoverObservations()
     {
-        if (insertCount > 0)
+        if (insertCount > 0 && !testMode)
         {
             insertCount = 0;
             CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript.toString(), delimiter);
@@ -454,12 +335,7 @@ public class DatacardSource extends BasicSource {
 	 */
 	private void addObservedEvent(String observedTime, Float observedValue) throws Exception
 	{
-        if (!dateIsApproved(observedTime) || !valueIsApproved(observedValue))
-        {
-            return;
-        }
-        
-		if (insertCount > 0)
+       	if (insertCount > 0)
 		{
 			currentScript.append(NEWLINE);
 		}
@@ -469,7 +345,7 @@ public class DatacardSource extends BasicSource {
 			currentScript = new StringBuilder();
 		}
 		
-		currentScript.append(Features.getVariablePositionID(getSpecifiedLocationID(), getSpecifiedLocationID(), getVariableID()));
+		currentScript.append(getVariablePositionID());
 		currentScript.append(delimiter);
 		currentScript.append("'").append(observedTime).append("'");
 		currentScript.append(delimiter);
@@ -482,7 +358,7 @@ public class DatacardSource extends BasicSource {
 		insertCount++;
 	}
 			
-	private Integer getMeasurementID()  throws Exception
+	public Integer getMeasurementID()  throws Exception
 	{
 		if(currentMeasurementUnitID == null)
 		{
@@ -490,6 +366,11 @@ public class DatacardSource extends BasicSource {
 		}
 		
 		return currentMeasurementUnitID ;
+	}
+	
+	public void setMeasurementID(Integer id)  
+	{
+		currentMeasurementUnitID = id;
 	}
 	
 	/**
@@ -500,7 +381,7 @@ public class DatacardSource extends BasicSource {
 	{		
 		if (currentVariableID == null)
 		{
-			this.currentVariableID = Variables.getVariableID(currentVariableName, measuremnt_unit);
+			this.currentVariableID = Variables.getVariableID(currentVariableName, measurementUnit);
 		}
 		
 		return this.currentVariableID;
@@ -510,7 +391,7 @@ public class DatacardSource extends BasicSource {
 	 * @return A valid ID for the source of this PIXML file from the database
 	 * @throws Exception Thrown if an ID could not be retrieved from the database
 	 */
-	private int getSourceID() throws Exception
+	public int getSourceID() throws Exception
 	{
 		if (currentSourceID == null)
 		{
@@ -528,6 +409,12 @@ public class DatacardSource extends BasicSource {
 		return currentSourceID;
 	}
 	
+	public void setSourceID(Integer id)  
+	{
+		currentSourceID = id;
+	}
+	
+	
 	private boolean dateIsApproved(String date)
 	{
 	    if (!detailsSpecified || (this.specifiedEarliestDate == null && this.specifiedLatestDate == null))
@@ -540,12 +427,55 @@ public class DatacardSource extends BasicSource {
 	    return dateToApprove.isAfter(specifiedEarliestDate) && dateToApprove.isBefore(specifiedLatestDate);
 	}
 	
-	private boolean valueIsApproved(Float value)
+    private boolean valueIsApproved(String value)
 	{
-	    return !value.equals(this.currentMissingValue) &&
-	           value >= this.specifiedMinimumValue && 
-	           value <= this.specifiedMaximumValue; 
+    	String missingVal = getSpecifiedMissingValue();
+		String accumVal   = getAccumlatedValue();
+		Float  f          = null;
+		boolean approved  = true;
+		
+		try
+	    {
+			f = Float.valueOf(value.trim());
+			
+			if(missingVal != null && accumVal != null)
+			{
+				approved = !isMissingValue(f, missingVal) && !f.equals(Float.valueOf(accumVal)) &&
+						 f >= specifiedMinimumValue && f <= specifiedMaximumValue; 
+			}
+					   
+	    }
+	    catch (NumberFormatException nfe)
+	    {
+	    	approved = false;
+	    	
+	    	if (LOGGER.isInfoEnabled())
+	    	{
+	    		LOGGER.info(value + ": not approved value; Missing Val: " + missingVal + "; Accum Val: " + accumVal +
+	    		" ; Range: [" + specifiedMinimumValue + ", " + specifiedMaximumValue + "]");
+	    	}
+	    }
+    	
+    	return approved;
 	}
+    
+    private boolean isMissingValue(Float value, String specifiedMissingValues) throws NumberFormatException
+    { 
+    	boolean  isMissing = false;
+    	String[] missingValArr = specifiedMissingValues.split(",");
+    	
+    	//loop through all comma delimited missing values specified in config file
+    	for (String missingVal : missingValArr)
+    	{
+    		if(Float.valueOf(missingVal.trim()).equals(value))
+    		{
+    			isMissing = true;
+    			break;
+    		}
+    	}
+    	
+    	return isMissing;
+    }
 	
 	public void setSpecifiedEarliestDate(String earliestDate)
 	{
@@ -565,7 +495,7 @@ public class DatacardSource extends BasicSource {
 	 */
 	public int getEntryCount()
 	{
-	   return entry_count;
+	   return entryCount;
 	}
 	
 	/**
@@ -602,13 +532,13 @@ public class DatacardSource extends BasicSource {
 		{
 			idxF = formatStr.toUpperCase().indexOf('F');
 			idxPeriod = formatStr.indexOf('.');
+			
+			if(idxPeriod > idxF)
+			{
+				width = Integer.parseInt(formatStr.substring(idxF + 1, idxPeriod));
+			}
 		}
-		
-		if(idxPeriod > idxF)
-		{
-			width = Integer.parseInt(formatStr.substring(idxF + 1, idxPeriod));
-		}
-		
+				
 		return width;
 	}
 	
@@ -632,11 +562,82 @@ public class DatacardSource extends BasicSource {
 		
 		return cleanedDateTime;
 	}
-				
-	private final String save_observation_script = "INSERT INTO Observation (source, variable_id, measurementunit_id)\n" +
-			   									   "VALUES ('%s', %d, %d)\n" +
-			   									   "RETURNING observation_id;";
 	
+	/**
+	 * Returns a accumulated value as a string
+	 * @return accumulated value from config file 
+	 */
+	protected String getAccumlatedValue()
+    {
+        String accumalatedValue = null;
+
+        if (dataSourceConfig != null)
+        {
+            DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, filename);
+
+            if (source != null && source.getAccumulatedValue() != null && !source.getAccumulatedValue().isEmpty())
+            {
+            	accumalatedValue = source.getAccumulatedValue();
+            }
+        }
+
+        return accumalatedValue;
+    }
+	
+	/**
+	 * Returns a symbol of comment line in DataCard file, from config file  as a string
+	 * @return a symbol of comment line
+	 */
+	protected String getCommentLnSymbol()
+    {
+        String commentLnSymbol = "$";
+
+        if (dataSourceConfig != null)
+        {
+            DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, this.filename);
+
+            if (source != null && source.getCommentLnSymbol() != null && !source.getCommentLnSymbol().isEmpty())
+            {
+            	commentLnSymbol = source.getCommentLnSymbol();
+            }
+        }
+
+        return commentLnSymbol;
+    }
+	
+	/**
+	 * Returns test mode as a boolean
+	 * @return test mode 
+	 */
+	public boolean getTestMode()
+	{
+		return testMode;
+	}
+	
+	/**
+	 * Set test mode
+	 * @param test Flag for test or not
+	 */
+	public void setTestMode(boolean test)
+	{
+		testMode = test;
+	}
+	
+	public Integer getVariablePositionID() throws Exception
+	{
+		if(variablePositionID  == null)
+		{
+			variablePositionID = Features.getVariablePositionID(getSpecifiedLocationID(), getSpecifiedLocationID(), getVariableID());
+		}
+		
+		return variablePositionID  ;
+	}
+	
+	public void setVariablePositionID(Integer id)  
+	{
+		variablePositionID = id;
+	}
+			
 	private final static String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, " +
 			  "observation_time, " +
 			  "observed_value, " +
@@ -645,20 +646,17 @@ public class DatacardSource extends BasicSource {
 
 	private final static String DATE_TIME_FORMAT = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z";
 	
-	private String variable_name;
-	private String datatype_code = "";
-	private int time_interval = 0;
-	private String time_series_identifier = "";
-	private String series_description = "";
-	private int first_month = 0;
-	private int first_year = 0;
-	private int last_month = 0;
-	private int last_year = 0;
-	private int values_per_record = 0;
-	private String missing_data_symbol = "-999.00";
-	private String accumulated_data_symbol = "-998.00";
+	private String datatypeCode = "";
+	private int timeInterval = 0;
+	private String timeSeriesIdentifier = "";
+	private String seriesDescription = "";
+	private int firstMonth = 0;
+	private int firstYear = 0;
+	private int lastMonth = 0;
+	private int lastYear = 0;
+	private int valuesPerRecord = 0;
 	
-	private String measuremnt_unit = "";
+	private String measurementUnit = "";
 	private static int FIRST_OBS_VALUE_START_POS = 20;
 		
 	/**
@@ -681,18 +679,13 @@ public class DatacardSource extends BasicSource {
 	 */
 	private static final String delimiter = "|";
 	
-	private static Float specifiedMinimumValue = Float.MIN_VALUE;
-    private static Float specifiedMaximumValue = Float.MAX_VALUE;
+	private Float specifiedMinimumValue = Float.MIN_VALUE;
+    private Float specifiedMaximumValue = Float.MAX_VALUE;
     
-    /**
-	 * The value which indicates a null or invalid value from the source
-	 */
-	private Float currentMissingValue = null;
-	
 	/**
      * Alias for the system agnostic newline separator
      */
-	private final static String NEWLINE = System.lineSeparator();
+	private static final String NEWLINE = System.lineSeparator();
 	
 	/**
 	 * The ID for the variable that is currently being parsed
@@ -728,8 +721,19 @@ public class DatacardSource extends BasicSource {
 	/**
 	/* The number of values in datacard file
 	*/
-	private int entry_count = 0;
+	private int entryCount = 0;
+	
+	/**
+	/* The flag for test or not
+	*/
+	private boolean testMode = false;
+	
+	/**
+	/* The flag for test or not
+	*/
+	private Integer variablePositionID = null;
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatacardSource.class);
 	
 }
+
