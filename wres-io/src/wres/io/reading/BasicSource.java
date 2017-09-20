@@ -80,7 +80,7 @@ public abstract class BasicSource {
         return this.specifiedFeatures;
     }
 
-	private String filename = "";
+	protected String filename = "";
 	private String hash;
 	private Future<String> futureHash;
 	private String absoluteFilename;
@@ -157,7 +157,7 @@ public abstract class BasicSource {
         return timeZone;
     }
 
-    private String getSpecifiedMissingValue()
+    protected String getSpecifiedMissingValue()
     {
         String missingValue = null;
 
@@ -318,6 +318,6 @@ public abstract class BasicSource {
         return Database.getResult( script.toString(), "exists");
     }
 
-	private DataSourceConfig dataSourceConfig;
+	protected DataSourceConfig dataSourceConfig;
 	private List<Feature> specifiedFeatures;
 }
