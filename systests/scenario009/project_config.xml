@@ -12,7 +12,7 @@
                 <location lid="DRRC2" name="DOLORES - RICO, BLO"/>
             </features>
         </left>
-        <right label="HEFS" scenario="Units Changed to CFS">
+        <right label="HEFS" >
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
                 recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/drrc2ForecastsOneYear_cfs/</source>
