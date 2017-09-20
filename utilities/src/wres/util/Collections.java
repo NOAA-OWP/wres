@@ -7,12 +7,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * @author Christopher Tubbs
@@ -144,7 +144,18 @@ public final class Collections
 
         if (source != null)
         {
-            filteredValues = source.stream().filter(expression).collect(Collectors.toList());
+            for (U sourceValue : source)
+            {
+                if (expression.test( sourceValue ))
+                {
+                    if (filteredValues == null)
+                    {
+                        filteredValues = new ArrayList<>(  );
+                    }
+
+                    filteredValues.add( sourceValue );
+                }
+            }
         }
         return filteredValues;
     }
@@ -248,6 +259,11 @@ public final class Collections
 
     public static <U> String formAnyStatement(Collection<U> items, String typeName)
     {
+        if (items.size() == 1)
+        {
+            return String.valueOf( items.toArray()[0] );
+        }
+
         StringJoiner anyJoiner = new StringJoiner( ",", "ANY('{", "}'::" + typeName + "[])" );
         Set<U> foundKeys = new TreeSet<>(  );
 
@@ -388,5 +404,19 @@ public final class Collections
         }
 
         return aggregatedValue;
+    }
+
+    public static <U extends Comparable<? super U>, V> List<V> getValuesInRange(NavigableMap<U, V> map, U minimum, U maximum)
+    {
+        List<V> values = new ArrayList<>(  );
+
+        map = map.subMap( minimum, false, maximum, true );
+
+        for (Map.Entry<U, V> entry : map.entrySet())
+        {
+            values.add( entry.getValue() );
+        }
+
+        return values;
     }
 }

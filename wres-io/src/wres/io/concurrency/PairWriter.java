@@ -161,11 +161,11 @@ public class PairWriter extends WRESCallable<Boolean>
         this.left = left;
     }
 
-    public void setRight(Double[] right)
+    public void setRight(double[] right)
     {
         if (right == null)
         {
-            right = new Double[0];
+            right = new double[0];
         }
         this.right = right;
     }
@@ -175,5 +175,5 @@ public class PairWriter extends WRESCallable<Boolean>
     private String featureDescription;
     private int windowNum;
     private Double left;
-    private Double[] right;
+    private double[] right;
 }
