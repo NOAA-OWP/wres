@@ -1,0 +1,12 @@
+$  IDENTIFIER=CALLICOON      DESCRIPTION=DELAWARE R-CALLICOON
+$  PERIOD OF RECORD=01/1949 THRU 12/1998
+$  SYMBOL FOR MISSING DATA=-999.00   SYMBOL FOR ACCUMULATED DATA=-998.00
+$  TYPE=MAP    UNITS=IN     DIMENSIONS=L      DATA TIME INTERVAL= 6 HOURS
+$  OUTPUT FORMAT=(3A4,2I2,I4,6F9.3)              
+DATACARD      MAP  L    IN    6   CALLICOON      DELAWARE R-CALLICOON
+ 1  1949 12   1998  6   F9.3        
+             149   1    0.650    0.229    0.000    0.024    0.025    0.001
+             149   2    0.000    0.000    0.000    0.000    0.000    0.001
+             149   3    0.000    0.015   -997.0    0.028                 
+             149   4    0.526    0.263    0.188    0.022    0.000    0.000
+         

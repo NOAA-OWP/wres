@@ -19,7 +19,7 @@
       <existingTimeAggregation>
         <function>avg</function>
         <period>1</period>
-          <unit>HOUR</unit>
+          <unit>hour</unit>
       </existingTimeAggregation>
     </right>
   </inputs>
@@ -35,7 +35,7 @@
       <desiredTimeAggregation>
           <function>avg</function>
           <period>1</period>
-          <unit>HOUR</unit>
+          <unit>hour</unit>
       </desiredTimeAggregation>
   </pair>
   <outputs>
