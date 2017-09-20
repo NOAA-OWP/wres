@@ -1,0 +1,1 @@
+/wres_share/releases/wres.sh
