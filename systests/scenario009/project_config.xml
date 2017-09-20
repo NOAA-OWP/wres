@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project label="ExampleProject">
+<project label="ExampleProject" name="Units Change Test">
 
     <inputs>
         <left label="">
