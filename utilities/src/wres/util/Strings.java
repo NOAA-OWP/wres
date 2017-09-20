@@ -210,4 +210,25 @@ public final class Strings {
 
         return algorithm;
     }
+
+    public static String rtrim(String s)
+	{
+		int    idx = 0;
+		String ret = null;
+		
+		if(s != null)
+		{
+		    idx = s.length()-1;
+		    
+		    while (idx > 0 && Character.isWhitespace(s.charAt(idx)))
+			{
+			    idx--;
+			}
+		    
+		    ret = s.substring(0, idx+1);
+		}
+	
+		return ret;
+	}
+
 }
