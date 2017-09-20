@@ -271,4 +271,26 @@ public final class Time
     	 
     	 return offsetHr;
     }
+
+    public static String plus( String time, String unit, double amount)
+            throws InvalidPropertiesFormatException
+    {
+        // Convert to hours, then convert to seconds
+        Double amountToAdd = Time.unitsToHours( unit, amount ) * 3600;
+        OffsetDateTime actualTime = convertStringToDate( time );
+        return convertDateToString(
+                actualTime.plusSeconds( amountToAdd.longValue() )
+        );
+    }
+
+    public static String minus(String time, String unit, double amount)
+            throws InvalidPropertiesFormatException
+    {
+        // Convert to hours, then convert to seconds
+        Double amountToAdd = Time.unitsToHours( unit, amount ) * 3600;
+        OffsetDateTime actualTime = convertStringToDate( time );
+        return convertDateToString(
+                actualTime.minusSeconds( amountToAdd.longValue() )
+        );
+    }
 }

@@ -19,6 +19,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.grouping.LabeledScript;
 import wres.util.Collections;
 import wres.util.Internal;
+import wres.util.Time;
 
 /**
  * @author Christopher Tubbs
@@ -143,6 +144,10 @@ public final class ScriptGenerator
             }
 
             script.append(")::text AS value_date,").append(NEWLINE);
+            script.append("     FV.lead - ")
+                  .append(ConfigHelper.getLead(projectConfig, progress - 1) + leadOffset)
+                  .append(" AS agg_hour,")
+                  .append(NEWLINE);
             script.append("     ARRAY_AGG(FV.forecasted_value) AS measurements,").append(NEWLINE);
             script.append("     FE.measurementunit_id").append(NEWLINE);
             script.append("FROM wres.Forecast F").append(NEWLINE);
@@ -215,10 +220,18 @@ public final class ScriptGenerator
                   .append("         ")
                   .append("-- Aggregate the forecasted values by grouping them based on their date")
                   .append(NEWLINE);
+            script.append("ORDER BY F.forecast_date, agg_hour");
         }
         else
         {
             List<Integer> sourceIds;
+            int windowPeriod = Time.unitsToHours(projectConfig.getPair()
+                                                              .getDesiredTimeAggregation()
+                                                              .getUnit()
+                                                              .value(),
+                                                 projectConfig.getPair()
+                                                              .getDesiredTimeAggregation()
+                                                              .getPeriod()).intValue();
 
             if (ConfigHelper.isLeft( dataSourceConfig, projectConfig ))
             {
@@ -242,6 +255,12 @@ public final class ScriptGenerator
             }
 
             script.append(")::text AS value_date,").append(NEWLINE);
+            script.append("     (EXTRACT(epoch FROM O.observation_time - '")
+                  .append(zeroDate)
+                  .append("')/3600)::int % ")
+                  .append(windowPeriod)
+                  .append(" AS agg_hour,")
+                  .append(NEWLINE);
             script.append("     O.measurementunit_id").append(NEWLINE);
             script.append("FROM wres.Observation O").append(NEWLINE);
             script.append("WHERE ").append(variablePositionClause).append(NEWLINE);

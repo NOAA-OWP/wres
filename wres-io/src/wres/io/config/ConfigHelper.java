@@ -110,7 +110,7 @@ public class ConfigHelper
      * @return
      * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
      */
-    private static int getLead(ProjectConfig projectConfig, int currentLead) throws InvalidPropertiesFormatException {
+    public static int getLead(ProjectConfig projectConfig, int currentLead) throws InvalidPropertiesFormatException {
         TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( projectConfig );
         return Time.unitsToHours(timeAggregationConfig.getUnit().name(),
                                  currentLead * timeAggregationConfig.getPeriod()).intValue();
@@ -250,7 +250,7 @@ public class ConfigHelper
         String rightVariablepositionClause;
 
         Integer leftVariableID = Variables.getVariableID( leftSource.getVariable().getValue(), leftSource.getVariable().getUnit() );
-        Integer rightVariableID = Variables.getVariableID( rightSource.getVariable().getValue(), rightSource.getVariable().getUnit() );;
+        Integer rightVariableID = Variables.getVariableID( rightSource.getVariable().getValue(), rightSource.getVariable().getUnit() );
 
         leftVariablepositionClause = ConfigHelper.getVariablePositionClause( left, leftVariableID, "O" );
         rightVariablepositionClause = ConfigHelper.getVariablePositionClause( right, rightVariableID, "FE" );

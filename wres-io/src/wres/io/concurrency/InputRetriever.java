@@ -7,7 +7,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.BiFunction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +20,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.TimeAggregationConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
@@ -33,9 +36,10 @@ import wres.io.data.caching.UnitConversions;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
+import wres.util.Collections;
 import wres.util.Internal;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
+import wres.util.Time;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -47,10 +51,10 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
     @Internal(exclusivePackage = "wres.io")
     public InputRetriever (ProjectConfig projectConfig,
-                           Function<String, Double> getLeftValue)
+                           BiFunction<String, String, List<Double>> getLeftValues)
     {
         this.projectConfig = projectConfig;
-        this.getLeftValue = getLeftValue;
+        this.getLeftValues = getLeftValues;
     }
 
     public void setRightFeature(Feature rightFeature)
@@ -87,7 +91,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             this.baselinePairs = this.createPairs(this.projectConfig.getInputs().getBaseline());
         }
 
-        MetricInput<?> input = null;
+        MetricInput<?> input;
 
         try
         {
@@ -193,6 +197,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         return loadScript;
     }
 
+    // TODO: REFACTOR
     private List<PairOfDoubleAndVectorOfDoubles> createPairs(DataSourceConfig dataSourceConfig)
             throws InvalidPropertiesFormatException, SQLException,
             ProjectConfigException
@@ -200,12 +205,20 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         String loadScript = getLoadScript( dataSourceConfig );
 
+        boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
+
         Connection connection = null;
         ResultSet resultSet = null;
 
-        Feature feature = this.getFeature( dataSourceConfig );
+        Integer aggHour = null;
+        String startDate = null;
+        String date = null;
+        String aggFunction = ConfigHelper.getTimeAggregation( this.projectConfig )
+                                         .getFunction()
+                                         .value();
 
-        DataFactory factory = DefaultDataFactory.getInstance();
+        List<Double> leftValues;
+        Map<Integer, List<Double>> rightValues = new TreeMap<>();
 
         try
         {
@@ -214,17 +227,35 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
             while(resultSet.next())
             {
-                String date = resultSet.getString("value_date");
-                Double leftValue = this.getLeftValue.apply(date);
+                    /**
+                     * aggHour: The hour into the aggregation
+                     * With the grouped aggregation, you might have several
+                     * blocks, each with values an hour in, or two hours in,
+                     * or three, etc. We don't want to mix those while
+                     * aggregating though; we still want to aggregate these
+                     * blocks, but we want to keep each chunk separate.
+                     *
+                     * I tried returning the time of the start of the block,
+                     * but the made calculations take ~3.5 minutes for six
+                     * months of data, but switching to the agg_hour set up
+                     * reduced that to 1.25 minutes.  Due to that speed up,
+                     * we are using the agg_hour method instead of the more
+                     * straight forward process.
+                     */
+                    if (aggHour != null && resultSet.getInt( "agg_hour" ) <= aggHour)
+                    {
+                        PairOfDoubleAndVectorOfDoubles pair = this.getPair( date, rightValues );
+                        writePair( date, pair, dataSourceConfig );
+                        pairs.add(pair);
 
-                // TODO: This is where we'd handle missing values; for now, we're skipping it
-                if (leftValue == null)
-                {
-                    continue;
-                }
+                        rightValues = new TreeMap<>(  );
+                    }
+
+                    aggHour = resultSet.getInt( "agg_hour" );
+
+                date = resultSet.getString("value_date");
 
                 Double[] measurements = (Double[])resultSet.getArray("measurements").getArray();
-                List<Double> convertedMeasurements = new ArrayList<>(  );
 
                 double minimum = Double.MAX_VALUE * -1.0;
                 double maximum = Double.MAX_VALUE;
@@ -250,40 +281,17 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
                     if (convertedMeasurement >= minimum && maximum >= convertedMeasurement)
                     {
-                        convertedMeasurements.add( convertedMeasurement );
+                        rightValues.putIfAbsent( measurementIndex, new ArrayList<>() );
+                        rightValues.get(measurementIndex).add( convertedMeasurement );
                     }
                 }
+            }
 
-                if (convertedMeasurements.size() == 0)
-                {
-                    continue;
-                }
-
-                List<DestinationConfig> destinationConfigs =
-                        ConfigHelper.getPairDestinations( this.projectConfig );
-
-                for ( DestinationConfig dest : destinationConfigs )
-                {
-
-                    PairWriter saver = new PairWriter();
-                    File directoryLocation =
-                            ConfigHelper.getDirectoryFromDestinationConfig( dest );
-                    saver.setFileDestination( directoryLocation.toString()
-                                              + "/pairs.csv" );
-                    saver.setFeatureDescription( ConfigHelper.getFeatureDescription( feature ) );
-                    saver.setDate( date );
-                    saver.setWindowNum( this.progress );
-                    saver.setLeft( leftValue );
-                    saver.setRight( convertedMeasurements.toArray(new Double[convertedMeasurements.size()]) );
-
-                    saver.setOnRun( ProgressMonitor.onThreadStartHandler() );
-                    saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-
-                    Executor.submitHighPriorityTask(saver);
-                }
-
-                pairs.add(factory.pairOf(leftValue,
-                                         convertedMeasurements.toArray(new Double[convertedMeasurements.size()])));
+            if (rightValues.size() > 0)
+            {
+                PairOfDoubleAndVectorOfDoubles pair = this.getPair( date, rightValues );
+                this.writePair( date, pair, dataSourceConfig );
+                pairs.add(pair);
             }
         }
         finally
@@ -342,6 +350,57 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                            lastLead.intValue());
     }
 
+    private PairOfDoubleAndVectorOfDoubles getPair(String date,
+                                                   Map<Integer, List<Double>> rightValues)
+            throws InvalidPropertiesFormatException, ProjectConfigException
+    {
+        String aggFunction = this.getDesiredAggregation()
+                                 .getFunction()
+                                 .value();
+
+        String firstDate = Time.minus( date,
+                                       this.getDesiredAggregation().getUnit().value(),
+                                       this.getDesiredAggregation().getPeriod());
+
+        List<Double> leftValues = this.getLeftValues.apply( firstDate, date );
+        double leftAggregation = Collections.aggregate(leftValues,
+                                                       aggFunction);
+        Double[] rightAggregation = new Double[rightValues.size()];
+
+
+        for (int memberIndex = 0; memberIndex < rightValues.size(); ++memberIndex)
+        {
+            rightAggregation[memberIndex] = Collections.aggregate( rightValues.get( memberIndex ), aggFunction );
+        }
+
+        return DefaultDataFactory.getInstance().pairOf( leftAggregation, rightAggregation );
+    }
+
+    private void writePair(String date, PairOfDoubleAndVectorOfDoubles pair, DataSourceConfig dataSourceConfig)
+            throws ProjectConfigException
+    {
+
+        List<DestinationConfig> destinationConfigs =
+                ConfigHelper.getPairDestinations( this.projectConfig );
+
+        for ( DestinationConfig dest : destinationConfigs )
+        {
+
+            PairWriter saver = new PairWriter();
+            File directoryLocation =
+                    ConfigHelper.getDirectoryFromDestinationConfig( dest );
+            saver.setFileDestination( directoryLocation.toString()
+                                      + "/pairs.csv" );
+            saver.setFeatureDescription( ConfigHelper.getFeatureDescription( this.getFeature( dataSourceConfig ) ) );
+            saver.setDate( date );
+            saver.setWindowNum( this.progress );
+            saver.setLeft( pair.getItemOne() );
+            saver.setRight( pair.getItemTwo() );
+
+            Executor.submitHighPriorityTask(saver);
+        }
+    }
+
     private Feature getFeature(DataSourceConfig dataSourceConfig)
     {
         Feature feature;
@@ -358,6 +417,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         return feature;
     }
 
+    private TimeAggregationConfig getDesiredAggregation()
+    {
+        return this.projectConfig.getPair().getDesiredTimeAggregation();
+    }
+
     private String baselineLoadScript;
     private String rightLoadScript;
     private int leadOffset;
@@ -365,7 +429,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private final ProjectConfig projectConfig;
     private Feature rightFeature;
     private Feature baselineFeature;
-    private final Function<String, Double> getLeftValue;
+    private final BiFunction<String, String, List<Double>> getLeftValues;
     private VectorOfDoubles climatology;
     private List<PairOfDoubleAndVectorOfDoubles> primaryPairs;
     private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;

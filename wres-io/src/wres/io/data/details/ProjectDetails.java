@@ -191,7 +191,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
         {
             LOGGER.warn( "Source data could not be attached to '{}' " +
                          "as {} data because no data was ever ingested for it.",
-                         this.projectName );
+                         this.projectName,
+                         member);
             return;
         }
 
@@ -222,7 +223,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
         {
             LOGGER.warn( "Source data could not be attached to '{}' " +
                          "as {} data because no data was ever ingested for it.",
-                         this.projectName );
+                         this.projectName,
+                         member);
             return;
         }
 

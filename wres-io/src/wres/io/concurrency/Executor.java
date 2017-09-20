@@ -51,8 +51,7 @@ public final class Executor {
 		}
 
 		ThreadFactory factory = runnable -> new Thread(runnable, "High Priority Database Thread");
-		ExecutorService executor = Executors.newFixedThreadPool(10, factory);
-		return executor;
+		return Executors.newFixedThreadPool(10, factory);
 	}
 
 	public static <V> Future<V> submitHighPriorityTask(Callable<V> task)

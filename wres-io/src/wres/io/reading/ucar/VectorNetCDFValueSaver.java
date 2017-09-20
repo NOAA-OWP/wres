@@ -84,13 +84,11 @@ class VectorNetCDFValueSaver extends WRESRunnable
 
     private String getForecastInsertScript() throws IOException, SQLException {
         if (this.forecastInsertScript == null) {
-            String script = "INSERT INTO " +
-                            ForecastDetails.getForecastValueParitionName( this.getLead() ) +
-                            "(forecastensemble_id, lead, forecasted_value)" +
-                            NEWLINE +
-                            "VALUES (?, ?, ?);";
-
-            this.forecastInsertScript = script;
+            this.forecastInsertScript = "INSERT INTO " +
+                                        ForecastDetails.getForecastValueParitionName( this.getLead() ) +
+                                        "(forecastensemble_id, lead, forecasted_value)" +
+                                        NEWLINE +
+                                        "VALUES (?, ?, ?);";
         }
         return this.forecastInsertScript;
     }
@@ -109,6 +107,10 @@ class VectorNetCDFValueSaver extends WRESRunnable
             this.addVariablePositions();
             this.addForecastEnsembles();
             this.read();
+            while (!this.operations.empty())
+            {
+                this.operations.pop().get();
+            }
         }
         catch (SQLException | IOException | InterruptedException | ExecutionException e)
         {

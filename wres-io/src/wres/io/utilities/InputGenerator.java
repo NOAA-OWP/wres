@@ -4,11 +4,11 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -89,7 +89,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private final Feature baselineFeature;
 
         private final ProjectConfig projectConfig;
-        private Map<String, Double> leftHandMap;
+        private NavigableMap<String, Double> leftHandMap;
         private VectorOfDoubles leftHandValues;
         private String zeroDate;
 
@@ -117,7 +117,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
         private void createLeftHandCache() throws SQLException, NoDataException
         {
-            Map<String, Double> values = new HashMap<>();
+            NavigableMap<String, Double> values = new TreeMap<>();
             List<Double> futureVector = null;
 
             String desiredMeasurementUnit = this.projectConfig.getPair().getUnit();
@@ -544,8 +544,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 try
                 {
                     InputRetriever retriever = new InputRetriever(this.projectConfig,
-                                                                  (String date) -> {
-                                                                      return this.leftHandMap.getOrDefault(date,null);
+                                                                  (String firstDate, String lastDate) -> {
+                                                                      return Collections.getValuesInRange( this.leftHandMap, firstDate, lastDate );
                                                                   });
                     retriever.setRightFeature( this.rightFeature );
                     retriever.setBaselineFeature( this.baselineFeature );
