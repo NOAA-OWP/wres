@@ -494,6 +494,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         @Override
         public boolean hasNext () {
             boolean next = false;
+
             try
             {
 
@@ -506,11 +507,30 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                                  this.getLeadOffset();
 
                     next = beginning < this.getLastLead() &&
-                           end >= this.projectConfig.getConditions().getFirstLead();
+                           end >= this.projectConfig.getConditions().getFirstLead() &&
+                           end <= this.getLastLead();
                 }
                 else
                 {
                     next = this.windowNumber == 0;
+                }
+
+                if (!next && this.windowNumber < 0)
+                {
+                    String message = "Due to the configuration of this project,";
+                    message += " there are no valid windows to evaluate. ";
+                    message += "The range of all lead times go from {} to ";
+                    message += "{}, and the size of the window is {} hours. ";
+                    message += "Based on the difference between the initialization ";
+                    message += "of the left and right data sets, there is a {} ";
+                    message += "hour offset. This puts an initial window out ";
+                    message += "range of the specifications.";
+
+                    LOGGER.error(message,
+                                 this.projectConfig.getConditions().getFirstLead(),
+                                 this.getLastLead(),
+                                 ConfigHelper.getWindowWidth( this.projectConfig ).intValue(),
+                                 this.getLeadOffset());
                 }
             }
             catch ( SQLException | InvalidPropertiesFormatException e )
@@ -523,6 +543,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                              "determined; There is no data to pair and " +
                              "iterate over.");
             }
+
             return next;
         }
 
