@@ -200,24 +200,17 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     // TODO: REFACTOR
     private List<PairOfDoubleAndVectorOfDoubles> createPairs(DataSourceConfig dataSourceConfig)
             throws InvalidPropertiesFormatException, SQLException,
-            ProjectConfigException
+            ProjectConfigException, NoDataException
     {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         String loadScript = getLoadScript( dataSourceConfig );
-
-        boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
 
         Connection connection = null;
         ResultSet resultSet = null;
 
         Integer aggHour = null;
-        String startDate = null;
         String date = null;
-        String aggFunction = ConfigHelper.getTimeAggregation( this.projectConfig )
-                                         .getFunction()
-                                         .value();
 
-        List<Double> leftValues;
         Map<Integer, List<Double>> rightValues = new TreeMap<>();
 
         try
@@ -352,8 +345,14 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
     private PairOfDoubleAndVectorOfDoubles getPair(String date,
                                                    Map<Integer, List<Double>> rightValues)
-            throws InvalidPropertiesFormatException, ProjectConfigException
+            throws InvalidPropertiesFormatException, ProjectConfigException,
+            NoDataException
     {
+        if (rightValues == null || rightValues.size() == 0)
+        {
+            throw new NoDataException( "No values could be retrieved to pair with with any possible set of left values." );
+        }
+
         String aggFunction = this.getDesiredAggregation()
                                  .getFunction()
                                  .value();
@@ -363,6 +362,12 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                        this.getDesiredAggregation().getPeriod());
 
         List<Double> leftValues = this.getLeftValues.apply( firstDate, date );
+
+        if (leftValues == null || leftValues.size() == 0)
+        {
+            throw new NoDataException( "No values could be retrieved to pair with the retrieved right values." );
+        }
+
         double leftAggregation = Collections.aggregate(leftValues,
                                                        aggFunction);
         Double[] rightAggregation = new Double[rightValues.size()];

@@ -281,7 +281,16 @@ public final class Collections
 
     public static Double median(Collection<Double> values)
     {
+        if (values.size() == 1)
+        {
+            for (Double value : values)
+            {
+                return value;
+            }
+        }
+
         Double median = null;
+
 
         if (values.size() > 0)
         {
@@ -310,6 +319,14 @@ public final class Collections
 
     public static Double min(Collection<Double> values)
     {
+        if (values.size() == 1)
+        {
+            for (Double value : values)
+            {
+                return value;
+            }
+        }
+
         Double min = null;
 
         for (Double value : values)
@@ -329,6 +346,14 @@ public final class Collections
 
     public static Double mean(Collection<Double> values)
     {
+        if (values.size() == 1)
+        {
+            for (Double value : values)
+            {
+                return value;
+            }
+        }
+
         Double mean = null;
 
         if (values.size() > 0)
@@ -342,6 +367,14 @@ public final class Collections
 
     public static Double sum(Collection<Double> values)
     {
+        if (values.size() == 1)
+        {
+            for (Double value : values)
+            {
+                return value;
+            }
+        }
+
         Double sum = null;
 
         for (Double value : values)
@@ -361,6 +394,14 @@ public final class Collections
 
     public static Double max(Collection<Double> values)
     {
+        if (values.size() == 1)
+        {
+            for (Double value : values)
+            {
+                return value;
+            }
+        }
+
         Double max = null;
 
         for (Double value : values)
@@ -380,6 +421,14 @@ public final class Collections
 
     public static Double aggregate(final Collection<Double> values, String function)
     {
+        if (values.size() == 1)
+        {
+            for (Double value : values)
+            {
+                return value;
+            }
+        }
+
         function = function.trim().toLowerCase();
 
         Double aggregatedValue = null;
