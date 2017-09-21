@@ -175,7 +175,10 @@ public class ConfigHelper
         }
         else
         {
-            qualifier = "lead = " + getLead(projectConfig, windowNumber);
+            // We add the plus one because the value yielded by
+            // getLead(projectConfig, windowNumber) grants us the first exclusive
+            // value, not the first inclusive value
+            qualifier = "lead = " + getLead(projectConfig, windowNumber) + 1;
         }
 
         return qualifier;
