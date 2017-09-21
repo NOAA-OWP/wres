@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- This is identical to 100 and 101, except that it uses the *hefs-mefp* files, which contain ESP forecasts.  Hence, the scenario change.-->
-<project label="ExampleProject">
+<project label="ExampleProject" name="ESP">
 
     <inputs>
         <left label="">
@@ -9,7 +9,7 @@
                 recursive="true" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_QME.xml</source>
             <variable>QME</variable>
             <features>
-                <location lid="LGGN5"/>
+                <location lid="LGNN5"/>
             </features>
             <existingTimeAggregation>
                 <function>avg</function>
@@ -17,13 +17,13 @@
                 <unit>hour</unit>
             </existingTimeAggregation>
         </left>
-        <right label="HEFS" scenario="HEFS">
+        <right label="ESP">
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
                 recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_hefs-mefp_flow_5yrs.tgz</source>
             <variable>QINE</variable>
             <features>
-                <location lid="LGGN5"/>
+                <location lid="LGNN5"/>
             </features>
             <existingTimeAggregation>
                 <function>instantaneous</function>
