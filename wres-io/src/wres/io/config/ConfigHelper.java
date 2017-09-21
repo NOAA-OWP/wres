@@ -267,6 +267,7 @@ public class ConfigHelper
         script.append("     ON O.observation_time = F.forecast_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
         script.append("WHERE ").append(leftVariablepositionClause).append(newline);
         script.append("     AND ").append(rightVariablepositionClause).append(newline);
+        script.append("     AND FV.lead - ").append(width).append(" >= 0").append(newline);
         script.append("     AND F.forecast_id = ").append(Collections.formAnyStatement( forecastIDs, "int" )).append(newline);
 
         if (projectConfig.getConditions().getFirstLead() > 1)
