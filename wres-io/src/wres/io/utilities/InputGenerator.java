@@ -78,7 +78,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
     private static final class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     {
-        private int windowNumber;
+        // Setting the initial window number to -1 ensures that our windows are 0 indexed
+        private int windowNumber = -1;
         private Integer windowCount;
         private Integer variableID;
         private Integer lastLead;
@@ -490,14 +491,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                    this.getLeadOffset();
         }
 
-        private int getLastLeadInWindow()
-                throws InvalidPropertiesFormatException, NoDataException,
-                SQLException
-        {
-            return ((this.windowNumber + 1) * ConfigHelper.getWindowWidth( this.projectConfig ).intValue()) +
-                   this.getLeadOffset();
-        }
-
         @Override
         public boolean hasNext () {
             boolean next = false;
@@ -506,14 +499,13 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
                 if (ConfigHelper.isForecast( this.getRight() ))
                 {
-                    // We don't use getLastLeadInWindow or getFiretleadInWindow because we want know the conditions in the future
-                    double beginning = ((this.windowNumber + 1) * ConfigHelper.getWindowWidth( this.projectConfig ).intValue()) +
+                    int nextWindowNumber = this.windowNumber + 1;
+                    double beginning = ConfigHelper.getLead (projectConfig, nextWindowNumber) +
                                        this.getLeadOffset();
-                    double end = ((this.windowNumber + 2) * ConfigHelper.getWindowWidth( this.projectConfig ).intValue()) +
+                    double end = ConfigHelper.getLead(projectConfig, nextWindowNumber + 1) +
                                  this.getLeadOffset();
 
                     next = beginning < this.getLastLead() &&
-                           beginning < this.projectConfig.getConditions().getLastLead() &&
                            end >= this.projectConfig.getConditions().getFirstLead();
                 }
                 else

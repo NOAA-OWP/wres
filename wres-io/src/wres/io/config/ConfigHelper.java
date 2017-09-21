@@ -166,8 +166,8 @@ public class ConfigHelper
         if (!(timeAggregationConfig.getPeriod() == 1 && timeAggregationConfig.getUnit() == DurationUnit.HOUR)) {
 
             // We perform -1 on beginning and not +1 on end because this is 1s indexed, which throws us off
-            int beginning = getLead( projectConfig, windowNumber - 1 );
-            int end = getLead( projectConfig, windowNumber );
+            int beginning = getLead( projectConfig, windowNumber );
+            int end = getLead( projectConfig, windowNumber + 1 );
 
             qualifier = String.valueOf(end + offset);
             qualifier += " >= lead AND lead > ";
@@ -238,7 +238,7 @@ public class ConfigHelper
     {
         Integer offset;
         String newline = System.lineSeparator();
-        double width = getWindowWidth( projectConfig );
+        int width = getWindowWidth( projectConfig ).intValue();
 
         DataSourceConfig leftSource = projectConfig.getInputs().getLeft();
         DataSourceConfig rightSource = projectConfig.getInputs().getRight();
@@ -257,7 +257,7 @@ public class ConfigHelper
 
         StringBuilder script = new StringBuilder(  );
 
-        script.append("SELECT FV.lead AS offset").append(newline);
+        script.append("SELECT FV.lead - ").append(width).append(" AS offset").append(newline);
         script.append("FROM wres.Forecast F").append(newline);
         script.append("INNER JOIN wres.ForecastEnsemble FE").append(newline);
         script.append("     ON FE.forecast_id = F.forecast_id").append(newline);

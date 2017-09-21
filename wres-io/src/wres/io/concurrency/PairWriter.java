@@ -59,7 +59,11 @@ public class PairWriter extends WRESCallable<Boolean>
 
                 line.add( this.featureDescription );
                 line.add( this.date );
-                line.add( String.valueOf( this.windowNum ) );
+
+                // Convert from 0 index to 1 index for easier representation
+                // i.e. first window, second, third, ...
+                // instead of: zeroth window, first, second, third, ...
+                line.add( String.valueOf( this.windowNum + 1 ) );
 
                 if (this.left == null)
                 {
