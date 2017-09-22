@@ -23,7 +23,7 @@
         </right>
     </inputs>
 
-    <conditions firstLead="1" lastLead="24">
+    <conditions> <!--firstLead="1" lastLead="24">-->
         <features>
             <location lid="DOSC1" />
         </features>
