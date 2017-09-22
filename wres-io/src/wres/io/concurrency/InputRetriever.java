@@ -220,31 +220,31 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
             while(resultSet.next())
             {
-                    /**
-                     * aggHour: The hour into the aggregation
-                     * With the grouped aggregation, you might have several
-                     * blocks, each with values an hour in, or two hours in,
-                     * or three, etc. We don't want to mix those while
-                     * aggregating though; we still want to aggregate these
-                     * blocks, but we want to keep each chunk separate.
-                     *
-                     * I tried returning the time of the start of the block,
-                     * but the made calculations take ~3.5 minutes for six
-                     * months of data, but switching to the agg_hour set up
-                     * reduced that to 1.25 minutes.  Due to that speed up,
-                     * we are using the agg_hour method instead of the more
-                     * straight forward process.
-                     */
-                    if (aggHour != null && resultSet.getInt( "agg_hour" ) <= aggHour)
-                    {
-                        PairOfDoubleAndVectorOfDoubles pair = this.getPair( date, rightValues );
-                        writePair( date, pair, dataSourceConfig );
-                        pairs.add(pair);
+                /**
+                 * aggHour: The hour into the aggregation
+                 * With the grouped aggregation, you might have several
+                 * blocks, each with values an hour in, or two hours in,
+                 * or three, etc. We don't want to mix those while
+                 * aggregating though; we still want to aggregate these
+                 * blocks, but we want to keep each chunk separate.
+                 *
+                 * I tried returning the time of the start of the block,
+                 * but the made calculations take ~3.5 minutes for six
+                 * months of data, but switching to the agg_hour set up
+                 * reduced that to 1.25 minutes.  Due to that speed up,
+                 * we are using the agg_hour method instead of the more
+                 * straight forward process.
+                 */
+                if (rightValues.size() > 0 && aggHour != null && resultSet.getInt( "agg_hour" ) <= aggHour)
+                {
+                    PairOfDoubleAndVectorOfDoubles pair = this.getPair( date, rightValues );
+                    writePair( date, pair, dataSourceConfig );
+                    pairs.add(pair);
 
-                        rightValues = new TreeMap<>(  );
-                    }
+                    rightValues = new TreeMap<>(  );
+                }
 
-                    aggHour = resultSet.getInt( "agg_hour" );
+                aggHour = resultSet.getInt( "agg_hour" );
 
                 date = resultSet.getString("value_date");
 
@@ -352,7 +352,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     {
         if (rightValues == null || rightValues.size() == 0)
         {
-            throw new NoDataException( "No values could be retrieved to pair with with any possible set of left values." );
+            throw new NoDataException( "No values could be retrieved to pair with with any possible set of left values ." );
         }
 
         String aggFunction = this.getDesiredAggregation()
@@ -367,7 +367,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if (leftValues == null || leftValues.size() == 0)
         {
-            throw new NoDataException( "No values could be retrieved to pair with the retrieved right values." );
+            throw new NoDataException( "No values from the left could be retrieved to pair with the retrieved right values." );
         }
 
         double leftAggregation = Collections.aggregate(leftValues,
