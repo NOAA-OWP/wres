@@ -948,9 +948,9 @@ public final class PIXMLReader extends XMLReader
     {
         String name = "UNNAMED";
 
-        if (this.projectConfig != null)
+        if (this.projectDetails != null)
         {
-            name = this.projectConfig.getName();
+            name = this.projectDetails.getKey();
         }
 
         return name;

@@ -155,9 +155,9 @@ public final class ScriptGenerator
             script.append("     ON FE.forecast_id = F.forecast_id").append(NEWLINE);
             script.append("INNER JOIN wres.ForecastValue FV").append(NEWLINE);
             script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(NEWLINE);
-            script.append("WHERE F.forecast_id = ")
-                  .append( Collections.formAnyStatement( forecastIds, "int" ))
-                  .append(NEWLINE);
+            script.append("WHERE F.scenario_id = ").append(projectDetails.getId()).append(NEWLINE);
+                  /*.append( Collections.formAnyStatement( forecastIds, "int" ))
+                  .append(NEWLINE);*/
             script.append("     AND ").append(ConfigHelper.getLeadQualifier(projectConfig, progress, leadOffset)).append(NEWLINE);
             script.append("     AND ").append(variablePositionClause).append(NEWLINE);
 
