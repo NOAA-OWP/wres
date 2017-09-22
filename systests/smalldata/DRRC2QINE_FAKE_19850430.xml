@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.2">
+    <timeZone>0.0</timeZone>
+    <series>
+        <header>
+            <type>instantaneous</type>
+            <locationId>DRRC2HSF</locationId>
+            <parameterId>QINE</parameterId>
+            <timeStep unit="second" multiplier="3600"/>
+            <startDate date="1985-04-30" time="01:00:00"/>
+            <endDate date="1985-04-30" time="23:00:00"/>
+            <missVal>-999.0</missVal>
+            <stationName>DOLORES - RICO, BLO</stationName>
+            <units>CFS</units>
+        </header>
+        <event date="1985-04-30" time="01:00:00" value="100.0" flag="0"/>
+        <event date="1985-04-30" time="02:00:00" value="150.0" flag="0"/>
+        <event date="1985-04-30" time="03:00:00" value="200.0" flag="0"/>
+        <event date="1985-04-30" time="04:00:00" value="250.0" flag="0"/>
+        <event date="1985-04-30" time="05:00:00" value="300.0" flag="0"/>
+        <event date="1985-04-30" time="06:00:00" value="350.0" flag="0"/>
+        <event date="1985-04-30" time="07:00:00" value="400.0" flag="0"/>
+        <event date="1985-04-30" time="08:00:00" value="450.0" flag="0"/>
+        <event date="1985-04-30" time="09:00:00" value="500.0" flag="0"/>
+        <event date="1985-04-30" time="10:00:00" value="550.0" flag="0"/>
+        <event date="1985-04-30" time="11:00:00" value="600.0" flag="0"/>
+        <event date="1985-04-30" time="12:00:00" value="650.0" flag="0"/>
+        <event date="1985-04-30" time="13:00:00" value="700.0" flag="0"/>
+        <event date="1985-04-30" time="14:00:00" value="750.0" flag="0"/>
+        <event date="1985-04-30" time="15:00:00" value="800.0" flag="0"/>
+        <event date="1985-04-30" time="16:00:00" value="850.0" flag="0"/>
+        <event date="1985-04-30" time="17:00:00" value="900.0" flag="0"/>
+        <event date="1985-04-30" time="18:00:00" value="950.0" flag="0"/>
+        <event date="1985-04-30" time="19:00:00" value="1000.0" flag="0"/>
+        <event date="1985-04-30" time="20:00:00" value="1050.0" flag="0"/>
+        <event date="1985-04-30" time="21:00:00" value="1100.0" flag="0"/>
+        <event date="1985-04-30" time="22:00:00" value="1150.0" flag="0"/>
+        <event date="1985-04-30" time="23:00:00" value="1200.0" flag="0"/>
+    </series>
+</TimeSeries>
