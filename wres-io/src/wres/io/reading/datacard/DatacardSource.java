@@ -274,14 +274,6 @@ public class DatacardSource extends BasicSource {
 						
 						datetime = datetime.plusHours(timeInterval);
 						
-						//TODO Hank (8/31/17): Again, the missing and accumulated data values are not being handled well.
-						//First, you should do a numerical check, since, with this check, if missing is "-999.0" but the
-						//datacard included a field with "-999", which can happen if someone manually edits the file, you 
-						//will not know it is missing.  You should get float values for missing, convert the ingested 
-						//value to a float and compare.  
-						//
-						//Also, please confirm this is necessary.  What if missing values were just forwarded to the database?
-						//Would that be okay?  Would the database handle it?
 						if (dateIsApproved(datetime.toString()) && valueIsApproved(value))
 						{
 							try
@@ -291,7 +283,7 @@ public class DatacardSource extends BasicSource {
 							}
 							catch (Exception e) 
 							{
-								LOGGER.warn(String.valueOf(entryCount) + "th value:" + value + "in datacard file not saved to database");
+								LOGGER.warn(value + " in datacard file not saved to database; cause: " + e.getMessage());
 		                    }
 						}
 					}
