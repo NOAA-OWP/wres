@@ -512,7 +512,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 }
                 else
                 {
-                    next = this.windowNumber == 0;
+                    next = this.windowNumber == -1;
                 }
 
                 if (!next && this.windowNumber < 0)

@@ -238,8 +238,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                 if (rightValues.size() > 0 && aggHour != null && resultSet.getInt( "agg_hour" ) <= aggHour)
                 {
                     PairOfDoubleAndVectorOfDoubles pair = this.getPair( date, rightValues );
-                    writePair( date, pair, dataSourceConfig );
-                    pairs.add(pair);
+                    if (pair != null)
+                    {
+                        writePair( date, pair, dataSourceConfig );
+                        pairs.add( pair );
+                    }
 
                     rightValues = new TreeMap<>(  );
                 }
@@ -283,8 +286,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             if (rightValues.size() > 0)
             {
                 PairOfDoubleAndVectorOfDoubles pair = this.getPair( date, rightValues );
-                this.writePair( date, pair, dataSourceConfig );
-                pairs.add(pair);
+                if (pair != null)
+                {
+                    writePair( date, pair, dataSourceConfig );
+                    pairs.add( pair );
+                }
             }
         }
         finally
@@ -367,7 +373,9 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if (leftValues == null || leftValues.size() == 0)
         {
-            throw new NoDataException( "No values from the left could be retrieved to pair with the retrieved right values." );
+            LOGGER.trace( "No values from the left could be retrieved to pair with the retrieved right values." );
+            //throw new NoDataException( "No values from the left could be retrieved to pair with the retrieved right values." );
+            return null;
         }
 
         double leftAggregation = Collections.aggregate(leftValues,
