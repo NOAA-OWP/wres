@@ -54,6 +54,11 @@
         <metric> <name>brier score</name> </metric>
         <metric> <name>reliability diagram</name> </metric>
         <metric> <name>sample size</name> </metric>
+
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+
         <destination type="numeric" decimalFormat="0.000000">
             <path>output</path>
         </destination>

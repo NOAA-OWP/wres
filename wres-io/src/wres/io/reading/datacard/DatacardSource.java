@@ -284,6 +284,7 @@ public class DatacardSource extends BasicSource {
 							catch (Exception e) 
 							{
 								LOGGER.warn(value + " in datacard file not saved to database; cause: " + e.getMessage());
+								throw new IOException("Unable to save datacard file data to database; cause: " + e.getMessage(), e);
 		                    }
 						}
 					}
