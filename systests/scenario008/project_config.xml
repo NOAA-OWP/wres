@@ -24,7 +24,7 @@
     </inputs>
 
     <conditions firstLead="1" lastLead="24">
-        <values minimum="20" maximum="60"/>  <!--Restricts the data, both obs and fcst, to range. -->
+        <values minimum="0.5" maximum="1.0"/>  <!--Restricts the data, both obs and fcst, to range. -->
         <features>
             <location lid="DRRC2" name="DOLORES - RICO, BLO" />
         </features>
@@ -51,6 +51,9 @@
         <metric> <name>reliability diagram</name> </metric>
         <metric> <name>sample size</name> </metric>
         <destination type="numeric" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+        <destination type="pairs" decimalFormat="0.000000">
             <path>output</path>
         </destination>
         <destination type="graphic">
