@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.5">
+    <timeZone>0.0</timeZone>
+    <series>
+        <header>
+            <type>instantaneous</type>
+            <locationId>DRRC2FAKE1</locationId>
+            <parameterId>SQIN</parameterId>
+            <qualifierId>SIM1</qualifierId>
+            <ensembleId>HEFSENSPOST</ensembleId>
+            <ensembleMemberIndex>1961</ensembleMemberIndex>
+            <timeStep unit="second" multiplier="3600"/>
+            <startDate date="1985-04-30" time="15:00:00"/>
+            <endDate date="1985-04-30" time="20:00:00"/>
+            <forecastDate date="1985-04-30" time="14:00:00"/>
+            <missVal>-999</missVal>
+            <stationName>DOLORES - RICO, BLO</stationName>
+            <units>CMS</units>
+            <creationDate>2017-09-22</creationDate>
+            <creationTime>17:20:00</creationTime>
+        </header>
+        <event date="1985-04-30" time="15:00:00" value="16.0" flag="0"/>
+        <event date="1985-04-30" time="16:00:00" value="26.0" flag="0"/>
+        <event date="1985-04-30" time="17:00:00" value="36.0" flag="0"/>
+        <event date="1985-04-30" time="18:00:00" value="46.0" flag="0"/>
+        <event date="1985-04-30" time="19:00:00" value="56.0" flag="0"/>
+        <event date="1985-04-30" time="20:00:00" value="66.0" flag="0"/>
+    </series>
+    <series>
+        <header>
+            <type>instantaneous</type>
+            <locationId>DRRC2FAKE1</locationId>
+            <parameterId>SQIN</parameterId>
+            <qualifierId>SIM1</qualifierId>
+            <ensembleId>HEFSENSPOST</ensembleId>
+            <ensembleMemberIndex>1962</ensembleMemberIndex>
+            <timeStep unit="second" multiplier="3600"/>
+            <startDate date="1985-04-30" time="15:00:00"/>
+            <endDate date="1985-04-30" time="20:00:00"/>
+            <forecastDate date="1985-04-30" time="14:00:00"/>
+            <missVal>-999</missVal>
+            <stationName>DOLORES - RICO, BLO</stationName>
+            <units>CMS</units>
+            <creationDate>2017-09-22</creationDate>
+            <creationTime>17:20:00</creationTime>
+        </header>
+        <event date="1985-04-30" time="15:00:00" value="17.0" flag="0"/>
+        <event date="1985-04-30" time="16:00:00" value="27.0" flag="0"/>
+        <event date="1985-04-30" time="17:00:00" value="37.0" flag="0"/>
+        <event date="1985-04-30" time="18:00:00" value="47.0" flag="0"/>
+        <event date="1985-04-30" time="19:00:00" value="57.0" flag="0"/>
+        <event date="1985-04-30" time="20:00:00" value="67.0" flag="0"/>
+    </series>
+    <series>
+        <header>
+            <type>instantaneous</type>
+            <locationId>DRRC2FAKE1</locationId>
+            <parameterId>SQIN</parameterId>
+            <qualifierId>SIM1</qualifierId>
+            <ensembleId>HEFSENSPOST</ensembleId>
+            <ensembleMemberIndex>1963</ensembleMemberIndex>
+            <timeStep unit="second" multiplier="3600"/>
+            <startDate date="1985-04-30" time="15:00:00"/>
+            <endDate date="1985-04-30" time="20:00:00"/>
+            <forecastDate date="1985-04-30" time="14:00:00"/>
+            <missVal>-999</missVal>
+            <stationName>DOLORES - RICO, BLO</stationName>
+            <units>CMS</units>
+            <creationDate>2017-09-22</creationDate>
+            <creationTime>17:20:00</creationTime>
+        </header>
+        <event date="1985-04-30" time="15:00:00" value="18.0" flag="0"/>
+        <event date="1985-04-30" time="16:00:00" value="28.0" flag="0"/>
+        <event date="1985-04-30" time="17:00:00" value="38.0" flag="0"/>
+        <event date="1985-04-30" time="18:00:00" value="48.0" flag="0"/>
+        <event date="1985-04-30" time="19:00:00" value="58.0" flag="0"/>
+        <event date="1985-04-30" time="20:00:00" value="68.0" flag="0"/>
+    </series>
+</TimeSeries>
