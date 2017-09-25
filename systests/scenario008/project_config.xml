@@ -24,7 +24,7 @@
     </inputs>
 
     <conditions firstLead="1" lastLead="24">
-        <values minimum="0.5" maximum="1.0"/>  <!--Restricts the data, both obs and fcst, to range. -->
+        <values minimum="0.0" maximum="8.0"/>  <!--Restricts the data, both obs and fcst, to range. -->
         <features>
             <location lid="DRRC2" name="DOLORES - RICO, BLO" />
         </features>
