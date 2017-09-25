@@ -20,6 +20,10 @@ WITH (
 ALTER TABLE wres.Source 
   OWNER TO wres;
 
+DROP INDEX IF EXISTS wres.source_idx;
+CREATE INDEX IF NOT EXISTS source_idx
+  ON wres.Source (source_id);
+
 DROP INDEX IF EXISTS wres.source_hash_idx;
 
 CREATE INDEX IF NOT EXISTS source_hash_idx

@@ -267,6 +267,8 @@ public abstract class BasicSource {
         this.futureHash = Executor.submitHighPriorityTask( hasher );
     }
 
+    // TODO: This process is now invalid; we need to rely on loaded
+    // project information
     private boolean dataExists(String sourceName, byte[] contents)
             throws SQLException, ExecutionException, InterruptedException
     {
@@ -277,11 +279,9 @@ public abstract class BasicSource {
 
         if (ConfigHelper.isForecast(dataSourceConfig))
         {
-            script.append("     FROM wres.Forecast F").append(NEWLINE);
+            script.append("     FROM wres.ForecastEnsemble FE").append(NEWLINE);
             script.append("     INNER JOIN wres.ForecastSource SL").append(NEWLINE);
-            script.append("         ON SL.forecast_id = F.forecast_id").append(NEWLINE);
-            script.append("     INNER JOIN wres.ForecastEnsemble FE").append(NEWLINE);
-            script.append("         ON FE.forecast_id = F.forecast_id").append(NEWLINE);
+            script.append("         ON SL.forecast_id = FE.forecastensemble_id").append(NEWLINE);
             script.append("     INNER JOIN wres.VariablePosition VP").append(NEWLINE);
             script.append("         ON VP.variableposition_id = FE.variableposition_id").append(NEWLINE);
         }

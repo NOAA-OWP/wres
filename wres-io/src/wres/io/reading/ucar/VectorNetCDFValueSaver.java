@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -18,14 +17,12 @@ import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
-import wres.config.generated.DatasourceType;
 import wres.io.concurrency.StatementRunner;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.ForecastDetails;
+import wres.io.data.details.ForecastEnsembleDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
@@ -88,7 +85,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
     private String getForecastInsertScript() throws IOException, SQLException {
         if (this.forecastInsertScript == null) {
             this.forecastInsertScript = "INSERT INTO " +
-                                        ForecastDetails.getForecastValueParitionName( this.getLead() ) +
+                                        ForecastEnsembleDetails.getForecastValueParitionName( this.getLead() ) +
                                         "(forecastensemble_id, lead, forecasted_value)" +
                                         NEWLINE +
                                         "VALUES (?, ?, ?);";
@@ -278,7 +275,8 @@ class VectorNetCDFValueSaver extends WRESRunnable
             throws IOException, SQLException, ExecutionException,
             InterruptedException
     {
-        StringBuilder script = new StringBuilder();
+        throw new NotImplementedException( "VectorNetCDFValueSaver#addForecastEnsembles needs to be updated for recent scema changes." );
+        /*StringBuilder script = new StringBuilder();
 
         script.append("INSERT INTO wres.ForecastEnsemble (forecast_id, variableposition_id, ensemble_id, measurementunit_id)").append(NEWLINE);
         script.append("SELECT ").append(this.getForecastID()).append(", ").append(NEWLINE);
@@ -297,7 +295,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
         synchronized (FORECASTENSEMBLE_LOCK)
         {
             Database.execute(script.toString());
-        }
+        }*/
     }
 
     private int getEnsembleID() throws SQLException, IOException
@@ -311,7 +309,8 @@ class VectorNetCDFValueSaver extends WRESRunnable
     {
         if (this.indexMapping == null)
         {
-            String script =
+            // TODO: This needs to be modified to use the predetermined forecastensemble information
+            /*String script =
                     "SELECT F.nwm_index, FE.forecastensemble_id" + NEWLINE +
                     "FROM wres.ForecastEnsemble FE" + NEWLINE +
                     "INNER JOIN " + this.getVariablePositionPartitionName()
@@ -329,13 +328,14 @@ class VectorNetCDFValueSaver extends WRESRunnable
             Database.populateMap(this.indexMapping,
                                  script,
                                  "nwm_index",
-                                 "forecastensemble_id");
+                                 "forecastensemble_id");*/
         }
 
         return this.indexMapping;
     }
 
-    private int getForecastID()
+    // TODO: We need to stop linking to forecast IDs
+    /*private int getForecastID()
             throws SQLException, IOException, ExecutionException,
             InterruptedException
     {
@@ -369,7 +369,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
         }
 
         return this.forecastID;
-    }
+    }*/
 
     private int getLead() throws IOException
     {

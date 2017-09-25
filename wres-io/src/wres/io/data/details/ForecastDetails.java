@@ -1,9 +1,7 @@
 package wres.io.data.details;
 
 import java.sql.SQLException;
-import java.util.HashMap;
 
-import wres.io.data.caching.DataSources;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 
@@ -11,33 +9,20 @@ import wres.util.Internal;
  * Important details about a forecast that predicted values for different variables over some span of time
  * @author Christopher Tubbs
  */
+@Deprecated
 @Internal(exclusivePackage = "wres.io")
 public final class ForecastDetails {
-	private final static short FORECASTVALUE_PARTITION_SPAN = 80;
 
 	private final static String NEWLINE = System.lineSeparator();
-	private final static HashMap<Integer, String> FORECASTVALUE_PARITION_NAMES = new HashMap<>();
-	private static final Object PARTITION_LOCK = new Object();
-	
-	private String sourcePath = null;
+
 	private String forecastDate = null;
 	private String hash = null;
 
 	private Integer forecast_id = null;
 	private String creationDate = null;
-	private String project = "";
 	private String type = "";
 	private Integer lead = null;
 	private Integer projectID = null;
-
-	/**
-	 * The path to the file that contains data for the forecast
-	 * @param path The path to the forecast file on the file system
-	 */
-	@Internal(exclusivePackage = "wres.io")
-	public ForecastDetails(String path) {
-		this.sourcePath = path;
-	}
 
 	/**
 	 * Sets the date of when the forecast was generated
@@ -142,8 +127,6 @@ public final class ForecastDetails {
 		script += "     AND scenario_id = " + this.projectID + ";";
 
 		this.forecast_id = Database.getResult(script, "forecast_id");
-		
-		saveForecastSource();
 	}
 	
 	private String getSourceDate() {
@@ -159,74 +142,5 @@ public final class ForecastDetails {
 	    }
 	    
 	    return date;
-	}
-	
-	/**
-	 * Links the forecast the information about the source of its data in the database
-	 * @throws SQLException Thrown if the Forecast and its source could not be properly linked
-	 */
-	private void saveForecastSource() throws SQLException
-    {
-        int sourceID = DataSources.getSourceID(sourcePath, getSourceDate(), this.lead, this.hash);
-
-        String script = "";
-        script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + NEWLINE;
-        script += "SELECT " + this.forecast_id + ", " + sourceID + NEWLINE;
-        script += "WHERE NOT EXISTS (" + NEWLINE;
-        script += "     SELECT 1" + NEWLINE;
-        script += "     FROM wres.ForecastSource" + NEWLINE;
-        script += "     WHERE forecast_id = " + this.forecast_id + NEWLINE;
-        script += "         AND source_id = " + sourceID + NEWLINE;
-        script += ");";
-
-		Database.execute(script);
-	}
-
-	public static String getForecastValueParitionName(int lead) throws SQLException {
-		Integer partitionNumber = lead / ForecastDetails.FORECASTVALUE_PARTITION_SPAN;
-
-		String name;
-
-		synchronized (FORECASTVALUE_PARITION_NAMES)
-		{
-			if (!FORECASTVALUE_PARITION_NAMES.containsKey(partitionNumber))
-			{
-				int low = (lead / FORECASTVALUE_PARTITION_SPAN) * FORECASTVALUE_PARTITION_SPAN;
-				int high = low + FORECASTVALUE_PARTITION_SPAN;
-				name = "partitions.ForecastValue_Lead_" + String.valueOf(partitionNumber);
-
-				StringBuilder script = new StringBuilder();
-				script.append("CREATE TABLE IF NOT EXISTS ").append(name).append(NEWLINE);
-				script.append("(").append(NEWLINE);
-				script.append("		CHECK ( lead >= ")
-					  .append(String.valueOf(low))
-					  .append(" AND lead < ")
-					  .append(String.valueOf(high))
-					  .append(" )")
-					  .append(NEWLINE);
-				script.append(") INHERITS (wres.ForecastValue);");
-
-				synchronized (PARTITION_LOCK)
-				{
-					Database.execute(script.toString());
-				}
-
-				Database.saveIndex(name,
-								   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_Lead_idx",
-								   "lead");
-
-				Database.saveIndex(name,
-								   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_ForecastEnsemble_idx",
-								   "forecastensemble_id");
-
-				ForecastDetails.FORECASTVALUE_PARITION_NAMES.put(partitionNumber, name);
-			}
-			else
-			{
-				name = ForecastDetails.FORECASTVALUE_PARITION_NAMES.get(partitionNumber);
-			}
-		}
-
-		return name;
 	}
 }

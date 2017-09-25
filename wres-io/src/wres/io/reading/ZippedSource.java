@@ -120,12 +120,14 @@ public class ZippedSource extends BasicSource {
 
             while (archivedSource != null)
             {
+                ProgressMonitor.increment();
                 if (archivedSource.isFile())
                 {
                     processFile(archivedSource, archive, isForecast);
                 }
 
                 archivedSource = archive.getNextTarEntry();
+                ProgressMonitor.completeStep();
             }
 
             Future ingestTask = this.getIngestTask();

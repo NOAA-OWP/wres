@@ -382,10 +382,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                        aggFunction);
         Double[] rightAggregation = new Double[rightValues.size()];
 
-
-        for (int memberIndex = 0; memberIndex < rightValues.size(); ++memberIndex)
+        byte memberIndex = 0;
+        for (List<Double> values : rightValues.values())
         {
-            rightAggregation[memberIndex] = Collections.aggregate( rightValues.get( memberIndex ), aggFunction );
+            rightAggregation[memberIndex] = Collections.aggregate( values, aggFunction );
+            memberIndex++;
         }
 
         return DefaultDataFactory.getInstance().pairOf( leftAggregation, rightAggregation );
