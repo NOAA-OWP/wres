@@ -1,4 +1,5 @@
 ﻿-- Table: wres.ForecastEnsemble
+-- This should probably be renamed to something like 'wres.TimeSeries'
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
@@ -11,6 +12,7 @@ CREATE TABLE IF NOT EXISTS wres.ForecastEnsemble
   variableposition_id INT,
   ensemble_id INT,
   measurementunit_id INT,
+  initialization_date timestamp without time zone,
   CONSTRAINT forecastensemble_pk PRIMARY KEY (forecastensemble_id)/*,
 
 	FKs have been removed until dynamic removal and reinstatement has been implemented
@@ -45,4 +47,19 @@ DROP INDEX IF EXISTS wres.forecastensemble_source_idx;
 CREATE INDEX IF NOT EXISTS forecastensemble_variableposition_idx
   ON wres.ForecastEnsemble
   (variableposition_id);
+
+-- Index: wres.forecastensemble_idx
+
+DROP INDEX IF EXISTS wres.forecastensemble_idx;
+
+CREATE INDEX IF NOT EXISTS forecastensemble_idx
+  ON wres.forecastensemble
+  USING btree
+  (forecastensemble_id);
+ALTER TABLE wres.forecastensemble CLUSTER ON forecastensemble_idx;
+
+DROP INDEX IF EXISTS wres.forecastensemble_initialization_idx;
+
+CREATE INDEX IF NOT EXISTS forecastensemble_initialization_idx
+  ON wres.Forecastensemble (variableposition_id, ensemble_id, initialization_date, measurementunit_id);
 

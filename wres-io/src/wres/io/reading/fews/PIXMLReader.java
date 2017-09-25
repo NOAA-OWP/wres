@@ -17,16 +17,13 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
-import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.Projects;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.ForecastDetails;
 import wres.io.data.details.ForecastEnsembleDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.XMLReader;
@@ -65,7 +62,7 @@ public final class PIXMLReader extends XMLReader
 		{
 			return null;
 		}
-		String partitionHeader = ForecastDetails.getForecastValueParitionName(leadTime);
+		String partitionHeader = ForecastEnsembleDetails.getForecastValueParitionName(leadTime);
 
 		partitionHeader += " (forecastensemble_id, lead, forecasted_value)";
 		return partitionHeader;
@@ -146,13 +143,10 @@ public final class PIXMLReader extends XMLReader
 		{
 			reader.next();
 		}
+
+		this.currentForecastEnsemble = null;
 		
 		String localName;
-		
-		if (isForecast) {
-		    currentForecast = new ForecastDetails(this.getFilename());
-		    currentForecastEnsemble = new ForecastEnsembleDetails();
-		}
 		
 		//	Loop through every element in a series (header -> entry -> entry -> ... )
 		while (reader.hasNext())
@@ -402,8 +396,7 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if(this.isForecast && localName.equalsIgnoreCase("forecastDate"))
 				{
-					//	If we are at the tag for the forecast date, save it to the forecast
-					currentForecast.setForecastDate(parseDateTime(reader));
+                    this.forecastDate = parseDateTime( reader );
 				}
 				else if(localName.equalsIgnoreCase("units"))
 				{
@@ -416,7 +409,6 @@ public final class PIXMLReader extends XMLReader
 					// If we are at the tag for the missing value definition, record it
 					currentMissingValue = Float.parseFloat(XML.getXMLText(reader));
 				}
-				// TODO: Uncomment when work on the source saving continues
 				else if (localName.equalsIgnoreCase("startDate"))
 				{				
 					startDate = parseDateTime(reader);
@@ -459,10 +451,6 @@ public final class PIXMLReader extends XMLReader
 				}
 			}
 			reader.next();
-		}
-	
-		if (isForecast && this.creationDate != null && this.creationTime != null) {
-			this.currentForecast.setCreationDate(this.creationDate + " " + this.creationTime);
 		}
 	}
 
@@ -514,25 +502,6 @@ public final class PIXMLReader extends XMLReader
 	}
 	
 	/**
-	 * @return The ID of the forecast that is currently being parsed
-	 * @throws SQLException Thrown if the forecast could not be retrieved properly
-	 */
-	private int getForecastID()
-            throws SQLException, IOException, ExecutionException,
-            InterruptedException
-    {
-    	this.currentForecast.setProjectID( this.projectDetails.getId() );
-        this.currentForecast.setType( this.dataSourceConfig.getType().value() );
-
-        if (this.currentForecast.getHash() == null)
-        {
-            this.currentForecast.setHash( this.getHash());
-        }
-
-		return currentForecast.getForecastID();
-	}
-	
-	/**
 	 * @return The ID of the position for the variable being parsed
 	 * @throws SQLException Thrown if the ID of the position could not be loaded from the cache
 	 */
@@ -555,14 +524,24 @@ public final class PIXMLReader extends XMLReader
             InterruptedException
     {
 		if (currentForecastEnsembleID == null) {
-			currentForecastEnsemble.setEnsembleID(getEnsembleID());
-			currentForecastEnsemble.setForecastID(getForecastID());
-			currentForecastEnsemble.setMeasurementUnitID(getMeasurementID());
-			currentForecastEnsemble.setVariablePositionID(getVariablePositionID());
-			currentForecastEnsembleID = currentForecastEnsemble.getForecastEnsembleID();
+			this.getCurrentForecastEnsemble().setEnsembleID(getEnsembleID());
+            this.getCurrentForecastEnsemble().setMeasurementUnitID(getMeasurementID());
+            this.getCurrentForecastEnsemble().setVariablePositionID(getVariablePositionID());
+			currentForecastEnsembleID = this.getCurrentForecastEnsemble().getForecastEnsembleID();
 		}
 		return currentForecastEnsembleID;
 	}
+
+	private ForecastEnsembleDetails getCurrentForecastEnsemble()
+            throws InterruptedException, SQLException, ExecutionException,
+            IOException
+    {
+        if (this.currentForecastEnsemble == null)
+        {
+            this.currentForecastEnsemble = new ForecastEnsembleDetails( this.getSourceID(), this.forecastDate );
+        }
+        return this.currentForecastEnsemble;
+    }
 	
 	/**
 	 * @return The ID of the variable currently being measured
@@ -727,7 +706,7 @@ public final class PIXMLReader extends XMLReader
 	private String creationTime = null;
 
 	/**
-	 * The date that data in the source first started being captured
+	 * The date and time of the first value forecasted
 	 */
 	private String startDate = null;
 	
@@ -735,16 +714,16 @@ public final class PIXMLReader extends XMLReader
 	 * The date that data generation/collection ended
 	 */
 	private String endDate = null;
+
+    /**
+     * The date and time that forecasting began
+     */
+	private String forecastDate = null;
 	
 	/**
 	 * Indicates whether or not the data is for forecasts. Default is True
 	 */
 	private boolean isForecast = true;
-	
-	/**
-	 * Basic details about any current forecast
-	 */
-	private ForecastDetails currentForecast = null;
 	
 	/**
 	 * Basic details about the current ensemble for a current forecast
@@ -863,29 +842,8 @@ public final class PIXMLReader extends XMLReader
 
 	private final ProjectDetails projectDetails;
 
-    /**
-     * The ID of the scenario for the data
-     */
-    private Integer scenarioID = null;
-
     private String getHash() throws ExecutionException, InterruptedException
     {
-        /*if (this.hash == null)
-        {
-            if (this.futureHash != null)
-            {
-                this.hash = this.futureHash.get();
-            }
-            else
-            {
-                String message = "No hash operation was set during ingestion. ";
-                message += "A hash for the source could not be determined.";
-                LOGGER.error( message );
-                throw new NotImplementedException( message );
-
-            }
-        }*/
-
         return this.hash;
     }
 

@@ -261,17 +261,15 @@ public class ConfigHelper
         StringBuilder script = new StringBuilder(  );
 
         script.append("SELECT FV.lead - ").append(width).append(" AS offset").append(newline);
-        script.append("FROM wres.Forecast F").append(newline);
-        script.append("INNER JOIN wres.ForecastEnsemble FE").append(newline);
-        script.append("     ON FE.forecast_id = F.forecast_id").append(newline);
+        script.append("FROM wres.ForecastEnsemble FE").append(newline);
         script.append("INNER JOIN wres.ForecastValue FV").append(newline);
         script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(newline);
         script.append("INNER JOIN wres.Observation O").append(newline);
-        script.append("     ON O.observation_time = F.forecast_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
+        script.append("     ON O.observation_time = FE.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
         script.append("WHERE ").append(leftVariablepositionClause).append(newline);
         script.append("     AND ").append(rightVariablepositionClause).append(newline);
         script.append("     AND FV.lead - ").append(width).append(" >= 0").append(newline);
-        script.append("     AND F.forecast_id = ").append(Collections.formAnyStatement( forecastIDs, "int" )).append(newline);
+        script.append("     AND FE.forecastensemble_id = ").append(Collections.formAnyStatement( forecastIDs, "int" )).append(newline);
 
         if (projectConfig.getConditions().getFirstLead() > 1)
         {
@@ -282,12 +280,12 @@ public class ConfigHelper
         {
             if (Strings.hasValue(projectConfig.getConditions().getDates().getEarliest()))
             {
-                script.append("     AND F.forecast_date >= ").append(newline);
+                script.append("     AND FE.initialization_date >= ").append(newline);
             }
 
             if (Strings.hasValue( projectConfig.getConditions().getDates().getLatest()))
             {
-                script.append("     AND F.forecast_date <= ").append(newline);
+                script.append("     AND FE.initialization_date <= ").append(newline);
             }
         }
 

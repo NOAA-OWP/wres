@@ -178,7 +178,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 }
                 script.append("(FV.forecasted_value) AS left_value,").append(NEWLINE);
                 script.append("     FE.measurementunit_id,").append(NEWLINE);
-                script.append("     (F.forecast_date + INTERVAL '1 hour' * FV.lead");
+                script.append("     (FE.initialization_date + INTERVAL '1 hour' * FV.lead");
 
                 if (timeShift != null)
                 {
@@ -187,20 +187,17 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
                 script.append(")::text AS left_date").append(NEWLINE);
 
-                script.append("FROM wres.Forecast F").append(NEWLINE);
-                script.append("INNER JOIN wres.ForecastEnsemble FE").append(NEWLINE);
-                script.append("     ON FE.forecast_id = F.forecast_id").append(NEWLINE);
+                script.append("FROM wres.ForecastEnsemble FE").append(NEWLINE);
                 script.append("INNER JOIN wres.ForecastValue FV" ).append(NEWLINE);
                 script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(NEWLINE);
-                script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
-                script.append("     AND F.forecast_id = ")
+                script.append("WHERE F.forecastensemble_id = ")
                       .append(Collections.formAnyStatement(
                               Projects.getProject( projectConfig )
                                       .getLeftForecastIDs(),
                               "int" ))
                       .append(NEWLINE);
 
-                script.append("GROUP BY F.forecast_date + INTERVAL '1 hour' * FV.lead");
+                script.append("GROUP BY FE.initialization_date + INTERVAL '1 hour' * FV.lead");
 
                 if (timeShift != null)
                 {

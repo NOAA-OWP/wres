@@ -19,6 +19,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Internal;
@@ -56,6 +57,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public static final String LEFT_MEMBER = "'left'";
     public static final String RIGHT_MEMBER = "'right'";
     public static final String BASELINE_MEMBER = "'baseline'";
+
+    private final int inputCode;
 
     private final Object LOAD_LOCK = new Object();
 
@@ -158,39 +161,89 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public ProjectDetails(ProjectConfig projectConfig)
     {
         this.projectConfig = projectConfig;
+        this.inputCode = ProjectDetails.hash( this.projectConfig );
     }
 
     @Override
-    public Integer getKey() {
+    public Integer getKey()
+    {
         return this.getInputCode();
+    }
+
+    public DataSourceConfig getLeft()
+    {
+        return this.projectConfig.getInputs().getLeft();
+    }
+
+    public DataSourceConfig getRight()
+    {
+        return this.projectConfig.getInputs().getRight();
+    }
+
+    public DataSourceConfig getBaseline()
+    {
+        return this.projectConfig.getInputs().getBaseline();
+    }
+
+    private Integer getLeftVariableID() throws SQLException
+    {
+        if (this.leftVariableID == null)
+        {
+            this.leftVariableID = Variables.getVariableID(this.getLeftVariableName(),
+                                                          this.getLeftVariableUnit());
+        }
+
+        return this.leftVariableID;
     }
 
     private String getLeftVariableName()
     {
-        return this.projectConfig.getInputs().getLeft().getVariable().getValue();
+        return this.getLeft().getVariable().getValue();
     }
 
     private String getLeftVariableUnit()
     {
-        return this.projectConfig.getInputs().getLeft().getVariable().getUnit();
+        return this.getLeft().getVariable().getUnit();
+    }
+
+    private Integer getRightVariableID() throws SQLException
+    {
+        if (this.rightVariableID == null)
+        {
+            this.rightVariableID = Variables.getVariableID( this.getRightVariableName(),
+                                                            this.getRightVariableUnit());
+        }
+
+        return this.rightVariableID;
     }
 
     private String getRightVariableName()
     {
-        return this.projectConfig.getInputs().getRight().getVariable().getValue();
+        return this.getRight().getVariable().getValue();
     }
 
     private String getRightVariableUnit()
     {
-        return this.projectConfig.getInputs().getRight().getVariable().getUnit();
+        return this.getRight().getVariable().getUnit();
+    }
+
+    private Integer getBaselineVariableID() throws SQLException
+    {
+        if (this.hasBaseline() && this.baselineVariableID == null)
+        {
+            this.baselineVariableID = Variables.getVariableID( this.getBaselineVariableName(),
+                                                               this.getBaselineVariableUnit() );
+        }
+
+        return this.baselineVariableID;
     }
 
     private String getBaselineVariableName()
     {
         String name = null;
-        if (this.projectConfig.getInputs().getBaseline() != null)
+        if (this.hasBaseline())
         {
-            name = this.projectConfig.getInputs().getBaseline().getVariable().getValue();
+            name = this.getBaseline().getVariable().getValue();
         }
         return name;
     }
@@ -198,9 +251,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private String getBaselineVariableUnit()
     {
         String unit = null;
-        if (this.projectConfig.getInputs().getBaseline() != null)
+        if (this.hasBaseline())
         {
-            unit = this.projectConfig.getInputs().getBaseline().getVariable().getUnit();
+            unit = this.getBaseline().getVariable().getUnit();
         }
         return unit;
     }
@@ -208,15 +261,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private String getProjectName()
     {
         return this.projectConfig.getName();
-    }
-
-    @Override
-    public void save() throws SQLException
-    {
-        super.save();
-
-        this.loadSources();
-        this.loadForecastIDs();
     }
 
     public void addSource( String hash, DataSourceConfig dataSourceConfig)
@@ -313,18 +357,18 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         if (member.equalsIgnoreCase( ProjectDetails.LEFT_MEMBER ))
         {
-            this.leftHashes.putIfAbsent( sourceID, hash );
-            this.leftSources.add(sourceID);
+            this.getLeftHashes().putIfAbsent( sourceID, hash );
+            this.getLeftSources().add(sourceID);
         }
         else if (member.equalsIgnoreCase( ProjectDetails.RIGHT_MEMBER ))
         {
-            this.rightHashes.putIfAbsent( sourceID, hash );
-            this.rightSources.add( sourceID );
+            this.getRightHashes().putIfAbsent( sourceID, hash );
+            this.getRightSources().add( sourceID );
         }
         else
         {
-            this.baselineHashes.putIfAbsent( sourceID, hash );
-            this.baselineSources.add( sourceID );
+            this.getBaselineHashes().putIfAbsent( sourceID, hash );
+            this.getBaselineSources().add( sourceID );
         }
     }
 
@@ -351,62 +395,218 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         if (member.equalsIgnoreCase( ProjectDetails.LEFT_MEMBER ))
         {
-            this.leftForecastIDs.add( forecastID );
-            this.leftSources.add(sourceID);
-            this.leftHashes.putIfAbsent( sourceID, hash );
+            this.getLeftForecastIDs().add( forecastID );
+            this.getLeftSources().add(sourceID);
+            this.getLeftHashes().putIfAbsent( sourceID, hash );
         }
         else if (member.equalsIgnoreCase( ProjectDetails.RIGHT_MEMBER ))
         {
-            this.rightForecastIDs.add( forecastID );
-            this.rightSources.add( sourceID );
-            this.rightHashes.putIfAbsent( sourceID, hash );
+            this.getRightForecastIDs().add( forecastID );
+            this.getRightSources().add( sourceID );
+            this.getRightHashes().putIfAbsent( sourceID, hash );
         }
         else
         {
-            this.baselineForecastIDs.add( forecastID );
-            this.baselineSources.add( sourceID );
-            this.baselineHashes.putIfAbsent( sourceID, hash );
+            this.getBaselineForecastIDs().add( forecastID );
+            this.getBaselineSources().add( sourceID );
+            this.getBaselineHashes().putIfAbsent( sourceID, hash );
         }
     }
 
     private Integer getInputCode()
     {
-        return ProjectDetails.hash( this.projectConfig );
+        return this.inputCode;
     }
 
-    public List<Integer> getLeftForecastIDs()
+    public List<Integer> getLeftForecastIDs() throws SQLException
     {
+        if (this.leftForecastIDs.size() == 0)
+        {
+            this.loadForecastIDs( ProjectDetails.LEFT_MEMBER );
+        }
         return this.leftForecastIDs;
     }
 
-    public List<Integer> getRightForecastIDs()
+    public List<Integer> getRightForecastIDs() throws SQLException
     {
+        if (this.rightForecastIDs.size() == 0)
+        {
+            this.loadForecastIDs( ProjectDetails.RIGHT_MEMBER );
+        }
         return this.rightForecastIDs;
     }
 
-    public List<Integer> getBaselineForecastIDs()
+    public List<Integer> getBaselineForecastIDs() throws SQLException
     {
+        if (this.hasBaseline() && this.baselineForecastIDs.size() == 0)
+        {
+            this.loadForecastIDs( ProjectDetails.BASELINE_MEMBER );
+        }
         return this.baselineForecastIDs;
     }
 
-    public List<Integer> getLeftSources()
+    private void loadForecastIDs(String member) throws SQLException
     {
+
+        Integer memberVariableID;
+        List<Integer> forecastIDs;
+
+        if (member.equals( ProjectDetails.LEFT_MEMBER ))
+        {
+            memberVariableID = this.getLeftVariableID();
+            forecastIDs = this.leftForecastIDs;
+        }
+        else if (member.equals( ProjectDetails.RIGHT_MEMBER ))
+        {
+            memberVariableID = this.getRightVariableID();
+            forecastIDs = this.rightForecastIDs;
+        }
+        else
+        {
+            memberVariableID = this.getBaselineVariableID();
+            forecastIDs = this.baselineForecastIDs;
+        }
+
+        StringBuilder script = new StringBuilder(  );
+        script.append( "SELECT FE.forecastensemble_id" ).append(NEWLINE);
+        script.append( "FROM wres.ForecastSource FS").append(NEWLINE);
+        script.append( "INNER JOIN wres.ProjectSource PS").append(NEWLINE);
+        script.append( "    ON PS.source_id = FS.source_id").append(NEWLINE);
+        script.append( "INNER JOIN wres.ForecastEnsemble FE").append(NEWLINE);
+        script.append( "    ON FE.forecastensemble_id = FS.forecast_id").append(NEWLINE);
+        script.append( "INNER JOIN wres.VariablePosition VP").append(NEWLINE);
+        script.append( "    ON VP.variableposition_id = FE.variableposition_id").append(NEWLINE);
+        script.append( "WHERE PS.project_id = ").append(this.projectID).append(NEWLINE);
+        script.append( "    AND PS.member = ").append(member).append(NEWLINE);
+        script.append("     AND PS.inactive_time IS NULL").append(NEWLINE);
+        script.append("     AND VP.variable_id = ").append(memberVariableID).append(";");
+
+        Database.populateCollection(forecastIDs, Integer.class, script.toString(), "forecastensemble_id");
+    }
+
+    public List<Integer> getLeftSources() throws SQLException
+    {
+        if (this.leftSources.size() == 0)
+        {
+            this.loadSources( ProjectDetails.LEFT_MEMBER );
+        }
         return this.leftSources;
     }
 
-    public List<Integer> getRightSources()
+    public Map<Integer, String> getLeftHashes() throws SQLException
     {
+        if (this.leftHashes.size() == 0)
+        {
+            this.loadSources( ProjectDetails.LEFT_MEMBER );
+        }
+        return this.leftHashes;
+    }
+
+    public List<Integer> getRightSources() throws SQLException
+    {
+        if (this.rightSources.size() == 0)
+        {
+            this.loadSources( ProjectDetails.RIGHT_MEMBER );
+        }
         return this.rightSources;
     }
 
-    public List<Integer> getBaselineSources()
+    public Map<Integer, String> getRightHashes() throws SQLException
     {
+        if (this.rightHashes.size() == 0)
+        {
+            this.loadSources( ProjectDetails.RIGHT_MEMBER );
+        }
+        return this.rightHashes;
+    }
+
+    public List<Integer> getBaselineSources() throws SQLException
+    {
+        if (this.hasBaseline() && this.baselineSources.size() == 0)
+        {
+            this.loadSources( ProjectDetails.BASELINE_MEMBER );
+        }
+
         return this.baselineSources;
+    }
+
+    public Map<Integer, String> getBaselineHashes() throws SQLException
+    {
+        if (this.hasBaseline() && this.baselineHashes.size() == 0)
+        {
+            this.loadSources( ProjectDetails.BASELINE_MEMBER );
+        }
+        return this.baselineHashes;
+    }
+
+    private void loadSources(String member) throws SQLException
+    {
+        StringBuilder script = new StringBuilder(  );
+
+        script.append( "SELECT PS.source_id, S.hash").append(NEWLINE);
+        script.append( "FROM wres.ProjectSource PS").append(NEWLINE);
+        script.append( "INNER JOIN wres.Source S").append(NEWLINE);
+        script.append( "    ON S.source_id = PS.source_id").append(NEWLINE);
+        script.append( "WHERE PS.project_id = ").append(this.projectID).append(NEWLINE);
+        script.append( "    AND PS.member = ").append(member).append(NEWLINE);
+        script.append( "    AND PS.inactive_time IS NULL;").append(NEWLINE);
+
+        Connection connection = null;
+        ResultSet resultSet = null;
+
+        Map<Integer, String> sourceHashes;
+        List<Integer> sourceIDs;
+
+        if (member.equals( ProjectDetails.LEFT_MEMBER ))
+        {
+            sourceHashes = this.leftHashes;
+            sourceIDs = this.leftSources;
+        }
+        else if (member.equals( ProjectDetails.RIGHT_MEMBER ))
+        {
+            sourceHashes = this.rightHashes;
+            sourceIDs = this.rightSources;
+        }
+        else
+        {
+            sourceHashes = this.baselineHashes;
+            sourceIDs = this.baselineSources;
+        }
+
+        try
+        {
+            connection = Database.getHighPriorityConnection();
+            resultSet = Database.getResults( connection, script.toString( ) );
+
+            while (resultSet.next())
+            {
+                sourceIDs.add( resultSet.getInt( "source_id" ) );
+                sourceHashes.put(resultSet.getInt( "source_id" ),
+                                    resultSet.getString( "hash" ));
+            }
+        }
+        finally
+        {
+            if (resultSet != null)
+            {
+                resultSet.close();
+            }
+
+            if (connection != null)
+            {
+                Database.returnHighPriorityConnection( connection );
+            }
+        }
     }
 
     public boolean isEmpty()
     {
         return (this.leftSources.size() + this.rightSources.size() + this.baselineSources.size()) == 0;
+    }
+
+    public boolean hasBaseline()
+    {
+        return this.getBaseline() != null;
     }
 
     public boolean hasSource(String foundHash, DataSourceConfig dataSourceConfig)
@@ -476,228 +676,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                         "WHERE P.input_code = " + this.getInputCode() + ";";
 
         return script;
-    }
-
-    private void loadForecastIDs() throws SQLException
-    {
-        StringBuilder script = new StringBuilder(  );
-        script.append( "SELECT FS.forecast_id" ).append(NEWLINE);
-        script.append( "FROM wres.ForecastSource FS").append(NEWLINE);
-        script.append( "INNER JOIN wres.ProjectSource PS").append(NEWLINE);
-        script.append( "    ON PS.source_id = FS.source_id").append(NEWLINE);
-        script.append( "INNER JOIN wres.ForecastEnsemble FE").append(NEWLINE);
-        script.append( "    ON FE.forecast_id = FS.forecast_id").append(NEWLINE);
-        script.append( "INNER JOIN wres.VariablePosition VP").append(NEWLINE);
-        script.append( "    ON VP.variableposition_id = FE.variableposition_id").append(NEWLINE);
-        script.append( "WHERE PS.project_id = ").append(this.projectID).append(NEWLINE);
-        script.append( "    AND PS.member = ").append(ProjectDetails.LEFT_MEMBER).append(NEWLINE);
-        script.append("     AND PS.inactive_time IS NULL").append(NEWLINE);
-        script.append("     AND VP.variable_id = ").append(this.leftVariableID).append(";");
-
-        Database.populateCollection(this.leftForecastIDs, Integer.class, script.toString(), "forecast_id");
-
-        script = new StringBuilder(  );
-        script.append( "SELECT FS.forecast_id" ).append(NEWLINE);
-        script.append( "FROM wres.ForecastSource FS").append(NEWLINE);
-        script.append( "INNER JOIN wres.ProjectSource PS").append(NEWLINE);
-        script.append( "    ON PS.source_id = FS.source_id").append(NEWLINE);
-        script.append( "INNER JOIN wres.ForecastEnsemble FE").append(NEWLINE);
-        script.append( "    ON FE.forecast_id = FS.forecast_id").append(NEWLINE);
-        script.append( "INNER JOIN wres.VariablePosition VP").append(NEWLINE);
-        script.append( "    ON VP.variableposition_id = FE.variableposition_id").append(NEWLINE);
-        script.append( "WHERE PS.project_id = ").append(this.projectID).append(NEWLINE);
-        script.append( "    AND PS.member = ").append(ProjectDetails.RIGHT_MEMBER).append(NEWLINE);
-        script.append("     AND PS.inactive_time IS NULL").append(NEWLINE);
-        script.append("     AND VP.variable_id = ").append(this.rightVariableID).append(";");
-
-        Database.populateCollection(this.rightForecastIDs, Integer.class, script.toString(), "forecast_id");
-
-        if (this.baselineVariableID == null)
-        {
-            return;
-        }
-
-        script = new StringBuilder();
-        script.append( "SELECT FS.forecast_id" ).append( NEWLINE );
-        script.append( "FROM wres.ForecastSource FS" ).append( NEWLINE );
-        script.append( "INNER JOIN wres.ProjectSource PS" )
-              .append( NEWLINE );
-        script.append( "    ON PS.source_id = FS.source_id" )
-              .append( NEWLINE );
-        script.append( "INNER JOIN wres.ForecastEnsemble FE" )
-              .append( NEWLINE );
-        script.append( "    ON FE.forecast_id = FS.forecast_id" )
-              .append( NEWLINE );
-        script.append( "INNER JOIN wres.VariablePosition VP" )
-              .append( NEWLINE );
-        script.append(
-                "    ON VP.variableposition_id = FE.variableposition_id" )
-              .append( NEWLINE );
-        script.append( "WHERE PS.project_id = " )
-              .append( this.projectID )
-              .append( NEWLINE );
-        script.append( "    AND PS.member = " )
-              .append( ProjectDetails.RIGHT_MEMBER )
-              .append( NEWLINE );
-        script.append( "     AND PS.inactive_time IS NULL" )
-              .append( NEWLINE );
-        script.append( "     AND VP.variable_id = " )
-              .append( this.baselineVariableID )
-              .append( ";" );
-
-        Database.populateCollection( this.baselineForecastIDs,
-                                     Integer.class,
-                                     script.toString(),
-                                     "forecast_id" );
-    }
-
-    private void loadSources()
-    {
-        StringBuilder script = new StringBuilder();
-
-        script.append( "SELECT PS.source_id, S.hash").append(NEWLINE);
-        script.append( "FROM wres.ProjectSource PS").append(NEWLINE);
-        script.append( "INNER JOIN wres.Source S").append(NEWLINE);
-        script.append( "    ON S.source_id = PS.source_id").append(NEWLINE);
-        script.append( "WHERE PS.project_id = ").append(this.projectID).append(NEWLINE);
-        script.append( "    AND PS.member = ").append(ProjectDetails.LEFT_MEMBER).append(NEWLINE);
-        script.append( "    AND PS.inactive_time IS NULL").append(NEWLINE);
-
-        Connection connection = null;
-        ResultSet resultSet = null;
-
-        try
-        {
-            connection = Database.getHighPriorityConnection();
-            resultSet = Database.getResults( connection, script.toString() );
-
-            while (resultSet.next())
-            {
-                this.leftSources.add( resultSet.getInt( "source_id" ) );
-                this.leftHashes.put(resultSet.getInt( "source_id" ),
-                                    resultSet.getString("hash"));
-            }
-        }
-        catch ( SQLException e )
-        {
-            LOGGER.error( Strings.getStackTrace(e) );
-        }
-        finally
-        {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch ( SQLException e )
-                {
-                    LOGGER.error( Strings.getStackTrace( e ));
-                }
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-        }
-
-        script = new StringBuilder();
-
-        script.append( "SELECT PS.source_id, S.hash").append(NEWLINE);
-        script.append( "FROM wres.ProjectSource PS").append(NEWLINE);
-        script.append( "INNER JOIN wres.Source S").append(NEWLINE);
-        script.append( "    ON S.source_id = PS.source_id").append(NEWLINE);
-        script.append( "WHERE PS.project_id = ").append(this.projectID).append(NEWLINE);
-        script.append( "    AND PS.member = ").append(ProjectDetails.RIGHT_MEMBER).append(NEWLINE);
-        script.append( "    AND PS.inactive_time IS NULL").append(NEWLINE);
-
-        try
-        {
-            connection = Database.getHighPriorityConnection();
-            resultSet = Database.getResults( connection, script.toString() );
-
-            while (resultSet.next())
-            {
-                this.rightSources.add( resultSet.getInt( "source_id" ) );
-                this.rightHashes.put(resultSet.getInt( "source_id" ),
-                                     resultSet.getString("hash"));
-            }
-        }
-        catch ( SQLException e )
-        {
-            LOGGER.error( Strings.getStackTrace(e) );
-        }
-        finally
-        {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch ( SQLException e )
-                {
-                    LOGGER.error( Strings.getStackTrace( e ));
-                }
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-        }
-
-        if (this.baselineVariableID == null)
-        {
-            return;
-        }
-
-        script = new StringBuilder();
-
-        script.append( "SELECT PS.source_id, S.hash").append(NEWLINE);
-        script.append( "FROM wres.ProjectSource PS").append(NEWLINE);
-        script.append( "INNER JOIN wres.Source S").append(NEWLINE);
-        script.append( "    ON S.source_id = PS.source_id").append(NEWLINE);
-        script.append( "WHERE PS.project_id = ").append(this.projectID).append(NEWLINE);
-        script.append( "    AND PS.member = ").append(ProjectDetails.BASELINE_MEMBER).append(NEWLINE);
-        script.append( "    AND PS.inactive_time IS NULL").append(NEWLINE);
-
-        try
-        {
-            connection = Database.getHighPriorityConnection();
-            resultSet = Database.getResults( connection, script.toString() );
-
-            while (resultSet.next())
-            {
-                this.baselineSources.add( resultSet.getInt( "source_id" ) );
-                this.baselineHashes.put(resultSet.getInt( "source_id" ),
-                                        resultSet.getString("hash"));
-            }
-        }
-        catch ( SQLException e )
-        {
-            LOGGER.error( Strings.getStackTrace(e) );
-        }
-        finally
-        {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch ( SQLException e )
-                {
-                    LOGGER.error( Strings.getStackTrace( e ));
-                }
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-        }
     }
 
     @Override

@@ -1,6 +1,7 @@
 package wres.io.data.details;
 
 import java.sql.SQLException;
+import java.util.HashMap;
 
 import wres.io.utilities.Database;
 import wres.util.Internal;
@@ -11,27 +12,24 @@ import wres.util.Internal;
  */
 @Internal(exclusivePackage = "wres.io")
 public final class ForecastEnsembleDetails {
+    private final static short FORECASTVALUE_PARTITION_SPAN = 80;
+
 	private static final String NEWLINE = System.lineSeparator();
-	
-	private Integer forecastID = null;
+    private final static HashMap<Integer, String> FORECASTVALUE_PARITION_NAMES = new HashMap<>();
+    private static final Object PARTITION_LOCK = new Object();
+
 	private Integer ensembleID = null;
 	private Integer variablePositionID = null;
 	private Integer measurementUnitID = null;
 	private Integer forecastEnsembleID = null;
-	
-	/**
-	 * Sets the ID of the forecast. The ID of the ForecastEnsemble is invalidated if the 
-	 * the ForecastEnsemble's forecast changes
-	 * @param forecast_id The ID of the new Forecast
-	 */
-	public void setForecastID(Integer forecast_id)
-	{
-		if (this.forecastID != null && !this.forecastID.equals(forecast_id))
-		{
-			this.forecastEnsembleID = null;
-		}
-        this.forecastID = forecast_id;
-	}
+    private final Integer sourceID;
+    private final String initializationDate;
+
+    public ForecastEnsembleDetails(Integer sourceID, String initializationDate)
+    {
+        this.sourceID = sourceID;
+        this.initializationDate = initializationDate;
+    }
 	
 	/**
 	 * Sets the ID of the Ensemble that the ForecastEnsemble is linked to. The ID of the ForecastEnsemble
@@ -99,18 +97,18 @@ public final class ForecastEnsembleDetails {
 		
 		script += "WITH new_forecastensemble AS" + NEWLINE;
 		script += "(" + NEWLINE;
-		script += "		INSERT INTO wres.forecastensemble (forecast_id, variableposition_id, ensemble_id, measurementunit_id)" + NEWLINE;
-		script += "		SELECT " + forecastID + "," + NEWLINE;
-		script += "			" + variablePositionID + "," + NEWLINE;
+		script += "		INSERT INTO wres.forecastensemble (variableposition_id, ensemble_id, measurementunit_id, initialization_date)" + NEWLINE;
+		script += "		SELECT " + variablePositionID + "," + NEWLINE;
 		script += "			" + ensembleID + "," + NEWLINE;
-		script += "			" + measurementUnitID + NEWLINE;
+		script += "			" + measurementUnitID + "," + NEWLINE;
+		script += "         '" + this.initializationDate + "'" + NEWLINE;
 		script += "		WHERE NOT EXISTS (" + NEWLINE;
 		script += "			SELECT 1" + NEWLINE;
 		script += "			FROM wres.forecastensemble" + NEWLINE;
-		script += "			WHERE forecast_id = " + forecastID + NEWLINE;
-		script += "				AND variableposition_id = " + variablePositionID + NEWLINE;
+		script += "			WHERE variableposition_id = " + variablePositionID + NEWLINE;
 		script += "				AND ensemble_id = " + ensembleID + NEWLINE;
-		script += "				AND measurementunit_id = " + measurementUnitID + NEWLINE;
+		script += "             AND initialization_date = '" + this.initializationDate + "'" + NEWLINE;
+        script += "				AND measurementunit_id = " + measurementUnitID + NEWLINE;
 		script += "		)" + NEWLINE;
 		script += "		RETURNING forecastensemble_id" + NEWLINE;
 		script += ")" + NEWLINE;
@@ -121,11 +119,79 @@ public final class ForecastEnsembleDetails {
 		script += "";
 		script += "SELECT forecastensemble_id" + NEWLINE;
 		script += "FROM wres.forecastensemble" + NEWLINE;
-		script += "WHERE forecast_id = " + forecastID + NEWLINE;
-		script += "		AND variableposition_id = " + variablePositionID + NEWLINE;
+		script += "WHERE variableposition_id = " + variablePositionID + NEWLINE;
 		script += "		AND ensemble_id = " + ensembleID + NEWLINE;
-		script += "		AND measurementunit_id = " + measurementUnitID + ";";
+		script += "     AND initialization_date = '" + this.initializationDate + "'" + NEWLINE;
+        script += "		AND measurementunit_id = " + measurementUnitID + ";";
 		
 		forecastEnsembleID = Database.getResult(script, "forecastensemble_id");
+		this.saveForecastSource();
 	}
+
+    /**
+     * Links the forecast the information about the source of its data in the database
+     * @throws SQLException Thrown if the Forecast and its source could not be properly linked
+     */
+    private void saveForecastSource() throws SQLException
+    {
+        String script = "";
+        script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + NEWLINE;
+        script += "SELECT " + this.forecastEnsembleID + ", " + this.sourceID + NEWLINE;
+        script += "WHERE NOT EXISTS (" + NEWLINE;
+        script += "     SELECT 1" + NEWLINE;
+        script += "     FROM wres.ForecastSource" + NEWLINE;
+        script += "     WHERE forecast_id = " + this.forecastEnsembleID + NEWLINE;
+        script += "         AND source_id = " + this.sourceID + NEWLINE;
+        script += ");";
+
+        Database.execute(script);
+    }
+
+    public static String getForecastValueParitionName(int lead) throws SQLException {
+        Integer partitionNumber = lead / ForecastEnsembleDetails.FORECASTVALUE_PARTITION_SPAN;
+
+        String name;
+
+        synchronized (FORECASTVALUE_PARITION_NAMES)
+        {
+            if (!FORECASTVALUE_PARITION_NAMES.containsKey(partitionNumber))
+            {
+                int low = (lead / FORECASTVALUE_PARTITION_SPAN) * FORECASTVALUE_PARTITION_SPAN;
+                int high = low + FORECASTVALUE_PARTITION_SPAN;
+                name = "partitions.ForecastValue_Lead_" + String.valueOf(partitionNumber);
+
+                StringBuilder script = new StringBuilder();
+                script.append("CREATE TABLE IF NOT EXISTS ").append(name).append(NEWLINE);
+                script.append("(").append(NEWLINE);
+                script.append("		CHECK ( lead >= ")
+                      .append(String.valueOf(low))
+                      .append(" AND lead < ")
+                      .append(String.valueOf(high))
+                      .append(" )")
+                      .append(NEWLINE);
+                script.append(") INHERITS (wres.ForecastValue);");
+
+                synchronized (PARTITION_LOCK)
+                {
+                    Database.execute(script.toString());
+                }
+
+                Database.saveIndex(name,
+                                   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_Lead_idx",
+                                   "lead");
+
+                Database.saveIndex(name,
+                                   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_ForecastEnsemble_idx",
+                                   "forecastensemble_id");
+
+                ForecastEnsembleDetails.FORECASTVALUE_PARITION_NAMES.put(partitionNumber, name);
+            }
+            else
+            {
+                name = ForecastEnsembleDetails.FORECASTVALUE_PARITION_NAMES.get(partitionNumber);
+            }
+        }
+
+        return name;
+    }
 }
