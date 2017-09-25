@@ -11,13 +11,12 @@ import wres.config.generated.ProjectConfig;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
-import wres.util.Strings;
 
 /**
  * Cache of available types of forecast
  */
 @Internal(exclusivePackage = "wres.io")
-public class Projects extends Cache<ProjectDetails, String> {
+public class Projects extends Cache<ProjectDetails, Integer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
     private static Projects INTERNAL_CACHE = null;
@@ -36,58 +35,23 @@ public class Projects extends Cache<ProjectDetails, String> {
         }
     }
 
-    public static Integer getProjectID( String projectName) throws SQLException
-    {
-        Integer projectID;
-
-        try
-        {
-            projectID = getCache().getID( projectName );
-        }
-        catch (SQLException e)
-        {
-            LOGGER.error("An error was encountered while trying to get the id for the project named '{}'",
-                         projectName);
-            LOGGER.error("{} is not a valid project.", projectName);
-            LOGGER.error(Strings.getStackTrace( e ));
-
-            throw e;
-        }
-
-        if (projectID == null)
-        {
-            ProjectDetails details = new ProjectDetails();
-            details.setProjectName( projectName );
-
-            projectID = getCache().getID( details );
-        }
-
-        return projectID;
-    }
-
     public static ProjectDetails getProject( ProjectConfig projectConfig)
             throws SQLException
     {
-        ProjectDetails projectDetails = Projects.getProject( projectConfig.getName() );
-        projectDetails.load( projectConfig );
-        return projectDetails;
-    }
-
-    public static ProjectDetails getProject(String projectName)
-            throws SQLException
-    {
         ProjectDetails details = null;
-        if (Projects.getCache().hasID( projectName ))
+        Integer inputCode = ProjectDetails.hash( projectConfig );
+
+        if (Projects.getCache().hasID( inputCode ))
         {
-            details = Projects.getCache().get( Projects.getProjectID( projectName ) );
+            details = Projects.getCache().get( Projects.getCache().getID( inputCode )  );
         }
 
         if (details == null)
         {
-            details = new ProjectDetails();
-            details.setProjectName( projectName );
+            details = new ProjectDetails(projectConfig);
             Projects.getCache().addElement( details );
         }
+
 
         return details;
     }
@@ -115,9 +79,9 @@ public class Projects extends Cache<ProjectDetails, String> {
             while (projects.next())
             {
                 Integer projectId = projects.getInt( "project_id" );
-                String projectName = projects.getString("project_name");
+                Integer inputCode = projects.getInt("input_code");
                 this.getKeyIndex().put(
-                        projectName,
+                        inputCode,
                         projectId
                 );
             }

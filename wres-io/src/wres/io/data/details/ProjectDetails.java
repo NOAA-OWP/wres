@@ -7,18 +7,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.EnsembleCondition;
+import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Internal;
@@ -26,16 +26,16 @@ import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 /**
- * Represents details about a type of forecast (such as short range, long range, analysis and assimilation, etc)
+ * Wrapper object linking a project configuration and the data needed to form
+ * database statements
  */
 @Internal(exclusivePackage = "wres.io")
-public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
+public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectDetails.class );
 
-    private String projectName = null;
     private Integer projectID = null;
-    private ProjectConfig projectConfig = null;
+    private final ProjectConfig projectConfig;
 
     private final List<Integer> leftForecastIDs = new ArrayList<>(  );
     private final List<Integer> rightForecastIDs = new ArrayList<>(  );
@@ -50,11 +50,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
     private final List<Integer> baselineSources = new ArrayList<>(  );
 
     private Integer leftVariableID = null;
-    private String leftVariableName = null;
     private Integer rightVariableID = null;
-    private String rightVariableName = null;
     private Integer baselineVariableID = null;
-    private String baselineVariableName = null;
 
     public static final String LEFT_MEMBER = "'left'";
     public static final String RIGHT_MEMBER = "'right'";
@@ -62,48 +59,164 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
 
     private final Object LOAD_LOCK = new Object();
 
-    @Override
-    public String getKey() {
-        return this.projectName;
+    public static Integer hash(ProjectConfig projectConfig)
+    {
+        StringBuilder hashBuilder = new StringBuilder(  );
+
+        DataSourceConfig left = projectConfig.getInputs().getLeft();
+        DataSourceConfig right = projectConfig.getInputs().getRight();
+        DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
+
+        hashBuilder.append(left.getType().value());
+
+        for ( EnsembleCondition ensembleCondition : left.getEnsemble())
+        {
+            hashBuilder.append(ensembleCondition.getName());
+            hashBuilder.append(ensembleCondition.getMemberId());
+            hashBuilder.append(ensembleCondition.getQualifier());
+        }
+
+        for ( Feature feature : left.getFeatures())
+        {
+            hashBuilder.append( ConfigHelper.getFeatureDescription( feature ) );
+        }
+
+        for ( DataSourceConfig.Source source : left.getSource())
+        {
+            if (source.getFormat() != null)
+            {
+                hashBuilder.append( source.getFormat().value() );
+            }
+
+            hashBuilder.append(source.getValue());
+        }
+
+        hashBuilder.append(left.getVariable().getValue());
+        hashBuilder.append(left.getVariable().getUnit());
+
+        hashBuilder.append(right.getType().value());
+
+        for ( EnsembleCondition ensembleCondition : right.getEnsemble())
+        {
+            hashBuilder.append(ensembleCondition.getName());
+            hashBuilder.append(ensembleCondition.getMemberId());
+            hashBuilder.append(ensembleCondition.getQualifier());
+        }
+
+        for ( Feature feature : right.getFeatures())
+        {
+            hashBuilder.append( ConfigHelper.getFeatureDescription( feature ) );
+        }
+
+        for ( DataSourceConfig.Source source : right.getSource())
+        {
+            if (source.getFormat() != null)
+            {
+                hashBuilder.append( source.getFormat().value() );
+            }
+
+            hashBuilder.append(source.getValue());
+        }
+
+        hashBuilder.append(right.getVariable().getValue());
+        hashBuilder.append(right.getVariable().getUnit());
+
+        if (baseline != null)
+        {
+
+            hashBuilder.append(baseline.getType().value());
+
+            for ( EnsembleCondition ensembleCondition : baseline.getEnsemble())
+            {
+                hashBuilder.append(ensembleCondition.getName());
+                hashBuilder.append(ensembleCondition.getMemberId());
+                hashBuilder.append(ensembleCondition.getQualifier());
+            }
+
+            for ( Feature feature : baseline.getFeatures())
+            {
+                hashBuilder.append( ConfigHelper.getFeatureDescription( feature ) );
+            }
+
+            for ( DataSourceConfig.Source source : baseline.getSource())
+            {
+                if (source.getFormat() != null)
+                {
+                    hashBuilder.append( source.getFormat().value() );
+                }
+
+                hashBuilder.append(source.getValue());
+            }
+
+            hashBuilder.append(baseline.getVariable().getValue());
+            hashBuilder.append(baseline.getVariable().getUnit());
+        }
+
+        return hashBuilder.toString().hashCode();
     }
 
-    public void load( ProjectConfig projectConfig ) throws SQLException
+    public ProjectDetails(ProjectConfig projectConfig)
     {
-        synchronized ( LOAD_LOCK )
+        this.projectConfig = projectConfig;
+    }
+
+    @Override
+    public Integer getKey() {
+        return this.getInputCode();
+    }
+
+    private String getLeftVariableName()
+    {
+        return this.projectConfig.getInputs().getLeft().getVariable().getValue();
+    }
+
+    private String getLeftVariableUnit()
+    {
+        return this.projectConfig.getInputs().getLeft().getVariable().getUnit();
+    }
+
+    private String getRightVariableName()
+    {
+        return this.projectConfig.getInputs().getRight().getVariable().getValue();
+    }
+
+    private String getRightVariableUnit()
+    {
+        return this.projectConfig.getInputs().getRight().getVariable().getUnit();
+    }
+
+    private String getBaselineVariableName()
+    {
+        String name = null;
+        if (this.projectConfig.getInputs().getBaseline() != null)
         {
-            boolean load = false;
-
-            this.projectConfig = projectConfig;
-
-            if (leftVariableWillChange())
-            {
-                load = true;
-                this.leftVariableName = projectConfig.getInputs().getLeft().getVariable().getValue();
-                this.leftVariableID = Variables.getVariableID( this.leftVariableName, "none" );
-            }
-
-            if (rightVariableWillChange())
-            {
-                load = true;
-                this.rightVariableName = projectConfig.getInputs().getRight().getVariable().getValue();
-                this.rightVariableID = Variables.getVariableID( this.rightVariableName, "none" );
-            }
-
-            // TODO: This might break if it was null before, but not anymore
-            if ( projectConfig.getInputs().getBaseline() != null &&
-                 this.baselineVariableWillChange())
-            {
-                load = true;
-                this.baselineVariableName = projectConfig.getInputs().getBaseline().getVariable().getValue();
-                this.baselineVariableID = Variables.getVariableID( this.baselineVariableName, "none" );
-            }
-
-            if (load)
-            {
-                this.loadSources();
-                this.loadForecastIDs();
-            }
+            name = this.projectConfig.getInputs().getBaseline().getVariable().getValue();
         }
+        return name;
+    }
+
+    private String getBaselineVariableUnit()
+    {
+        String unit = null;
+        if (this.projectConfig.getInputs().getBaseline() != null)
+        {
+            unit = this.projectConfig.getInputs().getBaseline().getVariable().getUnit();
+        }
+        return unit;
+    }
+
+    private String getProjectName()
+    {
+        return this.projectConfig.getName();
+    }
+
+    @Override
+    public void save() throws SQLException
+    {
+        super.save();
+
+        this.loadSources();
+        this.loadForecastIDs();
     }
 
     public void addSource( String hash, DataSourceConfig dataSourceConfig)
@@ -191,7 +304,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
         {
             LOGGER.warn( "Source data could not be attached to '{}' " +
                          "as {} data because no data was ever ingested for it.",
-                         this.projectName,
+                         this.getProjectName(),
                          member);
             return;
         }
@@ -223,7 +336,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
         {
             LOGGER.warn( "Source data could not be attached to '{}' " +
                          "as {} data because no data was ever ingested for it.",
-                         this.projectName,
+                         this.getProjectName(),
                          member);
             return;
         }
@@ -254,6 +367,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
             this.baselineSources.add( sourceID );
             this.baselineHashes.putIfAbsent( sourceID, hash );
         }
+    }
+
+    private Integer getInputCode()
+    {
+        return ProjectDetails.hash( this.projectConfig );
     }
 
     public List<Integer> getLeftForecastIDs()
@@ -289,46 +407,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
     public boolean isEmpty()
     {
         return (this.leftSources.size() + this.rightSources.size() + this.baselineSources.size()) == 0;
-    }
-
-    private boolean leftVariableWillChange()
-    {
-        String leftVariableName = this.projectConfig.getInputs()
-                                                    .getLeft()
-                                                    .getVariable()
-                                                    .getValue();
-        return leftVariableName != null && (
-                    this.leftVariableName == null ||
-                    !this.leftVariableName.equalsIgnoreCase( leftVariableName )
-                );
-    }
-
-    private boolean rightVariableWillChange()
-    {
-        String rightVariableName = this.projectConfig.getInputs()
-                                                     .getRight()
-                                                     .getVariable()
-                                                     .getValue();
-        return rightVariableName != null && (
-                    this.rightVariableName == null ||
-                    !this.rightVariableName.equalsIgnoreCase( rightVariableName )
-                );
-    }
-
-    private boolean baselineVariableWillChange()
-    {
-        DataSourceConfig baseline = this.projectConfig.getInputs().getBaseline();
-        if (baseline == null)
-        {
-            return false;
-        }
-
-        String baselineVariableName = baseline.getVariable().getValue();
-
-        return baselineVariableName != null && (
-                    this.baselineVariableName == null ||
-                    !this.baselineVariableName.equalsIgnoreCase( baselineVariableName )
-                );
     }
 
     public boolean hasSource(String foundHash, DataSourceConfig dataSourceConfig)
@@ -370,29 +448,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
         this.projectID = id;
     }
 
-    public void setProjectName( String projectName )
-    {
-        if ( this.projectName == null || !this.projectName.equalsIgnoreCase(
-                projectName ))
-        {
-            this.projectName = projectName;
-            this.projectID = null;
-        }
-    }
-
     @Override
     protected String getInsertSelectStatement() {
         String script = "WITH new_project AS" + NEWLINE +
                         "(" + NEWLINE +
-                        "     INSERT INTO wres.project (project_name)"
+                        "     INSERT INTO wres.project (project_name, input_code)"
                         + NEWLINE +
-                        "     SELECT '" + this.projectName + "'" + NEWLINE;
+                        "     SELECT '" + this.getProjectName() + "', " + this.getInputCode() + NEWLINE;
 
         script +=
                         "     WHERE NOT EXISTS (" + NEWLINE +
                         "         SELECT 1" + NEWLINE +
                         "         FROM wres.Project P" + NEWLINE +
-                        "         WHERE P.project_name = '" + this.projectName + "'" + NEWLINE;
+                        "         WHERE P.input_code = " + this.getInputCode() + NEWLINE;
 
         script +=
                         "     )" + NEWLINE +
@@ -405,7 +473,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
                         NEWLINE +
                         "SELECT project_id" + NEWLINE +
                         "FROM wres.Project P" + NEWLINE +
-                        "WHERE P.project_name = '" + this.projectName + "';";
+                        "WHERE P.input_code = " + this.getInputCode() + ";";
 
         return script;
     }
@@ -633,56 +701,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
     }
 
     @Override
-    public int compareTo(ProjectDetails other) {
-        int equality;
-
-        if (other == null)
-        {
-            equality = 1;
-        }
-        else
-        {
-            if (this.projectID == null && other.projectID == null)
-            {
-                equality = 0;
-            }
-            else if (this.projectID == null && other.projectID != null)
-            {
-                equality = -1;
-            }
-            else if (this.projectID != null && other.projectID == null)
-            {
-                equality = 1;
-            }
-            else
-            {
-                return this.projectID.compareTo( other.projectID );
-            }
-
-            if (equality == 0)
-            {
-                if ( this.projectName == null && other.projectName == null )
-                {
-                    equality = 0;
-                }
-                else if ( this.projectName == null
-                          && other.projectName != null )
-                {
-                    equality = -1;
-                }
-                else if ( this.projectName != null
-                          && other.projectName == null )
-                {
-                    equality = 1;
-                }
-                else
-                {
-                    equality = this.projectName.trim()
-                                               .compareTo( other.projectName.trim() );
-                }
-            }
-        }
-        return equality;
+    public int compareTo(ProjectDetails other)
+    {
+        return this.getInputCode().compareTo( other.getInputCode() );
     }
 
     @Override
@@ -696,7 +717,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, String> {
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.projectID,
-                             this.projectName);
+        return this.getInputCode();
     }
 }

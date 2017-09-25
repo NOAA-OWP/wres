@@ -155,7 +155,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
             if (ConfigHelper.isForecast(left))
             {
-                List<Integer> forecastIDs = Projects.getProject( this.projectConfig.getName() ).getLeftForecastIDs();
+                List<Integer> forecastIDs = Projects.getProject( this.projectConfig ).getLeftForecastIDs();
 
                 if (forecastIDs.size() == 0)
                 {
@@ -195,7 +195,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
                 script.append("     AND F.forecast_id = ")
                       .append(Collections.formAnyStatement(
-                              Projects.getProject( projectConfig.getName() )
+                              Projects.getProject( projectConfig )
                                       .getLeftForecastIDs(),
                               "int" ))
                       .append(NEWLINE);
@@ -211,7 +211,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             }
             else
             {
-                List<Integer> leftSources = Projects.getProject( this.projectConfig.getName() ).getLeftSources();
+                List<Integer> leftSources = Projects.getProject( this.projectConfig ).getLeftSources();
 
                 if (leftSources.size() == 0)
                 {

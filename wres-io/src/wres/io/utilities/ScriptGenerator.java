@@ -84,7 +84,7 @@ public final class ScriptGenerator
         String latestIssueDate = null;
 
         String variablePositionClause = ConfigHelper.getVariablePositionClause(feature, variableID, "");
-        ProjectDetails projectDetails = Projects.getProject( projectConfig.getName() );
+        ProjectDetails projectDetails = Projects.getProject( projectConfig );
 
         Integer timeShift = null;
 
