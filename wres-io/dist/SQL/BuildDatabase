@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -eq 0 ]; then
-    echo 'usage: ./BuildDatabase <IOEP Database username> <host> <database name>'
+    echo 'usage: ./BuildDatabase <Database username> <host> <database name>'
 else
     echo 'Droping old tables and data...'
     psql -U $1 -d $3 -h $2 -f DropTables.sql >/dev/null
@@ -13,10 +13,6 @@ else
     echo ''
     echo 'Adding wres.Variable...'
     psql -U $1 -d $3 -h $2 -f wres.Variable.sql >/dev/null
-
-    echo ''
-    echo 'Adding wres.Scenario...'
-    psql -U $1 -d $3 -h $2 -f wres.Scenario.sql >/dev/null
 
     echo ''
     echo 'Adding wres.Source...'
@@ -33,10 +29,6 @@ else
     echo ''
     echo 'Adding wres.ProjectSource...'
     psql -U $1 -d $3 -h $2 -f wres.ProjectSource.sql >/dev/null
-
-    echo ''
-    echo 'Adding wres.Forecast...'
-    psql -U $1 -d $3 -h $2 -f wres.Forecast.sql >/dev/null
 
     echo ''
     echo 'Adding wres.VariablePosition...'
