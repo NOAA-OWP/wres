@@ -10,6 +10,11 @@ import java.nio.file.attribute.FileTime;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.TimeUnit;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -544,16 +549,24 @@ public class DatacardSource extends BasicSource {
 		Path                path            = Paths.get(getFilename());
 		BasicFileAttributes fileAttr        = Files.readAttributes(path, BasicFileAttributes.class);
 		FileTime            creationTime    = fileAttr.creationTime();
-		String              cleanedDateTime = null; 
+			
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		long fileTimeInSeconds = creationTime.to(TimeUnit.SECONDS);
+		LocalDateTime fileDateTime = LocalDateTime.ofEpochSecond( fileTimeInSeconds,
+		                                                          0,
+		                                                          ZoneOffset.UTC );
 		
-		if(creationTime.toString().matches(DATE_TIME_FORMAT))
+		String fileDateTimeStr = fileDateTime.format(formatter);
+				
+		if(!fileDateTimeStr.matches(DATE_TIME_FORMAT))
 		{
-			cleanedDateTime = creationTime.toString();
-			cleanedDateTime = cleanedDateTime.replace('T', ' ');
-			cleanedDateTime = cleanedDateTime.substring(0, cleanedDateTime.length() - 2);
+			String errMsg = "Faied to parse file creation date/time" + creationTime.toString();
+			
+			LOGGER.error(errMsg);
+			throw new IOException(errMsg);
 		}
 		
-		return cleanedDateTime;
+		return fileDateTimeStr;
 	}
 	
 	/**
@@ -637,7 +650,7 @@ public class DatacardSource extends BasicSource {
 			  "measurementunit_id, " +
 			  "source_id)";
 
-	private final static String DATE_TIME_FORMAT = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z";
+	private final static String DATE_TIME_FORMAT = "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}";
 	
 	private String datatypeCode = "";
 	private int timeInterval = 0;
