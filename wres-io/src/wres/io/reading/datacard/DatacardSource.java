@@ -45,6 +45,7 @@ public class DatacardSource extends BasicSource {
 	 */
 	public DatacardSource(String filename) {
 		setFilename(filename);
+		this.setHash();
 	}
 	
 	public String getDatatypeCode()
@@ -302,6 +303,15 @@ public class DatacardSource extends BasicSource {
 			} //end of loop for all value lines
 			
 			saveLeftoverObservations();
+			
+			try
+			{
+	        	this.getProjectDetails().addSource( this.getHash(), getDataSourceConfig() );
+			}
+	        catch(Exception e)
+	        {
+	        	throw new IOException ("Failed to add source for datacard " + e.getMessage());
+	        }
 		}
 		finally
 		{
