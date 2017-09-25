@@ -123,9 +123,10 @@ public abstract class BasicSource {
         return unit;
     }
 
-    protected String getSpecifiedLocationID()
+    protected String getSpecifiedLocationID() throws IOException
     {
         String locationID = null;
+        final int LOCATION_ID_LENGTH = 5;
 
         if (dataSourceConfig != null)
         {
@@ -136,6 +137,13 @@ public abstract class BasicSource {
                 locationID = source.getLocation();
             }
         }
+        
+        if(locationID == null || locationID.length() < LOCATION_ID_LENGTH)
+        {
+        	throw new IOException ("No valid location ID");
+        }
+        
+        locationID = locationID.substring(0, LOCATION_ID_LENGTH);
 
         return locationID;
     }
