@@ -771,12 +771,6 @@ public final class Database {
             {
                 script.append("VACUUM ");
             }
-			script.append("ANALYZE wres.Forecast;").append(NEWLINE);
-
-            if (vacuum)
-            {
-                script.append("VACUUM ");
-            }
             script.append("ANALYZE wres.Observation;").append(NEWLINE);
 
             LOGGER.info("Now refreshing the statistics within the database.");
@@ -880,7 +874,6 @@ public final class Database {
 		builder.append("TRUNCATE wres.Observation;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;").append(NEWLINE);
-		builder.append("TRUNCATE wres.Forecast RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Variable RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("DELETE FROM wres.VariablePosition VP").append(NEWLINE);
 		builder.append("WHERE EXISTS(").append(NEWLINE);
