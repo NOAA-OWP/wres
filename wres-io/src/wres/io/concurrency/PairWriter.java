@@ -1,17 +1,23 @@
 package wres.io.concurrency;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.StringJoiner;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.util.Strings;
+import wres.config.ProjectConfigException;
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.Feature;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.io.config.ConfigHelper;
 
 public class PairWriter extends WRESCallable<Boolean>
 {
@@ -19,94 +25,113 @@ public class PairWriter extends WRESCallable<Boolean>
     private static final Object PAIR_OUTPUT_LOCK = new Object();
     private static final String OUTPUT_HEADER = "Feature,Date,Window,Left,Right";
     private static final String DELIMITER = ",";
-    private static final AtomicBoolean HAS_WRITTEN = new AtomicBoolean();
+
+    /** Guarded by PAIR_OUTPUT_LOCK */
+    private static boolean headerHasBeenWritten = false;
+
+    private final DestinationConfig destinationConfig;
+    private final String date;
+    private final Feature feature;
+    private final int windowNum;
+    private final PairOfDoubleAndVectorOfDoubles pair;
+
+    public PairWriter( DestinationConfig destinationConfig,
+                       String date,
+                       Feature feature,
+                       int windowNum,
+                       PairOfDoubleAndVectorOfDoubles pair )
+    {
+        this.destinationConfig = destinationConfig;
+        this.date = date;
+        this.feature = feature;
+        this.windowNum = windowNum;
+        this.pair = pair;
+    }
 
     @Override
-    protected Boolean execute() throws Exception
+    protected Boolean execute() throws IOException, ProjectConfigException
     {
 
-        Boolean success = false;
+        boolean success = false;
+
+        File directoryFromDestinationConfig =
+                ConfigHelper.getDirectoryFromDestinationConfig( this.getDestinationConfig() );
+
+        String actualFileDestination = directoryFromDestinationConfig.getCanonicalPath()
+                + "/pairs.csv";
+
+        DecimalFormat formatter = null;
+        String configuredFormat = this.getDestinationConfig().getDecimalFormat();
+
+        if ( configuredFormat != null && !configuredFormat.isEmpty() )
+        {
+            formatter = new DecimalFormat();
+            formatter.applyPattern( configuredFormat );
+        }
 
         synchronized ( PAIR_OUTPUT_LOCK )
         {
-            if ( !this.fileDestination.endsWith( ".csv" ) )
+            if ( !PairWriter.headerHasBeenWritten )
             {
-                this.fileDestination += ".csv";
+                Files.deleteIfExists( Paths.get( actualFileDestination) );
             }
 
-            BufferedWriter writer = null;
-
-            try
+            try ( FileWriter fileWriter = new FileWriter( actualFileDestination,
+                                                         true );
+                  BufferedWriter writer = new BufferedWriter( fileWriter ) )
             {
-                if ( !Files.exists( Paths.get( this.fileDestination ) ) )
+                if ( !PairWriter.headerHasBeenWritten )
                 {
-                    writer =
-                            new BufferedWriter( new FileWriter( this.fileDestination,
-                                                                false ) );
                     writer.write( OUTPUT_HEADER );
                     writer.newLine();
-                    writer.flush();
-                }
-                else
-                {
-                    writer =
-                            new BufferedWriter( new FileWriter( this.fileDestination,
-                                                                HAS_WRITTEN.get() ) );
+
+                    PairWriter.headerHasBeenWritten = true;
                 }
 
                 StringJoiner line = new StringJoiner( DELIMITER );
                 StringJoiner arrayJoiner = new StringJoiner( DELIMITER );
 
-                line.add( this.featureDescription );
-                line.add( this.date );
+                line.add( ConfigHelper.getFeatureDescription( this.getFeature() ) );
+                line.add( this.getDate() );
 
                 // Convert from 0 index to 1 index for easier representation
                 // i.e. first window, second, third, ...
                 // instead of: zeroth window, first, second, third, ...
-                line.add( String.valueOf( this.windowNum + 1 ) );
+                line.add( String.valueOf( this.getWindowNum() + 1 ) );
 
-                if (this.left == null)
+                double left = this.getPair().getItemOne();
+
+                if ( formatter != null )
                 {
-                    line.add("");
+                    line.add( formatter.format( left ) );
                 }
                 else
                 {
-                    line.add( String.valueOf( this.left ) );
+                    line.add( String.valueOf( left ) );
                 }
 
-                for ( Double rightValue : this.right )
+                double[] rightValues = this.getPair().getItemTwo();
+
+                Arrays.sort( rightValues );
+
+                for ( Double rightValue : rightValues )
                 {
-                    arrayJoiner.add( String.valueOf( rightValue ) );
+                    if ( formatter != null )
+                    {
+                        arrayJoiner.add( formatter.format( rightValue ) );
+                    }
+                    else
+                    {
+                        arrayJoiner.add( String.valueOf( rightValue ) );
+                    }
                 }
 
                 line.add( arrayJoiner.toString() );
 
                 writer.write( line.toString() );
                 writer.newLine();
-                writer.flush();
-
-                HAS_WRITTEN.set( true );
 
                 success = true;
-            }
-            catch ( IOException error )
-            {
-                LOGGER.error( Strings.getStackTrace( error ) );
-                error.printStackTrace();
-            }
-            finally
-            {
-                if ( writer != null )
-                {
-                    try
-                    {
-                        writer.close();
-                    }
-                    catch ( IOException e )
-                    {
-                        LOGGER.error( Strings.getStackTrace(e) );
-                    }
-                }
             }
         }
 
@@ -116,21 +141,31 @@ public class PairWriter extends WRESCallable<Boolean>
     @Override
     protected boolean validate()
     {
-        if (!Strings.hasValue( this.fileDestination ))
+        if ( this.getDestinationConfig() == null )
         {
             throw new IllegalArgumentException(
                     "The PairWriter does not have a destination to write to." );
         }
-        else if (!Strings.hasValue( this.featureDescription ))
+        else if ( this.getFeature() == null )
         {
             throw new IllegalArgumentException(
                     "No feature was specified for where pairs belong to." );
         }
-        else if (!Strings.hasValue( this.date ))
+        else if ( this.getDate() == null || this.getDate().isEmpty() )
         {
             throw new IllegalArgumentException(
                     "No date was specified for when the paired data occurred." );
         }
+
+        try
+        {
+            ConfigHelper.getDirectoryFromDestinationConfig( this.getDestinationConfig() );
+        }
+        catch ( ProjectConfigException pce )
+        {
+            throw new IllegalArgumentException( "The PairWriter needs a valid destination", pce );
+        }
+
         return true;
     }
 
@@ -140,44 +175,28 @@ public class PairWriter extends WRESCallable<Boolean>
         return LOGGER;
     }
 
-    public void setFileDestination(String fileDestination)
+    public DestinationConfig getDestinationConfig()
     {
-        this.fileDestination = fileDestination;
+        return this.destinationConfig;
     }
 
-    public void setDate(String date)
+    public String getDate()
     {
-        this.date = date;
+        return this.date;
     }
 
-    public void setFeatureDescription(String featureDescription)
+    public Feature getFeature()
     {
-        this.featureDescription = featureDescription;
+        return this.feature;
     }
 
-    public void setWindowNum(int windowNum)
+    public int getWindowNum()
     {
-        this.windowNum = windowNum;
+        return this.windowNum;
     }
 
-    public void setLeft(Double left)
+    public PairOfDoubleAndVectorOfDoubles getPair()
     {
-        this.left = left;
+        return this.pair;
     }
-
-    public void setRight(double[] right)
-    {
-        if (right == null)
-        {
-            right = new double[0];
-        }
-        this.right = right;
-    }
-
-    private String fileDestination;
-    private String date;
-    private String featureDescription;
-    private int windowNum;
-    private Double left;
-    private double[] right;
 }
