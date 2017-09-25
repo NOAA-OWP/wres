@@ -521,7 +521,7 @@ public final class PIXMLReader extends XMLReader
             throws SQLException, IOException, ExecutionException,
             InterruptedException
     {
-	    this.currentForecast.setProject( this.getProjectName() );
+    	this.currentForecast.setProjectID( this.projectDetails.getId() );
         this.currentForecast.setType( this.dataSourceConfig.getType().value() );
 
         if (this.currentForecast.getHash() == null)
@@ -604,15 +604,6 @@ public final class PIXMLReader extends XMLReader
 		}
 		return currentSourceID;
 	}
-
-	private Integer getProjectID() throws SQLException
-    {
-        if (this.scenarioID == null)
-        {
-            this.scenarioID = Projects.getProjectID( this.getProjectName());
-        }
-        return this.scenarioID;
-    }
     
     private boolean variableIsApproved (String name) {
 	    boolean approved = true;
@@ -944,19 +935,6 @@ public final class PIXMLReader extends XMLReader
         return this.specifiedFeatures;
     }
 
-    private String getProjectName()
-    {
-        String name = "UNNAMED";
-
-        if (this.projectDetails != null)
-        {
-            name = this.projectDetails.getKey();
-        }
-
-        return name;
-    }
-
-    private ProjectConfig projectConfig;
     private DataSourceConfig dataSourceConfig;
     private List<Feature> specifiedFeatures;
 

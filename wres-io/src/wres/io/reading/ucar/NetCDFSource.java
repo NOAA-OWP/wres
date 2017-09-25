@@ -66,7 +66,7 @@ public class NetCDFSource extends BasicSource {
                 }
                 else
                 {
-                    saver = new VectorNetCDFValueSaver(this.getFilename(), var.getShortName(), this.getFutureHash());
+                    saver = new VectorNetCDFValueSaver(this.getFilename(), var.getShortName(), this.getFutureHash(), this.getProjectDetails());
                 }
 
                 saver.setOnRun(ProgressMonitor.onThreadStartHandler());

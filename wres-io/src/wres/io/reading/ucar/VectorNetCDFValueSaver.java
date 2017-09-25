@@ -26,6 +26,7 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ForecastDetails;
+import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.NetCDF;
@@ -42,6 +43,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
     private final static Logger LOGGER = LoggerFactory.getLogger(VectorNetCDFValueSaver.class);
     private String forecastInsertScript;
 
+    private final Integer projectID;
     private final String variableName;
     private final Path filePath;
     private NetcdfFile source;
@@ -61,7 +63,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
     private int forecastID;
 
     @Internal(exclusivePackage = "wres.io")
-    public VectorNetCDFValueSaver(String filename, String variableName, Future<String> futureHash)
+    public VectorNetCDFValueSaver(String filename, String variableName, Future<String> futureHash, ProjectDetails projectDetails)
     {
         if (filename == null || filename.isEmpty())
         {
@@ -79,6 +81,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
         this.filePath = Paths.get(filename);
         this.variableName = variableName;
         this.futureHash = futureHash;
+        this.projectID = projectDetails.getId();
     }
 
 
@@ -360,7 +363,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
             }
 
             details.setType( datasourceType.value() );
-            details.setProject( range );
+            details.setProjectID( this.projectID );
 
             this.forecastID = details.getForecastID();
         }

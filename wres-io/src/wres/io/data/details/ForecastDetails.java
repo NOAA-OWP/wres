@@ -4,7 +4,6 @@ import java.sql.SQLException;
 import java.util.HashMap;
 
 import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Projects;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 
@@ -29,7 +28,7 @@ public final class ForecastDetails {
 	private String project = "";
 	private String type = "";
 	private Integer lead = null;
-	private Integer scenarioID = null;
+	private Integer projectID = null;
 
 	/**
 	 * The path to the file that contains data for the forecast
@@ -69,15 +68,6 @@ public final class ForecastDetails {
 	        this.forecast_id = null;
 	    }
 	}
-	
-	public void setProject( String project)
-	{
-	    if (this.project == null || !this.project.equalsIgnoreCase(project))
-	    {
-	        this.project = project;
-	        this.forecast_id = null;
-	    }
-	}
 
 	public void setType(String type)
 	{
@@ -97,13 +87,9 @@ public final class ForecastDetails {
 		}
 	}
 
-	private int getProjectID() throws SQLException
+	public void setProjectID(Integer projectID)
 	{
-		if (this.scenarioID == null)
-		{
-			this.scenarioID = Projects.getProjectID( this.project);
-		}
-		return this.scenarioID;
+		this.projectID = projectID;
 	}
 
 	public String getHash()
@@ -136,12 +122,12 @@ public final class ForecastDetails {
 		script += "(" + NEWLINE;
 		script += "		INSERT INTO wres.Forecast(forecast_date, scenario_id)" + NEWLINE;
 		script += "		SELECT '" + this.forecastDate + "', ";
-		script += "			" + this.getProjectID() + NEWLINE;
+		script += "			" + this.projectID + NEWLINE;
 		script += "		WHERE NOT EXISTS (" + NEWLINE;
 		script += "			SELECT 1" + NEWLINE;
 		script += "			FROM wres.Forecast" + NEWLINE;
 		script += "			WHERE forecast_date = '" + this.forecastDate + "'" + NEWLINE;
-		script += "				AND scenario_id = " + this.getProjectID();
+		script += "				AND scenario_id = " + this.projectID;
 		script += "		)" + NEWLINE;
 		script += "		RETURNING forecast_id" + NEWLINE;
 		script += ")" + NEWLINE;
@@ -153,7 +139,7 @@ public final class ForecastDetails {
 		script += "SELECT forecast_id" + NEWLINE;
 		script += "FROM wres.Forecast" + NEWLINE;
 		script += "WHERE forecast_date = '" + this.forecastDate + "'" + NEWLINE;
-		script += "     AND scenario_id = " + this.getProjectID() + ";";
+		script += "     AND scenario_id = " + this.projectID + ";";
 
 		this.forecast_id = Database.getResult(script, "forecast_id");
 		
