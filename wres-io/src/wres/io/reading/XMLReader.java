@@ -29,7 +29,7 @@ import wres.util.Internal;
 public class XMLReader 
 {
     private String filename;
-    private final boolean find_on_classpath;
+    private final boolean findOnClasspath;
     private final InputStream inputStream;
     private XMLInputFactory factory = null;
 
@@ -48,19 +48,20 @@ public class XMLReader
 	@Internal(exclusivePackage = "wres.io")
 	protected XMLReader( String fileName, InputStream inputStream )
 	{
-		this.find_on_classpath = false;
+		this.findOnClasspath = false;
 		this.filename = fileName;
 		this.inputStream = inputStream;
 	}
 
 	@Internal(exclusivePackage = "wres.io")
-    protected XMLReader( String filename, boolean find_on_classpath )
+    protected XMLReader( String filename, boolean findOnClasspath )
 	{
 	    this.filename = filename;
-	    this.find_on_classpath = find_on_classpath;
+	    this.findOnClasspath = findOnClasspath;
 	    this.inputStream = null;
 
-	    LOGGER.trace("Created XMLReader for file: {} find_on_classpath={}", filename, find_on_classpath);
+	    LOGGER.trace( "Created XMLReader for file: {} findOnClasspath={}", filename,
+					  findOnClasspath );
 	}
 	
 	protected String getFilename()
@@ -126,7 +127,7 @@ public class XMLReader
 
 	    try
 		{
-			if (find_on_classpath)
+			if ( findOnClasspath )
 			{
 				return factory.createXMLStreamReader( getFile());
 			}

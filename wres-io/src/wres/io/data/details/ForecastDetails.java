@@ -16,8 +16,8 @@ import wres.util.Internal;
 public final class ForecastDetails {
 	private final static short FORECASTVALUE_PARTITION_SPAN = 80;
 
-	private final static String NEWLINE = System.lineSeparator();
-	private final static HashMap<Integer, String> FORECASTVALUE_PARITION_NAMES = new HashMap<>();
+	private static final String NEWLINE = System.lineSeparator();
+	private static final HashMap<Integer, String> FORECASTVALUE_PARITION_NAMES = new HashMap<>();
 	private static final Object PARTITION_LOCK = new Object();
 	
 	private String sourcePath = null;
