@@ -241,7 +241,7 @@ public class DatacardSource extends BasicSource {
 				throw new IOException(String.format(message, getFilename()));
 			}					
 			
-			OffsetDateTime datetime       = OffsetDateTime.of(getFirstYear(), getFirstMonth(), 1, 1, 0, 0, 0, ZoneOffset.UTC);
+			OffsetDateTime datetime       = OffsetDateTime.of(getFirstYear(), getFirstMonth(), 1, 0, 0, 0, 0, ZoneOffset.UTC);
 			String         timeZone       = getSpecifiedTimeZone();
 			int            valIdxInRecord = 0;
 			String         value          = "";
