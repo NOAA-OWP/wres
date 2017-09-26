@@ -6,7 +6,7 @@
     <inputs>
         <left label="Observations">
             <type>observations</type>
-            <source format="datacard" timeZone="CST" unit="CFS" location="DRRC2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" timeZone="CST" unit="CFS" location="GLOO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
             <features>
                 <location lid="GLOO2"/>
@@ -57,15 +57,20 @@
         </probabilityThresholds>
         <metric><name>mean error</name></metric>
         <metric><name>sample size</name></metric>
-        <destination type="numeric" decimalFormat="0.000000">
-            <path>output/</path>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output</path>
         </destination>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+        <!--
         <destination type="graphic">
-            <path>output/</path>
+            <path>output</path>
             <graphical width="800" height="600">
                 <plotType>lead threshold</plotType>
             </graphical>
         </destination>
+        -->
     </outputs>
 
 </project>
