@@ -7,37 +7,64 @@ configuration file and asking WRES to execute that project.
 
     <?xml version="1.0" encoding="UTF-8"?>
     <project>
-      <inputs>
-        <left>
-          <type>observations</type>
-          <source recursive="true" all="true" format="PI-XML">c:/resources/DRRC2SQIN.xml</source>
-          <variable>QINE</variable>
-        </left>
-        <right>
-          <type>ensemble forecasts</type>
-          <source format="PI-XML">c:/resources/forecasts/</source>
-          <variable>SQIN</variable>
-        </right>
-      </inputs>
-      <conditions>
-        <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>
-        <feature>
-            <location lid="DRRC2" name="DOLORES - RICO, BLO"/>
-        </feature>
-      </conditions>
-      <pair>
-        <unit>CMS</unit>
-      </pair>
-      <outputs>
-        <metric label="ME">mean_error</metric>
-        <metric>correlation_coefficient</metric>
-        <metric>brier_skill_score</metric>
-        <destination type="graphic"><path>/tmp/</path>
-          <graphical width="800" height="600">
-            <plotType>lead threshold</plotType>
-            </graphical>
-        </destination>
-      </outputs>
+
+        <inputs>
+            <left>
+                <type>observations</type>
+                <source recursive="true" all="true" format="PI-XML">c:/resources/DRRC2SQIN.xml</source>
+                <variable>QINE</variable>
+                <features><location lid="DRRC2" /></features>
+            </left>
+            <right>
+                <type>ensemble forecasts</type>
+                <source format="PI-XML">c:/resources/forecasts/</source>
+                <variable>SQIN</variable>
+                <features><location lid="DRRC2" /></features>
+            </right>
+        </inputs>
+
+        <conditions>
+            <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>
+            <features>
+                <location lid="DRRC2" />
+            </features>
+        </conditions>
+
+        <pair>
+            <unit>CMS</unit>
+            <desiredTimeAggregation>
+                <function>avg</function>
+                <period>1</period>
+                <unit>hour</unit>
+            </desiredTimeAggregation>
+        </pair>
+
+        <outputs>
+
+            <probabilityThresholds>
+                <applyTo>left</applyTo>
+                <commaSeparatedValues>0.25,0.5,0.75,0.9</commaSeparatedValues>
+                <operator>greater than or equal to</operator>
+            </probabilityThresholds>
+ 
+            <metric><name>mean error</name></metric>
+            <metric><name>brier score</name></metric>
+            <metric><name>reliability diagram</name></metric>
+            <metric><name>sample size</name></metric>
+
+            <destination type="numeric">
+                <path>c:/output</path>
+            </destination>
+
+            <destination type="graphic">
+                <path>c:/output</path>
+                <graphical width="600" height="400">
+                    <plotType>lead threshold</plotType>
+                </graphical>
+            </destination>
+
+        </outputs>
+
     </project>
 
 ## Project
