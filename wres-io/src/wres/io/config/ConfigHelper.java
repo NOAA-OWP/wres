@@ -243,49 +243,67 @@ public class ConfigHelper
         String newline = System.lineSeparator();
         int width = getWindowWidth( projectConfig ).intValue();
 
-        DataSourceConfig leftSource = projectConfig.getInputs().getLeft();
-        DataSourceConfig rightSource = projectConfig.getInputs().getRight();
-
         ProjectDetails projectDetails = Projects.getProject( projectConfig );
-        List<Integer> forecastIDs = projectDetails.getRightForecastIDs();
 
-        String leftVariablepositionClause;
-        String rightVariablepositionClause;
-
-        Integer leftVariableID = Variables.getVariableID( leftSource.getVariable().getValue(), leftSource.getVariable().getUnit() );
-        Integer rightVariableID = Variables.getVariableID( rightSource.getVariable().getValue(), rightSource.getVariable().getUnit() );
-
-        leftVariablepositionClause = ConfigHelper.getVariablePositionClause( left, leftVariableID, "O" );
-        rightVariablepositionClause = ConfigHelper.getVariablePositionClause( right, rightVariableID, "FE" );
+        String leftVariablepositionClause =
+                ConfigHelper.getVariablePositionClause( left,
+                                                        projectDetails.getLeftVariableID(),
+                                                        "O" );
+        String rightVariablepositionClause =
+                ConfigHelper.getVariablePositionClause( right,
+                                                        projectDetails.getRightVariableID(),
+                                                        "TS" );
 
         StringBuilder script = new StringBuilder(  );
 
         script.append("SELECT FV.lead - ").append(width).append(" AS offset").append(newline);
-        script.append("FROM wres.ForecastEnsemble FE").append(newline);
+        script.append("FROM wres.TimeSeries TS").append(newline);
         script.append("INNER JOIN wres.ForecastValue FV").append(newline);
-        script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(newline);
+        script.append("     ON FV.timeseries_id = TS.timeseries_id").append(newline);
+        script.append("INNER JOIN wres.ForecastSource FS").append(newline);
+        script.append("     ON FS.forecast_id = TS.timeseries_id").append(newline);
+        script.append("INNER JOIN wres.ProjectSource PS").append(newline);
+        script.append("     ON PS.source_id = FS.source_id").append(newline);
         script.append("INNER JOIN wres.Observation O").append(newline);
-        script.append("     ON O.observation_time = FE.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
-        script.append("WHERE ").append(leftVariablepositionClause).append(newline);
+        script.append("     ON O.observation_time = TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
+        script.append("WHERE PS.project_id = ").append(Projects.getProject( projectConfig ).getId()).append(newline);
+        script.append("     AND ").append(leftVariablepositionClause).append(newline);
         script.append("     AND ").append(rightVariablepositionClause).append(newline);
-        script.append("     AND FV.lead - ").append(width).append(" >= 0").append(newline);
-        script.append("     AND FE.forecastensemble_id = ").append(Collections.formAnyStatement( forecastIDs, "int" )).append(newline);
+
+        if (width > 1)
+        {
+            script.append( "     AND FV.lead - " )
+                  .append( width )
+                  .append( " >= 0" )
+                  .append( newline );
+        }
 
         if (projectConfig.getConditions().getFirstLead() > 1)
         {
             script.append("     AND FV.lead >= ").append(projectConfig.getConditions().getFirstLead()).append(newline);
         }
 
+        if (projectConfig.getConditions().getLastLead() < Integer.MAX_VALUE)
+        {
+            script.append("     AND FV.lead <= ").append(projectConfig.getConditions().getLastLead()).append(newline);
+        }
+
         if (projectConfig.getConditions().getDates() != null)
         {
             if (Strings.hasValue(projectConfig.getConditions().getDates().getEarliest()))
             {
-                script.append("     AND FE.initialization_date >= ").append(newline);
+                script.append("     AND TS.initialization_date >= '")
+                      .append(projectConfig.getConditions().getDates().getLatest())
+                      .append("'")
+                      .append(newline);
             }
 
             if (Strings.hasValue( projectConfig.getConditions().getDates().getLatest()))
             {
-                script.append("     AND FE.initialization_date <= ").append(newline);
+                script.append("     AND TS.initialization_date <= '")
+                      .append(projectConfig.getConditions().getDates().getLatest())
+                      .append("'")
+                      .append(newline);
             }
         }
 

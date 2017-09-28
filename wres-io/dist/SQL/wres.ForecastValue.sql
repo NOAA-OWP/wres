@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS wres.ForecastValue;
 
 CREATE TABLE IF NOT EXISTS wres.ForecastValue
 (
-  forecastensemble_id INT,
+  timeseries_id INT,
   lead INT,
   forecasted_value FLOAT
 )
@@ -16,9 +16,9 @@ WITH (
 ALTER TABLE wres.forecastvalue
   OWNER TO wres;
 
-CREATE INDEX IF NOT EXISTS forecastvalue_forecastensemble_idx
+CREATE INDEX IF NOT EXISTS forecastvalue_timeseries_idx
   ON wres.ForecastValue
-  (forecastensemble_id);
+  (timeseries_id);
 
 CREATE INDEX IF NOT EXISTS forecastvalue_lead_idx
   ON wres.ForecastValue

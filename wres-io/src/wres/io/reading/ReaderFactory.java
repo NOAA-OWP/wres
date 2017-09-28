@@ -84,10 +84,11 @@ public class ReaderFactory {
 
         if (fileFormat != null)
         {
-            formatType = fileFormat.toString().toLowerCase();
+            formatType = fileFormat.value().toString().toLowerCase();
         }
 
-        if (formatType.equalsIgnoreCase("PI-XML"))
+        if (formatType.equalsIgnoreCase("PI-XML") ||
+			formatType.equalsIgnoreCase( "PI_XML" ))
         {
             type = SourceType.PI_XML;
         }

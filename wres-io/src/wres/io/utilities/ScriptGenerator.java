@@ -48,13 +48,14 @@ public final class ScriptGenerator
              */
 
             script += "SELECT FV.lead AS " + label + NEWLINE;
-            script += "FROM wres.ForecastEnsemble FE" + NEWLINE;
+            script += "FROM wres.TimeSeries TS" + NEWLINE;
             script += "INNER JOIN wres.ForecastValue FV" + NEWLINE;
-            script += "    ON FV.forecastensemble_id = FE.forecastensemble_id"
+            script += "    ON FV.timeseries_id = TS.timeseries_id"
                       + NEWLINE;
             script += "WHERE " +
-                      ConfigHelper.getVariablePositionClause( feature, variableID, "FE" ) +
+                      ConfigHelper.getVariablePositionClause( feature, variableID, "TS" ) +
                       NEWLINE;
+
             script += "ORDER BY FV.lead DESC" + NEWLINE;
             script += "LIMIT 1;";
         }
@@ -123,22 +124,7 @@ public final class ScriptGenerator
 
         if (ConfigHelper.isForecast(dataSourceConfig))
         {
-            script.append("SELECT (FE.initialization_date + INTERVAL '1 HOUR' * lead");
-
-            List<Integer> forecastIds;
-
-            if ( ConfigHelper.isLeft( dataSourceConfig, projectConfig ))
-            {
-                forecastIds = projectDetails.getLeftForecastIDs();
-            }
-            else if (ConfigHelper.isRight( dataSourceConfig, projectConfig ))
-            {
-                forecastIds = projectDetails.getRightForecastIDs();
-            }
-            else
-            {
-                forecastIds = projectDetails.getBaselineForecastIDs();
-            }
+            script.append("SELECT (TS.initialization_date + INTERVAL '1 HOUR' * lead");
 
             if (timeShift != null)
             {
@@ -151,12 +137,12 @@ public final class ScriptGenerator
                   .append(" AS agg_hour,")
                   .append(NEWLINE);
             script.append("     ARRAY_AGG(FV.forecasted_value) AS measurements,").append(NEWLINE);
-            script.append("     FE.measurementunit_id").append(NEWLINE);
-            script.append("FROM wres.ForecastEnsemble FE").append(NEWLINE);
+            script.append("     TS.measurementunit_id").append(NEWLINE);
+            script.append("FROM wres.TimeSeries TS").append(NEWLINE);
             script.append("INNER JOIN wres.ForecastValue FV").append(NEWLINE);
-            script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(NEWLINE);
+            script.append("     ON FV.timeseries_id = TS.timeseries_id").append(NEWLINE);
             script.append("INNER JOIN wres.ForecastSource FS").append(NEWLINE);
-            script.append("     ON FS.forecast_id = FE.forecastensemble_id").append(NEWLINE);
+            script.append("     ON FS.forecast_id = TS.timeseries_id").append(NEWLINE);
             script.append("INNER JOIN wres.ProjectSource PS").append(NEWLINE);
             script.append("     ON PS.source_id = FS.source_id").append(NEWLINE);
             script.append("WHERE PS.project_id = ")
@@ -175,7 +161,7 @@ public final class ScriptGenerator
 
             if (earliestIssueDate != null)
             {
-                script.append("     AND FE.initialization_date >= ")
+                script.append("     AND TS.initialization_date >= ")
                       .append(earliestIssueDate)
                       .append("            ")
                       .append("-- Limit results to values that were forecasted on or after the given date")
@@ -184,7 +170,7 @@ public final class ScriptGenerator
 
             if (latestIssueDate != null)
             {
-                script.append("     AND FE.initialization_date <= ")
+                script.append("     AND TS.initialization_date <= ")
                       .append(latestIssueDate)
                       .append("            ")
                       .append("-- Limit results to values that were forecasted on or before the given date")
@@ -193,7 +179,7 @@ public final class ScriptGenerator
 
             if (earliestDate != null)
             {
-                script.append("     AND FE.initialization_date + INTERVAL '1 hour' * lead");
+                script.append("     AND TS.initialization_date + INTERVAL '1 hour' * lead");
 
                 if (timeShift != null)
                 {
@@ -208,7 +194,7 @@ public final class ScriptGenerator
 
             if (latestDate != null)
             {
-                script.append("     AND FE.initialization_date + INTERVAL '1 hour' * lead");
+                script.append("     AND TS.initialization_date + INTERVAL '1 hour' * lead");
 
                 if (timeShift != null)
                 {
@@ -221,11 +207,11 @@ public final class ScriptGenerator
                       .append(NEWLINE);
             }
 
-            script.append("GROUP BY FE.initialization_date, FV.lead, FE.measurementunit_id")
+            script.append("GROUP BY TS.initialization_date, FV.lead, TS.measurementunit_id")
                   .append("         ")
                   .append("-- Aggregate the forecasted values by grouping them based on their date")
                   .append(NEWLINE);
-            script.append("ORDER BY FE.initialization_date, agg_hour");
+            script.append("ORDER BY TS.initialization_date, agg_hour");
         }
         else
         {
@@ -331,7 +317,7 @@ public final class ScriptGenerator
 
             if (include.length() > 0)
             {
-                script.append("     AND FE.ensemble_id IN ")
+                script.append("     AND TS.ensemble_id IN ")
                       .append(include.toString())
                       .append("         ")
                       .append("-- Only get the values from these ensembles")
@@ -340,7 +326,7 @@ public final class ScriptGenerator
 
             if (exclude.length() > 0)
             {
-                script.append("     AND FE.ensemble NOT IN ")
+                script.append("     AND TS.ensemble NOT IN ")
                       .append(exclude.toString())
                       .append("         ")
                       .append("-- Only get values not pertaining to these ensembles")

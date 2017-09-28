@@ -25,7 +25,7 @@ ALTER TABLE wres.ProjectSource
 CREATE INDEX projectsource_project_idx
   ON wres.projectsource
   USING btree
-  (project_id);
+  (project_id, member);
 ALTER TABLE wres.projectsource CLUSTER ON projectsource_project_idx;
 
 -- Index: wres.projectsource_source_idx

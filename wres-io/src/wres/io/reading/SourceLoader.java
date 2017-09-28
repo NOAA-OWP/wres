@@ -25,18 +25,19 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.Internal;
+import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 /**
+ * Evaluates datasources specified within a project configuration and determines
+ * what data should be ingested. Asynchronous tasks for each file needed for
+ * ingest are created and sent to the Exector for ingestion.
  * @author Christopher Tubbs
- *
  */
 @Internal(exclusivePackage = "wres.io")
 public class SourceLoader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceLoader.class);
-
-    private static final String NEWLINE = System.lineSeparator();
 
     /**
      * @param projectConfig the project configuration
@@ -58,7 +59,7 @@ public class SourceLoader
         }
         catch ( SQLException e )
         {
-            e.printStackTrace();
+            LOGGER.error(Strings.getStackTrace( e ));
         }
 
         List<Future> savingFiles = new ArrayList<>();
@@ -70,10 +71,19 @@ public class SourceLoader
         return savingFiles;
     }
 
+    /**
+     * Searches through the specifications for a set of datasources and
+     * determines what needs to be ingested
+     * @param config The configuration for a set of datasources
+     * @return A listing of asynchronous tasks dispatched to ingest data
+     * @throws NoDataException Thrown if an invalid source of data was
+     * encountered
+     */
     private List<Future> loadConfig(DataSourceConfig config)
             throws NoDataException
     {
         List<Future> savingFiles = new ArrayList<>();
+        ProgressMonitor.increment();
 
         if (config != null) {
             for (DataSourceConfig.Source source : config.getSource()) {
@@ -109,13 +119,29 @@ public class SourceLoader
             }
         }
 
+        ProgressMonitor.completeStep();
+
         return savingFiles;
     }
 
-    private List<Future> loadDirectory(Path directory, DataSourceConfig.Source source, DataSourceConfig dataSourceConfig)
+    /**
+     * Looks through a directory to find data that is needed for ingest
+     * @param directory The path of the directory to evaluate
+     * @param source The source configuration that indicated that the directory
+     *               needed to be evaluated
+     * @param dataSourceConfig The configuration of the set of data sources
+     *                         that indicated that the directory needed to be
+     *                         evaluated
+     * @return A listing of asynchronous tasks dispatched to ingest data
+     */
+    private List<Future> loadDirectory(Path directory,
+                                       DataSourceConfig.Source source,
+                                       DataSourceConfig dataSourceConfig)
     {
         List<Future> results = new ArrayList<>();
         Stream<Path> files;
+
+        ProgressMonitor.increment();
 
         try
         {
@@ -155,6 +181,8 @@ public class SourceLoader
             LOGGER.error(Strings.getStackTrace(e));
         }
 
+        ProgressMonitor.completeStep();
+
         return results;
     }
 
@@ -169,6 +197,8 @@ public class SourceLoader
     {
         String absolutePath = filePath.toAbsolutePath().toString();
         Future task = null;
+
+        ProgressMonitor.increment();
 
         if (shouldIngest(absolutePath, source, dataSourceConfig))
         {
@@ -200,11 +230,28 @@ public class SourceLoader
             LOGGER.debug(message, absolutePath);
         }
 
+        ProgressMonitor.completeStep();
+
         return task;
     }
 
-    private boolean shouldIngest(String filePath, DataSourceConfig.Source source, DataSourceConfig dataSourceConfig)
+    /**
+     * Determines whether or not data at an indicated path should be ingested.
+     * archived data will always be further evaluated to determine whether its
+     * individual entries warrent an ingest
+     * @param filePath The path of the file to evaluate
+     * @param source The configuration indicating that the given file might
+     *               need to be ingested
+     * @param dataSourceConfig The overall configuration indicating that the
+     *                         file should be evaluated for ingestion
+     * @return Whether or not data within the file should be ingested
+     */
+    private boolean shouldIngest(String filePath,
+                                 DataSourceConfig.Source source,
+                                 DataSourceConfig dataSourceConfig)
     {
+        // Immediately return true if no data was ever saved to the project in
+        // the first place
         if (this.projectDetails.isEmpty())
         {
             return true;
@@ -257,7 +304,17 @@ public class SourceLoader
         return ingest;
     }
 
-    private boolean dataExists(String sourceName, DataSourceConfig dataSourceConfig) throws SQLException
+    /**
+     * Determines if the indicated data already exists within the database
+     * @param sourceName The name of the file that might need to be ingested
+     * @param dataSourceConfig The configuration for the set of data sources that
+     *                         indicated that this file might need to be ingested
+     * @return Whether or not the indicated data is already in the database
+     * @throws SQLException Thrown if communcation with the database failed in
+     * some way
+     */
+    private boolean dataExists(String sourceName, DataSourceConfig dataSourceConfig)
+            throws SQLException
     {
         boolean exists;
 
@@ -291,6 +348,10 @@ public class SourceLoader
         return exists;
     }
 
+    /**
+     * @return The data source configuration for the data on the left side of
+     * the evaluation
+     */
     private DataSourceConfig getLeftSource()
     {
         DataSourceConfig sourceConfig = null;
@@ -303,6 +364,10 @@ public class SourceLoader
         return sourceConfig;
     }
 
+    /**
+     * @return The data source configuration for the data on the right side of
+     * the evaluation
+     */
     private DataSourceConfig getRightSource()
     {
         DataSourceConfig sourceConfig = null;
@@ -315,6 +380,10 @@ public class SourceLoader
         return sourceConfig;
     }
 
+    /**
+     * @return The data source configuration for the data used as a baseline
+     * for the evaluation
+     */
     private DataSourceConfig getBaseLine()
     {
         DataSourceConfig source = null;
@@ -327,7 +396,19 @@ public class SourceLoader
         return source;
     }
 
+    /**
+     * The project configuration indicating what data to used
+     */
     private final ProjectConfig projectConfig;
+
+    /**
+     * Indicates whether or not indexes in the database have been suspended
+     */
     private boolean alreadySuspendedIndexes;
+
+    /**
+     * The collection of data in the database linking data for the project that
+     * might have already been ingested
+     */
     private ProjectDetails projectDetails;
 }

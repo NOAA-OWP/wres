@@ -39,8 +39,8 @@ else
     psql -U $1 -d $3 -h $2 -f wres.Ensemble.sql >/dev/null
 
     echo ''
-    echo 'Adding wres.ForecastEnsemble...'
-    psql -U $1 -d $3 -h $2 -f wres.ForecastEnsemble.sql >/dev/null
+    echo 'Adding wres.TimeSeries...'
+    psql -U $1 -d $3 -h $2 -f wres.TimeSeries.sql >/dev/null
 
     echo ''
     echo 'Adding wres.Observation...'
