@@ -91,9 +91,9 @@ cd $outputDirName
 for fileName in $(ls *.csv); do
     diff --brief $fileName ../$benchDirName/$fileName
 done
-echo "$echoPrefix Comparing output .png files..."
-for fileName in $(ls *.png); do
-    diff --brief $fileName ../$benchDirName/$fileName
-done
+#echo "$echoPrefix Comparing output .png files..."
+#for fileName in $(ls *.png); do
+#    diff --brief $fileName ../$benchDirName/$fileName
+#done
 
 
