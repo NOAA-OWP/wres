@@ -1,6 +1,5 @@
 package wres.io.concurrency;
 
-import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -401,18 +400,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
         for ( DestinationConfig dest : destinationConfigs )
         {
-
-            PairWriter saver = new PairWriter();
-            File directoryLocation =
-                    ConfigHelper.getDirectoryFromDestinationConfig( dest );
-            saver.setFileDestination( directoryLocation.toString()
-                                      + "/pairs.csv" );
-            saver.setFeatureDescription( ConfigHelper.getFeatureDescription( this.getFeature( dataSourceConfig ) ) );
-            saver.setDate( date );
-            saver.setWindowNum( this.progress );
-            saver.setLeft( pair.getItemOne() );
-            saver.setRight( pair.getItemTwo() );
-
+            PairWriter saver = new PairWriter( dest,
+                                               date,
+                                               this.getFeature( dataSourceConfig ),
+                                               this.progress,
+                                               pair );
             Executor.submitHighPriorityTask(saver);
         }
     }

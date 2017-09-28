@@ -7,10 +7,24 @@
         <left label="Observations">
             <type>observations</type>
             <source format="datacard" timeZone="CST" unit="CFS" location="GLOO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" timeZone="CST" unit="CFS" location="ANTO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard</source>
+            <source format="datacard" timeZone="CST" unit="CFS" location="ARCT2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" timeZone="CST" unit="CFS" location="BLUO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
-            <features>
-                <location lid="GLOO2"/>
-            </features>
+
+        <features>
+            <location lid="GLOO2" />
+        </features>
+        <features>
+            <location lid="ANTO2"/>
+        </features>
+        <features>
+            <location lid="ARCT2"/>
+        </features>
+        <features>
+            <location lid="BLUO2"/>
+        </features>
+
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>1</period>
@@ -22,9 +36,20 @@
             <source all="false" format="PI-XML" missingValue="-999.0"
                 recursive="false" timeZone="UTC" unit="CMS" zoneOffset="0">../data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
             <variable>QINE</variable>
-            <features>
-                <location lid="GLOO2"/>
-            </features>
+    
+        <features>
+            <location lid="GLOO2" />
+        </features>
+        <features>
+            <location lid="ANTO2"/>
+        </features>
+        <features>
+            <location lid="ARCT2"/>
+        </features>
+        <features>
+            <location lid="BLUO2"/>
+        </features>
+
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>1</period>
@@ -36,6 +61,15 @@
     <conditions firstLead="1" lastLead="24">
         <features>
             <location lid="GLOO2" />
+        </features>
+        <features>
+            <location lid="ANTO2"/>
+        </features>
+        <features>
+            <location lid="ARCT2"/>
+        </features>
+        <features>
+            <location lid="BLUO2"/>
         </features>
     </conditions>
 

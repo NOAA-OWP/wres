@@ -48,6 +48,11 @@ public class ConfigHelper
     private static final ConcurrentMap<ProjectConfig, ConcurrentSkipListSet<String>> messages
             = new ConcurrentHashMap<>();
 
+    private ConfigHelper()
+    {
+        // prevent construction
+    }
+
     /**
      * Given a config, generate feature IDs and return a sql string of them.
      *
