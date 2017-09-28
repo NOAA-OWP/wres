@@ -24,7 +24,7 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.ForecastEnsembleDetails;
+import wres.io.data.details.TimeSeries;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.XMLReader;
 import wres.io.utilities.Database;
@@ -62,9 +62,9 @@ public final class PIXMLReader extends XMLReader
 		{
 			return null;
 		}
-		String partitionHeader = ForecastEnsembleDetails.getForecastValueParitionName(leadTime);
+		String partitionHeader = TimeSeries.getForecastValueParitionName( leadTime);
 
-		partitionHeader += " (forecastensemble_id, lead, forecasted_value)";
+		partitionHeader += " (timeseries_id, lead, forecasted_value)";
 		return partitionHeader;
 	}
 
@@ -144,7 +144,7 @@ public final class PIXMLReader extends XMLReader
 			reader.next();
 		}
 
-		this.currentForecastEnsemble = null;
+		this.currentTimeSeries = null;
 		
 		String localName;
 		
@@ -208,7 +208,7 @@ public final class PIXMLReader extends XMLReader
 		
 		if (value != null && !value.equals(currentMissingValue)) {
 			if (isForecast) {
-				addForecastEvent(value, currentLeadTime, getForecastEnsembleID());
+				addForecastEvent(value, currentLeadTime, getTimeSeriesID());
 			} else {
 				addObservedEvent(time.toString(), value);
 			}
@@ -229,10 +229,10 @@ public final class PIXMLReader extends XMLReader
 	 * @param forecastedValue The value parsed out of the XML
 	 * @throws SQLException Any possible error encountered while trying to collect the forecast ensemble ID
 	 */
-	private static void addForecastEvent(Float forecastedValue, Integer lead, Integer forecastEnsembleID) throws SQLException {
+	private static void addForecastEvent(Float forecastedValue, Integer lead, Integer timeSeriesID) throws SQLException {
 		synchronized (groupLock) {
             PIXMLReader.getBuilder(lead)
-                    .append(forecastEnsembleID)
+                    .append(timeSeriesID)
                     .append(delimiter)
                     .append(lead)
                     .append(delimiter)
@@ -372,14 +372,14 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if(this.isForecast && localName.equalsIgnoreCase("ensembleId"))
 				{
-				    currentForecastEnsembleID = null;
+				    currentTimeSeriesID = null;
 					currentEnsembleID = null;
 					//	If we are at the tag for the name of the ensemble, save it to the ensemble
 					currentEnsembleName = XML.getXMLText(reader);
 				}
 				else if(this.isForecast && localName.equalsIgnoreCase("qualifierId"))
 				{
-				    currentForecastEnsembleID = null;
+				    currentTimeSeriesID = null;
 					currentEnsembleID = null;
 					
 					//	If we are at the tag for the ensemble qualifier, save it to the ensemble
@@ -388,7 +388,7 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if(this.isForecast && localName.equalsIgnoreCase("ensembleMemberIndex"))
 				{
-				    currentForecastEnsembleID = null;
+				    currentTimeSeriesID = null;
 					currentEnsembleID = null;
 					
 					//	If we are at the tag for the ensemble member, save it to the ensemble
@@ -519,28 +519,28 @@ public final class PIXMLReader extends XMLReader
 	 * @throws SQLException Thrown if intermediary values could not be loaded from their own caches or if interaction
 	 * with the database failed.
 	 */
-	private int getForecastEnsembleID()
+	private int getTimeSeriesID()
             throws SQLException, IOException, ExecutionException,
             InterruptedException
     {
-		if (currentForecastEnsembleID == null) {
-			this.getCurrentForecastEnsemble().setEnsembleID(getEnsembleID());
-            this.getCurrentForecastEnsemble().setMeasurementUnitID(getMeasurementID());
-            this.getCurrentForecastEnsemble().setVariablePositionID(getVariablePositionID());
-			currentForecastEnsembleID = this.getCurrentForecastEnsemble().getForecastEnsembleID();
+		if (currentTimeSeriesID == null) {
+			this.getCurrentTimeSeries().setEnsembleID(getEnsembleID());
+            this.getCurrentTimeSeries().setMeasurementUnitID(getMeasurementID());
+            this.getCurrentTimeSeries().setVariablePositionID(getVariablePositionID());
+            currentTimeSeriesID = this.getCurrentTimeSeries().getTimeSeriesID();
 		}
-		return currentForecastEnsembleID;
+		return currentTimeSeriesID;
 	}
 
-	private ForecastEnsembleDetails getCurrentForecastEnsemble()
+	private TimeSeries getCurrentTimeSeries()
             throws InterruptedException, SQLException, ExecutionException,
             IOException
     {
-        if (this.currentForecastEnsemble == null)
+        if (this.currentTimeSeries == null)
         {
-            this.currentForecastEnsemble = new ForecastEnsembleDetails( this.getSourceID(), this.forecastDate );
+            this.currentTimeSeries = new TimeSeries( this.getSourceID(), this.forecastDate );
         }
-        return this.currentForecastEnsemble;
+        return this.currentTimeSeries;
     }
 	
 	/**
@@ -728,7 +728,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * Basic details about the current ensemble for a current forecast
 	 */
-	private ForecastEnsembleDetails currentForecastEnsemble = null;
+	private TimeSeries currentTimeSeries = null;
 	
 	/**
 	 * The value which indicates a null or invalid value from the source
@@ -783,7 +783,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The ID for the Ensemble for the forecast that is currently being parsed
 	 */
-	private Integer currentForecastEnsembleID = null;
+	private Integer currentTimeSeriesID = null;
 	
 	/**
 	 * The ID for the position for the variable that is currently being parsed
@@ -834,11 +834,6 @@ public final class PIXMLReader extends XMLReader
      * The hash code for the source file
      */
 	private String hash;
-
-    /**
-     * The operation started prior to parsing used to generate a hash for the file
-     */
-	//private final Future<String> futureHash;
 
 	private final ProjectDetails projectDetails;
 

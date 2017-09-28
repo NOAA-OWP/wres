@@ -26,7 +26,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Projects;
 import wres.io.data.caching.UnitConversions;
-import wres.io.grouping.LabeledScript;
 import wres.util.Collections;
 import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
@@ -177,8 +176,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                     script.append("AVG");
                 }
                 script.append("(FV.forecasted_value) AS left_value,").append(NEWLINE);
-                script.append("     FE.measurementunit_id,").append(NEWLINE);
-                script.append("     (FE.initialization_date + INTERVAL '1 hour' * FV.lead");
+                script.append("     TS.measurementunit_id,").append(NEWLINE);
+                script.append("     (TS.initialization_date + INTERVAL '1 hour' * FV.lead");
 
                 if (timeShift != null)
                 {
@@ -187,24 +186,24 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
                 script.append(")::text AS left_date").append(NEWLINE);
 
-                script.append("FROM wres.ForecastEnsemble FE").append(NEWLINE);
+                script.append("FROM wres.TimeSeries TS").append(NEWLINE);
                 script.append("INNER JOIN wres.ForecastValue FV" ).append(NEWLINE);
-                script.append("     ON FV.forecastensemble_id = FE.forecastensemble_id").append(NEWLINE);
-                script.append("WHERE F.forecastensemble_id = ")
+                script.append("     ON FV.timeseries_id = TS.timeseries_id").append(NEWLINE);
+                script.append("WHERE TS.timeseries_id = ")
                       .append(Collections.formAnyStatement(
                               Projects.getProject( projectConfig )
                                       .getLeftForecastIDs(),
                               "int" ))
                       .append(NEWLINE);
 
-                script.append("GROUP BY FE.initialization_date + INTERVAL '1 hour' * FV.lead");
+                script.append("GROUP BY TS.initialization_date + INTERVAL '1 hour' * FV.lead");
 
                 if (timeShift != null)
                 {
                     script.append(" + INTERVAL '1 hour' * ").append(timeShift);
                 }
 
-                script.append(", FE.measurementunit_id");
+                script.append(", TS.measurementunit_id");
             }
             else
             {
@@ -426,28 +425,10 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             return this.windowCount;
         }
 
-        private Integer getLastLead()
-                throws SQLException, InvalidPropertiesFormatException,
-                NoDataException
+        private Integer getLastLead() throws SQLException
         {
-            if (this.lastLead == null)
-            {
-                LabeledScript lastLeadScript = ScriptGenerator.generateFindLastLead(this.getVariableID(),
-                                                                                    this.rightFeature,
-                                                                                    ConfigHelper.isForecast( this.getRight() ));
-
-                lastLead = Database.getResult(lastLeadScript.getScript(), lastLeadScript.getLabel());
-
-                if (this.lastLead == null)
-                {
-                    throw new NoDataException( "No data could be found to generate pairs for." );
-                }
-                if (projectConfig.getConditions().getLastLead() < lastLead)
-                {
-                    lastLead = projectConfig.getConditions().getLastLead();
-                }
-            }
-            return this.lastLead;
+            return Projects.getProject( this.projectConfig )
+                           .getLastLead( this.rightFeature );
         }
 
         private int getLeadOffset() throws NoDataException, SQLException,
@@ -462,6 +443,32 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 this.leadOffset = ConfigHelper.getLeadOffset( this.projectConfig,
                                                               leftFeature,
                                                               rightFeature);
+
+                if (this.leadOffset == null)
+                {
+                    String message = "A valid offset for matching lead values could not be determined. ";
+                    message += "The first acceptable lead time is ";
+                    message += String.valueOf(this.projectConfig.getConditions().getFirstLead());
+
+                    if (this.projectConfig.getConditions().getLastLead() < Integer.MAX_VALUE)
+                    {
+                        message += ", the last acceptable lead time is ";
+                        message += String.valueOf( this.projectConfig.getConditions().getLastLead() );
+                        message += ",";
+                    }
+
+                    message += " and the size of each evaluation window is ";
+                    message += String.valueOf(this.projectConfig.getPair().getDesiredTimeAggregation().getPeriod());
+                    message += " ";
+                    message += String.valueOf(this.projectConfig.getPair().getDesiredTimeAggregation().getUnit());
+                    message += "s. ";
+
+                    message += "A full evaluation window could not be found ";
+                    message += "between the left hand data and the right ";
+                    message += "data that fits within these parameters.";
+
+                    throw new NoDataException( message );
+                }
             }
 
             return this.leadOffset;
@@ -494,7 +501,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
             try
             {
-
                 if (ConfigHelper.isForecast( this.getRight() ))
                 {
                     int nextWindowNumber = this.windowNumber + 1;

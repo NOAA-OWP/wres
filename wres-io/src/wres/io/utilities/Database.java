@@ -11,7 +11,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -41,16 +40,44 @@ public final class Database {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
-    private static final ComboPooledDataSource CONNECTION_POOL = SystemSettings.getConnectionPool();
-    private static final ComboPooledDataSource HIGH_PRIORITY_CONNECTION_POOL = SystemSettings.getHighPriorityConnectionPool();
+	/**
+	 * The standard priority set of connections to the database
+	 */
+	private static final ComboPooledDataSource CONNECTION_POOL =
+			SystemSettings.getConnectionPool();
 
-	// A thread executor specifically for SQL calls
+	/**
+	 * A higher priority set of connections to the database used for operations
+	 * that absolutely need to operate within the database with little to no
+	 * competition for resources. Should be used sparingly
+	 */
+    private static final ComboPooledDataSource HIGH_PRIORITY_CONNECTION_POOL =
+			SystemSettings.getHighPriorityConnectionPool();
+
+	/**
+	 * A separate thread executor used to schedule database communication
+	 * outside of other threads
+	 */
 	private static ThreadPoolExecutor SQL_TASKS = createService();
 
+	/**
+	 * System agnostic newline character used to make generated queries human
+	 * readable
+	 */
     private static final String NEWLINE = System.lineSeparator();
 
-    private static Method copyAPI = null;
+	/**
+	 * The function used to copy data to the database
+	 */
+	private static Method copyAPI = null;
 
+	/**
+	 * @return The function used within the given implementation of the
+	 * JDBC PostgreSQL driver to copy values directly into the database rather
+	 * than inserting them
+	 * @throws NoSuchMethodException Thrown if the current implementation of
+	 * the JDBC PostgreSQL driver does not have the ability to copy values
+	 */
     private static Method getCopyAPI() throws NoSuchMethodException {
 		if (copyAPI == null)
 		{
@@ -59,30 +86,49 @@ public final class Database {
 		return copyAPI;
 	}
 
-	private static final LinkedBlockingQueue<Future> storedIngestTasks = new LinkedBlockingQueue<>();
+	/**
+	 * A queue containing tasks used to ingest data into the database
+	 */
+	private static final LinkedBlockingQueue<Future> storedIngestTasks =
+			new LinkedBlockingQueue<>();
 
+	/**
+	 * @return Either the first value in the ingest queue or null if none exist
+	 */
 	public static Future getStoredIngestTask()
     {
 		return storedIngestTasks.poll();
 	}
 
+	/**
+	 * Adds a task to the ingest queue
+	 * @param task The ingest task to add to the queue
+	 */
 	public static void storeIngestTask(Future task)
 	{
 		storedIngestTasks.add(task);
 	}
 
+	/**
+	 * Suspends all indices on partition tables within the database
+	 */
 	public synchronized static void suspendAllIndices()
 	{
+		// Creates a script used to load information about every index
+		// for the partition tables
 		StringBuilder builder = new StringBuilder();
 
-		builder.append("SELECT 	(idx.indrelid::REGCLASS)::text AS table_name,").append(NEWLINE);
+		builder.append("SELECT 	(idx.indrelid::REGCLASS)::text AS table_name,")
+			   .append(NEWLINE);
 		builder.append("		T.relname AS index_name,").append(NEWLINE);
 		builder.append("		AM.amname AS index_type,").append(NEWLINE);
 		builder.append("		'(' ||").append(NEWLINE);
 		builder.append("			ARRAY_TO_STRING(").append(NEWLINE);
 		builder.append("				ARRAY(").append(NEWLINE);
-		builder.append("					SELECT pg_get_indexdef(idx.indexrelid, k+1, TRUE)").append(NEWLINE);
-		builder.append("					FROM generate_subscripts(idx.indkey, 1) AS k").append(NEWLINE);
+		builder.append("					SELECT pg_get_indexdef(idx.indexrelid, k+1, TRUE)")
+			   .append(NEWLINE);
+		builder.append("					FROM generate_subscripts(idx.indkey, 1) AS k")
+			   .append(NEWLINE);
 		builder.append("					ORDER BY k").append(NEWLINE);
 		builder.append("				),").append(NEWLINE);
 		builder.append("			', ')").append(NEWLINE);
@@ -105,6 +151,8 @@ public final class Database {
 			connection = getConnection();
 			results = getResults(connection, builder.toString());
 
+			// Loads all preexisting definitions for the retrieved indexes,
+			// saves their metadata, the drops them.
 			while (results.next())
 			{
 				Database.saveIndex( results.getString( "table_name" ),
@@ -144,9 +192,12 @@ public final class Database {
 		}
 	}
 
+	/**
+	 * Loads the metadata for each saved index and reinstates them within the
+	 * database
+	 */
 	public synchronized static void restoreAllIndices()
 	{
-
 		StringBuilder builder;
 
 		boolean shouldRefresh = false;
@@ -154,10 +205,14 @@ public final class Database {
 
         Connection connection = null;
         ResultSet indexes = null;
-        LOGGER.info("Restoring Indices...");
 
-        FormattedStopwatch watch = new FormattedStopwatch();
-        watch.start();
+        FormattedStopwatch watch = null;
+
+        if (LOGGER.isTraceEnabled())
+		{
+			watch = new FormattedStopwatch();
+			watch.start();
+		}
 
         ProgressMonitor.resetMonitor();
 
@@ -183,6 +238,7 @@ public final class Database {
                        .append(indexes.getString( "column_definition" ))
                        .append(";").append(NEWLINE);
 
+                // Creates an asynchronous task to reinstate the index
                 WRESRunnable restore = new SQLExecutor( builder.toString(), false);
                 restore.setOnRun(ProgressMonitor.onThreadStartHandler());
                 restore.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
@@ -194,6 +250,8 @@ public final class Database {
                        .append(indexes.getInt( "indexqueue_id" ))
                        .append(";");
 
+                // Creates an asynchronous task to remove the record indicating
+                // that the index needs to be reinstated from the database
                 restore = new SQLExecutor( builder.toString());
                 restore.setOnRun(ProgressMonitor.onThreadStartHandler());
                 restore.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
@@ -202,7 +260,7 @@ public final class Database {
         }
         catch ( SQLException e )
         {
-            e.printStackTrace();
+            LOGGER.error(Strings.getStackTrace( e ));
         }
         finally
         {
@@ -225,6 +283,10 @@ public final class Database {
             }
         }
 
+        if (indexTasks.peek() != null)
+        {
+            LOGGER.info("Restoring Indices...");
+        }
 
 		Future<?> task;
 		while ((task = indexTasks.poll()) != null)
@@ -238,8 +300,11 @@ public final class Database {
             }
         }
 
-        watch.stop();
-		LOGGER.trace("It took {} to restore all indexes in the database.", watch.getFormattedDuration());
+        if (LOGGER.isTraceEnabled())
+        {
+            watch.stop();
+            LOGGER.trace("It took {} to restore all indexes in the database.", watch.getFormattedDuration());
+        }
 
 		if (shouldRefresh)
         {
@@ -247,12 +312,28 @@ public final class Database {
         }
 	}
 
+    /**
+     * Saves the definition of an index to the database, organized as a btree
+     * @param tableName The name of the table to index
+     * @param indexName The name of the index to instate
+     * @param indexDefinition The definition of the index to instate
+     */
 	public static void saveIndex(String tableName, String indexName, String indexDefinition)
 	{
 		saveIndex( tableName, indexName, indexDefinition, "btree" );
 	}
 
-	public static void saveIndex(String tableName, String indexName, String indexDefinition, String indexType)
+    /**
+     * Saves metadata about an index to instate into the database
+     * @param tableName The name of the table that the index will belong to
+     * @param indexName The name of the index to instate
+     * @param indexDefinition The definition of the index
+     * @param indexType The organizational method for the index
+     */
+	public static void saveIndex(String tableName,
+                                 String indexName,
+                                 String indexDefinition,
+                                 String indexType)
     {
 		if (!indexDefinition.startsWith("("))
 		{
@@ -299,6 +380,8 @@ public final class Database {
 			SQL_TASKS.shutdown();
 			while (!SQL_TASKS.isTerminated());
 		}
+
+		// Ensures that all created threads will be labeled "Database Thread"
 		ThreadFactory factory = runnable -> new Thread(runnable, "Database Thread");
 		ThreadPoolExecutor executor = new ThreadPoolExecutor(CONNECTION_POOL.getMaxPoolSize(),
                                                              CONNECTION_POOL.getMaxPoolSize(),
@@ -308,13 +391,22 @@ public final class Database {
 															 factory
 		);
 
+		// Ensures that the calling thread runs the new thread logic itself if
+        // the upper bound of the executor's internal queue has been hit
 		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 		return executor;
 	}
 
+    /**
+     * Loops through all stored ingest tasks and ensures that they all complete
+     */
 	public static void completeAllIngestTasks()
 	{
-		LOGGER.trace("Now completing all issued ingest tasks...");
+	    if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace( "Now completing all issued ingest tasks..." );
+        }
+
 		Future task;
 		try {
 			while (storedIngestTasks.peek() != null)
@@ -353,6 +445,12 @@ public final class Database {
 		return SQL_TASKS.submit(task);
 	}
 
+    /**
+     * Submits the passed in Callable for execution
+     * @param task The logic to execute
+     * @param <V> The return type encompassed by the future result
+     * @return The future result of the passed in logic
+     */
 	public static <V> Future<V> submit(Callable<V> task)
 	{
 		if (SQL_TASKS == null || SQL_TASKS.isShutdown())
@@ -375,11 +473,21 @@ public final class Database {
 		}
 	}
 
+    /**
+     * Checks out a database connection
+     * @return A database connection from the standard connection pool
+     * @throws SQLException Thrown if a connection could not be retrieved
+     */
 	public static Connection getConnection() throws SQLException
 	{
 		return CONNECTION_POOL.getConnection();
 	}
 
+    /**
+     * Checks out a high priority database connection
+     * @return A database connection that should have little to no contention
+     * @throws SQLException Thrown if a connection could not be retrieved
+     */
 	public static Connection getHighPriorityConnection() throws SQLException
     {
         LOGGER.debug("Retrieving a high priority database connection...");
@@ -393,7 +501,11 @@ public final class Database {
 	public static void returnConnection(Connection connection)
 	{
 	    if (connection != null) {
-	        // The implementation of the C3P0 Connection option returns the connection to the pool when "close"d
+	        // The implementation of the C3P0 Connection option returns the
+            // connection to the pool when "close"d. Despite seeming
+            // unneccessary, extra logic may be needed if the implementation
+            // changes (for instance, extra logic must be present if C3PO is not
+            // used) or for further diagnostic purposes
 	        try
             {
                 connection.close();
@@ -406,12 +518,21 @@ public final class Database {
 	    }
 	}
 
+    /**
+     * Returns a high priority connection to the connection pool
+     * @param connection The connection to return
+     */
 	public static void returnHighPriorityConnection(Connection connection)
     {
         if (connection != null)
         {
             try
             {
+                // The implementation of the C3P0 Connection option returns the
+                // connection to the pool when "close"d. Despite seeming
+                // unneccessary, extra logic may be needed if the implementation
+                // changes (for instance, extra logic must be present if C3PO is not
+                // used) or for further diagnostic purposes
                 connection.close();
                 LOGGER.debug("A high priority database operation has completed.");
             }
@@ -422,7 +543,13 @@ public final class Database {
             }
         }
     }
-	
+
+    /**
+     * Executes the passed in query in the current thread
+     * @param query The query to execute
+     * @throws SQLException Thrown if an error occurred while attempting to
+     * communicate with the database
+     */
 	public static void execute(final String query) throws SQLException
 	{	
 		Connection connection = null;
@@ -462,8 +589,22 @@ public final class Database {
 		}
 
 	}
-	
-	public static void copy(final String table_definition, final String values, String delimiter) throws CopyException
+
+    /**
+     * Sends a copy statement to the indicated table within the database
+     * @param table_definition The definition of a table and its columns (i.e.
+     *                         "table_1 (column_1, column_2, column_3)"
+     * @param values The series of values to copy, delimited by the passed in
+     *               delimiter, with each prospective row separated by new lines.
+     *               (i.e. "val1|val2|val2")
+     * @param delimiter The delimiter separating values per line. (i.e. "|").
+     *                  Despite being common, commas should be avoided.
+     * @throws CopyException Thrown if an error was encountered when trying to
+     * copy data to the database.
+     */
+	public static void copy(final String table_definition,
+                            final String values,
+                            String delimiter) throws CopyException
 	{
 		Connection connection = null;
 		PushbackReader reader = null;
@@ -540,6 +681,9 @@ public final class Database {
 
 	}
 
+    /**
+     * Executes the configured Liquibase scripts to keep the database up to date
+     */
 	public static synchronized void buildInstance()
 	{
 
@@ -572,6 +716,16 @@ public final class Database {
 		}*/
 	}
 
+    /**
+     * Returns the first value in the labeled column from the query
+     * @param query The query used to select the value
+     * @param label The name of the column containing the data to retrieve
+     * @param <T> The type of data that should exist within the indicated column
+     * @return The value in the indicated column from the first row of data.
+     * Null is returned if no data was found.
+     * @throws SQLException Thrown if communication with the database was
+     * unsuccessful.
+     */
 	@SuppressWarnings("unchecked")
 	public static <T> T getResult(final String query, String label) throws SQLException
 	{
@@ -620,6 +774,19 @@ public final class Database {
 		return result;
 	}
 
+    /**
+     * Populates the passed in collection with values of the indicated data type
+     * originating from the column with the name of the passed in fieldLabel
+     * in the passed in query
+     * @param collection The collection to populate
+     * @param collectionDataType The type of data to populate the collection with
+     * @param query The query used to retrieve data
+     * @param fieldLabel The name of the column containing data
+     * @param <U> The type of data within the collection
+     * @return The updated collection
+     * @throws SQLException Thrown if the database could not be communicated
+     * with successfully
+     */
 	public static <U> Collection<U> populateCollection(final Collection<U> collection,
                                                        final Class<U> collectionDataType,
                                                        final String query,
@@ -675,66 +842,14 @@ public final class Database {
 		return collection;
 	}
 
-	public static <K,V> Map<K, V> populateMap(Map<K, V> map,
-                                              String script,
-                                              String keyName,
-                                              String valueName) throws SQLException
-    {
-        if (LOGGER.isTraceEnabled())
-        {
-            LOGGER.trace( "" );
-            LOGGER.trace(script);
-            LOGGER.trace("");
-        }
-        Connection connection = null;
-        ResultSet results = null;
-
-        try
-        {
-            connection = Database.getConnection();
-            results = Database.getResults(connection, script);
-
-            while (results.next())
-            {
-            	if (results.getObject(keyName) != null && results.getObject(valueName) != null) {
-					map.put((K) results.getObject(keyName), (V) results.getObject(valueName));
-				}
-            }
-        }
-        catch (ClassCastException e)
-        {
-            LOGGER.error("The results from the SQL script could not be adequetely cast to the map.");
-            LOGGER.error(Strings.getStackTrace(e));
-            throw e;
-        }
-        catch (SQLException e) {
-        	LOGGER.error("A map could not be generated from the database:");
-        	LOGGER.error(formatQueryForOutput(script));
-            LOGGER.error(Strings.getStackTrace(e));
-            throw e;
-        }
-        finally {
-            if (results != null)
-            {
-                try
-                {
-                    results.close();
-                }
-                catch (SQLException e) {
-                    LOGGER.error("Could not close result set.");
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-            }
-
-            if (connection != null)
-            {
-                Database.returnConnection(connection);
-            }
-        }
-
-        return map;
-    }
-
+    /**
+     * Refreshes statistics that the database uses to optimize queries.
+     * Performance suffers if the operation is told to vacuum missing values,
+     * but the performance of the system as a whole is improved if many values
+     * were removed prior to running.
+     * @param vacuum Whether or not to remove records pertaining to deleted
+     *               values as well
+     */
 	public static void refreshStatistics(boolean vacuum)
 	{
 		Connection connection = null;
@@ -804,9 +919,6 @@ public final class Database {
 
         ResultSet results;
         Statement statement = connection.createStatement();
-        // statement is purposely left open so that the returned ResultSet is
-        // not closed. We count on c3p0 to magically take care of closing any
-        // open resources when it should?
 		statement.setFetchSize(SystemSettings.fetchSize());
 
 		try
@@ -823,6 +935,11 @@ public final class Database {
         return results; 
     }
 
+    /**
+     * Removes all user data from the database
+     * @throws SQLException Thrown if successful communication with the
+     * database could not be established
+     */
     public static void clean() throws SQLException {
 		StringBuilder builder = new StringBuilder();
 
@@ -873,7 +990,7 @@ public final class Database {
 		builder.append("TRUNCATE wres.ForecastValue;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Observation;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(NEWLINE);
-		builder.append("TRUNCATE wres.ForecastEnsemble RESTART IDENTITY CASCADE;").append(NEWLINE);
+		builder.append("TRUNCATE wres.TimeSeries RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Variable RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("DELETE FROM wres.VariablePosition VP").append(NEWLINE);
 		builder.append("WHERE EXISTS(").append(NEWLINE);
@@ -899,6 +1016,11 @@ public final class Database {
 		}
 	}
 
+    /**
+     * Truncates a query for output if the query is too long
+     * @param query The query to format
+     * @return The query formatted for friendly display on the screen
+     */
 	private static String formatQueryForOutput(String query)
 	{
 		if (query.length() > 1000) {
@@ -907,6 +1029,9 @@ public final class Database {
 		return query;
 	}
 
+    /**
+     * @return A reference to the standard connection pool
+     */
     public static ComboPooledDataSource getPool()
     {
         return Database.CONNECTION_POOL;

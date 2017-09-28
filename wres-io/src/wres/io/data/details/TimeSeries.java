@@ -7,60 +7,109 @@ import wres.io.utilities.Database;
 import wres.util.Internal;
 
 /**
- * Defines details about an Ensemble linked to a specific forecast
+ * Defines details about a forecasted time series
  * @author Christopher Tubbs
  */
 @Internal(exclusivePackage = "wres.io")
-public final class ForecastEnsembleDetails {
+public final class TimeSeries
+{
+    /**
+     * The number of unique lead times contained within a partition within
+     * the database for values linked to a forecasted time series
+     */
     private final static short FORECASTVALUE_PARTITION_SPAN = 80;
 
+    /**
+     * System agnostic newline character used to make created scripts easier to
+     * read
+     */
 	private static final String NEWLINE = System.lineSeparator();
-    private final static HashMap<Integer, String> FORECASTVALUE_PARITION_NAMES = new HashMap<>();
+
+    /**
+     * Mapping between the number of a forecast value partition and its name
+     */
+    private final static HashMap<Integer, String> FORECASTVALUE_PARITION_NAMES =
+            new HashMap<>();
+
+    /**
+     * The lock used to protect access to the mapping of partition numbers to
+     * names
+     */
     private static final Object PARTITION_LOCK = new Object();
 
+    /**
+     * The ID of the ensemble for the time series. A time series without
+     * an ensemble should be indicated as the "default" time series.
+     */
 	private Integer ensembleID = null;
+
+    /**
+     * The ID of the cross section between a variable and its location
+     */
 	private Integer variablePositionID = null;
+
+    /**
+     * The unit of measurement that values for the time series were taken in
+     */
 	private Integer measurementUnitID = null;
-	private Integer forecastEnsembleID = null;
+
+    /**
+     * The ID of the time series in the database
+     */
+	private Integer timeSeriesID = null;
+
+    /**
+     * The ID of the initial source of the data for the time series
+     */
     private final Integer sourceID;
+
+    /**
+     * The string representation of the date and time of when the forecast
+     * began. For instance, if a forecasted value for a time series at a lead
+     * time of 1 occured at '01-01-2017 13:00:00', the initialization date
+     * would be '01-01-2017 12:00:00'.
+     */
     private final String initializationDate;
 
-    public ForecastEnsembleDetails(Integer sourceID, String initializationDate)
+    public TimeSeries( Integer sourceID, String initializationDate)
     {
         this.sourceID = sourceID;
         this.initializationDate = initializationDate;
     }
 	
 	/**
-	 * Sets the ID of the Ensemble that the ForecastEnsemble is linked to. The ID of the ForecastEnsemble
-	 * is invalidated if the ID of the Ensemble it is linked to changes
+	 * Sets the ID of the Ensemble that the time series is linked to. The ID of
+     * the time series is invalidated if the ID of the Ensemble it is linked
+     * to changes
 	 * @param ensemble_id The ID of the new ensemble
 	 */
 	public void setEnsembleID(Integer ensemble_id)
 	{
 		if (this.ensembleID != null && !this.ensembleID.equals(ensemble_id))
 		{
-			this.forecastEnsembleID = null;
+			this.timeSeriesID = null;
 		}
         this.ensembleID = ensemble_id;
 	}
 	
 	/**
-	 * Sets the ID of the variable position for the ForecastEnsemble. The ID of the ForecastEnsemble is
-	 * invalidated if the ID of the linked VariablePosition changes
-	 * @param variableposition_id The ID of the new variable position
+	 * Sets the ID of the relationship between the variable and its location
+     * for this time series. The ID of the time series is
+	 * invalidated if the ID of the linked Variable location changes
+	 * @param variableposition_id The ID of the new variable location
 	 */
 	public void setVariablePositionID(int variableposition_id)
 	{
 		if (this.variablePositionID != null && this.variablePositionID != variableposition_id)
 		{
-			this.forecastEnsembleID = null;
+			this.timeSeriesID = null;
 		}
         this.variablePositionID = variableposition_id;
 	}
 	
 	/**
-	 * Sets the ID of the unit of measurement connected to the ensemble for this forecast. The ID of the ForecastEnsemble
+	 * Sets the ID of the unit of measurement connected to the ensemble for
+     * this Time Series. The ID of the Time Series
 	 * is invalidated if the ID of the linked Measurement Unit changes
 	 * @param measurementunit_id The ID of the new unit of measurement
 	 */
@@ -68,87 +117,100 @@ public final class ForecastEnsembleDetails {
 	{
 		if (this.measurementUnitID != null && this.measurementUnitID != measurementunit_id)
 		{
-			this.forecastEnsembleID = null;
+			this.timeSeriesID = null;
 		}
         this.measurementUnitID = measurementunit_id;
 	}
 	
 	/**
-	 * @return Returns the ID in the database corresponding to this combination of Forecast Ensemble details 
+	 * @return Returns the ID in the database corresponding to this
+     * Time Series. If the ID is not present, it is retrieved from the database
 	 * @throws SQLException Thrown if the value could not be retrieved from the database
 	 */
-	public int getForecastEnsembleID() throws SQLException 
+	public int getTimeSeriesID() throws SQLException
 	{
-		if (forecastEnsembleID == null)
+		if (timeSeriesID == null)
 		{
 			save();
 		}
-		return forecastEnsembleID;
+		return timeSeriesID;
 	}
 	
 	/**
-	 * Updates the ID for the ensemble for the forecast from the database. If it doesn't exist, it is added and the new ID is
-	 * saved.
-	 * @throws SQLException Thrown if the value could not be loaded from the database
+	 * Creates or returns the entry in the database representing this time
+     * series
+	 * @throws SQLException Thrown if successful communication with the database
+     * could not be established.
 	 */
     private void save() throws SQLException
 	{
 		String script = "";
 		
-		script += "WITH new_forecastensemble AS" + NEWLINE;
+		script += "WITH new_timeseries AS" + NEWLINE;
 		script += "(" + NEWLINE;
-		script += "		INSERT INTO wres.forecastensemble (variableposition_id, ensemble_id, measurementunit_id, initialization_date)" + NEWLINE;
+		script += "		INSERT INTO wres.TimeSeries (variableposition_id, ensemble_id, measurementunit_id, initialization_date)" + NEWLINE;
 		script += "		SELECT " + variablePositionID + "," + NEWLINE;
 		script += "			" + ensembleID + "," + NEWLINE;
 		script += "			" + measurementUnitID + "," + NEWLINE;
 		script += "         '" + this.initializationDate + "'" + NEWLINE;
 		script += "		WHERE NOT EXISTS (" + NEWLINE;
 		script += "			SELECT 1" + NEWLINE;
-		script += "			FROM wres.forecastensemble" + NEWLINE;
+		script += "			FROM wres.TimeSeries" + NEWLINE;
 		script += "			WHERE variableposition_id = " + variablePositionID + NEWLINE;
 		script += "				AND ensemble_id = " + ensembleID + NEWLINE;
 		script += "             AND initialization_date = '" + this.initializationDate + "'" + NEWLINE;
         script += "				AND measurementunit_id = " + measurementUnitID + NEWLINE;
 		script += "		)" + NEWLINE;
-		script += "		RETURNING forecastensemble_id" + NEWLINE;
+		script += "		RETURNING timeseries_id" + NEWLINE;
 		script += ")" + NEWLINE;
-		script += "SELECT forecastensemble_id" + NEWLINE;
-		script += "FROM new_forecastensemble" + NEWLINE + NEWLINE;
+		script += "SELECT timeseries_id" + NEWLINE;
+		script += "FROM new_timeseries" + NEWLINE + NEWLINE;
 		script += "";
 		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT forecastensemble_id" + NEWLINE;
-		script += "FROM wres.forecastensemble" + NEWLINE;
+		script += "SELECT timeseries_id" + NEWLINE;
+		script += "FROM wres.TimeSeries" + NEWLINE;
 		script += "WHERE variableposition_id = " + variablePositionID + NEWLINE;
 		script += "		AND ensemble_id = " + ensembleID + NEWLINE;
 		script += "     AND initialization_date = '" + this.initializationDate + "'" + NEWLINE;
         script += "		AND measurementunit_id = " + measurementUnitID + ";";
-		
-		forecastEnsembleID = Database.getResult(script, "forecastensemble_id");
-		this.saveForecastSource();
+
+        timeSeriesID = Database.getResult(script, "timeseries_id");
+		this.saveTimeSeriesSource();
 	}
 
     /**
-     * Links the forecast the information about the source of its data in the database
-     * @throws SQLException Thrown if the Forecast and its source could not be properly linked
+     * Links metadata for a data source to this time series
+     * @throws SQLException Thrown if the time series and its source could not
+     * be properly linked
      */
-    private void saveForecastSource() throws SQLException
+    private void saveTimeSeriesSource() throws SQLException
     {
         String script = "";
         script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + NEWLINE;
-        script += "SELECT " + this.forecastEnsembleID + ", " + this.sourceID + NEWLINE;
+        script += "SELECT " + this.timeSeriesID + ", " + this.sourceID + NEWLINE;
         script += "WHERE NOT EXISTS (" + NEWLINE;
         script += "     SELECT 1" + NEWLINE;
         script += "     FROM wres.ForecastSource" + NEWLINE;
-        script += "     WHERE forecast_id = " + this.forecastEnsembleID + NEWLINE;
+        script += "     WHERE forecast_id = " + this.timeSeriesID + NEWLINE;
         script += "         AND source_id = " + this.sourceID + NEWLINE;
         script += ");";
 
         Database.execute(script);
     }
 
+    /**
+     * Either creates or returns the name of the partition of where values
+     * for this timeseries should be saved based on lead time
+     * @param lead The lead time of this time series where values of interest
+     *             should be saved
+     * @return The name of the partition where values for the indicated lead time
+     * should be saved.
+     * @throws SQLException Thrown if an error occurs when trying to create the
+     * partition in the database
+     */
     public static String getForecastValueParitionName(int lead) throws SQLException {
-        Integer partitionNumber = lead / ForecastEnsembleDetails.FORECASTVALUE_PARTITION_SPAN;
+        Integer partitionNumber = lead / TimeSeries.FORECASTVALUE_PARTITION_SPAN;
 
         String name;
 
@@ -181,14 +243,14 @@ public final class ForecastEnsembleDetails {
                                    "lead");
 
                 Database.saveIndex(name,
-                                   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_ForecastEnsemble_idx",
-                                   "forecastensemble_id");
+                                   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_TimeSeries_idx",
+                                   "timeseries_id");
 
-                ForecastEnsembleDetails.FORECASTVALUE_PARITION_NAMES.put(partitionNumber, name);
+                TimeSeries.FORECASTVALUE_PARITION_NAMES.put( partitionNumber, name);
             }
             else
             {
-                name = ForecastEnsembleDetails.FORECASTVALUE_PARITION_NAMES.get(partitionNumber);
+                name = TimeSeries.FORECASTVALUE_PARITION_NAMES.get( partitionNumber);
             }
         }
 

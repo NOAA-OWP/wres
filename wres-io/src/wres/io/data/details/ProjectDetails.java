@@ -54,6 +54,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private Integer rightVariableID = null;
     private Integer baselineVariableID = null;
 
+    private Integer lastLead = null;
+
     public static final String LEFT_MEMBER = "'left'";
     public static final String RIGHT_MEMBER = "'right'";
     public static final String BASELINE_MEMBER = "'baseline'";
@@ -185,7 +187,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.projectConfig.getInputs().getBaseline();
     }
 
-    private Integer getLeftVariableID() throws SQLException
+    public Integer getLeftVariableID() throws SQLException
     {
         if (this.leftVariableID == null)
         {
@@ -196,17 +198,17 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.leftVariableID;
     }
 
-    private String getLeftVariableName()
+    public String getLeftVariableName()
     {
         return this.getLeft().getVariable().getValue();
     }
 
-    private String getLeftVariableUnit()
+    public String getLeftVariableUnit()
     {
         return this.getLeft().getVariable().getUnit();
     }
 
-    private Integer getRightVariableID() throws SQLException
+    public Integer getRightVariableID() throws SQLException
     {
         if (this.rightVariableID == null)
         {
@@ -217,17 +219,17 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.rightVariableID;
     }
 
-    private String getRightVariableName()
+    public String getRightVariableName()
     {
         return this.getRight().getVariable().getValue();
     }
 
-    private String getRightVariableUnit()
+    public String getRightVariableUnit()
     {
         return this.getRight().getVariable().getUnit();
     }
 
-    private Integer getBaselineVariableID() throws SQLException
+    public Integer getBaselineVariableID() throws SQLException
     {
         if (this.hasBaseline() && this.baselineVariableID == null)
         {
@@ -238,7 +240,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.baselineVariableID;
     }
 
-    private String getBaselineVariableName()
+    public String getBaselineVariableName()
     {
         String name = null;
         if (this.hasBaseline())
@@ -248,7 +250,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return name;
     }
 
-    private String getBaselineVariableUnit()
+    public String getBaselineVariableUnit()
     {
         String unit = null;
         if (this.hasBaseline())
@@ -258,7 +260,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return unit;
     }
 
-    private String getProjectName()
+    public String getProjectName()
     {
         return this.projectConfig.getName();
     }
@@ -468,20 +470,20 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         StringBuilder script = new StringBuilder(  );
-        script.append( "SELECT FE.forecastensemble_id" ).append(NEWLINE);
+        script.append( "SELECT TS.timeseries_id" ).append(NEWLINE);
         script.append( "FROM wres.ForecastSource FS").append(NEWLINE);
         script.append( "INNER JOIN wres.ProjectSource PS").append(NEWLINE);
         script.append( "    ON PS.source_id = FS.source_id").append(NEWLINE);
-        script.append( "INNER JOIN wres.ForecastEnsemble FE").append(NEWLINE);
-        script.append( "    ON FE.forecastensemble_id = FS.forecast_id").append(NEWLINE);
+        script.append( "INNER JOIN wres.TimeSeries TS").append(NEWLINE);
+        script.append( "    ON TS.timeseries_id = FS.forecast_id").append(NEWLINE);
         script.append( "INNER JOIN wres.VariablePosition VP").append(NEWLINE);
-        script.append( "    ON VP.variableposition_id = FE.variableposition_id").append(NEWLINE);
+        script.append( "    ON VP.variableposition_id = TS.variableposition_id").append(NEWLINE);
         script.append( "WHERE PS.project_id = ").append(this.projectID).append(NEWLINE);
         script.append( "    AND PS.member = ").append(member).append(NEWLINE);
         script.append("     AND PS.inactive_time IS NULL").append(NEWLINE);
         script.append("     AND VP.variable_id = ").append(memberVariableID).append(";");
 
-        Database.populateCollection(forecastIDs, Integer.class, script.toString(), "forecastensemble_id");
+        Database.populateCollection(forecastIDs, Integer.class, script.toString(), "timeseries_id");
     }
 
     public List<Integer> getLeftSources() throws SQLException
@@ -601,7 +603,18 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public boolean isEmpty()
     {
-        return (this.leftSources.size() + this.rightSources.size() + this.baselineSources.size()) == 0;
+        int sourceTotal = 0;
+
+        try
+        {
+            sourceTotal = this.getLeftSources().size() + this.getRightSources().size() + this.getBaselineSources().size();
+        }
+        catch ( SQLException e )
+        {
+            LOGGER.error( "Could not evaluate whether or not this project had data:" );
+            LOGGER.error( Strings.getStackTrace( e ) );
+        }
+        return sourceTotal == 0;
     }
 
     public boolean hasBaseline()
@@ -676,6 +689,76 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                         "WHERE P.input_code = " + this.getInputCode() + ";";
 
         return script;
+    }
+
+    public Integer getLastLead(Feature feature) throws SQLException
+    {
+        if (this.lastLead == null)
+        {
+            String script = "";
+
+            if ( ConfigHelper.isForecast( this.getRight() ) )
+            {
+                script += "WITH leads AS" + NEWLINE;
+                script += "(" + NEWLINE;
+                script += "     SELECT FV.lead AS last_lead" + NEWLINE;
+                script += "     FROM wres.ForecastValue FV" + NEWLINE;
+                script += "     INNER JOIN wres.TimeSeries TS" + NEWLINE;
+                script +=
+                        "           ON TS.timeseries_id = FV.timeseries_id" + NEWLINE;
+                script += "     INNER JOIN wres.ForecastSource FS" + NEWLINE;
+                script += "         ON FS.forecast_id = TS.timeseries_id" + NEWLINE;
+                script += "     INNER JOIN wres.ProjectSource PS" + NEWLINE;
+                script += "         ON PS.source_id = FS.source_id" + NEWLINE;
+                script += "     WHERE PS.project_id = " + this.getId() + NEWLINE;
+                script += "         AND  " +
+                          ConfigHelper.getVariablePositionClause( feature,
+                                                                  this.getRightVariableID(),
+                                                                  "TS" ) +
+                          NEWLINE;
+
+                if ( this.projectConfig.getConditions().getLastLead()
+                     < Integer.MAX_VALUE )
+                {
+                    script += "         AND FV.lead <= "
+                              + this.projectConfig.getConditions().getLastLead()
+                              + NEWLINE;
+                }
+
+                if ( this.projectConfig.getConditions().getFirstLead() > 1 )
+                {
+                    script += "         AND FV.lead >= "
+                              + this.projectConfig.getConditions()
+                                                  .getFirstLead() + NEWLINE;
+                }
+
+                script += ")" + NEWLINE;
+                script += "SELECT last_lead" + NEWLINE;
+                script += "FROM leads" + NEWLINE;
+                script += "ORDER BY last_lead DESC" + NEWLINE;
+                script += "LIMIT 1";
+            }
+            else
+            {
+                script += "SELECT COUNT(*)::int AS last_lead" + NEWLINE;
+                script += "FROM wres.Observation O" + NEWLINE;
+                script += "INNER JOIN wres.ProjectSource PS" + NEWLINE;
+                script += "     ON PS.source_id = O.source_id" + NEWLINE;
+                script += "WHERE PS.project_id = " + this.getId() + NEWLINE;
+                script += "     AND " +
+                          ConfigHelper.getVariablePositionClause(
+                                  feature,
+                                  this.getRightVariableID(),
+                                  "O" );
+                script += NEWLINE;
+            }
+            script += ";";
+
+
+            this.lastLead = Database.getResult( script, "last_lead" );
+        }
+
+        return this.lastLead;
     }
 
     @Override

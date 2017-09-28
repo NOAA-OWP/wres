@@ -22,7 +22,7 @@ import wres.io.concurrency.WRESRunnable;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.ForecastEnsembleDetails;
+import wres.io.data.details.TimeSeries;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
@@ -35,7 +35,6 @@ import wres.util.Strings;
 class VectorNetCDFValueSaver extends WRESRunnable
 {
     private static final Object VARIABLEPOSITION_LOCK = new Object();
-    private static final Object FORECASTENSEMBLE_LOCK = new Object();
 
     private final static Logger LOGGER = LoggerFactory.getLogger(VectorNetCDFValueSaver.class);
     private String forecastInsertScript;
@@ -85,8 +84,8 @@ class VectorNetCDFValueSaver extends WRESRunnable
     private String getForecastInsertScript() throws IOException, SQLException {
         if (this.forecastInsertScript == null) {
             this.forecastInsertScript = "INSERT INTO " +
-                                        ForecastEnsembleDetails.getForecastValueParitionName( this.getLead() ) +
-                                        "(forecastensemble_id, lead, forecasted_value)" +
+                                        TimeSeries.getForecastValueParitionName( this.getLead() ) +
+                                        "(timeseries_id, lead, forecasted_value)" +
                                         NEWLINE +
                                         "VALUES (?, ?, ?);";
         }
@@ -105,7 +104,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
             }
 
             this.addVariablePositions();
-            this.addForecastEnsembles();
+            this.addTimeSeries();
             this.read();
             while (!this.operations.empty())
             {
@@ -131,7 +130,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
         }
     }
 
-    private void addValuesToSave(Integer forecastEnsembleID, Double value) throws IOException, SQLException {
+    private void addValuesToSave(Integer timeSeriesID, Double value) throws IOException, SQLException {
         if (!measurementIsValid(value))
         {
             return;
@@ -142,7 +141,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
             valuesToSave = new ArrayList<>();
         }
 
-        valuesToSave.add(new Object[]{forecastEnsembleID, this.getLead(), value});
+        valuesToSave.add(new Object[]{timeSeriesID, this.getLead(), value});
 
         if (this.valuesToSave.size() > SystemSettings.maximumDatabaseInsertStatements())
         {
@@ -271,25 +270,23 @@ class VectorNetCDFValueSaver extends WRESRunnable
         }
     }
 
-    private void addForecastEnsembles()
+    private void addTimeSeries()
             throws IOException, SQLException, ExecutionException,
             InterruptedException
     {
-        throw new NotImplementedException( "VectorNetCDFValueSaver#addForecastEnsembles needs to be updated for recent scema changes." );
+        throw new NotImplementedException( "VectorNetCDFValueSaver#addTimeSeries needs to be updated for recent scema changes." );
         /*StringBuilder script = new StringBuilder();
 
-        script.append("INSERT INTO wres.ForecastEnsemble (forecast_id, variableposition_id, ensemble_id, measurementunit_id)").append(NEWLINE);
-        script.append("SELECT ").append(this.getForecastID()).append(", ").append(NEWLINE);
-        script.append("     VP.variableposition_id, ").append(NEWLINE);
+        script.append("INSERT INTO wres.TimeSeries (variableposition_id, ensemble_id, measurementunit_id)").append(NEWLINE);
+        script.append("SELECT VP.variableposition_id, ").append(NEWLINE);
         script.append("     ").append(this.getEnsembleID()).append(", ").append(NEWLINE);
         script.append("     ").append(MeasurementUnits.getMeasurementUnitID(this.getVariable().getUnitsString())).append(NEWLINE);
         script.append("FROM ").append(this.getVariablePositionPartitionName()).append(" VP").append(NEWLINE);
         script.append("WHERE variable_id = ").append(this.getVariableID()).append(NEWLINE);
         script.append("     AND NOT EXISTS (").append(NEWLINE);
         script.append("         SELECT 1").append(NEWLINE);
-        script.append("         FROM wres.ForecastEnsemble FE").append(NEWLINE);
-        script.append("         WHERE FE.forecast_id = ").append(this.getForecastID()).append(NEWLINE);
-        script.append("             AND FE.variableposition_id = VP.variableposition_id").append(NEWLINE);
+        script.append("         FROM wres.TimeSeries TS").append(NEWLINE);
+        script.append("         WHERE TS.variableposition_id = VP.variableposition_id").append(NEWLINE);
         script.append(");");
 
         synchronized (FORECASTENSEMBLE_LOCK)
@@ -309,13 +306,13 @@ class VectorNetCDFValueSaver extends WRESRunnable
     {
         if (this.indexMapping == null)
         {
-            // TODO: This needs to be modified to use the predetermined forecastensemble information
+            // TODO: This needs to be modified to use the predetermined TimeSeries information
             /*String script =
-                    "SELECT F.nwm_index, FE.forecastensemble_id" + NEWLINE +
-                    "FROM wres.ForecastEnsemble FE" + NEWLINE +
+                    "SELECT F.nwm_index, TS.timeseries_id" + NEWLINE +
+                    "FROM wres.TimeSeries TS" + NEWLINE +
                     "INNER JOIN " + this.getVariablePositionPartitionName()
                     + " VP" + NEWLINE +
-                    "     ON VP.variableposition_id = FE.variableposition_id"
+                    "     ON VP.variableposition_id = TS.variableposition_id"
                     + NEWLINE +
                     "INNER JOIN wres.Feature F" + NEWLINE +
                     "     ON F.feature_id = VP.x_position" + NEWLINE +
@@ -328,7 +325,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
             Database.populateMap(this.indexMapping,
                                  script,
                                  "nwm_index",
-                                 "forecastensemble_id");*/
+                                 "timeseries_id");*/
         }
 
         return this.indexMapping;
