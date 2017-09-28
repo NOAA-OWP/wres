@@ -52,6 +52,10 @@
         <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
         </destination>
+<!-- If you uncomment this, the file will be huge.
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>-->
         <destination type="graphic">
             <path>output/</path>
             <graphical width="800" height="600">
