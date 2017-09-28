@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +42,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private final List<Integer> rightForecastIDs = new ArrayList<>(  );
     private final List<Integer> baselineForecastIDs = new ArrayList<>(  );
 
-    private final Map<Integer, String> leftHashes = new TreeMap<>(  );
-    private final Map<Integer, String> rightHashes = new TreeMap<>(  );
-    private final Map<Integer, String> baselineHashes = new TreeMap<>(  );
+    private final Map<Integer, String> leftHashes = new ConcurrentHashMap<>(  );
+    private final Map<Integer, String> rightHashes = new ConcurrentHashMap<>(  );
+    private final Map<Integer, String> baselineHashes = new ConcurrentHashMap<>(  );
 
     private final List<Integer> leftSources = new ArrayList<>(  );
     private final List<Integer> rightSources = new ArrayList<>(  );
@@ -623,20 +623,26 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     }
 
     public boolean hasSource(String foundHash, DataSourceConfig dataSourceConfig)
+            throws SQLException
     {
         Collection<String> sources;
 
         if ( ConfigHelper.isLeft( dataSourceConfig, projectConfig ))
         {
-            sources = leftHashes.values();
+            sources = this.getLeftHashes().values();
         }
         else if ( ConfigHelper.isRight( dataSourceConfig, projectConfig ))
         {
-            sources = rightHashes.values();
+            sources = this.getRightHashes().values();
         }
         else
         {
-            sources = baselineHashes.values();
+            sources = this.getBaselineHashes().values();
+        }
+
+        if (sources.size() == 0)
+        {
+            return false;
         }
 
         synchronized ( LOAD_LOCK )
