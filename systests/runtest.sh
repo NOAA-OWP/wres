@@ -33,7 +33,7 @@ if [ ! -f $executeDir/../wres.sh ]; then
 fi
 
 #Put a link to the testing data directory in place if it does not exist.
-if [ ! -f $executeDir/../data && ! -d $executeDir/../data ]; then
+if [ ! -f $executeDir/../data ] && [ ! -d $executeDir/../data ]; then
     echo "$echoPrefix Creating link $systestsDir/data, ln -s /wres_share/testing/data $systestsDir/data ..."
     echo "(If this is not executed on the WRES test VM, then this link will most likely not work.)"
     ln -s /wres_share/testing/data $systestsDir/data
@@ -91,9 +91,9 @@ cd $outputDirName
 for fileName in $(ls *.csv); do
     diff --brief $fileName ../$benchDirName/$fileName
 done
-echo "$echoPrefix Comparing output .png files..."
-for fileName in $(ls *.png); do
-    diff --brief $fileName ../$benchDirName/$fileName
-done
+#echo "$echoPrefix Comparing output .png files..."
+#for fileName in $(ls *.png); do
+#    diff --brief $fileName ../$benchDirName/$fileName
+#done
 
 

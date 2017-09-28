@@ -12,7 +12,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
-import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 
 import org.slf4j.Logger;
@@ -250,7 +249,7 @@ public class DatacardSource extends BasicSource {
 			int    startIdx   = 0;
 			int    endIdx     = 0;
 				
-			datetime = datetime.plusHours(Time.zoneOffsetHours(timeZone));
+			datetime = datetime.minusHours(Time.zoneOffsetHours(timeZone));
             
 			//Process the lines one at a time.
 			while ((line = reader.readLine()) != null)
