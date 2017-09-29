@@ -4,7 +4,7 @@
 
     <inputs>
         <left label="">
-            <type>observations</type>
+            <type>simulations</type>
 <!-- Hank: Why is missingValue attribute needed?  PI-XML specifies missing within the file itself. -->
             <source all="true" format="PI-XML" missingValue="-999.0" 
                 recursive="true" timeZone="UTC" unit="" zoneOffset="0">../data/DRRC2QINE.xml</source>

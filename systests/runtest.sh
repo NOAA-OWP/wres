@@ -80,8 +80,8 @@ if [ -f FAILS ]; then
 fi
 
 #Benchmark comparisons.
-numOutputFiles=$(ls $outputDirName | wc -l)
-numBenchmarkFiles=$(ls $benchDirName | wc -l)
+numOutputFiles=$(ls $outputDirName/*.csv | wc -l)
+numBenchmarkFiles=$(ls $benchDirName/*.csv | wc -l)
 if [[ $numOutputFiles != $numBenchmarkFiles ]]; then
     echo "$echoPrefix Number of output files does not match: test = $numOutputFiles; benchmarks = $numBenchmarkFiles.  TEST FAILS!"
     exit 1

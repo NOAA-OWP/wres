@@ -7,7 +7,7 @@
         <left label="">
             <type>observations</type>
             <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" timeZone="UTC" unit="" zoneOffset="0">/wres_share/testing/data/abrfcExample/LGNN5_MAP.xml</source>
+                recursive="true" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_MAP.xml</source>
             <variable>MAP</variable>
             <features>
                 <location lid="LGNN5" />
@@ -24,7 +24,7 @@
         <right label="HEFS">
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" timeZone="UTC" unit="" zoneOffset="0">/wres_share/testing/data/abrfcExample/LGNN5_precip_5yrs.tgz</source>
+                recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_precip_5yrs.tgz</source>
             <variable>MAPX</variable>
             <features>
                 <location lid="LGNN5" />
