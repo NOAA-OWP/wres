@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- This is identical to 100 and 101, except that it uses the *hefs-mefp* files, which contain ESP forecasts.  Hence, the scenario change.-->
-<project label="ExampleProject" name="ESP">
+<!-- This is a test of real, baseline validation streamflows verified through WRES where the obs is 24-h
+     and the forecasts are 6-h.  Time aggregation is needed. -->
+<project label="ExampleProject" name="HEFS">
 
     <inputs>
         <left label="">
@@ -17,7 +18,7 @@
                 <unit>hour</unit>
             </existingTimeAggregation>
         </left>
-        <right label="ESP">
+        <right label="ESP" >
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
                 recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_hefs-mefp_flow_5yrs.tgz</source>
@@ -26,14 +27,14 @@
                 <location lid="LGNN5"/>
             </features>
             <existingTimeAggregation>
-                <function>instantaneous</function>
-                <period>6</period>
-                <unit>hour</unit>
+                <function>avg</function>
+                <period>1</period>
+                <unit>instant</unit>
             </existingTimeAggregation>
         </right>
     </inputs>
 
-    <conditions firstLead="1" lastLead="24">
+    <conditions firstLead="1" lastLead="48">
         <features>
             <location lid="LGNN5" />
         </features>
@@ -58,6 +59,9 @@
         <metric><name>all valid</name></metric>
         <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
+        </destination>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output</path>
         </destination>
         <destination type="graphic">
             <path>output/</path>
