@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * @author Christopher Tubbs
- *
+ * Helper class containing functions used to interpret and modify time data
+ * parsed from various data sources (most, in not all, of which are strings)
  */
 public final class Time
 {
@@ -25,7 +25,14 @@ public final class Time
      * The global format for dates is {@value}
      */
     public final static String DATE_FORMAT = "yyyy-MM-dd[ [HH][:mm][:ss][.SSSSSS]";
-    
+
+    /**
+     * Mapping between common date indicators to their conversion multipliers
+     * from hours
+     *
+     * i.e. The mapping of "second" holds the value to multiply a number of
+     * hours to get the total number of seconds contained.
+     */
     public static final Map<String, Double> HOUR_CONVERSION = mapTimeToHours();
 
     /**
@@ -128,55 +135,70 @@ public final class Time
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
         return datetime.format(formatter);
     }
-    
-    public static String extractDay(String date) {
-        String day = null;
-        
-        if (isTimestamp(date)) {
-            day = Strings.extractWord(date, "\\d{1,2}/\\d{1,2}/\\d{4}");
-            if (day == null) {
-                day = Strings.extractWord(date, "\\d{1,2}-\\d{1,2}-\\d{4}");
-            }
-        }
-        
-        return day;
-    }
-    
-    public static OffsetDateTime convertStringToDate(String date, String time, String offset) {
-        return convertStringToDate(date + " " + time, offset);
-    }
-    
+
+    /**
+     * Converts a parsed date to an actual date and time object, modified by
+     * a parsed hourly offset
+     * @param datetime The string representation of the original time
+     * @param offset The string representation of an hourly offset
+     * @return A date and time object for the parsed date modified by a parsed offset
+     */
     public static OffsetDateTime convertStringToDate(String datetime, String offset) {
         OffsetDateTime date = convertStringToDate(datetime);
         
-        if (date != null && Strings.isNumeric(offset)) {
+        if (date != null && Strings.isNumeric(offset))
+        {
             date = date.plusHours(Integer.parseInt(offset));
         }
         
         return date;
     }
-    
-    public static OffsetDateTime convertStringToDate(String datetime) {
+
+    /**
+     * Attempts to convert a string representation of a date to an actual date
+     * object
+     * @param datetime A string representation of a date
+     * @return A date and time object representing the described date
+     */
+    public static OffsetDateTime convertStringToDate(String datetime)
+    {
         OffsetDateTime date = null;
-        
-        if (datetime.equalsIgnoreCase("epoch")) {
+
+        datetime = datetime.trim();
+
+        if (datetime.equalsIgnoreCase("epoch"))
+        {
             date = OffsetDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
-        } else if (datetime.equalsIgnoreCase("infinity")) {
+        }
+        else if (datetime.equalsIgnoreCase("infinity"))
+        {
             date = OffsetDateTime.MAX;
-        } else if (datetime.equalsIgnoreCase("-infinity")) {
+        }
+        else if (datetime.equalsIgnoreCase("-infinity"))
+        {
             date = OffsetDateTime.MIN;
-        } else if (datetime.equalsIgnoreCase("today")) {
+        }
+        else if (datetime.equalsIgnoreCase("today"))
+        {
             date = OffsetDateTime.now();
             date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
-        } else if (datetime.equalsIgnoreCase("tomorrow")) {
+        }
+        else if (datetime.equalsIgnoreCase("tomorrow"))
+        {
             date = OffsetDateTime.now().plusDays(1L);
             date = date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
-        } else if (datetime.equalsIgnoreCase("now")) {
+        }
+        else if (datetime.equalsIgnoreCase("now"))
+        {
             date = OffsetDateTime.now();
-        } else if (datetime.equalsIgnoreCase("yesterday")) {
+        }
+        else if (datetime.equalsIgnoreCase("yesterday"))
+        {
             date = OffsetDateTime.now().minusDays(1L);
             date = date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
-        } else if (isTimestamp(datetime)) {
+        }
+        else if (isTimestamp(datetime))
+        {
             if (!datetime.endsWith("Z"))
             {
                 datetime += "Z";
@@ -191,16 +213,6 @@ public final class Time
         }
         
         return date;
-    }
-    
-    public static String extractTime(String date) {
-        String time = null;
-        
-        if (isTimestamp(date)) {
-            time = Strings.extractWord(date, "\\d{1,2}\\d{2}\\d{2}\\.?\\d*");
-        }
-        
-        return time;
     }
     
     public static Double unitsToHours(String unit, double count) throws InvalidPropertiesFormatException {
@@ -227,28 +239,11 @@ public final class Time
     }
 
     /**
-     * Converts a string representation of a date and time from one time zone to another
-     * @param date The string representation of a date and time
-     * @param timeZone The time zone abbreviation for the date and time
-     * @return A string representation of the date and time expressed in UTC
+     * Converts a parsed time representation to the format agnostic
+     * pattern used across the system
+     * @param date The time stamp to normalize
+     * @return An updated time string adhering to the defined standard
      */
-    public static String standardizeDateTime(String date, final String timeZone)
-    {
-        if (!TIMEZONE_OFFSET.containsKey(timeZone))
-        {
-            throw new IllegalArgumentException(timeZone + "is not a valid timezone.");
-        }
-
-        if (TIMEZONE_OFFSET.get(timeZone) != 0)
-        {
-            OffsetDateTime convertedDate = Time.convertStringToDate(date);
-            convertedDate = convertedDate.plusHours(TIMEZONE_OFFSET.get(timeZone));
-            date = Time.convertDateToString(convertedDate);
-        }
-
-        return date;
-    }
-
     public static String normalize(String date)
     {
         OffsetDateTime absoluteDate = Time.convertStringToDate(date);
@@ -256,7 +251,8 @@ public final class Time
     }
     
     /**
-     * Converts a string representation of a date and time from time zone to offset in hours
+     * Gets the number of hours to offset a unit of time depending on the
+     * time zone of interest
      * @param timeZone The string representation of a time zone
      * @return A Long representation of offset in UTC
      */
@@ -272,6 +268,15 @@ public final class Time
     	 return offsetHr;
     }
 
+    /**
+     * Adds the specified unit of time to a parsed time stamp
+     * @param time The timestamp to add to
+     * @param unit The unit of time to add
+     * @param amount The amount of the unit to add
+     * @return A string detailing the updated time stamp
+     * @throws InvalidPropertiesFormatException Thrown if the amount to
+     * add could not be determined from the unit description
+     */
     public static String plus( String time, String unit, double amount)
             throws InvalidPropertiesFormatException
     {
@@ -283,6 +288,15 @@ public final class Time
         );
     }
 
+    /**
+     * Subtract the specified unit of time from a parsed timestamp
+     * @param time The parsed time stamp
+     * @param unit The unit that we want to subtract (DAY, HOUR, etc)
+     * @param amount The number of the unit to subtract
+     * @return A string detailing the updated time stamp
+     * @throws InvalidPropertiesFormatException Thrown if the amount to
+     * subtract could not be determined from the unit description
+     */
     public static String minus(String time, String unit, double amount)
             throws InvalidPropertiesFormatException
     {
