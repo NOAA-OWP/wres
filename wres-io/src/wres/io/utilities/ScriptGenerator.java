@@ -136,7 +136,7 @@ public final class ScriptGenerator
                   .append(ConfigHelper.getLead(projectConfig, progress - 1) + leadOffset)
                   .append(" AS agg_hour,")
                   .append(NEWLINE);
-            script.append("     ARRAY_AGG(FV.forecasted_value) AS measurements,").append(NEWLINE);
+            script.append("     ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements,").append(NEWLINE);
             script.append("     TS.measurementunit_id").append(NEWLINE);
             script.append("FROM wres.TimeSeries TS").append(NEWLINE);
             script.append("INNER JOIN wres.ForecastValue FV").append(NEWLINE);
