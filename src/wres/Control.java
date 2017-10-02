@@ -102,7 +102,7 @@ public class Control implements Function<String[], Integer>
         {
             LOGGER.error( "Please correct project configuration files and pass "
                           + "them in the command line like this: "
-                          + "wres executeConfigProject c:/path/to/config1.xml "
+                          + "bin/wres.bat execute c:/path/to/config1.xml "
                           + "c:/path/to/config2.xml" );
             return 1;
         }
