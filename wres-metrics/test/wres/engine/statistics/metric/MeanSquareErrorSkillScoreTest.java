@@ -11,7 +11,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
@@ -71,7 +71,7 @@ public final class MeanSquareErrorSkillScoreTest
         assertTrue("The Mean Square Error is decomposable.", mse.isDecomposable());
         assertTrue("The Mean Square Error is a skill score.", mse.isSkillScore());
         assertTrue("Expected no decomposition for the Mean Square Error Skill Score.",
-                   mse.getDecompositionID() == MetricDecompositionGroup.NONE);
+                   mse.getScoreOutputGroup() == ScoreOutputGroup.NONE);
 
         //Check the exceptions
         try

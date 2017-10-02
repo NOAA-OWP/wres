@@ -4,8 +4,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 
 /**
  * An immutable vector of outputs associated with a metric. The number of outputs, as well as the individual outputs and
@@ -34,7 +33,7 @@ class SafeVectorOutput implements VectorOutput
      * The template associated with the outputs.
      */
 
-    private MetricDecompositionGroup template;
+    private ScoreOutputGroup template;
 
     @Override
     public MetricOutputMetadata getMetadata()
@@ -49,7 +48,7 @@ class SafeVectorOutput implements VectorOutput
     }
 
     @Override
-    public MetricDecompositionGroup getOutputTemplate()
+    public ScoreOutputGroup getOutputTemplate()
     {
         return template;
     }
@@ -92,7 +91,7 @@ class SafeVectorOutput implements VectorOutput
      */
 
     SafeVectorOutput(final VectorOfDoubles output,
-                     final MetricDecompositionGroup template,
+                     final ScoreOutputGroup template,
                      final MetricOutputMetadata meta)
     {
         Objects.requireNonNull(output, "Specify a non-null output.");

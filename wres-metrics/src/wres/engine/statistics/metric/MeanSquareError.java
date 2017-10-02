@@ -27,7 +27,7 @@ class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
         {
             throw new MetricInputException("Specify non-null input to the '"+this+"'.");
         }
-        switch ( getDecompositionID() )
+        switch ( getScoreOutputGroup() )
         {
             case NONE:
                 return getMSENoDecomp( s );

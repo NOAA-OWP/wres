@@ -12,7 +12,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.VectorOutput;
@@ -58,7 +58,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         //Build the metric
         final CRPSSBuilder b = new CRPSSBuilder();
 
-        b.setDecompositionID( MetricDecompositionGroup.NONE ).setOutputFactory( outF );
+        b.setDecompositionID( ScoreOutputGroup.NONE ).setOutputFactory( outF );
 
         final ContinuousRankedProbabilitySkillScore crpss = b.build();
 
@@ -84,7 +84,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         assertTrue( "The Continuous Ranked Probability Skill Score is decomposable.", crpss.isDecomposable() );
         assertTrue( "The Continuous Ranked Probability Skill Score is a skill score.", crpss.isSkillScore() );
         assertTrue( "Expected no decomposition for the Continuous Ranked Probability Skill Score.",
-                    crpss.getDecompositionID() == MetricDecompositionGroup.NONE );
+                    crpss.getScoreOutputGroup() == ScoreOutputGroup.NONE );
         assertTrue( "The Continuous Ranked Probability Skill Score is not proper.", !crpss.isProper() );
         assertTrue( "The Continuous Ranked Probability Skill Score is not strictly proper.", !crpss.isStrictlyProper() );
     }

@@ -3,7 +3,6 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
@@ -66,18 +65,6 @@ class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     public MetricConstants getID()
     {
         return MetricConstants.INDEX_OF_AGREEMENT;
-    }
-
-    @Override
-    public boolean isDecomposable()
-    {
-        return false;
-    }
-
-    @Override
-    public MetricDecompositionGroup getDecompositionID()
-    {
-        return MetricDecompositionGroup.NONE;
     }
 
     @Override
