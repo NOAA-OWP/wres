@@ -15,7 +15,7 @@ import evs.metric.results.MetricResult;
 import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.SafeMetricOutputForProjectByLeadThreshold.SafeMetricOutputForProjectByLeadThresholdBuilder;
 import wres.datamodel.SafeMetricOutputMapByLeadThreshold.Builder;
 import wres.datamodel.Threshold.Operator;
@@ -157,7 +157,7 @@ public final class DataModelTestDataFactory
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
                     final VectorOutput value =
-                            outputFactory.ofVectorOutput( res, MetricDecompositionGroup.CR_POT, meta );
+                            outputFactory.ofVectorOutput( res, ScoreOutputGroup.CR_POT, meta );
 
                     //Append result
                     builder.put( key, value );

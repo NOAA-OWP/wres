@@ -13,27 +13,27 @@ import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
-import wres.engine.statistics.metric.IndexOfAgreement.IndexOfAgreementBuilder;
+import wres.datamodel.VectorOutput;
+import wres.engine.statistics.metric.KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder;
 
 /**
- * Tests the {@link IndexOfAgreement}.
+ * Tests the {@link KlingGuptaEfficiency}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public final class IndexOfAgreementTest
+public final class KlingGuptaEfficiencyTest
 {
 
     /**
-     * Constructs a {@link IndexOfAgreement} and compares the actual result to the expected result. Also, checks the
-     * parameters.
+     * Constructs a {@link KlingGuptaEfficiency} and compares the actual result to the expected result. Also, checks 
+     * the parameters.
      */
 
     @Test
-    public void test1IndexOfAgreement()
+    public void test1KlingGuptaEfficiency()
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -53,31 +53,34 @@ public final class IndexOfAgreementTest
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "MM/DAY" ),
-                                                                   MetricConstants.INDEX_OF_AGREEMENT,
-                                                                   MetricConstants.MAIN,
+                                                                   MetricConstants.KLING_GUPTA_EFFICIENCY,
+                                                                   MetricConstants.NONE,
                                                                    metaFac.getDatasetIdentifier( "103.1",
                                                                                                  "QME",
                                                                                                  "NVE" ),
                                                                    24 );
 
         //Build the metric
-        final IndexOfAgreementBuilder b = new IndexOfAgreementBuilder();
+        final KlingGuptaEfficiencyBuilder b = new KlingGuptaEfficiencyBuilder();
         b.setOutputFactory( outF );
-        final IndexOfAgreement ioa = b.build();
+        final KlingGuptaEfficiency ioa = b.build();
 
         //Check the parameters
-        assertTrue( "Unexpected name for the Index of Agreement.",
-                    ioa.getName().equals( metaFac.getMetricName( MetricConstants.INDEX_OF_AGREEMENT ) ) );
-        assertTrue( "The Index of Agreement is not decomposable.", !ioa.isDecomposable() );
-        assertTrue( "The Index of Agreement is a skill score.", ioa.isSkillScore() );
-        assertTrue( "Expected no decomposition for the Index of Agreement.",
+        assertTrue( "Unexpected name for the Kling Gupta Efficiency.",
+                    ioa.getName().equals( metaFac.getMetricName( MetricConstants.KLING_GUPTA_EFFICIENCY ) ) );
+        assertTrue( "The Kling Gupta Efficiency is decomposable.", ioa.isDecomposable() );
+        assertTrue( "The Kling Gupta Efficiency is a skill score.", ioa.isSkillScore() );
+        assertTrue( "Expected no decomposition for the Kling Gupta Efficiency.",
                     ioa.getScoreOutputGroup() == ScoreOutputGroup.NONE );
 
         //Check the results
-        final ScalarOutput actual = ioa.apply( input );
+        final VectorOutput actual = ioa.apply( input );
 
-        final ScalarOutput expected = outF.ofScalarOutput( 0.8221179993380173, m1 );
-        assertTrue( "Actual: " + actual.getData() + ". Expected: " + expected.getData() + ".",
+        final VectorOutput expected = outF.ofVectorOutput( new double[] { 0.8921704394462281 }, m1 );
+        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+                    + ". Expected: "
+                    + expected.getData().getDoubles()[0]
+                    + ".",
                     actual.equals( expected ) );
     }
 
