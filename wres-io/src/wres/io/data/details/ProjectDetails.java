@@ -705,19 +705,17 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
             if ( ConfigHelper.isForecast( this.getRight() ) )
             {
-                script += "WITH leads AS" + NEWLINE;
-                script += "(" + NEWLINE;
-                script += "     SELECT FV.lead AS last_lead" + NEWLINE;
-                script += "     FROM wres.ForecastValue FV" + NEWLINE;
-                script += "     INNER JOIN wres.TimeSeries TS" + NEWLINE;
+                script += "SELECT FV.lead AS last_lead" + NEWLINE;
+                script += "FROM wres.ForecastValue FV" + NEWLINE;
+                script += "INNER JOIN wres.TimeSeries TS" + NEWLINE;
                 script +=
-                        "           ON TS.timeseries_id = FV.timeseries_id" + NEWLINE;
-                script += "     INNER JOIN wres.ForecastSource FS" + NEWLINE;
-                script += "         ON FS.forecast_id = TS.timeseries_id" + NEWLINE;
-                script += "     INNER JOIN wres.ProjectSource PS" + NEWLINE;
-                script += "         ON PS.source_id = FS.source_id" + NEWLINE;
-                script += "     WHERE PS.project_id = " + this.getId() + NEWLINE;
-                script += "         AND  " +
+                        "    ON TS.timeseries_id = FV.timeseries_id" + NEWLINE;
+                script += "INNER JOIN wres.ForecastSource FS" + NEWLINE;
+                script += "    ON FS.forecast_id = TS.timeseries_id" + NEWLINE;
+                script += "INNER JOIN wres.ProjectSource PS" + NEWLINE;
+                script += "   ON PS.source_id = FS.source_id" + NEWLINE;
+                script += "WHERE PS.project_id = " + this.getId() + NEWLINE;
+                script += "    AND  " +
                           ConfigHelper.getVariablePositionClause( feature,
                                                                   this.getRightVariableID(),
                                                                   "TS" ) +
@@ -726,21 +724,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 if ( this.projectConfig.getConditions().getLastLead()
                      < Integer.MAX_VALUE )
                 {
-                    script += "         AND FV.lead <= "
+                    script += "    AND FV.lead <= "
                               + this.projectConfig.getConditions().getLastLead()
                               + NEWLINE;
                 }
 
                 if ( this.projectConfig.getConditions().getFirstLead() > 1 )
                 {
-                    script += "         AND FV.lead >= "
+                    script += "    AND FV.lead >= "
                               + this.projectConfig.getConditions()
                                                   .getFirstLead() + NEWLINE;
                 }
 
-                script += ")" + NEWLINE;
-                script += "SELECT last_lead" + NEWLINE;
-                script += "FROM leads" + NEWLINE;
+                script += "GROUP BY FV.lead" + NEWLINE;
                 script += "ORDER BY last_lead DESC" + NEWLINE;
                 script += "LIMIT 1";
             }

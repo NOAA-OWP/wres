@@ -16,7 +16,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Projects;
 import wres.io.data.details.ProjectDetails;
-import wres.io.grouping.LabeledScript;
 import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.Time;
@@ -31,43 +30,6 @@ public final class ScriptGenerator
     private ScriptGenerator (){}
     
     private static final String NEWLINE = System.lineSeparator();
-
-    // TODO: This does not consider the ramifacations of project configurations
-    public static LabeledScript generateFindLastLead(int variableID,
-                                                     Feature feature,
-                                                     boolean isForecast)
-    {
-        final String label = "last_lead";
-        String script = "";
-
-        if (isForecast)
-        {
-            /*
-                TODO: This needs to consider the last lead of the project and
-                its sources, not the sum total of all the data
-             */
-
-            script += "SELECT FV.lead AS " + label + NEWLINE;
-            script += "FROM wres.TimeSeries TS" + NEWLINE;
-            script += "INNER JOIN wres.ForecastValue FV" + NEWLINE;
-            script += "    ON FV.timeseries_id = TS.timeseries_id"
-                      + NEWLINE;
-            script += "WHERE " +
-                      ConfigHelper.getVariablePositionClause( feature, variableID, "TS" ) +
-                      NEWLINE;
-
-            script += "ORDER BY FV.lead DESC" + NEWLINE;
-            script += "LIMIT 1;";
-        }
-        else
-        {
-            script += "SELECT COUNT(*)::int AS " + label + NEWLINE;
-            script += "FROM wres.Observation O" + NEWLINE;
-            script += "WHERE " + ConfigHelper.getVariablePositionClause( feature, variableID, "O" ) + NEWLINE;
-        }
-        
-        return new LabeledScript(label, script);
-    }
 
     // TODO: Convert function to its own class
     public static String generateLoadDatasourceScript(final ProjectConfig projectConfig,
