@@ -16,7 +16,6 @@ import wres.datamodel.ScalarOutput;
  * @since 0.1
  */
 class CriticalSuccessIndex extends ContingencyTableScore<DichotomousPairs>
-
 {
 
     @Override

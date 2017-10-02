@@ -4,13 +4,14 @@ import java.util.Objects;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 
 /**
- * A generic implementation of an error score without decomposition. For scores that can be computed in a single-pass,
+ * A generic implementation of an error score that cannot be decomposed. For scores that can be computed in a single-pass,
  * provide a {@link DoubleErrorFunction} to the constructor. This function is applied to each pair, and the average
  * score returned across all pairs.
  * 
@@ -74,7 +75,19 @@ abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, S
         //Compute the atomic errors in a stream
         return getDataFactory().ofScalarOutput(s.getData().stream().mapToDouble(f).average().getAsDouble(), metOut);
     }
-
+    
+    @Override
+    public ScoreOutputGroup getScoreOutputGroup()
+    {
+        return ScoreOutputGroup.NONE;
+    }    
+    
+    @Override
+    public boolean isDecomposable()
+    {
+        return false;
+    }    
+    
     /**
      * Hidden constructor.
      * 

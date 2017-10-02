@@ -8,7 +8,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
@@ -61,7 +61,7 @@ public final class SampleSizeTest
                    ss.getName().equals(metaFac.getMetricName(MetricConstants.SAMPLE_SIZE)));
         assertTrue("The Sample Size is not decomposable.", !ss.isDecomposable());
         assertTrue("The Sample Size is not a skill score.", !ss.isSkillScore());
-        assertTrue("The Sample Size cannot be decomposed.", ss.getDecompositionID() == MetricDecompositionGroup.NONE);
+        assertTrue("The Sample Size cannot be decomposed.", ss.getScoreOutputGroup() == ScoreOutputGroup.NONE);
     }
 
 }

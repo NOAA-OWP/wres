@@ -9,7 +9,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.engine.statistics.metric.EquitableThreatScore.EquitableThreatScoreBuilder;
@@ -69,7 +69,7 @@ public final class EquitableThreatScoreTest
         assertTrue("The Equitable Threat Score is not decomposable.", !ets.isDecomposable());
         assertTrue("The Equitable Threat Score is a skill score.", ets.isSkillScore());
         assertTrue("The Equitable Threat Score cannot be decomposed.",
-                   ets.getDecompositionID() == MetricDecompositionGroup.NONE);
+                   ets.getScoreOutputGroup() == ScoreOutputGroup.NONE);
         final String expName = metF.ofContingencyTable().getName();
         final String actName = metaFac.getMetricName(ets.getCollectionOf());
         assertTrue("The Equitable Threat Score should be a collection of '" + expName

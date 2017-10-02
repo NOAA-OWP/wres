@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 
 /**
  * Identifies a scoring rule. A score may be an absolute or relative measure. An absolute score is dimensioned, whereas
@@ -17,7 +17,17 @@ interface Score
 {
 
     /**
-     * Returns true if the score is a relative measure or skill score, false for an absolute measure.
+     * Returns <code>true</code> if the score is decomposable in principle, false otherwise. In practice, the output 
+     * may not be decomposed. For example {@link #getScoreOutputGroup()} may return {@link ScoreOutputGroup#NONE} when 
+     * this method returns <code>true</code>.
+     * 
+     * @return true if the score is decomposable, false otherwise
+     */
+
+    boolean isDecomposable(); 
+    
+    /**
+     * Returns <code>true</code> if the score is a relative measure or skill score, false for an absolute measure.
      * 
      * @return true if the score is a skill score
      */
@@ -25,20 +35,12 @@ interface Score
     boolean isSkillScore();
 
     /**
-     * Returns true if the score is decomposable, false otherwise.
+     * Returns the group to which the score output belongs or {@link ScoreOutputGroup#NONE} if the score output does 
+     * not belong to a group.
      * 
-     * @return true if the score is decomposable, false otherwise
+     * @return the {@link ScoreOutputGroup}
      */
 
-    boolean isDecomposable();
-
-    /**
-     * Returns the template associated with the decomposition. Must return {@link MetricDecompositionGroup#NONE} when 
-     * {@link #isDecomposable()} returns false.
-     * 
-     * @return the type of score decomposition
-     */
-
-    MetricDecompositionGroup getDecompositionID();
+    ScoreOutputGroup getScoreOutputGroup();
 
 }

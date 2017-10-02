@@ -13,7 +13,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MulticategoryPairs;
 import wres.datamodel.ScalarOutput;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.engine.statistics.metric.PeirceSkillScore.PeirceSkillScoreBuilder;
 
 /**
@@ -66,7 +66,7 @@ public final class PeirceSkillScoreTest
         assertTrue("The Peirce Skill Score is not decomposable.", !ps.isDecomposable());
         assertTrue("The Peirce Skill Score is a skill score.", ps.isSkillScore());
         assertTrue("The Peirce Skill Score cannot be decomposed.",
-                   ps.getDecompositionID() == MetricDecompositionGroup.NONE);
+                   ps.getScoreOutputGroup() == ScoreOutputGroup.NONE);
         final String expName = metF.ofContingencyTable().getName();
         final String actName = metaFac.getMetricName(ps.getCollectionOf());
         assertTrue("The Peirce Skill Score should be a collection of '" + expName

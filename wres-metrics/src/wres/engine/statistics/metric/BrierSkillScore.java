@@ -5,7 +5,7 @@ import java.util.Objects;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.SingleValuedPairs;
@@ -102,7 +102,7 @@ class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs
         }
 
         @Override
-        protected BrierSkillScoreBuilder setDecompositionID( final MetricDecompositionGroup decompositionID )
+        protected BrierSkillScoreBuilder setDecompositionID( final ScoreOutputGroup decompositionID )
         {
             super.setDecompositionID( decompositionID );
             return this;

@@ -8,7 +8,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
@@ -61,7 +61,7 @@ public final class MeanErrorTest
                    me.getName().equals(metaFac.getMetricName(MetricConstants.MEAN_ERROR)));
         assertTrue("The Mean Error is not decomposable.", !me.isDecomposable());
         assertTrue("The Mean Error is not a skill score.", !me.isSkillScore());
-        assertTrue("The Mean Error cannot be decomposed.", me.getDecompositionID() == MetricDecompositionGroup.NONE);
+        assertTrue("The Mean Error cannot be decomposed.", me.getScoreOutputGroup() == ScoreOutputGroup.NONE);
     }
 
 }

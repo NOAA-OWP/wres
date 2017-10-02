@@ -11,7 +11,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.engine.statistics.metric.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
 
 /**
@@ -62,7 +62,7 @@ public final class MeanAbsoluteErrorTest
         assertTrue("The Mean Absolute Error is not decomposable.", !mae.isDecomposable());
         assertTrue("The Mean Absolute Error is not a skill score.", !mae.isSkillScore());
         assertTrue("The Mean Absolute Error cannot be decomposed.",
-                   mae.getDecompositionID() == MetricDecompositionGroup.NONE);
+                   mae.getScoreOutputGroup() == ScoreOutputGroup.NONE);
     }
 
 }

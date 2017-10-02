@@ -11,7 +11,7 @@ import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.engine.statistics.metric.ProbabilityOfDetection.ProbabilityOfDetectionBuilder;
 
 /**
@@ -65,7 +65,7 @@ public final class ProbabilityOfDetectionTest
         assertTrue("The Probability of Detection is not decomposable.", !pod.isDecomposable());
         assertTrue("The Probability of Detection is not a skill score.", !pod.isSkillScore());
         assertTrue("The Probability of Detection cannot be decomposed.",
-                   pod.getDecompositionID() == MetricDecompositionGroup.NONE);
+                   pod.getScoreOutputGroup() == ScoreOutputGroup.NONE);
         final String expName = metF.ofContingencyTable().getName();
         final String actName = metaFac.getMetricName(pod.getCollectionOf());
         assertTrue("The Probability of Detection should be a collection of '" + expName

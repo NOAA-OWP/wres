@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
@@ -98,9 +98,9 @@ implements ProbabilityScore
     }    
 
     @Override
-    public MetricDecompositionGroup getDecompositionID()
+    public ScoreOutputGroup getScoreOutputGroup()
     {
-        return MetricDecompositionGroup.NONE;
+        return ScoreOutputGroup.NONE;
     }
 
     /**
