@@ -3,8 +3,13 @@ package wres.io.reading.fews;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
@@ -208,7 +213,35 @@ public final class PIXMLReader extends XMLReader
 		
 		if (value != null && !value.equals(currentMissingValue)) {
 			if (isForecast) {
-				addForecastEvent(value, currentLeadTime, getTimeSeriesID());
+                final String PATTERN = "yyyy-MM-dd HH:mm:ss";
+                DateTimeFormatter formatter
+                        = DateTimeFormatter.ofPattern( PATTERN,
+                                                       Locale.US )
+                                           .withZone( ZoneId.of( "UTC" ) );
+                LOGGER.trace( "The time is {}", time );
+                LocalDateTime dateTime = LocalDateTime.parse( time.toString(),
+                                                              formatter );
+                LocalDateTime forecastDateTime
+                        = LocalDateTime.parse( this.getForecastDate(),
+                                               formatter );
+                Duration leadTime = Duration.between( forecastDateTime,
+                                                      dateTime );
+                int leadTimeInHours = (int) leadTime.toHours();
+                if ( leadTimeInHours > 0 )
+                {
+                    PIXMLReader.addForecastEvent( value,
+                                                  leadTimeInHours,
+                                                  getTimeSeriesID() );
+                }
+                else
+                {
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "The value '" + value + "' is not being "
+                                      + "saved because the lead time '"
+                                      + leadTimeInHours + "' is negative." );
+                    }
+                }
 			} else {
 				addObservedEvent(time.toString(), value);
 			}
@@ -694,7 +727,12 @@ public final class PIXMLReader extends XMLReader
         
         return featureApproved && variableApproved && ensembleApproved;
     }
-	
+
+    private String getForecastDate()
+    {
+		return this.forecastDate;
+    }
+
 	/**
 	 * The date for when the source was created
 	 */
