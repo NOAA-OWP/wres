@@ -17,7 +17,7 @@ import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.engine.statistics.metric.CorrelationPearsons.CorrelationPearsonsBuilder;
 
 /**
@@ -67,7 +67,7 @@ public final class CorrelationPearsonsTest
         assertTrue("Pearson's correlation is not decomposable.", !rho.isDecomposable());
         assertTrue("Pearson's correlation is not a skill score.", !rho.isSkillScore());
         assertTrue("Pearson's correlation cannot be decomposed.",
-                   rho.getDecompositionID() == MetricDecompositionGroup.NONE);
+                   rho.getScoreOutputGroup() == ScoreOutputGroup.NONE);
         assertTrue("Pearson's correlation does not have real units", !rho.hasRealUnits());
 
         //Check exceptions

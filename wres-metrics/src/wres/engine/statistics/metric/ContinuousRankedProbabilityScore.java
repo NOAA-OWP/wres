@@ -8,7 +8,7 @@ import java.util.function.BiConsumer;
 
 import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -20,7 +20,7 @@ import wres.datamodel.VectorOutput;
  * The Continuous Ranked Probability Score (CRPS) is the square difference between the empirical distribution function
  * of an ensemble forecast and the step function associated with a single-valued observation, integrated over the unit
  * interval. By convention, the CRPS is then averaged over each pair of ensemble forecasts and observations. Optionally,
- * the CRPS may be factored into a three-component decomposition, {@link MetricDecompositionGroup#CR}.
+ * the CRPS may be factored into a three-component decomposition, {@link ScoreOutputGroup#CR}.
  * </p>
  * <p>
  * Uses the procedure outlined in Hersbach, H. (2000) Decomposition of the Continuous Ranked Probability Score for

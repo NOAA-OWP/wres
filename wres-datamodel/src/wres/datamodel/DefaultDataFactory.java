@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
 import wres.datamodel.SafeMetricOutputMultiMapByLeadThreshold.SafeMetricOutputMultiMapByLeadThresholdBuilder;
 import wres.datamodel.Threshold.Operator;
@@ -228,7 +228,7 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public VectorOutput ofVectorOutput( final double[] output,
-                                        final MetricDecompositionGroup template,
+                                        final ScoreOutputGroup template,
                                         final MetricOutputMetadata meta )
     {
         return new SafeVectorOutput( vectorOf( output ), template, meta );

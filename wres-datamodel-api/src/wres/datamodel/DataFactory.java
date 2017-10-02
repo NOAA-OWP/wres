@@ -3,7 +3,7 @@ package wres.datamodel;
 import java.util.List;
 import java.util.Map;
 
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
 import wres.datamodel.MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
 import wres.datamodel.Threshold.Operator;
@@ -284,7 +284,7 @@ public interface DataFactory
     }
 
     /**
-     * Return a {@link VectorOutput} with a default decomposition template of {@link MetricDecompositionGroup#NONE}.
+     * Return a {@link VectorOutput} with a default decomposition template of {@link ScoreOutputGroup#NONE}.
      * 
      * @param output the output data
      * @param meta the metadata
@@ -293,7 +293,7 @@ public interface DataFactory
 
     default VectorOutput ofVectorOutput( final double[] output, final MetricOutputMetadata meta )
     {
-        return ofVectorOutput( output, MetricDecompositionGroup.NONE, meta );
+        return ofVectorOutput( output, ScoreOutputGroup.NONE, meta );
     }
 
     /**
@@ -612,7 +612,7 @@ public interface DataFactory
     ScalarOutput ofScalarOutput( final double output, final MetricOutputMetadata meta );
 
     /**
-     * Return a {@link VectorOutput} with a prescribed decomposition template {@link MetricDecompositionGroup}, which
+     * Return a {@link VectorOutput} with a prescribed decomposition template {@link ScoreOutputGroup}, which
      * maps the output to specific components in a specific order.
      * 
      * @param output the output data
@@ -622,7 +622,7 @@ public interface DataFactory
      */
 
     VectorOutput ofVectorOutput( final double[] output,
-                                 final MetricDecompositionGroup template,
+                                 final ScoreOutputGroup template,
                                  final MetricOutputMetadata meta );
 
     /**

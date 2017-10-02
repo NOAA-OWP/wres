@@ -2,7 +2,7 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricInput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
@@ -20,10 +20,10 @@ implements Score
 {
 
     /**
-     * The decomposition identifier. See {@link MetricDecompositionGroup}.
+     * The decomposition identifier. See {@link ScoreOutputGroup}.
      */
 
-    private final MetricDecompositionGroup decompositionID;
+    private final ScoreOutputGroup decompositionID;
 
     @Override
     public boolean isDecomposable()
@@ -32,7 +32,7 @@ implements Score
     }
 
     @Override
-    public MetricDecompositionGroup getDecompositionID()
+    public ScoreOutputGroup getScoreOutputGroup()
     {
         return decompositionID;
     }
@@ -46,10 +46,10 @@ implements Score
         MetricBuilder<S, VectorOutput>
     {
         /**
-         * The type of metric decomposition. See {@link MetricDecompositionGroup}.
+         * The type of metric decomposition. See {@link ScoreOutputGroup}.
          */
 
-        MetricDecompositionGroup decompositionID = MetricDecompositionGroup.NONE;
+        ScoreOutputGroup decompositionID = ScoreOutputGroup.NONE;
 
         /**
          * Sets the decomposition identifier.
@@ -58,7 +58,7 @@ implements Score
          * @return the builder
          */
 
-        DecomposableDoubleErrorScoreBuilder<S> setDecompositionID(final MetricDecompositionGroup decompositionID)
+        DecomposableDoubleErrorScoreBuilder<S> setDecompositionID(final ScoreOutputGroup decompositionID)
         {
             this.decompositionID = decompositionID;
             return this;

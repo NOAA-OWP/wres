@@ -9,7 +9,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.engine.statistics.metric.FrequencyBias.FrequencyBiasBuilder;
@@ -68,7 +68,7 @@ public final class FrequencyBiasTest
         assertTrue( "The Frequency Bias is not decomposable.", !fb.isDecomposable() );
         assertTrue( "The Frequency Bias is not a skill score.", !fb.isSkillScore() );
         assertTrue( "The Frequency Bias cannot be decomposed.",
-                    fb.getDecompositionID() == MetricDecompositionGroup.NONE );
+                    fb.getScoreOutputGroup() == ScoreOutputGroup.NONE );
         final String expName = metF.ofContingencyTable().getName();
         final String actName = metaFac.getMetricName( fb.getCollectionOf() );
         assertTrue( "The Frequency Bias should be a collection of '" + expName

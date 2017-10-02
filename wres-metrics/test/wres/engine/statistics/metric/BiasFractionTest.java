@@ -8,7 +8,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
@@ -61,7 +61,7 @@ public final class BiasFractionTest
                    bf.getName().equals(metaFac.getMetricName(MetricConstants.BIAS_FRACTION)));
         assertTrue("The Bias Fraction is not decomposable.", !bf.isDecomposable());
         assertTrue("The Bias Fraction is not a skill score.", !bf.isSkillScore());
-        assertTrue("The Bias Fraction cannot be decomposed.", bf.getDecompositionID() == MetricDecompositionGroup.NONE);
+        assertTrue("The Bias Fraction cannot be decomposed.", bf.getScoreOutputGroup() == ScoreOutputGroup.NONE);
     }
 
 }

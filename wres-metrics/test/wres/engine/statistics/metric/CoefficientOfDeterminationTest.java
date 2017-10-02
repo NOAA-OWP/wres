@@ -16,7 +16,7 @@ import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.engine.statistics.metric.CoefficientOfDetermination.CoefficientOfDeterminationBuilder;
 
 /**
@@ -65,7 +65,7 @@ public final class CoefficientOfDeterminationTest
         assertTrue("Coefficient of determination is not decomposable.", !cod.isDecomposable());
         assertTrue("Coefficient of determination is not a skill score.", !cod.isSkillScore());
         assertTrue("Coefficient of determination cannot be decomposed.",
-                   cod.getDecompositionID() == MetricDecompositionGroup.NONE);
+                   cod.getScoreOutputGroup() == ScoreOutputGroup.NONE);
         assertTrue("Coefficient of determination does not have real units", !cod.hasRealUnits());
        
         //Check exceptions

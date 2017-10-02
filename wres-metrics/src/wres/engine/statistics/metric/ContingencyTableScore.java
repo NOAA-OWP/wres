@@ -6,7 +6,7 @@ import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MatrixOutput;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MulticategoryPairs;
@@ -60,9 +60,9 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
     }
 
     @Override
-    public MetricDecompositionGroup getDecompositionID()
+    public ScoreOutputGroup getScoreOutputGroup()
     {
-        return MetricDecompositionGroup.NONE;
+        return ScoreOutputGroup.NONE;
     }
 
     @Override

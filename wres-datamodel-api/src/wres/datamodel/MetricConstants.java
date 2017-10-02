@@ -185,80 +185,80 @@ public enum MetricConstants
      * Indicator for no decomposition.
      */
 
-    NONE( MetricDecompositionGroup.NONE ),
+    NONE( ScoreOutputGroup.NONE ),
 
     /**
      * Identifier for a Calibration-Refinement (CR) factorization.
      */
 
-    CR( MetricDecompositionGroup.CR ),
+    CR( ScoreOutputGroup.CR ),
 
     /**
      * Identifier for a Calibration-Refinement (CR) factorization, together with an additional potential score
      * component.
      */
 
-    CR_POT( MetricDecompositionGroup.CR_POT ),
+    CR_POT( ScoreOutputGroup.CR_POT ),
 
     /**
      * Identifier for a Likeilihood-Base-Rate (LBR) factorization.
      */
 
-    LBR( MetricDecompositionGroup.LBR ),
+    LBR( ScoreOutputGroup.LBR ),
 
     /**
      * Identifier for the score and components of both the CR and LBR factorizations.
      */
 
-    CR_AND_LBR( MetricDecompositionGroup.CR_AND_LBR ),
+    CR_AND_LBR( ScoreOutputGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the main component of a metric, such as the overall score in a score decomposition.
      */
 
-    MAIN( MetricDecompositionGroup.NONE, MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR ),
+    MAIN( ScoreOutputGroup.NONE, ScoreOutputGroup.CR, ScoreOutputGroup.CR_POT, ScoreOutputGroup.LBR, ScoreOutputGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the reliability component of a score decomposition.
      */
 
-    RELIABILITY( MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR ),
+    RELIABILITY( ScoreOutputGroup.CR, ScoreOutputGroup.CR_POT, ScoreOutputGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the resolution component of a score decomposition.
      */
 
-    RESOLUTION( MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR ),
+    RESOLUTION( ScoreOutputGroup.CR, ScoreOutputGroup.CR_POT, ScoreOutputGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the uncertainty component of a score decomposition.
      */
 
-    UNCERTAINTY( MetricDecompositionGroup.CR, MetricDecompositionGroup.CR_POT, MetricDecompositionGroup.CR_AND_LBR ),
+    UNCERTAINTY( ScoreOutputGroup.CR, ScoreOutputGroup.CR_POT, ScoreOutputGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the potential score value (perfect reliability).
      */
 
-    POTENTIAL( MetricDecompositionGroup.CR_POT ),
+    POTENTIAL( ScoreOutputGroup.CR_POT ),
 
     /**
      * Identifier for the Type-II conditional bias component of a score decomposition.
      */
 
-    TYPE_II_BIAS( MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR ),
+    TYPE_II_BIAS( ScoreOutputGroup.LBR, ScoreOutputGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the discrimination component of a score decomposition.
      */
 
-    DISCRIMINATION( MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR ),
+    DISCRIMINATION( ScoreOutputGroup.LBR, ScoreOutputGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the sharpness component of a score decomposition.
      */
 
-    SHARPNESS( MetricDecompositionGroup.LBR, MetricDecompositionGroup.CR_AND_LBR ),
+    SHARPNESS( ScoreOutputGroup.LBR, ScoreOutputGroup.CR_AND_LBR ),
 
     /**
      * Identifier for a forecast probability.
@@ -309,11 +309,11 @@ public enum MetricConstants
     private final MetricOutputGroup outGroup;
 
     /**
-     * The {@link MetricDecompositionGroup} to which this {@link MetricConstants} belongs or null if the
-     * {@link MetricConstants} does not belong to a {@link MetricDecompositionGroup}.
+     * The {@link ScoreOutputGroup} to which this {@link MetricConstants} belongs or null if the
+     * {@link MetricConstants} does not belong to a {@link ScoreOutputGroup}.
      */
 
-    private final MetricDecompositionGroup[] decGroup;
+    private final ScoreOutputGroup[] decGroup;
 
     /**
      * Default constructor
@@ -356,12 +356,12 @@ public enum MetricConstants
     }
 
     /**
-     * Construct with a varargs of {@link MetricDecompositionGroup}.
+     * Construct with a varargs of {@link ScoreOutputGroup}.
      * 
      * @param decGroup the decomposition groups to which the {@link MetricConstants} belongs
      */
 
-    private MetricConstants( MetricDecompositionGroup... decGroup )
+    private MetricConstants( ScoreOutputGroup... decGroup )
     {
         this.decGroup = decGroup;
         inGroup = null;
@@ -409,10 +409,10 @@ public enum MetricConstants
     }
 
     /**
-     * Returns all metric components in the {@link MetricDecompositionGroup} with which this constant is associated or
+     * Returns all metric components in the {@link ScoreOutputGroup} with which this constant is associated or
      * null if none is defined.
      * 
-     * @return the components in the {@link MetricDecompositionGroup} or null
+     * @return the components in the {@link ScoreOutputGroup} or null
      */
 
     public List<MetricConstants> getMetricComponents()
@@ -572,10 +572,10 @@ public enum MetricConstants
     }
     
     /**
-     * Type of metric decomposition.
+     * A template associated with one or more scalar values that compose a verification score.
      */
 
-    public enum MetricDecompositionGroup
+    public enum ScoreOutputGroup
     {
 
         /**
@@ -613,9 +613,9 @@ public enum MetricConstants
         CR_AND_LBR;
 
         /**
-         * Returns all {@link MetricConstants} associated with the current {@link MetricDecompositionGroup}.
+         * Returns all {@link MetricConstants} associated with the current {@link ScoreOutputGroup}.
          * 
-         * @return the {@link MetricConstants} associated with the current {@link MetricDecompositionGroup}
+         * @return the {@link MetricConstants} associated with the current {@link ScoreOutputGroup}
          */
 
         public List<MetricConstants> getMetricComponents()
@@ -628,11 +628,11 @@ public enum MetricConstants
         }
 
         /**
-         * Returns true if this {@link MetricDecompositionGroup} contains the input {@link MetricConstants}, false
+         * Returns true if this {@link ScoreOutputGroup} contains the input {@link MetricConstants}, false
          * otherwise.
          * 
          * @param input the {@link MetricConstants} to test
-         * @return true if this {@link MetricDecompositionGroup} contains the input {@link MetricConstants}, false
+         * @return true if this {@link ScoreOutputGroup} contains the input {@link MetricConstants}, false
          *         otherwise
          */
 

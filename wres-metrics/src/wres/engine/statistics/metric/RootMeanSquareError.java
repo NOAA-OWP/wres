@@ -3,7 +3,6 @@ package wres.engine.statistics.metric;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * As with the MSE, the Root Mean Square Error (RMSE) or Root Mean Square Deviation (RMSD) is a measure of accuracy.
@@ -31,21 +30,9 @@ class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     }
 
     @Override
-    public boolean isDecomposable()
-    {
-        return false;
-    }
-
-    @Override
     public boolean hasRealUnits()
     {
         return true;
-    }
-
-    @Override
-    public MetricDecompositionGroup getDecompositionID()
-    {
-        return MetricDecompositionGroup.NONE;
     }
 
     @Override
