@@ -9,7 +9,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.VectorOutput;
 import wres.engine.statistics.metric.BrierSkillScore.BrierSkillScoreBuilder;
@@ -40,7 +40,7 @@ public final class BrierSkillScoreTest
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         b.setOutputFactory(outF);
-        b.setDecompositionID(MetricDecompositionGroup.NONE);
+        b.setDecompositionID(ScoreOutputGroup.NONE);
 
         final BrierSkillScore bss = b.build();
 
@@ -66,7 +66,7 @@ public final class BrierSkillScoreTest
         assertTrue("The Brier Skill Score is decomposable.", bss.isDecomposable());
         assertTrue("The Brier Skill Score is a skill score.", bss.isSkillScore());
         assertTrue("Expected no decomposition for the Brier Skill Score.",
-                   bss.getDecompositionID() == MetricDecompositionGroup.NONE);
+                   bss.getScoreOutputGroup() == ScoreOutputGroup.NONE);
         assertTrue("The Brier Skill Score is not proper.", !bss.isProper());
         assertTrue("The Brier Skill Score is not strictly proper.", !bss.isStrictlyProper());
     }

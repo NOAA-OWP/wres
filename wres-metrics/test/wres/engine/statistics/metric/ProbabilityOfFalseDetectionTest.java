@@ -11,7 +11,7 @@ import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.engine.statistics.metric.ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder;
 
 /**
@@ -66,7 +66,7 @@ public final class ProbabilityOfFalseDetectionTest
         assertTrue("The Probability of False Detection is not decomposable.", !pofd.isDecomposable());
         assertTrue("The Probability of False Detection is not a skill score.", !pofd.isSkillScore());
         assertTrue("The Probability of False Detection cannot be decomposed.",
-                   pofd.getDecompositionID() == MetricDecompositionGroup.NONE);
+                   pofd.getScoreOutputGroup() == ScoreOutputGroup.NONE);
         final String expName = metF.ofContingencyTable().getName();
         final String actName = metaFac.getMetricName(pofd.getCollectionOf());
         assertTrue("The Probability of False Detection should be a collection of '" + expName
