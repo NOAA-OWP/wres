@@ -3,7 +3,7 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricInput;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.ScalarOutput;
@@ -47,9 +47,9 @@ class SampleSize<S extends MetricInput<?>> extends Metric<S, ScalarOutput> imple
     }
 
     @Override
-    public MetricDecompositionGroup getDecompositionID()
+    public ScoreOutputGroup getScoreOutputGroup()
     {
-        return MetricDecompositionGroup.NONE;
+        return ScoreOutputGroup.NONE;
     }
 
     @Override

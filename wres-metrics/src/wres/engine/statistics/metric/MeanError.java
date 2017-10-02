@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
 
 /**
  * The mean error applies to continuous variables and is the average signed difference between a single-valued
@@ -25,18 +24,6 @@ class MeanError extends DoubleErrorScore<SingleValuedPairs>
     public MetricConstants getID()
     {
         return MetricConstants.MEAN_ERROR;
-    }
-
-    @Override
-    public boolean isDecomposable()
-    {
-        return false;
-    }
-
-    @Override
-    public MetricDecompositionGroup getDecompositionID()
-    {
-        return MetricDecompositionGroup.NONE;
     }
 
     @Override

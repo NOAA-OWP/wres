@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.DoubleAdder;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDecompositionGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
@@ -57,9 +57,9 @@ class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> implements Sc
     }
 
     @Override
-    public MetricDecompositionGroup getDecompositionID()
+    public ScoreOutputGroup getScoreOutputGroup()
     {
-        return MetricDecompositionGroup.NONE;
+        return ScoreOutputGroup.NONE;
     }
 
     @Override
