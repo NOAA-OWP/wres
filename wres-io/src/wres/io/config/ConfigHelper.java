@@ -312,6 +312,21 @@ public class ConfigHelper
             }
         }
 
+        // Filtering on existence guarentees early exit
+        script.append("     AND EXISTS (").append(newline);
+        script.append("         SELECT 1").append(newline);
+        script.append("         FROM wres.ProjectSource OPS").append(newline);
+        script.append("         WHERE OPS.project_id = ").append(projectDetails.getId()).append(newline);
+        script.append("             AND OPS.member = 'right'").append(newline);
+        script.append("     )").append(newline);
+        script.append("     AND EXISTS (").append(newline);
+        script.append("         SELECT 1").append(newline);
+        script.append("         FROM wres.ProjectSource OPS").append(newline);
+        script.append("         WHERE OPS.project_id = ").append(projectDetails.getId()).append(newline);
+        script.append("             AND OPS.member =  'left'").append(newline);
+        script.append("             AND OPS.source_id = O.source_id").append(newline);
+        script.append("     )").append(newline);
+
         script.append("ORDER BY FV.lead").append(newline);
         script.append("LIMIT 1;");
 

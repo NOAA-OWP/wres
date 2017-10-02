@@ -160,36 +160,44 @@ public class ZippedSource extends BasicSource {
                 new File(filename).delete();
             }
         }
-        catch (IOException | InterruptedException e) {
+        catch (IOException | InterruptedException e)
+        {
             LOGGER.error(Strings.getStackTrace(e));
         }
-        finally {
+        finally
+        {
             if (archive != null)
             {
-                try {
+                try
+                {
                     archive.close();
                 }
-                catch (IOException e) {
+                catch (IOException e)
+                {
                     LOGGER.error(Strings.getStackTrace(e));
                 }
             }
 
             if (decompressedFileStream != null)
             {
-                try {
+                try
+                {
                     decompressedFileStream.close();
                 }
-                catch (IOException e) {
+                catch (IOException e)
+                {
                     LOGGER.error(Strings.getStackTrace(e));
                 }
             }
 
             if (bufferedFile != null)
             {
-                try {
+                try
+                {
                     bufferedFile.close();
                 }
-                catch (IOException e) {
+                catch (IOException e)
+                {
                     LOGGER.error(Strings.getStackTrace(e));
                 }
             }
@@ -206,7 +214,10 @@ public class ZippedSource extends BasicSource {
         }
     }
 
-    private void processFile(TarArchiveEntry source, TarArchiveInputStream archiveInputStream, boolean isForecast) throws IOException
+    private void processFile(TarArchiveEntry source,
+                             TarArchiveInputStream archiveInputStream,
+                             boolean isForecast)
+            throws IOException
     {
         String archivedFileName = Paths.get(this.directoryPath, source.getName()).toString();
         SourceType sourceType = ReaderFactory.getFiletype(archivedFileName);
@@ -246,6 +257,12 @@ public class ZippedSource extends BasicSource {
                 message += "observations.";
             }
             LOGGER.debug( message, archivedFileName );
+        }
+
+        if (!this.alreadySuspendedIndexes)
+        {
+            Database.suspendAllIndices();
+            this.alreadySuspendedIndexes = true;
         }
 
         WRESRunnable ingest;
@@ -295,4 +312,5 @@ public class ZippedSource extends BasicSource {
     }
 
     private final String directoryPath;
+    private boolean alreadySuspendedIndexes;
 }

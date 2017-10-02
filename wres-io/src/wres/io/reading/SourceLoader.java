@@ -43,7 +43,8 @@ public class SourceLoader
      * @param projectConfig the project configuration
      */
     @Internal(exclusivePackage = "wres.io")
-    public SourceLoader (ProjectConfig projectConfig) {
+    public SourceLoader (ProjectConfig projectConfig)
+    {
         this.projectConfig = projectConfig;
     }
 
@@ -202,7 +203,8 @@ public class SourceLoader
 
         if (shouldIngest(absolutePath, source, dataSourceConfig))
         {
-            if (!alreadySuspendedIndexes)
+            if (!alreadySuspendedIndexes &&
+                ReaderFactory.getFileType(source.getFormat()) != SourceType.ARCHIVE)
             {
                 Database.suspendAllIndices();
                 alreadySuspendedIndexes = true;
