@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.InvalidPropertiesFormatException;
@@ -60,6 +62,12 @@ public final class PIXMLReader extends XMLReader
 																			  "observed_value, " +
 																			  "measurementunit_id, " +
 																			  "source_id)";
+
+    private static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
+    private static final DateTimeFormatter FORMATTER
+            = DateTimeFormatter.ofPattern( PATTERN,
+                                           Locale.US )
+                               .withZone( ZoneId.of( "UTC" ) );
 
 	private static String createForecastValuePartition(Integer leadTime) throws SQLException {
 
@@ -194,8 +202,9 @@ public final class PIXMLReader extends XMLReader
     {
 		this.incrementLead();
 		Float value = null;
-		StringBuilder time = new StringBuilder();
 		String localName;
+        LocalDate localDate = null;
+        LocalTime localTime = null;
 		
 		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex) {
 			localName = reader.getAttributeLocalName(attributeIndex);
@@ -205,29 +214,21 @@ public final class PIXMLReader extends XMLReader
 			    // The value is parsed so that we can compare it to the missing value
 				value = Float.parseFloat(reader.getAttributeValue(attributeIndex));
 			} else if (localName.equalsIgnoreCase("date")) {
-				time.insert(0, reader.getAttributeValue(attributeIndex));
+                String dateText = reader.getAttributeValue(attributeIndex);
+                localDate = LocalDate.parse( dateText );
 			} else if (localName.equalsIgnoreCase("time")) {
-				time.append(" ").append(reader.getAttributeValue(attributeIndex));
+                String timeText = reader.getAttributeValue(attributeIndex);
+                localTime = LocalTime.parse( timeText );
 			}
 		}
 		
 		if (value != null && !value.equals(currentMissingValue)) {
+            LocalDateTime dateTime = LocalDateTime.of( localDate, localTime );
 			if (isForecast) {
-                final String PATTERN = "yyyy-MM-dd HH:mm:ss";
-                DateTimeFormatter formatter
-                        = DateTimeFormatter.ofPattern( PATTERN,
-                                                       Locale.US )
-                                           .withZone( ZoneId.of( "UTC" ) );
-                LOGGER.trace( "The time is {}", time );
-                LocalDateTime dateTime = LocalDateTime.parse( time.toString(),
-                                                              formatter );
-                LocalDateTime forecastDateTime
-                        = LocalDateTime.parse( this.getForecastDate(),
-                                               formatter );
-                Duration leadTime = Duration.between( forecastDateTime,
+                Duration leadTime = Duration.between( this.getForecastDate(),
                                                       dateTime );
                 int leadTimeInHours = (int) leadTime.toHours();
-                if ( leadTimeInHours > 0 )
+                if ( leadTimeInHours >= 0 )
                 {
                     PIXMLReader.addForecastEvent( value,
                                                   leadTimeInHours,
@@ -243,7 +244,8 @@ public final class PIXMLReader extends XMLReader
                     }
                 }
 			} else {
-				addObservedEvent(time.toString(), value);
+                String formattedDate = dateTime.format( FORMATTER );
+                addObservedEvent( formattedDate, value);
 			}
 		}
 		else if (value != null && value.equals(currentMissingValue)) {
@@ -446,7 +448,7 @@ public final class PIXMLReader extends XMLReader
 				{				
 					startDate = parseDateTime(reader);
 				}
-				else if (XML.tagIs(reader, endDate))
+                else if (XML.tagIs(reader, "endDate"))
 				{
 					endDate = parseDateTime(reader);
 				}
@@ -490,11 +492,12 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * Reads the date and time from an XML reader that stores the date and time in separate attributes
 	 * @param reader The XML Reader positioned at a node containing date and time attributes
-	 * @return A string of the format "{date} {time}"
-	 */
-	private static String parseDateTime (XMLStreamReader reader) {
-		String date = null;
-		String time = null;
+     * @return a LocalDateTime representing the parsed value
+     */
+    private static LocalDateTime parseDateTime (XMLStreamReader reader)
+    {
+        LocalDate date = null;
+        LocalTime time = null;
 		String localName;
 		
 		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
@@ -503,15 +506,25 @@ public final class PIXMLReader extends XMLReader
 
 			if (localName.equalsIgnoreCase("date"))
 			{
-				date = reader.getAttributeValue(attributeIndex);
+                String dateText = reader.getAttributeValue(attributeIndex);
+                date = LocalDate.parse( dateText );
 			}
 			else if (localName.equalsIgnoreCase("time"))
 			{
-				time = reader.getAttributeValue(attributeIndex);
+                String timeText = reader.getAttributeValue(attributeIndex);
+                time = LocalTime.parse( timeText );
 			}
 		}
-		
-		return date + " " + time;
+
+        if ( date == null || time == null )
+        {
+            throw new RuntimeException( "Could not parse date and time from "
+                                        + reader + " at line "
+                                        + reader.getLocation().getLineNumber()
+                                        + " column " + reader.getLocation().getColumnNumber() );
+        }
+
+        return LocalDateTime.of( date, time );
 	}
 	
 	/**
@@ -571,7 +584,9 @@ public final class PIXMLReader extends XMLReader
     {
         if (this.currentTimeSeries == null)
         {
-            this.currentTimeSeries = new TimeSeries( this.getSourceID(), this.forecastDate );
+            this.currentTimeSeries =
+                    new TimeSeries( this.getSourceID(),
+                                    this.forecastDate.format( FORMATTER ) );
         }
         return this.currentTimeSeries;
     }
@@ -607,7 +622,7 @@ public final class PIXMLReader extends XMLReader
 				}
 			}
 			else {
-				output_time = startDate;
+                output_time = startDate.format( FORMATTER );
 			}
 			currentSourceID = DataSources.getSourceID(getFilename(),
 													  output_time,
@@ -728,7 +743,7 @@ public final class PIXMLReader extends XMLReader
         return featureApproved && variableApproved && ensembleApproved;
     }
 
-    private String getForecastDate()
+    private LocalDateTime getForecastDate()
     {
 		return this.forecastDate;
     }
@@ -746,17 +761,17 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The date and time of the first value forecasted
 	 */
-	private String startDate = null;
+    private LocalDateTime startDate = null;
 	
 	/**
 	 * The date that data generation/collection ended
 	 */
-	private String endDate = null;
+    private LocalDateTime endDate = null;
 
     /**
      * The date and time that forecasting began
      */
-	private String forecastDate = null;
+    private LocalDateTime forecastDate = null;
 	
 	/**
 	 * Indicates whether or not the data is for forecasts. Default is True
