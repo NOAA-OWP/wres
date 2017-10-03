@@ -448,10 +448,6 @@ public final class PIXMLReader extends XMLReader
 				{				
 					startDate = parseDateTime(reader);
 				}
-                else if (XML.tagIs(reader, "endDate"))
-				{
-					endDate = parseDateTime(reader);
-				}
 				else if (XML.tagIs(reader, "creationDate")) {
 					creationDate = XML.getXMLText(reader);
 				}
@@ -494,7 +490,7 @@ public final class PIXMLReader extends XMLReader
 	 * @param reader The XML Reader positioned at a node containing date and time attributes
      * @return a LocalDateTime representing the parsed value
      */
-    private static LocalDateTime parseDateTime (XMLStreamReader reader)
+    private static LocalDateTime parseDateTime( XMLStreamReader reader )
     {
         LocalDate date = null;
         LocalTime time = null;
@@ -762,11 +758,6 @@ public final class PIXMLReader extends XMLReader
 	 * The date and time of the first value forecasted
 	 */
     private LocalDateTime startDate = null;
-	
-	/**
-	 * The date that data generation/collection ended
-	 */
-    private LocalDateTime endDate = null;
 
     /**
      * The date and time that forecasting began
