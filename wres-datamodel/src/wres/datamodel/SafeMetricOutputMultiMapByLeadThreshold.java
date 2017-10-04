@@ -116,7 +116,10 @@ class SafeMetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>>
         public MetricOutputMultiMapByLeadThresholdBuilder<S>
                 put( final int leadTime, final Threshold threshold, final MetricOutputMapByMetric<S> result )
         {
-            Objects.requireNonNull( result, "Specify a non-null metric result." );
+            if ( Objects.isNull( result ) )
+            {
+                throw new MetricOutputException( "Specify a non-null metric result." );
+            }
             result.forEach( ( key, value ) -> {
                 final MetricOutputMetadata d = value.getMetadata();
                 final MapKey<MetricConstants> check =
@@ -139,7 +142,10 @@ class SafeMetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>>
         public MetricOutputMultiMapByLeadThresholdBuilder<S> put( MapKey<MetricConstants> key,
                                                                   MetricOutputMapByLeadThreshold<S> result )
         {
-            Objects.requireNonNull( result, "Specify a non-null metric result." );
+            if ( Objects.isNull( result ) )
+            {
+                throw new MetricOutputException( "Specify a non-null metric result." );
+            }
             //Safe put
             final SafeMetricOutputMapByLeadThreshold.Builder<S> addMe =
                     new SafeMetricOutputMapByLeadThreshold.Builder<>();
@@ -157,23 +163,24 @@ class SafeMetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>>
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricOutputException if any of the inputs are invalid
      */
     private SafeMetricOutputMultiMapByLeadThreshold( final SafeMetricOutputMultiMapByLeadThresholdBuilder<S> builder )
     {
         //Bounds checks
         if ( builder.internal.isEmpty() )
         {
-            throw new UnsupportedOperationException( "Specify one or more <key,value> mappings to build the map." );
+            throw new MetricOutputException( "Specify one or more <key,value> mappings to build the map." );
         }
         //Bounds checks
         builder.internal.forEach( ( key, value ) -> {
             if ( Objects.isNull( key ) )
             {
-                throw new UnsupportedOperationException( "Cannot prescribe a null key for the input map." );
+                throw new MetricOutputException( "Cannot prescribe a null key for the input map." );
             }
             if ( Objects.isNull( value ) )
             {
-                throw new UnsupportedOperationException( "Cannot prescribe a null value for the input map." );
+                throw new MetricOutputException( "Cannot prescribe a null value for the input map." );
             }
         } );
         //Initialize

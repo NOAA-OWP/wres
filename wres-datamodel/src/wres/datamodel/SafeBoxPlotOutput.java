@@ -1,0 +1,171 @@
+package wres.datamodel;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+
+import wres.datamodel.MetricConstants.MetricDimension;
+
+/**
+ * Immutable implementation of a store for box plot outputs.
+ * 
+ * @author james.brown@hydrosolved.com
+ * @version 0.1
+ * @since 0.1
+ */
+class SafeBoxPlotOutput implements BoxPlotOutput
+{
+
+    /**
+     * The boxes in an immutable list.
+     */
+
+    private final List<PairOfDoubleAndVectorOfDoubles> output;
+
+    /**
+     * The metadata associated with the output.
+     */
+
+    private final MetricOutputMetadata meta;
+
+    /**
+     * The dimension associated with the domain axis.
+     */
+
+    private final MetricDimension domainAxisDimension;
+
+    /**
+     * The dimension associated with the range axis (boxes).
+     */
+
+    private final MetricDimension rangeAxisDimension;
+    
+    /**
+     * Probabilities associated with the whiskers for each box.
+     */
+
+    private VectorOfDoubles probabilities;
+    
+    @Override
+    public MetricOutputMetadata getMetadata()
+    {
+        return meta;
+    }
+
+    @Override
+    public List<PairOfDoubleAndVectorOfDoubles> getData()
+    {
+        return output;
+    }
+
+    @Override
+    public Iterator<PairOfDoubleAndVectorOfDoubles> iterator()
+    {
+        return output.iterator();
+    }
+
+    @Override
+    public VectorOfDoubles getProbabilities()
+    {
+        return probabilities;
+    }
+
+    @Override
+    public MetricDimension getDomainAxisDimension()
+    {
+        return domainAxisDimension;
+    }
+
+    @Override
+    public MetricDimension getRangeAxisDimension()
+    {
+        return rangeAxisDimension;
+    }
+
+    /**
+     * Construct the box plot output.
+     * 
+     * @param output the box plot data
+     * @param meta the box plot metadata
+     * @param probabilities the probabilities
+     * @param domainAxisDimension the domain axis dimension
+     * @param rangeAxisDimension the range axis dimension
+     * @throws MetricOutputException if any of the inputs are invalid
+     */
+
+    SafeBoxPlotOutput( final List<PairOfDoubleAndVectorOfDoubles> output,
+                       MetricOutputMetadata meta,
+                       VectorOfDoubles probabilities,
+                       MetricDimension domainAxisDimension,
+                       MetricDimension rangeAxisDimension )
+    {
+        //Validate
+        if ( Objects.isNull( output ) )
+        {
+            throw new MetricOutputException( "Specify a non-null output." );
+        }
+        if ( Objects.isNull( meta ) )
+        {
+            throw new MetricOutputException( "Specify non-null metadata." );
+        }
+        if ( Objects.isNull( domainAxisDimension ) )
+        {
+            throw new MetricOutputException( "Specify a non-null domain axis dimension." );
+        }
+        if ( Objects.isNull( rangeAxisDimension ) )
+        {
+            throw new MetricOutputException( "Specify a non-null range axis dimension." );
+        }
+        if ( Objects.isNull( probabilities ) )
+        {
+            throw new MetricOutputException( "Specify non-null probabilities." );
+        }
+        //Check contents
+        checkEachBox( output );
+        checkEachProbability( probabilities );
+
+        //Ensure safe types
+        DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
+        this.output = factory.safePairOfDoubleAndVectorOfDoublesList( output );
+        this.probabilities = factory.safeVectorOf( probabilities );
+        this.domainAxisDimension = domainAxisDimension;
+        this.rangeAxisDimension = rangeAxisDimension;
+        this.meta = meta;
+    }
+
+    /**
+     * Validates each box in each input.
+     * 
+     * @param boxes the boxes
+     */
+
+    private void checkEachBox( List<PairOfDoubleAndVectorOfDoubles> boxes )
+    {
+        for ( PairOfDoubleAndVectorOfDoubles next : boxes )
+        {
+            if ( next.getItemTwo().length == 0 )
+            {
+                throw new MetricOutputException( "One or more boxes are missing whiskers." );
+            }
+        }
+    }
+
+    /**
+     * Validates each probability.
+     * 
+     * @param probabilities the probabilities
+     */
+
+    private void checkEachProbability( VectorOfDoubles probabilities )
+    {
+        for ( double next : probabilities.getDoubles() )
+        {
+            if ( next < 0.0 || next > 1.0 )
+            {
+                throw new MetricOutputException( "One or more of the probabilities is invalid." );
+            }
+        }
+    }
+
+
+}

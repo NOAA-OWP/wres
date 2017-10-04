@@ -169,7 +169,10 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     @Override
     public MetricOutputMapWithBiKey<Integer, Threshold, T> sliceByFirst( final Integer first )
     {
-        Objects.requireNonNull( first, "Specify a non-null threshold by which to slice the map." );
+        if ( Objects.isNull( first ) )
+        {
+            throw new MetricOutputException( "Specify a non-null threshold by which to slice the map." );
+        }
         final Builder<T> b = new Builder<>();
         store.forEach( ( key, value ) -> {
             if ( first.equals( key.getFirstKey() ) )
@@ -179,7 +182,7 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
         } );
         if ( b.store.isEmpty() )
         {
-            throw new IllegalArgumentException( "No metric outputs match the specified criteria on forecast lead time." );
+            throw new MetricOutputException( "No metric outputs match the specified criteria on forecast lead time." );
         }
         return b.build();
     }
@@ -187,7 +190,10 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     @Override
     public MetricOutputMapWithBiKey<Integer, Threshold, T> sliceBySecond( final Threshold second )
     {
-        Objects.requireNonNull( second, "Specify a non-null threshold by which to slice the map." );
+        if ( Objects.isNull( second ) )
+        {
+            throw new MetricOutputException( "Specify a non-null threshold by which to slice the map." );
+        }
         final Builder<T> b = new Builder<>();
         store.forEach( ( key, value ) -> {
             if ( second.equals( key.getSecondKey() ) )
@@ -197,7 +203,7 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
         } );
         if ( b.store.isEmpty() )
         {
-            throw new IllegalArgumentException( "No metric outputs match the specified criteria on threshold value." );
+            throw new MetricOutputException( "No metric outputs match the specified criteria on threshold value." );
         }
         return b.build();
     }
@@ -286,6 +292,7 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricOutputException if any of the inputs are invalid
      */
 
     private SafeMetricOutputMapByLeadThreshold( final Builder<T> builder )
@@ -293,23 +300,23 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
         //Bounds checks
         if ( builder.store.isEmpty() )
         {
-            throw new UnsupportedOperationException( "Specify one or more <key,value> mappings to build the map." );
+            throw new MetricOutputException( "Specify one or more <key,value> mappings to build the map." );
         }
         final MetricOutputMetadata checkAgainst = builder.referenceMetadata;
         builder.store.forEach( ( key, value ) -> {
             if ( Objects.isNull( key ) )
             {
-                throw new UnsupportedOperationException( "Cannot prescribe a null key for the input map." );
+                throw new MetricOutputException( "Cannot prescribe a null key for the input map." );
             }
             if ( Objects.isNull( value ) )
             {
-                throw new UnsupportedOperationException( "Cannot prescribe a null value for the input map." );
+                throw new MetricOutputException( "Cannot prescribe a null value for the input map." );
             }
             //Check metadata
             if ( !value.getMetadata().minimumEquals( checkAgainst ) )
             {
-                throw new UnsupportedOperationException( "Cannot construct the map from inputs that comprise "
-                                                         + "inconsistent metadata." );
+                throw new MetricOutputException( "Cannot construct the map from inputs that comprise "
+                                                 + "inconsistent metadata." );
             }
         } );
         //Set the metadata
@@ -317,8 +324,8 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
         {
             if ( !builder.overrideMeta.minimumEquals( checkAgainst ) )
             {
-                throw new UnsupportedOperationException( "Cannot construct the map. The override metadata is "
-                                                         + "inconsistent with the metadata of the stored outputs." );
+                throw new MetricOutputException( "Cannot construct the map. The override metadata is "
+                                                 + "inconsistent with the metadata of the stored outputs." );
             }
             metadata = builder.overrideMeta;
         }
