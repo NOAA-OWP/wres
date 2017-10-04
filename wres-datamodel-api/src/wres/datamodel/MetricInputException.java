@@ -1,7 +1,7 @@
 package wres.datamodel;
 
 /**
- * A runtime exception associated with incorrect metric input.
+ * A runtime exception associated with an incorrect metric input.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

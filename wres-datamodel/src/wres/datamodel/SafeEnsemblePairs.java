@@ -15,7 +15,7 @@ class SafeEnsemblePairs implements EnsemblePairs
 {
 
     /**
-     * The verification pairs.
+     * The verification pairs in an immutable list.
      */
 
     private final List<PairOfDoubleAndVectorOfDoubles> mainInput;
@@ -27,7 +27,7 @@ class SafeEnsemblePairs implements EnsemblePairs
     private final Metadata mainMeta;
 
     /**
-     * The verification pairs for a baseline (may be null).
+     * The verification pairs for a baseline in an immutable list (may be null).
      */
 
     private final List<PairOfDoubleAndVectorOfDoubles> baselineInput;

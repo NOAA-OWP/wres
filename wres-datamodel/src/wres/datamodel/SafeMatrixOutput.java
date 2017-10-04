@@ -3,8 +3,6 @@ package wres.datamodel;
 import java.util.Arrays;
 import java.util.Objects;
 
-import wres.datamodel.MatrixOfDoubles;
-
 /**
  * An immutable matrix of outputs associated with a metric. The number of elements and the order in which they are
  * stored, is prescribed by the metric from which the outputs originate.
@@ -41,23 +39,23 @@ class SafeMatrixOutput implements MatrixOutput
     }
 
     @Override
-    public boolean equals(final Object o)
+    public boolean equals( final Object o )
     {
-        if(!(o instanceof SafeMatrixOutput))
+        if ( ! ( o instanceof SafeMatrixOutput ) )
         {
             return false;
         }
-        final SafeMatrixOutput m = (SafeMatrixOutput)o;
-        boolean start = meta.equals(m.getMetadata());
+        final SafeMatrixOutput m = (SafeMatrixOutput) o;
+        boolean start = meta.equals( m.getMetadata() );
         start = start && m.getData().rows() == output.rows() && m.getData().columns() == output.columns();
-        start = start && Arrays.deepEquals(output.getDoubles(), m.getData().getDoubles());
+        start = start && Arrays.deepEquals( output.getDoubles(), m.getData().getDoubles() );
         return start;
     }
 
     @Override
     public int hashCode()
     {
-        return getMetadata().hashCode() + Arrays.deepHashCode(output.getDoubles());
+        return getMetadata().hashCode() + Arrays.deepHashCode( output.getDoubles() );
     }
 
     /**
@@ -65,13 +63,20 @@ class SafeMatrixOutput implements MatrixOutput
      * 
      * @param output the verification output.
      * @param meta the metadata.
+     * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeMatrixOutput(final MatrixOfDoubles output, final MetricOutputMetadata meta)
+    SafeMatrixOutput( final MatrixOfDoubles output, final MetricOutputMetadata meta )
     {
-        Objects.requireNonNull(output, "Specify a non-null output.");
-        Objects.requireNonNull(meta, "Specify non-null metadata.");
-        this.output = ((DefaultDataFactory)DefaultDataFactory.getInstance()).safeMatrixOf(output);
+        if ( Objects.isNull( output ) )
+        {
+            throw new MetricOutputException( "Specify a non-null output." );
+        }
+        if ( Objects.isNull( meta ) )
+        {
+            throw new MetricOutputException( "Specify non-null metadata." );
+        }
+        this.output = ( (DefaultDataFactory) DefaultDataFactory.getInstance() ).safeMatrixOf( output );
         this.meta = meta;
     }
 

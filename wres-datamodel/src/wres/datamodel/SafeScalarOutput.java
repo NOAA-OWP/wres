@@ -32,22 +32,22 @@ class SafeScalarOutput implements ScalarOutput
     }
 
     @Override
-    public boolean equals(final Object o)
+    public boolean equals( final Object o )
     {
-        if(!(o instanceof SafeScalarOutput))
+        if ( ! ( o instanceof SafeScalarOutput ) )
         {
             return false;
         }
-        final SafeScalarOutput v = (SafeScalarOutput)o;
-        boolean start = meta.equals(v.getMetadata());
-        start = start && Math.abs(((SafeScalarOutput)o).getData() - output) < .00000001;
+        final SafeScalarOutput v = (SafeScalarOutput) o;
+        boolean start = meta.equals( v.getMetadata() );
+        start = start && Math.abs( ( (SafeScalarOutput) o ).getData() - output ) < .00000001;
         return start;
     }
 
     @Override
     public int hashCode()
     {
-        return Double.hashCode(output) + meta.hashCode();
+        return Double.hashCode( output ) + meta.hashCode();
     }
 
     @Override
@@ -59,7 +59,7 @@ class SafeScalarOutput implements ScalarOutput
     @Override
     public String toString()
     {
-        return Double.toString(output);
+        return Double.toString( output );
     }
 
     /**
@@ -67,12 +67,19 @@ class SafeScalarOutput implements ScalarOutput
      * 
      * @param output the verification output
      * @param meta the metadata
+     * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeScalarOutput(final double output, final MetricOutputMetadata meta)
+    SafeScalarOutput( final double output, final MetricOutputMetadata meta )
     {
-        Objects.requireNonNull(output, "Specify a non-null output.");
-        Objects.requireNonNull(meta, "Specify non-null metadata.");
+        if ( Objects.isNull( output ) )
+        {
+            throw new MetricOutputException( "Specify a non-null output." );
+        }
+        if ( Objects.isNull( meta ) )
+        {
+            throw new MetricOutputException( "Specify non-null metadata." );
+        }
         this.output = output;
         this.meta = meta;
     }

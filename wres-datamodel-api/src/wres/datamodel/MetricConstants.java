@@ -666,7 +666,43 @@ public enum MetricConstants
          * Identifier for observed quantiles.
          */
 
-        OBSERVED_QUANTILES;           
+        OBSERVED_QUANTILES,    
+        
+        /**
+         * Identifier for forecast error.
+         */
+        
+        FORECAST_ERROR,
+        
+        /**
+         * Identifier for observed value. 
+         */
+        
+        OBSERVED_VALUE,
+        
+        /**
+         * Identifier for ensemble mean. 
+         */
+        
+        ENSEMBLE_MEAN,
+        
+        /**
+         * Identifier for ensemble median. 
+         */
+        
+        ENSEMBLE_MEDIAN;   
+                
+        /**
+         * Returns a string representation.
+         * 
+         * @return a string representation
+         */
 
+        @Override
+        public String toString()
+        {
+            return name().replaceAll( "_", " " );
+        }
+        
     }
 }

@@ -35,32 +35,32 @@ class SafeMultiVectorOutput implements MultiVectorOutput
     }
 
     @Override
-    public VectorOfDoubles get(MetricDimension identifier)
+    public VectorOfDoubles get( MetricDimension identifier )
     {
-        return output.get(identifier);
+        return output.get( identifier );
     }
 
     @Override
-    public boolean containsKey(MetricDimension identifier)
+    public boolean containsKey( MetricDimension identifier )
     {
-        return output.containsKey(identifier);
-    }    
-    
+        return output.containsKey( identifier );
+    }
+
     @Override
     public Map<MetricDimension, VectorOfDoubles> getData()
     {
-        return new EnumMap<>(output);
+        return new EnumMap<>( output );
     }
 
     @Override
-    public boolean equals(final Object o)
+    public boolean equals( final Object o )
     {
-        if(!(o instanceof SafeMultiVectorOutput))
+        if ( ! ( o instanceof SafeMultiVectorOutput ) )
         {
             return false;
         }
-        final SafeMultiVectorOutput v = (SafeMultiVectorOutput)o;
-        return meta.equals(v.getMetadata()) && output.equals(v.output);
+        final SafeMultiVectorOutput v = (SafeMultiVectorOutput) o;
+        return meta.equals( v.getMetadata() ) && output.equals( v.output );
     }
 
     @Override
@@ -74,15 +74,22 @@ class SafeMultiVectorOutput implements MultiVectorOutput
      * 
      * @param output the verification output
      * @param meta the metadata
+     * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeMultiVectorOutput(final Map<MetricDimension, VectorOfDoubles> output, final MetricOutputMetadata meta)
+    SafeMultiVectorOutput( final Map<MetricDimension, VectorOfDoubles> output, final MetricOutputMetadata meta )
     {
-        Objects.requireNonNull(output, "Specify a non-null output.");
-        Objects.requireNonNull(meta, "Specify non-null metadata.");
-        this.output = new EnumMap<>(MetricDimension.class);
-        DefaultDataFactory inFac = (DefaultDataFactory)DefaultDataFactory.getInstance();
-        output.forEach((key,value)->this.output.put(key,inFac.safeVectorOf(value)));
+        if ( Objects.isNull( output ) )
+        {
+            throw new MetricOutputException( "Specify a non-null output." );
+        }
+        if ( Objects.isNull( meta ) )
+        {
+            throw new MetricOutputException( "Specify non-null metadata." );
+        }
+        this.output = new EnumMap<>( MetricDimension.class );
+        DefaultDataFactory inFac = (DefaultDataFactory) DefaultDataFactory.getInstance();
+        output.forEach( ( key, value ) -> this.output.put( key, inFac.safeVectorOf( value ) ) );
         this.meta = meta;
     }
 
