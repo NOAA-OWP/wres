@@ -167,6 +167,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricOutputException if any of the inputs are invalid
      */
 
     private SafeMetricOutputMapByMetric(final Builder<T> builder)
@@ -174,16 +175,16 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
         //Bounds checks
         if(builder.store.isEmpty())
         {
-            throw new UnsupportedOperationException("Specify one or more <key,value> mappings to build the map.");
+            throw new MetricOutputException("Specify one or more <key,value> mappings to build the map.");
         }
         builder.store.forEach((key, value) -> {
             if(Objects.isNull(key))
             {
-                throw new UnsupportedOperationException("Cannot prescribe a null key for the input map.");
+                throw new MetricOutputException("Cannot prescribe a null key for the input map.");
             }
             if(Objects.isNull(value))
             {
-                throw new UnsupportedOperationException("Cannot prescribe a null value for the input map.");
+                throw new MetricOutputException("Cannot prescribe a null value for the input map.");
             }
         });
         store = new TreeMap<>();
