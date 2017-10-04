@@ -1,6 +1,7 @@
 package wres.datamodel;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -100,6 +101,12 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         final int elements = mainInput.get(0).getBooleans().length;
         return elements == 2 ? 2 : elements / 2;
     }
+    
+    @Override
+    public Iterator<VectorOfBooleans> iterator()
+    {
+        return mainInput.iterator();
+    }      
 
     /**
      * A {@link MetricInputBuilder} to build the metric input.

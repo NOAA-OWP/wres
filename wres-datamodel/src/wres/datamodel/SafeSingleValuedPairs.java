@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -85,6 +86,12 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     {
         return climatology;
     }
+    
+    @Override
+    public Iterator<PairOfDoubles> iterator()
+    {
+        return mainInput.iterator();
+    }    
 
     /**
      * A {@link MetricInputBuilder} to build the metric input.
