@@ -14,6 +14,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.engine.statistics.metric.RankHistogram.RankHistogramBuilder;
@@ -63,8 +64,8 @@ public final class RankHistogramTest
 
         //Check the results       
         final MultiVectorOutput actual = rh.apply( input );
-        double[] actualRanks = actual.get( MetricConstants.RANK_ORDER ).getDoubles();
-        double[] actualRFreqs = actual.get( MetricConstants.OBSERVED_RELATIVE_FREQUENCY ).getDoubles();
+        double[] actualRanks = actual.get( MetricDimension.RANK_ORDER ).getDoubles();
+        double[] actualRFreqs = actual.get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY ).getDoubles();
         double[] expectedRanks = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
         double[] expectedRFreqs =
                 new double[] { 0.0995, 0.1041, 0.0976, 0.1041, 0.0993, 0.1044, 0.1014, 0.0952, 0.0972, 0.0972 };

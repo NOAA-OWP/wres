@@ -10,6 +10,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputMapByMetric;
@@ -86,9 +87,9 @@ extends
         pOFD[points] = 1.0;
 
         //Set the results
-        Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
-        output.put(MetricConstants.PROBABILITY_OF_DETECTION, pOD);
-        output.put(MetricConstants.PROBABILITY_OF_FALSE_DETECTION, pOFD);
+        Map<MetricDimension, double[]> output = new EnumMap<>(MetricDimension.class);
+        output.put(MetricDimension.PROBABILITY_OF_DETECTION, pOD);
+        output.put(MetricDimension.PROBABILITY_OF_FALSE_DETECTION, pOFD);
         final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
         return d.ofMultiVectorOutput(output, metOut);
     }

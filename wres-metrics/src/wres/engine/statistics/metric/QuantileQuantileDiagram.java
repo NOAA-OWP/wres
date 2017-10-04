@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
@@ -60,9 +61,9 @@ class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVectorOutpu
         }
 
         //Set and return the results
-        Map<MetricConstants, double[]> output = new EnumMap<>(MetricConstants.class);
-        output.put(MetricConstants.OBSERVED_QUANTILES, observedQ);
-        output.put(MetricConstants.PREDICTED_QUANTILES, predictedQ);
+        Map<MetricDimension, double[]> output = new EnumMap<>(MetricDimension.class);
+        output.put(MetricDimension.OBSERVED_QUANTILES, observedQ);
+        output.put(MetricDimension.PREDICTED_QUANTILES, predictedQ);
         final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
         return d.ofMultiVectorOutput(output, metOut);
     }
