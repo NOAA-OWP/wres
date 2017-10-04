@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
 import wres.datamodel.SafeMetricOutputMultiMapByLeadThreshold.SafeMetricOutputMultiMapByLeadThresholdBuilder;
@@ -235,10 +236,10 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public MultiVectorOutput ofMultiVectorOutput( final Map<MetricConstants, double[]> output,
+    public MultiVectorOutput ofMultiVectorOutput( final Map<MetricDimension, double[]> output,
                                                   final MetricOutputMetadata meta )
     {
-        EnumMap<MetricConstants, VectorOfDoubles> map = new EnumMap<>( MetricConstants.class );
+        EnumMap<MetricDimension, VectorOfDoubles> map = new EnumMap<>( MetricDimension.class );
         output.forEach( ( key, value ) -> map.put( key, vectorOf( value ) ) );
         return new SafeMultiVectorOutput( map, meta );
     }

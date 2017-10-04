@@ -258,43 +258,7 @@ public enum MetricConstants
      * Identifier for the sharpness component of a score decomposition.
      */
 
-    SHARPNESS( ScoreOutputGroup.LBR, ScoreOutputGroup.CR_AND_LBR ),
-
-    /**
-     * Identifier for a forecast probability.
-     */
-
-    FORECAST_PROBABILITY,
-
-    /**
-     * Identifier for the conditional observed probability of an event, given the forecast probability.
-     */
-
-    OBSERVED_GIVEN_FORECAST_PROBABILITY,
-
-    /**
-     * Identifier for the observed relative frequency with which an event occurs.
-     */
-
-    OBSERVED_RELATIVE_FREQUENCY,
-
-    /**
-     * Identifier for a rank ordering.
-     */
-
-    RANK_ORDER,
-
-    /**
-     * Identifier for predicted quantiles.
-     */
-
-    PREDICTED_QUANTILES,
-
-    /**
-     * Identifier for observed quantiles.
-     */
-
-    OBSERVED_QUANTILES;
+    SHARPNESS( ScoreOutputGroup.LBR, ScoreOutputGroup.CR_AND_LBR );
 
     /**
      * The {@link MetricInputGroup} or null if the {@link MetricConstants} does not belong to a group.
@@ -642,5 +606,67 @@ public enum MetricConstants
         }
 
     }
+    
+    /**
+     * A dimension associated with a verification metric.
+     */    
+    
+    public enum MetricDimension
+    {
 
+        /**
+         * Identifier for a sample size.
+         */
+        
+        SAMPLE_SIZE,
+        
+        /**
+         * Identifier for probability of detection.
+         */
+        
+        PROBABILITY_OF_DETECTION,
+        
+        /**
+         * Identifier for probability of false detection.
+         */
+        
+        PROBABILITY_OF_FALSE_DETECTION,
+        
+        /**
+         * Identifier for a forecast probability.
+         */
+
+        FORECAST_PROBABILITY,
+
+        /**
+         * Identifier for the conditional observed probability of an event, given the forecast probability.
+         */
+
+        OBSERVED_GIVEN_FORECAST_PROBABILITY,
+
+        /**
+         * Identifier for the observed relative frequency with which an event occurs.
+         */
+
+        OBSERVED_RELATIVE_FREQUENCY,
+
+        /**
+         * Identifier for a rank ordering.
+         */
+
+        RANK_ORDER,
+
+        /**
+         * Identifier for predicted quantiles.
+         */
+
+        PREDICTED_QUANTILES,
+
+        /**
+         * Identifier for observed quantiles.
+         */
+
+        OBSERVED_QUANTILES;           
+
+    }
 }

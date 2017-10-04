@@ -11,6 +11,7 @@ import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
@@ -91,12 +92,12 @@ class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOut
         }
 
         //Set the results
-        Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
-        output.put( MetricConstants.FORECAST_PROBABILITY,
+        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
+        output.put( MetricDimension.FORECAST_PROBABILITY,
                     fProbFinal.stream().mapToDouble( Double::doubleValue ).toArray() );
-        output.put( MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY,
+        output.put( MetricDimension.OBSERVED_GIVEN_FORECAST_PROBABILITY,
                     oProbFinal.stream().mapToDouble( Double::doubleValue ).toArray() );
-        output.put( MetricConstants.SAMPLE_SIZE, samples );
+        output.put( MetricDimension.SAMPLE_SIZE, samples );
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofMultiVectorOutput( output, metOut );
     }
