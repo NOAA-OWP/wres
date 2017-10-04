@@ -100,16 +100,31 @@ public final class ScriptGenerator
                   .append(NEWLINE);
             script.append("     ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements,").append(NEWLINE);
             script.append("     TS.measurementunit_id").append(NEWLINE);
-            script.append("FROM wres.TimeSeries TS").append(NEWLINE);
+            script.append("FROM wres.ProjectSource PS").append(NEWLINE);
+            script.append("INNER JOIN wres.ForecastSource FS").append(NEWLINE);
+            script.append("     ON FS.source_id = PS.source_id").append(NEWLINE);
+            script.append("INNER JOIN wres.TimeSeries TS").append(NEWLINE);
+            script.append("     ON TS.timeseries_id = FS.forecast_id").append(NEWLINE);
             script.append("INNER JOIN wres.ForecastValue FV").append(NEWLINE);
             script.append("     ON FV.timeseries_id = TS.timeseries_id").append(NEWLINE);
-            script.append("INNER JOIN wres.ForecastSource FS").append(NEWLINE);
-            script.append("     ON FS.forecast_id = TS.timeseries_id").append(NEWLINE);
-            script.append("INNER JOIN wres.ProjectSource PS").append(NEWLINE);
-            script.append("     ON PS.source_id = FS.source_id").append(NEWLINE);
             script.append("WHERE PS.project_id = ")
                   .append(projectDetails.getId())
                   .append(NEWLINE);
+            script.append("     AND PS.member = ");
+
+            if (ConfigHelper.isRight( dataSourceConfig, projectConfig) )
+            {
+                script.append(ProjectDetails.RIGHT_MEMBER);
+            }
+            else
+            {
+                script.append(ProjectDetails.BASELINE_MEMBER);
+            }
+
+            script.append(NEWLINE);
+
+
+            script.append("     AND ").append(variablePositionClause).append(NEWLINE);
             script.append("     AND ")
                   .append(ConfigHelper.getLeadQualifier(projectConfig, progress, leadOffset))
                   .append(NEWLINE);
