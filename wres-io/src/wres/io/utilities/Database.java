@@ -196,7 +196,7 @@ public final class Database {
 	 * Loads the metadata for each saved index and reinstates them within the
 	 * database
 	 */
-	public synchronized static void restoreAllIndices()
+	public static void restoreAllIndices()
 	{
 		StringBuilder builder;
 
@@ -852,6 +852,11 @@ public final class Database {
      */
 	public static void refreshStatistics(boolean vacuum)
 	{
+        if (vacuum)
+        {
+            Database.restoreAllIndices();
+        }
+
 		Connection connection = null;
 		ResultSet results;
 

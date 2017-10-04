@@ -1,17 +1,20 @@
 package wres.io.data.caching;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import wres.io.utilities.Database;
-import wres.util.Collections;
-import wres.util.NotImplementedException;
-import wres.util.Strings;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static wres.io.data.caching.Cache.NEWLINE;
+
+import wres.io.utilities.Database;
+import wres.util.Collections;
+import wres.util.NotImplementedException;
+import wres.util.Strings;
 
 public final class UnitConversions
 {
@@ -41,8 +44,13 @@ public final class UnitConversions
 
         try
         {
+            String script = "SELECT UC.*, M.unit_name" + NEWLINE;
+            script += "FROM wres.UnitConversion UC" + NEWLINE;
+            script += "INNER JOIN wres.MeasurementUnit M" + NEWLINE;
+            script += "     ON M.measurementunit_id = UC.to_unit;";
+
             connection = Database.getHighPriorityConnection();
-            conversionRows = Database.getResults(connection, "SELECT * FROM wres.UnitConversion;");
+            conversionRows = Database.getResults(connection, script);//"SELECT * FROM wres.UnitConversion;");
 
             while (conversionRows.next())
             {
@@ -74,17 +82,25 @@ public final class UnitConversions
 
     public static double convert(double value, int fromMeasurementUnitID, String toMeasurementUnit) throws SQLException
     {
-        int toMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(toMeasurementUnit);
+        //int toMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(toMeasurementUnit);
 
-        Conversion conversion = getConversion(fromMeasurementUnitID, toMeasurementUnitID);
+        Conversion conversion = getConversion( fromMeasurementUnitID, toMeasurementUnit ); //getConversion(fromMeasurementUnitID, toMeasurementUnitID);
 
         if (conversion == null) {
             throw new NotImplementedException("There is not currently a conversion from the measurement unit " +
                                                       String.valueOf(fromMeasurementUnitID) +
                                                       " to the measurement unit " +
-                                                      String.valueOf(toMeasurementUnitID));
+                                                        toMeasurementUnit);
+                                                      //String.valueOf(toMeasurementUnitID));
         }
         return conversion.convert(value);
+    }
+
+    public static Conversion getConversion(final int fromID, final String desiredName)
+    {
+        return Collections.find(getCache().conversionList, (Conversion conversion) -> {
+           return conversion.getFromID() == fromID && conversion.getDesiredName().equalsIgnoreCase( desiredName );
+        });
     }
 
     private static Conversion getConversion(final int fromID, final int toID)
@@ -94,10 +110,11 @@ public final class UnitConversions
         });
     }
 
-    private static class Conversion
+    public static class Conversion
     {
         private final int fromID;
         private final int toID;
+        private final String toName;
         private final double factor;
         private final double initial_offset;
         private final double final_offset;
@@ -109,6 +126,7 @@ public final class UnitConversions
             this.factor = row.getDouble("factor");
             this.initial_offset = row.getDouble("initial_offset");
             this.final_offset = row.getDouble("final_offset");
+            this.toName = row.getString("unit_name");
         }
 
         public double convert(double value)
@@ -124,6 +142,11 @@ public final class UnitConversions
         public int getToID()
         {
             return this.toID;
+        }
+
+        public String getDesiredName()
+        {
+            return this.toName;
         }
     }
 }

@@ -211,6 +211,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         String date = null;
 
         Map<Integer, List<Double>> rightValues = new TreeMap<>();
+        Map<Integer, UnitConversions.Conversion> conversionMap = new TreeMap<>(  );
 
         try
         {
@@ -270,9 +271,22 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
                 for (int measurementIndex = 0; measurementIndex < measurements.length; ++measurementIndex)
                 {
-                    double convertedMeasurement = UnitConversions.convert(measurements[measurementIndex],
+                    UnitConversions.Conversion conversion = null;
+                    Integer measurementUnitID = resultSet.getInt( "measurementunit_id" );
+                    if (!conversionMap.containsKey( measurementUnitID ))
+                    {
+                        conversion = UnitConversions.getConversion( measurementUnitID, this.projectConfig.getPair().getUnit() );
+                        conversionMap.put( measurementUnitID, conversion );
+                    }
+                    else
+                    {
+                        conversion = conversionMap.get( measurementUnitID );
+                    }
+
+                    double convertedMeasurement = conversion.convert( measurements[measurementIndex] );
+                    /*double convertedMeasurement = UnitConversions.convert(measurements[measurementIndex],
                                                                              resultSet.getInt("measurementunit_id"),
-                                                                             this.projectConfig.getPair().getUnit());
+                                                                             this.projectConfig.getPair().getUnit());*/
 
                     if (convertedMeasurement >= minimum && maximum >= convertedMeasurement)
                     {
