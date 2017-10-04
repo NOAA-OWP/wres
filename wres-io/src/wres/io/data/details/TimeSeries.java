@@ -218,9 +218,29 @@ public final class TimeSeries
         {
             if (!FORECASTVALUE_PARITION_NAMES.containsKey(partitionNumber))
             {
+                String partitionNumberWord = partitionNumber.toString();
+
                 int low = (lead / FORECASTVALUE_PARTITION_SPAN) * FORECASTVALUE_PARTITION_SPAN;
+
+                // Sometimes the lead times are negative, but the dash is not a
+                // valid character in a name in sql, so we replace with a word.
+                if ( partitionNumber < 0 )
+                {
+                    partitionNumberWord = "Negative_"
+                                          + partitionNumberWord.substring( 1 );
+                    low -= FORECASTVALUE_PARTITION_SPAN;
+				}
+
                 int high = low + FORECASTVALUE_PARTITION_SPAN;
-                name = "partitions.ForecastValue_Lead_" + String.valueOf(partitionNumber);
+
+                // 0 is a special case, having twice the span
+                if ( partitionNumber == 0 )
+                {
+                    low = -FORECASTVALUE_PARTITION_SPAN;
+                    high = FORECASTVALUE_PARTITION_SPAN;
+                }
+
+                name = "partitions.ForecastValue_Lead_" + partitionNumberWord;
 
                 StringBuilder script = new StringBuilder();
                 script.append("CREATE TABLE IF NOT EXISTS ").append(name).append(NEWLINE);
@@ -238,12 +258,15 @@ public final class TimeSeries
                     Database.execute(script.toString());
                 }
 
-                Database.saveIndex(name,
-                                   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_Lead_idx",
-                                   "lead");
+
+                Database.saveIndex( name,
+                                    "ForecastValue_Lead_"
+                                    + partitionNumberWord + "_Lead_idx",
+                                    "lead" );
 
                 Database.saveIndex(name,
-                                   "ForecastValue_Lead_" + String.valueOf(partitionNumber) + "_TimeSeries_idx",
+                                   "ForecastValue_Lead_"
+								   + partitionNumberWord + "_TimeSeries_idx",
                                    "timeseries_id");
 
                 TimeSeries.FORECASTVALUE_PARITION_NAMES.put( partitionNumber, name);
