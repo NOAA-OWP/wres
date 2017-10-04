@@ -1,7 +1,5 @@
 package wres.datamodel;
 
-import java.util.List;
-
 /**
  * Store of verification pairs that comprise two single-valued, continuous numerical, variables. The single-valued
  * variables are not necessarily deterministic (i.e. they may be probabilistic), but they do comprise single values,
@@ -11,7 +9,7 @@ import java.util.List;
  * @version 0.1
  * @since 0.1
  */
-public interface SingleValuedPairs extends MetricInput<List<PairOfDoubles>>
+public interface SingleValuedPairs extends PairedInput<PairOfDoubles>
 {
     
     /**

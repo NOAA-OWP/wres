@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -84,6 +85,12 @@ class SafeEnsemblePairs implements EnsemblePairs
     {
         return climatology;
     }
+    
+    @Override
+    public Iterator<PairOfDoubleAndVectorOfDoubles> iterator()
+    {
+        return mainInput.iterator();
+    }      
 
     /**
      * A {@link MetricInputBuilder} to build the metric input.
