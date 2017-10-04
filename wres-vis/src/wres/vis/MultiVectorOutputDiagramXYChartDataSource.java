@@ -1,6 +1,6 @@
 package wres.vis;
 
-import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.MultiVectorOutput;
 
@@ -16,8 +16,8 @@ public class MultiVectorOutputDiagramXYChartDataSource
 extends
     WRESXYChartDataSource<MetricOutputMapByLeadThreshold<MultiVectorOutput>>
 {
-    private final MetricConstants xConstant;
-    private final MetricConstants yConstant;
+    private final MetricDimension xConstant;
+    private final MetricDimension yConstant;
 
     /**
      * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
@@ -30,8 +30,8 @@ extends
      */
     public MultiVectorOutputDiagramXYChartDataSource(final int orderIndex,
                                                final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
-                                               final MetricConstants xConstant,
-                                               final MetricConstants yConstant,
+                                               final MetricDimension xConstant,
+                                               final MetricDimension yConstant,
                                                final String domainTitle,
                                                final String rangeTitle)
     {
@@ -57,8 +57,8 @@ extends
      */
     public MultiVectorOutputDiagramXYChartDataSource(final int orderIndex,
                                                final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
-                                               final MetricConstants xConstant,
-                                               final MetricConstants yConstant,
+                                               final MetricDimension xConstant,
+                                               final MetricDimension yConstant,
                                                final String domainTitle,
                                                final String rangeTitle,
                                                final int subPlotIndex)
@@ -67,12 +67,12 @@ extends
         getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(subPlotIndex);
     }
     
-    protected MetricConstants getXConstant()
+    protected MetricDimension getXConstant()
     {
         return xConstant;
     }
     
-    protected MetricConstants getYConstant()
+    protected MetricDimension getYConstant()
     {
         return yConstant;
     }

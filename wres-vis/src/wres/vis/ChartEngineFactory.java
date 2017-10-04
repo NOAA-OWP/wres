@@ -37,6 +37,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Metadata;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
@@ -263,14 +264,14 @@ public abstract class ChartEngineFactory
 
                 dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
                                                                                 inputSlice,
-                                                                                MetricConstants.FORECAST_PROBABILITY,
-                                                                                MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY,
+                                                                                MetricDimension.FORECAST_PROBABILITY,
+                                                                                MetricDimension.OBSERVED_GIVEN_FORECAST_PROBABILITY,
                                                                                 "Forecast Probability",
                                                                                 "Observed Probability Given Forecast Probability" ) );
                 dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 1,
                                                                                 inputSlice,
-                                                                                MetricConstants.FORECAST_PROBABILITY,
-                                                                                MetricConstants.SAMPLE_SIZE,
+                                                                                MetricDimension.FORECAST_PROBABILITY,
+                                                                                MetricDimension.SAMPLE_SIZE,
                                                                                 "Forecast Probability",
                                                                                 "Samples",
                                                                                 1 ) );
@@ -351,8 +352,8 @@ public abstract class ChartEngineFactory
 
                 dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
                                                                                 inputSlice,
-                                                                                MetricConstants.PROBABILITY_OF_FALSE_DETECTION,
-                                                                                MetricConstants.PROBABILITY_OF_DETECTION,
+                                                                                MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
+                                                                                MetricDimension.PROBABILITY_OF_DETECTION,
                                                                                 "Probability of False Detection",
                                                                                 "Probability of Detection" ) );
                 //Diagonal data source added so that it shows up in the legend.
@@ -431,8 +432,8 @@ public abstract class ChartEngineFactory
                 final MultiVectorOutputDiagramXYChartDataSource dataSource =
                                                                            new MultiVectorOutputDiagramXYChartDataSource(0,
                                                                                                                          inputSlice,
-                                                                                                                         MetricConstants.OBSERVED_QUANTILES,
-                                                                                                                         MetricConstants.PREDICTED_QUANTILES,
+                                                                                                                         MetricDimension.OBSERVED_QUANTILES,
+                                                                                                                         MetricDimension.PREDICTED_QUANTILES,
                                                                                                                          "Observed @variableName@@inputUnitsText@",
                                                                                                                          "Predicted @variableName@@inputUnitsText@");
                 //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
@@ -513,8 +514,8 @@ public abstract class ChartEngineFactory
                 final MultiVectorOutputDiagramXYChartDataSource dataSource =
                         new MultiVectorOutputDiagramXYChartDataSource( 0,
                                                                        inputSlice,
-                                                                       MetricConstants.RANK_ORDER,
-                                                                       MetricConstants.OBSERVED_RELATIVE_FREQUENCY,
+                                                                       MetricDimension.RANK_ORDER,
+                                                                       MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
                                                                        "Bin Separating Ranked Eensemble Members",
                                                                        "Observed Relative Frequency" )
                         {

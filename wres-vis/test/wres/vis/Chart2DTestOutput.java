@@ -31,6 +31,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MapBiKey;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
@@ -849,10 +850,10 @@ public class Chart2DTestOutput extends TestCase
                             }
                         }
 
-                        final Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
-                        output.put( MetricConstants.FORECAST_PROBABILITY, res[0] ); //Forecast probabilities
-                        output.put( MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY, res[1] ); //Observed | forecast probabilities
-                        output.put( MetricConstants.SAMPLE_SIZE, res[2] ); //Observed | forecast probabilities
+                        final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
+                        output.put( MetricDimension.FORECAST_PROBABILITY, res[0] ); //Forecast probabilities
+                        output.put( MetricDimension.OBSERVED_GIVEN_FORECAST_PROBABILITY, res[1] ); //Observed | forecast probabilities
+                        output.put( MetricDimension.SAMPLE_SIZE, res[2] ); //Observed | forecast probabilities
                         final MultiVectorOutput value = outputFactory.ofMultiVectorOutput( output, meta );
 
                         //Append result
@@ -951,9 +952,9 @@ public class Chart2DTestOutput extends TestCase
                             }
                         }
 
-                        final Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
-                        output.put( MetricConstants.PROBABILITY_OF_FALSE_DETECTION, roc[0] ); //PoFD
-                        output.put( MetricConstants.PROBABILITY_OF_DETECTION, roc[1] ); //PoD
+                        final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
+                        output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, roc[0] ); //PoFD
+                        output.put( MetricDimension.PROBABILITY_OF_DETECTION, roc[1] ); //PoD
                         final MultiVectorOutput value = outputFactory.ofMultiVectorOutput( output, meta );
 
                         //Append result
@@ -1047,9 +1048,9 @@ public class Chart2DTestOutput extends TestCase
                         }
                     }
 
-                    final Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
-                    output.put( MetricConstants.RANK_ORDER, rh[0] );
-                    output.put( MetricConstants.OBSERVED_RELATIVE_FREQUENCY, rh[1] );
+                    final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
+                    output.put( MetricDimension.RANK_ORDER, rh[0] );
+                    output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, rh[1] );
                     final MultiVectorOutput value = outputFactory.ofMultiVectorOutput( output, meta );
 
                     //Append result
@@ -1111,9 +1112,9 @@ public class Chart2DTestOutput extends TestCase
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] qq = t.getResult().toArray();
 
-                final Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
-                output.put( MetricConstants.PREDICTED_QUANTILES, qq[0] );
-                output.put( MetricConstants.OBSERVED_QUANTILES, qq[1] );
+                final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
+                output.put( MetricDimension.PREDICTED_QUANTILES, qq[0] );
+                output.put( MetricDimension.OBSERVED_QUANTILES, qq[1] );
                 final MultiVectorOutput value = outputFactory.ofMultiVectorOutput( output, meta );
 
                 //Append result

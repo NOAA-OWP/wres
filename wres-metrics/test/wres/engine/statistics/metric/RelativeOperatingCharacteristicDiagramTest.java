@@ -12,6 +12,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
 import wres.engine.statistics.metric.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
@@ -63,9 +64,9 @@ public final class RelativeOperatingCharacteristicDiagramTest
         double[] expectedPOFD = new double[]{0.0, 0.007518796992481203, 0.018796992481203006, 0.04887218045112782,
             0.11654135338345864, 0.17669172932330826, 0.22932330827067668, 0.2857142857142857, 0.42105263157894735,
             0.6240601503759399, 1.0};
-        Map<MetricConstants, double[]> output = new HashMap<>();
-        output.put(MetricConstants.PROBABILITY_OF_DETECTION, expectedPOD);
-        output.put(MetricConstants.PROBABILITY_OF_FALSE_DETECTION, expectedPOFD);
+        Map<MetricDimension, double[]> output = new HashMap<>();
+        output.put(MetricDimension.PROBABILITY_OF_DETECTION, expectedPOD);
+        output.put(MetricDimension.PROBABILITY_OF_FALSE_DETECTION, expectedPOFD);
         final MultiVectorOutput expected = outF.ofMultiVectorOutput(output, m1);
         assertTrue("Difference between actual and expected ROC.", actual.equals(expected));
         //Check the parameters

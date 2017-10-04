@@ -2,7 +2,7 @@ package wres.vis;
 
 import org.jfree.data.xy.XYDataset;
 
-import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.MultiVectorOutput;
 
@@ -15,10 +15,10 @@ import wres.datamodel.MultiVectorOutput;
 public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<MetricOutputMapByLeadThreshold<MultiVectorOutput>, MetricOutputMapByLeadThreshold<MultiVectorOutput>>
 {
     private static final long serialVersionUID = 4254109136599641286L;
-    private final MetricConstants xConstant;
-    private final MetricConstants yConstant;
+    private final MetricDimension xConstant;
+    private final MetricDimension yConstant;
 
-    public MultiVectorOutputDiagramXYDataset(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input, final MetricConstants xConstant, final MetricConstants yConstant)
+    public MultiVectorOutputDiagramXYDataset(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input, final MetricDimension xConstant, final MetricDimension yConstant)
     {
         super(input);
         this.xConstant = xConstant;

@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.util.List;
 import java.util.Map;
 
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
 import wres.datamodel.MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
@@ -633,7 +634,7 @@ public interface DataFactory
      * @return a {@link MultiVectorOutput}
      */
 
-    MultiVectorOutput ofMultiVectorOutput( final Map<MetricConstants, double[]> output,
+    MultiVectorOutput ofMultiVectorOutput( final Map<MetricDimension, double[]> output,
                                            final MetricOutputMetadata meta );
 
     /**

@@ -80,6 +80,8 @@ if [ -f FAILS ]; then
 fi
 
 #Benchmark comparisons.
+#TODO Add a check for the number of benchmark images and compare to ensure all images were generated.
+#TODO Skip the check for pairs.csv since we know it will fail.
 numOutputFiles=$(ls $outputDirName/*.csv | wc -l)
 numBenchmarkFiles=$(ls $benchDirName/*.csv | wc -l)
 if [[ $numOutputFiles != $numBenchmarkFiles ]]; then
