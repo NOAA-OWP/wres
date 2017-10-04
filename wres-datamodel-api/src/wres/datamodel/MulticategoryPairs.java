@@ -1,7 +1,5 @@
 package wres.datamodel;
 
-import java.util.List;
-
 /**
  * Store of verification pairs associated with the outcome (true or false) of a multi-category event. The categorical
  * outcomes may be ordered or unordered.
@@ -10,7 +8,7 @@ import java.util.List;
  * @version 0.1
  * @since 0.1
  */
-public interface MulticategoryPairs extends MetricInput<List<VectorOfBooleans>>
+public interface MulticategoryPairs extends PairedInput<VectorOfBooleans>
 {
 
     /**

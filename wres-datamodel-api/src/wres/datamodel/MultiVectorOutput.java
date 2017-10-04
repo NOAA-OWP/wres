@@ -2,15 +2,17 @@ package wres.datamodel;
 
 import java.util.Map;
 
+import wres.datamodel.MetricConstants.MetricDimension;
+
 /**
- * One or more vectors that are explicitly mapped to elements in {@link MetricConstants}.
+ * One or more vectors that are explicitly mapped to elements in {@link MetricDimension}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-public interface MultiVectorOutput extends MetricOutput<Map<MetricConstants, VectorOfDoubles>>
+public interface MultiVectorOutput extends MetricOutput<Map<MetricDimension, VectorOfDoubles>>
 {
 
     /**
@@ -20,7 +22,7 @@ public interface MultiVectorOutput extends MetricOutput<Map<MetricConstants, Vec
      * @return a vector or null
      */
 
-    VectorOfDoubles get(MetricConstants identifier);
+    VectorOfDoubles get(MetricDimension identifier);
 
     /**
      * Returns true if the store contains a mapping for the prescribed identifier, false otherwise.
@@ -29,5 +31,5 @@ public interface MultiVectorOutput extends MetricOutput<Map<MetricConstants, Vec
      * @return true if the mapping exists, false otherwise
      */
 
-    boolean containsKey(MetricConstants identifier);
+    boolean containsKey(MetricDimension identifier);
 }

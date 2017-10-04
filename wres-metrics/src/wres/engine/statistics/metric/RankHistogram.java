@@ -13,6 +13,7 @@ import java.util.stream.IntStream;
 import wres.datamodel.DataFactory;
 import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
@@ -70,9 +71,9 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
         double[] relativeFrequencies = Arrays.stream( sumRanks ).map( a -> a / useMe.size() ).toArray();
         
         //Set and return the results
-        Map<MetricConstants, double[]> output = new EnumMap<>( MetricConstants.class );
-        output.put( MetricConstants.RANK_ORDER, ranks );
-        output.put( MetricConstants.OBSERVED_RELATIVE_FREQUENCY, relativeFrequencies );
+        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
+        output.put( MetricDimension.RANK_ORDER, ranks );
+        output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, relativeFrequencies );
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         return d.ofMultiVectorOutput( output, metOut );
     }

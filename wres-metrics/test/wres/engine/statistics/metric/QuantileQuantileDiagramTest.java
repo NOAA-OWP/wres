@@ -12,6 +12,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.SingleValuedPairs;
@@ -56,8 +57,8 @@ public final class QuantileQuantileDiagramTest
 
         //Check the results       
         final MultiVectorOutput actual = qq.apply(input);
-        double[] actualObs = actual.get(MetricConstants.OBSERVED_QUANTILES).getDoubles();
-        double[] actualPred = actual.get(MetricConstants.PREDICTED_QUANTILES).getDoubles();
+        double[] actualObs = actual.get(MetricDimension.OBSERVED_QUANTILES).getDoubles();
+        double[] actualPred = actual.get(MetricDimension.PREDICTED_QUANTILES).getDoubles();
 
         //Check the first pair of quantiles, which should map to the first entry, since the lower bound is unknown
         assertTrue("Difference between actual and expected quantiles of observations [" + 1.001 + ", "

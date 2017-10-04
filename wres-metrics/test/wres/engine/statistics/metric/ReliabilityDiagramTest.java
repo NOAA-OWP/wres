@@ -12,6 +12,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
 import wres.engine.statistics.metric.ReliabilityDiagram.ReliabilityDiagramBuilder;
@@ -64,10 +65,10 @@ public final class ReliabilityDiagramTest
             0.7272727272727273, 0.8461538461538461};
         double[] expectedSample = new double[]{102.0, 59.0, 41.0, 19.0, 22.0, 22.0, 34.0, 24.0, 11.0, 13.0};
 
-        Map<MetricConstants, double[]> output = new HashMap<>();
-        output.put(MetricConstants.FORECAST_PROBABILITY, expectedFProb);
-        output.put(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY, expectedOProb);
-        output.put(MetricConstants.SAMPLE_SIZE, expectedSample);
+        Map<MetricDimension, double[]> output = new HashMap<>();
+        output.put(MetricDimension.FORECAST_PROBABILITY, expectedFProb);
+        output.put(MetricDimension.OBSERVED_GIVEN_FORECAST_PROBABILITY, expectedOProb);
+        output.put(MetricDimension.SAMPLE_SIZE, expectedSample);
 
         final MultiVectorOutput expected = outF.ofMultiVectorOutput(output, m1);
         assertTrue("Difference between actual and expected Reliability Diagram.", actual.equals(expected));
