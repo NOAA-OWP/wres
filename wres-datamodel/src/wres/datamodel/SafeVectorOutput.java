@@ -54,65 +54,78 @@ class SafeVectorOutput implements VectorOutput
     }
 
     @Override
-    public boolean equals(final Object o)
+    public boolean equals( final Object o )
     {
-        if(!(o instanceof SafeVectorOutput))
+        if ( ! ( o instanceof SafeVectorOutput ) )
         {
             return false;
         }
-        final SafeVectorOutput v = (SafeVectorOutput)o;
-        return meta.equals(v.getMetadata()) && template.equals(v.template)
-            && Arrays.equals(output.getDoubles(), v.getData().getDoubles());
+        final SafeVectorOutput v = (SafeVectorOutput) o;
+        return meta.equals( v.getMetadata() ) && template.equals( v.template )
+               && Arrays.equals( output.getDoubles(), v.getData().getDoubles() );
     }
 
     @Override
     public int hashCode()
     {
-        return getMetadata().hashCode() + getOutputTemplate().hashCode() + Arrays.hashCode(output.getDoubles());
+        return getMetadata().hashCode() + getOutputTemplate().hashCode() + Arrays.hashCode( output.getDoubles() );
     }
 
     @Override
     public String toString()
     {
-        StringJoiner joiner = new StringJoiner(",","[","]");
-        for(double next : output.getDoubles())
+        StringJoiner joiner = new StringJoiner( ",", "[", "]" );
+        for ( double next : output.getDoubles() )
         {
-            joiner.add(Double.toString(next));
+            joiner.add( Double.toString( next ) );
         }
         return joiner.toString();
-    }    
-    
+    }
+
     /**
      * Construct the output.
      * 
      * @param output the verification output
      * @param template the output template
      * @param meta the metadata
+     * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeVectorOutput(final VectorOfDoubles output,
-                     final ScoreOutputGroup template,
-                     final MetricOutputMetadata meta)
+    SafeVectorOutput( final VectorOfDoubles output,
+                      final ScoreOutputGroup template,
+                      final MetricOutputMetadata meta )
     {
-        Objects.requireNonNull(output, "Specify a non-null output.");
-        Objects.requireNonNull(meta, "Specify non-null metadata.");
-        Objects.requireNonNull(template, "Specify a non-null decomposition template for the vector output.");
-        //Check that the decomposition template is compatible
-        if(template.getMetricComponents().size() != output.size())
+        if ( Objects.isNull( output ) )
         {
-            throw new IllegalArgumentException("The specified output template '" + template
-                + "' has more components than metric inputs provided [" + template.getMetricComponents().size() + ", "
-                + output.size() + "].");
+            throw new MetricOutputException( "Specify a non-null output." );
         }
-        this.output = ((DefaultDataFactory)DefaultDataFactory.getInstance()).safeVectorOf(output);
+        if ( Objects.isNull( meta ) )
+        {
+            throw new MetricOutputException( "Specify non-null metadata." );
+        }
+        if ( Objects.isNull( template ) )
+        {
+            throw new MetricOutputException( "Specify a non-null output group for the vector output." );
+        }
+        //Check that the decomposition template is compatible
+        if ( template.getMetricComponents().size() != output.size() )
+        {
+            throw new MetricOutputException( "The specified output template '" + template
+                                             + "' has more components than metric inputs provided ["
+                                             + template.getMetricComponents().size()
+                                             + ", "
+                                             + output.size()
+                                             + "]." );
+        }
+        this.output = ( (DefaultDataFactory) DefaultDataFactory.getInstance() ).safeVectorOf( output );
         this.meta = meta;
         this.template = template;
     }
 
     @Override
-    public double getValue(MetricConstants component)
+    public double getValue( MetricConstants component )
     {
-        return output.getDoubles()[template.getMetricComponents().indexOf(component)];
+        return output.getDoubles()[template.getMetricComponents().indexOf( component )];
     }
 
 }

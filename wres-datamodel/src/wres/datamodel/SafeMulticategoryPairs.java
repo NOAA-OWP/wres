@@ -19,7 +19,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
 {
 
     /**
-     * The verification pairs.
+     * The verification pairs in an immutable list.
      */
 
     private final List<VectorOfBooleans> mainInput;
@@ -31,7 +31,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     private final Metadata mainMeta;
 
     /**
-     * The verification pairs for a baseline (may be null).
+     * The verification pairs for a baseline in an immutable list (may be null).
      */
 
     private final List<VectorOfBooleans> baselineInput;
