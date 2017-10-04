@@ -228,21 +228,11 @@ public final class PIXMLReader extends XMLReader
                 Duration leadTime = Duration.between( this.getForecastDate(),
                                                       dateTime );
                 int leadTimeInHours = (int) leadTime.toHours();
-                if ( leadTimeInHours >= 0 )
-                {
-                    PIXMLReader.addForecastEvent( value,
-                                                  leadTimeInHours,
-                                                  getTimeSeriesID() );
-                }
-                else
-                {
-                    if ( LOGGER.isDebugEnabled() )
-                    {
-                        LOGGER.debug( "The value '" + value + "' is not being "
-                                      + "saved because the lead time '"
-                                      + leadTimeInHours + "' is negative." );
-                    }
-                }
+
+                PIXMLReader.addForecastEvent( value,
+                                              leadTimeInHours,
+                                              getTimeSeriesID() );
+
 			} else {
                 String formattedDate = dateTime.format( FORMATTER );
                 addObservedEvent( formattedDate, value);
@@ -372,7 +362,7 @@ public final class PIXMLReader extends XMLReader
 		currentLeadTime = 0;
 		creationDate = null;
 		creationTime = null;
-				
+
 		//	Scrape all pertinent information from the header
 		while (reader.hasNext())
 		{
