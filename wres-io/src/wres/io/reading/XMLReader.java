@@ -159,6 +159,7 @@ public class XMLReader
 	
 	@SuppressWarnings("static-method")
     protected void parseElement(XMLStreamReader reader)
+            throws IOException
 	{
 		switch (reader.getEventType())
 		{

@@ -15,7 +15,7 @@ import com.sun.xml.bind.Locatable;
  * detected. The purpose of this is so that the location can be included in the
  * message.
  *
- * The thrower does not need to include the location in the config file, it is
+ * The thrower does not need to print the location in the message, it is
  * inserted automatically at the beginning of the exception message.
  */
 
