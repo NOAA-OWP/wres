@@ -520,9 +520,7 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if(this.isForecast && localName.equalsIgnoreCase("forecastDate"))
 				{
-                    LocalDateTime time = PIXMLReader.parseDateTime( reader );
-                    this.forecastDate = OffsetDateTime.of( time,
-                                                           this.getZoneOffset() );
+                    this.forecastDate = PIXMLReader.parseDateTime( reader );
 				}
 				else if(localName.equalsIgnoreCase("units"))
 				{
@@ -537,8 +535,7 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if (localName.equalsIgnoreCase("startDate"))
                 {
-                    LocalDateTime time = PIXMLReader.parseDateTime( reader );
-                    this.startDate = OffsetDateTime.of( time, this.zoneOffset );
+                    this.startDate = PIXMLReader.parseDateTime( reader );
 				}
 				else if (XML.tagIs(reader, "creationDate")) {
 					creationDate = XML.getXMLText(reader);
@@ -673,9 +670,12 @@ public final class PIXMLReader extends XMLReader
     {
         if (this.currentTimeSeries == null)
         {
+            OffsetDateTime forecastFullDateTime
+                    = OffsetDateTime.of( this.getForecastDate(),
+                                         this.getZoneOffset() );
             this.currentTimeSeries =
                     new TimeSeries( this.getSourceID(),
-                                    this.forecastDate.format( FORMATTER ) );
+                                    forecastFullDateTime.format( FORMATTER ) );
         }
         return this.currentTimeSeries;
     }
@@ -711,7 +711,10 @@ public final class PIXMLReader extends XMLReader
 				}
 			}
 			else {
-                output_time = startDate.format( FORMATTER );
+				OffsetDateTime actualStartDate =
+						OffsetDateTime.of( this.getStartDate(),
+										   this.getZoneOffset() );
+                output_time = actualStartDate.format( FORMATTER );
 			}
 			currentSourceID = DataSources.getSourceID(getFilename(),
 													  output_time,
@@ -832,7 +835,12 @@ public final class PIXMLReader extends XMLReader
         return featureApproved && variableApproved && ensembleApproved;
     }
 
-    private OffsetDateTime getForecastDate()
+    private LocalDateTime getStartDate()
+	{
+		return this.startDate;
+	}
+
+    private LocalDateTime getForecastDate()
     {
 		return this.forecastDate;
     }
@@ -860,12 +868,12 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The date and time of the first value forecasted
 	 */
-    private OffsetDateTime startDate = null;
+    private LocalDateTime startDate = null;
 
     /**
      * The date and time that forecasting began
      */
-    private OffsetDateTime forecastDate = null;
+    private LocalDateTime forecastDate = null;
 	
 	/**
 	 * Indicates whether or not the data is for forecasts. Default is True
