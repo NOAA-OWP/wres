@@ -39,13 +39,13 @@ class SafeBoxPlotOutput implements BoxPlotOutput
      */
 
     private final MetricDimension rangeAxisDimension;
-    
+
     /**
      * Probabilities associated with the whiskers for each box.
      */
 
     private VectorOfDoubles probabilities;
-    
+
     @Override
     public MetricOutputMetadata getMetadata()
     {
@@ -120,9 +120,22 @@ class SafeBoxPlotOutput implements BoxPlotOutput
         {
             throw new MetricOutputException( "Specify non-null probabilities." );
         }
+        if ( output.isEmpty() )
+        {
+            throw new MetricOutputException( "Specify one or more boxes to store." );
+        }
+        if ( probabilities.size() < 2 )
+        {
+            throw new MetricOutputException( "Specify two or more probabilities for the whiskers." );
+        }
+        if ( probabilities.size() != output.get( 0 ).getItemTwo().length )
+        {
+            throw new MetricOutputException( "The number of probabilities does not match the number of whiskers "
+                    + "associated with each box." );
+        }
         //Check contents
-        checkEachBox( output );
         checkEachProbability( probabilities );
+        checkEachBox( output );
 
         //Ensure safe types
         DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
@@ -141,11 +154,17 @@ class SafeBoxPlotOutput implements BoxPlotOutput
 
     private void checkEachBox( List<PairOfDoubleAndVectorOfDoubles> boxes )
     {
+        int check = boxes.get( 0 ).getItemTwo().length;
         for ( PairOfDoubleAndVectorOfDoubles next : boxes )
         {
             if ( next.getItemTwo().length == 0 )
             {
                 throw new MetricOutputException( "One or more boxes are missing whiskers." );
+            }
+            if( next.getItemTwo().length != check)
+            {
+                throw new MetricOutputException( "One or more boxes has a different number of whiskers than "
+                        + "input probabilities." );
             }
         }
     }
