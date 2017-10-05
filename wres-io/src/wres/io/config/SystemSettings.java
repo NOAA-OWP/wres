@@ -81,6 +81,7 @@ public final class SystemSettings extends XMLReader
 
 	@Override
 	protected void parseElement(XMLStreamReader reader)
+            throws IOException
 	{
 		try
 		{
@@ -91,7 +92,7 @@ public final class SystemSettings extends XMLReader
 				if (reader.getLocalName().equalsIgnoreCase("database"))
 				{
 					databaseConfiguration = new DatabaseSettings(reader);
-				}				
+                }
 				else if (reader.getLocalName().equalsIgnoreCase("maximum_thread_count"))
 				{
 					reader.next();
@@ -158,10 +159,15 @@ public final class SystemSettings extends XMLReader
 				}
 			}
 		}
-		catch (Exception error)
-		{
-			LOGGER.error("Failed to parse system settings:", error);
-		}
+        catch ( XMLStreamException xse )
+        {
+            String message = "While reading system settings, at line"
+                             + reader.getLocation().getLineNumber()
+                             + " and column "
+                             + reader.getLocation().getColumnNumber()
+                             + ", an issue occurred.";
+            throw new IOException( message, xse );
+        }
 	}
 
 	public static Long getUpdateFrequency()

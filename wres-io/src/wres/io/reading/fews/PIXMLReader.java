@@ -3,11 +3,14 @@ package wres.io.reading.fews;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
@@ -21,6 +24,7 @@ import javax.xml.stream.XMLStreamReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
@@ -33,6 +37,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.TimeSeries;
 import wres.io.data.details.ProjectDetails;
+import wres.io.reading.IngestException;
 import wres.io.reading.XMLReader;
 import wres.io.utilities.Database;
 import wres.util.Collections;
@@ -103,20 +108,53 @@ public final class PIXMLReader extends XMLReader
 		this.hash = hash;
 		this.projectDetails = projectDetails;
 	}
-	
+
 	@Override
-	protected void parseElement(XMLStreamReader reader) {
+	protected void parseElement( XMLStreamReader reader )
+			throws IOException
+	{
 		if (reader.isStartElement())
 		{
-			String local_name = reader.getLocalName();
-			
-			if (local_name.equalsIgnoreCase("series"))
-			{
-				try {
-					parseSeries(reader);
-				} catch (Exception e) {
-					LOGGER.error(Strings.getStackTrace(e));
-				}
+            String localName = reader.getLocalName();
+
+            if ( localName.equalsIgnoreCase( "timeZone" ) )
+            {
+                try
+                {
+                    parseOffsetHours( reader );
+                }
+                catch ( XMLStreamException e )
+                {
+                    String message = "While reading the time zone at line "
+                                     + reader.getLocation().getLineNumber()
+                                     + " and column "
+                                     + reader.getLocation().getColumnNumber()
+                                     + ", encountered an issue.";
+                    throw new IOException( message, e );
+                }
+            }
+            else if ( localName.equalsIgnoreCase( "series" ) )
+            {
+                try
+                {
+                    parseSeries( reader );
+                }
+                catch ( InterruptedException ie )
+                {
+                    Thread.currentThread().interrupt();
+                }
+                catch ( ExecutionException
+                        | XMLStreamException
+                        | SQLException
+                        | ProjectConfigException e )
+                {
+                    String message = "While ingesting timeseries at line "
+                                     + reader.getLocation().getLineNumber()
+                                     + " and column "
+                                     + reader.getLocation().getColumnNumber()
+                                     + ", encountered an issue.";
+                    throw new IngestException( message, e );
+                }
 			}
 		}
 	}
@@ -144,12 +182,37 @@ public final class PIXMLReader extends XMLReader
     }
 
     /**
+     * Parses offset hours from a reader that is positioned on "timeZone" tag.
+     * <br />
+     * Sets this reader's offset hours after parsing the value.
+     * @param reader the reader positioned on the timeZone tag
+     * @throws XMLStreamException when underlying reader can't read next element
+     * @throws NumberFormatException when value is not able to be parsed
+     * @throws DateTimeException when the value is outside the range +/- 18 hrs
+     */
+    private void parseOffsetHours( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        if ( reader.isStartElement()
+             && reader.getLocalName().equalsIgnoreCase("timeZone"))
+        {
+            reader.next();
+        }
+        String offsetValueText = reader.getText();
+        double offsetHours = Double.parseDouble( offsetValueText );
+        // There are timezones such as +8:45
+        int offsetSeconds = (int) ( offsetHours * 3600.0 );
+        this.zoneOffset = ZoneOffset.ofTotalSeconds( offsetSeconds );
+    }
+
+
+    /**
 	 * Interprets information within PIXML "series" tags
 	 * @param reader The XML reader, positioned at a "series" tag
 	 */
 	private void parseSeries(XMLStreamReader reader)
             throws XMLStreamException, SQLException, IOException,
-            ExecutionException, InterruptedException
+            ExecutionException, InterruptedException, ProjectConfigException
     {
 		//	If the current tag is the series tag itself, move on to the next tag
 		if (reader.isStartElement() && reader.getLocalName().equalsIgnoreCase("series"))
@@ -158,9 +221,9 @@ public final class PIXMLReader extends XMLReader
 		}
 
 		this.currentTimeSeries = null;
-		
+
 		String localName;
-		
+
 		//	Loop through every element in a series (header -> entry -> entry -> ... )
 		while (reader.hasNext())
 		{
@@ -198,7 +261,7 @@ public final class PIXMLReader extends XMLReader
 	 */
 	private void parseEvent(XMLStreamReader reader)
             throws SQLException, IOException, ExecutionException,
-            InterruptedException
+            InterruptedException, ProjectConfigException
     {
 		this.incrementLead();
 		Float value = null;
@@ -225,6 +288,15 @@ public final class PIXMLReader extends XMLReader
 		if (value != null && !value.equals(currentMissingValue)) {
             LocalDateTime dateTime = LocalDateTime.of( localDate, localTime );
 			if (isForecast) {
+                if ( this.getForecastDate() == null )
+                {
+                    String message = "No forecast date found for forecast data."
+                                     + " Might this really be observation data?"
+                                     + " Please check the <type> under both "
+                                     + "<left> and <right> sources.";
+                    throw new ProjectConfigException( this.getDataSourceConfig(),
+                                                      message );
+                }
                 Duration leadTime = Duration.between( this.getForecastDate(),
                                                       dateTime );
                 int leadTimeInHours = (int) leadTime.toHours();
@@ -234,8 +306,10 @@ public final class PIXMLReader extends XMLReader
                                               getTimeSeriesID() );
 
 			} else {
-                String formattedDate = dateTime.format( FORMATTER );
-                addObservedEvent( formattedDate, value);
+                OffsetDateTime offsetDateTime
+                    = OffsetDateTime.of( dateTime, this.zoneOffset );
+                String formattedDate = offsetDateTime.format( FORMATTER );
+                addObservedEvent( formattedDate, value );
 			}
 		}
 		else if (value != null && value.equals(currentMissingValue)) {
@@ -421,7 +495,8 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if(this.isForecast && localName.equalsIgnoreCase("forecastDate"))
 				{
-                    this.forecastDate = parseDateTime( reader );
+                    LocalDateTime time = PIXMLReader.parseDateTime( reader );
+                    this.forecastDate = OffsetDateTime.of( time, this.zoneOffset );
 				}
 				else if(localName.equalsIgnoreCase("units"))
 				{
@@ -435,8 +510,9 @@ public final class PIXMLReader extends XMLReader
 					currentMissingValue = Float.parseFloat(XML.getXMLText(reader));
 				}
 				else if (localName.equalsIgnoreCase("startDate"))
-				{				
-					startDate = parseDateTime(reader);
+                {
+                    LocalDateTime time = PIXMLReader.parseDateTime( reader );
+                    this.startDate = OffsetDateTime.of( time, this.zoneOffset );
 				}
 				else if (XML.tagIs(reader, "creationDate")) {
 					creationDate = XML.getXMLText(reader);
@@ -729,10 +805,15 @@ public final class PIXMLReader extends XMLReader
         return featureApproved && variableApproved && ensembleApproved;
     }
 
-    private LocalDateTime getForecastDate()
+    private OffsetDateTime getForecastDate()
     {
 		return this.forecastDate;
     }
+
+    /**
+     * The most recent time zone offset read from the source or UTC by default.
+     */
+    private ZoneOffset zoneOffset = ZoneOffset.UTC;
 
 	/**
 	 * The date for when the source was created
@@ -747,12 +828,12 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The date and time of the first value forecasted
 	 */
-    private LocalDateTime startDate = null;
+    private OffsetDateTime startDate = null;
 
     /**
      * The date and time that forecasting began
      */
-    private LocalDateTime forecastDate = null;
+    private OffsetDateTime forecastDate = null;
 	
 	/**
 	 * Indicates whether or not the data is for forecasts. Default is True
