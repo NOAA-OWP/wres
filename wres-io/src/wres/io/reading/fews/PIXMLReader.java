@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
@@ -44,7 +43,6 @@ import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
-import wres.util.Strings;
 import wres.util.Time;
 import wres.util.XML;
 
@@ -140,12 +138,7 @@ public final class PIXMLReader extends XMLReader
                 {
                     parseSeries( reader );
                 }
-                catch ( InterruptedException ie )
-                {
-                    Thread.currentThread().interrupt();
-                }
-                catch ( ExecutionException
-                        | XMLStreamException
+                catch ( XMLStreamException
                         | SQLException
                         | ProjectConfigException e )
                 {
@@ -162,23 +155,26 @@ public final class PIXMLReader extends XMLReader
 
     @Override
     protected void completeParsing()
+            throws IOException
     {
-        try
+        if ( this.hash != null && !this.hash.trim().isEmpty() )
         {
-        	if (Strings.hasValue( this.hash ))
+            try
 			{
 				this.projectDetails.addSource( this.hash,
 											   this.dataSourceConfig );
 			}
-			else
-			{
-				LOGGER.debug( "No data could be ingested from '{}'.",
-							  this.getFilename());
-			}
+            catch ( SQLException se )
+            {
+                String message = "Could not save data source information for "
+                                 + this.getFilename();
+                throw new IngestException( message, se );
+            }
         }
-        catch ( SQLException e )
+        else
         {
-            LOGGER.error( Strings.getStackTrace( e ) );
+            LOGGER.debug( "No data could be ingested from '{}'.",
+                          this.getFilename());
         }
     }
 
@@ -213,7 +209,7 @@ public final class PIXMLReader extends XMLReader
 	 */
 	private void parseSeries(XMLStreamReader reader)
             throws XMLStreamException, SQLException, IOException,
-            ExecutionException, InterruptedException, ProjectConfigException
+            ProjectConfigException
     {
         // If we get to this point without a zone offset, something is wrong.
         // See #38801 discussion.
@@ -277,11 +273,12 @@ public final class PIXMLReader extends XMLReader
 	 * Removes information about a measurement from an "event" tag. If a sufficient number of events have been
 	 * parsed, they are sent to the database to be saved.
 	 * @param reader The reader containing the current event tag
+     * @throws SQLException when unable to get a series id or unable to save
+     * @throws ProjectConfigException when a forecast is missing a forecast date
 	 */
 
 	private void parseEvent(XMLStreamReader reader)
-            throws SQLException, IOException, ExecutionException,
-            InterruptedException, ProjectConfigException
+            throws SQLException, ProjectConfigException
     {
 		this.incrementLead();
 		Float value = null;
@@ -381,8 +378,7 @@ public final class PIXMLReader extends XMLReader
 	 * @throws SQLException Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
 	 */
 	private void addObservedEvent(String observedTime, Float observedValue)
-            throws SQLException, IOException, ExecutionException,
-            InterruptedException
+            throws SQLException
     {
 		if (insertCount > 0)
 		{
@@ -411,18 +407,31 @@ public final class PIXMLReader extends XMLReader
     {
         synchronized (groupLock)
         {
-            for (Map.Entry<Integer, StringBuilder> builderPair : PIXMLReader.builderMap.entrySet()) {
-                if (PIXMLReader.copyCount.get(builderPair.getKey()) > 0) {
-                    try {
-                        String header = PIXMLReader.getForecastInsertHeader(builderPair.getKey());
-                        CopyExecutor copier = new CopyExecutor(header, builderPair.getValue().toString(), delimiter);
-                        copier.setOnRun(ProgressMonitor.onThreadStartHandler());
-                        copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                        Database.storeIngestTask(Database.execute(copier));
-                        PIXMLReader.builderMap.put(builderPair.getKey(), new StringBuilder());
-                    } catch (SQLException e) {
-                        LOGGER.error(Strings.getStackTrace(e));
+            for ( Map.Entry<Integer, StringBuilder> builderPair
+                    : PIXMLReader.builderMap.entrySet() )
+            {
+                Integer key = builderPair.getKey();
+
+                if ( PIXMLReader.copyCount.get( key ) > 0 )
+                {
+                    String header;
+                    try
+                    {
+                        header = PIXMLReader.getForecastInsertHeader( key );
                     }
+                    catch ( SQLException e )
+                    {
+                        LOGGER.error( "While saving leftover forecasts:", e );
+                        continue;
+                    }
+                    CopyExecutor copier =
+                            new CopyExecutor( header,
+                                              builderPair.getValue().toString(),
+                                              delimiter );
+                    copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
+                    copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+                    Database.storeIngestTask( Database.execute( copier ) );
+                    PIXMLReader.builderMap.put( key, new StringBuilder() );
                 }
             }
         }
@@ -652,8 +661,7 @@ public final class PIXMLReader extends XMLReader
 	 * with the database failed.
 	 */
 	private int getTimeSeriesID()
-            throws SQLException, IOException, ExecutionException,
-            InterruptedException
+            throws SQLException
     {
 		if (currentTimeSeriesID == null) {
 			this.getCurrentTimeSeries().setEnsembleID(getEnsembleID());
@@ -665,8 +673,7 @@ public final class PIXMLReader extends XMLReader
 	}
 
 	private TimeSeries getCurrentTimeSeries()
-            throws InterruptedException, SQLException, ExecutionException,
-            IOException
+            throws SQLException
     {
         if (this.currentTimeSeries == null)
         {
@@ -698,8 +705,7 @@ public final class PIXMLReader extends XMLReader
 	 * @throws SQLException Thrown if an ID could not be retrieved from the database
 	 */
 	private int getSourceID()
-            throws SQLException, IOException, ExecutionException,
-            InterruptedException
+            throws SQLException
     {
 		if (currentSourceID == null)
 		{
@@ -992,7 +998,7 @@ public final class PIXMLReader extends XMLReader
 
 	private final ProjectDetails projectDetails;
 
-    private String getHash() throws ExecutionException, InterruptedException
+    private String getHash()
     {
         return this.hash;
     }
