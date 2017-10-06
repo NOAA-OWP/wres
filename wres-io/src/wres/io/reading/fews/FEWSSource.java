@@ -2,16 +2,11 @@ package wres.io.reading.fews;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.concurrent.ExecutionException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import wres.io.data.caching.DataSources;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.util.Internal;
-import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs
@@ -20,7 +15,6 @@ import wres.util.Strings;
 @Internal(exclusivePackage = "wres.io")
 public class FEWSSource extends BasicSource
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( FEWSSource.class );
 	/**
 	 * Constructor that sets the filename 
 	 * @param filename The name of the source file
