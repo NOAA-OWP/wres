@@ -87,6 +87,10 @@ class SafeMultiVectorOutput implements MultiVectorOutput
         {
             throw new MetricOutputException( "Specify non-null metadata." );
         }
+        if ( output.isEmpty() )
+        {
+            throw new MetricOutputException( "Specify one or more outputs to store." );
+        }
         this.output = new EnumMap<>( MetricDimension.class );
         DefaultDataFactory inFac = (DefaultDataFactory) DefaultDataFactory.getInstance();
         output.forEach( ( key, value ) -> this.output.put( key, inFac.safeVectorOf( value ) ) );

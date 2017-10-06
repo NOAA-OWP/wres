@@ -239,6 +239,7 @@ public class DefaultDataFactory implements DataFactory
     public MultiVectorOutput ofMultiVectorOutput( final Map<MetricDimension, double[]> output,
                                                   final MetricOutputMetadata meta )
     {
+        Objects.requireNonNull( output, "Specify a non-null map of inputs." );
         EnumMap<MetricDimension, VectorOfDoubles> map = new EnumMap<>( MetricDimension.class );
         output.forEach( ( key, value ) -> map.put( key, vectorOf( value ) ) );
         return new SafeMultiVectorOutput( map, meta );
