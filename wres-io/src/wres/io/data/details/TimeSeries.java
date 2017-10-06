@@ -64,6 +64,11 @@ public final class TimeSeries
     private final Integer sourceID;
 
     /**
+     * The ID of the project that uses this Time Series
+     */
+    private final Integer projectID;
+
+    /**
      * The string representation of the date and time of when the forecast
      * began. For instance, if a forecasted value for a time series at a lead
      * time of 1 occured at '01-01-2017 13:00:00', the initialization date
@@ -71,10 +76,11 @@ public final class TimeSeries
      */
     private final String initializationDate;
 
-    public TimeSeries( Integer sourceID, String initializationDate)
+    public TimeSeries( Integer projectID, Integer sourceID, String initializationDate)
     {
         this.sourceID = sourceID;
         this.initializationDate = initializationDate;
+        this.projectID = projectID;
     }
 	
 	/**
@@ -158,11 +164,13 @@ public final class TimeSeries
 		script += "			FROM wres.TimeSeries TS" + NEWLINE;
 		script += "			INNER JOIN wres.ForecastSource FS" + NEWLINE;
 		script += "				ON FS.forecast_id = TS.timeseries_id" + NEWLINE;
+		script += "         INNER JOIN wres.ProjectSource PS" + NEWLINE;
+		script += "             ON PS.source_id = FS.source_id" + NEWLINE;
 		script += "			WHERE TS.variableposition_id = " + variablePositionID + NEWLINE;
 		script += "				AND TS.ensemble_id = " + ensembleID + NEWLINE;
 		script += "             AND TS.initialization_date = '" + this.initializationDate + "'" + NEWLINE;
         script += "				AND TS.measurementunit_id = " + measurementUnitID + NEWLINE;
-        script += "				AND FS.source_id = " + this.sourceID + NEWLINE;
+        script += "				AND PS.project_id = " + this.projectID + NEWLINE;
 		script += "		)" + NEWLINE;
 		script += "		RETURNING timeseries_id" + NEWLINE;
 		script += ")" + NEWLINE;
@@ -179,7 +187,14 @@ public final class TimeSeries
 		script += "		AND TS.ensemble_id = " + ensembleID + NEWLINE;
 		script += "     AND TS.initialization_date = '" + this.initializationDate + "'" + NEWLINE;
         script += "		AND TS.measurementunit_id = " + measurementUnitID + NEWLINE;
-        script += "		AND FS.source_id = " + this.sourceID + ";";
+        script += "     AND EXISTS (" + NEWLINE;
+        script += "         SELECT 1" + NEWLINE;
+        script += "         FROM wres.ForecastSource FS" + NEWLINE;
+        script += "         INNER JOIN wres.ProjectSource PS" + NEWLINE;
+        script += "             ON PS.source_id = FS.source_id" + NEWLINE;
+        script += "         WHERE FS.forecast_id = TS.timeseries_id" + NEWLINE;
+        script += "             AND PS.project_id = " + this.projectID + NEWLINE;
+        script += ");";
 
         timeSeriesID = Database.getResult(script, "timeseries_id");
 		this.saveTimeSeriesSource();

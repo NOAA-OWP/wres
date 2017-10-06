@@ -674,7 +674,8 @@ public final class PIXMLReader extends XMLReader
                     = OffsetDateTime.of( this.getForecastDate(),
                                          this.getZoneOffset() );
             this.currentTimeSeries =
-                    new TimeSeries( this.getSourceID(),
+                    new TimeSeries( this.projectDetails.getId(),
+									this.getSourceID(),
                                     forecastFullDateTime.format( FORMATTER ) );
         }
         return this.currentTimeSeries;
@@ -762,20 +763,21 @@ public final class PIXMLReader extends XMLReader
             if (exclusions)
             {
                 // Approve if there are no instructions to exclude this ensemble
-                approved = !Collections.exists(this.getDataSourceConfig().getEnsemble(), (EnsembleCondition ensemble) -> {
-                    return ensemble.isExclude() &&
-                            ensemble.getName().equalsIgnoreCase(name) &&
-                            ensemble.getMemberId().equalsIgnoreCase(ensembleMemberID);
-                });
+                approved = !Collections.exists(this.getDataSourceConfig().getEnsemble(),
+                                               (EnsembleCondition ensemble) ->
+                                                       ensemble.isExclude() &&
+                                                       ensemble.getName().equalsIgnoreCase(name) &&
+                                                       ensemble.getMemberId().equalsIgnoreCase(ensembleMemberID) );
             }
             else
             {
                 // Only approve if the ensemble has explicit inclusion specified
-                approved = Collections.exists(this.getDataSourceConfig().getEnsemble(), (EnsembleCondition ensemble) -> {
-                    return ensemble.isExclude() &&
-                            ensemble.getName().equalsIgnoreCase(name) &&
-                            ensemble.getMemberId().equalsIgnoreCase(ensembleMemberID);
-                });
+                approved = Collections.exists(this.getDataSourceConfig().getEnsemble(),
+                                              (EnsembleCondition ensemble) ->
+                                                      ensemble.isExclude() &&
+                                                      ensemble.getName().equalsIgnoreCase(name) &&
+                                                      ensemble.getMemberId().equalsIgnoreCase(ensembleMemberID)
+                );
             }
         }
 
