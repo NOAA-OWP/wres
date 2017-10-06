@@ -48,23 +48,13 @@ public class ConfigHelperTest
 
     @Test
     public void featureIdsTest()
-    throws IOException, SQLException
+    throws Exception // Needed due to signature of powermock doReturn().when()
     {
         // Need to intercept a call in Features.class
         PowerMockito.spy(Features.class);
-        try
-        {
-            // anyString() will return FALSE if the arg is null... need to use any() matcher!!
-            doReturn(1, 2,3).when(Features.class, "getFeatureID", any(), any());
-        }
-        catch (Exception e) // TODO: remove when Features.getFeatureID does not throw Exception
-        {
-            if (e instanceof RuntimeException)
-            {
-                throw (RuntimeException) e;
-            }
-            throw new IOException("Issue in Features.getFeatureID", e);
-        }
+
+        // anyString() will return FALSE if the arg is null... need to use any() matcher!!
+        doReturn(1, 2,3).when(Features.class, "getFeatureID", any(), any());
 
         String expected = "feature_id in (1,2,3)";
 
