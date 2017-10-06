@@ -616,10 +616,6 @@ final class MainFunctions
                 {
                     LOGGER.error(Strings.getStackTrace(e));
                 }
-                catch ( NoDataException e )
-                {
-                    LOGGER.error(Strings.getStackTrace( e ));
-                }
             }
             else
             {

@@ -1,6 +1,8 @@
 package wres.io.utilities;
 
-public class NoDataException extends Exception
+import java.io.IOException;
+
+public class NoDataException extends IOException
 {
     public NoDataException( String message )
     {
