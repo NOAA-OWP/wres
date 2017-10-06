@@ -64,7 +64,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.InputGenerator;
-import wres.io.utilities.NoDataException;
 import wres.io.writing.ChartWriter;
 import wres.io.writing.ChartWriter.ChartWritingException;
 import wres.io.writing.CommaSeparated;
@@ -180,11 +179,11 @@ public class Control implements Function<String[], Integer>
             }
             return 0;
         }
-        catch ( WresProcessingException | NoDataException wpe )
+        catch ( WresProcessingException | IOException e )
         {
             endTime = System.currentTimeMillis();
 
-            LOGGER.error( "Could not complete project execution:", wpe );
+            LOGGER.error( "Could not complete project execution:", e );
 
             Operations.logExecution( String.join(" ", args),
                                      projectRawConfig,
@@ -211,14 +210,15 @@ public class Control implements Function<String[], Integer>
      * @param pairExecutor the {@link ExecutorService} for processing pairs
      * @param thresholdExecutor the {@link ExecutorService} for processing thresholds
      * @param metricExecutor the {@link ExecutorService} for processing metrics
-     * @throws WresProcessingException when an error occurs during processing
+     * @throws IOException when an issue occurs during ingest
+     * @throws WresProcessingException when an issue occurs during processing
      */
 
     private void   processProjectConfig( final ProjectConfigPlus projectConfigPlus,
                                          final ExecutorService pairExecutor,
                                          final ExecutorService thresholdExecutor,
                                          final ExecutorService metricExecutor )
-            throws NoDataException
+            throws IOException
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -230,12 +230,7 @@ public class Control implements Function<String[], Integer>
                       projectConfigPlus.getPath() );
 
         // Need to ingest first
-        final boolean ingestResult = Operations.ingest(projectConfig);
-
-        if(!ingestResult)
-        {
-            throw new WresProcessingException( "Error while attempting to ingest data." );
-        }
+        Operations.ingest(projectConfig);
 
         LOGGER.debug( "Finished ingest for project {}...",
                       projectConfigPlus.getPath() );
