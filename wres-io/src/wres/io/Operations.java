@@ -22,7 +22,6 @@ import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
 import wres.io.utilities.InputGenerator;
-import wres.io.utilities.NoDataException;
 import wres.util.Strings;
 
 public final class Operations {
@@ -53,7 +52,7 @@ public final class Operations {
         }
         catch ( ExecutionException e )
         {
-            String message = "An asynchonrous ingest task could not be completed.";
+            String message = "An ingest task could not be completed.";
             throw new IngestException( message, e );
         }
         finally
