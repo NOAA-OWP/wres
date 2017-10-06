@@ -297,17 +297,29 @@ public abstract class BasicSource {
     /**
      * Retrieves the results of the asynchrous hashing operation for the file
      * @return The MD5 hash of the contents of the current source file
-     * @throws ExecutionException Thrown if an error occurs while executing the
-     * hashing task
-     * @throws InterruptedException Thrown if the hashing task is interupted
+     * @throws IOException when anything goes wrong while getting the hash
      */
-    protected String getHash() throws ExecutionException, InterruptedException
+    protected String getHash() throws IOException
     {
         if (this.hash == null)
         {
             if (this.futureHash != null)
             {
-                this.hash = this.futureHash.get();
+                try
+                {
+                    this.hash = this.futureHash.get();
+                }
+                catch ( InterruptedException ie )
+                {
+                    Thread.currentThread().interrupt();
+                }
+                catch ( ExecutionException ee )
+                {
+                    String message = "While identifying data from source "
+                                     + this.getAbsoluteFilename()
+                                     + ", encountered an issue.";
+                    throw new IOException( message, ee );
+                }
             }
             else
             {

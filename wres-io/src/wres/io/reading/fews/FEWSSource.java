@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.caching.DataSources;
 import wres.io.reading.BasicSource;
+import wres.io.reading.IngestException;
 import wres.util.Internal;
 import wres.util.Strings;
 
@@ -51,9 +52,12 @@ public class FEWSSource extends BasicSource
                 this.getProjectDetails().addSource( this.getHash(), getDataSourceConfig() );
             }
         }
-        catch ( SQLException | ExecutionException | InterruptedException e )
+        catch ( SQLException se )
         {
-            LOGGER.error( Strings.getStackTrace(e) );
+            String message = "While saving the forecast from source "
+                             + this.getAbsoluteFilename()
+                             + ", encountered an issue.";
+            throw new IngestException( message, se );
         }
     }
 
@@ -77,9 +81,12 @@ public class FEWSSource extends BasicSource
                 this.getProjectDetails().addSource( this.getHash(), getDataSourceConfig() );
             }
         }
-        catch ( InterruptedException | ExecutionException | SQLException e )
+        catch ( SQLException se )
         {
-            LOGGER.error( Strings.getStackTrace( e ) );
+            String message = "While saving the observation from source "
+                             + this.getAbsoluteFilename()
+                             + ", encountered an issue.";
+            throw new IngestException( message, se );
         }
     }
 
