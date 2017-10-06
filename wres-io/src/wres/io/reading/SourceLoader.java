@@ -51,6 +51,7 @@ public class SourceLoader
     /**
      * Ingest data
      * @return List of Future file ingest results
+     * @throws NoDataException when no data is found
      */
     public List<Future> load() throws NoDataException
     {
