@@ -799,15 +799,15 @@ public final class PIXMLReader extends XMLReader
 	    boolean approved = true;
 
 	    boolean hasLocations = Collections.exists(this.getSpecifiedFeatures(), (Feature feature) -> {
-            return feature.getLocation() != null && feature.getLocation().getLid() != null;
+            return feature.getLid() != null;
         });
 
 	    if (hasLocations)
         {
             approved = Collections.exists(this.getSpecifiedFeatures(), (Feature feature) -> {
-                return feature.getLocation() !=  null &&
-                        feature.getLocation().getLid() != null &&
-                        feature.getLocation().getLid().equalsIgnoreCase(lid);
+                return feature.getLid() != null &&
+                        feature.getLid()
+                               .equalsIgnoreCase( lid );
             });
         }
 

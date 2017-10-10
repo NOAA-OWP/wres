@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DurationUnit;
-import wres.config.generated.FeatureAliasConfig;
+import wres.config.generated.Feature;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
@@ -389,10 +389,10 @@ public class Validation
 
         boolean result = true;
 
-        if ( pairConfig.getFeatureAlias() != null )
+        if ( pairConfig.getFeature() != null )
         {
             SortedSet<String> alreadyUsed = new ConcurrentSkipListSet<>();
-            for ( FeatureAliasConfig f : pairConfig.getFeatureAlias() )
+            for ( Feature f : pairConfig.getFeature() )
             {
                 result = Validation.isFeatureAliasValid( projectConfigPlus,
                                                          f,
@@ -415,37 +415,37 @@ public class Validation
     }
 
     /**
-     * Validates a given feature alias from a projectconfig.
+     * Validates a given feature's aliases from a projectconfig.
      *
      * Expects caller to create a set of names already existing. If the name of
      * featureAliasConfig is present in that list, consider it invalid.
      *
      * @param projectConfigPlus the project config
-     * @param featureAliasConfig the feature alias to validate
+     * @param featureConfig the feature with aliases to validate
      * @param stuffAlreadyUsed set of strings already-used as names or aliases
      * @return true when valid
      * @throws NullPointerException when any argument is null
      */
 
     private static boolean isFeatureAliasValid( ProjectConfigPlus projectConfigPlus,
-                                                FeatureAliasConfig featureAliasConfig,
+                                                Feature featureConfig,
                                                 SortedSet<String> stuffAlreadyUsed )
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
-        Objects.requireNonNull( featureAliasConfig, NON_NULL );
+        Objects.requireNonNull( featureConfig, NON_NULL );
         Objects.requireNonNull( stuffAlreadyUsed, NON_NULL );
 
         boolean result = true;
 
-        final String ALREADY_USED = " The name or alias {} was already used as "
-                                    + "a name or alias earlier. Any and all "
-                                    + "aliases for a name must be specified in "
-                                    + "one stanza, e.g. <featureAlias><name>{}"
-                                    + "</name><alias>{}ONE</alias><alias>{}TWO"
-                                    + "</alias>.";
+        final String ALREADY_USED = " The lid or alias {} was already used as "
+                                    + "an lid or alias earlier. Any and all "
+                                    + "aliases for an lid must be specified in "
+                                    + "one stanza, e.g. <feature lid=\"{}\">"
+                                    + "<alias>{}ONE</alias><alias>{}TWO"
+                                    + "</alias></feature>.";
 
-        String name = featureAliasConfig.getName();
-        List<String> aliases = featureAliasConfig.getAlias();
+        String name = featureConfig.getLid();
+        List<String> aliases = featureConfig.getAlias();
 
         if ( name.length() > 0 )
         {
@@ -456,8 +456,8 @@ public class Validation
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                  + ALREADY_USED,
                                  projectConfigPlus.getPath(),
-                                 featureAliasConfig.sourceLocation().getLineNumber(),
-                                 featureAliasConfig.sourceLocation().getColumnNumber(),
+                                 featureConfig.sourceLocation().getLineNumber(),
+                                 featureConfig.sourceLocation().getColumnNumber(),
                                  name, name, name, name );
                 }
 
@@ -469,13 +469,13 @@ public class Validation
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The name represents the name of a location "
+                             + " The lid represents the name of a location "
                              + " within the actual data. It cannot be missing. "
-                             + "Please use the name found in data, e.g. <name>"
+                             + "Please use the lid found in data, e.g. <name>"
                              + "DRRC2</name>.",
                              projectConfigPlus.getPath(),
-                             featureAliasConfig.sourceLocation().getLineNumber(),
-                             featureAliasConfig.sourceLocation().getColumnNumber() );
+                             featureConfig.sourceLocation().getLineNumber(),
+                             featureConfig.sourceLocation().getColumnNumber() );
             }
 
             result = false;
@@ -490,8 +490,8 @@ public class Validation
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                  + ALREADY_USED,
                                  projectConfigPlus.getPath(),
-                                 featureAliasConfig.sourceLocation().getLineNumber(),
-                                 featureAliasConfig.sourceLocation().getColumnNumber(),
+                                 featureConfig.sourceLocation().getLineNumber(),
+                                 featureConfig.sourceLocation().getColumnNumber(),
                                  alias, name, name, name );
                 }
 
@@ -507,8 +507,8 @@ public class Validation
                                  + "specified in each <featureAlias>. (Feature "
                                  + "aliases as a whole are optional.)",
                                  projectConfigPlus.getPath(),
-                                 featureAliasConfig.sourceLocation().getLineNumber(),
-                                 featureAliasConfig.sourceLocation().getColumnNumber() );
+                                 featureConfig.sourceLocation().getLineNumber(),
+                                 featureConfig.sourceLocation().getColumnNumber() );
                 }
 
                 result = false;

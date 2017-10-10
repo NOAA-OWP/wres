@@ -81,11 +81,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             hashBuilder.append(ensembleCondition.getQualifier());
         }
 
-        for ( Feature feature : left.getFeatures())
-        {
-            hashBuilder.append( ConfigHelper.getFeatureDescription( feature ) );
-        }
-
         for ( DataSourceConfig.Source source : left.getSource())
         {
             if (source.getFormat() != null)
@@ -106,11 +101,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             hashBuilder.append(ensembleCondition.getName());
             hashBuilder.append(ensembleCondition.getMemberId());
             hashBuilder.append(ensembleCondition.getQualifier());
-        }
-
-        for ( Feature feature : right.getFeatures())
-        {
-            hashBuilder.append( ConfigHelper.getFeatureDescription( feature ) );
         }
 
         for ( DataSourceConfig.Source source : right.getSource())
@@ -138,11 +128,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 hashBuilder.append(ensembleCondition.getQualifier());
             }
 
-            for ( Feature feature : baseline.getFeatures())
-            {
-                hashBuilder.append( ConfigHelper.getFeatureDescription( feature ) );
-            }
-
             for ( DataSourceConfig.Source source : baseline.getSource())
             {
                 if (source.getFormat() != null)
@@ -155,6 +140,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
             hashBuilder.append(baseline.getVariable().getValue());
             hashBuilder.append(baseline.getVariable().getUnit());
+        }
+
+        for ( Feature feature : projectConfig.getPair()
+                                             .getFeature() )
+        {
+            hashBuilder.append( ConfigHelper.getFeatureDescription( feature ) );
         }
 
         return hashBuilder.toString().hashCode();
@@ -721,18 +712,18 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                                                   "TS" ) +
                           NEWLINE;
 
-                if ( this.projectConfig.getConditions().getLastLead()
+                if ( this.projectConfig.getPair().getLastLead()
                      < Integer.MAX_VALUE )
                 {
                     script += "    AND FV.lead <= "
-                              + this.projectConfig.getConditions().getLastLead()
+                              + this.projectConfig.getPair().getLastLead()
                               + NEWLINE;
                 }
 
-                if ( this.projectConfig.getConditions().getFirstLead() > 1 )
+                if ( this.projectConfig.getPair().getFirstLead() > 1 )
                 {
                     script += "    AND FV.lead >= "
-                              + this.projectConfig.getConditions()
+                              + this.projectConfig.getPair()
                                                   .getFirstLead() + NEWLINE;
                 }
 

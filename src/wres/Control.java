@@ -236,20 +236,13 @@ public class Control implements Function<String[], Integer>
                       projectConfigPlus.getPath() );
 
         // TODO: Implement way of iterating through features correctly
-        Feature left = projectConfig.getInputs().getLeft().getFeatures().get( 0 );
-        Feature right = projectConfig.getInputs().getRight().getFeatures().get(0);
-        Feature baseline = null;
-
-        if (projectConfig.getInputs().getBaseline() != null)
-        {
-            baseline = projectConfig.getInputs().getBaseline().getFeatures().get( 0 );
-        }
+        Feature feature = projectConfig.getPair()
+                                       .getFeature()
+                                       .get( 0 );
 
         ProgressMonitor.setShowStepDescription( false );
         ProgressMonitor.resetMonitor();
-        processFeature( left,
-                        right,
-                        baseline,
+        processFeature( feature,
                         projectConfigPlus,
                         pairExecutor,
                         thresholdExecutor,
@@ -260,19 +253,14 @@ public class Control implements Function<String[], Integer>
      * Processes a {@link ProjectConfigPlus} for a specific {@link Feature} using a prescribed {@link ExecutorService}
      * for each of the pairs, thresholds and metrics.
      * 
-     * @param leftFeature the feature to process on the left
-     * @param rightFeature the feature to proceses on the right
-     * @param baselineFeature the optional feature to process as the baseline
+     * @param feature the feature to process
      * @param projectConfigPlus the project configuration
      * @param pairExecutor the {@link ExecutorService} for processing pairs
      * @param thresholdExecutor the {@link ExecutorService} for processing thresholds
      * @param metricExecutor the {@link ExecutorService} for processing metrics
      * @throws WresProcessingException when an error occurs during processing
      */
-    // TODO: Refactor; there are now too many parameters
-    private void   processFeature( final Feature leftFeature,
-                                 final Feature rightFeature,
-                                 final Feature baselineFeature,
+    private void processFeature( final Feature feature,
                                  final ProjectConfigPlus projectConfigPlus,
                                  final ExecutorService pairExecutor,
                                  final ExecutorService thresholdExecutor,
@@ -284,22 +272,7 @@ public class Control implements Function<String[], Integer>
         if(LOGGER.isInfoEnabled())
         {
             // This will NOT work if we are using any other feature format
-            String message = "Processing features '{}' on the left";
-            if (baselineFeature != null)
-            {
-                message += ", '{}' on the right, and '{}' as the baseline.";
-                LOGGER.info(message,
-                            leftFeature.getLocation().getLid(),
-                            rightFeature.getLocation().getLid(),
-                            baselineFeature.getLocation().getLid());
-            }
-            else
-            {
-                message += " and '{}' on the right.";
-                LOGGER.info(message,
-                            leftFeature.getLocation().getLid(),
-                            rightFeature.getLocation().getLid());
-            }
+            LOGGER.info( "Processing feature '{}'", feature.getLid() );
         }
 
         // Sink for the results: the results are added incrementally to an immutable store via a builder
@@ -321,8 +294,23 @@ public class Control implements Function<String[], Integer>
                                                e );
         }
 
+        InputGenerator metricInputs;
+
         // Build an InputGenerator for the next feature
-        final InputGenerator metricInputs = Operations.getInputs(projectConfig, leftFeature, rightFeature, baselineFeature);
+        if ( projectConfig.getInputs().getBaseline() != null )
+        {
+            metricInputs = Operations.getInputs( projectConfig,
+                                                 feature,
+                                                 feature,
+                                                 feature );
+        }
+        else
+        {
+            metricInputs = Operations.getInputs( projectConfig,
+                                                 feature,
+                                                 feature,
+                                                 null );
+        }
 
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
@@ -338,8 +326,8 @@ public class Control implements Function<String[], Integer>
                                             CompletableFuture.supplyAsync(new PairsByLeadProcessor(nextInput),
                                                                           pairExecutor)
                                                              .thenApplyAsync(processor, pairExecutor)
-                                                             .thenAcceptAsync(new IntermediateResultProcessor(rightFeature,
-                                                                                                              projectConfigPlus),
+                                                             .thenAcceptAsync( new IntermediateResultProcessor( feature,
+                                                                                                                projectConfigPlus ),
                                                                               pairExecutor)
                                                              .thenAccept(
                                                                          aVoid -> ProgressMonitor.completeStep() );
@@ -355,48 +343,21 @@ public class Control implements Function<String[], Integer>
         }
         catch(final CompletionException e)
         {
-            String message = "Error while processing features "
-                             + leftFeature.getLocation().getLid();
-            if (baselineFeature != null)
-            {
-                message += ", " +
-                           ConfigHelper.getFeatureDescription( rightFeature ) +
-                           ", and " +
-                           ConfigHelper.getFeatureDescription( baselineFeature );
-            }
-            else
-            {
-                message += " and " + ConfigHelper.getFeatureDescription( rightFeature );
-            }
-            message += ":";
+            String message = "Error while processing feature "
+                             + ConfigHelper.getFeatureDescription( feature );
             throw new WresProcessingException( message, e );
-        }        
+        }
 
         // Generated stored output if available
         if ( processor.hasStoredMetricOutput() )
         {
-            // TODO: We now have to have 2-3 different features (or more).
-            processCachedProducts( projectConfigPlus, processor, rightFeature );
+            processCachedProducts( projectConfigPlus, processor, feature );
         }
         else if ( LOGGER.isInfoEnabled() )
         {
-            String message = "No cached outputs to generate for features: '{}' on the left";
-
-            if (baselineFeature == null)
-            {
-                message += " and '{}' on the right.";
-                LOGGER.info( message,
-                             ConfigHelper.getFeatureDescription( leftFeature ),
-                             ConfigHelper.getFeatureDescription( rightFeature ));
-            }
-            else
-            {
-                message += ", '{}' on the right, and '{}' as the baseline.";
-                LOGGER.info( message,
-                             ConfigHelper.getFeatureDescription( leftFeature ),
-                             ConfigHelper.getFeatureDescription( rightFeature ),
-                             ConfigHelper.getFeatureDescription( baselineFeature ));
-            }
+            String description = ConfigHelper.getFeatureDescription( feature );
+            LOGGER.info( "No cached outputs to generate for feature: '"
+                         + description + "'" );
         }
     }
 
@@ -420,7 +381,7 @@ public class Control implements Function<String[], Integer>
                                           DestinationType.GRAPHIC ) )
         {
             LOGGER.debug( "Beginning to build charts for feature {}...",
-                          feature.getLocation().getLid() );
+                          feature.getLid() );
 
             processCachedCharts( feature,
                                  projectConfigPlus,
@@ -429,7 +390,7 @@ public class Control implements Function<String[], Integer>
                                  MetricOutputGroup.VECTOR );
 
             LOGGER.debug( "Finished building charts for feature {}.",
-                          feature.getLocation().getLid() );
+                          feature.getLid() );
         }
 
         //Generate numerical output
@@ -437,7 +398,7 @@ public class Control implements Function<String[], Integer>
                                           DestinationType.NUMERIC ) )
         {
             LOGGER.debug( "Beginning to write numeric output for feature {}...",
-                          feature.getLocation().getLid() );
+                          feature.getLid() );
 
             try
             {
@@ -462,12 +423,12 @@ public class Control implements Function<String[], Integer>
             }
 
             LOGGER.debug( "Finished writing numeric output for feature {}.",
-                          feature.getLocation().getLid() );
+                          feature.getLid() );
         }
 
         if ( LOGGER.isInfoEnabled() )
         {
-            LOGGER.info( "Completed processing of feature '{}'.", feature.getLocation().getLid() );
+            LOGGER.info( "Completed processing of feature '{}'.", feature.getLid() );
         }
     }
 

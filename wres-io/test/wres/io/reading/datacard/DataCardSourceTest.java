@@ -1,7 +1,5 @@
 package wres.io.reading.datacard;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -15,12 +13,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.DataSourceConfig.Source;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.config.generated.Format;
-import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeZone;
-import wres.io.config.ConfigHelper;
-import wres.io.reading.BasicSource;
-import wres.io.reading.ReaderFactory;
-import wres.util.FormattedStopwatch;
 
 public class DataCardSourceTest
 {
@@ -71,8 +64,7 @@ public class DataCardSourceTest
     													   null, 
     													   null, 
     													   null, 
-    													   null, 
-    													   null, 
+    													   null,
     													   null);
         		
     		source = new wres.io.reading.datacard.DatacardSource(current + "/testinput/datacard/short_HOPR1SNE.QME.OBS");
@@ -114,8 +106,7 @@ public class DataCardSourceTest
     													   new Variable("QINE", "test", "IN"), 
     													   null, 
     													   null, 
-    													   null, 
-    													   null, 
+    													   null,
     													   null, 
     													   null);
         		
