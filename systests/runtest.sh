@@ -6,7 +6,9 @@ if [ ! -f runtest.sh ]; then
     exit 1;
 fi
 
-
+# ============================================================
+# Arguments
+# ============================================================
 scenarioName=$1
 systestsDir=.
 executeDir=$systestsDir/$1
@@ -15,7 +17,10 @@ outputDirName=output
 benchDirName=benchmarks
 echoPrefix="===================="
 
-#Check stuff
+# ============================================================
+# Preconditions
+# ============================================================
+
 if [ ! -d $executeDir ]; then
     echo "$echoPrefix Scenario provided, $scenarioName, does not exist in $(pwd).  Aborting..."
     exit 1;
@@ -25,32 +30,41 @@ if [ ! -f $executeDir/$configName ]; then
     exit 1;
 fi
 
-#Put the latest release in place next to hte execution directory but only if it doesn't exist.
+# ============================================================
+# Setup
+# ============================================================
+
+# Put the latest release in place next to the execution directory but only if it doesn't exist.
 if [ ! -f $executeDir/../wres.sh ]; then
     echo "$echoPrefix Creating link $systestsDir/wres.sh, ln -s /wres_share/releases/wres.sh $systestsDir/wres.sh ..."
     echo "(If this is not executed on the WRES test VM, then this link will most likely not work.)"
     ln -s /wres_share/releases/wres.sh $systestsDir/wres.sh
 fi
 
-#Put a link to the testing data directory in place if it does not exist.
+# Put a link to the testing data directory in place if it does not exist.
 if [ ! -f $executeDir/../data ] && [ ! -d $executeDir/../data ]; then
     echo "$echoPrefix Creating link $systestsDir/data, ln -s /wres_share/testing/data $systestsDir/data ..."
     echo "(If this is not executed on the WRES test VM, then this link will most likely not work.)"
     ln -s /wres_share/testing/data $systestsDir/data
 fi
 
-#Clearing the output directory.
+# Clearing the output directory.
 echo "$echoPrefix Removing and recreating $executeDir/output of .csv and .png files only..."
 if [ -d $executeDir/output ]; then
     rm -rf $executeDir/output
 fi
 mkdir $executeDir/output
 
-#Move into the directory.
+# Move into the directory.
 echo "$echoPrefix Moving (cd) to execution directory..."
 cd $executeDir
 
-#Do the clean if CLEAN is found in the scenario directory.
+
+# ============================================================
+# Process 0-length files, such as CLEAN
+# ============================================================
+
+# Do the clean if CLEAN is found in the scenario directory.
 if [ -f CLEAN ]; then
     echo "$echoPrefix Cleaning the database: ../wres.sh cleandatabase ..."
     ../wres.sh cleandatabase
@@ -60,8 +74,12 @@ if [ -f CLEAN ]; then
     fi
 fi
 
-#Execute the project.  If it fails then the file FAILS must exist in the scenario directory or its treated
-#as a test failure.  the file FAILS tells this script that failure is expected.
+# ============================================================
+# Execute the project.
+# ============================================================
+
+# If it fails then the file FAILS must exist in the scenario directory or its treated
+# as a test failure.  the file FAILS tells this script that failure is expected.
 echo "$echoPrefix Executing the project: ../wres.sh execute $configName ..."
 ../wres.sh execute $configName
 if [[ $? != 0 ]]; then
@@ -79,23 +97,21 @@ if [ -f FAILS ]; then
     exit 1
 fi
 
-#Benchmark comparisons.
-#TODO Add a check for the number of benchmark images and compare to ensure all images were generated.
-#TODO Skip the check for pairs.csv since we know it will fail.
-numOutputFiles=$(ls $outputDirName/*.csv | wc -l)
-numBenchmarkFiles=$(ls $benchDirName/*.csv | wc -l)
-if [[ $numOutputFiles != $numBenchmarkFiles ]]; then
-    echo "$echoPrefix Number of output files does not match: test = $numOutputFiles; benchmarks = $numBenchmarkFiles.  TEST FAILS!"
-    exit 1
-fi
-echo "$echoPrefix Comparing output .csv files..."
+# ====================================================
+# Benchmark comparisons.
+# ====================================================
 cd $outputDirName
-for fileName in $(ls *.csv); do
+
+#List the contents of the output directory and compare with contents in benchmark.
+echo "$echoPrefix Listing the output contents: ls *.csv *.png > dirListing.txt"
+ls *.csv *.png > dirListing.txt
+echo "$echoPrevix Comparing listing with benchmark expected contents: diff dirListing.txt ../$benchDirName/dirListing.txt"  
+diff dirListing.txt ../$benchDirName/dirListing.txt
+
+#Compare all csv files except for *pairs* files.
+echo "$echoPrefix Comparing output .csv files..."
+for fileName in $(ls *.csv | grep -v "pairs"); do
     diff --brief $fileName ../$benchDirName/$fileName
 done
-#echo "$echoPrefix Comparing output .png files..."
-#for fileName in $(ls *.png); do
-#    diff --brief $fileName ../$benchDirName/$fileName
-#done
 
 
