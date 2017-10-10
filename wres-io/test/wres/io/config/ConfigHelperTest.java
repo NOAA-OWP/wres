@@ -18,9 +18,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.powermock.api.mockito.PowerMockito.doReturn;
 
-import wres.config.generated.Conditions;
 import wres.config.generated.Feature;
-import wres.config.generated.Location;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.data.caching.Features;
