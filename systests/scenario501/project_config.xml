@@ -1,24 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="scenario500">
+<project name="scenario501">
 
     <inputs>
         <left>
             <type>observations</type>
             <source>../smalldata/DRRC2QINE_FAKE_19850430.xml</source>
             <variable>QINE</variable>
+            <features><location lid="DRRC2" /></features> 
         </left>
         <right>
-            <type>ensemble forecasts</type>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043013_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043014_DRRC2FAKE1_forecast.xml</source>
-            <variable>SQIN</variable>
+            <type>observations</type>
+            <source>../data/DOSC1QME.xml</source>
+            <variable>QME</variable>
+            <features><location lid="DOSC1" /></features>
         </right>
     </inputs>
 
+    <conditions>
+        <features><location lid="DRRC2" /></features> 
+    </conditions>
+
     <pair>
         <unit>CMS</unit>
-        <feature lid="DRRC2" /> 
         <desiredTimeAggregation>
             <function>avg</function>
             <period>1</period>

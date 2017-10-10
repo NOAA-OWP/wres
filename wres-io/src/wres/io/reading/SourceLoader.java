@@ -219,14 +219,18 @@ public class SourceLoader
                 task = Executor.execute(new ForecastSaver(absolutePath,
                                                           this.projectDetails,
                                                           dataSourceConfig,
-                                                          dataSourceConfig.getFeatures()));
+                                                          this.projectConfig
+                                                                  .getPair()
+                                                                  .getFeature() ) );
             }
             else {
                 LOGGER.trace("Loading {} as Observation data...");
                 task = Executor.execute(new ObservationSaver(absolutePath,
                                                              this.projectDetails,
                                                              dataSourceConfig,
-                                                             dataSourceConfig.getFeatures()));
+                                                             this.projectConfig
+                                                                     .getPair()
+                                                                     .getFeature() ) );
             }
         }
         else

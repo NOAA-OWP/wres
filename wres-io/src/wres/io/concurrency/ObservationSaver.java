@@ -48,7 +48,7 @@ public class ObservationSaver extends WRESRunnable {
 
             source.setDataSourceConfig(this.dataSourceConfig);
 
-            source.setSpecifiedFeatures( this.dataSourceConfig.getFeatures() );
+            source.setSpecifiedFeatures( this.specifiedFeatures );
 
             source.setProjectDetails( this.projectDetails );
 			source.saveObservation();

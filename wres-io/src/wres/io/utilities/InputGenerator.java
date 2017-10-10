@@ -132,16 +132,25 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
             Integer timeShift = null;
 
-            if (projectConfig.getConditions().getDates() != null)
+            if ( projectConfig.getPair()
+                              .getDates() != null )
             {
-                if (projectConfig.getConditions().getDates().getEarliest() != null)
+                if ( projectConfig.getPair()
+                                  .getDates()
+                                  .getEarliest() != null )
                 {
-                    earliestDate = "'" + projectConfig.getConditions().getDates().getEarliest() + "'";
+                    earliestDate = "'" + projectConfig.getPair()
+                                                      .getDates()
+                                                      .getEarliest() + "'";
                 }
 
-                if (projectConfig.getConditions().getDates().getLatest() != null)
+                if ( projectConfig.getPair()
+                                  .getDates()
+                                  .getLatest() != null )
                 {
-                    latestDate = "'" + projectConfig.getConditions().getDates().getLatest() + "'";
+                    latestDate = "'" + projectConfig.getPair()
+                                                    .getDates()
+                                                    .getLatest() + "'";
                 }
             }
 
@@ -273,16 +282,25 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 Double minimumValue = -Double.MAX_VALUE;
                 Double maximumValue = Double.MAX_VALUE;
 
-                if (projectConfig.getConditions().getValues() != null)
+                if ( projectConfig.getPair()
+                                  .getValues() != null )
                 {
-                    if (projectConfig.getConditions().getValues().getMinimum() != null)
+                    if ( projectConfig.getPair()
+                                      .getValues()
+                                      .getMinimum() != null )
                     {
-                        minimumValue = projectConfig.getConditions().getValues().getMinimum();
+                        minimumValue = projectConfig.getPair()
+                                                    .getValues()
+                                                    .getMinimum();
                     }
 
-                    if (projectConfig.getConditions().getValues().getMaximum() != null)
+                    if ( projectConfig.getPair()
+                                      .getValues()
+                                      .getMaximum() != null )
                     {
-                        maximumValue = projectConfig.getConditions().getValues().getMaximum();
+                        maximumValue = projectConfig.getPair()
+                                                    .getValues()
+                                                    .getMaximum();
                     }
                 }
 
@@ -351,7 +369,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 DataSourceConfig simulation = this.getSimulation();
 
                 String script = ScriptGenerator.generateZeroDateScript( this.projectConfig,
-                                                                        simulation);
+                                                                        simulation );
 
                 this.zeroDate = Database.getResult(script, "zero_date");
             }
@@ -448,12 +466,15 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 {
                     String message = "A valid offset for matching lead values could not be determined. ";
                     message += "The first acceptable lead time is ";
-                    message += String.valueOf(this.projectConfig.getConditions().getFirstLead());
+                    message += String.valueOf( this.projectConfig.getPair()
+                                                                 .getFirstLead() );
 
-                    if (this.projectConfig.getConditions().getLastLead() < Integer.MAX_VALUE)
+                    if ( this.projectConfig.getPair()
+                                           .getLastLead() < Integer.MAX_VALUE )
                     {
                         message += ", the last acceptable lead time is ";
-                        message += String.valueOf( this.projectConfig.getConditions().getLastLead() );
+                        message += String.valueOf( this.projectConfig.getPair()
+                                                                     .getLastLead() );
                         message += ",";
                     }
 
@@ -510,7 +531,9 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                                  this.getLeadOffset();
 
                     next = beginning < this.getLastLead() &&
-                           end >= this.projectConfig.getConditions().getFirstLead() &&
+                           end >= this.projectConfig.getPair()
+                                                    .getFirstLead()
+                           &&
                            end <= this.getLastLead();
                 }
                 else
@@ -530,7 +553,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                     message += "range of the specifications.";
 
                     LOGGER.error(message,
-                                 this.projectConfig.getConditions().getFirstLead(),
+                                  this.projectConfig.getPair()
+                                                    .getFirstLead(),
                                  this.getLastLead(),
                                  ConfigHelper.getWindowWidth( this.projectConfig ).intValue(),
                                  this.getLeadOffset());

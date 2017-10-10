@@ -11,6 +11,7 @@ import java.util.StringJoiner;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
@@ -53,29 +54,47 @@ public final class ScriptGenerator
 
         Integer timeShift = null;
 
-        if (projectConfig.getConditions().getDates() != null)
+        if ( projectConfig.getPair()
+                          .getDates() != null )
         {
-            if (projectConfig.getConditions().getDates().getEarliest() != null)
+            if ( projectConfig.getPair()
+                              .getDates()
+                              .getEarliest() != null )
             {
-                earliestDate = "'" + projectConfig.getConditions().getDates().getEarliest() + "'";
+                earliestDate = "'" + projectConfig.getPair()
+                                                  .getDates()
+                                                  .getEarliest() + "'";
             }
 
-            if (projectConfig.getConditions().getDates().getLatest() != null)
+            if ( projectConfig.getPair()
+                              .getDates()
+                              .getLatest() != null )
             {
-                latestDate = "'" + projectConfig.getConditions().getDates().getLatest() + "'";
+                latestDate = "'" + projectConfig.getPair()
+                                                .getDates()
+                                                .getLatest() + "'";
             }
         }
 
-        if (projectConfig.getConditions().getIssuedDates() != null)
+        if ( projectConfig.getPair()
+                          .getIssuedDates() != null )
         {
-            if (projectConfig.getConditions().getIssuedDates().getEarliest() != null)
+            if ( projectConfig.getPair()
+                              .getIssuedDates()
+                              .getEarliest() != null )
             {
-                earliestIssueDate = "'" + projectConfig.getConditions().getIssuedDates().getEarliest() + "'";
+                earliestIssueDate = "'" + projectConfig.getPair()
+                                                       .getIssuedDates()
+                                                       .getEarliest() + "'";
             }
 
-            if (projectConfig.getConditions().getIssuedDates().getLatest() != null)
+            if ( projectConfig.getPair()
+                              .getIssuedDates()
+                              .getLatest() != null )
             {
-                latestIssueDate = "'" + projectConfig.getConditions().getIssuedDates().getLatest() + "'";
+                latestIssueDate = "'" + projectConfig.getPair()
+                                                     .getIssuedDates()
+                                                     .getLatest() + "'";
             }
         }
 
@@ -325,21 +344,32 @@ public final class ScriptGenerator
         }
 
         // TODO: This will need to evolve once we get multiple locations involved
-        Feature feature = simulation.getFeatures().get( 0 );
+        Feature feature = projectConfig.getPair()
+                                       .getFeature()
+                                       .get( 0 );
 
         String earliestDate = null;
         String latestDate = null;
 
-        if (projectConfig.getConditions().getDates() != null)
+        if ( projectConfig.getPair()
+                          .getDates() != null )
         {
-            if (projectConfig.getConditions().getDates().getEarliest() != null)
+            if ( projectConfig.getPair()
+                              .getDates()
+                              .getEarliest() != null )
             {
-                earliestDate = "'" + projectConfig.getConditions().getDates().getEarliest() + "'";
+                earliestDate = "'" + projectConfig.getPair()
+                                                  .getDates()
+                                                  .getEarliest() + "'";
             }
 
-            if (projectConfig.getConditions().getDates().getLatest() != null)
+            if ( projectConfig.getPair()
+                              .getDates()
+                              .getLatest() != null )
             {
-                latestDate = "'" + projectConfig.getConditions().getDates().getLatest() + "'";
+                latestDate = "'" + projectConfig.getPair()
+                                                .getDates()
+                                                .getLatest() + "'";
             }
         }
 
