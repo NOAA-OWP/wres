@@ -34,7 +34,7 @@
         </right>
     </inputs>
 
-    <conditions firstLead="1" lastLead="48">
+    <conditions>
         <features>
             <location lid="LGNN5" />
         </features>
