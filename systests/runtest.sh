@@ -105,8 +105,12 @@ cd $outputDirName
 #List the contents of the output directory and compare with contents in benchmark.
 echo "$echoPrefix Listing the output contents: ls *.csv *.png > dirListing.txt"
 ls *.csv *.png > dirListing.txt
-echo "$echoPrevix Comparing listing with benchmark expected contents: diff dirListing.txt ../$benchDirName/dirListing.txt"  
-diff dirListing.txt ../$benchDirName/dirListing.txt
+if [ -f ../$benchDirName/dirListing.txt ]; then
+    echo "$echoPrefix Comparing listing with benchmark expected contents: diff dirListing.txt ../$benchDirName/dirListing.txt"  
+    diff dirListing.txt ../$benchDirName/dirListing.txt
+else
+    echo "$echoPrefix No benchmark directory listing to compare against."
+fi
 
 #Compare all csv files except for *pairs* files.
 echo "$echoPrefix Comparing output .csv files..."

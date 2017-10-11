@@ -1,0 +1,4 @@
+LGNN5.csv
+LGNN5_MEAN_ERROR_MAPX.png
+LGNN5_SAMPLE_SIZE_MAPX.png
+pairs.csv
