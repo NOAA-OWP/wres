@@ -46,11 +46,15 @@ class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs
             //Bernoulli R.V. with probability p 
             double p = FunctionFactory.mean().applyAsDouble( d.vectorOf( d.getSlicer().getLeftSide( s ) ) );
             double climP = p * ( 1.0 - p );
-            final double[] result = new double[] { Double.NaN };
+            final double[] result = new double[1];
             if ( climP > 0 )
             {
                 result[0] =
                         FunctionFactory.skill().applyAsDouble( getSumOfSquareError( s ) / s.size(), p * ( 1.0 - p ) );
+            }
+            else 
+            {
+                result[0] = Double.NaN;
             }
             //Metadata
             final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );

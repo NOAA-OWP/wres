@@ -38,6 +38,8 @@ public final class FunctionFactoryTest
         assertTrue("Failure on skill function.", testMe.test(FunctionFactory.skill().applyAsDouble(1.0, 2.0), 0.5));
         assertTrue("Failure on mean function.",
                    testMe.test(FunctionFactory.mean().applyAsDouble(metIn.vectorOf(new double[]{1.0, 2.0, 3.0})), 2.0));
+        assertTrue("Failure on round function.",
+                   testMe.test(FunctionFactory.round().apply(2.04,1), 2.0));        
     }
 
 }

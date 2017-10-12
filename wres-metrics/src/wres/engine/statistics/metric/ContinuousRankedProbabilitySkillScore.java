@@ -97,15 +97,6 @@ class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProbabilityS
     private ContinuousRankedProbabilitySkillScore( final CRPSSBuilder builder )
     {
         super( builder );
-        switch ( builder.decompositionID )
-        {
-            case NONE:
-            case CR:                
-                break;
-            default:
-                throw new UnsupportedOperationException( "Unsupported decomposition identifier: "
-                                                         + builder.decompositionID );
-        }
     }
 
 }

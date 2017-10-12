@@ -364,6 +364,15 @@ public class MetricCollectionTest
             catch ( final Exception e )
             {
             }
+            //Null input
+            try
+            {
+                collection.apply( null );
+                fail( "Expected a checked exception on calling apply with a null input." );
+            }
+            catch ( final Exception e )
+            {
+            }
             //Try to build with an empty output factory
             try
             {
@@ -395,6 +404,18 @@ public class MetricCollectionTest
             catch ( final Exception e )
             {
             }
+            //Check for interruptions and failed executions
+            final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> m = MetricCollectionBuilder.of();
+            m.setOutputFactory( outF );
+            m.add( new MeanErrorException() );
+            try
+            {
+                m.build().apply( input );
+                fail( "Expected an unchecked exception on calling apply." );
+            }
+            catch ( final Exception e )
+            {
+            }                       
         }
         finally
         {
@@ -613,6 +634,52 @@ public class MetricCollectionTest
                     + actualSecond
                     + ".",
                     testMe.test( actualSecond, expectedSecond ) );
+    }
+
+    /**
+     * Class for testing runtime exceptions.
+     */
+
+    private static class MeanErrorException extends DoubleErrorScore<SingleValuedPairs>
+    {
+        private MeanErrorException()
+        {
+            super( (MeanErrorExceptionBuilder) new MeanErrorExceptionBuilder().
+                   setOutputFactory( DefaultDataFactory.getInstance() ) );
+        }
+
+        @Override
+        public ScalarOutput apply( SingleValuedPairs input )
+        {
+            throw new IllegalArgumentException();
+        }
+        
+        private static class MeanErrorExceptionBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
+        {
+            @Override
+            protected MeanErrorException build()
+            {
+                return new MeanErrorException();
+            }
+        }
+
+        @Override
+        public boolean isSkillScore()
+        {
+            return false;
+        }
+
+        @Override
+        public MetricConstants getID()
+        {
+            return MetricConstants.MEAN_ERROR;
+        }
+
+        @Override
+        public boolean hasRealUnits()
+        {
+            return false;
+        }
     }
 
 }

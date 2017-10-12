@@ -1,7 +1,9 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +15,7 @@ import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.VectorOutput;
@@ -89,4 +92,52 @@ public final class ContinousRankedProbabilitySkillScoreTest
         assertTrue( "The Continuous Ranked Probability Skill Score is not strictly proper.", !crpss.isStrictlyProper() );
     }
 
+    /**
+     * Constructs a {@link ContinousRankedProbabilitySkillScore} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test2Exceptions()
+    {
+        //Obtain the factories
+        final DataFactory outF = DefaultDataFactory.getInstance();
+
+        //Build the metric
+        final CRPSSBuilder b = new CRPSSBuilder();
+        b.setDecompositionID( ScoreOutputGroup.NONE ).setOutputFactory( outF );
+        final ContinuousRankedProbabilitySkillScore crpss = b.build();
+
+        //Check exceptions
+        try
+        {
+            b.setDecompositionID( ScoreOutputGroup.CR_AND_LBR );
+            b.build();
+            fail( "Expected an exception on building with an unsupported decomposition." );
+        }
+        catch(UnsupportedOperationException e)
+        {          
+        }
+        //Null input
+        try
+        {
+            crpss.apply( null );
+            fail( "Expected an exception on null input." );
+        }
+        catch(MetricInputException e)
+        {          
+        }
+        try
+        {
+            crpss.apply( MetricTestDataFactory.getEnsemblePairsOne() );
+            fail( "Expected an exception on null input for the baseline." );
+        }
+        catch(MetricInputException e)
+        {          
+        }
+        catch ( IOException e )
+        {
+            fail( "Unable to read the input data." );
+        }        
+    }    
+    
 }

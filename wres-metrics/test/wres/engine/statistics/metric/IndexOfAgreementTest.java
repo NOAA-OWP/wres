@@ -12,6 +12,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
@@ -81,4 +82,28 @@ public final class IndexOfAgreementTest
                     actual.equals( expected ) );
     }
 
+    /**
+     * Constructs a {@link IndexOfAgreement} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test2Exceptions()
+    {
+        //Build the metric
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final IndexOfAgreementBuilder b = new IndexOfAgreementBuilder();
+        b.setOutputFactory( outF );
+        final IndexOfAgreement ioa = b.build();
+
+        //Check the exceptions
+        try
+        {
+            ioa.apply( null );
+            fail( "Expected an exception on null input." );
+        }
+        catch ( MetricInputException e )
+        {
+        }
+    }     
+    
 }
