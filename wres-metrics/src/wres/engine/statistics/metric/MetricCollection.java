@@ -217,14 +217,14 @@ class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
     private MetricOutputMapByMetric<T> applyParallel( final S s ) throws MetricCalculationException
     {
         //Bounds checks
-        if ( !Objects.isNull( this.input ) )
-        {
-            throw new MetricCalculationException( "The collection has already been constructed with a fixed input." );
-        }
-
         if ( Objects.isNull( s ) )
         {
             throw new MetricCalculationException( "Specify non-null input to the metric collection." );
+        }
+        if ( !Objects.isNull( this.input ) )
+        {
+            throw new MetricCalculationException( "The collection has already been constructed with a fixed input: "
+                                                  + "use call instead of apply to generate the metric results." );
         }
 
         //Collection of future metric results
@@ -262,7 +262,7 @@ class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
         for ( Map.Entry<MetricConstants, CompletableFuture<T>> nextResult : metricFutures.entrySet() )
         {
             try
-            { 
+            {
                 returnMe.add( nextResult.getValue().get() ); //This is blocking
             }
             catch ( ExecutionException e )

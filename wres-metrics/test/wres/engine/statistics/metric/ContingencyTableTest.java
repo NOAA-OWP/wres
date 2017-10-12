@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
@@ -10,6 +11,7 @@ import wres.datamodel.DichotomousPairs;
 import wres.datamodel.MatrixOutput;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.engine.statistics.metric.ContingencyTable.ContingencyTableBuilder;
 
@@ -61,4 +63,28 @@ public final class ContingencyTableTest
         assertTrue(table.getName().equals(metaFac.getMetricName(MetricConstants.CONTINGENCY_TABLE)));
     }
 
+    /**
+     * Constructs a {@link ContingencyTable} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test2Exceptions()
+    {
+        //Build the metric
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final ContingencyTableBuilder<DichotomousPairs> b = new ContingencyTable.ContingencyTableBuilder<>();
+        b.setOutputFactory(outF);
+        final ContingencyTable<DichotomousPairs> table = b.build();
+
+        //Check the exceptions
+        try
+        {
+            table.apply( (DichotomousPairs) null );
+            fail( "Expected an exception on null input." );
+        }
+        catch ( MetricInputException e )
+        {
+        }
+    }    
+    
 }

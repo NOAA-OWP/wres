@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +14,7 @@ import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
 import wres.engine.statistics.metric.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
@@ -72,7 +74,33 @@ public final class RelativeOperatingCharacteristicDiagramTest
         //Check the parameters
         assertTrue("Unexpected name for the Relative Operating Characteristic.",
                    roc.getName().equals(metaFac.getMetricName(MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM)));
-
     }
 
+    /**
+     * Constructs a {@link RelativeOperatingCharacteristicDiagram} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test4Exceptions()
+    {
+        
+        //Build the metric
+        final RelativeOperatingCharacteristicBuilder b = new RelativeOperatingCharacteristicBuilder();
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory(outF);
+
+        final RelativeOperatingCharacteristicDiagram roc = b.build();
+
+        //Check exceptions
+        try
+        {
+            roc.apply( null );
+            fail( "Expected an exception on null input." );
+        }
+        catch(MetricInputException e)
+        {          
+        }
+    }       
+    
+    
 }

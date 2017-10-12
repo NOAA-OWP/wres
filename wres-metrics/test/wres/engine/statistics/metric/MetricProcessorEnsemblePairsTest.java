@@ -88,7 +88,6 @@ public final class MetricProcessorEnsemblePairsTest
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
             fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
         }
     }
@@ -283,7 +282,6 @@ public final class MetricProcessorEnsemblePairsTest
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
             fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
         }
     }
@@ -484,7 +482,6 @@ public final class MetricProcessorEnsemblePairsTest
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
             fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
         }
     }

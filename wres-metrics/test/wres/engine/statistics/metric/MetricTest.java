@@ -9,6 +9,8 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.ScalarOutput;
+import wres.datamodel.SingleValuedPairs;
 import wres.engine.statistics.metric.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
 import wres.engine.statistics.metric.MeanError.MeanErrorBuilder;
 
@@ -33,20 +35,20 @@ public final class MetricTest
         //Build a metric
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
         final DataFactory outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final MeanError me = b.build();
         //Build another metric
         final MeanError me2 = b.build();
         //Build a different metric
         final MeanAbsoluteErrorBuilder c = new MeanAbsoluteError.MeanAbsoluteErrorBuilder();
-        c.setOutputFactory(outF);
+        c.setOutputFactory( outF );
         final MeanAbsoluteError mae = c.build();
 
         //Check for equality of names
-        assertTrue("Unexpected difference in metric names.", me.nameEquals(me2));
-        assertTrue("Unexpected equality in metric names.", !mae.nameEquals(me));
-        assertTrue("Unexpected equality in metric names.", !mae.nameEquals(null));
-        assertTrue("Unexpected equality in metric names.", !mae.nameEquals(new Integer(5)));
+        assertTrue( "Unexpected difference in metric names.", me.nameEquals( me2 ) );
+        assertTrue( "Unexpected equality in metric names.", !mae.nameEquals( me ) );
+        assertTrue( "Unexpected equality in metric names.", !mae.nameEquals( null ) );
+        assertTrue( "Unexpected equality in metric names.", !mae.nameEquals( new Integer( 5 ) ) );
     }
 
     /**
@@ -61,11 +63,12 @@ public final class MetricTest
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final MeanError me = b.build();
 
         //Check for equality of names
-        assertTrue("Unexpected metric name.", metaFac.getMetricName(MetricConstants.MEAN_ERROR).equals(me.toString()));
+        assertTrue( "Unexpected metric name.",
+                    metaFac.getMetricName( MetricConstants.MEAN_ERROR ).equals( me.toString() ) );
     }
 
     /**
@@ -75,14 +78,62 @@ public final class MetricTest
     @Test
     public void test3Exceptions()
     {
-        //Build a metric
+        //No data factory
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
         try
         {
             b.build();
-            fail("Expected a checked exception on building a metric without an output factory.");
+            fail( "Expected a checked exception on building a metric without an output factory." );
         }
-        catch(UnsupportedOperationException e)
+        catch ( UnsupportedOperationException e )
+        {
+        }
+        //No builder test
+        class MetricNoBuilder extends Metric<SingleValuedPairs, ScalarOutput>
+        {
+            protected MetricNoBuilder( MetricBuilder<SingleValuedPairs, ScalarOutput> builder )
+            {
+                super( null );
+            }
+
+            @Override
+            public ScalarOutput apply( SingleValuedPairs s )
+            {
+                return null;
+            }
+
+            @Override
+            public MetricConstants getID()
+            {
+                return null;
+            }
+
+            @Override
+            public boolean hasRealUnits()
+            {
+                return false;
+            }
+        }
+        try
+        {
+            new MetricNoBuilder( null );
+            fail( "Expected a checked exception on building a metric without a builder." );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+        }
+        //Obtaining metadata from a Collectable not allowed
+        try
+        {
+            final DataFactory outF = DefaultDataFactory.getInstance();
+            MetricFactory.getInstance( outF ).ofCorrelationPearsons().getMetadata(
+                                                                                   MetricTestDataFactory.getSingleValuedPairsOne(),
+                                                                                   1,
+                                                                                   MetricConstants.MAIN,
+                                                                                   null);
+            fail( "Expected a checked exception on building a metric without a builder." );
+        }
+        catch ( UnsupportedOperationException e )
         {
         }
     }

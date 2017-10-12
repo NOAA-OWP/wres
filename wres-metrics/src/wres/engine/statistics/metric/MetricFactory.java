@@ -141,7 +141,7 @@ public class MetricFactory
                                                                    metricExecutor,
                                                                    mergeList );
             default:
-                throw new UnsupportedOperationException( "Unsupported input type in the project configuration '"
+                throw new MetricConfigurationException( "Unsupported input type in the project configuration '"
                                                          + config
                                                          + "'" );
         }

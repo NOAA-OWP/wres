@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
@@ -9,6 +10,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
@@ -63,5 +65,33 @@ public final class SampleSizeTest
         assertTrue("The Sample Size is not a skill score.", !ss.isSkillScore());
         assertTrue("The Sample Size cannot be decomposed.", ss.getScoreOutputGroup() == ScoreOutputGroup.NONE);
     }
+    
+    /**
+     * Constructs a {@link SampleSize} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test2Exceptions()
+    {
+        //Obtain the factories
+        final DataFactory outF = DefaultDataFactory.getInstance();
+
+        //Build the metric
+        final SampleSizeBuilder<SingleValuedPairs> b = new SampleSize.SampleSizeBuilder<>();
+        b.setOutputFactory(outF);
+        final SampleSize<SingleValuedPairs> ss = b.build();
+
+        //Check exceptions
+        try
+        {
+            ss.apply( null );
+            fail( "Expected an exception on null input." );
+        }
+        catch(MetricInputException e)
+        {          
+        }
+    }    
+    
+    
 
 }

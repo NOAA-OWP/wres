@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.VectorOutput;
@@ -125,5 +127,31 @@ public final class ContinousRankedProbabilityScoreTest
                     + ".",
                     actual.equals( expected ) );
     }
+    
+    /**
+     * Constructs a {@link ContinousRankedProbabilityScore} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test2Exceptions()
+    {
+        //Obtain the factories
+        final DataFactory outF = DefaultDataFactory.getInstance();
+
+        //Build the metric
+        final CRPSBuilder b = new CRPSBuilder();
+        b.setDecompositionID( ScoreOutputGroup.NONE ).setOutputFactory( outF );
+        final ContinuousRankedProbabilityScore crps = b.build();
+
+        //Check exceptions
+        try
+        {
+            crps.apply( null );
+            fail( "Expected an exception on null input." );
+        }
+        catch(MetricInputException e)
+        {          
+        }
+    }    
 
 }

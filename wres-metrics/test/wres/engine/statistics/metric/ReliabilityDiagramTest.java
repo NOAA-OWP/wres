@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +14,7 @@ import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
 import wres.engine.statistics.metric.ReliabilityDiagram.ReliabilityDiagramBuilder;
@@ -75,7 +77,31 @@ public final class ReliabilityDiagramTest
         //Check the parameters
         assertTrue("Unexpected name for the Reliability Diagram.",
                    rel.getName().equals(metaFac.getMetricName(MetricConstants.RELIABILITY_DIAGRAM)));
-
     }
+    
+    /**
+     * Constructs a {@link ReliabilityDiagram} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test2Exceptions()
+    {
+        //Build the metric
+        final ReliabilityDiagramBuilder b = new ReliabilityDiagram.ReliabilityDiagramBuilder();
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory(outF);
+
+        final ReliabilityDiagram rel = b.build();
+
+        //Check exceptions
+        try
+        {
+            rel.apply( null );
+            fail( "Expected an exception on null input." );
+        }
+        catch(MetricInputException e)
+        {          
+        }
+    }      
 
 }

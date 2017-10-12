@@ -12,6 +12,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
@@ -72,17 +73,6 @@ public final class MeanSquareErrorSkillScoreTest
         assertTrue("The Mean Square Error is a skill score.", mse.isSkillScore());
         assertTrue("Expected no decomposition for the Mean Square Error Skill Score.",
                    mse.getScoreOutputGroup() == ScoreOutputGroup.NONE);
-
-        //Check the exceptions
-        try
-        {
-            b.setDecompositionID(null).build();
-            fail("Expected an invalid decomposition identifier.");
-        }
-        catch(final Exception e)
-        {
-        }
-
     }
 
     /**
@@ -130,4 +120,38 @@ public final class MeanSquareErrorSkillScoreTest
             + ".", actual.equals(expected));
     }
 
+    /**
+     * Constructs a {@link MeanSquareErrorSkillScore} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test3Exceptions()
+    {
+        
+        //Build the metric
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final MeanSquareErrorSkillScoreBuilder<SingleValuedPairs> b =
+                                                                    new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>();
+        b.setOutputFactory(outF);
+        final MeanSquareErrorSkillScore<SingleValuedPairs> mse = b.build();
+
+        //Check the exceptions
+        try
+        {
+            b.setDecompositionID(null).build();
+            fail("Expected an invalid decomposition identifier.");
+        }
+        catch(final Exception e)
+        {
+        }
+        try
+        {
+            mse.apply( null );
+            fail( "Expected an exception on null input." );
+        }
+        catch(MetricInputException e)
+        {          
+        }
+    }    
+    
 }

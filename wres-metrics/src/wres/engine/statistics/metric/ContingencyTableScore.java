@@ -105,6 +105,10 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
         {
             throw new MetricInputException(nullString);
         }
+        if(Objects.isNull(metric))
+        {
+            throw new MetricInputException(nullString);
+        }        
         final MatrixOfDoubles v = output.getData();
         if(!v.isSquare())
         {
@@ -125,6 +129,10 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
     void is2x2ContingencyTable(final MatrixOutput output, final Metric<?, ?> metric)
     {
         if(Objects.isNull(output))
+        {
+            throw new MetricInputException(nullString);
+        }
+        if(Objects.isNull(metric))
         {
             throw new MetricInputException(nullString);
         }
