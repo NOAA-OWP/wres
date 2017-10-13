@@ -32,6 +32,7 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
     private final String fileName;
     private final List<Feature> specifiedFeatures;
     private final DataSourceConfig dataSourceConfig;
+    private final DataSourceConfig.Source sourceConfig;
     private final Future<String> futureHash;
     private final ProjectDetails projectDetails;
 
@@ -39,12 +40,14 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
     public ZippedPIXMLIngest ( final String fileName,
                                final byte[] content,
                                final DataSourceConfig dataSourceConfig,
+                               final DataSourceConfig.Source sourceConfig,
                                final List<Feature> specifiedFeatures,
                                final ProjectDetails projectDetails)
     {
         this.fileName = fileName;
         this.content = content;
         this.dataSourceConfig = dataSourceConfig;
+        this.sourceConfig = sourceConfig;
         this.specifiedFeatures = specifiedFeatures;
         this.projectDetails = projectDetails;
 
@@ -93,6 +96,7 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
 
                     reader.setSpecifiedFeatures(this.specifiedFeatures);
                     reader.setDataSourceConfig(this.dataSourceConfig);
+                    reader.setSourceConfig( this.sourceConfig );
                     reader.parse();
                 }
                 catch (IOException e)

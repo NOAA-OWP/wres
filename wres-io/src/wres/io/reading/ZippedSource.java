@@ -272,6 +272,7 @@ public class ZippedSource extends BasicSource {
             ingest = new ZippedPIXMLIngest(archivedFileName,
                                            content,
                                            this.getDataSourceConfig(),
+                                           originalSource,
                                            this.getSpecifiedFeatures(),
                                            this.getProjectDetails());
 
@@ -291,6 +292,7 @@ public class ZippedSource extends BasicSource {
                     ingest = new ForecastSaver(archivedFileName,
                                                this.getProjectDetails(),
                                                this.getDataSourceConfig(),
+                                               originalSource,
                                                this.getSpecifiedFeatures());
                 }
                 else
@@ -298,6 +300,7 @@ public class ZippedSource extends BasicSource {
                     ingest = new ObservationSaver(archivedFileName,
                                                   this.getProjectDetails(),
                                                   this.getDataSourceConfig(),
+                                                  originalSource,
                                                   this.getSpecifiedFeatures());
                 }
 

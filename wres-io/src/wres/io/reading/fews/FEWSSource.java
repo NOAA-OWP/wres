@@ -39,6 +39,7 @@ public class FEWSSource extends BasicSource
                                                             this.getProjectDetails() );
                 sourceReader.setDataSourceConfig( this.getDataSourceConfig() );
                 sourceReader.setSpecifiedFeatures( this.getSpecifiedFeatures() );
+                sourceReader.setSourceConfig( this.getSourceConfig() );
                 sourceReader.parse();
             }
             else
@@ -68,6 +69,7 @@ public class FEWSSource extends BasicSource
                                          this.getProjectDetails() );
                 sourceReader.setDataSourceConfig( this.getDataSourceConfig() );
                 sourceReader.setSpecifiedFeatures( this.getSpecifiedFeatures() );
+                sourceReader.setSourceConfig( this.getSourceConfig() );
                 sourceReader.parse();
             }
             else

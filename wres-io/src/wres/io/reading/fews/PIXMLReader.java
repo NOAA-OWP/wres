@@ -28,6 +28,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.io.concurrency.CopyExecutor;
+import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
@@ -72,6 +73,8 @@ public final class PIXMLReader extends XMLReader
             = DateTimeFormatter.ofPattern( PATTERN,
                                            Locale.US )
                                .withZone( ZoneId.of( "UTC" ) );
+
+    private DataSourceConfig.Source sourceConfig;
 
 	private static String createForecastValuePartition(Integer leadTime) throws SQLException {
 
@@ -226,6 +229,25 @@ public final class PIXMLReader extends XMLReader
                              + "report this issue to whomever provided this "
                              + "data file.";
             throw new InvalidInputDataException( message );
+        }
+        else
+        {
+            ZoneOffset configuredOffset
+                = ConfigHelper.getZoneOffset( this.getSourceConfig() );
+            if ( configuredOffset != null
+                 && !configuredOffset.equals( this.getZoneOffset() ) )
+            {
+                String message =
+                        "The time zone specified for a PI-XML source ("
+						+ configuredOffset.toString()
+                        + ") did not match what was in the source data ("
+						+ this.getZoneOffset().toString()
+						+ "). It is best to NOT specify a time zone for PI-XML "
+						+ "sources in the project configuration because WRES "
+						+ "can simply use the time zone found in the data.";
+                throw new ProjectConfigException( this.getSourceConfig(),
+                                                  message );
+            }
         }
 
 		//	If the current tag is the series tag itself, move on to the next tag
@@ -1040,6 +1062,16 @@ public final class PIXMLReader extends XMLReader
 	{
 		return this.dataSourceConfig;
 	}
+
+    public void setSourceConfig( DataSourceConfig.Source sourceConfig )
+    {
+        this.sourceConfig = sourceConfig;
+    }
+
+    private DataSourceConfig.Source getSourceConfig()
+    {
+        return this.sourceConfig;
+    }
 
 	public void setSpecifiedFeatures(List<Feature> specifiedFeatures)
     {
