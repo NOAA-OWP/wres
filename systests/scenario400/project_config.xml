@@ -27,9 +27,10 @@
         </right>
     </inputs>
 
-    <pair label="Pairs by location and lead time" firstLead="1" lastLead="24">
+    <pair label="Pairs by location and lead time">
         <unit>CMS</unit>
         <feature lid="GLOO2" />
+        <leadHours minimum="1" maximum="24" />
         <grouping>feature,lead_time</grouping>       
         <desiredTimeAggregation>
             <function>avg</function>

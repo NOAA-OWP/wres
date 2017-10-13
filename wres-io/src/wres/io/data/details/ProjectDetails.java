@@ -712,19 +712,18 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                                                   "TS" ) +
                           NEWLINE;
 
-                if ( this.projectConfig.getPair().getLastLead()
-                     < Integer.MAX_VALUE )
+                if ( ConfigHelper.isMaximumLeadHourSpecified( this.projectConfig ) )
                 {
                     script += "    AND FV.lead <= "
-                              + this.projectConfig.getPair().getLastLead()
+                              + ConfigHelper.getMaximumLeadHour( this.projectConfig )
                               + NEWLINE;
                 }
 
-                if ( this.projectConfig.getPair().getFirstLead() > 1 )
+                if ( ConfigHelper.isMinimumLeadHourSpecified( this.projectConfig ) )
                 {
                     script += "    AND FV.lead >= "
-                              + this.projectConfig.getPair()
-                                                  .getFirstLead() + NEWLINE;
+                              + ConfigHelper.getMinimumLeadHour( this.projectConfig )
+                              + NEWLINE;
                 }
 
                 script += "GROUP BY FV.lead" + NEWLINE;

@@ -66,7 +66,7 @@ public class ConfigHelperTest
         features.add(featureFakeTwo);
         features.add(featureFakeThree);
 
-        PairConfig c = new PairConfig( null, features, null, null, null, null, null, null, null, 1, Integer.MAX_VALUE);
+        PairConfig c = new PairConfig( null, features, null, null, null, null, null, null, null, null );
         ProjectConfig config = new ProjectConfig(null, c, null, null, null, "test");
         String result = ConfigHelper.getFeatureIdsAndPutIfAbsent(config);
         assertEquals(expected, result);
