@@ -219,6 +219,7 @@ public class SourceLoader
                 task = Executor.execute(new ForecastSaver(absolutePath,
                                                           this.projectDetails,
                                                           dataSourceConfig,
+                                                          source,
                                                           this.projectConfig
                                                                   .getPair()
                                                                   .getFeature() ) );
@@ -228,6 +229,7 @@ public class SourceLoader
                 task = Executor.execute(new ObservationSaver(absolutePath,
                                                              this.projectDetails,
                                                              dataSourceConfig,
+                                                             source,
                                                              this.projectConfig
                                                                      .getPair()
                                                                      .getFeature() ) );

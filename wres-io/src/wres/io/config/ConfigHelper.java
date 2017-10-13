@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
@@ -802,4 +804,34 @@ public class ConfigHelper
         return result;
     }
 
+
+    /**
+     * Get the time zone offset from a datasource config or null if not found.
+     * @param sourceConfig the configuration element to retrieve for
+     * @return the time zone offset or null if not specified in dataSourceConfig
+     * @throws ProjectConfigException when the date time could not be parsed
+     */
+
+    public static ZoneOffset getZoneOffset( DataSourceConfig.Source sourceConfig )
+            throws ProjectConfigException
+    {
+        ZoneOffset result = null;
+
+        if ( sourceConfig != null
+             && sourceConfig.getZoneOffset() != null )
+        {
+            try
+            {
+                result = ZoneOffset.of( sourceConfig.getZoneOffset() );
+            }
+            catch ( DateTimeException dte )
+            {
+                String message = "Could not figure out the time zone offset. "
+                                 + "Try formatting it like this: -05:00.";
+                throw new ProjectConfigException( sourceConfig, message, dte );
+            }
+        }
+
+        return result;
+    }
 }
