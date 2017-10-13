@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This is a test of real, baseline validation streamflows verified through WRES where the obs is 24-h
+     and the forecasts are 6-h.  Time aggregation is needed. -->
+<project label="ExampleProject" name="HEFS">
+
+    <inputs>
+        <left label="">
+            <type>observations</type>
+            <source all="true" format="PI-XML" missingValue="-999.0"
+                recursive="true" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_QME.xml</source>
+            <variable>QME</variable>
+            <features>
+                <location lid="LGNN5"/>
+            </features>
+            <existingTimeAggregation>
+                <function>avg</function>
+                <period>24</period>
+                <unit>hour</unit>
+            </existingTimeAggregation>
+        </left>
+        <right label="HEFS" >
+            <type>ensemble forecasts</type>
+            <source all="false" format="PI-XML" missingValue="-999.0"
+                recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_hefs_flow_5yrs.tgz</source>
+            <variable>QINE</variable>
+            <features>
+                <location lid="LGNN5"/>
+            </features>
+            <existingTimeAggregation>
+                <function>avg</function>
+                <period>1</period>
+                <unit>instant</unit>
+            </existingTimeAggregation>
+        </right>
+        <baseline label="ESP" >
+            <type>ensemble forecasts</type>
+            <source all="false" format="PI-XML" missingValue="-999.0"
+                recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_hefs-mefp_flow_5yrs.tgz</source>
+            <variable>QINE</variable>
+            <features>
+                <location lid="LGNN5"/>
+            </features>
+            <existingTimeAggregation>
+                <function>avg</function>
+                <period>1</period>
+                <unit>instant</unit>
+            </existingTimeAggregation>
+        </baseline>
+
+    </inputs>
+
+    <conditions firstLead="1" lastLead="48">
+        <features>
+            <location lid="LGNN5" />
+        </features>
+    </conditions>
+
+    <pair label="Pairs by location and lead time"> 
+        <unit>CMS</unit>
+        <grouping>feature,lead_time</grouping>       
+        <desiredTimeAggregation>
+            <function>avg</function>
+            <period>24</period>
+            <unit>hour</unit>
+        </desiredTimeAggregation>
+    </pair>
+
+    <outputs>
+        <probabilityThresholds>
+            <applyTo>left</applyTo>
+            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
+            <operator>greater than or equal to</operator>
+        </probabilityThresholds>
+        <metric><name>all valid</name></metric>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+        <destination type="graphic">
+            <path>output/</path>
+            <graphical width="800" height="600">
+                <plotType>lead threshold</plotType>
+            </graphical>
+        </destination>
+    </outputs>
+
+</project>
