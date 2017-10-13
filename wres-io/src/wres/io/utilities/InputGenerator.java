@@ -81,7 +81,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private int windowNumber = -1;
         private Integer windowCount;
         private Integer variableID;
-        private Integer lastLead;
         private Integer leadOffset;
 
         private final Feature leftFeature;
@@ -466,15 +465,16 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 {
                     String message = "A valid offset for matching lead values could not be determined. ";
                     message += "The first acceptable lead time is ";
-                    message += String.valueOf( this.projectConfig.getPair()
-                                                                 .getFirstLead() );
+                    message += String.valueOf(
+                            ConfigHelper.getMinimumLeadHour( this.projectConfig )
+                    );
 
-                    if ( this.projectConfig.getPair()
-                                           .getLastLead() < Integer.MAX_VALUE )
+                    if ( ConfigHelper.isMaximumLeadHourSpecified( this.projectConfig ) )
                     {
                         message += ", the last acceptable lead time is ";
-                        message += String.valueOf( this.projectConfig.getPair()
-                                                                     .getLastLead() );
+                        message += String.valueOf(
+                                ConfigHelper.getMaximumLeadHour( this.projectConfig )
+                        );
                         message += ",";
                     }
 
@@ -531,8 +531,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                                  this.getLeadOffset();
 
                     next = beginning < this.getLastLead() &&
-                           end >= this.projectConfig.getPair()
-                                                    .getFirstLead()
+                           end >= ConfigHelper.getMinimumLeadHour( projectConfig )
                            &&
                            end <= this.getLastLead();
                 }
@@ -553,8 +552,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                     message += "range of the specifications.";
 
                     LOGGER.error(message,
-                                  this.projectConfig.getPair()
-                                                    .getFirstLead(),
+                                  ConfigHelper.getMinimumLeadHour( this.projectConfig ),
                                  this.getLastLead(),
                                  ConfigHelper.getWindowWidth( this.projectConfig ).intValue(),
                                  this.getLeadOffset());

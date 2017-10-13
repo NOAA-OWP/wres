@@ -9,9 +9,6 @@
             <source all="true" format="PI-XML" missingValue="-999.0"
                 recursive="true" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_QME.xml</source>
             <variable>QME</variable>
-            <features>
-                <location lid="LGNN5"/>
-            </features>
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>24</period>
@@ -23,9 +20,6 @@
             <source all="false" format="PI-XML" missingValue="-999.0"
                 recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_hefs_flow_5yrs.tgz</source>
             <variable>QINE</variable>
-            <features>
-                <location lid="LGNN5"/>
-            </features>
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>1</period>
@@ -34,14 +28,10 @@
         </right>
     </inputs>
 
-    <conditions firstLead="1" lastLead="48">
-        <features>
-            <location lid="LGNN5" />
-        </features>
-    </conditions>
-
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
+        <feature lid="LGNN5" />
+        <leadHours minimum="1" maximum="48" />
         <grouping>feature,lead_time</grouping>       
         <desiredTimeAggregation>
             <function>avg</function>

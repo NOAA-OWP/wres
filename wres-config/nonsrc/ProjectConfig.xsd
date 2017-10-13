@@ -4,6 +4,16 @@
            jaxb:version="2.1"
            elementFormDefault="qualified">
 
+    <xs:complexType name="doubleBoundsType">
+        <xs:attribute name="minimum" type="xs:double" />
+        <xs:attribute name="maximum" type="xs:double" />
+    </xs:complexType>
+
+    <xs:complexType name="intBoundsType">
+        <xs:attribute name="minimum" type="xs:int" />
+        <xs:attribute name="maximum" type="xs:int" />
+    </xs:complexType>
+
     <xs:simpleType name="datasourceType">
         <xs:restriction base="xs:string">
             <xs:enumeration value="ensemble forecasts" />
@@ -51,21 +61,7 @@
         <xs:attribute name="wkt" type="xs:string" />
     </xs:complexType>
 
-    <xs:complexType name="location">
-    </xs:complexType>
-
-    <!-- A mask may suffice to replace coordinate and polygon. -Jesse -->
-    <xs:complexType name="coordinate">
-        <xs:attribute name="x" type="xs:double" />
-        <xs:attribute name="y" type="xs:double" />
-    </xs:complexType>
-
-    <xs:complexType name="polygon">
-        <xs:sequence>
-            <xs:element name="point" type="coordinate" minOccurs="3" maxOccurs="unbounded" />
-        </xs:sequence>
-    </xs:complexType>
-
+    <!-- TODO revisit selection of a grid point by index - who wants? -->
     <xs:complexType name="variableIndex">
         <xs:attribute name="x" type="xs:int" />
         <xs:attribute name="y" type="xs:int" />
@@ -422,6 +418,7 @@
             <xs:element name="unit" type="xs:string" />
             <xs:element name="feature" type="feature" minOccurs="1" maxOccurs="unbounded"/>
 
+            <xs:element name="leadHours" type="intBoundsType" minOccurs="0" />
             <xs:element name="dates" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
                     <!-- xs:dateTime ends up being yucky XMLGregorianCalendar. Use string, let app deal with it. -->
@@ -436,12 +433,7 @@
                 </xs:complexType>
             </xs:element>
             <!-- values min and max should be in the unit above -->
-            <xs:element name="values" minOccurs="0" maxOccurs="1">
-                <xs:complexType>
-                    <xs:attribute name="minimum" type="xs:double" />
-                    <xs:attribute name="maximum" type="xs:double" />
-                </xs:complexType>
-            </xs:element>
+            <xs:element name="values" type="doubleBoundsType" minOccurs="0" />
 
             <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
             <xs:element name="desiredTimeAggregation" type="timeAggregation" />
@@ -462,8 +454,6 @@
             </xs:element>
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
-        <xs:attribute name="firstLead" type="xs:int" default="-2147483648"/>
-        <xs:attribute name="lastLead" type="xs:int" default="2147483647" />
     </xs:complexType>
 
     <xs:complexType name="dragons">

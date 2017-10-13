@@ -9,23 +9,18 @@
             <source all="true" format="PI-XML" missingValue="-999.0"
                 recursive="true" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_QME.xml</source>
             <variable>QME</variable>
-            <features>
-                <location lid="LGNN5"/>
-            </features>
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>24</period>
                 <unit>hour</unit>
             </existingTimeAggregation>
         </left>
+
         <right label="ESP" >
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
                 recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_Streamflow_hefs-mefp_Baseline_Validation_19850101_20160106.tgz</source>
             <variable>QINE</variable>
-            <features>
-                <location lid="LGNN5"/>
-            </features>
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>1</period>
@@ -34,14 +29,9 @@
         </right>
     </inputs>
 
-    <conditions>
-        <features>
-            <location lid="LGNN5" />
-        </features>
-    </conditions>
-
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
+        <feature lid="LGNN5" />
         <grouping>feature,lead_time</grouping>       
         <desiredTimeAggregation>
             <function>avg</function>

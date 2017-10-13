@@ -13,25 +13,18 @@ configuration file and asking WRES to execute that project.
                 <type>observations</type>
                 <source recursive="true" all="true" format="PI-XML">c:/resources/DRRC2SQIN.xml</source>
                 <variable>QINE</variable>
-                <features><location lid="DRRC2" /></features>
             </left>
             <right>
                 <type>ensemble forecasts</type>
                 <source format="PI-XML">c:/resources/forecasts/</source>
                 <variable>SQIN</variable>
-                <features><location lid="DRRC2" /></features>
             </right>
         </inputs>
 
-        <conditions>
-            <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>
-            <features>
-                <location lid="DRRC2" />
-            </features>
-        </conditions>
-
         <pair>
             <unit>CMS</unit>
+            <feature lid="DRRC2" />
+            <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>
             <desiredTimeAggregation>
                 <function>avg</function>
                 <period>1</period>
@@ -76,9 +69,9 @@ for this are to avoid duplication and to allow the system leeway for performance
 optimizations. In other words, the &lt;project&gt; declares concrete goals as
 well as anything else the tool needs in order to correctly compute those goals.
 
-A project consists of inputs, conditions, pairs, and outputs. For the WRES tool
+A project consists of inputs, pairs, and outputs. For the WRES tool
 to successfully read the &lt;project&gt;, the order of the elements in the file
-must be consistent. In other words, inputs come first, then conditions, then
+must be consistent. In other words, inputs come first, then
 pairs, then outputs. The same is true for all elements (e.g. &lt;anElement&gt;)
 and attributes (e.g. name="value" inside elements). Despite the format of the
 project requiring exact ordering of xml elements, the full project is a single
@@ -111,11 +104,11 @@ input data as it is, rather than prescribing any transformations on the data.
 In cases when the data format does not aptly describe the data, this is where
 the user must fill in the gaps, so to speak.
 
-### Conditions
-
-The contents of &lt;conditions&gt; declares the conditions desired for pairing.
-The pairs that have metrics applied to them will already have been filtered by
-these conditions.
+The inputs section also declares conditions that need to apply to a specific
+side of a pair and could also independently be specified for another side of a
+pair. For example, the exact variable name used in observations may not
+perfectly match each other, and the variable tag is used to declare which
+variable on the left will be compared to which variable on the right.
 
 ### Pairs
 
@@ -126,6 +119,8 @@ converted to the unit declared, so that the metrics performed are performed
 using this unit. The &lt;timeAggregation&gt; is required. This is the desired
 time step that pairs will have as well as the way to aggregate to reach this
 time step when needed.
+
+Conditions to be applied to both sides of the pairs are declared here as well.
 
 ### Outputs
 

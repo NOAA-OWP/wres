@@ -268,21 +268,17 @@ public class ConfigHelper
                   .append( newline );
         }
 
-        if ( projectConfig.getPair()
-                          .getFirstLead() > 1 )
+        if ( ConfigHelper.isMinimumLeadHourSpecified( projectConfig ) )
         {
             script.append( "     AND FV.lead >= " )
-                  .append( projectConfig.getPair()
-                                        .getFirstLead() )
+                  .append( ConfigHelper.getMinimumLeadHour( projectConfig ) )
                   .append( newline );
         }
 
-        if ( projectConfig.getPair()
-                          .getLastLead() < Integer.MAX_VALUE )
+        if ( ConfigHelper.isMaximumLeadHourSpecified( projectConfig ))
         {
             script.append( "     AND FV.lead <= " )
-                  .append( projectConfig.getPair()
-                                        .getLastLead() )
+                  .append( ConfigHelper.getMaximumLeadHour( projectConfig ) )
                   .append( newline );
         }
 
@@ -719,4 +715,91 @@ public class ConfigHelper
     {
         return getDestinationsOfType( config, DestinationType.PAIRS );
     }
+
+
+    /**
+     * Get whether the minimum lead hour from a project config was specified.
+     * @param config the config to use
+     * @return true if the config specified a lead hour, false otherwise
+     */
+
+    public static boolean isMaximumLeadHourSpecified( ProjectConfig config )
+    {
+        return config.getPair() != null
+               && config.getPair()
+                        .getLeadHours() != null
+               && config.getPair()
+                        .getLeadHours()
+                        .getMaximum() != null;
+    }
+
+
+    /**
+     * Get the maximum lead hours from a project config or a default.
+     * @param config the config to use
+     * @return the maximum value specified or a default of Integer.MAX_VALUE
+     */
+
+    public static int getMaximumLeadHour( ProjectConfig config )
+    {
+        int result = Integer.MAX_VALUE;
+
+        if ( config.getPair() != null
+             && config.getPair()
+                      .getLeadHours() != null
+             && config.getPair()
+                      .getLeadHours()
+                      .getMaximum() != null )
+        {
+            result = config.getPair()
+                           .getLeadHours()
+                           .getMaximum();
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Get whether the minimum lead hour from a project config was specified.
+     * @param config the config to use
+     * @return true if the config specified a lead hour, false otherwise
+     */
+
+    public static boolean isMinimumLeadHourSpecified( ProjectConfig config )
+    {
+        return config.getPair() != null
+               && config.getPair()
+                        .getLeadHours() != null
+               && config.getPair()
+                        .getLeadHours()
+                        .getMinimum() != null;
+    }
+
+
+    /**
+     * Get the minimum lead hours from a project config or a default.
+     * @param config the config to use
+     * @return the minimum value specified or a default of Integer.MIN_VALUE
+     */
+
+    public static int getMinimumLeadHour( ProjectConfig config )
+    {
+        int result = Integer.MIN_VALUE;
+
+        if ( config.getPair() != null
+             && config.getPair()
+                      .getLeadHours() != null
+             && config.getPair()
+                      .getLeadHours()
+                      .getMinimum() != null )
+        {
+            result = config.getPair()
+                           .getLeadHours()
+                           .getMinimum();
+        }
+
+        return result;
+    }
+
 }
