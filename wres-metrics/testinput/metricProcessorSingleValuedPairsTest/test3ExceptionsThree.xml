@@ -8,7 +8,7 @@
       <variable>QINE</variable>
     </left>
     <right label="My Name I want to see on charts">
-      <type>ensemble forecasts</type>
+      <type>single valued forecasts</type>
       <source format="PI-XML">/media/sf_userprofile/hefs_data/resources/forecasts/</source>
       <source recursive="false">https://my.data.com/foo</source>
       <variable>SQIN</variable>
@@ -18,9 +18,6 @@
           <unit>HOUR</unit>
       </rollingTimeAggregation>
     </right>
-    <baseline>
-      <type>simple forecasts</type>
-    </baseline>
   </inputs>
   <conditions> <!-- aka filters -->
 <!--    <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>--> <!-- optional, default all -->
@@ -37,22 +34,12 @@
       </timeAggregation>
   </pair>
   <outputs>
-    <probabilityThresholds>
+    <valueThresholds>
       <applyTo>left</applyTo>
-      <commaSeparatedValues>0.0,0.3919,0.4415,0.5042,0.5525</commaSeparatedValues>
-      <operator>greater than or equal to</operator>
-    </probabilityThresholds>
-    <metric label="ME"><name>mean error</name></metric>
-    <metric><name>correlation pearsons</name></metric>
-    <metric><name>mean absolute error</name></metric>
-    <metric><name>bias fraction</name></metric>
-    <metric><name>coefficient of determination</name></metric>
-    <metric><name>root mean square error</name></metric>
-    <metric><name>brier skill score</name></metric>
-    <metric><name>continuous ranked probability score</name></metric>
-    <metric><name>relative operating characteristic diagram</name></metric>
-    <metric><name>rank histogram</name></metric>
-    <metric><name>sample size</name></metric>
+      <commaSeparatedValues>0.5</commaSeparatedValues>
+      <operator>greater than</operator>
+    </valueThresholds>	
+    <metric><name>critical success index</name></metric>
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->

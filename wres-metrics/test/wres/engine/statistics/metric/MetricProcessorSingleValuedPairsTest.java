@@ -103,7 +103,7 @@ public final class MetricProcessorSingleValuedPairsTest
             MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
-                                                                MetricOutputGroup.SCALAR );
+                                                                MetricOutputGroup.values() );
             SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
             final MetadataFactory metFac = metIn.getMetadataFactory();
             //Generate results for 10 nominal lead times
@@ -115,17 +115,11 @@ public final class MetricProcessorSingleValuedPairsTest
                 SingleValuedPairs next = metIn.ofSingleValuedPairs( pairs.getData(), meta );
                 processor.apply( next );
             }
+            
+            //Validate a subset of the data            
             processor.getStoredMetricOutput().getScalarOutput().forEach( ( key, value ) -> {
-                if ( key.getKey().equals( MetricConstants.CRITICAL_SUCCESS_INDEX ) )
-                {
-                    assertTrue( "Expected ten results for the " + key.getKey(),
-                                value.size() == 10 );
-                }
-                else
-                {
-                    assertTrue( "Expected twenty results for the " + key.getKey(),
+                assertTrue( "Expected twenty results for the " + key.getKey()+": "+value.size(),
                                 value.size() == 20 );
-                }
             } );
         }
         catch ( Exception e )
@@ -141,41 +135,70 @@ public final class MetricProcessorSingleValuedPairsTest
     @Test
     public void test3Exceptions()
     {
+        
+        //Check for null input
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        String configPath = "testinput/metricProcessorSingleValuedPairsTest/test3Exceptions.xml";
+        String testOne = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsOne.xml";
         try
         {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testOne ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( null );
-            fail( "Expected a checked exception on processing the project configuration '" + configPath + "'." );
-        }
-        catch ( Exception e )
-        {
-        }
-        //Check for fail on insufficient data 
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
-                                                                MetricOutputGroup.SCALAR );
-            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
-            fail( "Expected a checked exception on processing the project configuration '" + configPath + "' "
-                    + "with insufficient data." );
+            fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
         }
         catch ( MetricCalculationException e )
         {
         }
         catch ( Exception e)
         {
-            fail( "Unexpected exception on processing the project configuration '" + configPath + "' "
-                    + "with insufficient data." );
+            fail( "Unexpected exception on processing the project configuration '" + testOne + "' "
+                    + "with null input." );
         }
+        //Check for fail on insufficient data for a single-valued metric
+        String testTwo = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsTwo.xml";      
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testTwo ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
+            fail( "Expected a checked exception on processing the project configuration '" + testTwo + "' "
+                    + "with insufficient data for a single-valued metric." );
+        }
+        catch ( MetricCalculationException e )
+        {
+        }
+        catch ( Exception e)
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testTwo + "' "
+                    + "with insufficient data for a single-valued metric." );
+        }
+        //Check for fail on insufficient data for a dichotomous metric
+        String testThree = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsThree.xml";      
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testThree ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
+            fail( "Expected a checked exception on processing the project configuration '" + testThree + "' "
+                    + "with insufficient data for a dichotomous metric." );
+        }
+        catch ( MetricCalculationException e )
+        {
+        }
+        catch ( Exception e)
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testThree + "' "
+                    + "with insufficient data for a dichotomous metric." );
+        }        
     }
 
 

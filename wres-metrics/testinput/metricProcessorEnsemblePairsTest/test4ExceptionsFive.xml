@@ -37,22 +37,12 @@
       </timeAggregation>
   </pair>
   <outputs>
-    <probabilityThresholds>
+    <valueThresholds>
       <applyTo>left</applyTo>
       <commaSeparatedValues>0.0,0.3919,0.4415,0.5042,0.5525</commaSeparatedValues>
       <operator>greater than or equal to</operator>
-    </probabilityThresholds>
-    <metric label="ME"><name>mean error</name></metric>
-    <metric><name>correlation pearsons</name></metric>
-    <metric><name>mean absolute error</name></metric>
-    <metric><name>bias fraction</name></metric>
-    <metric><name>coefficient of determination</name></metric>
-    <metric><name>root mean square error</name></metric>
-    <metric><name>brier skill score</name></metric>
-    <metric><name>continuous ranked probability score</name></metric>
-    <metric><name>relative operating characteristic diagram</name></metric>
-    <metric><name>rank histogram</name></metric>
-    <metric><name>sample size</name></metric>
+    </valueThresholds>
+    <metric><name>contingency table</name></metric>
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->

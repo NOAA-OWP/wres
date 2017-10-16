@@ -4,7 +4,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.nio.file.Paths;
-import java.util.TreeSet;
 
 import org.junit.Test;
 
@@ -18,7 +17,6 @@ import wres.datamodel.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
 import wres.datamodel.ScalarOutput;
-import wres.datamodel.Threshold;
 import wres.datamodel.VectorOutput;
 import wres.io.config.ProjectConfigPlus;
 
@@ -84,7 +82,7 @@ public final class MetricProcessorEnsemblePairsTest
             assertTrue( "Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
                         rmse.getValue( 0 ).getData().equals( 41.01563032408479 ) );
             assertTrue( "Unexpected difference in " + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                        Double.compare( crps.getValue( 0 ).getData().getDoubles()[0], 9.075772555092389 ) == 0 );
+                        Double.compare( crps.getValue( 0 ).getData().getDoubles()[0], 9.076475676968208 ) == 0 );
         }
         catch ( Exception e )
         {
@@ -110,7 +108,7 @@ public final class MetricProcessorEnsemblePairsTest
             MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
-                                                                MetricOutputGroup.SCALAR );
+                                                                MetricOutputGroup.values() );
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             processor.apply( pairs );
             //Obtain the results
@@ -311,10 +309,7 @@ public final class MetricProcessorEnsemblePairsTest
             MetricOutputMultiMapByLeadThreshold<ScalarOutput> results = processor.getStoredMetricOutput()
                                                                                  .getScalarOutput();
 
-            TreeSet<Threshold> s = new TreeSet<>();
-
-            results.get( MetricConstants.BIAS_FRACTION ).keySetByThreshold().forEach( res -> s.add( res ) );
-            ;
+            //Validate a selection of the outputs only
 
             //Validate bias
             MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
@@ -484,6 +479,148 @@ public final class MetricProcessorEnsemblePairsTest
         {
             fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
         }
+    }
+
+    /**
+     * Tests for exceptions associated with a {@link MetricProcessorEnsemblePairsByLeadTime}.
+     */
+
+    @Test
+    public void test4Exceptions()
+    {
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        String testOne = "testinput/metricProcessorEnsemblePairsTest/test4ExceptionsOne.xml";
+        try
+        {
+            ProjectConfig config =
+                    ProjectConfigPlus.from( Paths.get( testOne ) )
+                                     .getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( null );
+            fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
+        }
+        catch ( Exception e )
+        {
+        }
+        //Check for fail on insufficient data with ensemble metrics
+        String testTwo = "testinput/metricProcessorEnsemblePairsTest/test4ExceptionsTwo.xml";
+        try
+        {
+            ProjectConfig config =
+                    ProjectConfigPlus.from( Paths.get( testTwo ) )
+                                     .getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
+            fail( "Expected a checked exception on processing the project configuration '" + testTwo
+                  + "' with insufficient data." );
+        }
+        catch ( MetricCalculationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testTwo
+                  + "' with insufficient data." );
+        }
+        //Check for fail on insufficient data with discrete probability metrics
+        String testThree = "testinput/metricProcessorEnsemblePairsTest/test4ExceptionsThree.xml";
+        try
+        {
+            ProjectConfig config =
+                    ProjectConfigPlus.from( Paths.get( testThree ) )
+                                     .getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
+            fail( "Expected a checked exception on processing the project configuration '" + testThree
+                  + "' with insufficient data." );
+        }
+        catch ( MetricCalculationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testThree
+                  + "' with insufficient data." );
+        }
+        //Check for fail on configuration of a dichotomous metric
+        String testFour = "testinput/metricProcessorEnsemblePairsTest/test4ExceptionsFour.xml";
+        try
+        {
+            ProjectConfig config =
+                    ProjectConfigPlus.from( Paths.get( testFour ) )
+                                     .getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
+            fail( "Expected a checked exception on processing the project configuration '" + testFour
+                  + "' with a dichotomous metric." );
+        }
+        catch ( MetricConfigurationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testFour
+                  + "' with a dichotomous metric." );
+        }
+        //Check for fail on configuration of a multicategory metric
+        String testFive = "testinput/metricProcessorEnsemblePairsTest/test4ExceptionsFive.xml";
+        try
+        {
+            ProjectConfig config =
+                    ProjectConfigPlus.from( Paths.get( testFive ) )
+                                     .getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
+            fail( "Expected a checked exception on processing the project configuration '" + testFive
+                  + "' with a multicategory metric." );
+        }
+        catch ( MetricConfigurationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testFive
+                  + "' with a multicategory metric." );
+        }        
+        //Check for fail on configuration of a skill metric that requires a baseline, with no baseline configured
+        String testSix = "testinput/metricProcessorEnsemblePairsTest/test4ExceptionsSix.xml";
+        try
+        {
+            ProjectConfig config =
+                    ProjectConfigPlus.from( Paths.get( testSix ) )
+                                     .getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
+            fail( "Expected a checked exception on processing the project configuration '" + testSix
+                  + "' with a skill metric that requires a baseline, in the absence of a baseline." );
+        }
+        catch ( MetricConfigurationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testSix
+                  + "' with a skill metric that requires a baseline, in the absence of a baseline." );
+        }          
+
     }
 
 }

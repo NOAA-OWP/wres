@@ -269,6 +269,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
              * @param futures the input futures
              * @param mergeList the merge list
              * @return the builder
+             * @throws MetricCalculationException if one or more of the {@link MetricOutputGroup} are unsupported
              */
 
             private MetricFuturesByLeadTimeBuilder addFutures( MetricFuturesByLeadTime futures,
@@ -278,25 +279,22 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
                 {
                     for ( MetricOutputGroup nextGroup : mergeList )
                     {
-                        switch ( nextGroup )
+                        if ( nextGroup == MetricOutputGroup.SCALAR )
                         {
-                            case SCALAR:
-                                scalar.putAll( futures.scalar );
-                                break;
-                            case VECTOR:
-                                vector.putAll( futures.vector );
-                                break;
-                            case MULTIVECTOR:
-                                multivector.putAll( futures.multivector );
-                                break;
-                            default:
-                                LOGGER.error( "Unsupported metric group '{}'.", nextGroup );
+                            scalar.putAll( futures.scalar );
+                        }
+                        else if ( nextGroup == MetricOutputGroup.VECTOR )
+                        {
+                            vector.putAll( futures.vector );
+                        }
+                        else if ( nextGroup == MetricOutputGroup.MULTIVECTOR )
+                        {
+                            multivector.putAll( futures.multivector );
                         }
                     }
                 }
                 return this;
             }
-
         }
 
         /**
@@ -383,7 +381,8 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
         {
             // Aggregate, and report first instance
             LOGGER.warn( "WARN: failed to compute {} of {} thresholds at lead time {} for metrics that consume {} "
-                         + "inputs. " +
+                         + "inputs. "
+                         +
                          failures.get( failures.keySet().iterator().next() ).getMessage(),
                          failures.size(),
                          thresholdCount,
@@ -463,10 +462,6 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
                                                       processSingleValuedThreshold( useMe,
                                                                                     input,
                                                                                     singleValuedMultiVector ) );
-                    }
-                    else
-                    {
-                        throw new MetricCalculationException( " Unsupported metric output '" + outGroup + ".'" );
                     }
                 }
                 //Insufficient data for one threshold: log, but allow

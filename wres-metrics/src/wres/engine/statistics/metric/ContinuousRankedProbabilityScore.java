@@ -210,27 +210,31 @@ class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorScore<Ense
 
     /**
      * Returns a consumer that increments the parameters within an {@link Incrementer} for each input pair with sorted
-     * forecasts. Appropriate where the observation falls between two ensemble members.
+     * forecasts. Appropriate where the observation falls within the ensemble forecast distribution.
      * 
      * @return a consumer that increments the parameters in the {@link Incrementer} for each input pair
      */
 
     private static BiConsumer<double[], Incrementer> sumAlphaBetaMiddle()
     {
+        //Hersbach 2000 has an error in table/eqn (26) and should read >= for the first entry in table, so that 
+        //the alpha is incremented when the observation is exactly equal to the upper bound of the interval. 
+        //Likewise the third entry should be <= to include the beta when the observation is exactly equal to the 
+        //lower bound of the interval
         return ( pair, inc ) -> {
-            //Case 3: observed exceeds ith
-            if ( pair[0] > pair[inc.member + 1] )
+            //Case 3: observed exceeds ith + 1
+            if ( pair[0] >= pair[inc.member + 1] )  //Correction to Hersbach
             {
                 final double nextAlpha = pair[inc.member + 1] - pair[inc.member];
 //                inc.alphaSum += nextAlpha; //Beta unchanged
                 inc.totCRPS += nextAlpha * inc.probSquared;
-            } //Case 4: observed falls below i-1th
-            else if ( pair[0] < pair[inc.member] )
+            } //Case 4: observed falls below ith
+            else if ( pair[0] <= pair[inc.member] ) //Correction to Hersbach
             {
                 final double nextBeta = pair[inc.member + 1] - pair[inc.member];
 //                inc.betaSum += nextBeta; //Alpha unchanged
                 inc.totCRPS += nextBeta * inc.invProbSquared;
-            } //Case 5: observed falls between i-1th and ith
+            } //Case 5: observed falls between ith and ith+1
             else if ( pair[0] > pair[inc.member] && pair[0] < pair[inc.member + 1] )
             {
                 final double nextAlpha = pair[0] - pair[inc.member];

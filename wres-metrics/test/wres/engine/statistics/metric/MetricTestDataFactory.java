@@ -228,6 +228,26 @@ public final class MetricTestDataFactory
                                                  24);
         return metIn.ofEnsemblePairs(values, meta, metIn.vectorOf(climatology.toArray(new Double[climatology.size()])));
     }
+    
+    /**
+     * Returns a set of ensemble pairs with a single pair and no baseline. This is useful for checking exceptional
+     * behaviour due to an inadequate sample size.
+     * 
+     * @return ensemble pairs
+     */
+
+    public static EnsemblePairs getEnsemblePairsTwo()
+    {
+        //Construct some single-valued pairs
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        values.add(metIn.pairOf(22.9, new double[]{22.8,23.9}));
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata meta = metFac.getMetadata(metFac.getDimension("MM/DAY"),
+                                                 metFac.getDatasetIdentifier("A", "MAP"),
+                                                 24);
+        return metIn.ofEnsemblePairs(values, meta);
+    }    
 
     /**
      * Returns a set of dichotomous pairs based on http://www.cawcr.gov.au/projects/verification/#Contingency_table. The
