@@ -6,13 +6,13 @@
         <left label="">
             <type>observations</type>
             <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" timeZone="UTC" unit="" zoneOffset="0">../data/DRRC2QINE.xml</source>
+                recursive="true" timeZone="UTC" unit="">../data/DRRC2QINE.xml</source>
             <variable>QINE</variable>
         </left>
         <right label="HEFS" >
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/drrc2ForecastsOneYear_cfs/</source>
+                recursive="false" timeZone="UTC" unit="">../data/drrc2ForecastsOneYear_cfs/</source>
             <variable>SQIN</variable>
         </right>
     </inputs>
