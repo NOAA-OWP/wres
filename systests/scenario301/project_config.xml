@@ -7,7 +7,7 @@
         <left label="">
             <type>observations</type>
             <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_MAP.xml</source>
+                recursive="true" timeZone="UTC" unit="">../data/abrfcExample/LGNN5_MAP.xml</source>
             <variable>MAP</variable>
 
 <!-- At some point, this should not be necessary.  However, for now, it informs the WRES what the time step of the incoming data is, more or less. -->
@@ -21,7 +21,7 @@
         <right label="HEFS">
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_precip_5yrs.tgz</source>
+                recursive="false" timeZone="UTC" unit="">../data/abrfcExample/LGNN5_precip_5yrs.tgz</source>
             <variable>MAPX</variable>
 
 <!-- See the note above. -->
