@@ -45,16 +45,16 @@ public final class ContinousRankedProbabilitySkillScoreTest
         final List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         pairs.add( outF.pairOf( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
         pairs.add( outF.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
-        pairs.add( outF.pairOf( 32, new double[] { 23, 54, 23, 12, 32 } ) );
+        pairs.add( outF.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32 } ) );
         pairs.add( outF.pairOf( 47, new double[] { 12, 54, 23, 54, 78 } ) );
         pairs.add( outF.pairOf( 12, new double[] { 9, 8, 5, 6, 12 } ) );
         pairs.add( outF.pairOf( 43, new double[] { 23, 12, 12, 34, 10 } ) );
         final List<PairOfDoubleAndVectorOfDoubles> basePairs = new ArrayList<>();
         basePairs.add( outF.pairOf( 25.7, new double[] { 20, 43, 45, 23, 94 } ) );
         basePairs.add( outF.pairOf( 21.4, new double[] { 19, 76, 57, 23, 9 } ) );
-        basePairs.add( outF.pairOf( 32, new double[] { 23, 53, 23, 12, 32 } ) );
+        basePairs.add( outF.pairOf( 32.1, new double[] { 23, 53, 23, 12, 32 } ) );
         basePairs.add( outF.pairOf( 47, new double[] { 2, 54, 23, 54, 78 } ) );
-        basePairs.add( outF.pairOf( 12, new double[] { 9, 18, 5, 6, 12 } ) );
+        basePairs.add( outF.pairOf( 12.1, new double[] { 9, 18, 5, 6, 12 } ) );
         basePairs.add( outF.pairOf( 43, new double[] { 23, 12, 12, 39, 10 } ) );
         EnsemblePairs input = outF.ofEnsemblePairs( pairs, basePairs, metaFac.getMetadata(), metaFac.getMetadata() );
 
@@ -74,7 +74,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
                                            MetricConstants.NONE );
         //Check the results       
         final VectorOutput actual = crpss.apply( input );
-        final VectorOutput expected = outF.ofVectorOutput( new double[] { 0.10086324398000912 }, m1 );
+        final VectorOutput expected = outF.ofVectorOutput( new double[] { 0.0779168348809044 }, m1 );
         assertTrue( "Actual: " + actual.getData().getDoubles()[0]
                     + ". Expected: "
                     + expected.getData().getDoubles()[0]
