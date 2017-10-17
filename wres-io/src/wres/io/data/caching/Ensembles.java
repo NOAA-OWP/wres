@@ -17,6 +17,7 @@ import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Internal;
+import wres.util.NetCDF;
 import wres.util.Strings;
 
 /**
@@ -53,8 +54,17 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	 * @return The ID of the Ensemble in question
 	 * @throws SQLException Thrown if the ID could not be retrieved from the database
 	 */
-	public static Integer getEnsembleID(String name) throws SQLException {
+	public static Integer getEnsembleID(String name) throws SQLException
+    {
 		return getCache().getID(name);
+	}
+
+	public static Integer getEnsembleID( NetCDF.Ensemble ensemble )
+            throws SQLException
+    {
+		return Ensembles.getCache().getID( ensemble.getName(),
+                                           ensemble.getTMinus(),
+                                           ensemble.getQualifier() );
 	}
 	
 	/**

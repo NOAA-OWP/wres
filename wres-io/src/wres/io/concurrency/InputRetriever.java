@@ -213,6 +213,69 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         Map<Integer, List<Double>> rightValues = new TreeMap<>();
         Map<Integer, UnitConversions.Conversion> conversionMap = new TreeMap<>(  );
 
+        /**
+         * Task #39440
+         *
+         * Alternate Solution (for forecasts):
+         * 1) Get ids for all time series
+         * 2) Instead of doing the full series of joins then the array
+         *    aggregation and sorting, group by time series and return a series
+         *    of pairs of (timeseries_id, aggregate for all leads)
+         *    To do so, the ranges for all timeseries_ids will need to be
+         *    determined and added to the where clause. Your query will look
+         *    like:
+         *
+         *    SELECT FV.timeseries_id, AVG(FV.forecasted_value) AS measurement
+         *    FROM wres.ForecastValue FV
+         *    WHERE (
+         *          (FV.timeseries_id >= 1 AND FV.timeseries_id <= 4000)
+         *              OR (FV.timeseries_id >= 9000 AND FV.timeseries_id <= 25000)
+         *        )
+         *        AND FV.lead >= 24
+         *        AND FV.lead <= 48;
+         *
+         * 3) Perform the unit conversion on the aggregated values
+         * 4) Determine if the converted aggregation is a valid value for the pull
+         *    (is greater than or equal to min value or less than or equal to
+         *        the max value)
+         * 5) Group all aggregated values in ensemble order
+         *    in collections based on the timeseries initialization date +
+         *    the maximum number of lead hours for the window.
+         * 6) After finding the matching left hand value for each pair of
+         *    (date, [aggregated ensemble/single values...]), convert the
+         *    left and pair to PairOfDoubleAndVectorOfDouble
+         * 7) Add pair object to pair collection
+         *
+         * Pros:
+         *    -  This should provide a performance improvement on databases
+         *       with a large amount of data for many projects
+         *    -  For a single retrieval on such a system, the current process
+         *       takes ~25 seconds. By using the above query, it took 4.03
+         *       seconds. For a single lead, it took 1.359 seconds.
+         * Cons:
+         *    -  More intermediate steps are required
+         *    -  Even more complicated
+         *    -  Ensembles and their IDs will need to be associated with their
+         *       timeseries_ids
+         *    -  A listing of acceptable timeseries_ids will need to be sorted
+         *       and added to ranges of (min, max) and added to a collection,
+         *       then that collection will need to be used to form the
+         *
+         *       (FV.timeseries_id >= min AND FV.timeseries_id <= max) || ...
+         *
+         *       statements. The min/max statements will need to have
+         *       branching logic so that it is simply
+         *
+         *       FV.timeseries_id >= min AND FV.timeseries_id <= max
+         *
+         *       in cases of a single range.
+         *
+         *    -  Most likely a larger memory footprint
+         *    -  Current logic for simulation data will still need to be intact
+         *    -  Refactoring for new logic would require a complete rewrite
+         *       and forking of several core functions
+         */
+
         try
         {
             connection = Database.getConnection();

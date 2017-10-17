@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -779,18 +780,16 @@ public final class Database {
      * originating from the column with the name of the passed in fieldLabel
      * in the passed in query
      * @param collection The collection to populate
-     * @param collectionDataType The type of data to populate the collection with
      * @param query The query used to retrieve data
      * @param fieldLabel The name of the column containing data
-     * @param <U> The type of data within the collection
      * @return The updated collection
      * @throws SQLException Thrown if the database could not be communicated
      * with successfully
      */
-	public static <U> Collection<U> populateCollection(final Collection<U> collection,
-                                                       final Class<U> collectionDataType,
+	public static Collection populateCollection(final Collection collection,
                                                        final String query,
-                                                       final String fieldLabel) throws SQLException
+                                                       final String fieldLabel)
+            throws SQLException
 	{
 		Connection connection = null;
 		ResultSet results = null;
@@ -805,6 +804,8 @@ public final class Database {
             LOGGER.trace( "" );
             LOGGER.trace(query);
             LOGGER.trace("");
+            LOGGER.trace("The value is '{}'", fieldLabel);
+            LOGGER.trace("");
         }
 
 		try
@@ -816,14 +817,14 @@ public final class Database {
             {
             	if (results.getObject(fieldLabel) != null)
             	{
-					collection.add(results.getObject(fieldLabel, collectionDataType));
+					collection.add(results.getObject(fieldLabel));
 				}
             }
 		}
 		catch (SQLException error)
 		{
 			LOGGER.error("The following query failed:");
-			LOGGER.error(formatQueryForOutput(query));
+			LOGGER.error(query);
 			throw error;
 		}
 		finally
@@ -840,6 +841,66 @@ public final class Database {
 		}
 
 		return collection;
+	}
+
+	public static Map populateMap(final Map map,
+											   final String query,
+											   final String keyLabel,
+											   final String valueLabel)
+		throws SQLException
+	{
+		Connection connection = null;
+		ResultSet results = null;
+
+		if (map == null)
+		{
+			throw new NullPointerException( "The map passed into 'populateMap' was null." );
+		}
+
+		if (LOGGER.isTraceEnabled())
+		{
+			LOGGER.trace("");
+			LOGGER.trace(query);
+			LOGGER.trace("");
+			LOGGER.trace("The key is '{}' and the value is '{}'",
+						 keyLabel,
+						 valueLabel);
+			LOGGER.trace( "" );
+		}
+
+		try
+		{
+			connection = Database.getConnection();
+			results = Database.getResults( connection, query );
+			while (results.next())
+			{
+				Object key = results.getObject(keyLabel);
+				if (key != null)
+				{
+					map.put(key, results.getObject( valueLabel));
+				}
+			}
+		}
+		catch (SQLException error)
+		{
+			LOGGER.error( "The following query failed:" );
+			LOGGER.error(formatQueryForOutput( query ));
+			throw error;
+		}
+		finally
+		{
+			if (results != null)
+			{
+				results.close();
+			}
+
+			if (connection != null)
+			{
+				Database.returnConnection( connection );
+			}
+		}
+
+		return map;
 	}
 
     /**
