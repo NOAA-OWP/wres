@@ -55,16 +55,25 @@ public final class Downloader extends WRESRunnable {
             }
             catch (java.io.IOException saveError)
             {
-                this.getLogger().error("The file at '" + this.address + "' could not be saved to: '" + this.targetPath.toString() + "'.");
+                this.getLogger().error("{}The file at '{}' could not be saved to:{} '{}'.",
+                                       NEWLINE,
+                                       this.address,
+                                       NEWLINE,
+                                       this.targetPath.toString());
                 message += "Not Downloaded";
             }
 
-        } catch (java.io.IOException e) {
-            this.getLogger().error("The address: '" + this.address + "' is not a valid url.");
+        } catch (java.io.IOException e)
+        {
+            this.getLogger().error("The address: '{}' is not a valid url.{}",
+                                   this.address,
+                                   NEWLINE);
+
             this.getLogger().error(Strings.getStackTrace(e));
         }
 
-        if (displayOutput) {
+        if (displayOutput)
+        {
             this.getLogger().info(message);
         }
 

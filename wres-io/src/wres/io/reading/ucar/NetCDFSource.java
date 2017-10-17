@@ -40,7 +40,12 @@ public class NetCDFSource extends BasicSource {
 	@Override
 	public void saveObservation() throws IOException
 	{
-		throw new NotImplementedException("Observational data within NetCDF files are not supported by the WRES.");
+	    /*LOGGER.warn("Saving for NetCDF observations is still being implemented. No ingest will occur for '{}'",
+                    this.getFilename());*/
+		try (NetcdfFile source = getSource())
+		{
+			save( source );
+		}
 	}
 	
 	@Override
@@ -60,13 +65,19 @@ public class NetCDFSource extends BasicSource {
         {
             try {
                 WRESRunnable saver;
-                if (NetCDF.isGridded(var)) {
+                if (NetCDF.isGridded(var))
+                {
                     saver = new GriddedNetCDFValueSaver(this.getFilename(),
-                                                        Variables.getVariableID(var.getShortName(), var.getUnitsString()), this.getFutureHash());
+                                                        Variables.getVariableID(var.getShortName(),
+																				var.getUnitsString()),
+														this.getFutureHash());
                 }
                 else
                 {
-                    saver = new VectorNetCDFValueSaver(this.getFilename(), var.getShortName(), this.getFutureHash(), this.getProjectDetails());
+                    saver = new VectorNetCDFValueSaver(this.getFilename(),
+													   this.getFutureHash(),
+													   this.dataSourceConfig,
+													   this.getProjectDetails());
                 }
 
                 saver.setOnRun(ProgressMonitor.onThreadStartHandler());

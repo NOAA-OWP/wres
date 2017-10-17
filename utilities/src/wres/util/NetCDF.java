@@ -8,6 +8,9 @@ import ucar.nc2.Variable;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 
 /**
  * Created by ctubbs on 7/7/17.
@@ -16,7 +19,48 @@ public final class NetCDF {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NetCDF.class);
     private static final String NWM_NAME_PATTERN =
-            "^nwm\\.t\\d\\dz\\.(short|medium|long|analysis)_(range|assim)\\.[a-zA-Z]+(_rt)?(_\\d)?\\.(f\\d\\d\\d|tm\\d\\d)\\.conus\\.nc(\\.gz)?$";;
+            "^nwm\\.t\\d\\dz\\.(short|medium|long|analysis)_(range|assim)\\.[a-zA-Z]+(_rt)?(_\\d)?\\.(f\\d\\d\\d|tm\\d\\d)\\.conus\\.nc(\\.gz)?$";
+
+    public static class Ensemble
+    {
+        public Ensemble(String name, String qualifier, String tMinus)
+        {
+            this.name = name;
+            this.qualifier = qualifier;
+            this.tMinus = tMinus;
+        }
+
+        private final String name;
+        private final String qualifier;
+        private final String tMinus;
+
+        public String getName()
+        {
+            return this.name;
+        }
+
+        public String getQualifier()
+        {
+            return this.qualifier;
+        }
+
+        public String getTMinus()
+        {
+            return this.tMinus;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( this.name, this.qualifier, this.tMinus);
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            return this.hashCode() == obj.hashCode();
+        }
+    }
 
     private NetCDF() {}
 
@@ -76,9 +120,6 @@ public final class NetCDF {
                                                        file.getLocation() +
                                                        "' is not valid National Water Model Data.");
         }
-
-        Integer lead = null;
-        String leadDescription;
 
         OffsetDateTime initialization = Time.convertStringToDate(NetCDF.getInitializedTime(file));
         OffsetDateTime valid = Time.convertStringToDate(NetCDF.getValidTime(file));
@@ -171,19 +212,38 @@ public final class NetCDF {
                                    "(?<=(assim|range)\\.)[a-zA-Z_\\d]+(?=\\.(tm\\d\\d|f\\d\\d\\d))");
     }
 
-    public static String getEnsemble(NetcdfFile file)
+    public static Ensemble getEnsemble(NetcdfFile file)
     {
-        String ensembleName = "Default";
-
-        String range = NetCDF.getNWMRange(file);
-
-        if (Strings.hasValue(range) && range.equalsIgnoreCase("long_range"))
+        if (!NetCDF.isNWMData(file))
         {
-            String category = NetCDF.getNWMCategory(file);
-            ensembleName = Strings.extractWord(category, "(?<=_)\\d");
+            throw new IllegalArgumentException("The NetCDF data in '" +
+                                               file.getLocation() +
+                                               "' is not valid National Water Model Data.");
         }
 
-        return ensembleName;
+        Map<String, String> ensemble = new TreeMap<>();
+        String[] parts = NetCDF.getNWMFilenameParts( file );
+        String name = Collections.find(parts, (String possibility) ->
+                        Strings.hasValue( possibility) &&
+                        ( possibility.endsWith( "range") || possibility.endsWith( "assim")) );
+        String qualifier = NetCDF.getNWMCategory( file );
+        String tMinus = null;
+
+        if (name.endsWith( "assim" ))
+        {
+            String minus = Collections.find(parts,
+                                            (String possibility) ->
+                                                    Strings.hasValue( possibility ) &&
+                                                    possibility.startsWith( "tm" )
+            );
+
+            if (Strings.hasValue( minus ))
+            {
+                tMinus = Strings.extractWord( minus, "\\d\\d" );
+            }
+        }
+
+        return new Ensemble( name, qualifier, tMinus );
     }
 
     public static Integer getXLength(Variable var)

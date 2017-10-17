@@ -483,7 +483,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         script.append("     AND PS.inactive_time IS NULL").append(NEWLINE);
         script.append("     AND VP.variable_id = ").append(memberVariableID).append(";");
 
-        Database.populateCollection(forecastIDs, Integer.class, script.toString(), "timeseries_id");
+        Database.populateCollection(forecastIDs,
+                                    script.toString(),
+                                    "timeseries_id");
     }
 
     public List<Integer> getLeftSources() throws SQLException

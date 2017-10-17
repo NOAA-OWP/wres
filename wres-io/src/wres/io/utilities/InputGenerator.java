@@ -228,12 +228,13 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append(")::text AS left_date,").append(NEWLINE);
                 script.append("     O.observed_value AS left_value,").append(NEWLINE);
                 script.append("     O.measurementunit_id").append(NEWLINE);
-                script.append("FROM wres.Observation O").append(NEWLINE);
-                script.append("WHERE ").append(variablepositionClause).append(NEWLINE);
-                script.append("     AND O.source_id = ")
-                      .append( Collections.formAnyStatement( Projects.getProject( this.projectConfig )
-                                                                     .getLeftSources(), "int" ))
+                script.append("FROM wres.ProjectSource PS").append(NEWLINE);
+                script.append("INNER JOIN wres.Observation O").append(NEWLINE);
+                script.append("     ON O.source_id = PS.source_id").append(NEWLINE);
+                script.append("WHERE PS.project_id = ")
+                      .append(Projects.getProject( this.projectConfig ).getId())
                       .append(NEWLINE);
+                script.append("     AND ").append(variablepositionClause).append(NEWLINE);
 
                 if (earliestDate != null)
                 {

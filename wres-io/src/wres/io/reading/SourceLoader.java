@@ -147,7 +147,7 @@ public class SourceLoader
 
         try
         {
-            files = Files.list(directory);
+            files = Files.walk(directory);
 
             files.forEach((Path path) -> {
                 if (Files.notExists(path))
@@ -157,16 +157,12 @@ public class SourceLoader
                                                         " does not exist and is therefore not a valid source.");
                 }
 
-                if (Files.isDirectory(path) && source.isRecursive())
+                if (directory.equals( path ))
                 {
-                    List<Future> tasks = loadDirectory(path, source, dataSourceConfig);
-
-                    if (tasks != null)
-                    {
-                        results.addAll(tasks);
-                    }
+                    return;
                 }
-                else if (Files.isRegularFile(path))
+
+                if (Files.isRegularFile(path))
                 {
                     Future task = saveFile(path, source, dataSourceConfig);
 
