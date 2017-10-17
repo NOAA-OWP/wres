@@ -6,13 +6,13 @@
         <left label="">
             <type>simulations</type>
             <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" timeZone="UTC" unit="">../data/DRRC2QINE.xml</source>
+                recursive="true" unit="">../data/DRRC2QINE.xml</source>
             <variable>QINE</variable>
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" timeZone="UTC" unit="">../data/CB_DRRC2_enspost_gefs_climatology_20170215.full.tgz</source>
+                recursive="false" unit="">../data/CB_DRRC2_enspost_gefs_climatology_20170215.full.tgz</source>
             <variable>SQIN</variable>
         </right>
     </inputs>
