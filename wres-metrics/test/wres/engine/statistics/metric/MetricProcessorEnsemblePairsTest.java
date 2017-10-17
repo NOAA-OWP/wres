@@ -12,6 +12,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
@@ -620,7 +621,34 @@ public final class MetricProcessorEnsemblePairsTest
             fail( "Unexpected exception on processing the project configuration '" + testSix
                   + "' with a skill metric that requires a baseline, in the absence of a baseline." );
         }          
-
     }
+    
+    /**
+     * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} for all valid metrics associated
+     * with ensemble inputs.
+     */
+
+    @Test
+    public void test5AllValid()
+    {
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        String configPath = "testinput/metricProcessorEnsemblePairsTest/test5AllValid.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.values() );
+            //Check for the expected number of metrics
+            assertTrue( processor.metrics.size() == MetricInputGroup.ENSEMBLE.getMetrics().size()
+                                                    + MetricInputGroup.DISCRETE_PROBABILITY.getMetrics().size()
+                                                    + MetricInputGroup.SINGLE_VALUED.getMetrics().size() );
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
+        }
+    }    
 
 }
