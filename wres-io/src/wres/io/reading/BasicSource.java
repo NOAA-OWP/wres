@@ -83,7 +83,7 @@ public abstract class BasicSource {
 
     /**
      * Loads the specification for the data source
-     * @param dataSourceConfig
+     * @param dataSourceConfig the outer data source config, such as "right"
      */
 	public void setDataSourceConfig (DataSourceConfig dataSourceConfig)
 	{
@@ -97,6 +97,16 @@ public abstract class BasicSource {
 	{
 		return this.dataSourceConfig;
 	}
+
+    public void setSourceConfig ( DataSourceConfig.Source sourceConfig )
+    {
+        this.sourceConfig = sourceConfig;
+    }
+
+    protected DataSourceConfig.Source getSourceConfig()
+    {
+        return this.sourceConfig;
+    }
 
     /**
      * Sets the specific features to ingest. Only the described features should
@@ -464,6 +474,12 @@ public abstract class BasicSource {
      * need to be ingested
      */
 	protected DataSourceConfig dataSourceConfig;
+
+    /**
+     * The precise configuration of the data source indicating that this file
+     * might need to be ingested
+     */
+    protected DataSourceConfig.Source sourceConfig;
 
     /**
      * The listing of features to ingest

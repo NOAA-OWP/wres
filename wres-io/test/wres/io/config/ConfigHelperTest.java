@@ -18,9 +18,8 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.powermock.api.mockito.PowerMockito.doReturn;
 
-import wres.config.generated.Conditions;
 import wres.config.generated.Feature;
-import wres.config.generated.Location;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.data.caching.Features;
 import wres.io.utilities.Database;
@@ -58,17 +57,17 @@ public class ConfigHelperTest
 
         String expected = "feature_id in (1,2,3)";
 
-        Feature featureFakeOne = new Feature( null, null, new Location( "fake1", null, null, null, null), null, null, false);
-        Feature featureFakeTwo = new Feature(null, null,  new Location("fake2", null, null, null, null), null, null, false);
-        Feature featureFakeThree = new Feature(null, null,  new Location("fake3", null, null, null, null), null, null, false);
+        Feature featureFakeOne = new Feature( null, null, "fake1", null, null, null, null, null );
+        Feature featureFakeTwo = new Feature(null, null, "fake2", null, null, null, null, null );
+        Feature featureFakeThree = new Feature(null, null, "fake3", null, null, null, null, null );
 
         List<Feature> features = new ArrayList<>();
         features.add(featureFakeOne);
         features.add(featureFakeTwo);
         features.add(featureFakeThree);
 
-        Conditions c = new Conditions(null, null, null, features, null, 1, 2818644);
-        ProjectConfig config = new ProjectConfig(null, c, null, null, null, null, "test");
+        PairConfig c = new PairConfig( null, features, null, null, null, null, null, null, null, null );
+        ProjectConfig config = new ProjectConfig(null, c, null, null, null, "test");
         String result = ConfigHelper.getFeatureIdsAndPutIfAbsent(config);
         assertEquals(expected, result);
     }

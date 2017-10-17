@@ -178,6 +178,26 @@ public final class MetricTestDataFactory
     }
 
     /**
+     * Returns a set of single-valued pairs with a single pair and no baseline. This is useful for checking exceptional
+     * behaviour due to an inadequate sample size.
+     * 
+     * @return single-valued pairs
+     */
+
+    public static SingleValuedPairs getSingleValuedPairsSix()
+    {
+        //Construct some single-valued pairs
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        final List<PairOfDoubles> values = new ArrayList<>();
+        values.add(metIn.pairOf(22.9, 22.8));
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata meta = metFac.getMetadata(metFac.getDimension("MM/DAY"),
+                                                 metFac.getDatasetIdentifier("A", "MAP"),
+                                                 24);
+        return metIn.ofSingleValuedPairs(values, meta);
+    }    
+    
+    /**
      * Returns a moderately-sized test dataset of ensemble pairs without a baseline. Reads the pairs from
      * testinput/metricTestDataFactory/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours.
      * 
@@ -208,6 +228,26 @@ public final class MetricTestDataFactory
                                                  24);
         return metIn.ofEnsemblePairs(values, meta, metIn.vectorOf(climatology.toArray(new Double[climatology.size()])));
     }
+    
+    /**
+     * Returns a set of ensemble pairs with a single pair and no baseline. This is useful for checking exceptional
+     * behaviour due to an inadequate sample size.
+     * 
+     * @return ensemble pairs
+     */
+
+    public static EnsemblePairs getEnsemblePairsTwo()
+    {
+        //Construct some single-valued pairs
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        values.add(metIn.pairOf(22.9, new double[]{22.8,23.9}));
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata meta = metFac.getMetadata(metFac.getDimension("MM/DAY"),
+                                                 metFac.getDatasetIdentifier("A", "MAP"),
+                                                 24);
+        return metIn.ofEnsemblePairs(values, meta);
+    }    
 
     /**
      * Returns a set of dichotomous pairs based on http://www.cawcr.gov.au/projects/verification/#Contingency_table. The
@@ -735,4 +775,26 @@ public final class MetricTestDataFactory
         return metIn.ofDiscreteProbabilityPairs(values, main);
     }
 
+    /**
+     * Returns a set of discrete probability pairs without a baseline and comprising observed non-occurrences only.
+     * 
+     * @return discrete probability pairs with observed non-occurrences
+     */
+
+    public static DiscreteProbabilityPairs getDiscreteProbabilityPairsFour()
+    {
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        final List<PairOfDoubles> values = new ArrayList<>();
+        values.add(metIn.pairOf(0, 3.0 / 5.0));
+        values.add(metIn.pairOf(0, 1.0 / 5.0));
+        values.add(metIn.pairOf(0, 2.0 / 5.0));
+        values.add(metIn.pairOf(0, 3.0 / 5.0));
+        values.add(metIn.pairOf(0, 0.0 / 5.0));
+        values.add(metIn.pairOf(0, 1.0 / 5.0));
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata meta = metFac.getMetadata(metFac.getDimension(),
+                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+        return metIn.ofDiscreteProbabilityPairs(values, meta);
+    }    
+    
 }

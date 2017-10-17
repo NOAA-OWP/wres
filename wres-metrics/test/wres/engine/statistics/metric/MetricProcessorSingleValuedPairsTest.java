@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.nio.file.Paths;
+import java.util.concurrent.Executors;
 
 import org.junit.Test;
 
@@ -13,6 +14,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Metadata;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricOutputForProjectByLeadThreshold;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
@@ -45,41 +47,45 @@ public final class MetricProcessorSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml";
         try
         {
-            ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor = MetricFactory.getInstance(dataFactory)
-                                                                                            .getMetricProcessorByLeadTime(config);
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor = MetricFactory.getInstance( dataFactory )
+                                                                                            .getMetricProcessorByLeadTime( config,
+                                                                                                                           Executors.newSingleThreadExecutor(),
+                                                                                                                           null,
+                                                                                                                           (MetricOutputGroup[]) null );
             SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
-            MetricOutputForProjectByLeadThreshold results = processor.apply(pairs);
+            MetricOutputForProjectByLeadThreshold results = processor.apply( pairs );
             MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.getScalarOutput()
-                                                                       .get(MetricConstants.BIAS_FRACTION);
+                                                                       .get( MetricConstants.BIAS_FRACTION );
             MetricOutputMapByLeadThreshold<ScalarOutput> cod =
-                                                             results.getScalarOutput()
-                                                                    .get(MetricConstants.COEFFICIENT_OF_DETERMINATION);
+                    results.getScalarOutput()
+                           .get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
             MetricOutputMapByLeadThreshold<ScalarOutput> rho = results.getScalarOutput()
-                                                                      .get(MetricConstants.CORRELATION_PEARSONS);
+                                                                      .get( MetricConstants.CORRELATION_PEARSONS );
             MetricOutputMapByLeadThreshold<ScalarOutput> mae = results.getScalarOutput()
-                                                                      .get(MetricConstants.MEAN_ABSOLUTE_ERROR);
-            MetricOutputMapByLeadThreshold<ScalarOutput> me = results.getScalarOutput().get(MetricConstants.MEAN_ERROR);
+                                                                      .get( MetricConstants.MEAN_ABSOLUTE_ERROR );
+            MetricOutputMapByLeadThreshold<ScalarOutput> me =
+                    results.getScalarOutput().get( MetricConstants.MEAN_ERROR );
             MetricOutputMapByLeadThreshold<ScalarOutput> rmse = results.getScalarOutput()
-                                                                       .get(MetricConstants.ROOT_MEAN_SQUARE_ERROR);
+                                                                       .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
             //Test contents
-            assertTrue("Unexpected difference in " + MetricConstants.BIAS_FRACTION,
-                       bias.getValue(0).getData().equals(1.6666666666666667));
-            assertTrue("Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                       cod.getValue(0).getData().equals(1.0));
-            assertTrue("Unexpected difference in " + MetricConstants.CORRELATION_PEARSONS,
-                       rho.getValue(0).getData().equals(1.0));
-            assertTrue("Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
-                       mae.getValue(0).getData().equals(5.0));
-            assertTrue("Unexpected difference in " + MetricConstants.MEAN_ERROR, me.getValue(0).getData().equals(5.0));
-            assertTrue("Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
-                       rmse.getValue(0).getData().equals(5.0));
+            assertTrue( "Unexpected difference in " + MetricConstants.BIAS_FRACTION,
+                        bias.getValue( 0 ).getData().equals( 1.6666666666666667 ) );
+            assertTrue( "Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                        cod.getValue( 0 ).getData().equals( 1.0 ) );
+            assertTrue( "Unexpected difference in " + MetricConstants.CORRELATION_PEARSONS,
+                        rho.getValue( 0 ).getData().equals( 1.0 ) );
+            assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
+                        mae.getValue( 0 ).getData().equals( 5.0 ) );
+            assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ERROR,
+                        me.getValue( 0 ).getData().equals( 5.0 ) );
+            assertTrue( "Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
+                        rmse.getValue( 0 ).getData().equals( 5.0 ) );
 
         }
-        catch(Exception e)
+        catch ( Exception e )
         {
-            e.printStackTrace();
-            fail("Unexpected exception on processing project configuration '" + configPath + "'.");
+            fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
         }
     }
 
@@ -92,38 +98,263 @@ public final class MetricProcessorSingleValuedPairsTest
      */
 
     @Test
-    public void test2ApplyNoThresholds()
+    public void test2ApplyThresholds()
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        String configPath = "testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsTest/test2ApplyThresholds.xml";
         try
         {
-            ProjectConfig config = ProjectConfigPlus.from(Paths.get(configPath)).getProjectConfig();
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
-                                                                             MetricFactory.getInstance(metIn)
-                                                                                          .getMetricProcessorByLeadTime(config,
-                                                                                                              MetricOutputGroup.SCALAR);
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.values() );
             SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
             final MetadataFactory metFac = metIn.getMetadataFactory();
             //Generate results for 10 nominal lead times
-            for(int i = 1; i < 11; i++)
+            for ( int i = 1; i < 11; i++ )
             {
-                final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
-                                                         metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"),
-                                                         i);
-                SingleValuedPairs next = metIn.ofSingleValuedPairs(pairs.getData(), meta);
-                processor.apply(next);
+                final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                          metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                          i );
+                SingleValuedPairs next = metIn.ofSingleValuedPairs( pairs.getData(), meta );
+                processor.apply( next );
             }
-            processor.getStoredMetricOutput().getScalarOutput().forEach((key, value) -> {
-                assertTrue("Expected results at ten forecast lead times for the " + key.getKey(),
-                           value.size() == 10);
-            });
+
+            //Validate a subset of the data            
+            processor.getStoredMetricOutput().getScalarOutput().forEach( ( key, value ) -> {
+                assertTrue( "Expected twenty results for the " + key.getKey()
+                            + ": "
+                            + value.size(),
+                            value.size() == 20 );
+            } );
         }
-        catch(Exception e)
+        catch ( Exception e )
         {
-            e.printStackTrace();
-            fail("Unexpected exception on processing project configuration '" + configPath + "'.");
+            fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
         }
     }
+
+    /**
+     * Tests for exceptions associated with a {@link MetricProcessorSingleValuedPairsByLeadTime}.
+     */
+
+    @Test
+    public void test3Exceptions()
+    {
+
+        //Check for null input
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        String testOne = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsOne.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testOne ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( null );
+            fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
+        }
+        catch ( MetricCalculationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testOne
+                  + "' "
+                  + "with null input." );
+        }
+        //Check for fail on insufficient data for a single-valued metric
+        String testTwo = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsTwo.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testTwo ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
+            fail( "Expected a checked exception on processing the project configuration '" + testTwo
+                  + "' "
+                  + "with insufficient data for a single-valued metric." );
+        }
+        catch ( MetricCalculationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testTwo
+                  + "' "
+                  + "with insufficient data for a single-valued metric." );
+        }
+        //Check for fail on insufficient data for a dichotomous metric
+        String testThree = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsThree.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testThree ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
+            fail( "Expected a checked exception on processing the project configuration '" + testThree
+                  + "' "
+                  + "with insufficient data for a dichotomous metric." );
+        }
+        catch ( MetricCalculationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testThree
+                  + "' "
+                  + "with insufficient data for a dichotomous metric." );
+        }
+        //Check for absence of thresholds on metrics that require them
+        String testFour = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsFour.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testFour ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
+            fail( "Expected a checked exception on processing the project configuration '" + testFour
+                  + "' "
+                  + "with no thresholds for metrics that require them." );
+        }
+        catch ( MetricConfigurationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testFour
+                  + "' "
+                  + "with no thresholds for metrics that require them." );
+        }
+        //Checked for value thresholds that do not apply to left
+        String testFive = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsFive.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testFive ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
+            fail( "Expected a checked exception on processing the project configuration '" + testFive
+                  + "' "
+                  + "with value thresholds that do not apply to left." );
+        }
+        catch ( MetricConfigurationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testFive
+                  + "' "
+                  + "with value thresholds that do not apply to left." );
+        }
+        //Checked for probability thresholds that do not apply to left
+        String testSix = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsSix.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testSix ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
+            fail( "Expected a checked exception on processing the project configuration '" + testSix
+                  + "' "
+                  + "with probability thresholds that do not apply to left." );
+        }
+        catch ( MetricConfigurationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testSix
+                  + "' "
+                  + "with probability thresholds that do not apply to left." );
+        }
+        //Checked for metric-local thresholds, which are not supported
+        String testSeven = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsSeven.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testSeven ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
+            fail( "Expected a checked exception on processing the project configuration '" + testSeven
+                  + "' "
+                  + "with metric-local thresholds that are not supported." );
+        }
+        catch ( MetricConfigurationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testSeven
+                  + "' "
+                  + "with metric-local thresholds that are not supported." );
+        }
+        //Check for insufficient data to compute climatological probability thresholds
+        String testEight = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsEight.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testEight ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
+            fail( "Expected a checked exception on processing the project configuration '" + testEight
+                  + "' "
+                  + "with metric-local thresholds that are not supported." );
+        }
+        catch ( MetricCalculationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testEight
+                  + "' "
+                  + "with metric-local thresholds that are not supported." );
+        }
+    }
+
+    /**
+     * Tests the construction of a {@link MetricProcessorSingleValuedPairsByLeadTime} for all valid metrics associated
+     * with single-valued inputs.
+     */
+
+    @Test
+    public void test4AllValid()
+    {
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        String configPath = "testinput/metricProcessorSingleValuedPairsTest/test4AllValid.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.values() );
+            //Check for the expected number of metrics
+            assertTrue( "Unexpected number of metrics.",
+                        processor.metrics.size() == MetricInputGroup.SINGLE_VALUED.getMetrics().size()
+                                                    + MetricInputGroup.DICHOTOMOUS.getMetrics().size() );
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
+        }
+    }
+
 
 }

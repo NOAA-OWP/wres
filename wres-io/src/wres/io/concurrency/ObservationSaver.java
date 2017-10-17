@@ -23,14 +23,17 @@ public class ObservationSaver extends WRESRunnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ObservationSaver.class);
 
+    private final DataSourceConfig.Source sourceConfig;
 
     @Internal(exclusivePackage = "wres.io")
 	public ObservationSaver(String filepath,
                             ProjectDetails projectDetails,
                             DataSourceConfig dataSourceConfig,
+							DataSourceConfig.Source sourceConfig,
                             List<Feature> specifiedFeatures)
     {
         this.dataSourceConfig = dataSourceConfig;
+		this.sourceConfig = sourceConfig;
         this.projectDetails = projectDetails;
         this.specifiedFeatures = specifiedFeatures;
         this.filepath = filepath;
@@ -48,7 +51,9 @@ public class ObservationSaver extends WRESRunnable {
 
             source.setDataSourceConfig(this.dataSourceConfig);
 
-            source.setSpecifiedFeatures( this.dataSourceConfig.getFeatures() );
+			source.setSourceConfig( this.sourceConfig );
+
+            source.setSpecifiedFeatures( this.specifiedFeatures );
 
             source.setProjectDetails( this.projectDetails );
 			source.saveObservation();

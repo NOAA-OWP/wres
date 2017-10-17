@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
@@ -9,6 +10,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
@@ -63,5 +65,31 @@ public final class MeanErrorTest
         assertTrue("The Mean Error is not a skill score.", !me.isSkillScore());
         assertTrue("The Mean Error cannot be decomposed.", me.getScoreOutputGroup() == ScoreOutputGroup.NONE);
     }
+    
+    /**
+     * Constructs a {@link MeanError} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test4Exceptions()
+    {
+        //Obtain the factories
+        final DataFactory outF = DefaultDataFactory.getInstance();
+
+        //Build the metric
+        final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
+        b.setOutputFactory(outF);
+        final MeanError me = b.build();
+
+        //Check exceptions
+        try
+        {
+            me.apply( null );
+            fail( "Expected an exception on null input." );
+        }
+        catch(MetricInputException e)
+        {          
+        }
+    }     
 
 }

@@ -39,10 +39,10 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
 {
 
     /**
-     * Random number generator to assign ties randomly.
+     * A random number generator, used to assign ties randomly.
      */
 
-    final private static Random RNG = new Random();
+    private static Random rng;
 
     @Override
     public MultiVectorOutput apply( EnsemblePairs s )
@@ -96,11 +96,28 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
 
     static class RankHistogramBuilder extends MetricBuilder<EnsemblePairs, MultiVectorOutput>
     {
+        /**
+         * Random number generator to assign ties randomly.
+         */
+
+        private Random rng;
+        
         @Override
         protected RankHistogram build()
         {
             return new RankHistogram( this );
         }
+        
+        /**
+         * Optionally, assign a random number generator for resolving ties.
+         * 
+         * @param rng the random number generator
+         */
+        RankHistogramBuilder setRNGForTies(Random rng)
+        {
+            this.rng = rng;
+            return this;
+        }        
     }
 
     /**
@@ -112,6 +129,14 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
     private RankHistogram( final RankHistogramBuilder builder )
     {
         super( builder );
+        if( Objects.nonNull( builder.rng ))
+        {
+            rng = builder.rng;
+        }
+        else 
+        {
+            rng = new Random();
+        }
     }
 
     /**
@@ -213,7 +238,7 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
             else
             {
                 int adj = endRank - startRank;
-                sumRanks[RNG.nextInt( adj + 1 ) + startRank] += 1;
+                sumRanks[rng.nextInt( adj + 1 ) + startRank] += 1;
             }
         };
     }

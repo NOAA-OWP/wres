@@ -1,39 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<project label="ExampleProject">
+<!-- This is a test of real, baseline validation streamflows verified through WRES where the obs is 24-h
+     and the forecasts are 6-h.  Time aggregation is needed. -->
+<project label="ExampleProject" name="ESP">
 
     <inputs>
         <left label="">
             <type>observations</type>
             <source all="true" format="PI-XML" missingValue="-999.0"
-                recursive="true" timeZone="UTC" unit="" zoneOffset="0">/wres_share/testing/data/abrfcExample/LGNN5_QME.xml</source>
+                recursive="true" timeZone="UTC" unit="" zoneOffset="+0">../data/abrfcExample/LGNN5_QME.xml</source>
             <variable>QME</variable>
-            <features>
-                <location lid="LGGN5"/>
-            </features>
+            <existingTimeAggregation>
+                <function>avg</function>
+                <period>24</period>
+                <unit>hour</unit>
+            </existingTimeAggregation>
         </left>
-        <right label="ESP">
+
+        <right label="ESP" >
             <type>ensemble forecasts</type>
-<!-- The change in this test relative to 100 and 101 is the name of the tgz file: *hefs-mefp*.  This is the baseline validation ESP forecast.
-     The files within the tarball are all identical in header, but not values to those already ingested. -->
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" timeZone="UTC" unit="" zoneOffset="0">/wres_share/testing/data/abrfcExample/LGNN5_Streamflow_hefs-mefp_Baseline_Validation_19850101_20160106.tgz</source>
+                recursive="false" timeZone="UTC" unit="" zoneOffset="+0">../data/abrfcExample/LGNN5_Streamflow_hefs-mefp_Baseline_Validation_19850101_20160106.tgz</source>
             <variable>QINE</variable>
-            <features>
-                <location lid="LGGN5"/>
-            </features>
+            <existingTimeAggregation>
+                <function>avg</function>
+                <period>1</period>
+                <unit>instant</unit>
+            </existingTimeAggregation>
         </right>
     </inputs>
 
-    <conditions firstLead="1" lastLead="24">
-        <features>
-            <location lid="LGNN5" />
-        </features>
-    </conditions>
-
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
-        <grouping>feature,lead_time</grouping>
+        <feature lid="LGNN5" />
+        <grouping>feature,lead_time</grouping>       
         <desiredTimeAggregation>
             <function>avg</function>
             <period>24</period>
@@ -50,6 +49,9 @@
         <metric><name>all valid</name></metric>
         <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
+        </destination>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output</path>
         </destination>
         <destination type="graphic">
             <path>output/</path>

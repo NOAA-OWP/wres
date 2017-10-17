@@ -1,5 +1,6 @@
 package wres.io.config;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -132,13 +133,17 @@ public class ProjectConfigPlus
 
         List<String> xmlLines;
 
+        /** To get the full path to display information about it */
+        File configFileForInformation = path.toFile();
+
         try
         {
             xmlLines = Files.readAllLines( path );
         }
         catch ( IOException ioe )
         {
-            String message = "Could not read file " + path;
+            String message = "Could not read file "
+                             + configFileForInformation.getCanonicalPath();
             // communicate failure back up the stack
             throw new IOException( message, ioe );
         }
@@ -165,7 +170,11 @@ public class ProjectConfigPlus
             final JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
             projectConfig = wrappedConfig.getValue();
 
-            LOGGER.info("Unmarshalled project configuration file {}", path);
+            if ( LOGGER.isInfoEnabled() )
+            {
+                LOGGER.info( "Unmarshalled project configuration file "
+                             + configFileForInformation.getCanonicalPath() );
+            }
 
             if (projectConfig == null
                 || projectConfig.getInputs() == null
