@@ -8,8 +8,9 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.sql.SQLException;
-import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 import java.time.LocalDateTime;
@@ -25,10 +26,10 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
+import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.Database;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-import wres.util.Time;
 
 /**
  * @author ctubbs
@@ -240,17 +241,29 @@ public class DatacardSource extends BasicSource {
 				String message = "The NWS Datacard file ('%s') was not formatted correctly and could not be loaded correctly";
 				throw new IOException(String.format(message, getFilename()));
 			}					
-			
-			OffsetDateTime datetime       = OffsetDateTime.of(getFirstYear(), getFirstMonth(), 1, 0, 0, 0, 0, ZoneOffset.UTC);
-			String         timeZone       = getSpecifiedTimeZone();
-			int            valIdxInRecord = 0;
-			String         value          = "";
-			
+
+            LocalDateTime  localDateTime  = LocalDateTime.of( getFirstYear(),
+                                                              getFirstMonth(),
+                                                              1,
+                                                              0,
+                                                              0,
+                                                              0 );
+            ZoneId         timeZone       = getSpecifiedTimeZone();
+            int            valIdxInRecord = 0;
+
 			int    startIdx   = 0;
 			int    endIdx     = 0;
-				
-			datetime = datetime.minusHours(Time.zoneOffsetHours(timeZone));
-            
+
+            LOGGER.debug( "{} is localDateTime", localDateTime );
+
+            ZonedDateTime zonedDateTime = localDateTime.atZone( timeZone );
+            LOGGER.debug( "{} is zonedDateTime", zonedDateTime );
+
+            LocalDateTime utcDateTime =
+                    zonedDateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+                                 .toLocalDateTime();
+            LOGGER.debug( "{} is utcDateTime", utcDateTime );
+
 			//Process the lines one at a time.
 			while ((line = reader.readLine()) != null)
 			{
@@ -259,7 +272,7 @@ public class DatacardSource extends BasicSource {
 				// loop through all values in one line
 				for (valIdxInRecord = 0; valIdxInRecord < valuesPerRecord; valIdxInRecord++)
 				{
-					value = "";
+                    String value = "";
 					startIdx = FIRST_OBS_VALUE_START_POS + valIdxInRecord * obsValColWidth;
 					
 					//Have all values in the line been processed?
@@ -276,17 +289,35 @@ public class DatacardSource extends BasicSource {
 							endIdx = Math.min(startIdx + obsValColWidth + 1, line.length());
 							value = line.substring(startIdx, endIdx);
 						}
-						
-						datetime = datetime.plusHours(timeInterval);
-						
-						if (dateIsApproved(datetime.toString()) && valueIsApproved(value))
+
+                        double actualValue;
+
+                        try
+                        {
+                            actualValue = Double.parseDouble( value );
+                        }
+                        catch ( NumberFormatException nfe )
+                        {
+                            String message = "While reading datacard file "
+                                             + this.getFilename()
+                                             + ", could not parse the value at "
+                                             + "position " + valIdxInRecord
+                                             + " on this line: " + line;
+                            throw new InvalidInputDataException( message, nfe );
+                        }
+
+                        utcDateTime = utcDateTime.plusHours( timeInterval );
+
+                        // TODO: should we even qualify ingest like this?
+                        if ( dateIsApproved( utcDateTime )
+                             && valueIsApproved( value ) )
 						{
 							try
 							{
-								addObservedEvent(datetime.toString(), Float.parseFloat(value));
+                                addObservedEvent( utcDateTime, actualValue );
 								entryCount++;
 							}
-							catch (Exception e) 
+                            catch ( SQLException | IOException e )
 							{
 								LOGGER.warn(value + " in datacard file not saved to database; cause: " + e.getMessage());
 								throw new IOException("Unable to save datacard file data to database; cause: " + e.getMessage(), e);
@@ -302,22 +333,21 @@ public class DatacardSource extends BasicSource {
 			} //end of loop for all value lines
 			
 			saveLeftoverObservations();
-			
+
 			try
 			{
+				String hash = this.getHash();
 	        	this.getProjectDetails().addSource( this.getHash(), getDataSourceConfig() );
 			}
-	        catch(Exception e)
+            catch( SQLException e )
 	        {
-	        	throw new IOException ("Failed to add source for datacard " + e.getMessage());
+                throw new IOException( "Failed to add source for datacard.", e );
 	        }
 		}
 		finally
 		{
-			 if (LOGGER.isInfoEnabled())
-	         {
-				 LOGGER.info(String.valueOf(entryCount) + " values of datacardsource saved to database");
-	         }
+            LOGGER.info( "{} values of datacardsource saved to database.",
+                         entryCount );
 		}
 	}
 				
@@ -336,11 +366,16 @@ public class DatacardSource extends BasicSource {
 	
 	/**
 	 * Adds measurement information to the current insert script in the form of observation data
-	 * @param observedTime The time when the measurement was taken
+     * @param observedTime The datetime when the measurement was taken (in UTC)
 	 * @param observedValue The value retrieved from the XML
-	 * @throws Exception Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
-	 */
-	private void addObservedEvent(String observedTime, Float observedValue) throws Exception
+     * @throws SQLException when a database issue is encountered while trying
+     * to retrieve the variable position id or the id of the measurement unit
+     * @throws IOException when reading the file or computing the hash
+     */
+    private void addObservedEvent( LocalDateTime observedTime,
+                                   double observedValue )
+    // TODO translate to some kind of IOException here or deeper in the stack
+            throws SQLException, IOException
 	{
        	if (insertCount > 0)
 		{
@@ -351,7 +386,7 @@ public class DatacardSource extends BasicSource {
 			currentTableDefinition = INSERT_OBSERVATION_HEADER;
 			currentScript = new StringBuilder();
 		}
-		
+
 		currentScript.append(getVariablePositionID());
 		currentScript.append(delimiter);
 		currentScript.append("'").append(observedTime).append("'");
@@ -364,8 +399,8 @@ public class DatacardSource extends BasicSource {
 		
 		insertCount++;
 	}
-			
-	public Integer getMeasurementID()  throws Exception
+
+	public Integer getMeasurementID() throws SQLException
 	{
 		if(currentMeasurementUnitID == null)
 		{
@@ -379,13 +414,13 @@ public class DatacardSource extends BasicSource {
 	{
 		currentMeasurementUnitID = id;
 	}
-	
+
 	/**
 	 * @return The ID of the variable currently being measured
-	 * @throws Exception Thrown if interaction with the database failed.
-	 */
-	private int getVariableID() throws Exception
-	{		
+     * @throws SQLException when unable to retrieve an ID from the database
+     */
+    private int getVariableID() throws SQLException
+    {
 		if (currentVariableID == null)
 		{
 			this.currentVariableID = Variables.getVariableID(currentVariableName, measurementUnit);
@@ -396,9 +431,10 @@ public class DatacardSource extends BasicSource {
 	
 	/**
 	 * @return A valid ID for the source of this PIXML file from the database
-	 * @throws Exception Thrown if an ID could not be retrieved from the database
+     * @throws SQLException when an ID could not be retrieved from the database
+     * @throws IOException when unable to get file attributes OR compute a hash
 	 */
-	public int getSourceID() throws Exception
+    public int getSourceID() throws IOException, SQLException
 	{
 		if (currentSourceID == null)
 		{
@@ -420,17 +456,14 @@ public class DatacardSource extends BasicSource {
 	{
 		currentSourceID = id;
 	}
-	
-	
-	private boolean dateIsApproved(String date)
+
+    private boolean dateIsApproved( LocalDateTime dateToApprove )
 	{
 	    if (!detailsSpecified || (this.specifiedEarliestDate == null && this.specifiedLatestDate == null))
 	    {
 	        return true;
 	    }
-	    
-	    OffsetDateTime dateToApprove = Time.convertStringToDate(date);
-	    
+
 	    return dateToApprove.isAfter(specifiedEarliestDate) && dateToApprove.isBefore(specifiedLatestDate);
 	}
 	
@@ -486,13 +519,13 @@ public class DatacardSource extends BasicSource {
 	
 	public void setSpecifiedEarliestDate(String earliestDate)
 	{
-	    this.specifiedEarliestDate = Time.convertStringToDate(earliestDate);
+        this.specifiedEarliestDate = LocalDateTime.parse( earliestDate );
 	    this.detailsSpecified = true;
 	}
 	
 	public void setSpecifiedLatestDate(String latestDate)
 	{
-	    this.specifiedLatestDate = Time.convertStringToDate(latestDate);
+        this.specifiedLatestDate = LocalDateTime.parse( latestDate );
 	    this.detailsSpecified = true;
 	}
 	
@@ -619,7 +652,8 @@ public class DatacardSource extends BasicSource {
 
         return commentLnSymbol;
     }
-	
+
+    // TODO: can we find a way to avoid a test mode?
 	/**
 	 * Returns test mode as a boolean
 	 * @return test mode 
@@ -638,7 +672,7 @@ public class DatacardSource extends BasicSource {
 		testMode = test;
 	}
 	
-	public Integer getVariablePositionID() throws Exception
+    public Integer getVariablePositionID() throws SQLException
 	{
 		if(variablePositionID  == null)
 		{
@@ -693,10 +727,11 @@ public class DatacardSource extends BasicSource {
 	 * The delimiter between values for copy statements
 	 */
 	private static final String delimiter = "|";
-	
-	private Float specifiedMinimumValue = Float.MIN_VALUE;
-    private Float specifiedMaximumValue = Float.MAX_VALUE;
-    
+
+    // TODO: should probably be double values
+    private Float specifiedMinimumValue = Float.NEGATIVE_INFINITY;
+    private Float specifiedMaximumValue = Float.POSITIVE_INFINITY;
+
 	/**
      * Alias for the system agnostic newline separator
      */
@@ -723,10 +758,12 @@ public class DatacardSource extends BasicSource {
 	private Integer currentSourceID = null;
 	
 	private boolean detailsSpecified = false;
-	
-	private OffsetDateTime specifiedEarliestDate = null;
-    private OffsetDateTime specifiedLatestDate = null;
-    
+
+    /** Earliest date specified in configuration */
+    private LocalDateTime specifiedEarliestDate = null;
+    /** Latest date specified in configuration */
+    private LocalDateTime specifiedLatestDate = null;
+
    
 	/**
 	/* The date/time that the source was created
