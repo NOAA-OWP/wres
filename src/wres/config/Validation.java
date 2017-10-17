@@ -583,6 +583,63 @@ public class Validation
             result = instantMakesSense && result;
         }
 
+        boolean dataSourcesValid = true;
+
+        if ( dataSourceConfig.getSource() == null )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + "A source needs to exist within each of the left "
+                         + "and right sections of the configuration.",
+                         projectConfigPlus,
+                         dataSourceConfig.sourceLocation().getLineNumber(),
+                         dataSourceConfig.sourceLocation().getColumnNumber() );
+            dataSourcesValid = false;
+        }
+        else
+        {
+            for ( DataSourceConfig.Source s : dataSourceConfig.getSource() )
+            {
+                dataSourcesValid =
+                        Validation.isDateConfigValid( projectConfigPlus,
+                                                      s )
+                        && dataSourcesValid;
+            }
+        }
+
+        result = dataSourcesValid && result;
+
+        return result;
+    }
+
+    /**
+     * Checks validity of date and time configuration such as zone and offset.
+     * @param projectConfigPlus the config
+     * @param source the particular source element to check
+     * @return true if valid, false otherwise
+     * @throws NullPointerException when any arg is null
+     */
+    static boolean isDateConfigValid( ProjectConfigPlus projectConfigPlus,
+                                      DataSourceConfig.Source source )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+        Objects.requireNonNull( source, NON_NULL );
+
+        boolean result = true;
+
+        if ( source.getZoneOffset() != null
+             && source.getTimeZone() != null )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " One may optionally specify either a zoneOffset "
+                         + "such as -0500 or a timeZone such as "
+                         + "America/Chicago, but not both.",
+                         projectConfigPlus.getPath(),
+                         source.sourceLocation().getLineNumber(),
+                         source.sourceLocation().getColumnNumber() );
+
+            result = false;
+        }
+
         return result;
     }
 }

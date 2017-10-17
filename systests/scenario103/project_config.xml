@@ -29,7 +29,7 @@
         <baseline label="ESP" >
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/abrfcExample/LGNN5_hefs-mefp_flow_5yrs.tgz</source>
+                recursive="false" timeZone="UTC" unit="">../data/abrfcExample/LGNN5_hefs-mefp_flow_5yrs.tgz</source>
             <variable>QINE</variable>
             <existingTimeAggregation>
                 <function>avg</function>
