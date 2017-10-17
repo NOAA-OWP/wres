@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project label="ExampleProject">
+  <inputs>
+    <left label="My Desired Name For Graphics" type="observation">
+      <type>observations</type>
+      <source recursive="true" all="true" format="PI-XML">/media/sf_userprofile/hefs_data/resources/DRRC2SQIN.xml</source>
+      <source recursive="false" format="netCDF">https://my.observations.com/bar/some.nc</source>
+      <variable>QINE</variable>
+    </left>
+    <right label="My Name I want to see on charts">
+      <type>single valued forecasts</type>
+      <source format="PI-XML">/media/sf_userprofile/hefs_data/resources/forecasts/</source>
+      <source recursive="false">https://my.data.com/foo</source>
+      <variable>SQIN</variable>
+      <rollingTimeAggregation>
+        <function>sum</function>
+        <period>1</period>
+          <unit>HOUR</unit>
+      </rollingTimeAggregation>
+    </right>
+  </inputs>
+  <conditions> <!-- aka filters -->
+<!--    <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>--> <!-- optional, default all -->
+    <feature>
+        <location lid="DRRC2" name="DOLORES - RICO, BLO"/>
+    </feature>
+  </conditions>
+  <pair label="Pairs by location and lead time"> <!-- required for unit -->
+    <unit>CMS</unit>
+    <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
+      <timeAggregation>
+          <period>1</period>
+          <unit>HOUR</unit>
+      </timeAggregation>
+  </pair>
+  <outputs>
+    <probabilityThresholds>
+      <applyTo>left</applyTo>
+      <commaSeparatedValues>0.5</commaSeparatedValues>
+      <operator>greater than</operator>
+    </probabilityThresholds>
+    <metric><name>critical success index</name></metric>
+    <destination type="numeric">/home/jesse/text_output"</destination>
+    <destination type="graphic"><path>/tmp/</path>
+    <!--Optional:-->
+    <graphical width="1920" height="1080">
+      <plotType>LEAD_THRESHOLD</plotType>
+      </graphical>
+    </destination>
+  </outputs>
+</project>
+

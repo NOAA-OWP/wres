@@ -302,7 +302,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
 
     public boolean willStoreMetricOutput()
     {
-        return mergeList.length > 0;
+        return Objects.nonNull( mergeList ) && mergeList.length > 0;
     }
 
     /**
@@ -573,7 +573,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         globalThresholds = new EnumMap<>( MetricInputGroup.class );
         setThresholds( dataFactory, config );
         this.mergeList = mergeList;
-        //Set the executor
+        //Set the executor for processing thresholds
         if ( Objects.nonNull( thresholdExecutor ) )
         {
             this.thresholdExecutor = thresholdExecutor;
