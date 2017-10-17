@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -826,8 +827,32 @@ public class ConfigHelper
             }
             catch ( DateTimeException dte )
             {
-                String message = "Could not figure out the time zone offset. "
+                String message = "Could not figure out the zoneOffset. "
                                  + "Try formatting it like this: -05:00.";
+                throw new ProjectConfigException( sourceConfig, message, dte );
+            }
+        }
+
+        return result;
+    }
+
+
+    public static ZoneId getZoneId( DataSourceConfig.Source sourceConfig )
+            throws ProjectConfigException
+    {
+        ZoneId result = null;
+
+        if ( sourceConfig != null
+             && sourceConfig.getTimeZone() != null )
+        {
+            try
+            {
+                result = ZoneId.of( sourceConfig.getTimeZone() );
+            }
+            catch ( DateTimeException dte )
+            {
+                String message = "Could not figure out the timeZone. "
+                                 + "Try using one like this: America/Chicago.";
                 throw new ProjectConfigException( sourceConfig, message, dte );
             }
         }

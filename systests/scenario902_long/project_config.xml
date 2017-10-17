@@ -7,7 +7,7 @@
         <left label="">
             <type>observations</type>
             <source all="true" format="PI-XML" missingValue="-999.0"
-                recursive="true" timeZone="UTC" unit="">../data/abrfcExample/LGNN5_QME.xml</source>
+                recursive="true" unit="">../data/abrfcExample/LGNN5_QME.xml</source>
             <variable>QME</variable>
             <existingTimeAggregation>
                 <function>avg</function>
@@ -19,7 +19,7 @@
         <right label="ESP" >
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" timeZone="UTC" unit="">../data/abrfcExample/LGNN5_Streamflow_hefs-mefp_Baseline_Validation_19850101_20160106.tgz</source>
+                recursive="false" unit="">../data/abrfcExample/LGNN5_Streamflow_hefs-mefp_Baseline_Validation_19850101_20160106.tgz</source>
             <variable>QINE</variable>
             <existingTimeAggregation>
                 <function>avg</function>

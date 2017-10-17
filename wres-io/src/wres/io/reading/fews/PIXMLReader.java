@@ -238,13 +238,26 @@ public final class PIXMLReader extends XMLReader
                  && !configuredOffset.equals( this.getZoneOffset() ) )
             {
                 String message =
-                        "The time zone specified for a PI-XML source ("
-						+ configuredOffset.toString()
+                        "The zone offset specified for a PI-XML source ("
+                        + configuredOffset.toString()
                         + ") did not match what was in the source data ("
-						+ this.getZoneOffset().toString()
-						+ "). It is best to NOT specify a time zone for PI-XML "
-						+ "sources in the project configuration because WRES "
-						+ "can simply use the time zone found in the data.";
+                        + this.getZoneOffset().toString()
+                        + "). It is best to NOT specify the zone for PI-XML "
+                        + "sources in the project configuration because WRES "
+                        + "can simply use the zone offset found in the data.";
+                throw new ProjectConfigException( this.getSourceConfig(),
+                                                  message );
+            }
+
+            ZoneId configuredZoneId
+                    = ConfigHelper.getZoneId( this.getSourceConfig() );
+            if ( configuredZoneId != null )
+            {
+                String message =
+                        "A time zone was specified for a PI-XML source but "
+                        + "it is best to NOT specify the zone for PI-XML "
+                        + "sources in the project configuration because WRES "
+                        + "can simply use the zone offset found in the data.";
                 throw new ProjectConfigException( this.getSourceConfig(),
                                                   message );
             }
