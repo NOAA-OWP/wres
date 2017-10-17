@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
@@ -20,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
-import wres.config.generated.Coordinate;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
@@ -63,8 +64,8 @@ public class ConfigHelper
     public static String getFeatureIdsAndPutIfAbsent(ProjectConfig config)
     throws IOException
     {
-        if (config.getConditions() == null
-            || config.getConditions().getFeatures() == null)
+        if ( config.getPair() == null
+             || config.getPair().getFeature() == null )
         {
             return "";
         }
@@ -74,20 +75,17 @@ public class ConfigHelper
         try
         {
             // build a sql string of feature_ids, using cache to populate as needed
-            for (Feature feature : Collections.where(config.getConditions().getFeatures(), feature -> {
-                return feature.getLocation() != null && !feature.getLocation().getLid().isEmpty();
-            }))
+            for ( Feature feature : Collections.where(config.getPair().getFeature(), feature -> {
+                return feature.getLid() != null && !feature.getLid().isEmpty();
+            } ) )
             {
-                Integer i = Features.getFeatureID(feature.getLocation().getLid(), feature.getLocation().getName());
+                Integer i = Features.getFeatureID( feature.getLid(),
+                                                   feature.getName() );
                 result.add(Integer.toString(i));
             }
         }
-        catch (Exception e)
+        catch ( SQLException e )
         {
-            if (e instanceof RuntimeException)
-            {
-                throw (RuntimeException) e;
-            }
             throw new IOException("Failed to get or put a feature id.", e);
         }
 
@@ -193,15 +191,16 @@ public class ConfigHelper
     {
         StringBuilder clause = new StringBuilder();
 
-        if (feature.getLocation() != null)
+        if ( feature.getLid() != null )
         {
             try
             {
                 // TODO: This only works when a) a location is specified and b) an lid is specified
                 // TODO: This needs to work with all other identifiers
-                Integer variablePositionId = Features.getVariablePositionID(feature.getLocation().getLid(),
-                                                                            feature.getLocation().getName(),
-                                                                            variableId);
+                Integer variablePositionId
+                        = Features.getVariablePositionID( feature.getLid(),
+                                                          feature.getName(),
+                                                          variableId );
 
                 if (variablePositionId != null)
                 {
@@ -216,18 +215,6 @@ public class ConfigHelper
             catch (Exception e) {
                 LOGGER.error(Strings.getStackTrace(e));
             }
-        }
-        else if (feature.getIndex() != null)
-        {
-            throw new wres.util.NotImplementedException("Selecting a variable position based on its x and y values has not been implemented yet.");
-        }
-        else if (feature.getPoint() != null)
-        {
-            throw new wres.util.NotImplementedException("Selecting a variable position based on a coordinate has not been implemented yet.");
-        }
-        else if (feature.getPolygon() != null)
-        {
-            throw new wres.util.NotImplementedException("Selecting variable positions based on a polygon has not be implemented yet.");
         }
 
         return clause.toString();
@@ -283,30 +270,53 @@ public class ConfigHelper
                   .append( newline );
         }
 
-        if (projectConfig.getConditions().getFirstLead() > 1)
+        if ( ConfigHelper.isMinimumLeadHourSpecified( projectConfig ) )
         {
-            script.append("     AND FV.lead >= ").append(projectConfig.getConditions().getFirstLead()).append(newline);
+            script.append( "     AND FV.lead >= " )
+                  .append( ConfigHelper.getMinimumLeadHour( projectConfig ) )
+                  .append( newline );
         }
 
-        if (projectConfig.getConditions().getLastLead() < Integer.MAX_VALUE)
+        if ( ConfigHelper.isMaximumLeadHourSpecified( projectConfig ))
         {
-            script.append("     AND FV.lead <= ").append(projectConfig.getConditions().getLastLead()).append(newline);
+            script.append( "     AND FV.lead <= " )
+                  .append( ConfigHelper.getMaximumLeadHour( projectConfig ) )
+                  .append( newline );
         }
 
-        if (projectConfig.getConditions().getDates() != null)
+        if ( projectConfig.getPair()
+                          .getDates() != null )
         {
-            if (Strings.hasValue(projectConfig.getConditions().getDates().getEarliest()))
+            if ( projectConfig.getPair()
+                              .getDates()
+                              .getEarliest() != null
+                 && !projectConfig.getPair()
+                                  .getDates()
+                                  .getEarliest()
+                                  .trim()
+                                  .isEmpty() )
             {
                 script.append("     AND TS.initialization_date >= '")
-                      .append(projectConfig.getConditions().getDates().getLatest())
+                      .append( projectConfig.getPair()
+                                            .getDates()
+                                            .getLatest() )
                       .append("'")
                       .append(newline);
             }
 
-            if (Strings.hasValue( projectConfig.getConditions().getDates().getLatest()))
+            if ( projectConfig.getPair()
+                              .getDates()
+                              .getLatest() != null
+                 && !projectConfig.getPair()
+                                  .getDates()
+                                  .getEarliest()
+                                  .trim()
+                                  .isEmpty() )
             {
                 script.append("     AND TS.initialization_date <= '")
-                      .append(projectConfig.getConditions().getDates().getLatest())
+                      .append( projectConfig.getPair()
+                                            .getDates()
+                                            .getLatest() )
                       .append("'")
                       .append(newline);
             }
@@ -399,19 +409,24 @@ public class ConfigHelper
      */
     public static LocalDateTime getEarliestDateTimeFromDataSources(ProjectConfig config)
     {
-        if (config.getConditions() == null)
+        if ( config.getPair() == null )
         {
             return null;
         }
 
         String earliest = "";
 
-        if ( config.getConditions().getDates() != null
-             && config.getConditions().getDates().getEarliest() != null )
+        if ( config.getPair()
+                   .getDates() != null
+             && config.getPair()
+                      .getDates()
+                      .getEarliest() != null )
         {
             try
             {
-                earliest = config.getConditions().getDates().getEarliest();
+                earliest = config.getPair()
+                                 .getDates()
+                                 .getEarliest();
                 return LocalDateTime.parse( earliest );
             }
             catch ( DateTimeParseException dtpe )
@@ -424,9 +439,15 @@ public class ConfigHelper
                     LOGGER.warn( "Correct the date \"{}\" near line {} column "
                                  + "{} to ISO8601 format such as "
                                  + "\"2017-06-27T16:16\"",
-                                earliest,
-                                config.getConditions().getDates().sourceLocation().getLineNumber(),
-                                config.getConditions().getDates().sourceLocation().getColumnNumber() );
+                                 earliest,
+                                 config.getPair()
+                                       .getDates()
+                                       .sourceLocation()
+                                       .getLineNumber(),
+                                 config.getPair()
+                                       .getDates()
+                                       .sourceLocation()
+                                       .getColumnNumber() );
                 }
                 return null;
             }
@@ -436,9 +457,13 @@ public class ConfigHelper
             String messageId = "no_earliest_date";
             if (LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent(config, messageId))
             {
-                LOGGER.info("No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-07-06T11:35\" /> under <conditions> (near line {} column {} of project file) to specify an earliest date.",
-                            config.getConditions().sourceLocation().getLineNumber(),
-                            config.getConditions().sourceLocation().getColumnNumber());
+                LOGGER.info( "No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-07-06T11:35\" /> under <pair> (near line {} column {} of project file) to specify an earliest date.",
+                             config.getPair()
+                                   .sourceLocation()
+                                   .getLineNumber(),
+                             config.getPair()
+                                   .sourceLocation()
+                                   .getColumnNumber() );
             }
             return null;
         }
@@ -453,19 +478,24 @@ public class ConfigHelper
      */
     public static LocalDateTime getLatestDateTimeFromDataSources(ProjectConfig config)
     {
-        if (config.getConditions() == null)
+        if ( config.getPair() == null )
         {
             return null;
         }
 
         String latest = "";
 
-        if ( config.getConditions().getDates() != null
-             && config.getConditions().getDates().getLatest() != null )
+        if ( config.getPair()
+                   .getDates() != null
+             && config.getPair()
+                      .getDates()
+                      .getLatest() != null )
         {
             try
             {
-                latest = config.getConditions().getDates().getLatest();
+                latest = config.getPair()
+                               .getDates()
+                               .getLatest();
                 return LocalDateTime.parse( latest );
             }
             catch ( DateTimeParseException dtpe )
@@ -478,9 +508,15 @@ public class ConfigHelper
                     LOGGER.warn( "Correct the date \"{}\" after line {} col {} "
                                  + "to ISO8601 format such as "
                                  + "\"2017-06-27T16:16\"",
-                                latest,
-                                config.getConditions().getDates().sourceLocation().getLineNumber(),
-                                config.getConditions().getDates().sourceLocation().getColumnNumber() );
+                                 latest,
+                                 config.getPair()
+                                       .getDates()
+                                       .sourceLocation()
+                                       .getLineNumber(),
+                                 config.getPair()
+                                       .getDates()
+                                       .sourceLocation()
+                                       .getColumnNumber() );
                 }
                 return null;
             }
@@ -490,9 +526,13 @@ public class ConfigHelper
             String messageId = "no_latest_date";
             if (LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent(config, messageId))
             {
-                LOGGER.info("No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-07-06T11:35\" />  under <conditions> (near line {} col {} of project file) to specify a latest date.",
-                            config.getConditions().sourceLocation().getLineNumber(),
-                            config.getConditions().sourceLocation().getColumnNumber());
+                LOGGER.info( "No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-07-06T11:35\" />  under <pair> (near line {} col {} of project file) to specify a latest date.",
+                             config.getPair()
+                                   .sourceLocation()
+                                   .getLineNumber(),
+                             config.getPair()
+                                   .sourceLocation()
+                                   .getColumnNumber() );
 
             }
             return null;
@@ -538,38 +578,33 @@ public class ConfigHelper
     {
         String description = null;
 
-        if (feature.getLocation() != null)
+        if ( feature != null )
         {
-            if (Strings.hasValue(feature.getLocation().getLid())) {
-                description = feature.getLocation().getLid();
-            }
-            else if (Strings.hasValue(feature.getLocation().getHuc())) {
-                description = feature.getLocation().getHuc();
-            }
-            else if (feature.getLocation().getComid() != null)
+            if ( feature.getLid() != null
+                 && !feature.getLid()
+                            .trim()
+                            .isEmpty() )
             {
-                description = String.valueOf(feature.getLocation().getComid());
+                description = feature.getLid();
             }
-            else if (Strings.hasValue(feature.getLocation().getGageId()))
+            else if ( feature.getHuc() != null
+                      && !feature.getHuc()
+                                 .trim()
+                                 .isEmpty() )
             {
-                description = feature.getLocation().getGageId();
+                description = feature.getHuc();
             }
-        }
-        else if (feature.getPolygon() != null && feature.getPolygon().getPoint().size() >= 3)
-        {
-            description = "Within_";
-            List<String> coordinates = new ArrayList<>();
-
-            for (Coordinate coordinate : feature.getPolygon().getPoint())
+            else if ( feature.getComid() != null )
             {
-                coordinates.add(String.valueOf(coordinate.getX()) + "," + String.valueOf(coordinate.getY()));
+                description = String.valueOf( feature.getComid() );
             }
-
-            description += String.join("_", coordinates);
-        }
-        else if (feature.getPoint() != null)
-        {
-            description = String.valueOf(feature.getPoint().getX()) + "," + String.valueOf(feature.getPoint().getY());
+            else if ( feature.getGageId() != null
+                      && !feature.getGageId()
+                                 .trim()
+                                 .isEmpty() )
+            {
+                description = feature.getGageId();
+            }
         }
 
         return description;
@@ -681,5 +716,122 @@ public class ConfigHelper
     public static List<DestinationConfig> getPairDestinations( ProjectConfig config )
     {
         return getDestinationsOfType( config, DestinationType.PAIRS );
+    }
+
+
+    /**
+     * Get whether the minimum lead hour from a project config was specified.
+     * @param config the config to use
+     * @return true if the config specified a lead hour, false otherwise
+     */
+
+    public static boolean isMaximumLeadHourSpecified( ProjectConfig config )
+    {
+        return config.getPair() != null
+               && config.getPair()
+                        .getLeadHours() != null
+               && config.getPair()
+                        .getLeadHours()
+                        .getMaximum() != null;
+    }
+
+
+    /**
+     * Get the maximum lead hours from a project config or a default.
+     * @param config the config to use
+     * @return the maximum value specified or a default of Integer.MAX_VALUE
+     */
+
+    public static int getMaximumLeadHour( ProjectConfig config )
+    {
+        int result = Integer.MAX_VALUE;
+
+        if ( config.getPair() != null
+             && config.getPair()
+                      .getLeadHours() != null
+             && config.getPair()
+                      .getLeadHours()
+                      .getMaximum() != null )
+        {
+            result = config.getPair()
+                           .getLeadHours()
+                           .getMaximum();
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Get whether the minimum lead hour from a project config was specified.
+     * @param config the config to use
+     * @return true if the config specified a lead hour, false otherwise
+     */
+
+    public static boolean isMinimumLeadHourSpecified( ProjectConfig config )
+    {
+        return config.getPair() != null
+               && config.getPair()
+                        .getLeadHours() != null
+               && config.getPair()
+                        .getLeadHours()
+                        .getMinimum() != null;
+    }
+
+
+    /**
+     * Get the minimum lead hours from a project config or a default.
+     * @param config the config to use
+     * @return the minimum value specified or a default of Integer.MIN_VALUE
+     */
+
+    public static int getMinimumLeadHour( ProjectConfig config )
+    {
+        int result = Integer.MIN_VALUE;
+
+        if ( config.getPair() != null
+             && config.getPair()
+                      .getLeadHours() != null
+             && config.getPair()
+                      .getLeadHours()
+                      .getMinimum() != null )
+        {
+            result = config.getPair()
+                           .getLeadHours()
+                           .getMinimum();
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Get the time zone offset from a datasource config or null if not found.
+     * @param sourceConfig the configuration element to retrieve for
+     * @return the time zone offset or null if not specified in dataSourceConfig
+     * @throws ProjectConfigException when the date time could not be parsed
+     */
+
+    public static ZoneOffset getZoneOffset( DataSourceConfig.Source sourceConfig )
+            throws ProjectConfigException
+    {
+        ZoneOffset result = null;
+
+        if ( sourceConfig != null
+             && sourceConfig.getZoneOffset() != null )
+        {
+            try
+            {
+                result = ZoneOffset.of( sourceConfig.getZoneOffset() );
+            }
+            catch ( DateTimeException dte )
+            {
+                String message = "Could not figure out the time zone offset. "
+                                 + "Try formatting it like this: -05:00.";
+                throw new ProjectConfigException( sourceConfig, message, dte );
+            }
+        }
+
+        return result;
     }
 }

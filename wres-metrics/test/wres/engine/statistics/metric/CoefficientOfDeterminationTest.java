@@ -12,11 +12,12 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.engine.statistics.metric.CoefficientOfDetermination.CoefficientOfDeterminationBuilder;
 
 /**
@@ -67,19 +68,45 @@ public final class CoefficientOfDeterminationTest
         assertTrue("Coefficient of determination cannot be decomposed.",
                    cod.getScoreOutputGroup() == ScoreOutputGroup.NONE);
         assertTrue("Coefficient of determination does not have real units", !cod.hasRealUnits());
-       
-        //Check exceptions
-        List<PairOfDoubles> list = new ArrayList<>();
-        list.add(dataF.pairOf(0.0, 0.0));
-        try
-        {
-            cod.apply(dataF.ofSingleValuedPairs(list, m1));
-            fail("Expected a checked exception on invalid inputs: insufficient pairs.");
-        }
-        catch(MetricCalculationException e)
-        {
-        }
-
     }
 
+    /**
+     * Constructs a {@link CoefficientOfDetermination} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test2Exceptions()
+    {
+        //Build the metric
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+        final CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
+        b.setOutputFactory(outF);
+        final CoefficientOfDetermination cod = b.build();
+
+        //Check the exceptions
+        try
+        {
+            cod.apply( (SingleValuedPairs) null );
+            fail( "Expected an exception on null input." );
+        }
+        catch ( MetricInputException e )
+        {
+        }
+        try
+        {
+            List<PairOfDoubles> list = new ArrayList<>();
+            list.add( outF.pairOf( 0.0, 0.0 ) );
+            cod.apply( outF.ofSingleValuedPairs( list, metaFac.getOutputMetadata( 1,
+                                                                                  metaFac.getDimension(),
+                                                                                  metaFac.getDimension(),
+                                                                                  MetricConstants.CORRELATION_PEARSONS ) ) );
+            fail( "Expected a checked exception on invalid inputs: insufficient pairs." );
+        }
+        catch ( MetricCalculationException e )
+        {
+        }
+    }    
+    
+    
 }

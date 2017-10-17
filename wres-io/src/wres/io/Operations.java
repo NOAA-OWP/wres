@@ -1,6 +1,7 @@
 package wres.io;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
@@ -16,11 +17,11 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.SystemSettings;
+import wres.io.reading.IngestException;
 import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
 import wres.io.utilities.InputGenerator;
-import wres.io.utilities.NoDataException;
 import wres.util.Strings;
 
 public final class Operations {
@@ -33,50 +34,33 @@ public final class Operations {
     {
     }
 
-    public static boolean ingest(ProjectConfig projectConfig)
-            throws NoDataException
+    public static void ingest( ProjectConfig projectConfig )
+            throws IOException
     {
-        boolean completedSmoothly;
-
         SourceLoader loader = new SourceLoader(projectConfig);
         try {
             List<Future> ingestions = loader.load();
 
             for (Future task : ingestions)
             {
-                try
-                {
-                    if (!task.isDone())
-                    {
-                        task.get();
-                    }
-                }
-                catch (InterruptedException | ExecutionException e)
-                {
-                    LOGGER.error("");
-                    LOGGER.error("An asynchonrous ingest task could not be completed.");
-                    LOGGER.error("");
-                    LOGGER.error(Strings.getStackTrace(e));
-                    LOGGER.error("");
-                }
+                task.get();
             }
-
-            PIXMLReader.saveLeftoverForecasts();
-            Database.completeAllIngestTasks();
-
-            completedSmoothly = SUCCESS;
         }
-        catch ( NoDataException e )
+        catch ( InterruptedException ie )
         {
-            LOGGER.error( "No data could be ingested." );
-            throw e;
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException e )
+        {
+            String message = "An ingest task could not be completed.";
+            throw new IngestException( message, e );
         }
         finally
         {
+            PIXMLReader.saveLeftoverForecasts();
+            Database.completeAllIngestTasks();
             Database.restoreAllIndices();
         }
-
-        return completedSmoothly;
     }
 
     public static InputGenerator getInputs(ProjectConfig projectConfig,

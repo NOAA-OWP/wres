@@ -114,7 +114,11 @@ public class XMLReader
 		}
 	}
 	
-	protected void completeParsing(){}
+	protected void completeParsing()
+			throws IOException
+	{
+		// Optional for subclasses to implement
+	}
 	
 	private XMLStreamReader createReader() throws FileNotFoundException, XMLStreamException
 	{

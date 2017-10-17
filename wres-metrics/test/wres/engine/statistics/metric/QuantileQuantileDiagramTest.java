@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.SingleValuedPairs;
@@ -82,7 +84,32 @@ public final class QuantileQuantileDiagramTest
         //Check the parameters
         assertTrue("Unexpected name for the Quantile-Quantile Diagram.",
                    qq.getName().equals(metaFac.getMetricName(MetricConstants.QUANTILE_QUANTILE_DIAGRAM)));
-
     }
+    
+    /**
+     * Constructs a {@link QuantileQuantileDiagram} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test2Exceptions()
+    {
+        
+        //Build the metric
+        final QuantileQuantileDiagramBuilder b = new QuantileQuantileDiagramBuilder();
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory(outF);
+
+        final QuantileQuantileDiagram qq = b.build();
+
+        //Check exceptions
+        try
+        {
+            qq.apply( null );
+            fail( "Expected an exception on null input." );
+        }
+        catch(MetricInputException e)
+        {          
+        }
+    }    
 
 }

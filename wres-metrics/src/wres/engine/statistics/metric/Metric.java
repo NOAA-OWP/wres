@@ -223,7 +223,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
     {
         if(Objects.isNull(builder))
         {
-            throw new UnsupportedOperationException("Cannot construct the metric without a null builder.");
+            throw new UnsupportedOperationException("Cannot construct the metric with a null builder.");
         }
         if(Objects.isNull(builder.dataFactory))
         {

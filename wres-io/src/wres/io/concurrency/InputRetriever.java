@@ -319,16 +319,25 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                 double minimum = Double.MAX_VALUE * -1.0;
                 double maximum = Double.MAX_VALUE;
 
-                if (this.projectConfig.getConditions().getValues() != null)
+                if ( this.projectConfig.getPair()
+                                       .getValues() != null )
                 {
-                    if (this.projectConfig.getConditions().getValues().getMinimum() != null)
+                    if ( this.projectConfig.getPair()
+                                           .getValues()
+                                           .getMinimum() != null )
                     {
-                        minimum = this.projectConfig.getConditions().getValues().getMinimum();
+                        minimum = this.projectConfig.getPair()
+                                                    .getValues()
+                                                    .getMinimum();
                     }
 
-                    if (this.projectConfig.getConditions().getValues().getMaximum() != null)
+                    if ( this.projectConfig.getPair()
+                                           .getValues()
+                                           .getMaximum() != null )
                     {
-                        maximum = this.projectConfig.getConditions().getValues().getMaximum();
+                        maximum = this.projectConfig.getPair()
+                                                    .getValues()
+                                                    .getMaximum();
                     }
                 }
 

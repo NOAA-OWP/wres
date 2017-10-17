@@ -396,7 +396,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         //Deal with global thresholds
         if ( hasGlobalThresholds( MetricInputGroup.DISCRETE_PROBABILITY ) )
         {
-            List<Threshold> global = globalThresholds.get( MetricInputGroup.ENSEMBLE );
+            List<Threshold> global = globalThresholds.get( MetricInputGroup.DISCRETE_PROBABILITY );
             double[] sorted = getSortedClimatology( input, global );
             Map<Threshold, MetricInputSliceException> failures = new HashMap<>();
             global.forEach( threshold -> {

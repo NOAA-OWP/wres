@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
@@ -9,6 +10,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
@@ -40,28 +42,55 @@ public final class BiasFractionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.BIAS_FRACTION,
-                                                                  MetricConstants.MAIN);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+                                                                   metaFac.getDimension(),
+                                                                   metaFac.getDimension(),
+                                                                   MetricConstants.BIAS_FRACTION,
+                                                                   MetricConstants.MAIN );
         //Build the metric
         final BiasFractionBuilder b = new BiasFraction.BiasFractionBuilder();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final BiasFraction bf = b.build();
 
         //Check the results
-        final ScalarOutput actual = bf.apply(input);
-        final ScalarOutput expected = outF.ofScalarOutput(0.056796298, m1);
-        assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
-            + ".", actual.equals(expected));
+        final ScalarOutput actual = bf.apply( input );
+        final ScalarOutput expected = outF.ofScalarOutput( 0.056796298, m1 );
+        assertTrue( "Actual: " + actual.getData().doubleValue()
+                    + ". Expected: "
+                    + expected.getData().doubleValue()
+                    + ".",
+                    actual.equals( expected ) );
 
         //Check the parameters
-        assertTrue("Unexpected name for the Bias Fraction.",
-                   bf.getName().equals(metaFac.getMetricName(MetricConstants.BIAS_FRACTION)));
-        assertTrue("The Bias Fraction is not decomposable.", !bf.isDecomposable());
-        assertTrue("The Bias Fraction is not a skill score.", !bf.isSkillScore());
-        assertTrue("The Bias Fraction cannot be decomposed.", bf.getScoreOutputGroup() == ScoreOutputGroup.NONE);
+        assertTrue( "Unexpected name for the Bias Fraction.",
+                    bf.getName().equals( metaFac.getMetricName( MetricConstants.BIAS_FRACTION ) ) );
+        assertTrue( "The Bias Fraction is not decomposable.", !bf.isDecomposable() );
+        assertTrue( "The Bias Fraction is not a skill score.", !bf.isSkillScore() );
+        assertTrue( "The Bias Fraction cannot be decomposed.", bf.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }
+
+    /**
+     * Constructs a {@link BiasFraction} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test2Exceptions()
+    {
+        //Build the metric
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final BiasFractionBuilder b = new BiasFraction.BiasFractionBuilder();
+        b.setOutputFactory( outF );
+        final BiasFraction bf = b.build();
+
+        //Check the exceptions
+        try
+        {
+            bf.apply( (SingleValuedPairs) null );
+            fail( "Expected an exception on null input." );
+        }
+        catch ( MetricInputException e )
+        {
+        }
     }
 
 }

@@ -286,19 +286,14 @@ final class MainFunctions
                 {
                     ProjectConfig projectConfig = ProjectConfigPlus.from( Paths.get( args[0] ) ).getProjectConfig();
                     MainFunctions.setProjectPath( args[0] );
-                    Feature leftFeature = projectConfig.getInputs().getLeft().getFeatures().get( 0 );
-                    Feature rightFeature = projectConfig.getInputs().getRight().getFeatures().get( 0 );
-                    Feature baselineFeature = null;
-
-                    if (projectConfig.getInputs().getBaseline() != null)
-                    {
-                        baselineFeature = projectConfig.getInputs().getBaseline().getFeatures().get( 0 );
-                    }
+                    Feature feature = projectConfig.getPair()
+                                                   .getFeature()
+                                                   .get( 0 );
 
                     InputGenerator generator = Operations.getInputs(projectConfig,
-                                                                    leftFeature,
-                                                                    rightFeature,
-                                                                    baselineFeature);
+                                                                     feature,
+                                                                     feature,
+                                                                     feature );
 
                     List<Future<MetricInput<?>>> futures = new ArrayList<>(  );
 
@@ -841,10 +836,6 @@ final class MainFunctions
                 catch ( IOException e )
                 {
                     LOGGER.error(Strings.getStackTrace(e));
-                }
-                catch ( NoDataException e )
-                {
-                    LOGGER.error(Strings.getStackTrace( e ));
                 }
             }
             else

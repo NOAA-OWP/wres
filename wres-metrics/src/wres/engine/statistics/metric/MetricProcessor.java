@@ -302,7 +302,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
 
     public boolean willStoreMetricOutput()
     {
-        return mergeList.length > 0;
+        return Objects.nonNull( mergeList ) && mergeList.length > 0;
     }
 
     /**
@@ -573,7 +573,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         globalThresholds = new EnumMap<>( MetricInputGroup.class );
         setThresholds( dataFactory, config );
         this.mergeList = mergeList;
-        //Set the executor
+        //Set the executor for processing thresholds
         if ( Objects.nonNull( thresholdExecutor ) )
         {
             this.thresholdExecutor = thresholdExecutor;
@@ -773,21 +773,27 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         //Pool together all probability thresholds and real-valued thresholds in the context of the 
         //outputs configuration. 
         List<Threshold> globalThresholds = new ArrayList<>();
+        List<Threshold> globalThresholdsAllData = new ArrayList<>();
+        
         //Add a threshold for "all data" by default
-        globalThresholds.add( dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+        globalThresholdsAllData.add( dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
         //Add probability thresholds
         if ( Objects.nonNull( outputs.getProbabilityThresholds() ) )
         {
             Operator oper = fromThresholdOperator( outputs.getProbabilityThresholds().getOperator() );
             String values = outputs.getProbabilityThresholds().getCommaSeparatedValues();
-            globalThresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, true ) );
+            List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, true );
+            globalThresholds.addAll( thresholds );
+            globalThresholdsAllData.addAll( thresholds );
         }
         //Add real-valued thresholds
         if ( Objects.nonNull( outputs.getValueThresholds() ) )
         {
             Operator oper = fromThresholdOperator( outputs.getValueThresholds().getOperator() );
             String values = outputs.getValueThresholds().getCommaSeparatedValues();
-            globalThresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, false ) );
+            List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, false );
+            globalThresholds.addAll( thresholds );
+            globalThresholdsAllData.addAll( thresholds );
         }
 
         //Only set the global thresholds if no local ones are available
@@ -795,7 +801,14 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         {
             for ( MetricInputGroup group : MetricInputGroup.values() )
             {
-                this.globalThresholds.put( group, globalThresholds );
+                if (group.equals( MetricInputGroup.SINGLE_VALUED ) || group.equals( MetricInputGroup.ENSEMBLE ) )
+                {
+                    this.globalThresholds.put( group, globalThresholdsAllData );
+                }
+                else
+                {
+                    this.globalThresholds.put( group, globalThresholds );
+                }
             }
         }
     }

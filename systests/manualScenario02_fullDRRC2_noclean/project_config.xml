@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project label="ExampleProject">
+
+    <inputs>
+        <left label="">
+            <type>simulations</type>
+            <source all="true" format="PI-XML" missingValue="-999.0" 
+                recursive="true" timeZone="UTC" unit="">../data/DRRC2QINE.xml</source>
+            <variable>QINE</variable>
+        </left>
+        <right label="HEFS">
+            <type>ensemble forecasts</type>
+            <source all="false" format="PI-XML" missingValue="-999.0"
+                recursive="false" timeZone="UTC" unit="">../data/CB_DRRC2_enspost_gefs_climatology_20170215.full.tgz</source>
+            <variable>SQIN</variable>
+        </right>
+    </inputs>
+
+    <pair label="Pairs by location and lead time"> <!-- required for unit -->
+        <unit>CMS</unit>
+        <feature lid="DRRC2" />
+        <!-- All lead times --> 
+        <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
+        <desiredTimeAggregation>
+            <function>avg</function>
+            <period>1</period>
+            <unit>hour</unit>
+        </desiredTimeAggregation>
+    </pair>
+
+    <outputs>
+        <probabilityThresholds>
+            <applyTo>left</applyTo>
+            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
+            <operator>greater than or equal to</operator>
+        </probabilityThresholds>
+        <metric> <name>all valid</name> </metric>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+    </outputs>
+</project>

@@ -6,31 +6,20 @@
         <left label="">
             <type>observations</type>
             <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" timeZone="UTC" unit="" zoneOffset="0">../data/DOSC1_QIN.xml</source>
+                recursive="true" timeZone="UTC" unit="">../data/DOSC1_QIN.xml</source>
             <variable>QIN</variable>
-            <features>
-                <location lid="DOSC1" />
-            </features>
         </left>
         <right label="HEFS">
             <type>simulations</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" timeZone="UTC" unit="" zoneOffset="0">../data/DOSC1_SQIN.xml</source>
+                recursive="false" timeZone="UTC" unit="">../data/DOSC1_SQIN.xml</source>
             <variable>SQIN</variable>
-            <features>
-                <location lid="DOSC1" />
-            </features>
         </right>
     </inputs>
 
-    <conditions> <!--firstLead="1" lastLead="24">-->
-        <features>
-            <location lid="DOSC1" />
-        </features>
-    </conditions>
-
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
+        <feature lid="DOSC1" />
         <grouping>feature,lead_time</grouping>
         <desiredTimeAggregation>
             <function>avg</function>

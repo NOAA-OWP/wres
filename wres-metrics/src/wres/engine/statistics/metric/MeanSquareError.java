@@ -35,10 +35,9 @@ class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
             case LBR:
             case CR_AND_LBR:
             default:
-                throw new UnsupportedOperationException( "The Mean Square Error decomposition is not currently "
+                throw new MetricCalculationException( "The Mean Square Error decomposition is not currently "
                                                          + "implemented." );
         }
-
     }
 
     @Override
@@ -51,12 +50,6 @@ class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
     public MetricConstants getID()
     {
         return MetricConstants.MEAN_SQUARE_ERROR;
-    }
-
-    @Override
-    public boolean hasRealUnits()
-    {
-        return true;
     }
 
     /**

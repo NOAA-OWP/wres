@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +15,7 @@ import wres.datamodel.Metadata;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOutput;
@@ -95,7 +97,7 @@ public final class RelativeOperatingCharacteristicScoreTest
      */
 
     @Test
-    public void test1RelativeOperatingCharacteristicScoreWithoutTies()
+    public void test2RelativeOperatingCharacteristicScoreWithoutTies()
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -151,7 +153,7 @@ public final class RelativeOperatingCharacteristicScoreTest
      */
 
     @Test
-    public void test1RelativeOperatingCharacteristicScoreNoOccurrences()
+    public void test3RelativeOperatingCharacteristicScoreNoOccurrences()
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -195,5 +197,31 @@ public final class RelativeOperatingCharacteristicScoreTest
             + ".", actual.equals(expected));
     }    
     
+    /**
+     * Constructs a {@link RelativeOperatingCharacteristicScore} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test4Exceptions()
+    {
+        //Obtain the factories
+        final DataFactory outF = DefaultDataFactory.getInstance();
+
+        //Build the metric
+        final RelativeOperatingCharacteristicScoreBuilder b = new RelativeOperatingCharacteristicScoreBuilder();
+        b.setOutputFactory(outF);
+
+        final RelativeOperatingCharacteristicScore rocs = b.build();
+
+        //Check exceptions
+        try
+        {
+            rocs.apply( null );
+            fail( "Expected an exception on null input." );
+        }
+        catch(MetricInputException e)
+        {          
+        }
+    }     
 
 }

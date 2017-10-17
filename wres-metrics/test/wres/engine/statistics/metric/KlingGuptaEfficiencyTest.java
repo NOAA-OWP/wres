@@ -12,6 +12,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
@@ -63,18 +64,18 @@ public final class KlingGuptaEfficiencyTest
         //Build the metric
         final KlingGuptaEfficiencyBuilder b = new KlingGuptaEfficiencyBuilder();
         b.setOutputFactory( outF );
-        final KlingGuptaEfficiency ioa = b.build();
+        final KlingGuptaEfficiency kge = b.build();
 
         //Check the parameters
         assertTrue( "Unexpected name for the Kling Gupta Efficiency.",
-                    ioa.getName().equals( metaFac.getMetricName( MetricConstants.KLING_GUPTA_EFFICIENCY ) ) );
-        assertTrue( "The Kling Gupta Efficiency is decomposable.", ioa.isDecomposable() );
-        assertTrue( "The Kling Gupta Efficiency is a skill score.", ioa.isSkillScore() );
+                    kge.getName().equals( metaFac.getMetricName( MetricConstants.KLING_GUPTA_EFFICIENCY ) ) );
+        assertTrue( "The Kling Gupta Efficiency is decomposable.", kge.isDecomposable() );
+        assertTrue( "The Kling Gupta Efficiency is a skill score.", kge.isSkillScore() );
         assertTrue( "Expected no decomposition for the Kling Gupta Efficiency.",
-                    ioa.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+                    kge.getScoreOutputGroup() == ScoreOutputGroup.NONE );
 
         //Check the results
-        final VectorOutput actual = ioa.apply( input );
+        final VectorOutput actual = kge.apply( input );
 
         final VectorOutput expected = outF.ofVectorOutput( new double[] { 0.8921704394462281 }, m1 );
         assertTrue( "Actual: " + actual.getData().getDoubles()[0]
@@ -83,5 +84,29 @@ public final class KlingGuptaEfficiencyTest
                     + ".",
                     actual.equals( expected ) );
     }
+    
+    /**
+     * Constructs a {@link KlingGuptaEfficiency} and checks for exceptional cases.
+     */
+
+    @Test
+    public void test2Exceptions()
+    {
+        //Build the metric
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final KlingGuptaEfficiencyBuilder b = new KlingGuptaEfficiencyBuilder();
+        b.setOutputFactory( outF );
+        final KlingGuptaEfficiency kge = b.build();
+
+        //Check the exceptions
+        try
+        {
+            kge.apply( null );
+            fail( "Expected an exception on null input." );
+        }
+        catch ( MetricInputException e )
+        {
+        }
+    }    
 
 }

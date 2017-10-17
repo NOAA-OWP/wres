@@ -51,9 +51,10 @@ public class SourceLoader
     /**
      * Ingest data
      * @return List of Future file ingest results
-     * @throws NoDataException when no data is found
+     * @throws IOException when no data is found
+     * @throws IngestException when getting project details fails
      */
-    public List<Future> load() throws NoDataException
+    public List<Future> load() throws IOException
     {
         try
         {
@@ -61,7 +62,9 @@ public class SourceLoader
         }
         catch ( SQLException e )
         {
-            LOGGER.error(Strings.getStackTrace( e ));
+            throw new IngestException(
+                    "While loading project details, an issue occured",
+                    e );
         }
 
         List<Future> savingFiles = new ArrayList<>();
@@ -212,14 +215,20 @@ public class SourceLoader
                 task = Executor.execute(new ForecastSaver(absolutePath,
                                                           this.projectDetails,
                                                           dataSourceConfig,
-                                                          dataSourceConfig.getFeatures()));
+                                                          source,
+                                                          this.projectConfig
+                                                                  .getPair()
+                                                                  .getFeature() ) );
             }
             else {
                 LOGGER.trace("Loading {} as Observation data...");
                 task = Executor.execute(new ObservationSaver(absolutePath,
                                                              this.projectDetails,
                                                              dataSourceConfig,
-                                                             dataSourceConfig.getFeatures()));
+                                                             source,
+                                                             this.projectConfig
+                                                                     .getPair()
+                                                                     .getFeature() ) );
             }
         }
         else

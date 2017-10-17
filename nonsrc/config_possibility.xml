@@ -3,19 +3,13 @@
   <inputs>
     <left label="My Desired Name For Graphics">
       <type>observations</type>
-      <source recursive="true" all="true" format="PI-XML">/media/sf_userprofile/hefs_data/resources/DRRC2SQIN.xml</source>
+      <source recursive="true" all="true" format="PI-XML">/media/sf_userprofile/wres_data/data/DRRC2QINE.xml</source>
       <variable>QINE</variable>
-    <features>
-      <location lid="DRRC2HLF" name="DOLORES - RICO, BLO"/>
-    </features>
     </left>
     <right label="My Name I want to see on charts">
       <type>ensemble forecasts</type>
-      <source format="PI-XML">/media/sf_userprofile/hefs_data/resources/forecasts/</source>
+      <source format="PI-XML">/media/sf_userprofile/wres_data/data/drrc2ForecastsOneYear/</source>
       <variable>SQIN</variable>
-      <features>
-        <location lid="DRRC2HSF" name="DOLORES - RICO, BLO"/>
-      </features>
       <existingTimeAggregation>
         <function>avg</function>
         <period>1</period>
@@ -23,14 +17,10 @@
       </existingTimeAggregation>
     </right>
   </inputs>
-  <conditions> <!-- aka filters -->
-<!--    <dates earliest="1980-01-01T00:00" latest="2010-12-23T23:59"/>--> <!-- optional, default all -->
-<features>
-  <location lid="DRRC2*" />
-</features>
-  </conditions>
+
   <pair label="Pairs by location and lead time"> <!-- required for unit -->
     <unit>CMS</unit>
+    <feature lid="DRRC2" />
     <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
       <desiredTimeAggregation>
           <function>avg</function>
@@ -40,19 +30,19 @@
   </pair>
   <outputs>
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
-    <valueThresholds>
+<!--    <valueThresholds>
       <applyTo>left</applyTo>
       <commaSeparatedValues>10.0</commaSeparatedValues>
       <operator>greater than or equal to</operator>
-    </valueThresholds>
+    </valueThresholds>-->
 
-<!--    <metric label="ME">
+    <metric label="ME">
       <name>mean error</name>
     </metric>
     <metric label="">
       <name>correlation pearsons</name>
-    </metric>-->
-    <metric><name>reliability diagram</name></metric>
+    </metric>
+    <!--<metric><name>reliability diagram</name></metric>-->
     <destination type="numeric"><path>testoutput/</path></destination>
     <!--<destination type="graphic"><path>/tmp/</path>
     <graphical width="192" height="108">

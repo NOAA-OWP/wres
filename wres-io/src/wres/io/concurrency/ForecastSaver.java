@@ -23,13 +23,17 @@ public class ForecastSaver extends WRESRunnable
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ForecastSaver.class);
 
+	private final DataSourceConfig.Source sourceConfig;
+
     @Internal(exclusivePackage = "wres.io")
 	public ForecastSaver(String filepath,
 						 ProjectDetails projectDetails,
 						 DataSourceConfig dataSourceConfig,
+						 DataSourceConfig.Source sourceConfig,
 						 List<Feature> specifiedFeatures)
     {
         this.dataSourceConfig = dataSourceConfig;
+        this.sourceConfig = sourceConfig;
         this.filepath = filepath;
         this.specifiedFeatures = specifiedFeatures;
         this.projectDetails = projectDetails;
@@ -45,6 +49,8 @@ public class ForecastSaver extends WRESRunnable
 			BasicSource source = ReaderFactory.getReader(this.filepath);
 
 			source.setDataSourceConfig(this.dataSourceConfig);
+
+			source.setSourceConfig( this.sourceConfig );
 
 			source.setSpecifiedFeatures(this.specifiedFeatures);
 

@@ -15,11 +15,10 @@ import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 
 import wres.config.ProjectConfigException;
-import wres.config.generated.Conditions;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
-import wres.config.generated.Location;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
@@ -157,32 +156,31 @@ public class CommaSeparatedTest
                                            null,
                                            destinations );
 
-        Location location = new Location( LID,
-                                          null,
-                                          null,
-                                          null,
-                                          null );
-
         Feature feature = new Feature( null,
                                        null,
-                                       location,
+                                       LID,
+                                       null,
+                                       null,
                                        null,
                                        null,
                                        null );
 
         List<Feature> features = new ArrayList<>();
         features.add( feature );
-        Conditions conditions = new Conditions( null,
-                                                null,
-                                                null,
+
+        PairConfig pairConfig = new PairConfig( null,
                                                 features,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
                                                 null,
                                                 null,
                                                 null );
 
         ProjectConfig projectConfig = new ProjectConfig( null,
-                                                         conditions,
-                                                         null,
+                                                         pairConfig,
                                                          outputsConfig,
                                                          null,
                                                          null,
