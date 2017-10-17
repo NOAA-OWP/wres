@@ -1,5 +1,6 @@
 package wres.io.concurrency;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -58,12 +59,13 @@ public class ForecastSaver extends WRESRunnable
 
 			source.saveForecast();
 		}
-		catch (Exception e)
-		{
-			this.getLogger().error("A forecast for the data at '{}' could not be saved to the database.",
-                                   this.filepath);
-            this.getLogger().error(Strings.getStackTrace(e));
-		}
+        catch ( IOException e )
+        {
+            String message = "A forecast for the data at '"
+                             + this.filepath
+                             + "' could not be saved to the database.";
+            throw new RuntimeException( message, e );
+        }
 	}
 
 	private final String filepath;
