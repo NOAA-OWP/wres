@@ -3,6 +3,7 @@ package wres.io.reading;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -231,17 +232,19 @@ public abstract class BasicSource {
      * data source. This should be ignored in data sources that define their
      * own time zone.
      */
-    protected String getSpecifiedTimeZone()
+    protected ZoneId getSpecifiedTimeZone()
     {
-        String timeZone = "UTC";
+        ZoneId timeZone = null;
 
         if (dataSourceConfig != null)
         {
             DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, this.filename);
 
-            if (source != null && source.getTimeZone() != null && !source.getTimeZone().value().isEmpty())
+            if ( source != null
+                 && source.getTimeZone() != null
+                 && !source.getTimeZone().isEmpty() )
             {
-                timeZone = source.getTimeZone().value();
+                timeZone = ZoneId.of( source.getTimeZone() );
             }
         }
 
