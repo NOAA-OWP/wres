@@ -587,12 +587,19 @@ public class Validation
 
         if ( dataSourceConfig.getSource() == null )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + "A source needs to exist within each of the left "
-                         + "and right sections of the configuration.",
-                         projectConfigPlus,
-                         dataSourceConfig.sourceLocation().getLineNumber(),
-                         dataSourceConfig.sourceLocation().getColumnNumber() );
+            if ( LOGGER.isWarnEnabled() )
+            {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + "A source needs to exist within each of the "
+                                 + "left and right sections of the "
+                                 + "configuration.",
+                                 projectConfigPlus,
+                                 dataSourceConfig.sourceLocation()
+                                                 .getLineNumber(),
+                                 dataSourceConfig.sourceLocation()
+                                                 .getColumnNumber() );
+            }
+
             dataSourcesValid = false;
         }
         else
@@ -629,13 +636,16 @@ public class Validation
         if ( source.getZoneOffset() != null
              && source.getTimeZone() != null )
         {
-            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + " One may optionally specify either a zoneOffset "
-                         + "such as -0500 or a timeZone such as "
-                         + "America/Chicago, but not both.",
-                         projectConfigPlus.getPath(),
-                         source.sourceLocation().getLineNumber(),
-                         source.sourceLocation().getColumnNumber() );
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " One may optionally specify either a zoneOffset"
+                             + " such as -0500 or a timeZone such as "
+                             + "America/Chicago, but not both.",
+                             projectConfigPlus.getPath(),
+                             source.sourceLocation().getLineNumber(),
+                             source.sourceLocation().getColumnNumber() );
+            }
 
             result = false;
         }
