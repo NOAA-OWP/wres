@@ -262,6 +262,20 @@ public class DatacardSource extends BasicSource {
             ZoneOffset offset = ConfigHelper.getZoneOffset( source );
             LOGGER.debug( "{} is configured offset", offset );
 
+            if ( offset == null )
+            {
+                String message = "While reading datacard source "
+                                 + this.getFilename()
+                                 + " WRES could not find a zoneOffset specified"
+                                 + ". Datacard unfortunately requires that the "
+                                 + "project configuration set a zoneOffset such"
+                                 + " as zoneOffset=\"-0500\" or "
+                                 + "zoneOffset=\"EST\" or zoneOffset=\"Z\". "
+                                 + "Please discover and set the correct "
+                                 + "zoneOffset for this data file.";
+                throw new ProjectConfigException( source, message );
+            }
+
             OffsetDateTime offsetDateTime = localDateTime.atOffset( offset );
             LOGGER.debug( "{} is offsetDateTime", offsetDateTime );
 
