@@ -95,7 +95,7 @@ public class DataCardSourceTest
         Format f = Format.fromValue("datacard");
 
         DataSourceConfig.Source confSource = new Source(current, f, "IN", "DRRC2",
-                                                        "-0500", "-999.0", true,
+                                                        "EST", "-999.0", true,
                                                         true, "-998.0", "$");
 
         sourceList.add(confSource);
@@ -166,7 +166,7 @@ public class DataCardSourceTest
         Format f = Format.fromValue("datacard");
 
         DataSourceConfig.Source confSource = new Source(current, f, "IN", "DRRC2",
-                                                        "-0500","-999.0, -997", true,
+                                                        "EST","-999.0, -997", true,
                                                         true, "-998.0", "$");
 
         sourceList.add(confSource);
