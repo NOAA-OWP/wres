@@ -60,8 +60,9 @@ public class ObservationSaver extends WRESRunnable {
 		}
         catch (IOException ioe)
         {
-			this.getLogger().error("Failed to save '{}' as an observation", filepath);
-			this.getLogger().error("The exception:", ioe);
+            String message = "Failed to save '" + filepath
+                             + "' as an observation";
+            throw new RuntimeException( message, ioe );
         }
 	}
 
