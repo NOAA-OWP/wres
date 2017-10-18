@@ -334,25 +334,6 @@
             <xs:enumeration value="day" />
         </xs:restriction>
     </xs:simpleType>
-    
-    <xs:simpleType name="timeZone">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="UTC"/>
-            <xs:enumeration value="GMT"/>
-            <xs:enumeration value="EDT"/>
-            <xs:enumeration value="EST" />
-            <xs:enumeration value="CST" />
-            <xs:enumeration value="CDT" />
-            <xs:enumeration value="MDT" />
-            <xs:enumeration value="MST" />
-            <xs:enumeration value="PDT" />
-            <xs:enumeration value="PST" />
-            <xs:enumeration value="AKDT" />
-            <xs:enumeration value="AKST"/>
-            <xs:enumeration value="HAST" />
-            <xs:enumeration value="HADT" />
-        </xs:restriction>
-    </xs:simpleType>
 
     <xs:simpleType name="timeAggregationMode">
         <xs:restriction base="xs:string">
