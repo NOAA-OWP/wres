@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -227,29 +228,6 @@ public abstract class BasicSource {
         return locationID;
     }
 
-    /**
-     * @return The intended time zone specified within the configuration for the
-     * data source. This should be ignored in data sources that define their
-     * own time zone.
-     */
-    protected ZoneId getSpecifiedTimeZone()
-    {
-        ZoneId timeZone = null;
-
-        if (dataSourceConfig != null)
-        {
-            DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, this.filename);
-
-            if ( source != null
-                 && source.getTimeZone() != null
-                 && !source.getTimeZone().isEmpty() )
-            {
-                timeZone = ZoneId.of( source.getTimeZone() );
-            }
-        }
-
-        return timeZone;
-    }
 
     /**
      * @return The value specifying a value that is missing from the data set

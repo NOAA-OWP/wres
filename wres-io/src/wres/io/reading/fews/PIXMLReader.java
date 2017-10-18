@@ -248,19 +248,6 @@ public final class PIXMLReader extends XMLReader
                 throw new ProjectConfigException( this.getSourceConfig(),
                                                   message );
             }
-
-            ZoneId configuredZoneId
-                    = ConfigHelper.getZoneId( this.getSourceConfig() );
-            if ( configuredZoneId != null )
-            {
-                String message =
-                        "A time zone was specified for a PI-XML source but "
-                        + "it is best to NOT specify the zone for PI-XML "
-                        + "sources in the project configuration because WRES "
-                        + "can simply use the zone offset found in the data.";
-                throw new ProjectConfigException( this.getSourceConfig(),
-                                                  message );
-            }
         }
 
 		//	If the current tag is the series tag itself, move on to the next tag
