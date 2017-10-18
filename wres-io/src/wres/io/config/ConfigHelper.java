@@ -818,6 +818,8 @@ public class ConfigHelper
     {
         ZoneOffset result = null;
 
+
+
         if ( sourceConfig != null
              && sourceConfig.getZoneOffset() != null )
         {
@@ -829,30 +831,6 @@ public class ConfigHelper
             {
                 String message = "Could not figure out the zoneOffset. "
                                  + "Try formatting it like this: -05:00.";
-                throw new ProjectConfigException( sourceConfig, message, dte );
-            }
-        }
-
-        return result;
-    }
-
-
-    public static ZoneId getZoneId( DataSourceConfig.Source sourceConfig )
-            throws ProjectConfigException
-    {
-        ZoneId result = null;
-
-        if ( sourceConfig != null
-             && sourceConfig.getTimeZone() != null )
-        {
-            try
-            {
-                result = ZoneId.of( sourceConfig.getTimeZone() );
-            }
-            catch ( DateTimeException dte )
-            {
-                String message = "Could not figure out the timeZone. "
-                                 + "Try using one like this: America/Chicago.";
                 throw new ProjectConfigException( sourceConfig, message, dte );
             }
         }
