@@ -24,7 +24,8 @@ import wres.util.Strings;
  *
  */
 @Internal(exclusivePackage = "wres.io")
-public class NetCDFSource extends BasicSource {
+public class NetCDFSource extends BasicSource
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(NetCDFSource.class);
 
 	/**
@@ -32,7 +33,8 @@ public class NetCDFSource extends BasicSource {
 	 * @param filename the file name
 	 */
 	@Internal(exclusivePackage = "wres.io")
-	public NetCDFSource(String filename) {
+	public NetCDFSource(String filename)
+    {
 		this.setFilename(filename);
 		this.setHash();
 	}
@@ -40,9 +42,7 @@ public class NetCDFSource extends BasicSource {
 	@Override
 	public void saveObservation() throws IOException
 	{
-	    /*LOGGER.warn("Saving for NetCDF observations is still being implemented. No ingest will occur for '{}'",
-                    this.getFilename());*/
-		try (NetcdfFile source = getSource())
+		try ( NetcdfFile source = getSource() )
 		{
 			save( source );
 		}
@@ -63,7 +63,8 @@ public class NetCDFSource extends BasicSource {
 
 		if (var != null)
         {
-            try {
+            try
+			{
                 WRESRunnable saver;
                 if (NetCDF.isGridded(var))
                 {
@@ -84,7 +85,8 @@ public class NetCDFSource extends BasicSource {
                 saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                 Database.storeIngestTask(Executor.execute(saver));
             }
-            catch (SQLException e) {
+            catch (SQLException e)
+			{
                 LOGGER.error(Strings.getStackTrace(e));
             }
         }

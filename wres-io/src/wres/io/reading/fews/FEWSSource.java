@@ -31,6 +31,7 @@ public class FEWSSource extends BasicSource
     {
         try
         {
+            // TODO: This will break if we have the source but not the variable/location
             if ( !DataSources.hasSource( this.getHash() ) )
             {
                 PIXMLReader sourceReader = new PIXMLReader( this.getFilename(),

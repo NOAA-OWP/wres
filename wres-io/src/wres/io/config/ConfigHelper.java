@@ -252,14 +252,9 @@ public class ConfigHelper
         script.append("FROM wres.TimeSeries TS").append(newline);
         script.append("INNER JOIN wres.ForecastValue FV").append(newline);
         script.append("     ON FV.timeseries_id = TS.timeseries_id").append(newline);
-        script.append("INNER JOIN wres.ForecastSource FS").append(newline);
-        script.append("     ON FS.forecast_id = TS.timeseries_id").append(newline);
-        script.append("INNER JOIN wres.ProjectSource PS").append(newline);
-        script.append("     ON PS.source_id = FS.source_id").append(newline);
         script.append("INNER JOIN wres.Observation O").append(newline);
         script.append("     ON O.observation_time = TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
-        script.append("WHERE PS.project_id = ").append(Projects.getProject( projectConfig ).getId()).append(newline);
-        script.append("     AND ").append(leftVariablepositionClause).append(newline);
+        script.append("WHERE ").append(leftVariablepositionClause).append(newline);
         script.append("     AND ").append(rightVariablepositionClause).append(newline);
 
         if (width > 1)
@@ -326,8 +321,11 @@ public class ConfigHelper
         script.append("     AND EXISTS (").append(newline);
         script.append("         SELECT 1").append(newline);
         script.append("         FROM wres.ProjectSource OPS").append(newline);
+        script.append("         INNER JOIN wres.ForecastSource OFS").append(newline);
+        script.append("             ON OFS.source_id = OPS.source_id").append(newline);
         script.append("         WHERE OPS.project_id = ").append(projectDetails.getId()).append(newline);
         script.append("             AND OPS.member = 'right'").append(newline);
+        script.append("             AND OFS.forecast_id = TS.timeseries_id").append(newline);
         script.append("     )").append(newline);
         script.append("     AND EXISTS (").append(newline);
         script.append("         SELECT 1").append(newline);

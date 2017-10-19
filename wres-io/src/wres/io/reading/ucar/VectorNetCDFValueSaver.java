@@ -299,6 +299,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
     {
         try
         {
+
             // Read the data from the NetCDF file
             this.read();
 

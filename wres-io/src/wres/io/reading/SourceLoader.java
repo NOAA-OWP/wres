@@ -203,6 +203,7 @@ public class SourceLoader
 
         if (shouldIngest(absolutePath, source, dataSourceConfig))
         {
+            // Perf testing will determine if we should continue suspending this
             if (!alreadySuspendedIndexes &&
                 ReaderFactory.getFileType(source.getFormat()) != SourceType.ARCHIVE)
             {
@@ -210,7 +211,8 @@ public class SourceLoader
                 alreadySuspendedIndexes = true;
             }
 
-            if (ConfigHelper.isForecast(dataSourceConfig)) {
+            if (ConfigHelper.isForecast(dataSourceConfig))
+            {
                 LOGGER.trace("Loading {} as forecast data...", absolutePath);
                 task = Executor.execute(new ForecastSaver(absolutePath,
                                                           this.projectDetails,
@@ -220,7 +222,8 @@ public class SourceLoader
                                                                   .getPair()
                                                                   .getFeature() ) );
             }
-            else {
+            else
+            {
                 LOGGER.trace("Loading {} as Observation data...");
                 task = Executor.execute(new ObservationSaver(absolutePath,
                                                              this.projectDetails,
@@ -258,13 +261,6 @@ public class SourceLoader
                                  DataSourceConfig.Source source,
                                  DataSourceConfig dataSourceConfig)
     {
-        // Immediately return true if no data was ever saved to the project in
-        // the first place
-        if (this.projectDetails.isEmpty())
-        {
-            return true;
-        }
-
         SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
         SourceType pathFormat = ReaderFactory.getFiletype(filePath);
 
@@ -279,11 +275,12 @@ public class SourceLoader
         }
 
         boolean ingest = specifiedFormat == SourceType.UNDEFINED ||
-                         specifiedFormat.equals(pathFormat);
+                         specifiedFormat.equals(pathFormat) || this.projectDetails.isEmpty();
 
         if (ingest)
         {
-            try {
+            try
+            {
                 ingest = !dataExists(filePath, dataSourceConfig);
             }
             catch (SQLException e) {
