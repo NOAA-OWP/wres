@@ -74,6 +74,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 
     public static Integer getActiveSourceID(String hash) throws SQLException
     {
+        // TODO: Chris suggests putting insert/select statement in this method
         Integer id = null;
 
         SourceKey key = new SourceKey( null, null, null, hash );
