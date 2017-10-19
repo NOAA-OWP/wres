@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- This is a test of verifying forecast MAPX vs obs MAP using a value threshold to break out the 0s from non-zeros. -->
+<project label="ExampleProject">
+
+    <inputs>
+        <left label="">
+            <type>observations</type>
+            <source all="true" format="PI-XML" missingValue="-999.0" 
+                recursive="true" unit="">../data/abrfcExample/LGNN5_MAP.tzshifted.xml</source>
+            <variable>MAP</variable>
+<timeShift>
+    <width>2</width>
+    <direction>forward</direction>
+</timeShift>
+
+<!-- At some point, this should not be necessary.  However, for now, it informs the WRES what the time step of the incoming data is, more or less. -->
+            <existingTimeAggregation>
+                <function>sum</function>
+                <period>6</period>
+                <unit>hour</unit>
+            </existingTimeAggregation>
+
+        </left>
+        <right label="HEFS">
+            <type>ensemble forecasts</type>
+            <source all="false" format="PI-XML" missingValue="-999.0"
+                recursive="false" unit="">../data/abrfcExample/LGNN5_precip_5yrs.tgz</source>
+            <variable>MAPX</variable>
+
+<!-- See the note above. -->   
+            <existingTimeAggregation>
+                <function>sum</function>
+                <period>6</period>
+                <unit>hour</unit>
+            </existingTimeAggregation>
+
+        </right>
+    </inputs>
+
+    <pair label="Pairs by location and lead time"> 
+        <unit>MM</unit>
+        <feature lid="LGNN5" />
+        <grouping>feature,lead_time</grouping>
+        <desiredTimeAggregation>
+            <function>sum</function>
+            <period>6</period>
+            <unit>hour</unit>
+        </desiredTimeAggregation>
+    </pair>
+
+    <outputs>
+        
+        <valueThresholds>
+            <applyTo>left</applyTo> 
+            <commaSeparatedValues>0.0</commaSeparatedValues>
+            <operator>greater than</operator>
+        </valueThresholds>
+        <probabilityThresholds>
+            <applyTo>left</applyTo>
+            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
+            <operator>greater than</operator>
+        </probabilityThresholds>
+        <metric> <name>mean error</name> </metric>
+        <metric> <name>brier score</name> </metric>
+        <metric> <name>reliability diagram</name> </metric>
+        <metric> <name>sample size</name> </metric>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+<!--
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+-->
+
+        <destination type="graphic">
+            <path>output/</path>
+            <graphical width="800" height="600">
+                <plotType>lead threshold</plotType>
+            </graphical>
+        </destination>
+    </outputs>
+
+</project>
+
