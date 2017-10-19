@@ -1,4 +1,6 @@
-# This script is designed for execution on the WRES test VM in the directory ~/wres/systests. 
+# This script is designed for execution on the WRES test VM within the Git cloned directory .../wres/systests.
+# Arguments specify scenario subdirectories of systests and can be more than one.  It will look through the 
+#   arguments provided in order.
 
 # Always cd to the directory containing this script to execute!
 if [ ! -f runtest.sh ]; then
@@ -9,113 +11,135 @@ fi
 # ============================================================
 # Arguments
 # ============================================================
-scenarioName=$1
-systestsDir=.
-executeDir=$systestsDir/$1
+systestsDir=$(pwd)
 configName=project_config.xml
 outputDirName=output
 benchDirName=benchmarks
 echoPrefix="===================="
 
 # ============================================================
-# Preconditions
-# ============================================================
-
-if [ ! -d $executeDir ]; then
-    echo "$echoPrefix Scenario provided, $scenarioName, does not exist in $(pwd).  Aborting..."
-    exit 1;
-fi
-if [ ! -f $executeDir/$configName ]; then
-    echo "$echoPrefix Scenario project config file, $executeDir/$configName, does not exist.  Aborting..."
-    exit 1;
-fi
-
-# ============================================================
-# Setup
+# Overall Setup
 # ============================================================
 
 # Put the latest release in place next to the execution directory but only if it doesn't exist.
-if [ ! -f $executeDir/../wres.sh ]; then
+if [ ! -f $systestsDir/wres.sh ]; then
     echo "$echoPrefix Creating link $systestsDir/wres.sh, ln -s /wres_share/releases/wres.sh $systestsDir/wres.sh ..."
     echo "(If this is not executed on the WRES test VM, then this link will most likely not work.)"
     ln -s /wres_share/releases/wres.sh $systestsDir/wres.sh
 fi
 
 # Put a link to the testing data directory in place if it does not exist.
-if [ ! -f $executeDir/../data ] && [ ! -d $executeDir/../data ]; then
-    echo "$echoPrefix Creating link $systestsDir/data, ln -s /wres_share/testing/data $systestsDir/data ..."
+if [ ! -f $systestsDir/data ] && [ ! -d $systestsDir/data ]; then
+    echo "$echoPrefix Creating link $systestsDir/data, ln -s /wres_share/testing/data $systestsDir/data ..." 
     echo "(If this is not executed on the WRES test VM, then this link will most likely not work.)"
     ln -s /wres_share/testing/data $systestsDir/data
 fi
 
-# Clearing the output directory.
-echo "$echoPrefix Removing and recreating $executeDir/output of .csv and .png files only..."
-if [ -d $executeDir/output ]; then
-    rm -rf $executeDir/output
-fi
-mkdir $executeDir/output
-
-# Move into the directory.
-echo "$echoPrefix Moving (cd) to execution directory..."
-cd $executeDir
-
 
 # ============================================================
-# Process 0-length files, such as CLEAN
+# Loop over provided scenarios
 # ============================================================
+for scenarioName in $*; do
 
-# Do the clean if CLEAN is found in the scenario directory.
-if [ -f CLEAN ]; then
-    echo "$echoPrefix Cleaning the database: ../wres.sh cleandatabase ..."
-    ../wres.sh cleandatabase
+    echo    
+    echo "##########################################################################"
+    echo "PROCESSING $scenarioName..." | tee /dev/stderr
+    echo "##########################################################################"
+    echo
+
+    startsec=$(date +%s) 
+    executeDir=$systestsDir/$scenarioName
+
+    # ============================================================
+    # Preconditions
+    # ============================================================
+    if [ ! -d $executeDir ]; then
+        echo "$echoPrefix Scenario provided, $scenarioName, does not exist in $(pwd).  Aborting..." | tee /dev/stderr
+        continue 
+    fi
+    if [ ! -f $executeDir/$configName ]; then
+        echo "$echoPrefix Scenario project config file, $executeDir/$configName, does not exist.  Aborting..." | tee /dev/stderr
+        continue
+    fi
+
+    # ============================================================
+    # Setup Scenario
+    # ============================================================
+    # Clearing the output directory.
+    echo "$echoPrefix Removing and recreating $executeDir/output of .csv and .png files only..."
+    if [ -d $executeDir/output ]; then
+        rm -rf $executeDir/output
+    fi
+    mkdir $executeDir/output
+
+    # Move into the directory.
+    echo "$echoPrefix Moving (cd) to execution directory..."
+    cd $executeDir
+
+    # ============================================================
+    # Process 0-length files, such as CLEAN
+    # ============================================================
+
+    # Do the clean if CLEAN is found in the scenario directory.
+    if [ -f CLEAN ]; then
+        echo "$echoPrefix Cleaning the database: ../wres.sh cleandatabase ..."
+        ../wres.sh cleandatabase
+        if [[ $? != 0 ]]; then
+            echo "$echoPrefix WRES clean failed; see above.  Something is wrong with the database.  Aborting all tests..." | tee /dev/stderr
+            exit 1
+        fi
+    fi
+
+    # ============================================================
+    # Execute the project.
+    # ============================================================
+
+    # If it fails then the file FAILS must exist in the scenario directory or its treated
+    # as a test failure.  the file FAILS tells this script that failure is expected.
+    echo "$echoPrefix Executing the project: ../wres.sh execute $configName ..."
+    ../wres.sh execute $configName
     if [[ $? != 0 ]]; then
-        echo "$echoPrefix WRES clean failed; see above.  Aborting test..."
-        exit 1
+        if [ -f FAILS ]; then
+            echo "$echoPrefix Expected failure occurred.  Test passes."
+        else 
+            echo "$echoPrefix WRES execution failed; see log file.  TEST FAILS!" | tee /dev/stderr
+        fi
+        
+        endsec=$(date +%s)
+        echo "$echoPrefix Test completed in $(($endsec - $startsec)) seconds" | tee /dev/stderr
+        continue 
     fi
-fi
 
-# ============================================================
-# Execute the project.
-# ============================================================
-
-# If it fails then the file FAILS must exist in the scenario directory or its treated
-# as a test failure.  the file FAILS tells this script that failure is expected.
-echo "$echoPrefix Executing the project: ../wres.sh execute $configName ..."
-../wres.sh execute $configName
-if [[ $? != 0 ]]; then
+    #If this if is triggered, then the execute was successful but the FAILS flag was set for this test.  Test fails.
     if [ -f FAILS ]; then
-        echo "$echoPrefix Expected failure occured.  Test passes."
-        exit 0
+        echo "$echoPrefix Expected a WRES failure, but it did not fail! TEST FAILS!" | tee /dev/stderr
+        endsec=$(date +%s)
+        echo "$echoPrefix Test completed in $(($endsec - $startsec)) seconds" | tee /dev/stderr
+        continue
     fi
-    echo "$echoPrefix WRES execution failed; see above.  Aborting..."
-    exit 1
-fi
 
-#If this if is triggered, then the execute was successful but the FAILS flag was set for this test.  Test fails.
-if [ -f FAILS ]; then
-    echo "$echoPrefix Expected a failure, but it did not fail! TEST FAILS! Aborting..."
-    exit 1
-fi
+    # ====================================================
+    # Benchmark comparisons.
+    # ====================================================
+    cd $outputDirName
 
-# ====================================================
-# Benchmark comparisons.
-# ====================================================
-cd $outputDirName
+    #List the contents of the output directory and compare with contents in benchmark.
+    echo "$echoPrefix Listing the output contents: ls *.csv *.png > dirListing.txt"
+    ls *.csv *.png > dirListing.txt 2>/dev/null 
+    if [ -f ../$benchDirName/dirListing.txt ]; then
+        echo "$echoPrefix Comparing listing with benchmark expected contents: diff dirListing.txt  ../$benchDirName/dirListing.txt"  
+        diff dirListing.txt ../$benchDirName/dirListing.txt | tee /dev/stderr
+    else 
+        echo "$echoPrefix No benchmark directory listing to compare against.  Cannot compare expected output listing." | tee /dev/stderr
+    fi
 
-#List the contents of the output directory and compare with contents in benchmark.
-echo "$echoPrefix Listing the output contents: ls *.csv *.png > dirListing.txt"
-ls *.csv *.png > dirListing.txt
-if [ -f ../$benchDirName/dirListing.txt ]; then
-    echo "$echoPrefix Comparing listing with benchmark expected contents: diff dirListing.txt ../$benchDirName/dirListing.txt"  
-    diff dirListing.txt ../$benchDirName/dirListing.txt
-else
-    echo "$echoPrefix No benchmark directory listing to compare against."
-fi
+    #Compare all csv files except for *pairs* files.
+    echo "$echoPrefix Comparing output .csv files..."
+    for fileName in $(ls *.csv | grep -v "pairs"); do
+        diff --brief $fileName ../$benchDirName/$fileName | tee /dev/stderr
+    done
 
-#Compare all csv files except for *pairs* files.
-echo "$echoPrefix Comparing output .csv files..."
-for fileName in $(ls *.csv | grep -v "pairs"); do
-    diff --brief $fileName ../$benchDirName/$fileName
+    endsec=$(date +%s)
+    echo "$echoPrefix Test completed in $(($endsec - $startsec)) seconds" | tee /dev/stderr
+
 done
-
-

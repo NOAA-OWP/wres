@@ -133,12 +133,7 @@ public class ZippedSource extends BasicSource {
             Future ingestTask = this.getIngestTask();
             while (ingestTask != null)
             {
-                try {
-                    ingestTask.get();
-                }
-                catch (InterruptedException | ExecutionException e) {
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
+                ingestTask.get();
                 ingestTask = this.getIngestTask();
             }
 
@@ -146,12 +141,7 @@ public class ZippedSource extends BasicSource {
 
             while (ingestTask != null)
             {
-                try {
-                    ingestTask.get();
-                }
-                catch (ExecutionException e) {
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
+                ingestTask.get();
                 ingestTask = Database.getStoredIngestTask();
             }
 
@@ -160,9 +150,13 @@ public class ZippedSource extends BasicSource {
                 new File(filename).delete();
             }
         }
-        catch (IOException | InterruptedException e)
+        catch ( InterruptedException ie )
         {
-            LOGGER.error(Strings.getStackTrace(e));
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException | IOException e )
+        {
+            throw new RuntimeException( "Failure", e );
         }
         finally
         {

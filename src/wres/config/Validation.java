@@ -583,6 +583,28 @@ public class Validation
             result = instantMakesSense && result;
         }
 
+        boolean dataSourcesValid = true;
+
+        if ( dataSourceConfig.getSource() == null )
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + "A source needs to exist within each of the "
+                                 + "left and right sections of the "
+                                 + "configuration.",
+                                 projectConfigPlus,
+                                 dataSourceConfig.sourceLocation()
+                                                 .getLineNumber(),
+                                 dataSourceConfig.sourceLocation()
+                                                 .getColumnNumber() );
+            }
+
+            dataSourcesValid = false;
+        }
+
+        result = dataSourcesValid && result;
+
         return result;
     }
 }
