@@ -99,19 +99,19 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
                     reader.setSourceConfig( this.sourceConfig );
                     reader.parse();
                 }
-                catch (IOException e)
-                {
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
             }
             else
             {
                 this.projectDetails.addSource( hash, this.dataSourceConfig );
             }
         }
-        catch ( InterruptedException | ExecutionException | SQLException e )
+        catch ( InterruptedException ie )
         {
-            LOGGER.error(Strings.getStackTrace( e ));
+            Thread.currentThread().interrupt();
+        }
+        catch ( SQLException | IOException | ExecutionException e )
+        {
+            throw new RuntimeException( "Failed to ingest", e );
         }
     }
 

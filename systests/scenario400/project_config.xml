@@ -6,7 +6,7 @@
     <inputs>
         <left label="Observations">
             <type>observations</type>
-            <source format="datacard" timeZone="America/Chicago" unit="CFS" location="GLOO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" location="GLOO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
             <existingTimeAggregation>
                 <function>avg</function>
@@ -17,7 +17,7 @@
         <right label="Operational Single-Valued Forecasts" >
             <type>single valued forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" timeZone="UTC" unit="CMS">../data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
+                recursive="false" unit="CMS">../data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
             <variable>QINE</variable>
             <existingTimeAggregation>
                 <function>avg</function>

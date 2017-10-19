@@ -8,9 +8,8 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.sql.SQLException;
-import java.time.ZoneId;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 import java.time.LocalDateTime;
@@ -18,6 +17,7 @@ import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.config.ConfigHelper;
@@ -248,7 +248,6 @@ public class DatacardSource extends BasicSource {
                                                               0,
                                                               0,
                                                               0 );
-            ZoneId         timeZone       = getSpecifiedTimeZone();
             int            valIdxInRecord = 0;
 
 			int    startIdx   = 0;
@@ -256,12 +255,33 @@ public class DatacardSource extends BasicSource {
 
             LOGGER.debug( "{} is localDateTime", localDateTime );
 
-            ZonedDateTime zonedDateTime = localDateTime.atZone( timeZone );
-            LOGGER.debug( "{} is zonedDateTime", zonedDateTime );
+            DataSourceConfig.Source source =
+                    ConfigHelper.findDataSourceByFilename( dataSourceConfig,
+                                                           filename );
+
+            ZoneOffset offset = ConfigHelper.getZoneOffset( source );
+            LOGGER.debug( "{} is configured offset", offset );
+
+            if ( offset == null )
+            {
+                String message = "While reading datacard source "
+                                 + this.getFilename()
+                                 + " WRES could not find a zoneOffset specified"
+                                 + ". Datacard unfortunately requires that the "
+                                 + "project configuration set a zoneOffset such"
+                                 + " as zoneOffset=\"-0500\" or "
+                                 + "zoneOffset=\"EST\" or zoneOffset=\"Z\". "
+                                 + "Please discover and set the correct "
+                                 + "zoneOffset for this data file.";
+                throw new ProjectConfigException( source, message );
+            }
+
+            OffsetDateTime offsetDateTime = localDateTime.atOffset( offset );
+            LOGGER.debug( "{} is offsetDateTime", offsetDateTime );
 
             LocalDateTime utcDateTime =
-                    zonedDateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
-                                 .toLocalDateTime();
+                    offsetDateTime.withOffsetSameInstant( ZoneOffset.UTC )
+                                  .toLocalDateTime();
             LOGGER.debug( "{} is utcDateTime", utcDateTime );
 
 			//Process the lines one at a time.
@@ -344,6 +364,11 @@ public class DatacardSource extends BasicSource {
                 throw new IOException( "Failed to add source for datacard.", e );
 	        }
 		}
+        catch ( ProjectConfigException pce )
+        {
+            throw new IOException( "Failed to add datacard data from "
+                                   + this.getFilename(), pce );
+        }
 		finally
 		{
             LOGGER.info( "{} values of datacardsource saved to database.",

@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -818,18 +819,65 @@ public class ConfigHelper
         if ( sourceConfig != null
              && sourceConfig.getZoneOffset() != null )
         {
-            try
+            String configuredOffset = sourceConfig.getZoneOffset();
+
+            // Look for CONUS-ish names like "EDT" and convert to offset.
+            for ( ConusZoneId id : ConusZoneId.values() )
             {
-                result = ZoneOffset.of( sourceConfig.getZoneOffset() );
+                if ( configuredOffset.equalsIgnoreCase( id.name() ) )
+                {
+                    result = id.getZoneOffset();
+                }
             }
-            catch ( DateTimeException dte )
+
+            if ( result == null )
             {
-                String message = "Could not figure out the time zone offset. "
-                                 + "Try formatting it like this: -05:00.";
-                throw new ProjectConfigException( sourceConfig, message, dte );
+                // Otherwise, try to parse directly into an offset
+                try
+                {
+                    result = ZoneOffset.of( configuredOffset );
+                }
+                catch ( DateTimeException dte )
+                {
+                    String message = "Could not figure out the zoneOffset. "
+                                     + "Try formatting it like this: -05:00.";
+                    throw new ProjectConfigException( sourceConfig,
+                                                      message,
+                                                      dte );
+                }
             }
         }
 
         return result;
+    }
+
+    private enum ConusZoneId
+    {
+        UTC ( "+0000" ),
+        GMT ( "+0000" ),
+        EDT ( "-0400" ),
+        EST ( "-0500" ),
+        CDT ( "-0500" ),
+        CST ( "-0600" ),
+        MDT ( "-0600" ),
+        MST ( "-0700" ),
+        PDT ( "-0700" ),
+        PST ( "-0800" ),
+        AKDT ( "-0800" ),
+        AKST ( "-0900" ),
+        HADT ( "-0900" ),
+        HAST ( "-1000" );
+
+        private final ZoneOffset zoneOffset;
+
+        ConusZoneId( String zoneOffset )
+        {
+            this.zoneOffset = ZoneOffset.of( zoneOffset );
+        }
+
+        public ZoneOffset getZoneOffset()
+        {
+            return this.zoneOffset;
+        }
     }
 }
