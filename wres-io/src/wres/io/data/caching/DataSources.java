@@ -100,7 +100,8 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	}
 	
 	@Override
-    public Integer getID(SourceKey key) throws SQLException {
+    public Integer getID(SourceKey key) throws SQLException
+    {
 	    if (!this.hasID(key))
 	    {
 	        addElement(new SourceDetails(key));
@@ -109,9 +110,10 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	    return super.getID(key);
 	}
 
+	//TODO: This is arbitrarily large; there needs to be a better process of pulling in values when one is missing
 	@Override
 	protected int getMaxDetails() {
-		return 400;
+		return 10000;
 	}
 
     @Override

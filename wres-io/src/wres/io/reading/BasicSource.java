@@ -285,7 +285,7 @@ public abstract class BasicSource {
      *                 the source originates from an archive.
      * @return Whether or not to ingest the file
      */
-    boolean shouldIngest( String filePath, DataSourceConfig.Source source, byte[] contents )
+    protected boolean shouldIngest( String filePath, DataSourceConfig.Source source, byte[] contents )
     {
         SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
         SourceType pathFormat = ReaderFactory.getFiletype(filePath);
@@ -460,7 +460,27 @@ public abstract class BasicSource {
         }
         else
         {
-            script.append("     WHERE S.path = '").append(sourceName).append("'").append(NEWLINE);
+            if (this.futureHash != null)
+            {
+                try
+                {
+                    script.append("     WHERE S.hash = '").append(this.getHash()).append("'").append(NEWLINE);
+                }
+                catch ( IOException e )
+                {
+                    script.append( "     WHERE S.path = '" )
+                          .append( sourceName )
+                          .append( "'" )
+                          .append( NEWLINE );
+                }
+            }
+            else
+            {
+                script.append( "     WHERE S.path = '" )
+                      .append( sourceName )
+                      .append( "'" )
+                      .append( NEWLINE );
+            }
         }
 
         script.append("         AND V.variable_name = '")
