@@ -11,7 +11,6 @@ import java.util.StringJoiner;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
-import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
@@ -125,6 +124,8 @@ public final class ScriptGenerator
             script.append("WHERE ").append(variablePositionClause).append(NEWLINE);
             script.append("     AND ")
                   .append(ConfigHelper.getLeadQualifier(projectConfig, progress, leadOffset))
+                  .append( NEWLINE )
+                  .append( ConfigHelper.getSeasonQualifier( projectConfig ) )
                   .append(NEWLINE);
 
             String ensembleClause = constructEnsembleClause(dataSourceConfig);

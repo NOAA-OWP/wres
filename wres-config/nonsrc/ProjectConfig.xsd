@@ -412,6 +412,17 @@
                     <xs:attribute name="latest" type="xs:string" />
                 </xs:complexType>
             </xs:element>
+            <!-- Intended for seasonal verification, GMT, valid time: -->
+            <xs:element name="season" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="earliestMonth" type="xs:short" />
+                        <xs:element name="earliestDay" type="xs:short" />
+                        <xs:element name="latestMonth" type="xs:short" />
+                        <xs:element name="latestDay" type="xs:short" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
             <!-- values min and max should be in the unit above -->
             <xs:element name="values" type="doubleBoundsType" minOccurs="0" />
 
