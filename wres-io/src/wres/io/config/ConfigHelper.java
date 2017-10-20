@@ -30,6 +30,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.MetricConfig;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
@@ -879,5 +880,38 @@ public class ConfigHelper
         {
             return this.zoneOffset;
         }
+    }
+
+
+    /**
+     * Creates a SQL snippet expected by the ScriptGenerator as part of a where
+     * clause, filtering by season specified in the configuration passed in.
+     * @param projectConfig the configuration
+     * @return a where clause sql snippet or empty string if no season
+     */
+
+    public static String getSeasonQualifier( ProjectConfig projectConfig )
+    {
+        StringBuilder s = new StringBuilder();
+        PairConfig.Season season = projectConfig.getPair()
+                                                .getSeason();
+        if ( season != null )
+        {
+            s.append( "     AND EXTRACT( day from ts.initialization_date + ");
+            s.append( "INTERVAL '1 HOUR' * lead ) BETWEEN '" );
+            s.append( season.getEarliestDay() );
+            s.append( "' AND '" );
+            s.append( season.getLatestDay() );
+            s.append( "'" );
+            s.append( System.lineSeparator() );
+            s.append( "     AND EXTRACT( month from ts.initialization_date +" );
+            s.append( "INTERVAL '1 HOUR' * lead ) BETWEEN '" );
+            s.append( season.getEarliestMonth() );
+            s.append( "' AND '" );
+            s.append( season.getLatestMonth() );
+            s.append( "' " );
+        }
+
+        return s.toString();
     }
 }
