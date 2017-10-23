@@ -584,8 +584,8 @@ public class Validation
                                  projectConfigPlus.getPath(),
                                  season.sourceLocation().getLineNumber(),
                                  season.sourceLocation().getColumnNumber(),
-                                 season.getEarliestMonth(),
-                                 season.getEarliestDay() );
+                                 season.getLatestMonth(),
+                                 season.getLatestDay() );
                 }
                 result = false;
             }
