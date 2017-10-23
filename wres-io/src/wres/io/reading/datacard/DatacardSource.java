@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 import java.time.LocalDateTime;
 
+import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,206 +29,105 @@ import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.Database;
+import wres.util.Collections;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 /**
- * @author ctubbs
+ * @author Qing Zhu
  *
  */
-@SuppressWarnings("deprecation")
-public class DatacardSource extends BasicSource {
-
-     
+public class DatacardSource extends BasicSource
+{
+	private static final Double[] IGNORABLE_VALUES = {-998.0, -999.0, -9999.0};
 	/**
 	 * 
 	 * @param filename the file name
 	 */
-	public DatacardSource(String filename) {
+    private DatacardSource(String filename)
+    {
 		setFilename(filename);
 		this.setHash();
 	}
-	
-	public String getDatatypeCode()
-	{
-		return datatypeCode;
-	}
-	
-	public void setDatatypeCode(String code)
-	{
-		datatypeCode = code.trim();
-	}
-	
-	public int getTimeInterval()
-	{
-		return timeInterval;
-	}
-	
-	public void setTimeInterval(int interval)
-	{
-		timeInterval = interval;
-	}
-	
-	public void setTimeInterval(String interval)
-	{
-		setTimeInterval(Integer.parseInt(interval.trim()));
-	}
-	
-	public String getSeriesDescription()
-	{
-		return seriesDescription;
-	}
-	
-	public void setSeriesDescription(String description)
-	{
-		seriesDescription = description.trim();
-	}
-	
-	public int getFirstMonth()
+
+    private void setTimeInterval(String interval)
+    {
+        this.timeInterval = Integer.parseInt(interval.trim());
+    }
+
+    private int getFirstMonth()
 	{
 		return firstMonth;
 	}
-	
-	public void setFirstMonth(int month)
+
+    private void setFirstMonth(int month)
 	{
 		firstMonth = month;
 	}
-	
-	public void setFirstMonth(String monthNumber)
+
+    private void setFirstMonth(String monthNumber)
 	{
 	    setFirstMonth(Integer.parseInt(monthNumber.trim()));
 	}
-	
-	public int getFirstYear()
+
+    private int getFirstYear()
 	{
 		return firstYear;
 	}
-	
-	public void setFirstYear(int year)
+
+    private void setFirstYear(int year)
 	{
 		firstYear = year;
 	}
-	
-	public void setFirstYear(String year)
+
+    private void setFirstYear(String year)
 	{
 		year = year.trim();
 		setFirstYear(Integer.parseInt(year));
 	}
-	
-	public int getLastMonth()
-	{
-		return lastMonth;
-	}
-	
-	public void setLastMonth(int month)
-	{
-		lastMonth = month;
-	}
-	
-	public void setLastMonth(String monthNumber)
-	{
-	    setLastMonth(Integer.parseInt(monthNumber.trim()));
-	}
-	
-	public int getLastYear()
-	{
-		return lastYear;
-	}
-	
-	public void setLastYear(int year)
-	{
-		lastYear = year;
-	}
-	
-	public void setLastYear(String year)
-	{
-	    setLastYear(Integer.parseInt(year.trim()));
-	}
-	
-	public int getValuesPerRecord()
-	{
-		return valuesPerRecord;
-	}
-	
-	public void setValuesPerRecord(String amount)
+
+    private void setValuesPerRecord(String amount)
 	{
 		valuesPerRecord = Integer.parseInt(amount.trim());
 	}
-		
-	public String getTimeSeriesIdentifier()
-	{
-		return timeSeriesIdentifier;
-	}
-	
-	public void setTimeSeriesIdentifier(String identifier)
-	{
-		timeSeriesIdentifier = identifier.trim();
-	}
-		
-	public String getMeasurementUnit()
-	{
-		return measurementUnit;
-	}
-	
-	public void setMeasurementUnit(String unit)
-	{
-		measurementUnit = unit;
-	}
-	
-	public int getMeasurementUnitId() throws SQLException 
-	{
-		int id = -1;
-		
-		id = MeasurementUnits.getMeasurementUnitID(measurementUnit);
-				
-		return id;
-	}
 
 	@Override
-	public void saveObservation() throws IOException {
+	public void saveObservation() throws IOException
+    {
 		Path path = Paths.get(getFilename());
-		
-		currentVariableName = getSpecifiedVariableName();
-		measurementUnit     = getSpecifiedVariableUnit();
 										
 		try (BufferedReader reader = Files.newBufferedReader(path))
 		{
-			String line           = null;
-			int    obsValColWidth = 0;
-			int	   lastColIdx     = 0;
+			String line;
+			int lineNumber = 1;
+			int obsValColWidth = 0;
+			int lastColIdx;
 			
 			//Process the comment lines. 
-		    while ((line = reader.readLine()) != null && line.startsWith(getCommentLnSymbol()))
+		    while ((line = reader.readLine()) != null && line.startsWith("$"))
 			{
-				//skip comment lines
+				lineNumber++;
+				LOGGER.debug( "Line {} was skipped because it was a comment line.",
+                              lineNumber );
 			}
-			
-			//First non-comment, header line.
-			if (line != null)
-			{
-				setDatatypeCode(line.substring(14, 18));
-				setTimeInterval(line.substring(29, 31));
-				setTimeSeriesIdentifier(line.substring(34, 46));
-				lastColIdx = Math.min(69, line.length() - 1);
-				
-				if(lastColIdx > 49)
-				{
-					setSeriesDescription(line.substring(49, lastColIdx));
-				}
-			}
-			else
-			{
-				String message = "The NWS Datacard file ('%s') was not formatted correctly and could not be loaded correctly";
-				throw new IOException(String.format(message, getFilename()));
-			}
+
+            //First non-comment, header line.
+            if (line != null)
+            {
+                setTimeInterval(line.substring(29, 31));
+            }
+            else
+            {
+                String message = "The NWS Datacard file ('%s') was not formatted correctly and could not be loaded correctly";
+                throw new IOException(String.format(message, getFilename()));
+            }
 			
 			//Second non-comment, header line.
 			if ((line = reader.readLine()) != null)
 			{
+			    lineNumber++;
 				setFirstMonth(line.substring(0, 2));
 				setFirstYear(line.substring(4, 8));
-				setLastMonth(line.substring(9, 11));
-				setLastYear(line.substring(14, 18));
 				setValuesPerRecord(line.substring(19, 21));
 				lastColIdx = Math.min(32, line.length() - 1);
 				
@@ -238,8 +138,8 @@ public class DatacardSource extends BasicSource {
 			}
 			else
 			{
-				String message = "The NWS Datacard file ('%s') was not formatted correctly and could not be loaded correctly";
-				throw new IOException(String.format(message, getFilename()));
+				String message = "The NWS Datacard file ('%s') was not formatted correctly on line %d and could not be loaded correctly";
+				throw new IOException(String.format(message, getFilename(), lineNumber + 1));
 			}					
 
             LocalDateTime  localDateTime  = LocalDateTime.of( getFirstYear(),
@@ -248,12 +148,10 @@ public class DatacardSource extends BasicSource {
                                                               0,
                                                               0,
                                                               0 );
-            int            valIdxInRecord = 0;
+            int valIdxInRecord;
 
-			int    startIdx   = 0;
-			int    endIdx     = 0;
-
-            LOGGER.debug( "{} is localDateTime", localDateTime );
+			int startIdx;
+			int endIdx;
 
             DataSourceConfig.Source source =
                     ConfigHelper.findDataSourceByFilename( dataSourceConfig,
@@ -277,22 +175,20 @@ public class DatacardSource extends BasicSource {
             }
 
             OffsetDateTime offsetDateTime = localDateTime.atOffset( offset );
-            LOGGER.debug( "{} is offsetDateTime", offsetDateTime );
-
             LocalDateTime utcDateTime =
                     offsetDateTime.withOffsetSameInstant( ZoneOffset.UTC )
                                   .toLocalDateTime();
-            LOGGER.debug( "{} is utcDateTime", utcDateTime );
 
 			//Process the lines one at a time.
 			while ((line = reader.readLine()) != null)
 			{
+			    lineNumber++;
 				line = Strings.rtrim(line);
 				
 				// loop through all values in one line
 				for (valIdxInRecord = 0; valIdxInRecord < valuesPerRecord; valIdxInRecord++)
 				{
-                    String value = "";
+                    String value;
 					startIdx = FIRST_OBS_VALUE_START_POS + valIdxInRecord * obsValColWidth;
 					
 					//Have all values in the line been processed?
@@ -322,26 +218,23 @@ public class DatacardSource extends BasicSource {
                                              + this.getFilename()
                                              + ", could not parse the value at "
                                              + "position " + valIdxInRecord
-                                             + " on this line: " + line;
+                                             + " on this line (" + lineNumber + "): "
+                                             + line;
                             throw new InvalidInputDataException( message, nfe );
                         }
 
                         utcDateTime = utcDateTime.plusHours( timeInterval );
 
-                        // TODO: should we even qualify ingest like this?
-                        if ( dateIsApproved( utcDateTime )  )
-						{
-							try
-							{
-                                addObservedEvent( utcDateTime, this.getValueToSave( actualValue ) );
-								entryCount++;
-							}
-                            catch ( SQLException | IOException e )
-							{
-								LOGGER.warn(value + " in datacard file not saved to database; cause: " + e.getMessage());
-								throw new IOException("Unable to save datacard file data to database; cause: " + e.getMessage(), e);
-		                    }
-						}
+                        try
+                        {
+                            addObservedEvent( utcDateTime, this.getValueToSave( actualValue ) );
+                            entryCount++;
+                        }
+                        catch ( SQLException | IOException e )
+                        {
+                            LOGGER.warn(value + " in datacard file not saved to database; cause: " + e.getMessage());
+                            throw new IOException("Unable to save datacard file data to database; cause: " + e.getMessage(), e);
+                        }
 					}
 					else
 					{
@@ -355,7 +248,6 @@ public class DatacardSource extends BasicSource {
 
 			try
 			{
-				String hash = this.getHash();
 	        	this.getProjectDetails().addSource( this.getHash(), getDataSourceConfig() );
 			}
             catch( SQLException e )
@@ -377,7 +269,7 @@ public class DatacardSource extends BasicSource {
 				
 	private void saveLeftoverObservations()
     {
-        if (insertCount > 0 && !testMode)
+        if (insertCount > 0)
         {
             insertCount = 0;
             CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript.toString(), delimiter);
@@ -424,7 +316,7 @@ public class DatacardSource extends BasicSource {
 		insertCount++;
 	}
 
-	public Integer getMeasurementID() throws SQLException
+    private Integer getMeasurementID() throws SQLException
 	{
 		if(currentMeasurementUnitID == null)
 		{
@@ -432,11 +324,6 @@ public class DatacardSource extends BasicSource {
 		}
 		
 		return currentMeasurementUnitID ;
-	}
-	
-	public void setMeasurementID(Integer id)  
-	{
-		currentMeasurementUnitID = id;
 	}
 
 	/**
@@ -447,7 +334,8 @@ public class DatacardSource extends BasicSource {
     {
 		if (currentVariableID == null)
 		{
-			this.currentVariableID = Variables.getVariableID(currentVariableName, measurementUnit);
+			this.currentVariableID = Variables.getVariableID(this.getSpecifiedVariableName(),
+                                                             this.getSpecifiedVariableUnit());
 		}
 		
 		return this.currentVariableID;
@@ -458,7 +346,7 @@ public class DatacardSource extends BasicSource {
      * @throws SQLException when an ID could not be retrieved from the database
      * @throws IOException when unable to get file attributes OR compute a hash
 	 */
-    public int getSourceID() throws IOException, SQLException
+    private int getSourceID() throws IOException, SQLException
 	{
 		if (currentSourceID == null)
 		{
@@ -476,110 +364,6 @@ public class DatacardSource extends BasicSource {
 		return currentSourceID;
 	}
 	
-	public void setSourceID(Integer id)  
-	{
-		currentSourceID = id;
-	}
-
-    private boolean dateIsApproved( LocalDateTime dateToApprove )
-	{
-	    if (!detailsSpecified || (this.specifiedEarliestDate == null && this.specifiedLatestDate == null))
-	    {
-	        return true;
-	    }
-
-	    return dateToApprove.isAfter(specifiedEarliestDate) && dateToApprove.isBefore(specifiedLatestDate);
-	}
-	
-    private boolean valueIsApproved(String value)
-	{
-    	String missingVal = getSpecifiedMissingValue();
-		String accumVal   = getAccumlatedValue();
-		Float  f          = null;
-		boolean approved  = true;
-		
-		try
-	    {
-			f = Float.valueOf(value.trim());
-			
-			if(missingVal != null && accumVal != null)
-			{
-				approved = !isMissingValue(f, missingVal) && !f.equals(Float.valueOf(accumVal)) &&
-						 f >= specifiedMinimumValue && f <= specifiedMaximumValue; 
-			}
-					   
-	    }
-	    catch (NumberFormatException nfe)
-	    {
-	    	approved = false;
-	    	
-	    	if (LOGGER.isInfoEnabled())
-	    	{
-	    		LOGGER.info(value + ": not approved value; Missing Val: " + missingVal + "; Accum Val: " + accumVal +
-	    		" ; Range: [" + specifiedMinimumValue + ", " + specifiedMaximumValue + "]");
-	    	}
-	    }
-    	
-    	return approved;
-	}
-    
-    private boolean isMissingValue(Float value, String specifiedMissingValues) throws NumberFormatException
-    { 
-    	boolean  isMissing = false;
-    	String[] missingValArr = specifiedMissingValues.split(",");
-    	
-    	//loop through all comma delimited missing values specified in config file
-    	for (String missingVal : missingValArr)
-    	{
-    		if(Float.valueOf(missingVal.trim()).equals(value))
-    		{
-    			isMissing = true;
-    			break;
-    		}
-    	}
-    	
-    	return isMissing;
-    }
-	
-	public void setSpecifiedEarliestDate(String earliestDate)
-	{
-        this.specifiedEarliestDate = LocalDateTime.parse( earliestDate );
-	    this.detailsSpecified = true;
-	}
-	
-	public void setSpecifiedLatestDate(String latestDate)
-	{
-        this.specifiedLatestDate = LocalDateTime.parse( latestDate );
-	    this.detailsSpecified = true;
-	}
-	
-	/**
-	 * Returns number of observation values in file
-	 * @return number of observation values in file
-	 */
-	public int getEntryCount()
-	{
-	   return entryCount;
-	}
-	
-	/**
-	 * Returns number of observation values sent to database
-	 * @return number of observation values sent to database
-	 */
-	public int getInsertCount()
-	{
-	   return insertCount;
-	}
-	
-	/**
-	 * Returns insert query sent to database
-	 * @return insert query sent to database
-	 */
-	public String getInsertQuery()
-	{
-		return currentScript.toString();
-	}
-	
 	/**
 	 * Return the number of columns of allocated for an observation value. In general, it is smaller than 
 	 * the number of columns actually used by an observation value
@@ -589,8 +373,8 @@ public class DatacardSource extends BasicSource {
 	private int getValColWidth(String formatStr)
 	{
 		int width = 0;
-		int idxF  = 0;
-		int idxPeriod = 0;
+		int idxF;
+		int idxPeriod;
 		
 		if(formatStr != null && formatStr.length() > 3)
 		{
@@ -634,103 +418,61 @@ public class DatacardSource extends BasicSource {
 		
 		return fileDateTimeStr;
 	}
-	
-	/**
-	 * Returns a accumulated value as a string
-	 * @return accumulated value from config file 
-	 */
-	protected String getAccumlatedValue()
-    {
-        String accumalatedValue = null;
 
-        if (dataSourceConfig != null)
-        {
-            DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, filename);
-
-            if (source != null && source.getAccumulatedValue() != null && !source.getAccumulatedValue().isEmpty())
-            {
-            	accumalatedValue = source.getAccumulatedValue();
-            }
-        }
-
-        return accumalatedValue;
-    }
-	
-	/**
-	 * Returns a symbol of comment line in DataCard file, from config file  as a string
-	 * @return a symbol of comment line
-	 */
-	protected String getCommentLnSymbol()
-    {
-        String commentLnSymbol = "$";
-
-        if (dataSourceConfig != null)
-        {
-            DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, this.filename);
-
-            if (source != null && source.getCommentLnSymbol() != null && !source.getCommentLnSymbol().isEmpty())
-            {
-            	commentLnSymbol = source.getCommentLnSymbol();
-            }
-        }
-
-        return commentLnSymbol;
-    }
-
-    // TODO: can we find a way to avoid a test mode?
-	/**
-	 * Returns test mode as a boolean
-	 * @return test mode 
-	 */
-	public boolean getTestMode()
-	{
-		return testMode;
-	}
-	
-	/**
-	 * Set test mode
-	 * @param test Flag for test or not
-	 */
-	public void setTestMode(boolean test)
-	{
-		testMode = test;
-	}
-	
-    public Integer getVariablePositionID() throws SQLException
+    private Integer getVariablePositionID() throws SQLException
 	{
 		if(variablePositionID  == null)
 		{
-			variablePositionID = Features.getVariablePositionID(getSpecifiedLocationID(), getSpecifiedLocationID(), getVariableID());
+			variablePositionID = Features.getVariablePositionID(getSpecifiedLocationID(),
+                                                                getSpecifiedLocationID(),
+                                                                getVariableID());
 		}
 		
 		return variablePositionID  ;
 	}
-	
-	public void setVariablePositionID(Integer id)  
-	{
-		variablePositionID = id;
-	}
-			
-	private final static String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, " +
-			  "observation_time, " +
-			  "observed_value, " +
-			  "measurementunit_id, " +
-			  "source_id)";
+
+    @Override
+    protected String getValueToSave( final Double value )
+    {
+        String save;
+
+        if (value == null || this.valueIsIgnorable( value ) || this.valueIsMissing( value ))
+        {
+            save = "\\N";
+        }
+        else
+        {
+            save = String.valueOf(value);
+        }
+
+        return save;
+    }
+
+    private boolean valueIsIgnorable(final double value)
+    {
+        return Collections.exists( DatacardSource.IGNORABLE_VALUES,
+                                   ignorable -> Precision.equals( value, ignorable, EPSILON ));
+    }
+
+    private boolean valueIsMissing(final double value)
+    {
+        return this.getSpecifiedMissingValue() != null &&
+               Precision.equals( Double.parseDouble( this.getSpecifiedMissingValue()), value, EPSILON );
+    }
+
+    private final static String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, " +
+                                                            "observation_time, " +
+                                                            "observed_value, " +
+                                                            "measurementunit_id, " +
+                                                            "source_id)";
 
 	private final static String DATE_TIME_FORMAT = "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}";
-	
-	private String datatypeCode = "";
-	private int timeInterval = 0;
-	private String timeSeriesIdentifier = "";
-	private String seriesDescription = "";
+
 	private int firstMonth = 0;
 	private int firstYear = 0;
-	private int lastMonth = 0;
-	private int lastYear = 0;
 	private int valuesPerRecord = 0;
-	
-	private String measurementUnit = "";
-	private static int FIRST_OBS_VALUE_START_POS = 20;
+
+	private static final int FIRST_OBS_VALUE_START_POS = 20;
 		
 	/**
 	 * The current state of a script that will be sent to the database
@@ -751,15 +493,6 @@ public class DatacardSource extends BasicSource {
 	 * The delimiter between values for copy statements
 	 */
 	private static final String delimiter = "|";
-
-    // TODO: should probably be double values
-    private Float specifiedMinimumValue = Float.NEGATIVE_INFINITY;
-    private Float specifiedMaximumValue = Float.POSITIVE_INFINITY;
-
-	/**
-     * Alias for the system agnostic newline separator
-     */
-	private static final String NEWLINE = System.lineSeparator();
 	
 	/**
 	 * The ID for the variable that is currently being parsed
@@ -770,24 +503,13 @@ public class DatacardSource extends BasicSource {
 	 * The ID for the unit of measurement for the variable that is currently being parsed
 	 */
 	private Integer currentMeasurementUnitID = null;
-	
-	/**
-	 * The name of the variable whose values are currently being parsed 
-	 */
-	private String currentVariableName = null;
-	
+
+
+    private int timeInterval = 0;
 	/**
 	 * The ID for the current source file
 	 */
 	private Integer currentSourceID = null;
-	
-	private boolean detailsSpecified = false;
-
-    /** Earliest date specified in configuration */
-    private LocalDateTime specifiedEarliestDate = null;
-    /** Latest date specified in configuration */
-    private LocalDateTime specifiedLatestDate = null;
-
    
 	/**
 	/* The date/time that the source was created
@@ -798,15 +520,7 @@ public class DatacardSource extends BasicSource {
 	/* The number of values in datacard file
 	*/
 	private int entryCount = 0;
-	
-	/**
-	/* The flag for test or not
-	*/
-	private boolean testMode = false;
-	
-	/**
-	/* The flag for test or not
-	*/
+
 	private Integer variablePositionID = null;
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatacardSource.class);

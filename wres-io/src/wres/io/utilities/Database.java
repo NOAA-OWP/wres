@@ -322,20 +322,26 @@ public final class Database {
 
 		Future task;
 	    boolean shouldAnalyze = false;
-		try {
+
+		try
+		{
 			while (storedIngestTasks.peek() != null)
             {
                 shouldAnalyze = true;
 				ProgressMonitor.increment();
 				task = getStoredIngestTask();
-				if (!task.isDone()) {
-					try {
+				if (!task.isDone())
+				{
+					try
+                    {
 						task.get();
 					}
-					catch (ExecutionException e) {
+					catch (ExecutionException e)
+                    {
 						LOGGER.error(Strings.getStackTrace(e));
 					}
 				}
+
 				ProgressMonitor.completeStep();
 			}
 		}

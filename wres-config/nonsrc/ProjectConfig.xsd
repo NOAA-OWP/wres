@@ -93,8 +93,6 @@
                             <xs:attribute name="missingValue" type="xs:string" default="-999.0" />
                             <xs:attribute name="all" type="xs:boolean" default="false"/>
                             <xs:attribute name="recursive" type="xs:boolean" default="false" />
-                            <xs:attribute name="accumulatedValue" type="xs:string" default="-998.0" />
-                            <xs:attribute name="commentLnSymbol" type="xs:string" default="$" />
                         </xs:extension>
                     </xs:simpleContent>
                 </xs:complexType>

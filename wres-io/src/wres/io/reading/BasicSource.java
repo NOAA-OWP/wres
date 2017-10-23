@@ -41,7 +41,7 @@ public abstract class BasicSource
     /**
      * Epsilon value used to test floating point equivalency
      */
-    private static final double EPSILON = 0.0000001;
+    protected static final double EPSILON = 0.0000001;
 	
 	@SuppressWarnings("static-method")
     /**
