@@ -262,7 +262,8 @@ public final class ScriptGenerator
 
             if (timeShift != null)
             {
-                script.append(" + INTERVAL + '1 hour' * ").append(timeShift);
+                script.append( " + INTERVAL '1 hour' * " )
+                      .append( timeShift );
             }
 
             script.append(NEWLINE);
@@ -280,6 +281,10 @@ public final class ScriptGenerator
                       .append("-- Only retrieve observations on or before this date")
                       .append(NEWLINE);
             }
+
+            script.append( ConfigHelper.getObservationishSeasonQualifier( projectConfig,
+                                                                          timeShift ) )
+                  .append( NEWLINE );
         }
 
         script.append(";");
