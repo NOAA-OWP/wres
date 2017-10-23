@@ -140,6 +140,7 @@ project(':utilities')
         compile 'org.slf4j:slf4j-api:1.7.25'
 
         compile 'com.google.guava:guava:22.0'
+        compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         compile('edu.ucar:cdm:4.6.8')
         {
@@ -192,9 +193,10 @@ project(':wres-io')
         compile project(':utilities')
         compile project(':wres-datamodel-api')
         compile project(':wres-config')
-	compile project(':wres-vis')
+	    compile project(':wres-vis')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
+        compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         compile('edu.ucar:cdm:4.6.8')
         {
@@ -243,7 +245,7 @@ project(':wres-metrics')
     {
         compile project(':wres-datamodel-api')
 	compile project(':wres-config')
-	compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6'
+	compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         compile 'org.slf4j:slf4j-api:1.7.25'
 
         testCompile project (':wres-datamodel')
