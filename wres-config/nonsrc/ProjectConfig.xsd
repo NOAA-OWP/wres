@@ -113,7 +113,6 @@
                 <xs:complexType>
                     <xs:sequence>
                         <xs:element name="width" type="duration" />
-                        <xs:element name="direction" type="direction" />
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
