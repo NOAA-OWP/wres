@@ -208,7 +208,8 @@ public final class Collections
         return foundElement;
     }
     
-    public static <U> boolean exists(Collection<U> source, Predicate<U> expression) {
+    public static <U> boolean exists(Collection<U> source, Predicate<U> expression)
+    {
         Collection<U> filteredCollection = where(source, expression);
         boolean valueExists = false;
 
@@ -217,6 +218,22 @@ public final class Collections
             valueExists = !filteredCollection.isEmpty();
         }
         return valueExists;
+    }
+
+    public static <U> boolean exists(U[] source, Predicate<U> expression)
+    {
+        boolean exists = false;
+
+        for (U value : source)
+        {
+            if (expression.test( value ))
+            {
+                exists = true;
+                break;
+            }
+        }
+
+        return exists;
     }
     
     /**
@@ -229,7 +246,8 @@ public final class Collections
      * @return Boolean indicating whether or not the indicated value exists within the
      * indicated array
      */
-    public static <U> boolean contains(final U[] array, final U value) {
+    public static <U> boolean contains(final U[] array, final U value)
+    {
         boolean has_object = false;
 
         for (U arrayValue : array) {
