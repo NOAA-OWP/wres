@@ -243,6 +243,7 @@ public final class ScriptGenerator
             }
 
             script.append(")::text AS value_date,").append(NEWLINE);
+            // TODO: revisit "extract(epoch...", could agg_hour be simply "0"?
             script.append("     (EXTRACT(epoch FROM O.observation_time - '")
                   .append(zeroDate)
                   .append("')/3600)::int % ")
