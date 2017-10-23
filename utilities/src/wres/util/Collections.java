@@ -1,5 +1,6 @@
 package wres.util;
 
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -14,13 +15,29 @@ import java.util.TreeSet;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
+import org.apache.commons.math3.stat.descriptive.AbstractUnivariateStatistic;
+import org.apache.commons.math3.stat.descriptive.moment.GeometricMean;
+import org.apache.commons.math3.stat.descriptive.moment.Kurtosis;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import org.apache.commons.math3.stat.descriptive.moment.SecondMoment;
+import org.apache.commons.math3.stat.descriptive.moment.Skewness;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
+import org.apache.commons.math3.stat.descriptive.moment.Variance;
+import org.apache.commons.math3.stat.descriptive.rank.Max;
+import org.apache.commons.math3.stat.descriptive.rank.Median;
+import org.apache.commons.math3.stat.descriptive.rank.Min;
+import org.apache.commons.math3.stat.descriptive.rank.PSquarePercentile;
+import org.apache.commons.math3.stat.descriptive.summary.Product;
+import org.apache.commons.math3.stat.descriptive.summary.Sum;
+import org.apache.commons.math3.stat.descriptive.summary.SumOfLogs;
+import org.apache.commons.math3.stat.descriptive.summary.SumOfSquares;
+
 /**
  * @author Christopher Tubbs
  *
  */
 public final class Collections
 {
-    
     /**
      * Creates a new array without the value at the indicated index
      * 
@@ -119,11 +136,14 @@ public final class Collections
      * @param expression An expression that will find a matching element
      * @return The first found object
      */
-    public static <U> U find(U[] source, Predicate<U> expression) {
+    public static <U> U find(U[] source, Predicate<U> expression)
+    {
         U found_element = null;
         
-        for (U element : source) {
-            if (expression.test(element)) {
+        for (U element : source)
+        {
+            if (expression.test(element))
+            {
                 found_element = element;
                 break;
             }
@@ -279,183 +299,105 @@ public final class Collections
         return anyJoiner.toString();
     }
 
-    public static Double median(Collection<Double> values)
-    {
-        if (values.size() == 1)
-        {
-            for (Double value : values)
-            {
-                return value;
-            }
-        }
-
-        Double median = null;
-
-
-        if (values.size() > 0)
-        {
-            List<Double> sortedValues = new ArrayList<>();
-
-            for ( Double value : values )
-            {
-                sortedValues.add( value );
-            }
-
-            sortedValues.sort( Comparator.naturalOrder() );
-
-            if (sortedValues.size() % 2 == 0)
-            {
-                int mid = sortedValues.size() / 2;
-                median = (sortedValues.get( mid - 1 ) + sortedValues.get(mid)) / 2.0;
-            }
-            else
-            {
-                median = sortedValues.get( sortedValues.size() / 2 );
-            }
-        }
-
-        return median;
-    }
-
-    public static Double min(Collection<Double> values)
-    {
-        if (values.size() == 1)
-        {
-            for (Double value : values)
-            {
-                return value;
-            }
-        }
-
-        Double min = null;
-
-        for (Double value : values)
-        {
-            if (min == null)
-            {
-                min = value;
-            }
-            else
-            {
-                min = Math.min( min, value );
-            }
-        }
-
-        return min;
-    }
-
-    public static Double mean(Collection<Double> values)
-    {
-        if (values.size() == 1)
-        {
-            for (Double value : values)
-            {
-                return value;
-            }
-        }
-
-        Double mean = null;
-
-        if (values.size() > 0)
-        {
-            Double sum = sum( values );
-            mean = sum / values.size();
-        }
-
-        return mean;
-    }
-
-    public static Double sum(Collection<Double> values)
-    {
-        if (values.size() == 1)
-        {
-            for (Double value : values)
-            {
-                return value;
-            }
-        }
-
-        Double sum = null;
-
-        for (Double value : values)
-        {
-            if (sum == null)
-            {
-                sum = value;
-            }
-            else
-            {
-                sum += value;
-            }
-        }
-
-        return sum;
-    }
-
-    public static Double max(Collection<Double> values)
-    {
-        if (values.size() == 1)
-        {
-            for (Double value : values)
-            {
-                return value;
-            }
-        }
-
-        Double max = null;
-
-        for (Double value : values)
-        {
-            if (max == null)
-            {
-                max = value;
-            }
-            else
-            {
-                max = Math.max( max, value );
-            }
-        }
-
-        return max;
-    }
-
+    /**
+     * Translates a listing of values and a specified function to an aggregated
+     * value.
+     * <p>
+     *     <b>Note:</b> If there are missing values or the function is not valid,
+     *     NaN is returned
+     * </p>
+     * @param values The collection of values to aggregate
+     * @param function The function to use to aggregate
+     * @return The aggregated value
+     */
     public static Double aggregate(final Collection<Double> values, String function)
     {
-        if (values.size() == 1)
-        {
-            for (Double value : values)
-            {
-                return value;
-            }
-        }
-
         function = function.trim().toLowerCase();
 
-        Double aggregatedValue = null;
+        Double aggregatedValue = Double.NaN;
+
+        AbstractUnivariateStatistic operation = null;
 
         switch ( function )
         {
+            case "mean":
+            case "average":
             case "avg":
-                aggregatedValue = mean( values );
+                operation = new Mean();
                 break;
             case "median":
-                aggregatedValue = median( values );
+                operation = new Median(  );
                 break;
+            case "maximum":
             case "max":
-                aggregatedValue = max(values);
+                operation = new Max(  );
                 break;
+            case "minimum":
             case "min":
-                aggregatedValue = min( values );
+                operation = new Min();
                 break;
             case "sum":
-                aggregatedValue = sum(values);
+                operation = new Sum(  );
                 break;
+            case "sum of logs":
+            case "sum_of_logs":
+            case "sumoflogs":
+                operation = new SumOfLogs(  );
+                break;
+            case "sum_of_squares":
+            case "sum of squares":
+            case "sumofsquares":
+                operation = new SumOfSquares(  );
+                break;
+            case "variance":
+                operation = new Variance(  );
+                break;
+            case "second moment":
+            case "second_moment":
+            case "secondmoment":
+                operation = new SecondMoment(  );
+                break;
+            case "skewness":
+                operation = new Skewness(  );
+                break;
+            case "standard deviation":
+            case "standard_deviation":
+            case "standarddeviation":
+                operation = new StandardDeviation(  );
+                break;
+            case "geometric_mean":
+            case "geometric mean":
+            case "geometricmean":
+                operation = new GeometricMean(  );
+                break;
+            case "product":
+                operation = new Product();
+                break;
+            case "kurtosis":
+                operation = new Kurtosis(  );
+                break;
+            default:
+                throw new InvalidParameterException( "The function '" +
+                                                     String.valueOf(function) +
+                                                     "' is not a valid aggregation function.");
+        }
+
+        if (operation != null)
+        {
+            aggregatedValue = operation.evaluate(
+                    values.stream()
+                          .mapToDouble(
+                                  (value) -> value.doubleValue() ).toArray()
+            );
         }
 
         return aggregatedValue;
     }
 
-    public static <U extends Comparable<? super U>, V> List<V> getValuesInRange(NavigableMap<U, V> map, U minimum, U maximum)
+    public static <U extends Comparable<? super U>, V> List<V> getValuesInRange(
+            NavigableMap<U, V> map,
+            U minimum,
+            U maximum)
     {
         List<V> values = new ArrayList<>(  );
 

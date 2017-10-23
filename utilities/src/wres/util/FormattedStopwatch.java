@@ -21,7 +21,8 @@ public class FormattedStopwatch {
 	/**
 	 * Resets the time keeping and stores the current time in nanoseconds
 	 */
-	public void start() {
+	public void start()
+	{
 		this.innerWatch.reset();
 	    this.innerWatch.start();
 	    this.startTime = OffsetDateTime.now();
@@ -30,7 +31,8 @@ public class FormattedStopwatch {
 	/**
 	 * Halts operations so that a consistent duration may be retrieved
 	 */
-	public void stop() {
+	public void stop()
+	{
 	    this.innerWatch.stop();
 	    this.stopTime = OffsetDateTime.now();
 	}
@@ -39,14 +41,16 @@ public class FormattedStopwatch {
 	 * @return The number of milliseconds between the start and end time. If the
 	 * time is still running, the current time is used in place of the end time
 	 */
-	public long getDuration() {
+	public long getDuration()
+	{
 		return this.innerWatch.elapsed(TimeUnit.MILLISECONDS);
 	}
 	
 	/**
 	 * @return The current duration between start and stop formatted for human readability
 	 */
-	public String getFormattedDuration() {
+	public String getFormattedDuration()
+	{
 	    long milliseconds = getDuration();
 	    String duration = "";
 		
@@ -60,12 +64,14 @@ public class FormattedStopwatch {
 			milliseconds = milliseconds - (3600000 * hours);
 		}
 
-		if (milliseconds > 60000) {
+		if (milliseconds > 60000)
+		{
 		    minutes = Time.minutesFromMilliseconds(milliseconds);
 		    milliseconds = milliseconds - (60000 * minutes); 
 		}
 		
-		if (milliseconds > 1000) {
+		if (milliseconds > 1000)
+		{
 		    seconds = milliseconds / 1000.0;
 		}
 
@@ -82,7 +88,8 @@ public class FormattedStopwatch {
 		    duration += seconds + "s";
 		}
 		
-		if (duration.isEmpty()) {
+		if (duration.isEmpty())
+		{
 		    duration = milliseconds + " ms";
 		}
 		

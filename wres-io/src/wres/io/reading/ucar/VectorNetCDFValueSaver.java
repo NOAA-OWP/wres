@@ -3,13 +3,12 @@ package wres.io.reading.ucar;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -17,6 +16,7 @@ import java.util.concurrent.Future;
 
 import javax.validation.constraints.NotNull;
 
+import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
@@ -90,32 +90,84 @@ class VectorNetCDFValueSaver extends WRESRunnable
         }
     }
 
-    private static final Object VARIABLEPOSITION_LOCK = new Object();
-    private static final String DELIMITER = "|";
-    private static final String COLUMN_DEFINTIION = "(timeseries_id, lead, forecasted_value)";
+    // Used to map the mapping between netcdf vector indices to spatiovariable
+    // ids from the database to the key for the series of values.
+    //
+    // If all short range channel_rt NWM forecasts from a certain date are
+    // being ingested, that means that there will be ~432 different files,
+    // split up into 24 groups of 18 files. Each group will get its own mapping
+    // to indices since they will be unique to each group.
+    //
+    // A spatiovariable id is the identifier for the link between a variable
+    // and a location. That id will be used to link a value for a variable
+    // to a location.
+    // In observations, the spatiovariable id is the variable position id,
+    // with forecasts, it is the time series id
+    private static Map<TimeSeriesIndexKey, Map<Integer, Integer>> indexMapping;
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(VectorNetCDFValueSaver.class);
+    // Keeps track of the IDs for all variables whose variable positions have
+    // been generated. Only variables that are not recorded in this list
+    // should have variable positions generated for them.
+    private static final Set<Integer> addedVariables =
+            Collections.synchronizedSet( new HashSet<Integer>() );
+
+    // A collection of locks to use based on a series of values' context
+    // This will allow the application to lock operations for a given
+    // initialization date, variable, type of measurement,
+    // and NWM grouping (short range, assim, etc) without blocking the other
+    // NWM contexts (the short range stream flow for '2017-08-08 00:00:00'
+    // won't block '2017-08-08 01:00:00')
+    private static final Map<TimeSeriesIndexKey, Object> keyLocks = new ConcurrentHashMap<>(  );
+    private static final Object KEY_LOCK = new Object();
+
+    /**
+     * Epsilon value used to test floating point equivalency
+     */
+    private static final double EPSILON = 0.0000001;
+
+    /**
+     * Gets a object to lock on based on the key for a time series
+     * @param key The identifier for a set of circumstances that the NetCDF
+     *            file belongs to
+     * @return A sharable object to lock on
+     */
+    private static Object getKeyLock(TimeSeriesIndexKey key)
+    {
+        Object lock;
+        synchronized ( KEY_LOCK )
+        {
+            // If no lock has been created, add one so it can be shared
+            if (!keyLocks.containsKey( key ))
+            {
+                keyLocks.put( key, new Object() );
+            }
+            lock = keyLocks.get( key );
+        }
+        return lock;
+    }
+
+    private static final String DELIMITER = "|";
+    private static final String FORECAST_COLUMN_DEFINTIION =
+            "(timeseries_id, lead, forecasted_value)";
+
+    private final static Logger LOGGER =
+            LoggerFactory.getLogger(VectorNetCDFValueSaver.class);
+
     private StringBuilder copyScript;
     private String copyHeader;
     private int copyCount = 0;
 
     private final Path filePath;
     private NetcdfFile source;
-    private final Stack<Future<?>> operations = new Stack<>();
     private Integer lead;
     private Variable variable;
     private Integer variableID;
-    private String variablePositionPartitionName;
     private final Future<String> futureHash;
     private String hash;
     private final ProjectDetails projectDetails;
     private final DataSourceConfig dataSourceConfig;
     private Integer measurementUnitID;
     private Integer sourceID;
-
-    // Used to map feature indices to forecast ensembles (used for forecasts)
-    private static Map<TimeSeriesIndexKey, Map<Integer, Integer>> indexMapping;
-
     private Double missingValue;
 
     @Internal(exclusivePackage = "wres.io")
@@ -139,6 +191,11 @@ class VectorNetCDFValueSaver extends WRESRunnable
         this.dataSourceConfig = dataSourceConfig;
     }
 
+    /**
+     * Gets the result of the
+     * @return
+     * @throws IOException
+     */
     private String getHash() throws IOException
     {
         if (this.hash == null)
@@ -169,13 +226,22 @@ class VectorNetCDFValueSaver extends WRESRunnable
         return this.hash;
     }
 
+    /**
+     * Generates and returns the header used to copy data straight into the
+     * database
+     * @return The header for copy statements
+     * @throws IOException Thrown if the lead time could not be retrieved
+     * from the source file
+     * @throws SQLException Thrown if an appropriate name for a partition
+     * could not be retrieved from the database
+     */
     private String getCopyHeader() throws IOException, SQLException
     {
         if (!Strings.hasValue( this.copyHeader ) && this.isForecast())
         {
             this.copyHeader = TimeSeries.getForecastValueParitionName( this.getLead() );
             this.copyHeader += " ";
-            this.copyHeader += VectorNetCDFValueSaver.COLUMN_DEFINTIION;
+            this.copyHeader += VectorNetCDFValueSaver.FORECAST_COLUMN_DEFINTIION;
         }
         else if (!Strings.hasValue( this.copyHeader ))
         {
@@ -299,17 +365,10 @@ class VectorNetCDFValueSaver extends WRESRunnable
     {
         try
         {
-
-            // Read the data from the NetCDF file
+            // Read and save the data from the NetCDF file
             this.read();
-
-            // Wait for each statement sent to the database is complete
-            while (!this.operations.empty())
-            {
-                this.operations.pop().get();
-            }
         }
-        catch (SQLException | IOException | InterruptedException | ExecutionException e)
+        catch (SQLException | IOException e )
         {
             LOGGER.error(Strings.getStackTrace(e));
         }
@@ -367,9 +426,20 @@ class VectorNetCDFValueSaver extends WRESRunnable
             this.copyScript.append( spatioVariableID )
                            .append( DELIMITER )
                            .append( this.getLead() )
-                           .append( DELIMITER )
-                           .append( value )
-                           .append( NEWLINE );
+                           .append( DELIMITER );
+
+            // If the value is null, the value to copy should be '\N', which
+            // postgresql recognizes as null in the copy statement.
+            if (value == null)
+            {
+                this.copyScript.append("\\N");
+            }
+            else
+            {
+                this.copyScript.append(value);
+            }
+
+            this.copyScript.append( NEWLINE );
         }
         else
         {
@@ -379,9 +449,20 @@ class VectorNetCDFValueSaver extends WRESRunnable
             this.copyScript.append( spatioVariableID )
                            .append( DELIMITER )
                            .append( NetCDF.getValidTime( this.getSource() ) )
-                           .append( DELIMITER )
-                           .append(value)
-                           .append( DELIMITER )
+                           .append( DELIMITER );
+
+            // If the value is null, the value to copy should be '\N', which
+            // postgresql recognizes as null in the copy statement.
+            if (value == null)
+            {
+                this.copyScript.append("\\N");
+            }
+            else
+            {
+                this.copyScript.append(value);
+            }
+
+            this.copyScript.append( DELIMITER )
                            .append(this.getMeasurementUnitID())
                            .append( DELIMITER )
                            .append( this.getSourceID() )
@@ -527,7 +608,8 @@ class VectorNetCDFValueSaver extends WRESRunnable
 
             // Send the copier to the Database handler's task queue and add
             // the resulting future to our list of copy operations
-            this.operations.add(Database.execute( copier ));
+            Database.storeIngestTask( Database.execute( copier ) );
+            //this.operations.add(Database.execute( copier ));
 
             // Reset the values to copy
             this.copyScript = new StringBuilder(  );
@@ -586,24 +668,37 @@ class VectorNetCDFValueSaver extends WRESRunnable
      */
     private void addVariablePositions() throws IOException, SQLException
     {
+        // Only add variable positions for variables that haven't had positions
+        // added in this session. It doesn't scale well.
+        if (!VectorNetCDFValueSaver.addedVariables.contains( this.getVariableID() ))
+        {
+            // Build a script to add an entry to wres.VariablePosition for each
+            // variable and each location in the database that we can tie to a
+            // NetCDF index that does not exist
+            StringBuilder script = new StringBuilder();
 
-        // Build a script to add an entry to wres.VariablePosition for each
-        // variable and each location in the database that we can tie to a
-        // NetCDF index that does not exist
-        StringBuilder script = new StringBuilder();
+            script.append(
+                    "INSERT INTO wres.VariablePosition (variable_id, x_position)" )
+                  .append( NEWLINE );
+            script.append( "SELECT " )
+                  .append( this.getVariableID() )
+                  .append( ", F.feature_id" )
+                  .append( NEWLINE );
+            script.append( "FROM wres.Feature F" ).append( NEWLINE );
+            script.append( "WHERE F.nwm_index IS NOT NULL" ).append( NEWLINE );
+            script.append( "     AND NOT EXISTS (" ).append( NEWLINE );
+            script.append( "         SELECT 1" ).append( NEWLINE );
+            script.append( "         FROM wres.VariablePosition VP" )
+                  .append( NEWLINE );
+            script.append( "         WHERE VP.variable_id = " )
+                  .append( this.getVariableID() )
+                  .append( NEWLINE );
+            script.append( "             AND VP.x_position = F.feature_id" )
+                  .append( NEWLINE );
+            script.append( ");" );
 
-        script.append("INSERT INTO wres.VariablePosition (variable_id, x_position)").append(NEWLINE);
-        script.append("SELECT ").append(this.getVariableID()).append(", F.feature_id").append(NEWLINE);
-        script.append("FROM wres.Feature F").append(NEWLINE);
-        script.append("WHERE F.nwm_index IS NOT NULL").append(NEWLINE);
-        script.append("     AND NOT EXISTS (").append(NEWLINE);
-        script.append("         SELECT 1").append(NEWLINE);
-        script.append("         FROM wres.VariablePosition VP").append(NEWLINE);
-        script.append("         WHERE VP.variable_id = ").append(this.getVariableID()).append(NEWLINE);
-        script.append("             AND VP.x_position = F.feature_id").append(NEWLINE);
-        script.append(");");
-
-        Database.execute(script.toString());
+            Database.execute( script.toString() );
+        }
     }
 
     /**
@@ -647,18 +742,8 @@ class VectorNetCDFValueSaver extends WRESRunnable
         script.append("    AND NOT EXISTS (").append(NEWLINE);
         script.append("        SELECT 1").append(NEWLINE);
         script.append("        FROM wres.TimeSeries TS").append(NEWLINE);
-        script.append("        INNER JOIN wres.ForecastSource FS").append(NEWLINE);
-        script.append("            ON FS.forecast_id = TS.timeseries_id").append(NEWLINE);
-        script.append("        INNER JOIN wres.ProjectSource PS").append(NEWLINE);
-        script.append("            ON PS.source_id = FS.source_id").append(NEWLINE);
         script.append("        WHERE TS.variableposition_id = VP.variableposition_id")
               .append(NEWLINE);
-
-        script.append("            AND PS.project_id = ").append(this.projectDetails.getId())
-              .append(NEWLINE);
-
-        script.append("            AND TS.measurementunit_id = ").append(this.getMeasurementUnitID())
-              .append( NEWLINE );
 
         script.append("            AND TS.ensemble_id = " ).append(this.getEnsembleID())
               .append(NEWLINE);
@@ -698,6 +783,12 @@ class VectorNetCDFValueSaver extends WRESRunnable
      *     the forecast initialization date and ensemble, along with the position
      *     of the variable.
      * </p>
+     *<p>
+     *     Using the resulting index mapping, we can find the spatial variable
+     *     index by inputting the index of the read NetCDF variable.
+     *     So, if I encounter index 93832 in the NetCDF array, I can
+     *     discover that that value should be saved with timeseries_id = 83
+     *</p>
      * @return A mapping between the netcdf location index and the id of its
      * spatial-variable identifier
      * @throws IOException Thrown if communication with the source file failed
@@ -739,7 +830,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
              || !VectorNetCDFValueSaver.indexMapping.containsKey( key ) )
         {
             // Wait and lock down processing to ensure work isn't duplicated
-            synchronized ( VectorNetCDFValueSaver.VARIABLEPOSITION_LOCK )
+            synchronized ( VectorNetCDFValueSaver.getKeyLock( key ) )
             {
                 // Double check to make sure the necessary work wasn't done
                 // while waiting for the lock
@@ -906,10 +997,15 @@ class VectorNetCDFValueSaver extends WRESRunnable
             {
                 // Get the ID for the location and variable for this index
                 Integer positionIndex = variableIndices.get(index);
+                Double value = values.getDouble( index ) * scaleFactor;
+
+                if ( Precision.equals( value, this.getMissingValue(), EPSILON ) )
+                {
+                    value = null;
+                }
 
                 // Scale the read value and send it to be saved
-                this.addValuesToSave(positionIndex,
-                                     values.getDouble(index) * scaleFactor);
+                this.addValuesToSave(positionIndex, value);
             }
         }
 

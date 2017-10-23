@@ -253,12 +253,6 @@ public class ZippedSource extends BasicSource {
             LOGGER.debug( message, archivedFileName );
         }
 
-        if (!this.alreadySuspendedIndexes)
-        {
-            Database.suspendAllIndices();
-            this.alreadySuspendedIndexes = true;
-        }
-
         WRESRunnable ingest;
 
         if (sourceType == SourceType.PI_XML)
@@ -309,5 +303,4 @@ public class ZippedSource extends BasicSource {
     }
 
     private final String directoryPath;
-    private boolean alreadySuspendedIndexes;
 }

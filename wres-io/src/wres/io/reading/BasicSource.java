@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 
 import wres.config.generated.DataSourceConfig;
@@ -28,13 +29,19 @@ import wres.util.Strings;
  * observations or forecasts from a source file
  */
 @Internal(exclusivePackage = "wres.io")
-public abstract class BasicSource {
+public abstract class BasicSource
+{
 
     /**
         System agnostic newline character used to make created scripts easier
         to read
      */
     protected static final String NEWLINE = System.lineSeparator();
+
+    /**
+     * Epsilon value used to test floating point equivalency
+     */
+    private static final double EPSILON = 0.0000001;
 	
 	@SuppressWarnings("static-method")
     /**
@@ -155,6 +162,11 @@ public abstract class BasicSource {
 	private ProjectDetails projectDetails;
 
     /**
+     * Represents a value that should be ignored from the source material
+     */
+    private Double missingValue;
+
+    /**
      * Sets the details linking a configured project to data within the database
      * @param projectDetails The details linking the configured project to
      *                       the database
@@ -240,17 +252,81 @@ public abstract class BasicSource {
     {
         String missingValue = null;
 
-        if (dataSourceConfig != null)
+        if (missingValue == null && dataSourceConfig != null)
         {
             DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, this.filename);
 
             if (source != null && source.getMissingValue() != null && !source.getMissingValue().isEmpty())
             {
                 missingValue = source.getMissingValue();
+
+                if ( missingValue.lastIndexOf( "." ) + 6 < missingValue.length() )
+                {
+                    missingValue = missingValue.substring( 0, missingValue.lastIndexOf( "." ) + 6 );
+                }
             }
         }
 
         return missingValue;
+    }
+
+    /**
+     * Conditions the passed in value and transforms it into a form suitable to
+     * save into the database.
+     * <p>
+     *     If the passed in value is found to be within {@value EPSILON} of the
+     *     specified missing value, the value 'null' is returned.
+     * </p>
+     * @param value The original value
+     * @return The conditioned value that is safe to save to the database.
+     */
+    protected String getValueToSave(Double value)
+    {
+        if (value != null && getSpecifiedMissingValue() != null)
+        {
+            Double missing = Double.parseDouble( this.getSpecifiedMissingValue() );
+            if ( Precision.equals( value, missing, EPSILON ))
+            {
+                value = null;
+            }
+        }
+
+        return String.valueOf(value);
+    }
+
+    /**
+     * Conditions the passed in value and transforms it into a form suitable to
+     * save into the database.
+     * <p>
+     *     If the passed in value is found to be equal to the specified missing
+     *     value, it is set to 'null'
+     * </p>
+     * @param value The original value
+     * @return The conditioned value that is safe to save to the database.
+     */
+    protected String getValueToSave(String value)
+    {
+        if (value != null &&
+            !value.equalsIgnoreCase( "null" ) &&
+            this.getSpecifiedMissingValue() != null)
+        {
+            if ( value.lastIndexOf( "." ) + 6 < value.length() )
+            {
+                value = value.substring( 0, value.lastIndexOf( "." ) + 6 );
+            }
+
+            if (value.equalsIgnoreCase( this.getSpecifiedMissingValue() ))
+            {
+                value = "\\N";
+            }
+        }
+
+        if (value == null || value.equalsIgnoreCase( "null" ))
+        {
+            value = "\\N";
+        }
+
+        return value;
     }
 
     /**

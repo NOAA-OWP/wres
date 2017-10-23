@@ -600,7 +600,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         try
         {
-            sourceTotal = this.getLeftSources().size() + this.getRightSources().size() + this.getBaselineSources().size();
+            sourceTotal = this.getLeftSources().size() +
+                          this.getRightSources().size() +
+                          this.getBaselineSources().size();
         }
         catch ( SQLException e )
         {

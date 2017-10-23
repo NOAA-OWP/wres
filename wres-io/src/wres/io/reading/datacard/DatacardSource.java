@@ -371,7 +371,7 @@ public class DatacardSource extends BasicSource {
         }
 		finally
 		{
-            LOGGER.info( "{} values of datacardsource saved to database.",
+            LOGGER.debug( "{} values of datacardsource saved to database.",
                          entryCount );
 		}
 	}

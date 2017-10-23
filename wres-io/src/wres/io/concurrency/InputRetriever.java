@@ -408,29 +408,29 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                                                    variableIdentifier,
                                                                                    sourceConfig.getLabel());
 
-        int windowNumber = this.progress;
-
+        // This will help us determine when the window will end
+        int windowNumber = this.progress + 1;
+        Double windowWidth = 1.0;
         // If this is a simulation, there are no windows, so set to 0
-        if ( sourceConfig.getType() == DatasourceType.SIMULATIONS)
+        if ( !ConfigHelper.isForecast( sourceConfig ))
         {
             windowNumber = 0;
+            windowWidth = 0.0;
         }
-
-        Double windowWidth = 1.0;
-
-        try
+        else
         {
-            windowWidth = ConfigHelper.getWindowWidth( this.projectConfig );
-        }
-        catch ( InvalidPropertiesFormatException e )
-        {
-            LOGGER.error( Strings.getStackTrace(e) );
-            LOGGER.error("The width of the standard window for this project could not be determined.");
+            try
+            {
+                windowWidth = ConfigHelper.getWindowWidth( this.projectConfig );
+            }
+            catch ( InvalidPropertiesFormatException e )
+            {
+                LOGGER.error( Strings.getStackTrace(e) );
+                LOGGER.error("The width of the standard window for this project could not be determined.");
+            }
         }
 
-        // (windowNumber * windowWidth) + leadOffset would yield when the window BEGAN
-        // want the upper bound, instead
-        Double lastLead = ((windowNumber + 1) * windowWidth) + leadOffset;
+        Double lastLead = (windowNumber * windowWidth) + leadOffset;
         return metadataFactory.getMetadata(dim,
                                            datasetIdentifier,
                                            lastLead.intValue());

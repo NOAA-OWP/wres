@@ -59,7 +59,7 @@ public final class Operations {
         {
             PIXMLReader.saveLeftoverForecasts();
             Database.completeAllIngestTasks();
-            Database.restoreAllIndices();
+            Database.addNewIndexes();
         }
     }
 
@@ -79,7 +79,7 @@ public final class Operations {
     public static void shutdown()
     {
         LOGGER.info("Shutting down the IO layer...");
-        Database.restoreAllIndices();
+        Database.addNewIndexes();
         Executor.complete();
         Database.shutdown();
     }
