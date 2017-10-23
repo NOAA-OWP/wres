@@ -220,7 +220,7 @@ public class CommaSeparated
 
                     String toWrite = "NA";
 
-                    if ( value != null )
+                    if ( value != null && value.equals( Double.NaN ) )
                     {
                         if ( formatter != null )
                         {
@@ -315,7 +315,8 @@ public class CommaSeparated
                         String toWrite = "NA";
 
                         if ( value != null
-                             && value.getData() != null )
+                             && value.getData() != null
+                             && !value.getData().equals( Double.NaN ) )
                         {
 
                             if ( formatter != null )
