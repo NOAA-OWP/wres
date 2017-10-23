@@ -124,9 +124,10 @@ public final class ScriptGenerator
             script.append("WHERE ").append(variablePositionClause).append(NEWLINE);
             script.append("     AND ")
                   .append(ConfigHelper.getLeadQualifier(projectConfig, progress, leadOffset))
-                  .append( NEWLINE )
-                  .append( ConfigHelper.getSeasonQualifier( projectConfig ) )
-                  .append(NEWLINE);
+                  .append( NEWLINE );
+            script.append( ConfigHelper.getForecastishSeasonQualifier( projectConfig,
+                                                                       timeShift ) )
+                  .append( NEWLINE );
 
             String ensembleClause = constructEnsembleClause(dataSourceConfig);
 

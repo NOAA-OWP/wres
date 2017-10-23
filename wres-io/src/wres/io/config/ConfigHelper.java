@@ -886,26 +886,44 @@ public class ConfigHelper
     /**
      * Creates a SQL snippet expected by the ScriptGenerator as part of a where
      * clause, filtering by season specified in the configuration passed in.
-     * @param projectConfig the configuration
+     * <br>
+     * Tailored to the forecast-ish type queries, not observation-ish type.
+     * @param projectConfig the configuration, non-null
+     * @param timeShift the amount of time to shift, null otherwise
      * @return a where clause sql snippet or empty string if no season
      */
 
-    public static String getSeasonQualifier( ProjectConfig projectConfig )
+    public static String getForecastishSeasonQualifier( ProjectConfig projectConfig,
+                                                        Integer timeShift )
     {
         StringBuilder s = new StringBuilder();
         PairConfig.Season season = projectConfig.getPair()
                                                 .getSeason();
         if ( season != null )
         {
-            s.append( "     AND EXTRACT( day from ts.initialization_date + ");
-            s.append( "INTERVAL '1 HOUR' * lead ) BETWEEN '" );
+            s.append( "     AND EXTRACT( day from ts.initialization_date + " );
+            s.append( "INTERVAL '1 HOUR' * lead " );
+
+            if ( timeShift != null )
+            {
+                s.append(" + INTERVAL '1 HOUR' * ").append( timeShift );
+            }
+
+            s.append( ") BETWEEN '");
             s.append( season.getEarliestDay() );
             s.append( "' AND '" );
             s.append( season.getLatestDay() );
             s.append( "'" );
             s.append( System.lineSeparator() );
             s.append( "     AND EXTRACT( month from ts.initialization_date +" );
-            s.append( "INTERVAL '1 HOUR' * lead ) BETWEEN '" );
+            s.append( " INTERVAL '1 HOUR' * lead ");
+
+            if ( timeShift != null )
+            {
+                s.append(" + INTERVAL '1 HOUR' * ").append( timeShift );
+            }
+
+            s.append( ") BETWEEN '" );
             s.append( season.getEarliestMonth() );
             s.append( "' AND '" );
             s.append( season.getLatestMonth() );
