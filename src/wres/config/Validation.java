@@ -4,6 +4,8 @@ import java.io.File;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.DateTimeException;
+import java.time.MonthDay;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
@@ -18,6 +20,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
+import wres.config.generated.Format;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
@@ -378,6 +381,10 @@ public class Validation
                                                     pairConfig )
                  && result;
 
+        result = Validation.isSeasonValid( projectConfigPlus,
+                                           pairConfig )
+                 && result;
+
         return result;
     }
 
@@ -518,6 +525,97 @@ public class Validation
         return result;
     }
 
+
+    /**
+     * Returns true when seasonal verification config is valid, false otherwise
+     * @param projectConfigPlus the project config
+     * @param pairConfig the pair element to check
+     * @return true when valid, false otherwise
+     */
+    private static boolean isSeasonValid( ProjectConfigPlus projectConfigPlus,
+                                          PairConfig pairConfig )
+    {
+        boolean result = true;
+
+        PairConfig.Season season = pairConfig.getSeason();
+
+        if ( season != null )
+        {
+            MonthDay earliest = MonthDay.of( 1, 1 );
+            MonthDay latest = MonthDay.of( 12, 31 );
+
+            try
+            {
+                earliest = MonthDay.of( season.getEarliestMonth(),
+                                        season.getEarliestDay() );
+            }
+            catch ( DateTimeException dte )
+            {
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " The month {} and day {} combination does "
+                                 + "not appear to be valid. Please use numeric "
+                                 + "month and numeric day, such as 4 for April "
+                                 + "and 20 for 20th.",
+                                 projectConfigPlus.getPath(),
+                                 season.sourceLocation().getLineNumber(),
+                                 season.sourceLocation().getColumnNumber(),
+                                 season.getEarliestMonth(),
+                                 season.getEarliestDay() );
+                }
+                result = false;
+            }
+
+            try
+            {
+                latest = MonthDay.of( season.getLatestMonth(),
+                                      season.getLatestDay() );
+            }
+            catch ( DateTimeException dte )
+            {
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " The month {} and day {} combination does "
+                                 + "not appear to be valid. Please use numeric "
+                                 + "month and numeric day, such as 8 for August"
+                                 + " and 30 for 30th.",
+                                 projectConfigPlus.getPath(),
+                                 season.sourceLocation().getLineNumber(),
+                                 season.sourceLocation().getColumnNumber(),
+                                 season.getLatestMonth(),
+                                 season.getLatestDay() );
+                }
+                result = false;
+            }
+
+            // Earliest should precede latest.
+            if ( earliest.isAfter( latest ) )
+            {
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " The 'earliest' month {} and day {} is "
+                                 + "AFTER the 'latest' month {} and day {}. "
+                                 + "Please correct the dates so that earliest "
+                                 + "falls before the latest.",
+                                 projectConfigPlus.getPath(),
+                                 season.sourceLocation().getLineNumber(),
+                                 season.sourceLocation().getColumnNumber(),
+                                 season.getEarliestMonth(),
+                                 season.getEarliestDay(),
+                                 season.getLatestMonth(),
+                                 season.getLatestDay() );
+                }
+
+                result = false;
+            }
+        }
+
+        return result;
+    }
+
     private static boolean areDataSourceConfigsValid( ProjectConfigPlus projectConfigPlus )
     {
         boolean result = true;
@@ -602,8 +700,60 @@ public class Validation
 
             dataSourcesValid = false;
         }
+        else
+        {
+            for ( DataSourceConfig.Source s : dataSourceConfig.getSource() )
+            {
+                dataSourcesValid =
+                        Validation.isDateConfigValid( projectConfigPlus,
+                                                      s )
+                        && dataSourcesValid;
+            }
+        }
 
         result = dataSourcesValid && result;
+
+        return result;
+    }
+
+
+    /**
+     * Checks validity of date and time configuration such as zone and offset.
+     * @param projectConfigPlus the config
+     * @param source the particular source element to check
+     * @return true if valid, false otherwise
+     * @throws NullPointerException when any arg is null
+     */
+
+    static boolean isDateConfigValid( ProjectConfigPlus projectConfigPlus,
+                                      DataSourceConfig.Source source )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+        Objects.requireNonNull( source, NON_NULL );
+
+        boolean result = true;
+
+        if ( source.getZoneOffset() != null
+             && source.getFormat() != null
+             && source.getFormat().equals( Format.PI_XML ) )
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " Please remove the zoneOffset from PI-XML "
+                             + "source configuration. WRES requires PI-XML to "
+                             + "include a zone offset in the data and will use "
+                             + "that. If you wish to have data perform time "
+                             + "travel for whatever reason, there is a "
+                             + "separate <timeShift> configuration option " +
+                             "for that purpose.",
+                             projectConfigPlus.getPath(),
+                             source.sourceLocation().getLineNumber(),
+                             source.sourceLocation().getColumnNumber() );
+            }
+
+            result = false;
+        }
 
         return result;
     }
