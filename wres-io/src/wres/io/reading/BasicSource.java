@@ -291,42 +291,14 @@ public abstract class BasicSource
             }
         }
 
-        return String.valueOf(value);
-    }
-
-    /**
-     * Conditions the passed in value and transforms it into a form suitable to
-     * save into the database.
-     * <p>
-     *     If the passed in value is found to be equal to the specified missing
-     *     value, it is set to 'null'
-     * </p>
-     * @param value The original value
-     * @return The conditioned value that is safe to save to the database.
-     */
-    protected String getValueToSave(String value)
-    {
-        if (value != null &&
-            !value.equalsIgnoreCase( "null" ) &&
-            this.getSpecifiedMissingValue() != null)
+        if (value == null)
         {
-            if ( value.lastIndexOf( "." ) + 6 < value.length() )
-            {
-                value = value.substring( 0, value.lastIndexOf( "." ) + 6 );
-            }
-
-            if (value.equalsIgnoreCase( this.getSpecifiedMissingValue() ))
-            {
-                value = "\\N";
-            }
+            return "\\N";
         }
-
-        if (value == null || value.equalsIgnoreCase( "null" ))
+        else
         {
-            value = "\\N";
+            return String.valueOf(value);
         }
-
-        return value;
     }
 
     /**

@@ -355,12 +355,17 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                         conversion = conversionMap.get( measurementUnitID );
                     }
 
-                    double convertedMeasurement = conversion.convert( measurements[measurementIndex] );
-                    /*double convertedMeasurement = UnitConversions.convert(measurements[measurementIndex],
-                                                                             resultSet.getInt("measurementunit_id"),
-                                                                             this.projectConfig.getPair().getUnit());*/
+                    Double convertedMeasurement = null;
 
-                    if (convertedMeasurement >= minimum && maximum >= convertedMeasurement)
+                    if (measurements[measurementIndex] != null)
+                    {
+                        convertedMeasurement = conversion.convert( measurements[measurementIndex] );
+                    }
+
+                    // The value needs to be added if it was null because it indicates
+                    // missing source data which will need to be handled.
+                    if (convertedMeasurement == null ||
+                        (convertedMeasurement >= minimum && maximum >= convertedMeasurement))
                     {
                         rightValues.putIfAbsent( measurementIndex, new ArrayList<>() );
                         rightValues.get(measurementIndex).add( convertedMeasurement );

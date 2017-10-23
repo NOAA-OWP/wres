@@ -101,7 +101,11 @@ public class PairWriter extends WRESCallable<Boolean>
 
                 double left = this.getPair().getItemOne();
 
-                if ( formatter != null )
+                if (left == Double.NaN)
+                {
+                    line.add("NaN");
+                }
+                else if ( formatter != null )
                 {
                     line.add( formatter.format( left ) );
                 }
@@ -116,7 +120,11 @@ public class PairWriter extends WRESCallable<Boolean>
 
                 for ( Double rightValue : rightValues )
                 {
-                    if ( formatter != null )
+                    if (rightValue == Double.NaN)
+                    {
+                        arrayJoiner.add( "NaN" );
+                    }
+                    else if ( formatter != null )
                     {
                         arrayJoiner.add( formatter.format( rightValue ) );
                     }

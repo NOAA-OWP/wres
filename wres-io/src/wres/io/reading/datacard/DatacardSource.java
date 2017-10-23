@@ -329,12 +329,11 @@ public class DatacardSource extends BasicSource {
                         utcDateTime = utcDateTime.plusHours( timeInterval );
 
                         // TODO: should we even qualify ingest like this?
-                        if ( dateIsApproved( utcDateTime )
-                             && valueIsApproved( value ) )
+                        if ( dateIsApproved( utcDateTime )  )
 						{
 							try
 							{
-                                addObservedEvent( utcDateTime, actualValue );
+                                addObservedEvent( utcDateTime, this.getValueToSave( actualValue ) );
 								entryCount++;
 							}
                             catch ( SQLException | IOException e )
@@ -398,7 +397,7 @@ public class DatacardSource extends BasicSource {
      * @throws IOException when reading the file or computing the hash
      */
     private void addObservedEvent( LocalDateTime observedTime,
-                                   double observedValue )
+                                   String observedValue )
     // TODO translate to some kind of IOException here or deeper in the stack
             throws SQLException, IOException
 	{
