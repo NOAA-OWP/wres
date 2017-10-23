@@ -1,6 +1,8 @@
 package wres.io.reading.datacard;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
@@ -29,6 +32,7 @@ import wres.io.data.details.ProjectDetails;
 
 @RunWith( PowerMockRunner.class )
 @PrepareForTest( { DataSources.class } )
+@PowerMockIgnore( "javax.management.*") // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
 public class DataCardSourceTest
 {
 
@@ -78,6 +82,7 @@ public class DataCardSourceTest
             + "123|'1949-01-06T17:00'|0.0|456|789";
 
 	@Mock DataSources mockDataSources;
+	@Mock ProjectDetails mockProjectDetails;
 
 	@Before
     public void setup() throws Exception
@@ -85,6 +90,13 @@ public class DataCardSourceTest
         PowerMockito.whenNew( DataSources.class )
                     .withAnyArguments()
                     .thenReturn( mockDataSources );
+
+        PowerMockito.whenNew( ProjectDetails.class )
+                    .withAnyArguments()
+                    .thenReturn( mockProjectDetails );
+
+        when(mockDataSources.hasID( any() ) ).thenReturn( true );
+        when(mockDataSources.getID( any() ) ).thenReturn( 0 );
     }
 
 	@Test

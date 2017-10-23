@@ -134,7 +134,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 		return id;
 	}
 	
-	boolean hasID (U key)
+	public boolean hasID (U key)
 	{
 	    boolean hasIt;
 	    
