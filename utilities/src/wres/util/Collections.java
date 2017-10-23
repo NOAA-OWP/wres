@@ -387,7 +387,12 @@ public final class Collections
             aggregatedValue = operation.evaluate(
                     values.stream()
                           .mapToDouble(
-                                  (value) -> value.doubleValue() ).toArray()
+                                  (Double value) -> {
+                                      if (value == null)
+                                          return Double.NaN;
+                                      else
+                                          return value.doubleValue();
+                                  } ).toArray()
             );
         }
 

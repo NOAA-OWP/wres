@@ -73,6 +73,7 @@ public class DataCardSourceTest
             + "123|'1949-01-04T05:00'|0.001|456|789" + EOL
             + "123|'1949-01-04T11:00'|0.0|456|789" + EOL
             + "123|'1949-01-04T17:00'|0.015|456|789" + EOL
+            + "123|'1949-01-04T23:00'|\\N|456|789" + EOL
             + "123|'1949-01-05T05:00'|0.028|456|789" + EOL
             + "123|'1949-01-05T11:00'|0.526|456|789" + EOL
             + "123|'1949-01-05T17:00'|0.263|456|789" + EOL
@@ -181,7 +182,7 @@ public class DataCardSourceTest
         Format f = Format.fromValue("datacard");
 
         DataSourceConfig.Source confSource = new Source(current, f, "IN", "DRRC2",
-                                                        "EST","-999.0, -997", true,
+                                                        "EST","-997", true,
                                                         true, "-998.0", "$");
 
         sourceList.add(confSource);
