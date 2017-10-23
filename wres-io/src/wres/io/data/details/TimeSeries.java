@@ -17,7 +17,7 @@ public final class TimeSeries
      * The number of unique lead times contained within a partition within
      * the database for values linked to a forecasted time series
      */
-    private final static short FORECASTVALUE_PARTITION_SPAN = 80;
+    private final static short FORECASTVALUE_PARTITION_SPAN = 20;
 
     /**
      * System agnostic newline character used to make created scripts easier to
@@ -230,7 +230,8 @@ public final class TimeSeries
      * @throws SQLException Thrown if an error occurs when trying to create the
      * partition in the database
      */
-    public static String getForecastValueParitionName(int lead) throws SQLException {
+    public static String getForecastValueParitionName(int lead) throws SQLException
+    {
         Integer partitionNumber = lead / TimeSeries.FORECASTVALUE_PARTITION_SPAN;
 
         String name;
@@ -242,23 +243,28 @@ public final class TimeSeries
                 String partitionNumberWord = partitionNumber.toString();
 
                 int low = (lead / FORECASTVALUE_PARTITION_SPAN) * FORECASTVALUE_PARTITION_SPAN;
+                String highCheck = null;
+                String lowCheck = null;
 
                 // Sometimes the lead times are negative, but the dash is not a
                 // valid character in a name in sql, so we replace with a word.
                 if ( partitionNumber < 0 )
                 {
                     partitionNumberWord = "Negative_"
-                                          + partitionNumberWord.substring( 1 );
+                                          + String.valueOf( Math.abs( partitionNumber ));
                     low -= FORECASTVALUE_PARTITION_SPAN;
+                    lowCheck = "lead > " + String.valueOf((partitionNumber - 1) * FORECASTVALUE_PARTITION_SPAN);
+                    highCheck = "lead <= " + String.valueOf( partitionNumber * FORECASTVALUE_PARTITION_SPAN );
 				}
-
-                int high = low + FORECASTVALUE_PARTITION_SPAN;
-
-                // 0 is a special case, having twice the span
-                if ( partitionNumber == 0 )
+				else if ( partitionNumber == 0)
                 {
-                    low = -FORECASTVALUE_PARTITION_SPAN;
-                    high = FORECASTVALUE_PARTITION_SPAN;
+                    highCheck = "lead < " + String.valueOf( FORECASTVALUE_PARTITION_SPAN );
+                    lowCheck = "lead > " + String.valueOf( -FORECASTVALUE_PARTITION_SPAN );
+                }
+                else
+                {
+                    lowCheck = "lead >= " + String.valueOf(partitionNumber * FORECASTVALUE_PARTITION_SPAN);
+                    highCheck = "lead < " + String.valueOf((partitionNumber + 1) * FORECASTVALUE_PARTITION_SPAN);
                 }
 
                 name = "partitions.ForecastValue_Lead_" + partitionNumberWord;
@@ -266,10 +272,10 @@ public final class TimeSeries
                 StringBuilder script = new StringBuilder();
                 script.append("CREATE TABLE IF NOT EXISTS ").append(name).append(NEWLINE);
                 script.append("(").append(NEWLINE);
-                script.append("		CHECK ( lead >= ")
-                      .append(String.valueOf(low))
-                      .append(" AND lead < ")
-                      .append(String.valueOf(high))
+                script.append("		CHECK ( ")
+                      .append(highCheck)
+                      .append(" AND ")
+                      .append(lowCheck)
                       .append(" )")
                       .append(NEWLINE);
                 script.append(") INHERITS (wres.ForecastValue);");

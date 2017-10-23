@@ -203,14 +203,6 @@ public class SourceLoader
 
         if (shouldIngest(absolutePath, source, dataSourceConfig))
         {
-            // Perf testing will determine if we should continue suspending this
-            if (!alreadySuspendedIndexes &&
-                ReaderFactory.getFileType(source.getFormat()) != SourceType.ARCHIVE)
-            {
-                Database.suspendAllIndices();
-                alreadySuspendedIndexes = true;
-            }
-
             if (ConfigHelper.isForecast(dataSourceConfig))
             {
                 LOGGER.trace("Loading {} as forecast data...", absolutePath);
@@ -275,7 +267,8 @@ public class SourceLoader
         }
 
         boolean ingest = specifiedFormat == SourceType.UNDEFINED ||
-                         specifiedFormat.equals(pathFormat) || this.projectDetails.isEmpty();
+                         specifiedFormat.equals(pathFormat) ||
+                         this.projectDetails.isEmpty();
 
         if (ingest)
         {
@@ -325,7 +318,6 @@ public class SourceLoader
 
         try
         {
-
             String hash = Strings.getMD5Checksum( sourceName );
 
             // Check to see if the file has already been ingested for this project
@@ -405,11 +397,6 @@ public class SourceLoader
      * The project configuration indicating what data to used
      */
     private final ProjectConfig projectConfig;
-
-    /**
-     * Indicates whether or not indexes in the database have been suspended
-     */
-    private boolean alreadySuspendedIndexes;
 
     /**
      * The collection of data in the database linking data for the project that

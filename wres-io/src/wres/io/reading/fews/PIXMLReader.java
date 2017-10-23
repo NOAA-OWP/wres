@@ -20,6 +20,7 @@ import java.util.TreeMap;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,11 @@ import wres.util.XML;
 public final class PIXMLReader extends XMLReader 
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PIXMLReader.class);
+
+    /**
+     * Epsilon value used to test floating point equivalency
+     */
+    private static final double EPSILON = 0.0000001;
 
     /**
      * Alias for the system agnostic newline separator
@@ -298,64 +304,67 @@ public final class PIXMLReader extends XMLReader
      * @throws SQLException when unable to get a series id or unable to save
      * @throws ProjectConfigException when a forecast is missing a forecast date
 	 */
-
 	private void parseEvent(XMLStreamReader reader)
             throws SQLException, ProjectConfigException
     {
 		this.incrementLead();
-		Float value = null;
+		String value = null;
 		String localName;
         LocalDate localDate = null;
         LocalTime localTime = null;
 
-		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex) {
+        // TODO: Return lead logic to the programmatic method, not the date time
+        // object allocation method. The date time allocation method doubles
+        // the processing time for small data sets and increases
+        // super linearly and increases the memory footprint.
+		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
+		{
 			localName = reader.getAttributeLocalName(attributeIndex);
 			
-			if (localName.equalsIgnoreCase("value")) {
-			    
-			    // The value is parsed so that we can compare it to the missing value
-				value = Float.parseFloat(reader.getAttributeValue(attributeIndex));
-			} else if (localName.equalsIgnoreCase("date")) {
+			if (localName.equalsIgnoreCase("value"))
+			{
+				value = reader.getAttributeValue(attributeIndex);
+			}
+			else if (localName.equalsIgnoreCase("date"))
+			{
                 String dateText = reader.getAttributeValue(attributeIndex);
                 localDate = LocalDate.parse( dateText );
-			} else if (localName.equalsIgnoreCase("time")) {
+			}
+			else if (localName.equalsIgnoreCase("time"))
+			{
                 String timeText = reader.getAttributeValue(attributeIndex);
                 localTime = LocalTime.parse( timeText );
 			}
 		}
-		
-		if (value != null && !value.equals(currentMissingValue)) {
-            LocalDateTime dateTime = LocalDateTime.of( localDate, localTime );
-			if (isForecast) {
-                if ( this.getForecastDate() == null )
-                {
-                    String message = "No forecast date found for forecast data."
-                                     + " Might this really be observation data?"
-                                     + " Please check the <type> under both "
-                                     + "<left> and <right> sources.";
-                    throw new ProjectConfigException( this.getDataSourceConfig(),
-                                                      message );
-                }
-                Duration leadTime = Duration.between( this.getForecastDate(),
-                                                      dateTime );
-                int leadTimeInHours = (int) leadTime.toHours();
 
-                PIXMLReader.addForecastEvent( value,
-                                              leadTimeInHours,
-                                              getTimeSeriesID() );
+        LocalDateTime dateTime = LocalDateTime.of( localDate, localTime );
+        if (isForecast)
+        {
+            if ( this.getForecastDate() == null )
+            {
+                String message = "No forecast date found for forecast data."
+                                 + " Might this really be observation data?"
+                                 + " Please check the <type> under both "
+                                 + "<left> and <right> sources.";
+                throw new ProjectConfigException( this.getDataSourceConfig(),
+                                                  message );
+            }
+            Duration leadTime = Duration.between( this.getForecastDate(),
+                                                  dateTime );
+            int leadTimeInHours = (int) leadTime.toHours();
 
-			} else {
-                OffsetDateTime offsetDateTime
-                    = OffsetDateTime.of( dateTime, this.getZoneOffset() );
-                String formattedDate = offsetDateTime.format( FORMATTER );
-                addObservedEvent( formattedDate, value );
-			}
-		}
-		else if (value != null && value.equals(currentMissingValue)) {
-			LOGGER.debug("The value '{}' is not being saved because it equals '{}', which is the 'missing value'.",
-						 value,
-						 currentMissingValue);
-		}
+            PIXMLReader.addForecastEvent( this.getValueToSave( value ),
+                                          leadTimeInHours,
+                                          getTimeSeriesID() );
+
+        }
+        else
+        {
+            OffsetDateTime offsetDateTime
+                = OffsetDateTime.of( dateTime, this.getZoneOffset() );
+            String formattedDate = offsetDateTime.format( FORMATTER );
+            addObservedEvent( formattedDate, this.getValueToSave( value ) );
+        }
 		
 		if (insertCount >= SystemSettings.getMaximumCopies()) {
             saveLeftoverObservations();
@@ -367,8 +376,13 @@ public final class PIXMLReader extends XMLReader
 	 * @param forecastedValue The value parsed out of the XML
 	 * @throws SQLException Any possible error encountered while trying to collect the forecast ensemble ID
 	 */
-	private static void addForecastEvent(Float forecastedValue, Integer lead, Integer timeSeriesID) throws SQLException {
-		synchronized (groupLock) {
+	private static void addForecastEvent(String forecastedValue,
+                                         Integer lead,
+                                         Integer timeSeriesID)
+            throws SQLException
+    {
+		synchronized (groupLock)
+        {
             PIXMLReader.getBuilder(lead)
                     .append(timeSeriesID)
                     .append(delimiter)
@@ -379,7 +393,8 @@ public final class PIXMLReader extends XMLReader
 
             copyCount.put(lead, copyCount.get(lead) + 1);
 
-            if (copyCount.get(lead) >= SystemSettings.getMaximumCopies()) {
+            if (copyCount.get(lead) >= SystemSettings.getMaximumCopies())
+            {
                 CopyExecutor copier = new CopyExecutor(getForecastInsertHeader(lead),
                         getBuilder(lead).toString(),
                         delimiter);
@@ -399,7 +414,7 @@ public final class PIXMLReader extends XMLReader
 	 * @param observedValue The value retrieved from the XML
 	 * @throws SQLException Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
 	 */
-	private void addObservedEvent(String observedTime, Float observedValue)
+	private void addObservedEvent(String observedTime, String observedValue)
             throws SQLException
     {
 		if (insertCount > 0)
@@ -836,7 +851,8 @@ public final class PIXMLReader extends XMLReader
         return approved;
     }
     
-    private boolean seriesIsApproved () {
+    private boolean seriesIsApproved ()
+    {
         boolean ensembleApproved = this.ensembleIsApproved(this.currentEnsembleName, this.currentEnsembleMemberID);
 
         if (!ensembleApproved)
@@ -863,6 +879,70 @@ public final class PIXMLReader extends XMLReader
         }
         
         return featureApproved && variableApproved && ensembleApproved;
+    }
+
+    /**
+     * @return The value specifying a value that is missing from the data set
+     * originating from the data source configuration. While parsing the data,
+     * if this value is encountered, it indicates that the value should be
+     * ignored as it represents invalid data. This should be ignored in data
+     * sources that define their own missing value.
+     */
+    protected String getSpecifiedMissingValue()
+    {
+        String missingValue = null;
+
+        if (missingValue == null && dataSourceConfig != null)
+        {
+            DataSourceConfig.Source source = this.getSourceConfig();
+
+            if (source != null && source.getMissingValue() != null && !source.getMissingValue().isEmpty())
+            {
+                missingValue = source.getMissingValue();
+
+                if ( missingValue.lastIndexOf( "." ) + 6 < missingValue.length() )
+                {
+                    missingValue = missingValue.substring( 0, missingValue.lastIndexOf( "." ) + 6 );
+                }
+            }
+        }
+
+        return missingValue;
+    }
+
+    /**
+     * Conditions the passed in value and transforms it into a form suitable to
+     * save into the database.
+     * <p>
+     *     If the passed in value is found to be equal to the specified missing
+     *     value, it is set to 'null'
+     * </p>
+     * @param value The original value
+     * @return The conditioned value that is safe to save to the database.
+     */
+    protected String getValueToSave(String value)
+    {
+        if (value != null &&
+            !value.equalsIgnoreCase( "null" ) &&
+            this.getSpecifiedMissingValue() != null)
+        {
+            if ( value.lastIndexOf( "." ) + 6 < value.length() )
+            {
+                value = value.substring( 0, value.lastIndexOf( "." ) + 6 );
+            }
+
+            if (value.equalsIgnoreCase( this.getSpecifiedMissingValue() ))
+            {
+                value = "null";
+            }
+        }
+
+        if (value == null || value.equalsIgnoreCase( "null" ))
+        {
+            value = "\\N";
+        }
+
+        return value;
     }
 
     private LocalDateTime getStartDate()
@@ -1044,9 +1124,12 @@ public final class PIXMLReader extends XMLReader
         }
     }
 
-	private static String getForecastInsertHeader(Integer lead) throws SQLException {
-	    synchronized (PIXMLReader.headerMap) {
-            if (!PIXMLReader.headerMap.containsKey(lead)) {
+	private static String getForecastInsertHeader(Integer lead) throws SQLException
+    {
+	    synchronized (PIXMLReader.headerMap)
+        {
+            if (!PIXMLReader.headerMap.containsKey(lead))
+            {
                 PIXMLReader.headerMap.putIfAbsent(lead, PIXMLReader.createForecastValuePartition(lead));
             }
         }

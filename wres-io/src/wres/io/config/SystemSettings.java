@@ -2,6 +2,7 @@ package wres.io.config;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Paths;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -54,6 +55,7 @@ public final class SystemSettings extends XMLReader
     private int defaultChartWidth = 800;
     private int defaultChartHeight = 600;
 	private String remoteNetCDFURL = "http://***REMOVED***dstore.***REMOVED***.***REMOVED***/nwm/";
+	private String netcdfStorePath = "systests/data/";
 
 	/**
 	 * The Default constructor
@@ -157,6 +159,14 @@ public final class SystemSettings extends XMLReader
 						this.remoteNetCDFURL = URL;
 					}
 				}
+				else if(XML.tagIs( reader, "netcdf_store_path" ))
+				{
+					String path = XML.getXMLText( reader );
+					if ( Strings.hasValue( path ) && Strings.isValidPathFormat( path ))
+					{
+						this.netcdfStorePath = path;
+					}
+				}
 			}
 		}
         catch ( XMLStreamException xse )
@@ -170,11 +180,17 @@ public final class SystemSettings extends XMLReader
         }
 	}
 
-	public static Long getUpdateFrequency()
+    /**
+     * @return The path where the system should store NetCDF files internally
+     */
+	public static String getNetCDFStorePath()
     {
-        return INSTANCE.updateFrequency;
+        return INSTANCE.netcdfStorePath;
     }
 
+    /**
+     * @return The URL where NetCDF files may be downloaded from
+     */
 	public static String getRemoteNetcdfURL()
 	{
 		return INSTANCE.remoteNetCDFURL;

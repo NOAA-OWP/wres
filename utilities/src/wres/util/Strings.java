@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -215,7 +216,7 @@ public final class Strings {
 	{
 		int    idx = 0;
 		String ret = null;
-		
+
 		if(s != null)
 		{
 		    idx = s.length()-1;
@@ -231,4 +232,20 @@ public final class Strings {
 		return ret;
 	}
 
+	public static boolean isValidPathFormat(final String path)
+	{
+		boolean isValid = false;
+
+		try
+		{
+			Paths.get( path );
+			isValid = true;
+		}
+		catch ( InvalidPathException invalid )
+		{
+			// If it isn't valid, we want to catch this, but not break
+		}
+
+		return isValid;
+	}
 }

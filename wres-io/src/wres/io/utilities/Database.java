@@ -111,97 +111,12 @@ public final class Database {
 	}
 
 	/**
-	 * Suspends all indices on partition tables within the database
-	 */
-	public synchronized static void suspendAllIndices()
-	{
-		// Creates a script used to load information about every index
-		// for the partition tables
-		StringBuilder builder = new StringBuilder();
-
-		builder.append("SELECT 	(idx.indrelid::REGCLASS)::text AS table_name,")
-			   .append(NEWLINE);
-		builder.append("		T.relname AS index_name,").append(NEWLINE);
-		builder.append("		AM.amname AS index_type,").append(NEWLINE);
-		builder.append("		'(' ||").append(NEWLINE);
-		builder.append("			ARRAY_TO_STRING(").append(NEWLINE);
-		builder.append("				ARRAY(").append(NEWLINE);
-		builder.append("					SELECT pg_get_indexdef(idx.indexrelid, k+1, TRUE)")
-			   .append(NEWLINE);
-		builder.append("					FROM generate_subscripts(idx.indkey, 1) AS k")
-			   .append(NEWLINE);
-		builder.append("					ORDER BY k").append(NEWLINE);
-		builder.append("				),").append(NEWLINE);
-		builder.append("			', ')").append(NEWLINE);
-		builder.append("		|| ')' AS column_names").append(NEWLINE);
-		builder.append("FROM pg_index AS IDX").append(NEWLINE);
-		builder.append("INNER JOIN pg_class AS T").append(NEWLINE);
-		builder.append("	ON T.oid = IDX.indexrelid").append(NEWLINE);
-		builder.append("INNER JOIN pg_am AS AM").append(NEWLINE);
-		builder.append("	ON T.relam = AM.oid").append(NEWLINE);
-		builder.append("INNER JOIN pg_namespace AS NS").append(NEWLINE);
-		builder.append("	ON T.relnamespace = NS.OID").append(NEWLINE);
-		builder.append("WHERE T.relname LIKE '%_idx'").append(NEWLINE);
-		builder.append("	AND ns.nspname = 'partitions';");
-
-		Connection connection = null;
-		ResultSet results = null;
-
-		try
-		{
-			connection = getConnection();
-			results = getResults(connection, builder.toString());
-
-			// Loads all preexisting definitions for the retrieved indexes,
-			// saves their metadata, the drops them.
-			while (results.next())
-			{
-				Database.saveIndex( results.getString( "table_name" ),
-									results.getString("index_name"),
-									results.getString("column_names"),
-									results.getString( "index_type" ) );
-
-				builder = new StringBuilder(  );
-				builder.append("DROP INDEX IF EXISTS ")
-                       .append(results.getString( "index_name" ))
-                       .append(";");
-				Database.execute( builder.toString() );
-			}
-		}
-		catch (SQLException error)
-		{
-		    LOGGER.error("The list of indices to suspend could not be properly loaded.");
-            LOGGER.error(NEWLINE + builder.toString() + NEWLINE);
-			LOGGER.error(Strings.getStackTrace(error));
-		}
-		finally
-		{
-			if (results != null)
-			{
-				try {
-					results.close();
-				}
-				catch (SQLException e) {
-					LOGGER.error(Strings.getStackTrace(e));
-				}
-			}
-
-			if (connection != null)
-			{
-				returnConnection(connection);
-			}
-		}
-	}
-
-	/**
 	 * Loads the metadata for each saved index and reinstates them within the
 	 * database
 	 */
-	public static void restoreAllIndices()
+	public static void addNewIndexes()
 	{
 		StringBuilder builder;
-
-		boolean shouldRefresh = false;
         LinkedList<Future<?>> indexTasks = new LinkedList<>();
 
         Connection connection = null;
@@ -292,11 +207,12 @@ public final class Database {
 		Future<?> task;
 		while ((task = indexTasks.poll()) != null)
         {
-            try {
+            try
+            {
                 task.get();
-                shouldRefresh = true;
             }
-            catch (InterruptedException | ExecutionException e) {
+            catch (InterruptedException | ExecutionException e)
+            {
                 LOGGER.error(Strings.getStackTrace(e));
             }
         }
@@ -304,12 +220,8 @@ public final class Database {
         if (LOGGER.isTraceEnabled())
         {
             watch.stop();
-            LOGGER.trace("It took {} to restore all indexes in the database.", watch.getFormattedDuration());
-        }
-
-		if (shouldRefresh)
-        {
-            Database.refreshStatistics(false);
+            LOGGER.trace("It took {} to restore all indexes in the database.",
+                         watch.getFormattedDuration());
         }
 	}
 
@@ -409,9 +321,11 @@ public final class Database {
         }
 
 		Future task;
+	    boolean shouldAnalyze = false;
 		try {
 			while (storedIngestTasks.peek() != null)
             {
+                shouldAnalyze = true;
 				ProgressMonitor.increment();
 				task = getStoredIngestTask();
 				if (!task.isDone()) {
@@ -429,6 +343,11 @@ public final class Database {
 		    LOGGER.error("Ingest task completion was interrupted.");
 			LOGGER.error(Strings.getStackTrace(e));
 		}
+
+		if (shouldAnalyze)
+        {
+            Database.refreshStatistics( false );
+        }
 	}
 	
 	/**
@@ -605,7 +524,8 @@ public final class Database {
      */
 	public static void copy(final String table_definition,
                             final String values,
-                            String delimiter) throws CopyException
+                            String delimiter)
+            throws CopyException
 	{
 		Connection connection = null;
 		PushbackReader reader = null;
@@ -787,8 +707,8 @@ public final class Database {
      * with successfully
      */
 	public static Collection populateCollection(final Collection collection,
-                                                       final String query,
-                                                       final String fieldLabel)
+                                                final String query,
+                                                final String fieldLabel)
             throws SQLException
 	{
 		Connection connection = null;
@@ -844,9 +764,9 @@ public final class Database {
 	}
 
 	public static Map populateMap(final Map map,
-											   final String query,
-											   final String keyLabel,
-											   final String valueLabel)
+								  final String query,
+								  final String keyLabel,
+								  final String valueLabel)
 		throws SQLException
 	{
 		Connection connection = null;
@@ -915,7 +835,7 @@ public final class Database {
 	{
         if (vacuum)
         {
-            Database.restoreAllIndices();
+            Database.addNewIndexes();
         }
 
 		Connection connection = null;

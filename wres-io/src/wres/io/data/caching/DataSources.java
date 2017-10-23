@@ -59,22 +59,8 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
         return DataSources.getActiveSourceID( hash ) != null;
     }
 
-    public static String getHash(Integer sourceID)
-    {
-        String hash = null;
-        SourceDetails source = DataSources.getCache().get( sourceID );
-
-        if (source != null)
-        {
-            hash = source.getHash();
-        }
-
-        return hash;
-    }
-
     public static Integer getActiveSourceID(String hash) throws SQLException
     {
-        // TODO: Chris suggests putting insert/select statement in this method
         Integer id = null;
 
         SourceKey key = new SourceKey( null, null, null, hash );
@@ -82,6 +68,54 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
         if (DataSources.getCache().hasID( key ))
         {
             id = DataSources.getCache().getID( key );
+        }
+
+        if (id == null &&
+            DataSources.getCache().getKeyIndex().size() >= DataSources.getCache().getMaxDetails())
+        {
+            Connection connection = null;
+            ResultSet results = null;
+
+            String script = "";
+
+            script += "SELECT source_id, path, output_time::text, lead" + NEWLINE;
+            script += "FROM wres.Source" + NEWLINE;
+            script += "WHERE hash = '" + hash + "';";
+
+            try
+            {
+                connection = Database.getConnection();
+                results = Database.getResults( connection, script );
+
+                SourceDetails details;
+
+                if (results.next())
+                {
+                    details = new SourceDetails(  );
+                    details.setHash( hash );
+                    details.setLead( results.getInt( "lead" ) );
+                    details.setOutputTime( results.getString("output_time") );
+                    details.setSourcePath( results.getString( "path" ) );
+                    details.setID( results.getInt( "source_id" ) );
+
+                    DataSources.getCache().addElement( details );
+
+                    id = results.getInt( "source_id" );
+                }
+
+            }
+            finally
+            {
+                if (results != null)
+                {
+                    results.close();
+                }
+
+                if (connection != null)
+                {
+                    Database.returnConnection( connection );
+                }
+            }
         }
 
         return id;
@@ -114,7 +148,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	//TODO: This is arbitrarily large; there needs to be a better process of pulling in values when one is missing
 	@Override
 	protected int getMaxDetails() {
-		return 10000;
+		return 200;
 	}
 
     @Override

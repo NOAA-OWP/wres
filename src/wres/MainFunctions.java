@@ -3,6 +3,7 @@ package wres;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -424,7 +425,13 @@ final class MainFunctions
                     final Map<String, Future> downloadOperations = new TreeMap<>();
 
                     // The location for where to put the downloaded files
-                    String downloadPath = "testinput/sharedinput/";
+                    String downloadPath = SystemSettings.getNetCDFStorePath();
+
+                    if (!downloadPath.endsWith( "/" ))
+                    {
+                        downloadPath += "/";
+                    }
+
                     downloadPath += category;
                     downloadPath += "/";
                     downloadPath += range;
@@ -487,8 +494,8 @@ final class MainFunctions
                         // The time between forecasts is 1 hour
                         hourIncrement = 1;
 
-                        // The last forecast to pull is at t18z
-                        maxZTime = 18;
+                        // The last forecast to pull is at t23z
+                        maxZTime = 23;
 
                         // The last lead is 18. Set the cutoff to either
                         // 18 or the value entered by the user. If the user
