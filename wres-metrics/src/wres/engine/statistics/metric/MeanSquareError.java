@@ -62,7 +62,7 @@ class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
     {
 
         @Override
-        protected MeanSquareError<S> build()
+        protected MeanSquareError<S> build() throws MetricParameterException
         {
             return new MeanSquareError<>( this );
         }
@@ -73,9 +73,10 @@ class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    MeanSquareError( final MeanSquareErrorBuilder<S> builder )
+    MeanSquareError( final MeanSquareErrorBuilder<S> builder ) throws MetricParameterException
     {
         super( builder );
     }

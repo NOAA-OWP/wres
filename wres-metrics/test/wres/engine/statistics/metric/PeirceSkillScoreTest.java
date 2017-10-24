@@ -10,10 +10,10 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MulticategoryPairs;
 import wres.datamodel.ScalarOutput;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.engine.statistics.metric.PeirceSkillScore.PeirceSkillScoreBuilder;
 
 /**
@@ -29,10 +29,11 @@ public final class PeirceSkillScoreTest
     /**
      * Constructs a dichotomous {@link PeirceSkillScore} and compares the actual result to the expected result. Also,
      * checks the parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1PeirceSkillScore()
+    public void test1PeirceSkillScore() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -85,10 +86,11 @@ public final class PeirceSkillScoreTest
 
     /**
      * Constructs a multicategory {@link PeirceSkillScore} and compares the actual result to the expected result.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test2PeirceSkillScore()
+    public void test2PeirceSkillScore() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();

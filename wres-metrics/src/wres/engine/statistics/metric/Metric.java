@@ -13,7 +13,6 @@ import wres.datamodel.MetricInput;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputMetadata;
-import wres.engine.statistics.metric.parameters.MetricParameter;
 
 /**
  * <p>
@@ -54,7 +53,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      */
 
     @Override
-    public abstract T apply(S s);
+    public abstract T apply( S s );
 
     /**
      * Returns a unique identifier for the metric from {@link MetricConstants}.
@@ -82,7 +81,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
 
     public String getName()
     {
-        return getDataFactory().getMetadataFactory().getMetricName(getID());
+        return getDataFactory().getMetadataFactory().getMetricName( getID() );
     }
 
     /**
@@ -104,9 +103,9 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * @param o the object to test for equality with the current object
      * @return true if the input is a metric and has an equivalent name to the current metric, false otherwise
      */
-    public boolean nameEquals(final Object o)
+    public boolean nameEquals( final Object o )
     {
-        return o != null && o instanceof Metric && ((Metric<?, ?>)o).getName().equals(getName());
+        return o != null && o instanceof Metric && ( (Metric<?, ?>) o ).getName().equals( getName() );
     }
 
     /**
@@ -117,8 +116,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * parameters in the {@link MetricBuilder} before construction.
      * </p>
      * <p>
-     * TODO: support construction with parameters by defining an abstract method, setParameters(EnumMap mapping). The
-     * EnumMap should map an Enum of parameter identifiers to {@link MetricParameter}.
+     * TODO: support construction with parameters by defining an abstract method, setParameters(EnumMap mapping).
      * </p>
      */
 
@@ -131,9 +129,10 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
          * Build the {@link Metric}.
          * 
          * @return a {@link Metric}
+         * @throws MetricParameterException if one or more parameters is incorrect
          */
 
-        protected abstract Metric<P, Q> build();
+        protected abstract Metric<P, Q> build() throws MetricParameterException;
 
         /**
          * Sets the {@link DataFactory} for constructing a {@link MetricOutput}.
@@ -142,7 +141,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
          * @return the builder
          */
 
-        protected MetricBuilder<P, Q> setOutputFactory(final DataFactory dataFactory)
+        protected MetricBuilder<P, Q> setOutputFactory( final DataFactory dataFactory )
         {
             this.dataFactory = dataFactory;
             return this;
@@ -176,20 +175,22 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * @return the metadata
      */
 
-    MetricOutputMetadata getMetadata(final MetricInput<?> input,
-                                               final int sampleSize,
-                                               final MetricConstants componentID,
-                                               final DatasetIdentifier baselineID)
+    MetricOutputMetadata getMetadata( final MetricInput<?> input,
+                                      final int sampleSize,
+                                      final MetricConstants componentID,
+                                      final DatasetIdentifier baselineID )
     {
-        if(this instanceof Collectable)
+        if ( this instanceof Collectable )
         {
-            throw new UnsupportedOperationException("Cannot safely obtain the metadata for the collectable "
-                + "implementation of '" + getID() + "': build the metadata in the implementing class.");
+            throw new UnsupportedOperationException( "Cannot safely obtain the metadata for the collectable "
+                                                     + "implementation of '"
+                                                     + getID()
+                                                     + "': build the metadata in the implementing class." );
         }
         final Metadata metIn = input.getMetadata();
         Dimension outputDim = null;
         //Dimensioned?
-        if(hasRealUnits())
+        if ( hasRealUnits() )
         {
             outputDim = metIn.getDimension();
         }
@@ -199,36 +200,38 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
         }
         DatasetIdentifier identifier = metIn.getIdentifier();
         //Add the scenario ID associated with the baseline input
-        if(Objects.nonNull(baselineID))
+        if ( Objects.nonNull( baselineID ) )
         {
-            identifier = dataFactory.getMetadataFactory().getDatasetIdentifier(identifier, baselineID.getScenarioID());
+            identifier =
+                    dataFactory.getMetadataFactory().getDatasetIdentifier( identifier, baselineID.getScenarioID() );
         }
         return dataFactory.getMetadataFactory()
-                          .getOutputMetadata(sampleSize,
-                                             outputDim,
-                                             metIn.getDimension(),
-                                             getID(),
-                                             componentID,
-                                             identifier,
-                                             metIn.getLeadTimeInHours());
+                          .getOutputMetadata( sampleSize,
+                                              outputDim,
+                                              metIn.getDimension(),
+                                              getID(),
+                                              componentID,
+                                              identifier,
+                                              metIn.getLeadTimeInHours() );
     }
 
     /**
      * Construct a {@link Metric} with a {@link MetricBuilder}.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    protected Metric(final MetricBuilder<S,T> builder)
+    protected Metric( final MetricBuilder<S, T> builder ) throws MetricParameterException
     {
-        if(Objects.isNull(builder))
+        if ( Objects.isNull( builder ) )
         {
-            throw new UnsupportedOperationException("Cannot construct the metric with a null builder.");
+            throw new MetricParameterException( "Cannot construct the metric with a null builder." );
         }
-        if(Objects.isNull(builder.dataFactory))
+        if ( Objects.isNull( builder.dataFactory ) )
         {
-            throw new UnsupportedOperationException("Specify a data factory with which to build the metric.");
-        }        
+            throw new MetricParameterException( "Specify a data factory with which to build the metric." );
+        }
         this.dataFactory = builder.dataFactory;
     }
 

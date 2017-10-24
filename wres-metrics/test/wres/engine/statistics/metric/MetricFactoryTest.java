@@ -40,10 +40,11 @@ public final class MetricFactoryTest
 
     /**
      * Tests the individual metrics in {@link MetricFactory}.
+     * @throws MetricParameterException if the metric construction fails 
      */
 
     @Test
-    public void test1MetricFactory()
+    public void test1MetricFactory() throws MetricParameterException
     {
         metF.ofBiasFraction();
         metF.ofBrierScore();
@@ -77,9 +78,10 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedScalar(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails
      */
     @Test
-    public void test2OfSingleValuedScalar()
+    public void test2OfSingleValuedScalar() throws MetricParameterException
     {
         metF.ofSingleValuedScalar( MetricConstants.BIAS_FRACTION );
         metF.ofSingleValuedScalar( MetricConstants.MEAN_ABSOLUTE_ERROR );
@@ -101,9 +103,10 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedVector(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails
      */
     @Test
-    public void test3OfSingleValuedVector()
+    public void test3OfSingleValuedVector() throws MetricParameterException
     {
         metF.ofSingleValuedVector( MetricConstants.MEAN_SQUARE_ERROR );
         metF.ofSingleValuedVector( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE );
@@ -120,9 +123,10 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofDiscreteProbabilityVector(MetricConstants)} 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test4OfDiscreteProbabilityVector()
+    public void test4OfDiscreteProbabilityVector() throws MetricParameterException
     {
         metF.ofDiscreteProbabilityVector( MetricConstants.BRIER_SCORE );
         metF.ofDiscreteProbabilityVector( MetricConstants.BRIER_SKILL_SCORE );
@@ -139,9 +143,10 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofDichotomousScalar(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test5OfDichotomousScalar()
+    public void test5OfDichotomousScalar() throws MetricParameterException
     {
         metF.ofDichotomousScalar( MetricConstants.CRITICAL_SUCCESS_INDEX );
         metF.ofDichotomousScalar( MetricConstants.EQUITABLE_THREAT_SCORE );
@@ -160,9 +165,10 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofMulticategoryScalar(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test6OfMulticategoryScalar()
+    public void test6OfMulticategoryScalar() throws MetricParameterException
     {
         metF.ofMulticategoryScalar( MetricConstants.PEIRCE_SKILL_SCORE );
         try
@@ -177,9 +183,10 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofMulticategoryMatrix(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test7OfMulticategoryMatrix()
+    public void test7OfMulticategoryMatrix() throws MetricParameterException
     {
         metF.ofMulticategoryMatrix( MetricConstants.CONTINGENCY_TABLE );
         try
@@ -194,36 +201,40 @@ public final class MetricFactoryTest
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedScalarCollection(MetricConstants...)}. 
+     * @throws MetricParameterException if the metric construction fails
      */
     @Test
-    public void test8OfSingleValuedScalarCollection()
+    public void test8OfSingleValuedScalarCollection() throws MetricParameterException
     {
         metF.ofSingleValuedScalarCollection( MetricConstants.MEAN_ABSOLUTE_ERROR );
     }
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedVector(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test8OfSingleValuedVectorCollection()
+    public void test8OfSingleValuedVectorCollection() throws MetricParameterException
     {
         metF.ofSingleValuedVectorCollection( MetricConstants.MEAN_SQUARE_ERROR );
     }
 
     /**
      * Tests {@link MetricFactory#OfDiscreteProbabilityVectorCollection(MetricConstants...)}. 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test9OfDiscreteProbabilityVectorCollection()
+    public void test9OfDiscreteProbabilityVectorCollection() throws MetricParameterException
     {
         metF.ofDiscreteProbabilityVectorCollection( MetricConstants.BRIER_SCORE );
     }
 
     /**
      * Tests {@link MetricFactory#ofDichotomousScalarCollection(MetricConstants...)}. 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test10OfDichotomousScalarCollection()
+    public void test10OfDichotomousScalarCollection() throws MetricParameterException
     {
         metF.ofDichotomousScalarCollection( MetricConstants.CRITICAL_SUCCESS_INDEX );
         metF.ofDichotomousScalarCollection( MetricConstants.FREQUENCY_BIAS );
@@ -231,9 +242,10 @@ public final class MetricFactoryTest
     
     /**
      * Tests {@link MetricFactory#ofSingleValuedMultiVectorCollection(MetricConstants...)}. 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test11OfSingleValuedMultiVectorCollection()
+    public void test11OfSingleValuedMultiVectorCollection() throws MetricParameterException
     {
         metF.ofSingleValuedMultiVectorCollection( MetricConstants.QUANTILE_QUANTILE_DIAGRAM );
         try
@@ -248,9 +260,10 @@ public final class MetricFactoryTest
     
     /**
      * Tests {@link MetricFactory#ofDiscreteProbabilityMultiVectorCollection(MetricConstants...)}. 
+     * @throws MetricParameterException 
      */
     @Test
-    public void test12OfDiscreteProbabilityMultiVectorCollection()
+    public void test12OfDiscreteProbabilityMultiVectorCollection() throws MetricParameterException
     {
         metF.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELIABILITY_DIAGRAM );
         metF.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM );
@@ -266,18 +279,20 @@ public final class MetricFactoryTest
     
     /**
      * Tests {@link MetricFactory#ofMulticategoryMatrixCollection(MetricConstants...)}. 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test13OfMulticategoryMatrixCollection()
+    public void test13OfMulticategoryMatrixCollection() throws MetricParameterException
     {
         metF.ofMulticategoryMatrixCollection( MetricConstants.CONTINGENCY_TABLE );
     }    
     
     /**
      * Tests {@link MetricFactory#ofEnsembleScalarCollection(MetricConstants...)}. 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test14OfEnsembleScalarCollection()
+    public void test14OfEnsembleScalarCollection() throws MetricParameterException
     {
         metF.ofEnsembleScalarCollection( MetricConstants.SAMPLE_SIZE );
         try
@@ -292,9 +307,10 @@ public final class MetricFactoryTest
     
     /**
      * Tests {@link MetricFactory#ofEnsembleVectorCollection(MetricConstants...)}. 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test15OfEnsembleVectorCollection()
+    public void test15OfEnsembleVectorCollection() throws MetricParameterException
     {
         metF.ofEnsembleVectorCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
         metF.ofEnsembleVectorCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
@@ -310,9 +326,10 @@ public final class MetricFactoryTest
     
     /**
      * Tests {@link MetricFactory#ofEnsembleMultiVectorCollection(MetricConstants...)}. 
+     * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test16OfEnsembleMultiVectorCollection()
+    public void test16OfEnsembleMultiVectorCollection() throws MetricParameterException
     {
         metF.ofEnsembleMultiVectorCollection( MetricConstants.RANK_HISTOGRAM );
         try
@@ -351,6 +368,7 @@ public final class MetricFactoryTest
         }
         catch ( InvocationTargetException e )
         {
+            e.printStackTrace();
             assertTrue( "Expected an IllegalArgumentException from the factory constructor.",
                         e.getTargetException() instanceof IllegalArgumentException );
         }

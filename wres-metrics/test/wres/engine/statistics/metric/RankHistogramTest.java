@@ -35,10 +35,11 @@ public final class RankHistogramTest
      * Constructs a {@link RankHistogram} and compares the actual result to the expected result for a synthetic dataset,
      * involving sampling from a uniform probability distribution whose expected frequencies are 1/N+1, where N=9 
      * ensemble members. Also, checks the parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1RankHistogram()
+    public void test1RankHistogram() throws MetricParameterException
     {
         //Build the metric
         final RankHistogramBuilder b = new RankHistogramBuilder();
@@ -86,10 +87,11 @@ public final class RankHistogramTest
     /**
      * Constructs a {@link RankHistogram} and compares the actual result to the expected result for a synthetic dataset
      * with ties.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test2RankHistogramWithTies()
+    public void test2RankHistogramWithTies() throws MetricParameterException
     {
         //Build the metric
         final RankHistogramBuilder b = new RankHistogramBuilder();
@@ -123,10 +125,11 @@ public final class RankHistogramTest
 
     /**
      * Constructs a {@link RankHistogram} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Build the metric
         final RankHistogramBuilder b = new RankHistogramBuilder();

@@ -88,7 +88,7 @@ class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVectorOutpu
     {
 
         @Override
-        protected QuantileQuantileDiagram build()
+        protected QuantileQuantileDiagram build() throws MetricParameterException
         {
             return new QuantileQuantileDiagram(this);
         }
@@ -99,9 +99,10 @@ class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVectorOutpu
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private QuantileQuantileDiagram(final QuantileQuantileDiagramBuilder builder)
+    private QuantileQuantileDiagram(final QuantileQuantileDiagramBuilder builder) throws MetricParameterException
     {
         super(builder);
         //Set the number of thresholds to 1000

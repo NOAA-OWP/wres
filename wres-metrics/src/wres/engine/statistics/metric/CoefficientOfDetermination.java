@@ -68,7 +68,7 @@ class CoefficientOfDetermination extends CorrelationPearsons
     {
 
         @Override
-        protected CoefficientOfDetermination build()
+        protected CoefficientOfDetermination build() throws MetricParameterException
         {
             return new CoefficientOfDetermination(this);
         }
@@ -79,9 +79,10 @@ class CoefficientOfDetermination extends CorrelationPearsons
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private CoefficientOfDetermination(final CoefficientOfDeterminationBuilder builder)
+    private CoefficientOfDetermination(final CoefficientOfDeterminationBuilder builder) throws MetricParameterException
     {
         super(builder);
     }    

@@ -30,10 +30,11 @@ public final class EquitableThreatScoreTest
     /**
      * Constructs a {@link EquitableThreatScore} and compares the actual result to the expected result. Also, checks the
      * parameters of the metric.
+     * @throws MetricParameterException if the metric construction fails
      */
 
     @Test
-    public void test1EquitableThreatScore()
+    public void test1EquitableThreatScore() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -84,10 +85,11 @@ public final class EquitableThreatScoreTest
 
     /**
      * Constructs a {@link EquitableThreatScore} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();

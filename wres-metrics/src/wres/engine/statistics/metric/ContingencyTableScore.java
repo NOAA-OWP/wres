@@ -148,9 +148,10 @@ implements Score, Collectable<S, MatrixOutput, ScalarOutput>
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    ContingencyTableScore(final MetricBuilder<S, ScalarOutput> builder)
+    ContingencyTableScore(final MetricBuilder<S, ScalarOutput> builder) throws MetricParameterException
     {
         super(builder);
         ContingencyTableBuilder<S> ct = new ContingencyTableBuilder<>();
