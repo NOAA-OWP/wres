@@ -79,7 +79,7 @@ class ContingencyTable<S extends MulticategoryPairs> extends Metric<S, MatrixOut
     {
 
         @Override
-        protected ContingencyTable<S> build()
+        protected ContingencyTable<S> build() throws MetricParameterException
         {
             return new ContingencyTable<>(this);
         }
@@ -90,9 +90,10 @@ class ContingencyTable<S extends MulticategoryPairs> extends Metric<S, MatrixOut
      * Hidden constructor.
      * 
      * @param builder the builder.
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    ContingencyTable(final ContingencyTableBuilder<S> builder)
+    ContingencyTable(final ContingencyTableBuilder<S> builder) throws MetricParameterException
     {
         super(builder);
     }

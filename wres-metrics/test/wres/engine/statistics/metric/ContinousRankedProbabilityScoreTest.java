@@ -33,10 +33,11 @@ public final class ContinousRankedProbabilityScoreTest
     /**
      * Constructs a {@link ContinousRankedProbabilityScore} and compares the actual result to the expected result for
      * a scenario without missing data. Also, checks the parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1CRPSNoMissings()
+    public void test1CRPSNoMissings() throws MetricParameterException
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -87,10 +88,11 @@ public final class ContinousRankedProbabilityScoreTest
     /**
      * Constructs a {@link ContinousRankedProbabilityScore} and compares the actual result to the expected result for
      * a scenario without  missing data.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test2CRPSWithMissings()
+    public void test2CRPSWithMissings() throws MetricParameterException
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -132,10 +134,11 @@ public final class ContinousRankedProbabilityScoreTest
      * Constructs a {@link ContinousRankedProbabilityScore} and compares the actual result to the expected result for
      * a scenario where the observed value overlaps one ensemble member. This exposes a mistake in the Hersbach (2000) 
      * paper where rows 1 and 3 of table/eqn. 26 should be inclusive bounds.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test3CRPSObsEqualsMember()
+    public void test3CRPSObsEqualsMember() throws MetricParameterException
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -170,10 +173,11 @@ public final class ContinousRankedProbabilityScoreTest
     
     /**
      * Constructs a {@link ContinousRankedProbabilityScore} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test4Exceptions()
+    public void test4Exceptions() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();

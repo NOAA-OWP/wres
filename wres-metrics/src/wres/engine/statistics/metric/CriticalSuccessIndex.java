@@ -53,7 +53,7 @@ class CriticalSuccessIndex extends ContingencyTableScore<DichotomousPairs>
     {
 
         @Override
-        protected CriticalSuccessIndex build()
+        protected CriticalSuccessIndex build() throws MetricParameterException
         {
             return new CriticalSuccessIndex(this);
         }
@@ -64,9 +64,10 @@ class CriticalSuccessIndex extends ContingencyTableScore<DichotomousPairs>
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private CriticalSuccessIndex(final CriticalSuccessIndexBuilder builder)
+    private CriticalSuccessIndex(final CriticalSuccessIndexBuilder builder) throws MetricParameterException
     {
         super(builder);
     }

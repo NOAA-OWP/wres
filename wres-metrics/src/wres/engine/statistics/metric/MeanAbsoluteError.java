@@ -40,7 +40,7 @@ class MeanAbsoluteError extends DoubleErrorScore<SingleValuedPairs>
     {
 
         @Override
-        protected MeanAbsoluteError build()
+        protected MeanAbsoluteError build() throws MetricParameterException
         {
             return new MeanAbsoluteError(this);
         }
@@ -51,9 +51,10 @@ class MeanAbsoluteError extends DoubleErrorScore<SingleValuedPairs>
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private MeanAbsoluteError(final MeanAbsoluteErrorBuilder builder)
+    private MeanAbsoluteError(final MeanAbsoluteErrorBuilder builder) throws MetricParameterException
     {
         super(builder.setErrorFunction(FunctionFactory.absError()));
     }

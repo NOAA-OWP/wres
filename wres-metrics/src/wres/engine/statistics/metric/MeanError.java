@@ -40,7 +40,7 @@ class MeanError extends DoubleErrorScore<SingleValuedPairs>
     {
 
         @Override
-        protected MeanError build()
+        protected MeanError build() throws MetricParameterException
         {
             return new MeanError(this);
         }
@@ -51,9 +51,10 @@ class MeanError extends DoubleErrorScore<SingleValuedPairs>
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private MeanError(final MeanErrorBuilder builder)
+    private MeanError(final MeanErrorBuilder builder) throws MetricParameterException
     {
         super(builder.setErrorFunction(FunctionFactory.error()));
     }

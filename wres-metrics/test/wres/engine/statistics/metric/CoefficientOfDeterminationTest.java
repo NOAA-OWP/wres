@@ -32,10 +32,11 @@ public final class CoefficientOfDeterminationTest
     
     /**
      * Constructs a {@link CoefficientOfDetermination}.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1CoefficientOfDetermination()
+    public void test1CoefficientOfDetermination() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory dataF = DefaultDataFactory.getInstance();
@@ -72,10 +73,11 @@ public final class CoefficientOfDeterminationTest
 
     /**
      * Constructs a {@link CoefficientOfDetermination} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();

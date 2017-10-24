@@ -92,9 +92,10 @@ abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, S
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected DoubleErrorScore(final DoubleErrorScoreBuilder<S> builder)
+    protected DoubleErrorScore(final DoubleErrorScoreBuilder<S> builder) throws MetricParameterException
     {
         super(builder);
         this.f = builder.f;

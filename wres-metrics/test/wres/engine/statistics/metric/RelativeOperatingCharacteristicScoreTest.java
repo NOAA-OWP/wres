@@ -34,10 +34,11 @@ public final class RelativeOperatingCharacteristicScoreTest
     /**
      * Constructs a {@link RelativeOperatingCharacteristicScore} and compares the actual result to the expected result
      * for the model with ties from Mason and Graham (2002).
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1RelativeOperatingCharacteristicScoreWithTies()
+    public void test1RelativeOperatingCharacteristicScoreWithTies() throws MetricParameterException
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -94,10 +95,11 @@ public final class RelativeOperatingCharacteristicScoreTest
     /**
      * Constructs a {@link RelativeOperatingCharacteristicScore} and compares the actual result to the expected result
      * for the model with ties from Mason and Graham (2002).
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test2RelativeOperatingCharacteristicScoreWithoutTies()
+    public void test2RelativeOperatingCharacteristicScoreWithoutTies() throws MetricParameterException
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -150,10 +152,11 @@ public final class RelativeOperatingCharacteristicScoreTest
     /**
      * Constructs a {@link RelativeOperatingCharacteristicScore} and compares the actual result to the expected result
      * for an example dataset with no occurrences.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test3RelativeOperatingCharacteristicScoreNoOccurrences()
+    public void test3RelativeOperatingCharacteristicScoreNoOccurrences() throws MetricParameterException
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -199,10 +202,11 @@ public final class RelativeOperatingCharacteristicScoreTest
     
     /**
      * Constructs a {@link RelativeOperatingCharacteristicScore} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test4Exceptions()
+    public void test4Exceptions() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();

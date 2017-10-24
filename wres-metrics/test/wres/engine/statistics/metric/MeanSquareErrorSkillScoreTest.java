@@ -31,10 +31,11 @@ public final class MeanSquareErrorSkillScoreTest
     /**
      * Constructs a {@link MeanSquareErrorSkillScore} with an explicit baseline and compares the actual result to the
      * expected result. Also, checks the parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1MeanSquareErrorSkillScoreWithBaseline()
+    public void test1MeanSquareErrorSkillScoreWithBaseline() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -78,10 +79,11 @@ public final class MeanSquareErrorSkillScoreTest
     /**
      * Constructs a {@link MeanSquareErrorSkillScore} with a no-skill baseline and compares the actual result to
      * the expected result.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test2MeanSquareErrorSkillScoreWithoutBaseline()
+    public void test2MeanSquareErrorSkillScoreWithoutBaseline() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -122,10 +124,11 @@ public final class MeanSquareErrorSkillScoreTest
 
     /**
      * Constructs a {@link MeanSquareErrorSkillScore} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test3Exceptions()
+    public void test3Exceptions() throws MetricParameterException
     {
         
         //Build the metric

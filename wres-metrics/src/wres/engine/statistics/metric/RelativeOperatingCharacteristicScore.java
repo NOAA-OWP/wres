@@ -40,30 +40,30 @@ import wres.datamodel.VectorOutput;
  */
 
 class RelativeOperatingCharacteristicScore extends RelativeOperatingCharacteristic<VectorOutput>
-implements ProbabilityScore
+        implements ProbabilityScore
 {
 
     @Override
-    public VectorOutput apply(final DiscreteProbabilityPairs s)
+    public VectorOutput apply( final DiscreteProbabilityPairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         //Obtain the AUC for the main prediction and, if available, the baseline.
         double rocScore;
-        if(s.hasBaseline())
+        if ( s.hasBaseline() )
         {
-            double rocMain = getAUCMasonGraham(s);
-            double rocBase = getAUCMasonGraham(s.getBaselineData());
-            rocScore = (rocMain - rocBase) / (1.0 - rocBase);
+            double rocMain = getAUCMasonGraham( s );
+            double rocBase = getAUCMasonGraham( s.getBaselineData() );
+            rocScore = ( rocMain - rocBase ) / ( 1.0 - rocBase );
         }
         else
         {
-            rocScore = 2.0 * getAUCMasonGraham(s) - 1.0;
+            rocScore = 2.0 * getAUCMasonGraham( s ) - 1.0;
         }
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.NONE, null);
-        return getDataFactory().ofVectorOutput(new double[]{rocScore}, metOut);
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
+        return getDataFactory().ofVectorOutput( new double[] { rocScore }, metOut );
     }
 
     @Override
@@ -83,7 +83,7 @@ implements ProbabilityScore
     {
         return false;
     }
-    
+
 
     @Override
     public boolean isProper()
@@ -95,7 +95,7 @@ implements ProbabilityScore
     public boolean isStrictlyProper()
     {
         return false;
-    }    
+    }
 
     @Override
     public ScoreOutputGroup getScoreOutputGroup()
@@ -108,14 +108,14 @@ implements ProbabilityScore
      */
 
     static class RelativeOperatingCharacteristicScoreBuilder
-    extends
-        MetricBuilder<DiscreteProbabilityPairs, VectorOutput>
+            extends
+            MetricBuilder<DiscreteProbabilityPairs, VectorOutput>
     {
 
         @Override
-        protected RelativeOperatingCharacteristicScore build()
+        protected RelativeOperatingCharacteristicScore build() throws MetricParameterException
         {
-            return new RelativeOperatingCharacteristicScore(this);
+            return new RelativeOperatingCharacteristicScore( this );
         }
 
     }
@@ -127,44 +127,44 @@ implements ProbabilityScore
      * @return the AUC
      */
 
-    private double getAUCMasonGraham(DiscreteProbabilityPairs pairs)
+    private double getAUCMasonGraham( DiscreteProbabilityPairs pairs )
     {
         DataFactory d = getDataFactory();
         //Obtain the predicted probabilities when the event occurred and did not occur
         //Begin by collecting against occurrence/non-occurrence
         Map<Boolean, List<PairOfDoubles>> mapped = pairs.getData()
                                                         .stream()
-                                                        .collect(Collectors.groupingBy(a -> d.doubleEquals(a.getItemOne(),
-                                                                                                           1.0,
-                                                                                                           7)));
-        if(mapped.size() !=2)
+                                                        .collect( Collectors.groupingBy( a -> d.doubleEquals( a.getItemOne(),
+                                                                                                              1.0,
+                                                                                                              7 ) ) );
+        if ( mapped.size() != 2 )
         {
-            return Double.NaN;  //Undefined
+            return Double.NaN; //Undefined
         }
         //Get the right side by each outcome
         List<Double> byOccurrence =
-                                  mapped.get(true).stream().map(PairOfDoubles::getItemTwo).collect(Collectors.toList());
-        List<Double> byNonOccurrence = mapped.get(false)
+                mapped.get( true ).stream().map( PairOfDoubles::getItemTwo ).collect( Collectors.toList() );
+        List<Double> byNonOccurrence = mapped.get( false )
                                              .stream()
-                                             .map(PairOfDoubles::getItemTwo)
-                                             .collect(Collectors.toList());
+                                             .map( PairOfDoubles::getItemTwo )
+                                             .collect( Collectors.toList() );
         //Sort descending
-        Collections.sort(byOccurrence, Collections.reverseOrder());
-        Collections.sort(byNonOccurrence, Collections.reverseOrder());
+        Collections.sort( byOccurrence, Collections.reverseOrder() );
+        Collections.sort( byNonOccurrence, Collections.reverseOrder() );
 
         //For each occurrence, determine how may forecasts associated with non-occurrences had a larger or equal 
         //probability. Derive the AUC from this.
         double rhs = 0.0;
-        for(double probYes: byOccurrence)
+        for ( double probYes : byOccurrence )
         {
-            for(double probNo: byNonOccurrence)
+            for ( double probNo : byNonOccurrence )
             {
                 double diff = probNo - probYes;
-                if(diff > .0000001)
+                if ( diff > .0000001 )
                 { //prob[non-occurrence] > prob[occurrence]
                     rhs += 2.0;
                 }
-                else if(Math.abs(diff) < .0000001)
+                else if ( Math.abs( diff ) < .0000001 )
                 { //Equal probs
                     rhs += 1.0;
                 }
@@ -174,18 +174,20 @@ implements ProbabilityScore
                 }
             }
         }
-        return 1.0 - ((1.0 / (2.0 * byOccurrence.size() * byNonOccurrence.size())) * rhs);
+        return 1.0 - ( ( 1.0 / ( 2.0 * byOccurrence.size() * byNonOccurrence.size() ) ) * rhs );
     }
 
     /**
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    private RelativeOperatingCharacteristicScore(final RelativeOperatingCharacteristicScoreBuilder builder)
+    private RelativeOperatingCharacteristicScore( final RelativeOperatingCharacteristicScoreBuilder builder )
+            throws MetricParameterException
     {
-        super(builder);
+        super( builder );
     }
 
 }
