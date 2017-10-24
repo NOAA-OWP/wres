@@ -237,6 +237,37 @@ public class ConfigHelper
         String newline = System.lineSeparator();
         int width = getWindowWidth( projectConfig ).intValue();
 
+        Integer leftTimeShift = null;
+        Integer rightTimeShift = null;
+
+        if (projectConfig.getInputs()
+                         .getLeft()
+                         .getTimeShift() != null
+            && projectConfig.getInputs()
+                            .getLeft()
+                            .getTimeShift()
+                            .getWidth() != 0)
+        {
+            leftTimeShift = projectConfig.getInputs()
+                                         .getLeft()
+                                         .getTimeShift()
+                                         .getWidth();
+        }
+
+        if ( projectConfig.getInputs()
+                          .getRight()
+                          .getTimeShift() != null
+             && projectConfig.getInputs()
+                             .getRight()
+                             .getTimeShift()
+                             .getWidth() != 0 )
+        {
+            rightTimeShift = projectConfig.getInputs()
+                                          .getRight()
+                                          .getTimeShift()
+                                          .getWidth();
+        }
+
         ProjectDetails projectDetails = Projects.getProject( projectConfig );
 
         String leftVariablepositionClause =
@@ -255,7 +286,21 @@ public class ConfigHelper
         script.append("INNER JOIN wres.ForecastValue FV").append(newline);
         script.append("     ON FV.timeseries_id = TS.timeseries_id").append(newline);
         script.append("INNER JOIN wres.Observation O").append(newline);
-        script.append("     ON O.observation_time = TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
+        script.append("     ON O.observation_time");
+
+        if ( leftTimeShift != null )
+        {
+            script.append(" + INTERVAL '1 hour' * ").append( leftTimeShift );
+        }
+
+        script.append(" = TS.initialization_date ");
+
+        if ( rightTimeShift != null )
+        {
+            script.append(" + INTERVAL '1 hour' * ").append( rightTimeShift );
+        }
+
+        script.append("+ INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
         script.append("WHERE ").append(leftVariablepositionClause).append(newline);
         script.append("     AND ").append(rightVariablepositionClause).append(newline);
 
