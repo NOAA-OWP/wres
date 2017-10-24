@@ -186,7 +186,7 @@ public class CommaSeparated
         SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
         StringJoiner headerRow = new StringJoiner( "," );
 
-        headerRow.add( "LEAD" + HEADER_DELIMITER + "TIME" );
+        headerRow.add( "LEAD" + HEADER_DELIMITER + "HOUR" );
         for ( Map.Entry<MapKey<MetricConstants>,
                 MetricOutputMapByLeadThreshold<ScalarOutput>> m
                 : output.entrySet() )
