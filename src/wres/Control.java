@@ -149,9 +149,6 @@ public class Control implements Function<String[], Integer>
         pairExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
 
-        // The following three are for logging run information to the database.
-        long startTime = System.currentTimeMillis();
-        long endTime;
         String projectRawConfig = "";
 
         try
@@ -161,35 +158,20 @@ public class Control implements Function<String[], Integer>
             {
                 projectRawConfig = projectConfigPlus.getRawConfig();
 
-                startTime = System.currentTimeMillis();
-
                 // Process the next configuration
                 processProjectConfig( projectConfigPlus,
                                       pairExecutor,
                                       thresholdExecutor,
                                       metricExecutor );
 
-                endTime = System.currentTimeMillis();
-
-                Operations.logExecution( String.join(" ", args),
-                                         projectRawConfig,
-                                         Control.sqlDateFromMillis( startTime ),
-                                         Control.sqlDateFromMillis( endTime ),
-                                         false );
             }
             return 0;
         }
         catch ( WresProcessingException | IOException e )
         {
-            endTime = System.currentTimeMillis();
 
             LOGGER.error( "Could not complete project execution:", e );
 
-            Operations.logExecution( String.join(" ", args),
-                                     projectRawConfig,
-                                     Control.sqlDateFromMillis( startTime ),
-                                     Control.sqlDateFromMillis( endTime ),
-                                     true );
 
             return -1;
         }
@@ -1035,16 +1017,6 @@ public class Control implements Function<String[], Integer>
         }
 
         return false;
-    }
-
-    private static String sqlDateFromMillis( long millis )
-    {
-        final String PATTERN = "YYYY-MM-dd HH:mm:ss.SSSZ";
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern( PATTERN,
-                                                                   Locale.US )
-                                                       .withZone( ZoneId.systemDefault() );
-        Instant instant = Instant.ofEpochMilli( millis );
-        return formatter.format( instant );
     }
 
     /**
