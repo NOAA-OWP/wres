@@ -81,7 +81,7 @@ public class Features extends Cache<FeatureDetails, String>
         LOGGER.trace("getFeatureID - args {} ; {}", lid, stationName);
 		FeatureDetails detail = new FeatureDetails();
 		detail.setLID(lid);
-		detail.station_name = stationName;
+		detail.featureName = stationName;
 		return getFeatureID(detail);
 	}
 	
@@ -112,7 +112,7 @@ public class Features extends Cache<FeatureDetails, String>
 		{
 			FeatureDetails detail = new FeatureDetails();
 			detail.setLID(lid);
-			detail.station_name = stationName;
+			detail.featureName = stationName;
 			getID(detail);
 		}
 

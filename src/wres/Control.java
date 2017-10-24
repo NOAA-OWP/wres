@@ -300,16 +300,12 @@ public class Control implements Function<String[], Integer>
         if ( projectConfig.getInputs().getBaseline() != null )
         {
             metricInputs = Operations.getInputs( projectConfig,
-                                                 feature,
-                                                 feature,
                                                  feature );
         }
         else
         {
             metricInputs = Operations.getInputs( projectConfig,
-                                                 feature,
-                                                 feature,
-                                                 null );
+                                                 feature );
         }
 
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)

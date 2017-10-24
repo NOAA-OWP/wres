@@ -16,7 +16,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 {
 
 	private String lid = null;
-	public String station_name = null;
+	public String featureName = null;
 	private Integer feature_id = null;
 	
 	// A concurrent mapping of the feature to its index for a variable
@@ -97,13 +97,13 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 	{
 		String name;
 		
-		if (station_name == null)
+		if ( featureName == null)
 		{
 			name = "null";
 		}
 		else
 		{
-			name = "'" + station_name + "'";
+			name = "'" + featureName + "'";
 		}
 		
 		return name;
@@ -138,7 +138,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, String>
 
 	@Override
 	public void setID(Integer id) {
-		this.feature_id = id;		
+		this.feature_id = id;
 	}
 
 	@Override

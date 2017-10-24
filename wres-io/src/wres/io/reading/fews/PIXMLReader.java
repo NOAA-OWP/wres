@@ -45,6 +45,7 @@ import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
+import wres.util.Strings;
 import wres.util.Time;
 import wres.util.XML;
 
@@ -577,7 +578,7 @@ public final class PIXMLReader extends XMLReader
 				else if(localName.equalsIgnoreCase("missVal"))
 				{
 					// If we are at the tag for the missing value definition, record it
-					currentMissingValue = Float.parseFloat(XML.getXMLText(reader));
+					missingValue = Double.parseDouble( XML.getXMLText( reader ) );
 				}
 				else if (localName.equalsIgnoreCase("startDate"))
                 {
@@ -888,22 +889,15 @@ public final class PIXMLReader extends XMLReader
      * ignored as it represents invalid data. This should be ignored in data
      * sources that define their own missing value.
      */
-    protected String getSpecifiedMissingValue()
+    protected Double getSpecifiedMissingValue()
     {
-        String missingValue = null;
-
         if (missingValue == null && dataSourceConfig != null)
         {
             DataSourceConfig.Source source = this.getSourceConfig();
 
-            if (source != null && source.getMissingValue() != null && !source.getMissingValue().isEmpty())
+            if (source != null && Strings.hasValue( source.getMissingValue() ))
             {
-                missingValue = source.getMissingValue();
-
-                if ( missingValue.lastIndexOf( "." ) + 6 < missingValue.length() )
-                {
-                    missingValue = missingValue.substring( 0, missingValue.lastIndexOf( "." ) + 6 );
-                }
+                missingValue = Double.parseDouble(source.getMissingValue());
             }
         }
 
@@ -922,22 +916,19 @@ public final class PIXMLReader extends XMLReader
      */
     protected String getValueToSave(String value)
     {
-        if (value != null &&
-            !value.equalsIgnoreCase( "null" ) &&
+        value = value.trim();
+
+        if (Strings.hasValue(value) &&
+			!value.equalsIgnoreCase( "null" ) &&
             this.getSpecifiedMissingValue() != null)
         {
-            if ( value.lastIndexOf( "." ) + 6 < value.length() )
+            Double val = Double.parseDouble( value );
+            if ( Precision.equals(val, this.getSpecifiedMissingValue(), EPSILON))
             {
-                value = value.substring( 0, value.lastIndexOf( "." ) + 6 );
-            }
-
-            if (value.equalsIgnoreCase( this.getSpecifiedMissingValue() ))
-            {
-                value = "null";
+                value = "\\N";
             }
         }
-
-        if (value == null || value.equalsIgnoreCase( "null" ))
+        else if (!Strings.hasValue( value ) || value.equalsIgnoreCase( "null" ))
         {
             value = "\\N";
         }
@@ -998,7 +989,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The value which indicates a null or invalid value from the source
 	 */
-	private Float currentMissingValue = null;
+	private Double missingValue = null;
 	
 	/**
 	 * Indicates the amount of time in hours between measurements

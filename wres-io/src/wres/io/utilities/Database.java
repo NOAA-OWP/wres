@@ -352,6 +352,7 @@ public final class Database {
 
 		if (shouldAnalyze)
         {
+            Database.addNewIndexes();
             Database.refreshStatistics( false );
         }
 	}
@@ -699,6 +700,26 @@ public final class Database {
         }
 
 		return result;
+	}
+
+    /**
+     * Gets a value from the set of results with the given field name
+     * <p>
+     *     <b>Note:</b> If you attempt to pull a primitive value from the
+     *     result set and the value is null, then you will get the default
+     *     primitive value back. This will attempt to cast the non-existent value
+     * </p>
+     *
+     * @param resultSet The set to get the results from
+     * @param fieldName The name of the field for the value to get
+     * @param <U> The type of value to retrieve
+     * @return The value if it is in the result set, null otherwise
+     * @throws SQLException Thrown if the field is not in the result set
+     */
+	public static <U> U getValue(ResultSet resultSet, String fieldName)
+			throws SQLException
+	{
+		return (U)resultSet.getObject( fieldName);
 	}
 
     /**

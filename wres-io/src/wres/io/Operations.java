@@ -59,16 +59,13 @@ public final class Operations {
         {
             PIXMLReader.saveLeftoverForecasts();
             Database.completeAllIngestTasks();
-            Database.addNewIndexes();
         }
     }
 
     public static InputGenerator getInputs(ProjectConfig projectConfig,
-                                           Feature leftFeature,
-                                           Feature rightFeature,
-                                           Feature baselineFeature)
+                                           Feature feature)
     {
-        return new InputGenerator(projectConfig, leftFeature, rightFeature, baselineFeature);
+        return new InputGenerator(projectConfig, feature);
     }
 
     public static void install()

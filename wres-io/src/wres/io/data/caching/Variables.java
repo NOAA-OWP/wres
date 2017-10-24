@@ -167,8 +167,8 @@ public final class Variables extends Cache<VariableDetails, String>
                 while (variables.next()) {
                     detail = new VariableDetails();
                     detail.setVariableName(variables.getString("variable_name"));
-                    detail.measurementunitId = variables.getInt("measurementunit_id");
-                    detail.setID(variables.getInt("variable_id"));
+                    detail.measurementunitId = Database.getValue( variables, "measurementunit_id" );
+                    detail.setID(Database.getValue( variables,"variable_id"));
                     this.getKeyIndex().put(detail.getKey(), detail.getId());
 
                     this.getDetails().put(detail.getId(), detail);

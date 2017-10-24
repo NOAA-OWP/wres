@@ -50,8 +50,6 @@ public final class SystemSettings extends XMLReader
     private int fetchSize = 100;
     private int maximumInserts = 5000;
     private int maximumCopies = 200;
-    private long updateFrequency = 5000;
-    private boolean updateProgressMonitor = true;
     private int defaultChartWidth = 800;
     private int defaultChartHeight = 600;
 	private String remoteNetCDFURL = "http://***REMOVED***dstore.***REMOVED***.***REMOVED***/nwm/";
@@ -130,8 +128,7 @@ public final class SystemSettings extends XMLReader
 					String frequency = XML.getXMLText(reader);
 					if (Strings.isNumeric(frequency))
 					{
-						this.updateFrequency = Long.parseLong(frequency);
-						ProgressMonitor.setUpdateFrequency(this.updateFrequency);
+						ProgressMonitor.setUpdateFrequency(Long.parseLong( frequency ));
 					}
 				}
 				else if (XML.tagIs(reader, "fetch_size"))
@@ -140,8 +137,7 @@ public final class SystemSettings extends XMLReader
 				}
 				else if (XML.tagIs(reader, "update_progress_monitor"))
 				{
-					this.updateProgressMonitor = Strings.isTrue(XML.getXMLText(reader));
-					ProgressMonitor.setShouldUpdate(this.updateProgressMonitor);
+					ProgressMonitor.setShouldUpdate(Strings.isTrue(XML.getXMLText(reader)));
 				}
                 else if (XML.tagIs(reader, "default_chart_width"))
                 {
