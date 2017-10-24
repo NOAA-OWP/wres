@@ -1,13 +1,18 @@
 package wres;
 
 import java.lang.management.ManagementFactory;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import wres.io.Operations;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
 import wres.util.Strings;
@@ -50,6 +55,7 @@ public class Main {
             return op;
         }).get();
 
+
         FormattedStopwatch watch = new FormattedStopwatch();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -69,6 +75,10 @@ public class Main {
                                    "...");
         watch.start();
 
+        // The following two are for logging run information to the database.
+        long startTime = System.currentTimeMillis();
+        long endTime;
+
         Integer exitCode = null;
 
         try
@@ -77,7 +87,14 @@ public class Main {
         }
         catch ( Exception e )
         {
+            endTime = System.currentTimeMillis();
             LOGGER.error( "Operation {} completed unsuccessfully", operation, e );
+
+            Operations.logExecution( String.join( " ", args),
+                                     "",
+                                     Main.sqlDateFromMillis( startTime ),
+                                     Main.sqlDateFromMillis( endTime ),
+                                     true );
         }
 
         if (exitCode == null)
@@ -85,7 +102,14 @@ public class Main {
             exitCode = MainFunctions.FAILURE;
         }
 
+        endTime = System.currentTimeMillis();
         watch.stop();
+
+        Operations.logExecution( String.join(" ", args),
+                                 "",
+                                 Main.sqlDateFromMillis( startTime ),
+                                 Main.sqlDateFromMillis( endTime ),
+                                 false );
 
         System.out.println( "Log messages have been written to the file "
                             + System.getProperty("user.home")
@@ -111,4 +135,16 @@ public class Main {
             return "WRES version is unknown, probably developer version.";
         }
     }
+
+
+    private static String sqlDateFromMillis( long millis )
+    {
+        final String PATTERN = "YYYY-MM-dd HH:mm:ss.SSSZ";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern( PATTERN,
+                                                                   Locale.US )
+                                                       .withZone( ZoneId.systemDefault() );
+        Instant instant = Instant.ofEpochMilli( millis );
+        return formatter.format( instant );
+    }
+
 }
