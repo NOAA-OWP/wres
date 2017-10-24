@@ -25,9 +25,9 @@ class RelativeOperatingCharacteristicDiagram extends RelativeOperatingCharacteri
     private final int points;
 
     @Override
-    public MultiVectorOutput apply(final DiscreteProbabilityPairs s)
+    public MultiVectorOutput apply( final DiscreteProbabilityPairs s )
     {
-        return getROC(s, points);
+        return getROC( s, points );
     }
 
     @Override
@@ -41,14 +41,14 @@ class RelativeOperatingCharacteristicDiagram extends RelativeOperatingCharacteri
      */
 
     static class RelativeOperatingCharacteristicBuilder
-    extends
-        MetricBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
+            extends
+            MetricBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
     {
 
         @Override
-        protected RelativeOperatingCharacteristicDiagram build()
+        protected RelativeOperatingCharacteristicDiagram build() throws MetricParameterException
         {
-            return new RelativeOperatingCharacteristicDiagram(this);
+            return new RelativeOperatingCharacteristicDiagram( this );
         }
 
     }
@@ -57,11 +57,13 @@ class RelativeOperatingCharacteristicDiagram extends RelativeOperatingCharacteri
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    private RelativeOperatingCharacteristicDiagram(final RelativeOperatingCharacteristicBuilder builder)
+    private RelativeOperatingCharacteristicDiagram( final RelativeOperatingCharacteristicBuilder builder )
+            throws MetricParameterException
     {
-        super(builder);
+        super( builder );
         //Set the default points
         points = 10;
     }

@@ -110,17 +110,24 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
         //Construct the metrics
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ) )
+        try
         {
-            dichotomousScalar =
-                    metricFactory.ofDichotomousScalarCollection( metricExecutor,
-                                                                 getSelectedMetrics( metrics,
-                                                                                     MetricInputGroup.DICHOTOMOUS,
-                                                                                     MetricOutputGroup.SCALAR ) );
+            if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ) )
+            {
+                dichotomousScalar =
+                        metricFactory.ofDichotomousScalarCollection( metricExecutor,
+                                                                     getSelectedMetrics( metrics,
+                                                                                         MetricInputGroup.DICHOTOMOUS,
+                                                                                         MetricOutputGroup.SCALAR ) );
+            }
+            else
+            {
+                dichotomousScalar = null;
+            }
         }
-        else
+        catch ( MetricParameterException e )
         {
-            dichotomousScalar = null;
+            throw new MetricConfigurationException( "Failed to construct one or more metrics.", e );
         }
     }
 

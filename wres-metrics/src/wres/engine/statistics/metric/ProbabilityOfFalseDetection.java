@@ -50,7 +50,7 @@ class ProbabilityOfFalseDetection extends ContingencyTableScore<DichotomousPairs
     {
 
         @Override
-        protected ProbabilityOfFalseDetection build()
+        protected ProbabilityOfFalseDetection build() throws MetricParameterException
         {
             return new ProbabilityOfFalseDetection(this);
         }
@@ -61,9 +61,10 @@ class ProbabilityOfFalseDetection extends ContingencyTableScore<DichotomousPairs
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private ProbabilityOfFalseDetection(final ProbabilityOfFalseDetectionBuilder builder)
+    private ProbabilityOfFalseDetection(final ProbabilityOfFalseDetectionBuilder builder) throws MetricParameterException
     {
         super(builder);
     }

@@ -61,7 +61,7 @@ class BrierScore extends MeanSquareError<DiscreteProbabilityPairs> implements Pr
     {
 
         @Override
-        protected BrierScore build()
+        protected BrierScore build() throws MetricParameterException
         {
             return new BrierScore(this);
         }
@@ -79,9 +79,10 @@ class BrierScore extends MeanSquareError<DiscreteProbabilityPairs> implements Pr
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private BrierScore(final BrierScoreBuilder builder)
+    private BrierScore(final BrierScoreBuilder builder) throws MetricParameterException
     {
         super(builder);
     }

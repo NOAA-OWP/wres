@@ -28,10 +28,11 @@ public final class ContingencyTableTest
     /**
      * Constructs a {@link ContingencyTable} and compares the actual result to the expected result. Also, checks the
      * parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1ContingencyTable()
+    public void test1ContingencyTable() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -65,10 +66,11 @@ public final class ContingencyTableTest
 
     /**
      * Constructs a {@link ContingencyTable} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();

@@ -81,7 +81,7 @@ class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     {
 
         @Override
-        protected IndexOfAgreement build()
+        protected IndexOfAgreement build() throws MetricParameterException
         {
             return new IndexOfAgreement( this );
         }
@@ -92,9 +92,10 @@ class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private IndexOfAgreement( final IndexOfAgreementBuilder builder )
+    private IndexOfAgreement( final IndexOfAgreementBuilder builder ) throws MetricParameterException
     {
         super( builder );
         //Default exponent

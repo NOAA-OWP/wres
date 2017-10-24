@@ -22,10 +22,11 @@ public final class DoubleErrorScoreTest
 
     /**
      * Checks that the baseline is set correctly.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1Baseline()
+    public void test1Baseline() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();

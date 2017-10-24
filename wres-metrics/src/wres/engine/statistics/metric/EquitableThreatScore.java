@@ -60,7 +60,7 @@ class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs>
     {
 
         @Override
-        protected EquitableThreatScore build()
+        protected EquitableThreatScore build() throws MetricParameterException
         {
             return new EquitableThreatScore(this);
         }
@@ -71,9 +71,10 @@ class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs>
      * Hidden constructor.
      * 
      * @param builder the builder.
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private EquitableThreatScore(final EquitableThreatScoreBuilder builder)
+    private EquitableThreatScore(final EquitableThreatScoreBuilder builder) throws MetricParameterException
     {
         super(builder);
     }

@@ -76,7 +76,7 @@ class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> implements Sc
     {
 
         @Override
-        protected BiasFraction build()
+        protected BiasFraction build() throws MetricParameterException
         {
             return new BiasFraction(this);
         }
@@ -87,9 +87,10 @@ class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> implements Sc
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private BiasFraction(final BiasFractionBuilder builder)
+    private BiasFraction(final BiasFractionBuilder builder) throws MetricParameterException
     {
         super(builder);
     }

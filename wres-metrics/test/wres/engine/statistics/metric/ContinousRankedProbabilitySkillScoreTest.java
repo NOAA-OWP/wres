@@ -34,10 +34,11 @@ public final class ContinousRankedProbabilitySkillScoreTest
     /**
      * Constructs a {@link ContinousRankedProbabilitySkillScore} and compares the actual result to the expected result 
      * for a scenario without  missing data. Also, checks the parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1CRPSSNoMissings()
+    public void test1CRPSSNoMissings() throws MetricParameterException
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -89,15 +90,17 @@ public final class ContinousRankedProbabilitySkillScoreTest
         assertTrue( "Expected no decomposition for the Continuous Ranked Probability Skill Score.",
                     crpss.getScoreOutputGroup() == ScoreOutputGroup.NONE );
         assertTrue( "The Continuous Ranked Probability Skill Score is not proper.", !crpss.isProper() );
-        assertTrue( "The Continuous Ranked Probability Skill Score is not strictly proper.", !crpss.isStrictlyProper() );
+        assertTrue( "The Continuous Ranked Probability Skill Score is not strictly proper.",
+                    !crpss.isStrictlyProper() );
     }
 
     /**
      * Constructs a {@link ContinousRankedProbabilitySkillScore} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -114,8 +117,8 @@ public final class ContinousRankedProbabilitySkillScoreTest
             b.build();
             fail( "Expected an exception on building with an unsupported decomposition." );
         }
-        catch(UnsupportedOperationException e)
-        {          
+        catch ( MetricParameterException e )
+        {
         }
         //Null input
         try
@@ -123,21 +126,21 @@ public final class ContinousRankedProbabilitySkillScoreTest
             crpss.apply( null );
             fail( "Expected an exception on null input." );
         }
-        catch(MetricInputException e)
-        {          
+        catch ( MetricInputException e )
+        {
         }
         try
         {
             crpss.apply( MetricTestDataFactory.getEnsemblePairsOne() );
             fail( "Expected an exception on null input for the baseline." );
         }
-        catch(MetricInputException e)
-        {          
+        catch ( MetricInputException e )
+        {
         }
         catch ( IOException e )
         {
             fail( "Unable to read the input data." );
-        }        
-    }    
-    
+        }
+    }
+
 }

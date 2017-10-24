@@ -50,7 +50,7 @@ class ProbabilityOfDetection extends ContingencyTableScore<DichotomousPairs>
     {
 
         @Override
-        protected ProbabilityOfDetection build()
+        protected ProbabilityOfDetection build() throws MetricParameterException
         {
             return new ProbabilityOfDetection(this);
         }
@@ -61,9 +61,10 @@ class ProbabilityOfDetection extends ContingencyTableScore<DichotomousPairs>
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private ProbabilityOfDetection(final ProbabilityOfDetectionBuilder builder)
+    private ProbabilityOfDetection(final ProbabilityOfDetectionBuilder builder) throws MetricParameterException
     {
         super(builder);
     }

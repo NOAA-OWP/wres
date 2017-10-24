@@ -252,6 +252,16 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
+    public BoxPlotOutput ofBoxPlotOutput( List<PairOfDoubleAndVectorOfDoubles> output,
+                                          VectorOfDoubles probabilities,
+                                          MetricOutputMetadata meta,
+                                          MetricDimension domainAxisDimension,
+                                          MetricDimension rangeAxisDimension )
+    {
+        return new SafeBoxPlotOutput( output, probabilities, meta, domainAxisDimension, rangeAxisDimension );
+    }
+
+    @Override
     public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( final List<T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null list of inputs." );

@@ -8,10 +8,10 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.engine.statistics.metric.RootMeanSquareError.RootMeanSquareErrorBuilder;
 
 /**
@@ -27,10 +27,11 @@ public final class RootMeanSquareErrorTest
     /**
      * Constructs a {@link RootMeanSquareError} and compares the actual result to the expected result. Also, checks the
      * parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1RootMeanSquareError()
+    public void test1RootMeanSquareError() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();

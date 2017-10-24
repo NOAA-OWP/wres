@@ -31,10 +31,11 @@ public final class IndexOfAgreementTest
     /**
      * Constructs a {@link IndexOfAgreement} and compares the actual result to the expected result. Also, checks the
      * parameters.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1IndexOfAgreement()
+    public void test1IndexOfAgreement() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -84,10 +85,11 @@ public final class IndexOfAgreementTest
 
     /**
      * Constructs a {@link IndexOfAgreement} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();

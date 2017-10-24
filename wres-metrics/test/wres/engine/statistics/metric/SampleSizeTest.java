@@ -29,10 +29,11 @@ public final class SampleSizeTest
     /**
      * Constructs a {@link SampleSize} and compares the actual result to the expected result. Also, checks the 
      * parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1SampleSize()
+    public void test1SampleSize() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -68,10 +69,11 @@ public final class SampleSizeTest
     
     /**
      * Constructs a {@link SampleSize} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();

@@ -16,7 +16,7 @@ import wres.datamodel.VectorOutput;
  */
 
 abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Metric<S, VectorOutput>
-implements Score
+        implements Score
 {
 
     /**
@@ -42,8 +42,8 @@ implements Score
      */
 
     static abstract class DecomposableDoubleErrorScoreBuilder<S extends MetricInput<?>>
-    extends
-        MetricBuilder<S, VectorOutput>
+            extends
+            MetricBuilder<S, VectorOutput>
     {
         /**
          * The type of metric decomposition. See {@link ScoreOutputGroup}.
@@ -58,7 +58,7 @@ implements Score
          * @return the builder
          */
 
-        DecomposableDoubleErrorScoreBuilder<S> setDecompositionID(final ScoreOutputGroup decompositionID)
+        DecomposableDoubleErrorScoreBuilder<S> setDecompositionID( final ScoreOutputGroup decompositionID )
         {
             this.decompositionID = decompositionID;
             return this;
@@ -69,13 +69,17 @@ implements Score
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    DecomposableDoubleErrorScore(final DecomposableDoubleErrorScoreBuilder<S> builder)
+    DecomposableDoubleErrorScore( final DecomposableDoubleErrorScoreBuilder<S> builder ) throws MetricParameterException
     {
-        super(builder);
+        super( builder );
         this.decompositionID = builder.decompositionID;
-        Objects.requireNonNull(decompositionID, "Specify a non-null decomposition identifier.");
+        if ( Objects.isNull( this.decompositionID ) )
+        {
+            throw new MetricParameterException( "Specify a non-null decomposition identifier." );
+        }
     }
 
 }

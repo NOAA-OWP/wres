@@ -9,9 +9,9 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.engine.statistics.metric.CriticalSuccessIndex.CriticalSuccessIndexBuilder;
 
 /**
@@ -27,10 +27,11 @@ public final class CriticalSuccessIndexTest
     /**
      * Constructs a {@link CriticalSuccessIndex} and compares the actual result to the expected result. Also, checks the
      * parameters of the metric.
+     * @throws MetricParameterException if the metric construction fails
      */
 
     @Test
-    public void test1CriticalSuccessIndex()
+    public void test1CriticalSuccessIndex() throws MetricParameterException
     {
 
         //Obtain the factories

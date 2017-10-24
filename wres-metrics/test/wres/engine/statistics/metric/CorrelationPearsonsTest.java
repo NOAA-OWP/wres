@@ -34,10 +34,11 @@ public final class CorrelationPearsonsTest
     /**
      * Constructs a {@link CorrelationPearsons}. Minimal test that focuses on the wrapper, and not the underlying
      * {@link PearsonsCorrelation}.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1Correlation()
+    public void test1Correlation() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory dataF = DefaultDataFactory.getInstance();
@@ -77,10 +78,11 @@ public final class CorrelationPearsonsTest
 
     /**
      * Constructs a {@link CorrelationPearsons} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
