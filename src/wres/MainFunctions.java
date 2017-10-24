@@ -292,8 +292,6 @@ final class MainFunctions
                                                    .get( 0 );
 
                     InputGenerator generator = Operations.getInputs(projectConfig,
-                                                                     feature,
-                                                                     feature,
                                                                      feature );
 
                     List<Future<MetricInput<?>>> futures = new ArrayList<>(  );

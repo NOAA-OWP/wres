@@ -272,6 +272,13 @@ public final class Collections
         return (U[])copy.toArray();
     }
 
+    public static <U> U[] shrink(final U[] array, final U...ignorableValues)
+    {
+        return Collections.removeAll( array,
+                                      (U value) -> value == null ||
+                                                   Collections.contains( ignorableValues, value ) );
+    }
+
     /**
      * Finds a key matching up with an indicated value
      * @param mapping The mapping between keys and values

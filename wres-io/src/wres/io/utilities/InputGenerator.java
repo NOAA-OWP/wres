@@ -39,18 +39,14 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
     private static final String NEWLINE = System.lineSeparator();
     private static final Logger LOGGER = LoggerFactory.getLogger(InputGenerator.class);
 
-    public InputGenerator (ProjectConfig projectConfig, Feature leftFeature, Feature rightFeature, Feature baselineFeature)
+    public InputGenerator (ProjectConfig projectConfig, Feature feature)
     {
         this.projectConfig = projectConfig;
-        this.leftFeature = leftFeature;
-        this.rightFeature = rightFeature;
-        this.baselineFeature = baselineFeature;
+        this.feature = feature;
     }
 
     private final ProjectConfig projectConfig;
-    private final Feature leftFeature;
-    private final Feature rightFeature;
-    private final Feature baselineFeature;
+    private final Feature feature;
 
     @Override
     public Iterator<Future<MetricInput<?>>> iterator()
@@ -58,9 +54,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         MetricInputIterator iterator = null;
         try {
             iterator =  new MetricInputIterator(this.projectConfig,
-                                                this.leftFeature,
-                                                this.rightFeature,
-                                                this.baselineFeature);
+                                                this.feature);
         }
         catch (SQLException | NotImplementedException | InvalidPropertiesFormatException e) {
             LOGGER.error("A MetricInputIterator could not be created.");
@@ -83,9 +77,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private Integer variableID;
         private Integer leadOffset;
 
-        private final Feature leftFeature;
-        private final Feature rightFeature;
-        private final Feature baselineFeature;
+        private final Feature feature;
 
         private final ProjectConfig projectConfig;
         private NavigableMap<String, Double> leftHandMap;
@@ -153,7 +145,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 }
             }
 
-            String variablepositionClause = ConfigHelper.getVariablePositionClause(leftFeature, leftVariableID, "");
+            String variablepositionClause = ConfigHelper.getVariablePositionClause(feature, leftVariableID, "");
 
             if (left.getTimeShift() != null && left.getTimeShift().getWidth() != 0)
             {
@@ -215,17 +207,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             }
             else
             {
-                List<Integer> leftSources = Projects.getProject( this.projectConfig ).getLeftSources();
-
-                if (leftSources.size() == 0)
-                {
-                    throw new NoDataException( "There are no observation data "
-                                               + "pair with. Please ensure "
-                                               + "data exists that can be "
-                                               + "ingested and that the project "
-                                               + "is properly configured." );
-                }
-
                 script.append("SELECT (O.observation_time");
 
                 if (timeShift != null)
@@ -242,7 +223,9 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                 script.append("WHERE PS.project_id = ")
                       .append(Projects.getProject( this.projectConfig ).getId())
                       .append(NEWLINE);
+                script.append("     AND PS.member = 'left'").append(NEWLINE);
                 script.append("     AND ").append(variablepositionClause).append(NEWLINE);
+                script.append("     AND O.observed_value IS NOT NULL").append(NEWLINE);
 
                 if (earliestDate != null)
                 {
@@ -306,9 +289,10 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
                 while(resultSet.next())
                 {
-                    String date = resultSet.getString("left_date");
-                    Double value = resultSet.getDouble("left_value");
-                    int unitID = resultSet.getInt("measurementunit_id");
+                    String date = Database.getValue( resultSet, "left_date" );
+                    Double value = Database.getValue( resultSet, "left_value" );
+
+                    int unitID = Database.getValue( resultSet, "measurementunit_id" );
 
                     if (unitID != desiredMeasurementUnitID)
                     {
@@ -393,14 +377,12 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             return simulation;
         }
 
-        public MetricInputIterator(ProjectConfig projectConfig, Feature leftFeature, Feature rightFeature, Feature baselineFeature)
+        public MetricInputIterator(ProjectConfig projectConfig, Feature feature)
                 throws SQLException, InvalidPropertiesFormatException,
                 NoDataException
         {
             this.projectConfig = projectConfig;
-            this.leftFeature = leftFeature;
-            this.rightFeature = rightFeature;
-            this.baselineFeature = baselineFeature;
+            this.feature = feature;
 
             this.createLeftHandCache();
 
@@ -446,7 +428,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
         private Integer getLastLead() throws SQLException
         {
             return Projects.getProject( this.projectConfig )
-                           .getLastLead( this.rightFeature );
+                           .getLastLead( this.feature );
         }
 
         private int getLeadOffset() throws NoDataException, SQLException,
@@ -459,8 +441,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             else if (this.leadOffset == null)
             {
                 this.leadOffset = ConfigHelper.getLeadOffset( this.projectConfig,
-                                                              leftFeature,
-                                                              rightFeature);
+                                                              feature);
 
                 if (this.leadOffset == null)
                 {
@@ -586,8 +567,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                                                                   (String firstDate, String lastDate) -> {
                                                                       return Collections.getValuesInRange( this.leftHandMap, firstDate, lastDate );
                                                                   });
-                    retriever.setRightFeature( this.rightFeature );
-                    retriever.setBaselineFeature( this.baselineFeature );
+                    retriever.setFeature(feature);
                     retriever.setClimatology( this.leftHandValues );
                     retriever.setProgress( this.windowNumber );
                     retriever.setLeadOffset( this.getLeadOffset() );

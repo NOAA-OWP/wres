@@ -251,6 +251,42 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return unit;
     }
 
+    public int getLeftTimeShift()
+    {
+        int shift = 0;
+
+        if (this.getLeft().getTimeShift() != null)
+        {
+            shift = this.getLeft().getTimeShift().getWidth();
+        }
+
+        return shift;
+    }
+
+    public int getRightTimeShift()
+    {
+        int shift = 0;
+
+        if (this.getRight().getTimeShift() != null)
+        {
+            shift = this.getRight().getTimeShift().getWidth();
+        }
+
+        return shift;
+    }
+
+    public int getBaselineTimeShift()
+    {
+        int shift = 0;
+
+        if (this.getBaseline().getTimeShift() != null)
+        {
+            shift = this.getBaseline().getTimeShift().getWidth();
+        }
+
+        return shift;
+    }
+
     public String getProjectName()
     {
         return this.projectConfig.getName();

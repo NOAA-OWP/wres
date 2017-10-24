@@ -56,14 +56,9 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         this.getLeftValues = getLeftValues;
     }
 
-    public void setRightFeature(Feature rightFeature)
+    public void setFeature(Feature feature)
     {
-        this.rightFeature = rightFeature;
-    }
-
-    public void setBaselineFeature(Feature baselineFeature)
-    {
-        this.baselineFeature = baselineFeature;
+        this.feature = feature;
     }
 
     public void setProgress(int progress)
@@ -130,7 +125,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                                .getVariable()
                                                                .getValue() +
                                        " at " +
-                                       ConfigHelper.getFeatureDescription( this.rightFeature ) );
+                                       ConfigHelper.getFeatureDescription( this.feature ) );
         }
 
         if (this.baselineExists())
@@ -173,7 +168,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             {
                 this.rightLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectConfig,
                                                                                      dataSourceConfig,
-                                                                                     this.getFeature( dataSourceConfig ),
+                                                                                     this.feature,
                                                                                      this.progress,
                                                                                      this.zeroDate,
                                                                                      this.leadOffset);
@@ -186,7 +181,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             {
                 this.baselineLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectConfig,
                                                                                         dataSourceConfig,
-                                                                                        this.getFeature( dataSourceConfig ),
+                                                                                        this.feature,
                                                                                         this.progress,
                                                                                         this.zeroDate,
                                                                                         this.leadOffset);
@@ -401,12 +396,10 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
     private Metadata buildMetadata (DataFactory dataFactory, DataSourceConfig sourceConfig)
     {
-        Feature feature = this.getFeature( sourceConfig );
-
         MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
         Dimension dim = metadataFactory.getDimension(String.valueOf(this.projectConfig.getPair().getUnit()));
 
-        String geospatialIdentifier = ConfigHelper.getFeatureDescription(feature);
+        String geospatialIdentifier = ConfigHelper.getFeatureDescription(this.feature);
         String variableIdentifier = sourceConfig.getVariable().getValue();
 
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
@@ -464,7 +457,6 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         if (leftValues == null || leftValues.size() == 0)
         {
             LOGGER.trace( "No values from the left could be retrieved to pair with the retrieved right values." );
-            //throw new NoDataException( "No values from the left could be retrieved to pair with the retrieved right values." );
             return null;
         }
 
@@ -479,6 +471,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             memberIndex++;
         }
 
+        rightAggregation = Collections.shrink(rightAggregation, Double.NaN);
         return DefaultDataFactory.getInstance().pairOf( leftAggregation, rightAggregation );
     }
 
@@ -493,27 +486,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             PairWriter saver = new PairWriter( dest,
                                                date,
-                                               this.getFeature( dataSourceConfig ),
+                                               this.feature,
                                                this.progress,
                                                pair );
             Executor.submitHighPriorityTask(saver);
         }
-    }
-
-    private Feature getFeature(DataSourceConfig dataSourceConfig)
-    {
-        Feature feature;
-
-        if ( ConfigHelper.isRight( dataSourceConfig, this.projectConfig ))
-        {
-            feature = this.rightFeature;
-        }
-        else
-        {
-            feature = this.baselineFeature;
-        }
-
-        return feature;
     }
 
     private TimeAggregationConfig getDesiredAggregation()
@@ -526,8 +503,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private int leadOffset;
     private int progress;
     private final ProjectConfig projectConfig;
-    private Feature rightFeature;
-    private Feature baselineFeature;
+    private Feature feature;
     private final BiFunction<String, String, List<Double>> getLeftValues;
     private VectorOfDoubles climatology;
     private List<PairOfDoubleAndVectorOfDoubles> primaryPairs;
@@ -536,7 +512,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
     private Boolean baselineExists()
     {
-        return this.baselineFeature != null;
+        return this.projectConfig.getInputs().getBaseline() != null;
     }
 
     @Override

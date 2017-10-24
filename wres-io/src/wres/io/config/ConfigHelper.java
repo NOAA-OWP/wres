@@ -230,7 +230,7 @@ public class ConfigHelper
                                   timeAggregationConfig.getPeriod() );
     }
 
-    public static Integer getLeadOffset( ProjectConfig projectConfig, Feature left, Feature right )
+    public static Integer getLeadOffset( ProjectConfig projectConfig, Feature feature )
             throws InvalidPropertiesFormatException, SQLException
     {
         Integer offset;
@@ -240,11 +240,11 @@ public class ConfigHelper
         ProjectDetails projectDetails = Projects.getProject( projectConfig );
 
         String leftVariablepositionClause =
-                ConfigHelper.getVariablePositionClause( left,
+                ConfigHelper.getVariablePositionClause( feature,
                                                         projectDetails.getLeftVariableID(),
                                                         "O" );
         String rightVariablepositionClause =
-                ConfigHelper.getVariablePositionClause( right,
+                ConfigHelper.getVariablePositionClause( feature,
                                                         projectDetails.getRightVariableID(),
                                                         "TS" );
 
@@ -255,7 +255,21 @@ public class ConfigHelper
         script.append("INNER JOIN wres.ForecastValue FV").append(newline);
         script.append("     ON FV.timeseries_id = TS.timeseries_id").append(newline);
         script.append("INNER JOIN wres.Observation O").append(newline);
-        script.append("     ON O.observation_time = TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
+        script.append("     ON O.observation_time");
+
+        if (projectDetails.getLeftTimeShift() != 0)
+        {
+            script.append(" + INTERVAL '1 HOUR' *").append(projectDetails.getLeft().getTimeShift().getWidth());
+        }
+
+        script.append(" = TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")");
+
+        if (projectDetails.getRightTimeShift() != 0)
+        {
+            script.append(" + INTERVAL '1 HOUR' *").append(projectDetails.getRight().getTimeShift().getWidth());
+        }
+
+        script.append(newline);
         script.append("WHERE ").append(leftVariablepositionClause).append(newline);
         script.append("     AND ").append(rightVariablepositionClause).append(newline);
 
@@ -296,7 +310,13 @@ public class ConfigHelper
                 script.append("     AND TS.initialization_date >= '")
                       .append( projectConfig.getPair()
                                             .getDates()
-                                            .getLatest() )
+                                            .getEarliest() )
+                      .append("'")
+                      .append(newline);
+                script.append("     AND O.observation_time >= '")
+                      .append( projectConfig.getPair()
+                                            .getDates()
+                                            .getEarliest() )
                       .append("'")
                       .append(newline);
             }
@@ -306,7 +326,7 @@ public class ConfigHelper
                               .getLatest() != null
                  && !projectConfig.getPair()
                                   .getDates()
-                                  .getEarliest()
+                                  .getLatest()
                                   .trim()
                                   .isEmpty() )
             {
@@ -314,6 +334,10 @@ public class ConfigHelper
                       .append( projectConfig.getPair()
                                             .getDates()
                                             .getLatest() )
+                      .append("'")
+                      .append(newline);
+                script.append("     AND O.observation_time <= '")
+                      .append( projectConfig.getPair().getDates().getLatest())
                       .append("'")
                       .append(newline);
             }
