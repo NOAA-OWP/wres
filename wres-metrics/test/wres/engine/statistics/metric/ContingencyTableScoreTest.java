@@ -26,10 +26,11 @@ public final class ContingencyTableScoreTest
 
     /**
      * Constructs a {@link ContingencyTableScore} and tests it.
+     * @throws MetricParameterException if the metric construction fails 
      */
 
     @Test
-    public void test1ContingencyTableScore()
+    public void test1ContingencyTableScore() throws MetricParameterException
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outputFactory.getMetadataFactory();
@@ -59,10 +60,11 @@ public final class ContingencyTableScoreTest
 
     /**
      * Constructs a {@link ContingencyTableScore} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric construction fails
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();

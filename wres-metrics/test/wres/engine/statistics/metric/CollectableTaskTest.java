@@ -30,10 +30,11 @@ public final class CollectableTaskTest
 
     /**
      * Constructs a {@link CollectableTask} and checks for exceptions.
+     * @throws MetricParameterException if the metric construction fails
      */
 
     @Test
-    public void test1CollectableTask()
+    public void test1CollectableTask() throws MetricParameterException
     {
 
         final DataFactory outF = DefaultDataFactory.getInstance();

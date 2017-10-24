@@ -27,10 +27,11 @@ public final class FrequencyBiasTest
     /**
      * Constructs a {@link FrequencyBias} and compares the actual result to the expected result. Also, checks the
      * parameters of the metric.
+     * @throws MetricParameterException if the metric construction fails 
      */
 
     @Test
-    public void test1FrequencyBias()
+    public void test1FrequencyBias() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();

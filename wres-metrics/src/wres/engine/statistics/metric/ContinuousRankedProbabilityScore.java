@@ -94,7 +94,7 @@ class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorScore<Ense
     static class CRPSBuilder extends DecomposableDoubleErrorScoreBuilder<EnsemblePairs>
     {
         @Override
-        protected ContinuousRankedProbabilityScore build()
+        protected ContinuousRankedProbabilityScore build() throws MetricParameterException
         {
             return new ContinuousRankedProbabilityScore( this );
         }
@@ -104,9 +104,10 @@ class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorScore<Ense
      * Constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    ContinuousRankedProbabilityScore( final CRPSBuilder builder )
+    ContinuousRankedProbabilityScore( final CRPSBuilder builder ) throws MetricParameterException
     {
         super( builder );
         switch ( builder.decompositionID )
@@ -115,7 +116,7 @@ class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorScore<Ense
             case CR:
                 break;
             default:
-                throw new UnsupportedOperationException( "Unsupported decomposition identifier: "
+                throw new MetricParameterException( "Unsupported decomposition identifier: "
                                                          + builder.decompositionID );
         }
     }

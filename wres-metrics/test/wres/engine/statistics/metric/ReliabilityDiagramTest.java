@@ -32,10 +32,11 @@ public final class ReliabilityDiagramTest
     /**
      * Constructs a {@link ReliabilityDiagram} and compares the actual result to the expected result. Also, checks the
      * parameters of the metric. Uses the data from {@link MetricTestDataFactory#getDiscreteProbabilityPairsThree()}.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1ReliabilityDiagram()
+    public void test1ReliabilityDiagram() throws MetricParameterException
     {
         //Generate some data
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
@@ -81,10 +82,11 @@ public final class ReliabilityDiagramTest
     
     /**
      * Constructs a {@link ReliabilityDiagram} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Build the metric
         final ReliabilityDiagramBuilder b = new ReliabilityDiagram.ReliabilityDiagramBuilder();

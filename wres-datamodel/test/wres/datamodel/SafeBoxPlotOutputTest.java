@@ -48,14 +48,14 @@ public final class SafeBoxPlotOutputTest
         }
         final SafeBoxPlotOutput q =
                 new SafeBoxPlotOutput( values,
-                                       m1,
                                        d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
+                                       m1,
                                        MetricDimension.OBSERVED_VALUE,
                                        MetricDimension.FORECAST_ERROR );
         final SafeBoxPlotOutput r =
                 new SafeBoxPlotOutput( values,
-                                       m2,
                                        d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
+                                       m2,
                                        MetricDimension.OBSERVED_VALUE,
                                        MetricDimension.FORECAST_ERROR );
         assertTrue( "Expected unequal dimensions.", !q.getMetadata().equals( r.getMetadata() ) );
@@ -83,8 +83,8 @@ public final class SafeBoxPlotOutputTest
         }
         final SafeBoxPlotOutput q =
                 new SafeBoxPlotOutput( values,
-                                       m1,
                                        d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
+                                       m1,
                                        MetricDimension.OBSERVED_VALUE,
                                        MetricDimension.FORECAST_ERROR );
         assertTrue( "Expected a list of data.", !q.getData().isEmpty() );
@@ -122,8 +122,8 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( null,
-                                   m1,
                                    d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
+                                   m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on null input data." );
@@ -135,8 +135,8 @@ public final class SafeBoxPlotOutputTest
         {
             List<PairOfDoubleAndVectorOfDoubles> emptyList = new ArrayList<>();
             new SafeBoxPlotOutput( emptyList,
-                                   m1,
                                    d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
+                                   m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on an empty list of input data." );
@@ -147,8 +147,8 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   null,
                                    d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
+                                   null,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on null metadata." );
@@ -159,8 +159,8 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   m1,
                                    null,
+                                   m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on a null vector of probabilities." );
@@ -171,8 +171,8 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   m1,
                                    d.vectorOf( new double[] {} ),
+                                   m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on an empty vector of probabilities." );
@@ -183,8 +183,8 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   m1,
                                    d.vectorOf( new double[] {5.0, 10.0, 15.0} ),
+                                   m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on invalid probabilities." );
@@ -195,8 +195,8 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   m1,
                                    d.vectorOf( new double[] {5.0, 10.0} ),
+                                   m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on fewer probabilities than whiskers." );
@@ -210,8 +210,8 @@ public final class SafeBoxPlotOutputTest
             uneven.add( d.pairOf( 1.0, new double[] {1,2,3} ) );
             uneven.add( d.pairOf( 1.0, new double[] {1,2,3,4} ) );
             new SafeBoxPlotOutput( uneven,
-                                   m1,
                                    d.vectorOf( new double[] {0.0, 0.5, 1.0} ),
+                                   m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on boxes with varying numbers of whiskers." );
@@ -225,8 +225,8 @@ public final class SafeBoxPlotOutputTest
             uneven.add( d.pairOf( 1.0, new double[] {1,2,3} ) );
             uneven.add( d.pairOf( 1.0, new double[] {} ) );
             new SafeBoxPlotOutput( uneven,
-                                   m1,
                                    d.vectorOf( new double[] {0.0, 0.5, 1.0} ),
+                                   m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on boxes with missing whiskers." );
@@ -237,8 +237,8 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   m1,
                                    d.vectorOf( new double[] {0.0, -0.5, 1.0} ),
+                                   m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on boxes with invalid probabilities." );
@@ -249,8 +249,8 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   m1,
                                    d.vectorOf( new double[] {0.0,0.5,1.0} ),
+                                   m1,
                                    null,
                                    MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on a null domain axis dimension." );
@@ -261,8 +261,8 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   m1,
                                    d.vectorOf( new double[] {0.0,0.5,1.0} ),
+                                   m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    null );
             fail( "Expected an exception on a null range axis dimension." );

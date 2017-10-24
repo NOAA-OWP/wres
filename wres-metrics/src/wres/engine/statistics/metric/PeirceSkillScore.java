@@ -96,7 +96,7 @@ class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyTableSco
     {
 
         @Override
-        public PeirceSkillScore<S> build()
+        public PeirceSkillScore<S> build() throws MetricParameterException
         {
             return new PeirceSkillScore<>(this);
         }
@@ -107,9 +107,10 @@ class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyTableSco
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private PeirceSkillScore(final PeirceSkillScoreBuilder<S> builder)
+    private PeirceSkillScore(final PeirceSkillScoreBuilder<S> builder) throws MetricParameterException
     {
         super(builder);
     }

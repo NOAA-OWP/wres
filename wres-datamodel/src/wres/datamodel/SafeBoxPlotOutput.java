@@ -86,16 +86,16 @@ class SafeBoxPlotOutput implements BoxPlotOutput
      * Construct the box plot output.
      * 
      * @param output the box plot data
-     * @param meta the box plot metadata
      * @param probabilities the probabilities
+     * @param meta the box plot metadata
      * @param domainAxisDimension the domain axis dimension
      * @param rangeAxisDimension the range axis dimension
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeBoxPlotOutput( final List<PairOfDoubleAndVectorOfDoubles> output,
-                       MetricOutputMetadata meta,
+    SafeBoxPlotOutput( List<PairOfDoubleAndVectorOfDoubles> output,
                        VectorOfDoubles probabilities,
+                       MetricOutputMetadata meta,
                        MetricDimension domainAxisDimension,
                        MetricDimension rangeAxisDimension )
     {
@@ -131,7 +131,7 @@ class SafeBoxPlotOutput implements BoxPlotOutput
         if ( probabilities.size() != output.get( 0 ).getItemTwo().length )
         {
             throw new MetricOutputException( "The number of probabilities does not match the number of whiskers "
-                    + "associated with each box." );
+                                             + "associated with each box." );
         }
         //Check contents
         checkEachProbability( probabilities );
@@ -161,10 +161,10 @@ class SafeBoxPlotOutput implements BoxPlotOutput
             {
                 throw new MetricOutputException( "One or more boxes are missing whiskers." );
             }
-            if( next.getItemTwo().length != check)
+            if ( next.getItemTwo().length != check )
             {
                 throw new MetricOutputException( "One or more boxes has a different number of whiskers than "
-                        + "input probabilities." );
+                                                 + "input probabilities." );
             }
         }
     }

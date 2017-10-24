@@ -51,7 +51,7 @@ class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
     static class FrequencyBiasBuilder extends MetricBuilder<DichotomousPairs, ScalarOutput>
     {
         @Override
-        protected FrequencyBias build()
+        protected FrequencyBias build() throws MetricParameterException
         {
             return new FrequencyBias(this);
         }
@@ -61,9 +61,10 @@ class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
      * Hidden constructor.
      * 
      * @param builder the builder.
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private FrequencyBias(final FrequencyBiasBuilder builder)
+    private FrequencyBias(final FrequencyBiasBuilder builder) throws MetricParameterException
     {
         super(builder);
     }

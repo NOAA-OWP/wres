@@ -100,7 +100,7 @@ class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs
     {
 
         @Override
-        protected BrierSkillScore build()
+        protected BrierSkillScore build() throws MetricParameterException
         {
             return new BrierSkillScore( this );
         }
@@ -118,9 +118,10 @@ class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private BrierSkillScore( final BrierSkillScoreBuilder builder )
+    private BrierSkillScore( final BrierSkillScoreBuilder builder ) throws MetricParameterException
     {
         super( builder );
     }

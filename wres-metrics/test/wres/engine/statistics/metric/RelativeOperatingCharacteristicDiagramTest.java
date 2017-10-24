@@ -33,10 +33,11 @@ public final class RelativeOperatingCharacteristicDiagramTest
      * Constructs a {@link RelativeOperatingCharacteristicDiagram} and compares the actual result to the expected result. Also,
      * checks the parameters of the metric. Uses the data from
      * {@link MetricTestDataFactory#getDiscreteProbabilityPairsThree()}.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1RelativeOperatingCharacteristic()
+    public void test1RelativeOperatingCharacteristic() throws MetricParameterException
     {
         //Generate some data
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
@@ -78,10 +79,11 @@ public final class RelativeOperatingCharacteristicDiagramTest
 
     /**
      * Constructs a {@link RelativeOperatingCharacteristicDiagram} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test4Exceptions()
+    public void test4Exceptions() throws MetricParameterException
     {
         
         //Build the metric

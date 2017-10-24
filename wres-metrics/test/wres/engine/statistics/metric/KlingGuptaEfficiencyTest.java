@@ -31,10 +31,11 @@ public final class KlingGuptaEfficiencyTest
     /**
      * Constructs a {@link KlingGuptaEfficiency} and compares the actual result to the expected result. Also, checks 
      * the parameters.
+     * @throws MetricParameterException if the metric construction fails 
      */
 
     @Test
-    public void test1KlingGuptaEfficiency()
+    public void test1KlingGuptaEfficiency() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -87,10 +88,11 @@ public final class KlingGuptaEfficiencyTest
     
     /**
      * Constructs a {@link KlingGuptaEfficiency} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric construction fails
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();

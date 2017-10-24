@@ -37,10 +37,11 @@ public class MetricCollectionTest
     /**
      * Construct a collection of metrics that consume single-valued pairs and produce scalar outputs. Compute and check
      * the results.
+     * @throws MetricParameterException if the metric construction fails 
      */
 
     @Test
-    public void test1OfSingleValuedScalar()
+    public void test1OfSingleValuedScalar() throws MetricParameterException
     {
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
@@ -91,10 +92,11 @@ public class MetricCollectionTest
     /**
      * Construct a collection of metrics that consume dichotomous pairs and produce scalar outputs. Compute and check
      * the results.
+     * @throws MetricParameterException if the metric construction fails 
      */
 
     @Test
-    public void test2OfDichotomousScalar()
+    public void test2OfDichotomousScalar() throws MetricParameterException
     {
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
@@ -166,10 +168,11 @@ public class MetricCollectionTest
     /**
      * Construct a collection of metrics that consume discrete probability pairs and produce vector outputs. Compute and
      * check the results.
+     * @throws MetricParameterException if the metric construction fails
      */
 
     @Test
-    public void test3OfDiscreteProbabilityVector()
+    public void test3OfDiscreteProbabilityVector() throws MetricParameterException
     {
         //Generate some data
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
@@ -217,10 +220,11 @@ public class MetricCollectionTest
     /**
      * Construct a collection of metrics that consume single-valued pairs and produce vector outputs. Compute and check
      * the results.
+     * @throws MetricParameterException if the metric construction fails
      */
 
     @Test
-    public void test4OfSingleValuedVector()
+    public void test4OfSingleValuedVector() throws MetricParameterException
     {
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
@@ -269,10 +273,11 @@ public class MetricCollectionTest
     /**
      * Construct a collection of metrics that consume multicategory pairs and produce scalar outputs. Compute and check
      * the results.
+     * @throws MetricParameterException if the metric construction fails 
      */
 
     @Test
-    public void test5OfMulticategoryScalar()
+    public void test5OfMulticategoryScalar() throws MetricParameterException
     {
         //Generate some data
         final MulticategoryPairs input = MetricTestDataFactory.getMulticategoryPairsOne();
@@ -311,13 +316,15 @@ public class MetricCollectionTest
     /**
      * Tests the exceptions associated with {@link MetricCollection}.
      * 
-     * @throws ExecutionException
-     * @throws InterruptedException
-     * @throws MetricCalculationException
+     * @throws ExecutionException if the execution fails
+     * @throws InterruptedException if the calculation is interrupted
+     * @throws MetricCalculationException if the metric calculation fails
+     * @throws MetricParameterException if the metric construction fails
      */
 
     @Test
-    public void test6ExceptionTests() throws MetricCalculationException, InterruptedException, ExecutionException
+    public void test6ExceptionTests()
+            throws MetricCalculationException, InterruptedException, ExecutionException, MetricParameterException
     {
 
         final ExecutorService metricPool = Executors.newSingleThreadExecutor();
@@ -415,7 +422,7 @@ public class MetricCollectionTest
             }
             catch ( final Exception e )
             {
-            }                       
+            }
         }
         finally
         {
@@ -430,10 +437,12 @@ public class MetricCollectionTest
      * @throws ExecutionException if the execution fails
      * @throws InterruptedException if the execution is interrupted
      * @throws MetricCalculationException if the metric calculation fails
+     * @throws MetricParameterException if the metric construction fails 
      */
 
     @Test
-    public void test7Callable() throws MetricCalculationException, InterruptedException, ExecutionException
+    public void test7Callable()
+            throws MetricCalculationException, InterruptedException, ExecutionException, MetricParameterException
     {
 
         //Set the input and an executor service
@@ -527,10 +536,12 @@ public class MetricCollectionTest
      * @throws ExecutionException if the execution fails
      * @throws InterruptedException if the execution is interrupted
      * @throws MetricCalculationException if the metric calculation fails
+     * @throws MetricParameterException if the metric construction fails 
      */
 
     @Test
-    public void test8Callable() throws MetricCalculationException, InterruptedException, ExecutionException
+    public void test8Callable()
+            throws MetricCalculationException, InterruptedException, ExecutionException, MetricParameterException
     {
         final ExecutorService metricPool = Executors.newSingleThreadExecutor();
         final ExecutorService pairPool = Executors.newSingleThreadExecutor();
@@ -594,10 +605,11 @@ public class MetricCollectionTest
     /**
      * Construct a collection of metrics that consume single-valued pairs and produce scalar outputs. Tests a pair of
      * metrics that implement {@link Collectable}.
+     * @throws MetricParameterException if the metric construction fails 
      */
 
     @Test
-    public void test9OfSingleValuedScalar()
+    public void test9OfSingleValuedScalar() throws MetricParameterException
     {
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
@@ -642,10 +654,9 @@ public class MetricCollectionTest
 
     private static class MeanErrorException extends DoubleErrorScore<SingleValuedPairs>
     {
-        private MeanErrorException()
+        private MeanErrorException() throws MetricParameterException
         {
-            super( (MeanErrorExceptionBuilder) new MeanErrorExceptionBuilder().
-                   setOutputFactory( DefaultDataFactory.getInstance() ) );
+            super( (MeanErrorExceptionBuilder) new MeanErrorExceptionBuilder().setOutputFactory( DefaultDataFactory.getInstance() ) );
         }
 
         @Override
@@ -653,11 +664,11 @@ public class MetricCollectionTest
         {
             throw new IllegalArgumentException();
         }
-        
+
         private static class MeanErrorExceptionBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
         {
             @Override
-            protected MeanErrorException build()
+            protected MeanErrorException build() throws MetricParameterException
             {
                 return new MeanErrorException();
             }

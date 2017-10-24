@@ -120,7 +120,7 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     {
 
         @Override
-        protected CorrelationPearsons build()
+        protected CorrelationPearsons build() throws MetricParameterException
         {
             return new CorrelationPearsons(this);
         }
@@ -131,9 +131,10 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected CorrelationPearsons(final CorrelationPearsonsBuilder builder)
+    protected CorrelationPearsons(final CorrelationPearsonsBuilder builder) throws MetricParameterException
     {
         super(builder);
         correlation = new PearsonsCorrelation();

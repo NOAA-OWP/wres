@@ -49,7 +49,7 @@ class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     {
 
         @Override
-        protected RootMeanSquareError build()
+        protected RootMeanSquareError build() throws MetricParameterException
         {
             return new RootMeanSquareError(this);
         }
@@ -60,9 +60,10 @@ class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private RootMeanSquareError(final RootMeanSquareErrorBuilder builder)
+    private RootMeanSquareError(final RootMeanSquareErrorBuilder builder) throws MetricParameterException
     {
         super(builder.setErrorFunction(FunctionFactory.squareError()));
     }

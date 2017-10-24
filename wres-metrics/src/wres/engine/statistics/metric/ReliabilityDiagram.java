@@ -122,7 +122,7 @@ class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOut
     {
 
         @Override
-        protected ReliabilityDiagram build()
+        protected ReliabilityDiagram build() throws MetricParameterException
         {
             return new ReliabilityDiagram( this );
         }
@@ -133,9 +133,10 @@ class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOut
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected ReliabilityDiagram( final ReliabilityDiagramBuilder builder )
+    protected ReliabilityDiagram( final ReliabilityDiagramBuilder builder ) throws MetricParameterException
     {
         super( builder );
         //Set the default bins
