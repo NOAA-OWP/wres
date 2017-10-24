@@ -2,21 +2,30 @@ package wres.io.reading.datacard;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.powermock.api.mockito.PowerMockito.doAnswer;
+import static org.powermock.api.mockito.PowerMockito.doNothing;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.objenesis.instantiator.android.AndroidSerializationInstantiator;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+import org.powermock.reflect.Whitebox;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -107,11 +116,16 @@ public class DataCardSourceTest
     {
         String current = new java.io.File( "." ).getCanonicalPath();
         List<DataSourceConfig.Source> sourceList = new ArrayList<DataSourceConfig.Source>();
-        Format f = Format.fromValue("datacard");
+        Format format = Format.fromValue("datacard");
 
-        DataSourceConfig.Source confSource = new Source(current, f, "IN", "DRRC2",
-                                                        "EST", "-999.0", true,
-                                                        true, "-998.0", "$");
+        DataSourceConfig.Source confSource = new Source(current,
+                                                        format,
+                                                        "IN",
+                                                        "DRRC2",
+                                                        "EST",
+                                                        "-999.0",
+                                                        true,
+                                                        true);
 
         sourceList.add(confSource);
 
@@ -158,17 +172,22 @@ public class DataCardSourceTest
                                                          null,
                                                          null );
 
-        source = new wres.io.reading.datacard.DatacardSource(current + "/testinput/datacard/short_HOPR1SNE.QME.OBS");
-        source.setProjectDetails( new ProjectDetails( projectConfig ) );source.setDataSourceConfig(config);
-        source.setTestMode(true);
+        String filePath = current + "/testinput/datacard/short_HOPR1SNE.QME.OBS";
 
-        source.setVariablePositionID(123);
-        source.setMeasurementID(456);
-        source.setSourceID(789);
+        // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
+        source = PowerMockito.spy(new wres.io.reading.datacard.DatacardSource(filePath));
+
+        source.setProjectDetails( new ProjectDetails( projectConfig ) );
+        source.setDataSourceConfig(config);
+        Whitebox.setInternalState( source, "variablePositionID", 123 );
+        Whitebox.setInternalState( source, "currentMeasurementUnitID", 456 );
+        Whitebox.setInternalState( source, "currentSourceID", 789 );
+        doNothing().when( source ).save();
+
         source.saveObservation();
 
-        String query = source.getInsertQuery();
-        assertEquals( "Expected equal outputs.", EXPECTED_QUERY_NORMAL, query );
+        StringBuilder currentScript = Whitebox.getInternalState( source, "currentScript" );
+        assertEquals( "Expected equal outputs.", EXPECTED_QUERY_NORMAL, currentScript.toString() );
 
 	}
 	
@@ -179,11 +198,16 @@ public class DataCardSourceTest
     {
         String current = new java.io.File( "." ).getCanonicalPath();
         List<DataSourceConfig.Source> sourceList = new ArrayList<DataSourceConfig.Source>();
-        Format f = Format.fromValue("datacard");
+        Format format = Format.fromValue("datacard");
 
-        DataSourceConfig.Source confSource = new Source(current, f, "IN", "DRRC2",
-                                                        "EST","-997", true,
-                                                        true, "-998.0", "$");
+        DataSourceConfig.Source confSource = new Source(current,
+                                                        format,
+                                                        "IN",
+                                                        "DRRC2",
+                                                        "EST",
+                                                        "-997",
+                                                        true,
+                                                        true);
 
         sourceList.add(confSource);
 
@@ -228,19 +252,23 @@ public class DataCardSourceTest
                                                          null,
                                                          null,
                                                          null );
-        source = new wres.io.reading.datacard.DatacardSource(current + "/testinput/datacard/short_CCRN6.MAP06_short_record");
+
+        String filePath = current + "/testinput/datacard/short_CCRN6.MAP06_short_record";
+
+        // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
+        source = PowerMockito.spy(new wres.io.reading.datacard.DatacardSource(filePath));
 
         source.setProjectDetails( new ProjectDetails( projectConfig ) );
         source.setDataSourceConfig(config);
-        source.setTestMode(true);
+        Whitebox.setInternalState( source, "variablePositionID", 123 );
+        Whitebox.setInternalState( source, "currentMeasurementUnitID", 456 );
+        Whitebox.setInternalState( source, "currentSourceID", 789 );
+        doNothing().when( source ).save();
 
-        source.setVariablePositionID(123);
-        source.setMeasurementID(456);
-        source.setSourceID(789);
         source.saveObservation();
 
-        String query = source.getInsertQuery();
-        assertEquals( "Expected equal outputs.", EXPECTED_QUERY_SHORT_RECORD, query );
+        StringBuilder currentScript = Whitebox.getInternalState( source, "currentScript" );
+        assertEquals( "Expected equal outputs.", EXPECTED_QUERY_SHORT_RECORD, currentScript.toString() );
 	}
 
 }

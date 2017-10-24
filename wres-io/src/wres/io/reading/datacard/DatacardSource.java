@@ -44,7 +44,7 @@ public class DatacardSource extends BasicSource
 	 * 
 	 * @param filename the file name
 	 */
-    private DatacardSource(String filename)
+    public DatacardSource(String filename)
     {
 		setFilename(filename);
 		this.setHash();
@@ -244,7 +244,7 @@ public class DatacardSource extends BasicSource
 				} //end of loop for one value line 
 			} //end of loop for all value lines
 			
-			saveLeftoverObservations();
+			save();
 
 			try
 			{
@@ -267,7 +267,7 @@ public class DatacardSource extends BasicSource
 		}
 	}
 				
-	private void saveLeftoverObservations()
+	public void save()
     {
         if (insertCount > 0)
         {
@@ -520,6 +520,10 @@ public class DatacardSource extends BasicSource
 	/* The number of values in datacard file
 	*/
 	private int entryCount = 0;
+
+	// Indicates that it is ok to save. This should only ever not be the case
+    // when
+	private boolean savingEnabled = true;
 
 	private Integer variablePositionID = null;
 	
