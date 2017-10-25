@@ -29,10 +29,11 @@ public final class BiasFractionTest
     /**
      * Constructs a {@link BiasFraction} and compares the actual result to the expected result. Also, checks the
      * parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1BiasFraction()
+    public void test1BiasFraction() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -71,10 +72,11 @@ public final class BiasFractionTest
 
     /**
      * Constructs a {@link BiasFraction} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();

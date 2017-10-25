@@ -33,10 +33,11 @@ public final class QuantileQuantileDiagramTest
     /**
      * Constructs a {@link QuantileQuantileDiagram} and compares the actual result to the expected result. Also, checks
      * the parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1QuantileQuantileDiagram()
+    public void test1QuantileQuantileDiagram() throws MetricParameterException
     {
         //Build the metric
         final QuantileQuantileDiagramBuilder b = new QuantileQuantileDiagramBuilder();
@@ -88,10 +89,11 @@ public final class QuantileQuantileDiagramTest
     
     /**
      * Constructs a {@link QuantileQuantileDiagram} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test2Exceptions()
+    public void test2Exceptions() throws MetricParameterException
     {
         
         //Build the metric

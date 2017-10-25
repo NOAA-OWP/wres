@@ -26,10 +26,11 @@ public final class MetricTest
 
     /**
      * Constructs a {@link Metric} and tests the {@link Metric#nameEquals(Object)}.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1NameEquals()
+    public void test1NameEquals() throws MetricParameterException
     {
 
         //Build a metric
@@ -53,10 +54,11 @@ public final class MetricTest
 
     /**
      * Constructs a {@link Metric} and tests the {@link Metric#toString()}.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test2ToString()
+    public void test2ToString() throws MetricParameterException
     {
 
         //Build a metric
@@ -73,10 +75,11 @@ public final class MetricTest
 
     /**
      * Constructs a {@link Metric} and tests for checked exceptions.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test3Exceptions()
+    public void test3Exceptions() throws MetricParameterException
     {
         //No data factory
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
@@ -85,13 +88,14 @@ public final class MetricTest
             b.build();
             fail( "Expected a checked exception on building a metric without an output factory." );
         }
-        catch ( UnsupportedOperationException e )
+        catch ( MetricParameterException e )
         {
         }
         //No builder test
         class MetricNoBuilder extends Metric<SingleValuedPairs, ScalarOutput>
         {
             protected MetricNoBuilder( MetricBuilder<SingleValuedPairs, ScalarOutput> builder )
+                    throws MetricParameterException
             {
                 super( null );
             }
@@ -119,7 +123,7 @@ public final class MetricTest
             new MetricNoBuilder( null );
             fail( "Expected a checked exception on building a metric without a builder." );
         }
-        catch ( UnsupportedOperationException e )
+        catch ( MetricParameterException e )
         {
         }
         //Obtaining metadata from a Collectable not allowed
@@ -130,8 +134,8 @@ public final class MetricTest
                                                                                    MetricTestDataFactory.getSingleValuedPairsOne(),
                                                                                    1,
                                                                                    MetricConstants.MAIN,
-                                                                                   null);
-            fail( "Expected a checked exception on building a metric without a builder." );
+                                                                                   null );
+            fail( "Expected a checked exception on requesting metadata from a collectable metric." );
         }
         catch ( UnsupportedOperationException e )
         {

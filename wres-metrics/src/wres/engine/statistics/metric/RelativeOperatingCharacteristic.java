@@ -31,8 +31,8 @@ import wres.datamodel.Slicer;
  */
 
 abstract class RelativeOperatingCharacteristic<T extends MetricOutput<?>>
-extends
-    Metric<DiscreteProbabilityPairs, T>
+        extends
+        Metric<DiscreteProbabilityPairs, T>
 {
 
     /**
@@ -53,11 +53,11 @@ extends
      * @return a {@link MultiVectorOutput} containing the pairs of PoD and PoFD
      */
 
-    MultiVectorOutput getROC(final DiscreteProbabilityPairs s, int points)
+    MultiVectorOutput getROC( final DiscreteProbabilityPairs s, int points )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         //Determine the empirical ROC. 
         //For each classifier, derive the pairs of booleans and compute the PoD and PoFD from the
@@ -68,30 +68,30 @@ extends
         DataFactory d = getDataFactory();
         Slicer slice = d.getSlicer();
 
-        for(int i = 1; i < points; i++)
+        for ( int i = 1; i < points; i++ )
         {
-            double prob = Precision.round(1.0 - (i * constant), 5);
+            double prob = Precision.round( 1.0 - ( i * constant ), 5 );
             //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
             //according to the probability on the RHS
             MetricOutputMapByMetric<ScalarOutput> out =
-                                                      roc.apply(slice.transformPairs(s,
-                                                                                     in -> d.pairOf(Double.compare(in.getItemOne(),
-                                                                                                                   1.0) == 0,
-                                                                                                    in.getItemTwo() > prob)));
+                    roc.apply( slice.transformPairs( s,
+                                                     in -> d.pairOf( Double.compare( in.getItemOne(),
+                                                                                     1.0 ) == 0,
+                                                                     in.getItemTwo() > prob ) ) );
             //Store
-            pOD[i] = out.get(MetricConstants.PROBABILITY_OF_DETECTION).getData();
-            pOFD[i] = out.get(MetricConstants.PROBABILITY_OF_FALSE_DETECTION).getData();
+            pOD[i] = out.get( MetricConstants.PROBABILITY_OF_DETECTION ).getData();
+            pOFD[i] = out.get( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).getData();
         }
         //Set the upper point to (1.0, 1.0)
         pOD[points] = 1.0;
         pOFD[points] = 1.0;
 
         //Set the results
-        Map<MetricDimension, double[]> output = new EnumMap<>(MetricDimension.class);
-        output.put(MetricDimension.PROBABILITY_OF_DETECTION, pOD);
-        output.put(MetricDimension.PROBABILITY_OF_FALSE_DETECTION, pOFD);
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
-        return d.ofMultiVectorOutput(output, metOut);
+        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
+        output.put( MetricDimension.PROBABILITY_OF_DETECTION, pOD );
+        output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, pOFD );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        return d.ofMultiVectorOutput( output, metOut );
     }
 
     @Override
@@ -104,13 +104,15 @@ extends
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    RelativeOperatingCharacteristic(final MetricBuilder<DiscreteProbabilityPairs, T> builder)
+    RelativeOperatingCharacteristic( final MetricBuilder<DiscreteProbabilityPairs, T> builder )
+            throws MetricParameterException
     {
-        super(builder);
-        roc = MetricFactory.getInstance(builder.dataFactory)
-                           .ofDichotomousScalarCollection(MetricConstants.PROBABILITY_OF_DETECTION,
-                                                          MetricConstants.PROBABILITY_OF_FALSE_DETECTION);
+        super( builder );
+        roc = MetricFactory.getInstance( builder.dataFactory )
+                           .ofDichotomousScalarCollection( MetricConstants.PROBABILITY_OF_DETECTION,
+                                                           MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
     }
 }

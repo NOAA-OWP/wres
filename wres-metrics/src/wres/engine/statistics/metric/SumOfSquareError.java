@@ -17,16 +17,17 @@ abstract class SumOfSquareError<S extends SingleValuedPairs> extends Decomposabl
     {
         return true;
     }
-    
+
     /**
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    SumOfSquareError(final DecomposableDoubleErrorScoreBuilder<S> builder)
+    SumOfSquareError( final DecomposableDoubleErrorScoreBuilder<S> builder ) throws MetricParameterException
     {
-        super(builder);
+        super( builder );
     }
 
     /**
@@ -36,9 +37,9 @@ abstract class SumOfSquareError<S extends SingleValuedPairs> extends Decomposabl
      * @return the sum of square errors
      */
 
-    double getSumOfSquareError(final SingleValuedPairs s)
+    double getSumOfSquareError( final SingleValuedPairs s )
     {
-        return s.getData().stream().mapToDouble(FunctionFactory.squareError()).sum();
+        return s.getData().stream().mapToDouble( FunctionFactory.squareError() ).sum();
     }
 
 }

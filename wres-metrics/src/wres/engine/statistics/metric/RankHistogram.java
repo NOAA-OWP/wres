@@ -42,14 +42,14 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
      * A random number generator, used to assign ties randomly.
      */
 
-    private static Random rng;
+    private Random rng;
 
     @Override
     public MultiVectorOutput apply( EnsemblePairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         DataFactory d = getDataFactory();
         Slicer slicer = d.getSlicer();
@@ -64,12 +64,12 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
         double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
 
         //Compute the sum of ranks
-        BiConsumer<PairOfDoubleAndVectorOfDoubles, double[]> ranker = rankWithTies();
+        BiConsumer<PairOfDoubleAndVectorOfDoubles, double[]> ranker = rankWithTies( rng );
         useMe.forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
 
         //Compute relative frequencies
         double[] relativeFrequencies = Arrays.stream( sumRanks ).map( a -> a / useMe.size() ).toArray();
-        
+
         //Set and return the results
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.RANK_ORDER, ranks );
@@ -101,39 +101,40 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
          */
 
         private Random rng;
-        
+
         @Override
-        protected RankHistogram build()
+        protected RankHistogram build() throws MetricParameterException
         {
             return new RankHistogram( this );
         }
-        
+
         /**
          * Optionally, assign a random number generator for resolving ties.
          * 
          * @param rng the random number generator
          */
-        RankHistogramBuilder setRNGForTies(Random rng)
+        RankHistogramBuilder setRNGForTies( Random rng )
         {
             this.rng = rng;
             return this;
-        }        
+        }
     }
 
     /**
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private RankHistogram( final RankHistogramBuilder builder )
+    private RankHistogram( final RankHistogramBuilder builder ) throws MetricParameterException
     {
         super( builder );
-        if( Objects.nonNull( builder.rng ))
+        if ( Objects.nonNull( builder.rng ) )
         {
             rng = builder.rng;
         }
-        else 
+        else
         {
             rng = new Random();
         }
@@ -144,12 +145,13 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
      * the right-hand side. When the right-hand side contains ties, the rank position is assigned randomnly. Increments 
      * the input array by one at the corresponding index.
      * 
+     * @param rng the random number generator for handling ties
      * @return a function that increments the second argument based on the rank position of the observation within the ensemble
      */
 
-    private static BiConsumer<PairOfDoubleAndVectorOfDoubles, double[]> rankWithTies()
+    private static BiConsumer<PairOfDoubleAndVectorOfDoubles, double[]> rankWithTies( Random rng )
     {
-        final TriConsumer<double[], Double, double[]> containedRanker = getContainedRanker();
+        final TriConsumer<double[], Double, double[]> containedRanker = getContainedRanker( rng );
         return ( pair, sumRanks ) -> {
             //Sort the RHS
             double[] sorted = pair.getItemTwo();
@@ -176,12 +178,13 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
     /**
      * Increments the ranked position within the input array when the observation is contained by the ensemble.
      * 
+     * @param rng the random number generator for handling ties
      * @return a function that increments the ranked position with the observation is contained
      */
 
-    private static TriConsumer<double[], Double, double[]> getContainedRanker()
+    private static TriConsumer<double[], Double, double[]> getContainedRanker( Random rng )
     {
-        final TriConsumer<double[], Integer, double[]> tiedRanker = getTiedRanker();
+        final TriConsumer<double[], Integer, double[]> tiedRanker = getTiedRanker( rng );
         return ( sorted, obs, sumRanks ) -> {
             for ( int k = 0; k < sorted.length; k++ )
             {
@@ -208,11 +211,12 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
      * Increments the ranked position within the input array when the observation is contained by the ensemble and
      * the ensemble includes tied ranks.
      * 
+     * @param rng the random number generator for handling ties
      * @return a function that increments the ranked position when the observation is contained and the ensemble 
      *            includes ties
      */
 
-    private static TriConsumer<double[], Integer, double[]> getTiedRanker()
+    private static TriConsumer<double[], Integer, double[]> getTiedRanker( Random rng )
     {
         return ( sorted, lowerBound, sumRanks ) -> {
             int startRank = lowerBound; //Lower bound of tie

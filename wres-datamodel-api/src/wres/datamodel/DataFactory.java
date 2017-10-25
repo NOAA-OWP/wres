@@ -648,6 +648,23 @@ public interface DataFactory
     MatrixOutput ofMatrixOutput( final double[][] output, final MetricOutputMetadata meta );
 
     /**
+     * Return a {@link BoxPlotOutput}.
+     * 
+     * @param output the box plot data
+     * @param probabilities the probabilities
+     * @param meta the box plot metadata
+     * @param domainAxisDimension the domain axis dimension
+     * @param rangeAxisDimension the range axis dimension
+     * @throws MetricOutputException if any of the inputs are invalid
+     */
+
+    BoxPlotOutput ofBoxPlotOutput( List<PairOfDoubleAndVectorOfDoubles> output,
+                                  VectorOfDoubles probabilities,
+                                  MetricOutputMetadata meta,
+                                  MetricDimension domainAxisDimension,
+                                  MetricDimension rangeAxisDimension );
+
+    /**
      * Returns a {@link MapKey} to map a {@link MetricOutput} by an elementary key.
      * 
      * @param <S> the type of key

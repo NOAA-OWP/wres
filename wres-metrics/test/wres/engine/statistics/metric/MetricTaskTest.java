@@ -26,10 +26,11 @@ public final class MetricTaskTest
 
     /**
      * Constructs a {@link MetricTask} and checks for exceptions.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1MetricTask()
+    public void test1MetricTask() throws MetricParameterException
     {
         
         final ExecutorService pairPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
