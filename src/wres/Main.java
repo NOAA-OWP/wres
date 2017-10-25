@@ -107,7 +107,7 @@ public class Main {
         Operations.logExecution( args,
                                  Main.sqlDateFromMillis( startTime ),
                                  Main.sqlDateFromMillis( endTime ),
-                                 false );
+                                 exitCode != 0 );
 
         System.out.println( "Log messages have been written to the file "
                             + System.getProperty("user.home")
