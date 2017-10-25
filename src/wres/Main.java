@@ -90,8 +90,7 @@ public class Main {
             endTime = System.currentTimeMillis();
             LOGGER.error( "Operation {} completed unsuccessfully", operation, e );
 
-            Operations.logExecution( String.join( " ", args),
-                                     "",
+            Operations.logExecution( args,
                                      Main.sqlDateFromMillis( startTime ),
                                      Main.sqlDateFromMillis( endTime ),
                                      true );
@@ -105,8 +104,7 @@ public class Main {
         endTime = System.currentTimeMillis();
         watch.stop();
 
-        Operations.logExecution( String.join(" ", args),
-                                 "",
+        Operations.logExecution( args,
                                  Main.sqlDateFromMillis( startTime ),
                                  Main.sqlDateFromMillis( endTime ),
                                  false );

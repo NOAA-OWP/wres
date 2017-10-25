@@ -4,6 +4,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -117,7 +120,10 @@ public final class Operations {
         return SUCCESS;
     }
 
-    public static void logExecution(String arguments, String project, String start, String stop, boolean failed)
+    public static void logExecution( String[] arguments,
+                                     String start,
+                                     String stop,
+                                     boolean failed )
     {
         try {
             String systemConfiguration = SystemSettings.getRawConfiguration();
@@ -130,19 +136,40 @@ public final class Operations {
                 address = String.valueOf(InetAddress.getLocalHost());
             }
             catch (UnknownHostException e) {
-                LOGGER.error(Strings.getStackTrace(e));
+                LOGGER.warn( "Could not figure out host name", e );
                 address = "Unknown";
             }
 
-            if (project == null || project.isEmpty())
-            {
-                project = "null";
-            }
-            else
-            {
-                project = "'" + project + "'::xml";
-            }
 
+            // For any arguments that happen to be regular files, read the
+            // contents of the first file into the "project" field. Maybe there
+            // is an improvement that can be made, but this should cover the
+            // common case of a single file in the args.
+            StringBuilder project = new StringBuilder();
+
+            for ( String arg : arguments )
+            {
+                Path path = Paths.get( arg );
+                if ( Files.isRegularFile( path ) )
+                {
+                    try
+                    {
+                        for ( String line : Files.readAllLines( path ) )
+                        {
+                            project.append( line );
+                            project.append( System.lineSeparator() );
+                        }
+                        // Since this is an xml column, only go for first file.
+                        break;
+                    }
+                    catch ( IOException ioe )
+                    {
+                        LOGGER.warn( "While attempting to read path {} while logging executions",
+                                     path,
+                                     ioe );
+                    }
+                }
+            }
 
             String script = "INSERT INTO ExecutionLog(" +
                             "arguments, " +
@@ -154,9 +181,10 @@ public final class Operations {
                             "run_time, " +
                             "failed) " +
                             "VALUES (" +
-                            "'" + arguments + "', " +
+                            "'" + String.join( " ", arguments ) +
+                            "', " +
                             "'" + systemConfiguration + "', " +
-                            project + ", " +
+                            "'" + project + "', " +
                             "'" + username + "', " +
                             "'" + address + "', " +
                             "'" + start + "'::timestamp, " +
@@ -168,12 +196,10 @@ public final class Operations {
         }
         catch (FileNotFoundException | XMLStreamException | TransformerException e)
         {
-            LOGGER.error("The system configuration could not be loaded. Execution information was not logged to the database.");
-            LOGGER.error(Strings.getStackTrace(e));
+            LOGGER.warn("The system configuration could not be loaded. Execution information was not logged to the database.", e);
         }
         catch (SQLException e) {
-            LOGGER.error("Execution information could not be saved to the database.");
-            LOGGER.error(Strings.getStackTrace(e));
+            LOGGER.warn("Execution information could not be saved to the database.", e);
         }
     }
 
