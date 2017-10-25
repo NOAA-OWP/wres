@@ -167,85 +167,83 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
         //Validate the configuration
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
+        validate(config); 
+        try
         {
-            throw new MetricConfigurationException( "Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
-                                                    + config.getLabel() + "'." );
-        }
-        if ( hasMetrics( MetricInputGroup.MULTICATEGORY ) )
-        {
-            throw new MetricConfigurationException( "Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
-                                                    + config.getLabel() + "'." );
-        }
-        //Construct the metrics
-        //Discrete probability input, vector output
-        if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ) )
-        {
-            discreteProbabilityVector =
-                    metricFactory.ofDiscreteProbabilityVectorCollection( metricExecutor,
-                                                                         getSelectedMetrics( metrics,
-                                                                                             MetricInputGroup.DISCRETE_PROBABILITY,
-                                                                                             MetricOutputGroup.VECTOR ) );
-        }
-        else
-        {
-            discreteProbabilityVector = null;
-        }
-        //Discrete probability input, multi-vector output
-        if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ) )
-        {
-            discreteProbabilityMultiVector =
-                    metricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
-                                                                              getSelectedMetrics( metrics,
-                                                                                                  MetricInputGroup.DISCRETE_PROBABILITY,
-                                                                                                  MetricOutputGroup.MULTIVECTOR ) );
-        }
-        else
-        {
-            discreteProbabilityMultiVector = null;
-        }
-        //Ensemble input, vector output
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
-        {
-            if ( metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
-                 && Objects.isNull( config.getInputs().getBaseline() ) )
+            //Construct the metrics
+            //Discrete probability input, vector output
+            if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ) )
             {
-                throw new MetricConfigurationException( "Specify a non-null baseline from which to generate the '"
-                                                        + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
-                                                        + "'." );
+                discreteProbabilityVector =
+                        metricFactory.ofDiscreteProbabilityVectorCollection( metricExecutor,
+                                                                             getSelectedMetrics( metrics,
+                                                                                                 MetricInputGroup.DISCRETE_PROBABILITY,
+                                                                                                 MetricOutputGroup.VECTOR ) );
             }
-            ensembleVector = metricFactory.ofEnsembleVectorCollection( metricExecutor,
-                                                                       getSelectedMetrics( metrics,
-                                                                                           MetricInputGroup.ENSEMBLE,
-                                                                                           MetricOutputGroup.VECTOR ) );
+            else
+            {
+                discreteProbabilityVector = null;
+            }
+            //Discrete probability input, multi-vector output
+            if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ) )
+            {
+                discreteProbabilityMultiVector =
+                        metricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
+                                                                                  getSelectedMetrics( metrics,
+                                                                                                      MetricInputGroup.DISCRETE_PROBABILITY,
+                                                                                                      MetricOutputGroup.MULTIVECTOR ) );
+            }
+            else
+            {
+                discreteProbabilityMultiVector = null;
+            }
+            //Ensemble input, vector output
+            if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
+            {
+                if ( metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                     && Objects.isNull( config.getInputs().getBaseline() ) )
+                {
+                    throw new MetricConfigurationException( "Specify a non-null baseline from which to generate the '"
+                                                            + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
+                                                            + "'." );
+                }
+                ensembleVector = metricFactory.ofEnsembleVectorCollection( metricExecutor,
+                                                                           getSelectedMetrics( metrics,
+                                                                                               MetricInputGroup.ENSEMBLE,
+                                                                                               MetricOutputGroup.VECTOR ) );
+            }
+            else
+            {
+                ensembleVector = null;
+            }
+            //Ensemble input, scalar output
+            if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCALAR ) )
+            {
+                ensembleScalar = metricFactory.ofEnsembleScalarCollection( metricExecutor,
+                                                                           getSelectedMetrics( metrics,
+                                                                                               MetricInputGroup.ENSEMBLE,
+                                                                                               MetricOutputGroup.SCALAR ) );
+            }
+            else
+            {
+                ensembleScalar = null;
+            }
+            //Ensemble input, multi-vector output
+            if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
+            {
+                ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
+                                                                                     getSelectedMetrics( metrics,
+                                                                                                         MetricInputGroup.ENSEMBLE,
+                                                                                                         MetricOutputGroup.MULTIVECTOR ) );
+            }
+            else
+            {
+                ensembleMultiVector = null;
+            }
         }
-        else
+        catch ( MetricParameterException e )
         {
-            ensembleVector = null;
-        }
-        //Ensemble input, scalar output
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCALAR ) )
-        {
-            ensembleScalar = metricFactory.ofEnsembleScalarCollection( metricExecutor,
-                                                                       getSelectedMetrics( metrics,
-                                                                                           MetricInputGroup.ENSEMBLE,
-                                                                                           MetricOutputGroup.SCALAR ) );
-        }
-        else
-        {
-            ensembleScalar = null;
-        }
-        //Ensemble input, multi-vector output
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
-        {
-            ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
-                                                                                 getSelectedMetrics( metrics,
-                                                                                                     MetricInputGroup.ENSEMBLE,
-                                                                                                     MetricOutputGroup.MULTIVECTOR ) );
-        }
-        else
-        {
-            ensembleMultiVector = null;
+            throw new MetricConfigurationException( "Failed to construct one or more metrics.", e );
         }
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
@@ -429,7 +427,10 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                 }
             } );
             //Handle any failures
-            handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.DISCRETE_PROBABILITY );
+            handleThresholdFailures( failures,
+                                     global.size(),
+                                     input.getMetadata(),
+                                     MetricInputGroup.DISCRETE_PROBABILITY );
         }
         //Deal with metric-local thresholds
         else
@@ -488,4 +489,25 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         return CompletableFuture.supplyAsync( () -> collection.apply( subset ), thresholdExecutor );
     }
 
+    /**
+     * Validates the configuration and throws a {@link MetricConfigurationException} if the configuration is invalid.
+     * 
+     * @param config the configuration to validate
+     * @throws MetricConfigurationException if the configuration is invalid
+     */
+    
+    private void validate( ProjectConfig config) throws MetricConfigurationException 
+    {
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
+        {
+            throw new MetricConfigurationException( "Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
+                                                    + config.getLabel() + "'." );
+        }
+        if ( hasMetrics( MetricInputGroup.MULTICATEGORY ) )
+        {
+            throw new MetricConfigurationException( "Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
+                                                    + config.getLabel() + "'." );
+        }
+    }
+    
 }

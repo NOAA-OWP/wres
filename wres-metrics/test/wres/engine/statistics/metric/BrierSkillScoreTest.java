@@ -29,10 +29,11 @@ public final class BrierSkillScoreTest
     /**
      * Constructs a {@link BrierSkillScore} and compares the actual result to the expected result. Also, checks the
      * parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1BrierSkillScore()
+    public void test1BrierSkillScore() throws MetricParameterException
     {
         //Generate some data
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
@@ -79,10 +80,11 @@ public final class BrierSkillScoreTest
     /**
      * Constructs a {@link BrierSkillScore} with a climatological baseline and compares the actual result to the 
      * expected result.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test2BrierSkillScore()
+    public void test2BrierSkillScore() throws MetricParameterException
     {
         //Generate some data
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
@@ -118,10 +120,11 @@ public final class BrierSkillScoreTest
 
     /**
      * Constructs a {@link BrierSkillScore} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test3Exceptions()
+    public void test3Exceptions() throws MetricParameterException
     {
         //Build the metric
         final BrierSkillScoreBuilder b = new BrierSkillScore.BrierSkillScoreBuilder();

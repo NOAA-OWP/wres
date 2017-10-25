@@ -32,6 +32,7 @@ import wres.datamodel.MetricInputSliceException;
 import wres.datamodel.MetricOutput;
 import wres.datamodel.MetricOutputForProject;
 import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.PairedInput;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Threshold;
@@ -532,41 +533,48 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         metrics = getMetricsFromConfig( config );
         metricFactory = MetricFactory.getInstance( dataFactory );
         //Construct the metrics that are common to more than one type of input pairs
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) )
+        try
         {
-            singleValuedScalar =
-                    metricFactory.ofSingleValuedScalarCollection( metricExecutor,
-                                                                  getSelectedMetrics( metrics,
-                                                                                      MetricInputGroup.SINGLE_VALUED,
-                                                                                      MetricOutputGroup.SCALAR ) );
+            if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) )
+            {
+                singleValuedScalar =
+                        metricFactory.ofSingleValuedScalarCollection( metricExecutor,
+                                                                      getSelectedMetrics( metrics,
+                                                                                          MetricInputGroup.SINGLE_VALUED,
+                                                                                          MetricOutputGroup.SCALAR ) );
+            }
+            else
+            {
+                singleValuedScalar = null;
+            }
+            if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ) )
+            {
+                singleValuedVector =
+                        metricFactory.ofSingleValuedVectorCollection( metricExecutor,
+                                                                      getSelectedMetrics( metrics,
+                                                                                          MetricInputGroup.SINGLE_VALUED,
+                                                                                          MetricOutputGroup.VECTOR ) );
+            }
+            else
+            {
+                singleValuedVector = null;
+            }
+            if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
+            {
+                singleValuedMultiVector =
+                        metricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
+                                                                           getSelectedMetrics( metrics,
+                                                                                               MetricInputGroup.SINGLE_VALUED,
+                                                                                               MetricOutputGroup.MULTIVECTOR ) );
+            }
+            else
+            {
+                singleValuedMultiVector = null;
+            }
         }
-        else
+        catch ( MetricParameterException e )
         {
-            singleValuedScalar = null;
-        }
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ) )
-        {
-            singleValuedVector =
-                    metricFactory.ofSingleValuedVectorCollection( metricExecutor,
-                                                                  getSelectedMetrics( metrics,
-                                                                                      MetricInputGroup.SINGLE_VALUED,
-                                                                                      MetricOutputGroup.VECTOR ) );
-        }
-        else
-        {
-            singleValuedVector = null;
-        }
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
-        {
-            singleValuedMultiVector =
-                    metricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
-                                                                       getSelectedMetrics( metrics,
-                                                                                           MetricInputGroup.SINGLE_VALUED,
-                                                                                           MetricOutputGroup.MULTIVECTOR ) );
-        }
-        else
-        {
-            singleValuedMultiVector = null;
+            throw new MetricConfigurationException( "Failed to construct one or more metrics.", e );
         }
         //Obtain the thresholds for each metric and store them
         localThresholds = new EnumMap<>( MetricConstants.class );
@@ -640,7 +648,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @return a sorted array of values or null
      */
 
-    double[] getSortedClimatology( MetricInput<?> input, List<Threshold> thresholds )
+    double[] getSortedClimatology( PairedInput<?> input, List<Threshold> thresholds )
     {
         double[] sorted = null;
         if ( hasProbabilityThreshold( thresholds ) && input.hasClimatology() )
@@ -774,7 +782,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         //outputs configuration. 
         List<Threshold> globalThresholds = new ArrayList<>();
         List<Threshold> globalThresholdsAllData = new ArrayList<>();
-        
+
         //Add a threshold for "all data" by default
         globalThresholdsAllData.add( dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
         //Add probability thresholds
@@ -801,7 +809,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         {
             for ( MetricInputGroup group : MetricInputGroup.values() )
             {
-                if (group.equals( MetricInputGroup.SINGLE_VALUED ) || group.equals( MetricInputGroup.ENSEMBLE ) )
+                if ( group.equals( MetricInputGroup.SINGLE_VALUED ) || group.equals( MetricInputGroup.ENSEMBLE ) )
                 {
                     this.globalThresholds.put( group, globalThresholdsAllData );
                 }

@@ -21,9 +21,9 @@ class SampleSize<S extends MetricInput<?>> extends Metric<S, ScalarOutput> imple
     @Override
     public ScalarOutput apply( S s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         return getDataFactory().ofScalarOutput( s.size(), getMetadata( s, s.size(), MetricConstants.MAIN, null ) );
     }
@@ -65,7 +65,7 @@ class SampleSize<S extends MetricInput<?>> extends Metric<S, ScalarOutput> imple
     static class SampleSizeBuilder<S extends MetricInput<?>> extends MetricBuilder<S, ScalarOutput>
     {
         @Override
-        protected SampleSize<S> build()
+        protected SampleSize<S> build() throws MetricParameterException
         {
             return new SampleSize<>( this );
         }
@@ -75,9 +75,10 @@ class SampleSize<S extends MetricInput<?>> extends Metric<S, ScalarOutput> imple
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private SampleSize( final SampleSizeBuilder<S> builder )
+    private SampleSize( final SampleSizeBuilder<S> builder ) throws MetricParameterException
     {
         super( builder );
     }

@@ -9,9 +9,9 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.ScalarOutput;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.engine.statistics.metric.ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder;
 
 /**
@@ -27,10 +27,11 @@ public final class ProbabilityOfFalseDetectionTest
     /**
      * Constructs a {@link ProbabilityOfFalseDetection} and compares the actual result to the expected result. Also,
      * checks the parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1ProbabilityOfDetection()
+    public void test1ProbabilityOfDetection() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();

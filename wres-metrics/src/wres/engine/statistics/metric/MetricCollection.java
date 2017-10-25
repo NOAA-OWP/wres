@@ -145,7 +145,6 @@ class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
 
         protected MetricCollectionBuilder<S, T> add( final Metric<S, T> metric )
         {
-            Objects.requireNonNull( metric, "Add a non-null metric to the collection." );
             builderMetrics.add( metric );
             return this;
         }
@@ -159,7 +158,6 @@ class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
 
         protected MetricCollectionBuilder<S, T> setMetricInput( final Future<S> input )
         {
-            Objects.requireNonNull( input, "Add a non-null metric input to the collection." );
             builderInput = input;
             return this;
         }
@@ -194,9 +192,10 @@ class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
          * Build the metric collection.
          * 
          * @return the metric
+         * @throws MetricParameterException if one or more parameters is invalid
          */
 
-        protected MetricCollection<S, T> build()
+        protected MetricCollection<S, T> build() throws MetricParameterException
         {
             return new MetricCollection<>( this );
         }
@@ -329,9 +328,10 @@ class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
      * Hidden constructor.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private MetricCollection( final MetricCollectionBuilder<S, T> builder )
+    private MetricCollection( final MetricCollectionBuilder<S, T> builder ) throws MetricParameterException
     {
         //Set 
         metrics = new ArrayList<>();
@@ -349,13 +349,20 @@ class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
         //Validate 
         if ( Objects.isNull( dataFactory ) )
         {
-            throw new UnsupportedOperationException( "Cannot construct the metric collection without a metric output "
-                                                     + "factory." );
+            throw new MetricParameterException( "Cannot construct the metric collection without a metric output "
+                                                + "factory." );
         }
         if ( metrics.isEmpty() )
         {
-            throw new UnsupportedOperationException( "Cannot construct a metric collection with an empty list of "
-                                                     + "metrics." );
+            throw new MetricParameterException( "Cannot construct a metric collection with an empty list of "
+                                                + "metrics." );
+        }
+        for ( Metric<?, ?> next : metrics )
+        {
+            if ( Objects.isNull( next ) )
+            {
+                throw new MetricParameterException( "Cannot construct a metric collection with a null metric." );
+            }
         }
     }
 

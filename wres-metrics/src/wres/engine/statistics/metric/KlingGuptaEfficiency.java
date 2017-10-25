@@ -113,7 +113,7 @@ class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
     {
 
         @Override
-        protected KlingGuptaEfficiency build()
+        protected KlingGuptaEfficiency build() throws MetricParameterException
         {
             return new KlingGuptaEfficiency( this );
         }
@@ -124,9 +124,10 @@ class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
      * Prevent direct construction.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    private KlingGuptaEfficiency( final KlingGuptaEfficiencyBuilder builder )
+    private KlingGuptaEfficiency( final KlingGuptaEfficiencyBuilder builder ) throws MetricParameterException
     {
         super( builder );
         rho = MetricFactory.getInstance( getDataFactory() ).ofCorrelationPearsons();

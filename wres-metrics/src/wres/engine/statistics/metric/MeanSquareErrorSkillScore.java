@@ -83,7 +83,7 @@ class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends MeanSquareE
     {
 
         @Override
-        protected MeanSquareErrorSkillScore<S> build()
+        protected MeanSquareErrorSkillScore<S> build() throws MetricParameterException
         {
             return new MeanSquareErrorSkillScore<>(this);
         }
@@ -94,9 +94,10 @@ class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends MeanSquareE
      * Prevent direct construction.
      * 
      * @param builder the builder
+     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    protected MeanSquareErrorSkillScore(final MeanSquareErrorSkillScoreBuilder<S> builder)
+    protected MeanSquareErrorSkillScore(final MeanSquareErrorSkillScoreBuilder<S> builder) throws MetricParameterException
     {
         super(builder);
     }

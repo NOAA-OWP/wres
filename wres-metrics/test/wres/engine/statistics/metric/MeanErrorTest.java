@@ -29,10 +29,11 @@ public final class MeanErrorTest
     /**
      * Constructs a {@link MeanError} and compares the actual result to the expected result. Also, checks the parameters
      * of the metric.
+     * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test1MeanError()
+    public void test1MeanError() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -68,10 +69,11 @@ public final class MeanErrorTest
     
     /**
      * Constructs a {@link MeanError} and checks for exceptional cases.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test4Exceptions()
+    public void test4Exceptions() throws MetricParameterException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();

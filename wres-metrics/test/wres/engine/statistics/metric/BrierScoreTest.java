@@ -28,10 +28,11 @@ public final class BrierScoreTest
     /**
      * Constructs a {@link BrierScore} and compares the actual result to the expected result. Also, checks the
      * parameters of the metric.
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1BrierScore()
+    public void test1BrierScore() throws MetricParameterException
     {
         //Generate some data
         final MetricInput<?> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
