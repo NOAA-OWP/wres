@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.time.MonthDay;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
@@ -911,103 +912,106 @@ public class ConfigHelper
      * Creates a SQL snippet expected by the ScriptGenerator as part of a where
      * clause, filtering by season specified in the configuration passed in.
      * <br>
-     * Tailored to the forecast-ish type queries, not observation-ish type.
+     * Caller is responsible for saying which column to compare to.
      * @param projectConfig the configuration, non-null
+     * @param databaseColumnName the column name with a date or time to use
      * @param timeShift the amount of time to shift, null otherwise
      * @return a where clause sql snippet or empty string if no season
-     * @throws NullPointerException when projectConfig is null
+     * @throws NullPointerException when projectConfig or databaseColumnName is null
+     * @throws DateTimeException when the values in the season are invalid
      */
 
-    public static String getForecastishSeasonQualifier( ProjectConfig projectConfig,
-                                                        Integer timeShift )
+    public static String getSeasonQualifier( ProjectConfig projectConfig,
+                                             String databaseColumnName,
+                                             Integer timeShift)
     {
         Objects.requireNonNull( projectConfig, "projectConfig needs to exist" );
+        Objects.requireNonNull( databaseColumnName, "databaseColumnName needs to exist" );
         StringBuilder s = new StringBuilder();
         PairConfig.Season season = projectConfig.getPair()
                                                 .getSeason();
         if ( season != null )
         {
-            s.append( "     AND EXTRACT( day from ts.initialization_date + " );
-            s.append( "INTERVAL '1 HOUR' * lead " );
+            MonthDay earliest = MonthDay.of( season.getEarliestMonth(),
+                                             season.getEarliestDay() );
+            MonthDay latest = MonthDay.of( season.getLatestMonth(),
+                                           season.getLatestMonth() );
 
-            if ( timeShift != null )
-            {
-                s.append(" + INTERVAL '1 HOUR' * ").append( timeShift );
-            }
+            s.append( "     AND ( " );
+            s.append( ConfigHelper.getExtractSqlSnippet( "day",
+                                                         databaseColumnName,
+                                                         timeShift ) );
 
-            s.append( ") BETWEEN '");
+            s.append( " >= ");
             s.append( season.getEarliestDay() );
-            s.append( "' AND '" );
-            s.append( season.getLatestDay() );
-            s.append( "'" );
-            s.append( System.lineSeparator() );
-            s.append( "     AND EXTRACT( month from ts.initialization_date +" );
-            s.append( " INTERVAL '1 HOUR' * lead ");
 
-            if ( timeShift != null )
+            if ( earliest.isAfter( latest ) )
             {
-                s.append(" + INTERVAL '1 HOUR' * ").append( timeShift );
+                s.append( " OR ");
+            }
+            else
+            {
+                s.append( " AND ");
             }
 
-            s.append( ") BETWEEN '" );
+            s.append( ConfigHelper.getExtractSqlSnippet( "day",
+                                                         databaseColumnName,
+                                                         timeShift ) );
+
+            s.append( " <= " );
+            s.append( season.getLatestDay() );
+            s.append( " )" );
+
+            s.append( System.lineSeparator() );
+
+            s.append( "     AND ( ");
+            s.append( ConfigHelper.getExtractSqlSnippet( "month",
+                                                         databaseColumnName,
+                                                         timeShift ) );
+
+            s.append( "  >= " );
             s.append( season.getEarliestMonth() );
-            s.append( "' AND '" );
+
+            if ( earliest.isAfter( latest ) )
+            {
+                s.append( " OR ");
+            }
+            else
+            {
+                s.append( " AND ");
+            }
+
+            s.append( ConfigHelper.getExtractSqlSnippet( "month",
+                                                         databaseColumnName,
+                                                         timeShift ) );
+
+            s.append( " <= " );
             s.append( season.getLatestMonth() );
-            s.append( "' " );
+            s.append( " ) " );
         }
 
+        LOGGER.trace( s.toString() );
         return s.toString();
     }
 
-
-    /**
-     * Creates a SQL snippet expected by the ScriptGenerator as part of a where
-     * clause, filtering by season specified in the configuration passed in.
-     * <br>
-     * Tailored to the observation-ish type queries, not forecast-ish type.
-     * @param projectConfig the configuration, non-null
-     * @param timeShift the amount of time to shift, null otherwise
-     * @return a where clause sql snippet or empty string if no season
-     * @throws NullPointerException when projectConfig is null
-     */
-
-    public static String getObservationishSeasonQualifier( ProjectConfig projectConfig,
-                                                           Integer timeShift )
+    private static String getExtractSqlSnippet( String toExtract,
+                                                String databaseColumnName,
+                                                Integer timeShift )
     {
-        Objects.requireNonNull( projectConfig, "projectConfig needs to exist" );
         StringBuilder s = new StringBuilder();
-        PairConfig.Season season = projectConfig.getPair()
-                                                .getSeason();
-        if ( season != null )
+
+        s.append( "EXTRACT( ");
+        s.append( toExtract );
+        s.append( " from " );
+        s.append( databaseColumnName );
+
+        if ( timeShift != null )
         {
-            s.append( "     AND EXTRACT( day from O.observation_time" );
-
-            if ( timeShift != null )
-            {
-                s.append(" + INTERVAL '1 HOUR' * ");
-                s.append( timeShift );
-            }
-
-            s.append( " ) BETWEEN '");
-            s.append( season.getEarliestDay() );
-            s.append( "' AND '" );
-            s.append( season.getLatestDay() );
-            s.append( "'" );
-            s.append( System.lineSeparator() );
-            s.append( "     AND EXTRACT( month from O.observation_time" );
-
-            if ( timeShift != null )
-            {
-                s.append(" + INTERVAL '1 HOUR' * ");
-                s.append( timeShift );
-            }
-
-            s.append( " ) BETWEEN '" );
-            s.append( season.getEarliestMonth() );
-            s.append( "' AND '" );
-            s.append( season.getLatestMonth() );
-            s.append( "' " );
+            s.append(" + INTERVAL '1 HOUR' * ");
+            s.append( timeShift );
         }
+
+        s.append( " )");
 
         return s.toString();
     }
