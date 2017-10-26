@@ -9,7 +9,7 @@ if [[ $? != 0 ]]; then
     exit 1
 fi
 
-targetDir=/wres_share/testing/systests_expected_outputs.$revision
+targetDir=/wres_share/testing/systestsExpectedOutputs/systests_expected_outputs.$revision
 echo "The directory of expected output to be created is $targetDir"
 echo "Making..."
 mkdir $targetDir
