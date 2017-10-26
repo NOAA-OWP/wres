@@ -8,7 +8,7 @@ echo "System test results for scenarios:" > $logFileName
 ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* >> $logFileName
 
 echo "System test results for scenarios:" 
-ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* 
+ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6*
 
 startsec=$(date +%s)
 
