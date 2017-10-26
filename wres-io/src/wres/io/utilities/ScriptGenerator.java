@@ -125,8 +125,9 @@ public final class ScriptGenerator
             script.append("     AND ")
                   .append(ConfigHelper.getLeadQualifier(projectConfig, progress, leadOffset))
                   .append( NEWLINE );
-            script.append( ConfigHelper.getForecastishSeasonQualifier( projectConfig,
-                                                                       timeShift ) )
+            script.append( ConfigHelper.getSeasonQualifier( projectConfig,
+                                                            "TS.initialization_date",
+                                                            timeShift ) )
                   .append( NEWLINE );
 
             String ensembleClause = constructEnsembleClause(dataSourceConfig);
@@ -283,8 +284,9 @@ public final class ScriptGenerator
                       .append(NEWLINE);
             }
 
-            script.append( ConfigHelper.getObservationishSeasonQualifier( projectConfig,
-                                                                          timeShift ) )
+            script.append( ConfigHelper.getSeasonQualifier( projectConfig,
+                                                            "O.observation_time",
+                                                            timeShift ) )
                   .append( NEWLINE );
         }
 

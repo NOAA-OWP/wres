@@ -589,28 +589,6 @@ public class Validation
                 }
                 result = false;
             }
-
-            // Earliest should precede latest.
-            if ( earliest.isAfter( latest ) )
-            {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " The 'earliest' month {} and day {} is "
-                                 + "AFTER the 'latest' month {} and day {}. "
-                                 + "Please correct the dates so that earliest "
-                                 + "falls before the latest.",
-                                 projectConfigPlus.getPath(),
-                                 season.sourceLocation().getLineNumber(),
-                                 season.sourceLocation().getColumnNumber(),
-                                 season.getEarliestMonth(),
-                                 season.getEarliestDay(),
-                                 season.getLatestMonth(),
-                                 season.getLatestDay() );
-                }
-
-                result = false;
-            }
         }
 
         return result;
