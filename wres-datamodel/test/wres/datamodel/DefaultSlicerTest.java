@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 
 import org.junit.Test;
@@ -390,29 +391,38 @@ public final class DefaultSlicerTest
     public void test10GetInverseCumulativeProbability()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
-        double[] sorted = new double[] { 1.5, 6.3, 4.9, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2 };
+        double[] sorted = new double[] { 1.5, 4.9, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2 };
+        double[] sortedB = new double[] { -50, -40, -30, -20, -10, 0, 10, 20, 30, 40 , 50 };
         double testA = 0.0;
         double testB = 1.0;
         double testC = 7.0 / 11.0;
         double testD = ( 8.0 + ( ( 5005.0 - 2009.8 ) / ( 7001.4 - 2009.8 ) ) ) / 11.0;
+        double testE = 0.5;
         double expectedA = 1.5;
         double expectedB = 17897.2;
-        double expectedC = 1012.6;
-        double expectedD = 5005.0;
+        double expectedC = 1647.1818181818185;
+        double expectedD = 8924.920568373052;
+        double expectedE = 0.0;
 
         //Test for equality
+        DoubleUnaryOperator qFA = slicer.getQuantileFunction( sorted );
+        DoubleUnaryOperator qFB = slicer.getQuantileFunction( sortedB );
+        
         assertTrue( "The inverse cumulative probability does not match the benchmark",
-                    metIn.doubleEquals( slicer.getQuantile( testA, sorted ), expectedA, 7 ) );
+                    metIn.doubleEquals( qFA.applyAsDouble( testA ), expectedA, 7 ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
-                    metIn.doubleEquals( slicer.getQuantile( testB, sorted ), expectedB, 7 ) );
+                    metIn.doubleEquals( qFA.applyAsDouble( testB ), expectedB, 7 ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
-                    metIn.doubleEquals( slicer.getQuantile( testC, sorted ), expectedC, 7 ) );
+                    metIn.doubleEquals( qFA.applyAsDouble( testC ), expectedC, 7 ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
-                    metIn.doubleEquals( slicer.getQuantile( testD, sorted ), expectedD, 7 ) );
+                    metIn.doubleEquals( qFA.applyAsDouble( testD ), expectedD, 7 ) );
+        assertTrue( "The inverse cumulative probability does not match the benchmark",
+                    metIn.doubleEquals( qFB.applyAsDouble( testE ), expectedE, 7 ) );
+        
         //Test the exception conditions
         try
         {
-            slicer.getQuantile( -0.1, sorted );
+            qFA.applyAsDouble( -0.1 );
             fail( "Expected and exception on using an out-of-bounds probability." );
         }
         catch ( Exception e )
@@ -420,7 +430,7 @@ public final class DefaultSlicerTest
         }
         try
         {
-            slicer.getQuantile( 1.1, sorted );
+            qFA.applyAsDouble( 1.1 );
             fail( "Expected and exception on using an out-of-bounds probability." );
         }
         catch ( Exception e )
@@ -428,7 +438,7 @@ public final class DefaultSlicerTest
         }
         try
         {
-            slicer.getQuantile( 0.0, new double[] {} );
+            slicer.getQuantileFunction( new double[] {} ).applyAsDouble( 0.0 );
             fail( "Expected and exception on using an empty test array." );
         }
         catch ( Exception e )
@@ -444,7 +454,7 @@ public final class DefaultSlicerTest
     public void test11GetQuantileFromProbability()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
-        double[] sorted = new double[] { 1.5, 6.3, 4.9, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2 };
+        double[] sorted = new double[] { 1.5, 4.9, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2 };
         double[] sortedSecond = new double[] { 1.5 };
         double tA = 0.0;
         double tB = 1.0;
@@ -463,10 +473,10 @@ public final class DefaultSlicerTest
         Threshold testG = metIn.getProbabilityThreshold( tG, Operator.GREATER );
         Threshold expectedA = metIn.getQuantileThreshold( 1.5, tA, Operator.GREATER );
         Threshold expectedB = metIn.getQuantileThreshold( 17897.2, tB, Operator.GREATER );
-        Threshold expectedC = metIn.getQuantileThreshold( 1012.6, tC, Operator.GREATER );
-        Threshold expectedD = metIn.getQuantileThreshold( 5005.000000000002, tD, Operator.GREATER );
-        Threshold expectedE = metIn.getQuantileThreshold( 5.25,
-                                                          238.59999999999997,
+        Threshold expectedC = metIn.getQuantileThreshold( 1647.1818181818185, tC, Operator.GREATER );
+        Threshold expectedD = metIn.getQuantileThreshold( 8924.920568373052, tD, Operator.GREATER );
+        Threshold expectedE = metIn.getQuantileThreshold( 6.3,
+                                                          433.9,
                                                           tE[0],
                                                           tE[1],
                                                           Operator.BETWEEN );

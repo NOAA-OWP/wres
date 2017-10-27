@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 
 /**
@@ -18,7 +19,7 @@ public interface Slicer
 
     /**
      * Returns a {@link Threshold} with quantiles defined from the prescribed {@link Threshold} with probabilities, 
-     * where the quantiles are mapped using {@link #getQuantile(double, double[])}.
+     * where the quantiles are mapped using {@link #getQuantileFunction(double[])}.
      * 
      * @param sorted the sorted input array
      * @param threshold the probability threshold from which the quantile is determined
@@ -172,25 +173,22 @@ public interface Slicer
     PairOfDoubles transformPair( PairOfDoubleAndVectorOfDoubles pair );
 
     /**
-     * Returns a value from the sorted array that corresponds to the input non-exceedence probability (p). This method
-     * produces undefined results if the input array is unsorted. Corresponds to method 4 in the R function,
-     * quantile{stats}: <a href=
+     * Returns a function to compute a value from the sorted array that corresponds to the input non-exceedence 
+     * probability. This method produces undefined results if the input array is unsorted. Corresponds to 
+     * method 6 in the R function, quantile{stats}: <a href=
      * "https://stat.ethz.ch/R-manual/R-devel/library/stats/html/quantile.html">https://stat.ethz.ch/R-manual/R-devel/library/stats/html/quantile.html</a>.
-     * Specifically, conducts linear interpolation of the empirical distribution function. When
-     * <code>p &lt; 1 / N</code>, the first sample value is returned. When <code>p = 1</code>, the last sample value is
-     * returned. Also see: <a href=
+     * Also see: <a href=
      * "https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample">https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample</a>.
      * 
-     * @param probability the non-exceedence probability in [0,1]
      * @param sorted the sorted input array
      * @return the threshold
      */
 
-    double getQuantile( double probability, double[] sorted );
+    DoubleUnaryOperator getQuantileFunction( double[] sorted );
 
     /**
      * Returns a {@link Threshold} with quantiles defined from a prescribed {@link Threshold} with probabilities, 
-     * where the quantiles are mapped using {@link #getQuantile(double, double[])}.
+     * where the quantiles are mapped using {@link #getQuantileFunction(double[])}.
      * 
      * @param sorted the sorted input array
      * @param threshold the probability threshold from which the quantile threshold is determined

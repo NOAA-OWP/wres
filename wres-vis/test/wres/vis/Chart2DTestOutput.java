@@ -3,6 +3,7 @@ package wres.vis;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
@@ -26,6 +27,7 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import ohd.hseb.hefs.utils.tools.FileTools;
 import wres.config.generated.PlotTypeSelection;
+import wres.datamodel.BoxPlotOutput;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MapBiKey;
@@ -35,9 +37,11 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricOutputMapByLeadThreshold;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.VectorOutput;
 
 /**
@@ -547,12 +551,12 @@ public class Chart2DTestOutput extends TestCase
 
             for ( final Object thresh : engineMap.keySet() )
             {
-                String thresholdString = (((Threshold) thresh).getThreshold()).toString();
-                if (Double.isInfinite( ((Threshold) thresh).getThreshold() ))
+                String thresholdString = ( ( (Threshold) thresh ).getThreshold() ).toString();
+                if ( Double.isInfinite( ( (Threshold) thresh ).getThreshold() ) )
                 {
                     thresholdString = "alldata";
                 }
-                
+
                 ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/"
                                                               + thresholdString
                                                               + "."
@@ -679,7 +683,6 @@ public class Chart2DTestOutput extends TestCase
         }
         catch ( final Exception e )
         {
-            e.printStackTrace();
             Assert.fail( "Test failed : " + e.getMessage() );
         }
         return outputFactory.ofMap( rawData );
@@ -749,7 +752,6 @@ public class Chart2DTestOutput extends TestCase
         }
         catch ( final Exception e )
         {
-            e.printStackTrace();
             Assert.fail( "Test failed : " + e.getMessage() );
         }
         return outputFactory.ofMap( rawData );
@@ -761,7 +763,7 @@ public class Chart2DTestOutput extends TestCase
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getReliabilityDiagramByLeadThreshold.xml.
      * 
-     * @return an output map of verification scores
+     * @return an output map of reliability diagrams
      */
     private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getReliabilityDiagramByLeadThreshold()
     {
@@ -865,7 +867,6 @@ public class Chart2DTestOutput extends TestCase
         }
         catch ( final Exception e )
         {
-            e.printStackTrace();
             Assert.fail( "Test failed : " + e.getMessage() );
         }
         //Return the results
@@ -878,7 +879,7 @@ public class Chart2DTestOutput extends TestCase
      * various thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getROCDiagramByLeadThreshold.xml.
      * 
-     * @return an output map of verification scores
+     * @return an output map of ROC diagrams
      */
 
     private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getROCDiagramByLeadThreshold()
@@ -965,7 +966,6 @@ public class Chart2DTestOutput extends TestCase
         }
         catch ( final Exception e )
         {
-            e.printStackTrace();
             Assert.fail( "Test failed : " + e.getMessage() );
         }
         //Return the results
@@ -978,7 +978,7 @@ public class Chart2DTestOutput extends TestCase
      * the relative frequency of observations that fall within each gap. The results include various thresholds and 
      * forecast lead times. Reads the input data from testinput/chart2DTest/getRankHistogramByLeadThreshold.xml.
      * 
-     * @return an output map of verification scores
+     * @return an output map of rank histograms
      */
 
     private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getRankHistogramByLeadThreshold()
@@ -1060,7 +1060,6 @@ public class Chart2DTestOutput extends TestCase
         }
         catch ( final Exception e )
         {
-            e.printStackTrace();
             Assert.fail( "Test failed : " + e.getMessage() );
         }
         //Return the results
@@ -1072,7 +1071,7 @@ public class Chart2DTestOutput extends TestCase
      * Quantile-Quantile Diagram (predicted quantiles and observed quantiles) for various thresholds and forecast lead
      * times. Reads the input data from testinput/chart2DTest/getQQDiagramByLeadThreshold.xml.
      * 
-     * @return an output map of verification scores
+     * @return an output map of QQ diagrams
      */
 
     private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getQQDiagramByLeadThreshold()
@@ -1124,13 +1123,156 @@ public class Chart2DTestOutput extends TestCase
         }
         catch ( final Exception e )
         {
-            e.printStackTrace();
             Assert.fail( "Test failed : " + e.getMessage() );
         }
         //Return the results
         return outputFactory.ofMap( rawData );
     }
 
+    /**
+     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link BoxPlotOutput} that contains a box plot of forecast
+     * errors against observed value for a single threshold (all data) and for several forecast lead times. 
+     * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml.
+     * 
+     * @return an output map of verification scores
+     */
+
+    private static MetricOutputMapByLeadThreshold<BoxPlotOutput> getBoxPlotErrorsByObservedAndLeadThreshold()
+    {
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
+        final Map<MapBiKey<Integer, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
+        try
+        {
+            //Create the input file
+            final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml" );
+            final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
+
+            final Iterator<MetricResultKey> d = data.getIterator();
+
+            //Metric output metadata
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
+                                                                             metaFactory.getDimension(),
+                                                                             metaFactory.getDimension( "INCH" ),
+                                                                             MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED,
+                                                                             MetricConstants.MAIN,
+                                                                             metaFactory.getDatasetIdentifier( "NBBC1",
+                                                                                                               "PRECIPITATION",
+                                                                                                               "HEFS" ) );
+            //Single threshold
+            final Threshold threshold = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
+                                                                            Double.NEGATIVE_INFINITY,
+                                                                            Operator.GREATER );
+
+            //Iterate through the lead times.
+            while ( d.hasNext() )
+            {
+                //Set the lead time
+                final double leadTime = (Double) d.next().getKey();
+                final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, threshold );
+                final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
+                final double[][] bp = t.getResult().toArray();
+                //Thresholds in the first row
+                VectorOfDoubles probabilities = outputFactory.vectorOf( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
+                //Boxes in the remaining rows
+                final List<PairOfDoubleAndVectorOfDoubles> output = new ArrayList<>();
+                for ( double[] next : bp )
+                {
+                    if ( Double.compare( next[0], -999 ) != 0 )
+                    {
+                        output.add( outputFactory.pairOf( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
+                    }
+                }
+                final BoxPlotOutput out = outputFactory.ofBoxPlotOutput( output,
+                                                                         probabilities,
+                                                                         meta,
+                                                                         MetricDimension.OBSERVED_VALUE,
+                                                                         MetricDimension.FORECAST_ERROR );
+
+                //Append result
+                rawData.put( key, out );
+            }
+        }
+        catch ( final Exception e )
+        {
+            Assert.fail( "Test failed : " + e.getMessage() );
+        }
+        //Return the results
+        return outputFactory.ofMap( rawData );
+    }
+    
+    /**
+     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link BoxPlotOutput} that contains a box plot of forecast
+     * errors against observed value for a single threshold (all data) and for several forecast lead times. 
+     * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml.
+     * 
+     * @return an output map of verification scores
+     */
+
+    private static MetricOutputMapByLeadThreshold<BoxPlotOutput> getBoxPlotErrorsByForecastAndLeadThreshold()
+    {
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
+        final Map<MapBiKey<Integer, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
+        try
+        {
+            //Create the input file
+            final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml" );
+            final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
+
+            final Iterator<MetricResultKey> d = data.getIterator();
+
+            //Metric output metadata
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
+                                                                             metaFactory.getDimension(),
+                                                                             metaFactory.getDimension( "INCH" ),
+                                                                             MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
+                                                                             MetricConstants.MAIN,
+                                                                             metaFactory.getDatasetIdentifier( "NBBC1",
+                                                                                                               "PRECIPITATION",
+                                                                                                               "HEFS" ) );
+            //Single threshold
+            final Threshold threshold = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
+                                                                            Double.NEGATIVE_INFINITY,
+                                                                            Operator.GREATER );
+
+            //Iterate through the lead times.
+            while ( d.hasNext() )
+            {
+                //Set the lead time
+                final double leadTime = (Double) d.next().getKey();
+                final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, threshold );
+                final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
+                final double[][] bp = t.getResult().toArray();
+                //Thresholds in the first row
+                VectorOfDoubles probabilities = outputFactory.vectorOf( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
+                //Boxes in the remaining rows
+                final List<PairOfDoubleAndVectorOfDoubles> output = new ArrayList<>();
+                for ( double[] next : bp )
+                {
+                    if ( Double.compare( next[0], -999 ) != 0 )
+                    {
+                        output.add( outputFactory.pairOf( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
+                    }
+                }
+                final BoxPlotOutput out = outputFactory.ofBoxPlotOutput( output,
+                                                                         probabilities,
+                                                                         meta,
+                                                                         MetricDimension.ENSEMBLE_MEAN,
+                                                                         MetricDimension.FORECAST_ERROR );
+
+                //Append result
+                rawData.put( key, out );
+            }
+        }
+        catch ( final Exception e )
+        {
+            Assert.fail( "Test failed : " + e.getMessage() );
+        }
+        //Return the results
+        return outputFactory.ofMap( rawData );
+    }    
+    
     /**
      * The comparison sensitivity.
      */

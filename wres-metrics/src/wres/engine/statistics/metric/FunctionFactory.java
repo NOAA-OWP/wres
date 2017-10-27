@@ -20,6 +20,7 @@ import wres.datamodel.VectorOfDoubles;
 
 class FunctionFactory
 {
+    
     /**
      * Return a function that computes the difference between the second and first entries in a {@link PairOfDoubles}.
      * 
@@ -110,7 +111,7 @@ class FunctionFactory
     public static ToDoubleFunction<VectorOfDoubles> mean()
     {
         return a -> Arrays.stream( a.getDoubles() ).average().getAsDouble();
-    }
+    }   
 
     /**
      * <p>

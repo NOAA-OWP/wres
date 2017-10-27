@@ -238,7 +238,7 @@ public final class MetricTestDataFactory
 
     public static EnsemblePairs getEnsemblePairsTwo()
     {
-        //Construct some single-valued pairs
+        //Construct some ensemble pairs
         final DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         values.add(metIn.pairOf(22.9, new double[]{22.8,23.9}));

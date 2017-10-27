@@ -68,7 +68,7 @@ class SafeVectorOutput implements VectorOutput
     @Override
     public int hashCode()
     {
-        return getMetadata().hashCode() + getOutputTemplate().hashCode() + Arrays.hashCode( output.getDoubles() );
+        return Objects.hash( meta, template, output );
     }
 
     @Override

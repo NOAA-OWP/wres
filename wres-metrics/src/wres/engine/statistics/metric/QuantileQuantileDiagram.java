@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.DoubleUnaryOperator;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -34,11 +35,11 @@ class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVectorOutpu
     private final int probCount;
 
     @Override
-    public MultiVectorOutput apply(SingleValuedPairs s)
+    public MultiVectorOutput apply( SingleValuedPairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         DataFactory d = getDataFactory();
         Slicer slicer = d.getSlicer();
@@ -47,25 +48,27 @@ class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVectorOutpu
         double[] predictedQ = new double[probCount];
 
         //Get the ordered data
-        double[] sortedLeft = slicer.getLeftSide(s);
-        double[] sortedRight = slicer.getRightSide(s);
-        Arrays.sort(sortedLeft);
-        Arrays.sort(sortedRight);
+        double[] sortedLeft = slicer.getLeftSide( s );
+        double[] sortedRight = slicer.getRightSide( s );
+        Arrays.sort( sortedLeft );
+        Arrays.sort( sortedRight );
+        DoubleUnaryOperator qLeft = slicer.getQuantileFunction( sortedLeft );
+        DoubleUnaryOperator qRight = slicer.getQuantileFunction( sortedRight );
 
         //Compute the order statistics
-        for(int i = 0; i < probCount; i++)
+        for ( int i = 0; i < probCount; i++ )
         {
-            double prob = (i+1.0) / (probCount+1.0);
-            observedQ[i] = slicer.getQuantile(prob, sortedLeft);
-            predictedQ[i] = slicer.getQuantile(prob, sortedRight);
+            double prob = ( i + 1.0 ) / ( probCount + 1.0 );
+            observedQ[i] = qLeft.applyAsDouble( prob );
+            predictedQ[i] = qRight.applyAsDouble( prob );
         }
 
         //Set and return the results
-        Map<MetricDimension, double[]> output = new EnumMap<>(MetricDimension.class);
-        output.put(MetricDimension.OBSERVED_QUANTILES, observedQ);
-        output.put(MetricDimension.PREDICTED_QUANTILES, predictedQ);
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
-        return d.ofMultiVectorOutput(output, metOut);
+        Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
+        output.put( MetricDimension.OBSERVED_QUANTILES, observedQ );
+        output.put( MetricDimension.PREDICTED_QUANTILES, predictedQ );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        return d.ofMultiVectorOutput( output, metOut );
     }
 
     @Override
@@ -90,7 +93,7 @@ class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVectorOutpu
         @Override
         protected QuantileQuantileDiagram build() throws MetricParameterException
         {
-            return new QuantileQuantileDiagram(this);
+            return new QuantileQuantileDiagram( this );
         }
 
     }
@@ -102,9 +105,9 @@ class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVectorOutpu
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private QuantileQuantileDiagram(final QuantileQuantileDiagramBuilder builder) throws MetricParameterException
+    private QuantileQuantileDiagram( final QuantileQuantileDiagramBuilder builder ) throws MetricParameterException
     {
-        super(builder);
+        super( builder );
         //Set the number of thresholds to 1000
         probCount = 1000;
     }

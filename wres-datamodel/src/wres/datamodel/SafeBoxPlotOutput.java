@@ -82,6 +82,51 @@ class SafeBoxPlotOutput implements BoxPlotOutput
         return rangeAxisDimension;
     }
 
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( ! ( o instanceof SafeBoxPlotOutput ) )
+        {
+            return false;
+        }
+        final SafeBoxPlotOutput v = (SafeBoxPlotOutput) o;
+        //Check probabilities
+        if ( !getProbabilities().equals( v.getProbabilities() ) )
+        {
+            return false;
+        }
+        //Check dimensions
+        if ( !getDomainAxisDimension().equals( v.getDomainAxisDimension() ) )
+        {
+            return false;
+        }
+        if ( !getRangeAxisDimension().equals( v.getRangeAxisDimension() ) )
+        {
+            return false;
+        }
+        //Check pairs
+        if ( v.output.size() != output.size() )
+        {
+            return false;
+        }
+        Iterator<PairOfDoubleAndVectorOfDoubles> it = iterator();
+        for ( PairOfDoubleAndVectorOfDoubles next : v )
+        {
+            if ( !next.equals( it.next() ) )
+            {
+                return false;
+            }
+        }
+        //Check metadata
+        return meta.equals( v.getMetadata() );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( meta, output, probabilities, domainAxisDimension, rangeAxisDimension );
+    }
+
     /**
      * Construct the box plot output.
      * 

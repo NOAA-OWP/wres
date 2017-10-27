@@ -66,7 +66,7 @@ class SafeMultiVectorOutput implements MultiVectorOutput
     @Override
     public int hashCode()
     {
-        return getMetadata().hashCode() + output.hashCode();
+        return Objects.hash( meta, output );
     }
 
     /**
