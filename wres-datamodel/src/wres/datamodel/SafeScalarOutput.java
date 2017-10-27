@@ -47,7 +47,7 @@ class SafeScalarOutput implements ScalarOutput
     @Override
     public int hashCode()
     {
-        return Double.hashCode( output ) + meta.hashCode();
+        return Objects.hash( output , meta );
     }
 
     @Override

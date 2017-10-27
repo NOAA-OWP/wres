@@ -9,12 +9,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * Default implementation of a utility class for slicing/dicing and transforming datasets associated with verification
- * metrics. TODO: reconcile this class with the Slicer in wres.datamodel.
+ * metrics.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -302,45 +303,54 @@ class DefaultSlicer implements Slicer
         return dataFac.pairOf( pair.getItemOne(), pair.getItemTwo()[0] );
     }
 
-    @Override
-    public double getQuantile( double probability, double[] sorted )
+    
+    public static void main(String[] args) 
     {
-        if ( probability < 0 || probability > 1.0 )
-        {
-            throw new IllegalArgumentException( "The input probability is not within the unit interval: "
-                                                + probability );
-        }
-        if ( sorted.length == 0 )
-        {
-            throw new IllegalArgumentException( "Cannot compute the inverse cumulative probability from empty input." );
-        }
-        //Single item
-        if ( sorted.length == 1 )
-        {
-            return sorted[0];
-        }
-        //Lower bound
-        if ( Double.compare( probability, 0 ) == 0 )
-        {
-            return sorted[0];
-        }
-        //Upper bound
-        if ( Double.compare( probability, 1 ) == 0 )
-        {
-            return sorted[sorted.length - 1];
-        }
+        new DefaultSlicer().getQuantileFunction( new double[]{} ).applyAsDouble( 1.0 );
+    }
+    
+    @Override
+    public DoubleUnaryOperator getQuantileFunction( double[] sorted )
+    {
+        return probability -> {
+            if ( probability < 0 || probability > 1 )
+            {
+                throw new IllegalArgumentException( "The input probability is not within the unit interval: "
+                                                    + probability );
+            }
+            if ( sorted.length == 0 )
+            {
+                throw new IllegalArgumentException( "Cannot compute the quantile from empty input." );
+            }
+            //Single item
+            if ( sorted.length == 1 )
+            {
+                return sorted[0];
+            }
 
-        //Find the low index, zero-based
-        double lowIndex = probability * sorted.length - 1;
-        //If the probability maps below the first sample, return the first sample as the lower bound is undefined
-        if ( lowIndex < 0.0 )
-        {
-            return sorted[0];
-        }
-        //Otherwise, linearly interpolate between samples
-        int lower = (int) Math.floor( lowIndex );
-        double fraction = lowIndex - lower;
-        return sorted[lower] + fraction * ( sorted[lower + 1] - sorted[lower] );
+            //Estimate the position
+            double pos = probability * ( sorted.length + 1.0 );
+            //Lower bound
+            if ( pos < 1.0 )
+            {
+                return sorted[0];
+            }
+            //Upper bound
+            else if ( pos >= sorted.length )
+            {
+                return sorted[sorted.length - 1];
+            }
+            //Contained: use linear interpolation
+            else
+            {
+                double floorPos = Math.floor( pos );
+                double dif = pos - floorPos;
+                int intPos = (int) floorPos;
+                double lower = sorted[intPos - 1];
+                double upper = sorted[intPos];
+                return lower + dif * ( upper - lower );
+            }
+        };
     }
 
     @Override
@@ -356,7 +366,8 @@ class DefaultSlicer implements Slicer
         {
             throw new IllegalArgumentException( "Cannot compute the quantile from empty input." );
         }
-        Double first = getQuantile( threshold.getThresholdProbability(), sorted );
+        DoubleUnaryOperator qF = getQuantileFunction( sorted );
+        Double first = qF.applyAsDouble( threshold.getThresholdProbability() );
         if ( Objects.nonNull( digits ) )
         {
             first = round().apply( first, digits );
@@ -364,7 +375,7 @@ class DefaultSlicer implements Slicer
         Double second = null;
         if ( threshold.hasBetweenCondition() )
         {
-            second = getQuantile( threshold.getThresholdUpperProbability(), sorted );
+            second = qF.applyAsDouble( threshold.getThresholdUpperProbability() );
             if ( Objects.nonNull( digits ) )
             {
                 second = round().apply( second, digits );

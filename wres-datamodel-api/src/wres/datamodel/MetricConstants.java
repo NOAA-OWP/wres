@@ -36,6 +36,18 @@ public enum MetricConstants
      */
 
     BRIER_SKILL_SCORE( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ),
+    
+    /**
+     * Identifier for a box plot of errors by observed value.
+     */
+    
+    BOX_PLOT_OF_ERRORS_BY_OBSERVED( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ),
+    
+    /**
+     * Identifier for a box plot of errors by forecast value.
+     */
+    
+    BOX_PLOT_OF_ERRORS_BY_FORECAST( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ),    
 
     /**
      * Identifier for coefficient of determination.
@@ -485,28 +497,34 @@ public enum MetricConstants
     {
 
         /**
-         * Metrics that produce a scalar output.
+         * Metrics that produce a {@link ScalarOutput}.
          */
 
         SCALAR,
 
         /**
-         * Metrics that produce a vector of outputs.
+         * Metrics that produce a {@link VectorOutput}.
          */
 
         VECTOR,
 
         /**
-         * Metrics that produce multiple vectors of outputs.
+         * Metrics that produce a {@link MultiVectorOutput}.
          */
 
         MULTIVECTOR,
 
         /**
-         * Metrics that produce matrix outputs.
+         * Metrics that produce a {@link MatrixOutput}.
          */
 
-        MATRIX;
+        MATRIX,
+        
+        /**
+         * Metrics that produce a {@link BoxPlotOutput}.
+         */
+
+        BOXPLOT;
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link MetricOutputGroup}.
@@ -679,6 +697,12 @@ public enum MetricConstants
          */
         
         OBSERVED_VALUE,
+        
+        /**
+         * Identifier for forecast value. 
+         */
+        
+        FORECAST_VALUE,        
         
         /**
          * Identifier for ensemble mean. 

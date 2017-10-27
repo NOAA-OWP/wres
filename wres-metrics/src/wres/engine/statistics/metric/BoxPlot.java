@@ -36,7 +36,7 @@ abstract class BoxPlot
      * A vector of probabilities that define the quantiles to plot.
      */
 
-    private final VectorOfDoubles probabilities;
+    final VectorOfDoubles probabilities;
 
     /**
      * Creates a box from a {@link PairOfDoubleAndVectorOfDoubles}.
@@ -78,7 +78,7 @@ abstract class BoxPlot
         {
             boxes.add( getBox( next ) );
         }
-        MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
+        MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofBoxPlotOutput( boxes,
                                                  probabilities,
                                                  metOut,
@@ -108,7 +108,7 @@ abstract class BoxPlot
         /**
          * Sets the probabilities associated with the boxes. requires at least two valid probabilities that differ.
          * 
-         * @param probabilities the probabiilties
+         * @param probabilities the probabilities
          * @return the builder
          */
         BoxPlotBuilder setProbabilities( VectorOfDoubles probabilities )
@@ -128,16 +128,25 @@ abstract class BoxPlot
     BoxPlot( final BoxPlotBuilder builder ) throws MetricParameterException
     {
         super( builder );
-        this.probabilities = builder.probabilities;
         //Validate the probabilities
-        if ( Objects.isNull( this.probabilities ) )
+        if ( Objects.isNull( builder.probabilities ) )
         {
-            throw new MetricParameterException( "Specify non-null probabilities for the verification box plot." );
+            //Add default probabilities
+            probabilities = getDataFactory().vectorOf( new double[]{0.0,0.25,0.5,0.75,1.0} );
+        }
+        else
+        {
+            this.probabilities = builder.probabilities;
         }
         if ( probabilities.size() < 2 )
         {
             throw new MetricParameterException( "Specify at least two probabilities for the verification box plot." );
         }
+        if (probabilities.size() > 2 && probabilities.size() % 2 == 0)
+        {
+            throw new MetricParameterException( "Specify an odd number of probabilities for the verification box plot." );
+        }
+        
         //Check for invalid or duplicate values
         Set<Double> check = new HashSet<>();
         for ( double next : this.probabilities.getDoubles() )

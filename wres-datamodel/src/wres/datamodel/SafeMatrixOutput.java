@@ -55,7 +55,7 @@ class SafeMatrixOutput implements MatrixOutput
     @Override
     public int hashCode()
     {
-        return getMetadata().hashCode() + Arrays.deepHashCode( output.getDoubles() );
+        return Objects.hash( meta, Arrays.deepHashCode( output.getDoubles() ) );
     }
 
     /**
