@@ -313,6 +313,8 @@ public final class PIXMLReader extends XMLReader
 		String localName;
         LocalDate localDate = null;
         LocalTime localTime = null;
+        String dateText = "";
+        String timeText = "";
 
         // TODO: Return lead logic to the programmatic method, not the date time
         // object allocation method. The date time allocation method doubles
@@ -328,12 +330,12 @@ public final class PIXMLReader extends XMLReader
 			}
 			else if (localName.equalsIgnoreCase("date"))
 			{
-                String dateText = reader.getAttributeValue(attributeIndex);
+                dateText = reader.getAttributeValue(attributeIndex);
                 localDate = LocalDate.parse( dateText );
 			}
 			else if (localName.equalsIgnoreCase("time"))
 			{
-                String timeText = reader.getAttributeValue(attributeIndex);
+                timeText = reader.getAttributeValue(attributeIndex);
                 localTime = LocalTime.parse( timeText );
 			}
 		}
@@ -361,6 +363,10 @@ public final class PIXMLReader extends XMLReader
         }
         else
         {
+            if (value.trim().equalsIgnoreCase( "nan" ))
+            {
+                LOGGER.debug( "NaN encountered." );
+            }
             OffsetDateTime offsetDateTime
                 = OffsetDateTime.of( dateTime, this.getZoneOffset() );
             String formattedDate = offsetDateTime.format( FORMATTER );
@@ -923,12 +929,12 @@ public final class PIXMLReader extends XMLReader
             this.getSpecifiedMissingValue() != null)
         {
             Double val = Double.parseDouble( value );
-            if ( Precision.equals(val, this.getSpecifiedMissingValue(), EPSILON))
+            if ( this.getSpecifiedMissingValue().equals( val ) || Precision.equals(val, this.getSpecifiedMissingValue(), EPSILON))
             {
                 value = "\\N";
             }
         }
-        else if (!Strings.hasValue( value ) || value.equalsIgnoreCase( "null" ))
+        else if (!Strings.hasValue( value ) || value.equalsIgnoreCase( "null" ) || value.equalsIgnoreCase( "nan" ))
         {
             value = "\\N";
         }
