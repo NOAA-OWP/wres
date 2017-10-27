@@ -930,20 +930,41 @@ public class ConfigHelper
         StringBuilder s = new StringBuilder();
         PairConfig.Season season = projectConfig.getPair()
                                                 .getSeason();
+
+        // This admittedly makeshift MONTH_MULTIPLIIER is to put the month in
+        // the most significant place in a unified "month and day" integer.
+        // This was simpler than trying to concatenate strings. Why? Because
+        // SQL EXTRACT will only pull out one digit for single digit months.
+        // Maybe could have used postgres-specific SQL, but this technique seems
+        // to work OK so far. If a more elegant or more straightforward way is
+        // found, by all means, eliminate the MONTH_MULTIPLIER.
+        final int MONTH_MULTIPLIER = 100;
+
         if ( season != null )
         {
             MonthDay earliest = MonthDay.of( season.getEarliestMonth(),
                                              season.getEarliestDay() );
             MonthDay latest = MonthDay.of( season.getLatestMonth(),
-                                           season.getLatestMonth() );
+                                           season.getLatestDay() );
 
             s.append( "     AND ( " );
+            s.append( MONTH_MULTIPLIER );
+            s.append( " * " );
+
+            s.append( ConfigHelper.getExtractSqlSnippet( "month",
+                                                         databaseColumnName,
+                                                         timeShift ) );
+
+            s.append( " + ");
+
             s.append( ConfigHelper.getExtractSqlSnippet( "day",
                                                          databaseColumnName,
                                                          timeShift ) );
 
-            s.append( " >= ");
-            s.append( season.getEarliestDay() );
+            s.append( " >= " );
+
+            s.append( earliest.getMonthValue() * MONTH_MULTIPLIER
+                      + earliest.getDayOfMonth() );
 
             if ( earliest.isAfter( latest ) )
             {
@@ -954,40 +975,25 @@ public class ConfigHelper
                 s.append( " AND ");
             }
 
+            s.append( MONTH_MULTIPLIER );
+            s.append( " * " );
+
+            s.append( ConfigHelper.getExtractSqlSnippet( "month",
+                                                         databaseColumnName,
+                                                         timeShift ) );
+
+            s.append( " + ");
+
             s.append( ConfigHelper.getExtractSqlSnippet( "day",
                                                          databaseColumnName,
                                                          timeShift ) );
 
-            s.append( " <= " );
-            s.append( season.getLatestDay() );
+            s.append( " <= ");
+
+            s.append( latest.getMonthValue() * MONTH_MULTIPLIER
+                      + latest.getDayOfMonth() );
+
             s.append( " )" );
-
-            s.append( System.lineSeparator() );
-
-            s.append( "     AND ( ");
-            s.append( ConfigHelper.getExtractSqlSnippet( "month",
-                                                         databaseColumnName,
-                                                         timeShift ) );
-
-            s.append( "  >= " );
-            s.append( season.getEarliestMonth() );
-
-            if ( earliest.isAfter( latest ) )
-            {
-                s.append( " OR ");
-            }
-            else
-            {
-                s.append( " AND ");
-            }
-
-            s.append( ConfigHelper.getExtractSqlSnippet( "month",
-                                                         databaseColumnName,
-                                                         timeShift ) );
-
-            s.append( " <= " );
-            s.append( season.getLatestMonth() );
-            s.append( " ) " );
         }
 
         LOGGER.trace( s.toString() );
