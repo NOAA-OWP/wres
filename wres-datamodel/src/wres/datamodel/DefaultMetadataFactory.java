@@ -226,6 +226,10 @@ public class DefaultMetadataFactory implements MetadataFactory
         {
             case BIAS_FRACTION:
                 return "BIAS FRACTION";
+            case BOX_PLOT_OF_ERRORS_BY_OBSERVED:
+                return "BOX PLOT OF FORECAST ERRORS BY OBSERVED VALUE";    
+            case BOX_PLOT_OF_ERRORS_BY_FORECAST:
+                return "BOX PLOT OF FORECAST ERRORS BY FORECAST VALUE";                    
             case BRIER_SCORE:
                 return "BRIER SCORE";
             case BRIER_SKILL_SCORE:
@@ -291,6 +295,10 @@ public class DefaultMetadataFactory implements MetadataFactory
         {
             case BIAS_FRACTION:
                 return "BIAS FRACTION";
+            case BOX_PLOT_OF_ERRORS_BY_OBSERVED:
+                return "BOX PLOT OF FORECAST ERRORS BY OBSERVED VALUE";      
+            case BOX_PLOT_OF_ERRORS_BY_FORECAST:
+                return "BOX PLOT OF FORECAST ERRORS BY FORECAST VALUE";                  
             case BRIER_SCORE:
                 return "BS";
             case BRIER_SKILL_SCORE:

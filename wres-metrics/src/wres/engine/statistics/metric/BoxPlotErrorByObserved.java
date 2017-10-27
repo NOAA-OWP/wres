@@ -1,10 +1,13 @@
 package wres.engine.statistics.metric;
 
+import java.util.Arrays;
+
 import wres.datamodel.BoxPlotOutput;
 import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.Slicer;
 
 /**
  * An concrete implementation of a {@link BoxPlot} that plots the ensemble forecast errors (right - left) against 
@@ -22,9 +25,9 @@ class BoxPlotErrorByObserved extends BoxPlot
     @Override
     public MetricConstants getID()
     {
-        return null;
-    }    
-    
+        return MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED;
+    }
+
     /**
      * Creates a box from a {@link PairOfDoubleAndVectorOfDoubles}.
      * 
@@ -33,9 +36,15 @@ class BoxPlotErrorByObserved extends BoxPlot
      */
 
     @Override
-    PairOfDoubleAndVectorOfDoubles getBox( PairOfDoubleAndVectorOfDoubles pair ) 
+    PairOfDoubleAndVectorOfDoubles getBox( PairOfDoubleAndVectorOfDoubles pair )
     {
-        return null;
+        //Get the sorted errors
+        double[] probs = probabilities.getDoubles();
+        double[] sortedErrors = Arrays.stream( pair.getItemTwo() ).map( x -> x - pair.getItemOne() ).sorted().toArray();
+        Slicer slicer = getDataFactory().getSlicer();       
+        //Compute the quantiles
+        double[] box = Arrays.stream( probs ).map( slicer.getQuantileFunction(sortedErrors) ).toArray();
+        return getDataFactory().pairOf( pair.getItemOne(), box );
     }
 
     /**
@@ -70,11 +79,10 @@ class BoxPlotErrorByObserved extends BoxPlot
 
     static class BoxPlotErrorByObservedBuilder extends BoxPlotBuilder
     {
-
         @Override
         protected Metric<EnsemblePairs, BoxPlotOutput> build() throws MetricParameterException
         {
-            return new BoxPlotErrorByObserved(this);
+            return new BoxPlotErrorByObserved( this );
         }
     }
 
@@ -84,7 +92,7 @@ class BoxPlotErrorByObserved extends BoxPlot
      * @param builder the builder
      * @throws MetricParameterException if the parameters are incorrect
      */
-    
+
     private BoxPlotErrorByObserved( BoxPlotErrorByObservedBuilder builder ) throws MetricParameterException
     {
         super( builder );

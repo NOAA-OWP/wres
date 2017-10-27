@@ -51,7 +51,7 @@ public final class QuantileQuantileDiagramTest
         final List<PairOfDoubles> values = new ArrayList<>();
         for(int i = 1; i < 1001; i++)
         {
-            double left = (i * 1001.0) / 1000.0;
+            double left = i;
             double right = left;
             values.add(outF.pairOf(left, right));
         }
@@ -62,12 +62,12 @@ public final class QuantileQuantileDiagramTest
         final MultiVectorOutput actual = qq.apply(input);
         double[] actualObs = actual.get(MetricDimension.OBSERVED_QUANTILES).getDoubles();
         double[] actualPred = actual.get(MetricDimension.PREDICTED_QUANTILES).getDoubles();
-
+        
         //Check the first pair of quantiles, which should map to the first entry, since the lower bound is unknown
-        assertTrue("Difference between actual and expected quantiles of observations [" + 1.001 + ", "
-            + actualObs[0] + "].", Double.compare(actualObs[0], 1.001) == 0);
-        assertTrue("Difference between actual and expected quantiles of predictions [" + 1.001 + ", "
-            + actualPred[0] + "].", Double.compare(actualPred[0], 1.001) == 0);
+        assertTrue("Difference between actual and expected quantiles of observations [" + 1.0 + ", "
+            + actualObs[0] + "].", Double.compare(actualObs[0], 1.0) == 0);
+        assertTrue("Difference between actual and expected quantiles of predictions [" + 1.0 + ", "
+            + actualPred[0] + "].", Double.compare(actualPred[0], 1.0) == 0);
 
         //Expected values
         for(int i = 1; i < 1000; i++)

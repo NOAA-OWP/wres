@@ -655,6 +655,7 @@ public interface DataFactory
      * @param meta the box plot metadata
      * @param domainAxisDimension the domain axis dimension
      * @param rangeAxisDimension the range axis dimension
+     * @return a container for box plots
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
