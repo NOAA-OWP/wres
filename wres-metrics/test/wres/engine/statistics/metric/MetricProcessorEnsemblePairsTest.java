@@ -333,7 +333,7 @@ public final class MetricProcessorEnsemblePairsTest
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 4 ),
-                        bias.getValue( 4 ).getData().equals( -0.0505708024162773 ) );
+                        bias.getValue( 4 ).getData().equals( -0.05090288343061958 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 5 ),
@@ -365,7 +365,7 @@ public final class MetricProcessorEnsemblePairsTest
                         + MetricConstants.COEFFICIENT_OF_DETERMINATION
                         + " at "
                         + cod.getKey( 4 ),
-                        cod.getValue( 4 ).getData().equals( 0.7542039364210298 ) );
+                        cod.getValue( 4 ).getData().equals( 0.7540690263086123 ) );
             assertTrue( "Expected results differ from actual results for "
                         + MetricConstants.COEFFICIENT_OF_DETERMINATION
                         + " at "
@@ -388,11 +388,11 @@ public final class MetricProcessorEnsemblePairsTest
             assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
                         + " at "
                         + rho.getKey( 3 ),
-                        rho.getValue( 3 ).getData().equals( 0.8721422652304439 ) );
+                        rho.getValue( 3 ).getData().equals( 0.8721422652304439 ) );       
             assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
                         + " at "
                         + rho.getKey( 4 ),
-                        rho.getValue( 4 ).getData().equals( 0.868449155921652 ) );
+                        rho.getValue( 4 ).getData().equals( 0.8683714794421868 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
                         + " at "
                         + rho.getKey( 5 ),
@@ -418,7 +418,7 @@ public final class MetricProcessorEnsemblePairsTest
             assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
                         + " at "
                         + mae.getKey( 4 ),
-                        mae.getValue( 4 ).getData().equals( 20.625668563442147 ) );
+                        mae.getValue( 4 ).getData().equals( 20.653785159500924 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
                         + " at "
                         + mae.getKey( 5 ),
@@ -444,7 +444,7 @@ public final class MetricProcessorEnsemblePairsTest
             assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
                         + " at "
                         + me.getKey( 4 ),
-                        me.getValue( 4 ).getData().equals( -3.4840043925326936 ) );
+                        me.getValue( 4 ).getData().equals( -3.5134287820490364 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
                         + " at "
                         + me.getKey( 5 ),
@@ -467,10 +467,11 @@ public final class MetricProcessorEnsemblePairsTest
                         + " at "
                         + rmse.getKey( 3 ),
                         rmse.getValue( 3 ).getData().equals( 54.82426155439095 ) );
+            
             assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
                         + " at "
                         + rmse.getKey( 4 ),
-                        rmse.getValue( 4 ).getData().equals( 58.12352988180837 ) );
+                        rmse.getValue( 4 ).getData().equals( 58.19124412599005 ) );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
                         + " at "
                         + rmse.getKey( 5 ),

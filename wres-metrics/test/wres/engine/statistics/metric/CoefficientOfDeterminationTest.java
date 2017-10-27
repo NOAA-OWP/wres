@@ -62,7 +62,7 @@ public final class CoefficientOfDeterminationTest
             + ".", actual.equals(expected));
 
         //Check the parameters
-        assertTrue("Unexpected name for Coefficient of determination.",
+        assertTrue("Unexpected name for coefficient of determination.",
                    cod.getName().equals(metaFac.getMetricName(MetricConstants.COEFFICIENT_OF_DETERMINATION)));
         assertTrue("Coefficient of determination is not decomposable.", !cod.isDecomposable());
         assertTrue("Coefficient of determination is not a skill score.", !cod.isSkillScore());
