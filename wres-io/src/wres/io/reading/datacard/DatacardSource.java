@@ -27,6 +27,7 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
+import wres.io.reading.IngestException;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.Database;
 import wres.util.Collections;
@@ -40,6 +41,9 @@ import wres.util.Strings;
 public class DatacardSource extends BasicSource
 {
 	private static final Double[] IGNORABLE_VALUES = {-998.0, -999.0, -9999.0};
+
+    private String currentLocationId;
+
 	/**
 	 * 
 	 * @param filename the file name
@@ -115,6 +119,19 @@ public class DatacardSource extends BasicSource
             if (line != null)
             {
                 setTimeInterval(line.substring(29, 31));
+                if ( line.length() > 45 )
+                {
+                    String locationId = line.substring( 34, 45 );
+                    // Currently using only the first five chars
+                    String lid = locationId.substring( 0, 5 );
+                    setCurrentLocationId( lid );
+                }
+                else
+                {
+                    String message = "Could not find location ID in file "
+                                     + this.getAbsoluteFilename();
+                    throw new IngestException( message );
+                }
             }
             else
             {
@@ -423,9 +440,9 @@ public class DatacardSource extends BasicSource
 	{
 		if(variablePositionID  == null)
 		{
-			variablePositionID = Features.getVariablePositionID(getSpecifiedLocationID(),
-                                                                getSpecifiedLocationID(),
-                                                                getVariableID());
+            variablePositionID = Features.getVariablePositionID( this.getCurrentLocationId(),
+                                                                 null,
+                                                                 getVariableID() );
 		}
 		
 		return variablePositionID  ;
@@ -458,6 +475,16 @@ public class DatacardSource extends BasicSource
     {
         return this.getSpecifiedMissingValue() != null &&
                Precision.equals( Double.parseDouble( this.getSpecifiedMissingValue()), value, EPSILON );
+    }
+
+    private String getCurrentLocationId()
+    {
+        return this.currentLocationId;
+    }
+
+    private void setCurrentLocationId( String currentLocationId )
+    {
+        this.currentLocationId = currentLocationId;
     }
 
     private final static String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, " +
@@ -528,6 +555,6 @@ public class DatacardSource extends BasicSource
 	private Integer variablePositionID = null;
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatacardSource.class);
-	
+
 }
 
