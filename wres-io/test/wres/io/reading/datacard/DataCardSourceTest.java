@@ -192,6 +192,7 @@ public class DataCardSourceTest
 	}
 	
 	@Test
+    @Ignore // TODO restore this test as part of #39721 feature aliasing
 	//Test short record and multiple specified missing values
     public void insertQueryShortRecordTest()
             throws IOException

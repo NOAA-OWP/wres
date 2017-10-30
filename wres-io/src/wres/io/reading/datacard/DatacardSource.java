@@ -125,12 +125,39 @@ public class DatacardSource extends BasicSource
                     // Currently using only the first five chars
                     String lid = locationId.substring( 0, 5 );
                     setCurrentLocationId( lid );
+
+                    if ( getSpecifiedLocationID() != null
+                         && !getSpecifiedLocationID().isEmpty()
+                         && !getSpecifiedLocationID().equalsIgnoreCase( lid ) )
+                    {
+                        String message = "Location identifier " + lid + " found"
+                                         + " in the file "
+                                         + this.getAbsoluteFilename()
+                                         + " does not match what was specified"
+                                         + " in the configuration "
+                                         + getSpecifiedLocationID()
+                                         + ". Please remove the attribute with "
+                                         + getSpecifiedLocationID()
+                                         + " from the config or change it to "
+                                         + lid + ".";
+                        throw new ProjectConfigException( getDataSourceConfig(),
+                                                          message );
+                    }
+                }
+                else if ( getSpecifiedLocationID() != null &&
+                          !getSpecifiedLocationID().isEmpty() )
+                {
+                    setCurrentLocationId( getSpecifiedLocationID() );
                 }
                 else
                 {
                     String message = "Could not find location ID in file "
-                                     + this.getAbsoluteFilename();
-                    throw new IngestException( message );
+                                     + this.getAbsoluteFilename()
+									 + " nor was it specified in the project "
+									 + "configuration. Please specify the lid "
+									 + "in the source.";
+                    throw new ProjectConfigException( getDataSourceConfig(),
+													  message );
                 }
             }
             else
