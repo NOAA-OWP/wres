@@ -462,6 +462,15 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
         double leftAggregation = Collections.aggregate(leftValues,
                                                        aggFunction);
+
+        if (Double.compare( leftAggregation, Double.NaN ) == 0)
+        {
+            LOGGER.debug("The left value aggregated to NaN and could not form a pair from the dates '{}' to '{}'.",
+                         firstDate,
+                         date);
+            return null;
+        }
+
         Double[] rightAggregation = new Double[rightValues.size()];
 
         byte memberIndex = 0;
