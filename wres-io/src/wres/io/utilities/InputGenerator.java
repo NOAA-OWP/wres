@@ -225,7 +225,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                       .append(NEWLINE);
                 script.append("     AND PS.member = 'left'").append(NEWLINE);
                 script.append("     AND ").append(variablepositionClause).append(NEWLINE);
-                script.append("     AND O.observed_value IS NOT NULL").append(NEWLINE);
 
                 if (earliestDate != null)
                 {
@@ -299,7 +298,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
                         value = UnitConversions.convert(value, unitID, desiredMeasurementUnit);
                     }
 
-                    if (value >= minimumValue && value <= maximumValue)
+                    if (value == null || ( value >= minimumValue && value <= maximumValue ))
                     {
                         values.put( date, value );
                     }
@@ -341,6 +340,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
             if (futureVector != null)
             {
                 DataFactory factory = DefaultDataFactory.getInstance();
+                futureVector.removeIf( value -> value == null );
                 this.leftHandValues = factory.vectorOf(futureVector.toArray(new Double[futureVector.size()]));
             }
         }
