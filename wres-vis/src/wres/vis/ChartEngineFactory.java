@@ -32,9 +32,12 @@ import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
+import ohd.hseb.util.misc.HString;
 import wres.config.generated.PlotTypeSelection;
+import wres.datamodel.BoxPlotOutput;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.MapBiKey;
 import wres.datamodel.Metadata;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
@@ -120,6 +123,26 @@ public abstract class ChartEngineFactory
                                                 new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "rankHistogramTemplate.xml" ) );
+        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
+                                                PlotTypeSelection.LEAD_THRESHOLD,
+                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                                         BoxPlotOutput.class,
+                                                                         "boxPlotOfErrors.xml" ) );
+        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
+                                                PlotTypeSelection.THRESHOLD_LEAD,
+                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                                         BoxPlotOutput.class,
+                                                                         "boxPlotOfErrors.xml" ) );
+        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED,
+                                                PlotTypeSelection.LEAD_THRESHOLD,
+                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                                         BoxPlotOutput.class,
+                                                                         "boxPlotOfErrors.xml" ) );
+        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED,
+                                                PlotTypeSelection.THRESHOLD_LEAD,
+                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                                         BoxPlotOutput.class,
+                                                                         "boxPlotOfErrors.xml" ) );
     }
 
     /**
@@ -143,7 +166,473 @@ public abstract class ChartEngineFactory
         return results;
     }
 
+
     /**
+     * Constructs a reliability diagram chart.
+     * @param inputKeyInstance The key-instance for which to build the plot.  The key is one of potentially multiple keys within the input provided next.
+     * @param input The metric output to plot.
+     * @param factory The data factory from which arguments will be identified.
+     * @param usedPlotType Name of the resource to load which provides the default template for
+     *            chart construction. May be null to use default template identified in static table.
+     * @param templateName The name of the template to use based on the plot type.  
+     * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
+     *            overrides for the appearance of chart.
+     * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
+     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     */
+    private static WRESChartEngine
+            processReliabilityDiagram(
+                                       Object inputKeyInstance,
+                                       final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                       final DataFactory factory,
+                                       PlotTypeSelection usedPlotType,
+                                       String templateName,
+                                       String overrideParametersStr )
+                    throws ChartEngineException
+    {
+        final List<XYChartDataSource> dataSources = new ArrayList<>();
+        WRESArgumentProcessor arguments = null;
+        int[] diagonalDataSourceIndices = null;
+        String axisToSquareAgainstDomain = null;
+
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
+
+        //-----------------------------------------------------------------
+        //Reliability diagram for each lead time, thresholds in the legend.
+        //-----------------------------------------------------------------
+        if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
+        {
+
+            inputSlice = input.sliceByLead( (Integer) inputKeyInstance );
+
+            //Setup the default arguments.
+            final MetricOutputMetadata meta = inputSlice.getMetadata();
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+
+            //Legend title and lead time argument are specific to the plot.
+            final String legendTitle = "Threshold";
+            String legendUnitsText = "";
+            if ( input.hasQuantileThresholds() )
+            {
+                legendUnitsText += " [" + meta.getInputDimension() + "]";
+            }
+            else if ( input.keySetByThreshold().size() > 1 )
+            {
+                legendUnitsText += " [" + meta.getInputDimension() + "]";
+            }
+            arguments.addArgument( "legendTitle", legendTitle );
+            arguments.addArgument( "legendUnitsText", legendUnitsText );
+            arguments.addArgument( "diagramInstanceDescription", "at Lead Hour " + inputKeyInstance );
+            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+        }
+
+        //-----------------------------------------------------------------
+        //Reliability diagram for each threshold, lead times in the legend.
+        //-----------------------------------------------------------------
+        else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+        {
+            inputSlice =
+                    input.sliceByThreshold( (Threshold) inputKeyInstance );
+
+            //Setup the default arguments.
+            final MetricOutputMetadata meta = inputSlice.getMetadata();
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+
+            //Legend title and lead time argument are specific to the plot.
+            arguments.addArgument( "legendTitle", "Lead Time" );
+            arguments.addArgument( "legendUnitsText", " [hours]" );
+            arguments.addArgument( "diagramInstanceDescription",
+                                   "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
+                                                                 + " ("
+                                                                 + meta.getInputDimension()
+                                                                 + ")" );
+            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+        }
+
+        //This is an error, since there are only two allowable types of reliability diagrams.
+        else
+        {
+            throw new IllegalArgumentException( "Plot type " + usedPlotType
+                                                + " is invalid for a reliability diagram." );
+        }
+
+
+        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
+                                                                        inputSlice,
+                                                                        MetricDimension.FORECAST_PROBABILITY,
+                                                                        MetricDimension.OBSERVED_GIVEN_FORECAST_PROBABILITY,
+                                                                        "Forecast Probability",
+                                                                        "Observed Probability Given Forecast Probability" ) );
+        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 1,
+                                                                        inputSlice,
+                                                                        MetricDimension.FORECAST_PROBABILITY,
+                                                                        MetricDimension.SAMPLE_SIZE,
+                                                                        "Forecast Probability",
+                                                                        "Samples",
+                                                                        1 ) );
+        //Diagonal data source added so that it shows up in the legend.
+        dataSources.add( constructConnectedPointsDataSource( 2,
+                                                             0,
+                                                             new Point2D.Double( 0.0, 0.0 ),
+                                                             new Point2D.Double( 1.0, 1.0 ) ) );
+
+
+        //Build the ChartEngine instance.
+        return generateChartEngine( dataSources,
+                                    arguments,
+                                    templateName,
+                                    overrideParametersStr,
+                                    diagonalDataSourceIndices,
+                                    axisToSquareAgainstDomain );
+    }
+
+
+    /**
+     * Constructs a ROC diagram chart.
+     * @param inputKeyInstance The key-instance for which to build the plot.  The key is one of potentially multiple keys within the input provided next.
+     * @param input The metric output to plot.
+     * @param factory The data factory from which arguments will be identified.
+     * @param usedPlotType Name of the resource to load which provides the default template for
+     *            chart construction. May be null to use default template identified in static table.
+     * @param templateName The name of the template to use based on the plot type.  
+     * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
+     *            overrides for the appearance of chart.
+     * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
+     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     */
+    private static WRESChartEngine
+            processROCDiagram(
+                               Object inputKeyInstance,
+                               final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                               final DataFactory factory,
+                               PlotTypeSelection usedPlotType,
+                               String templateName,
+                               String overrideParametersStr )
+                    throws ChartEngineException
+    {
+        final List<XYChartDataSource> dataSources = new ArrayList<>();
+        WRESArgumentProcessor arguments = null;
+        int[] diagonalDataSourceIndices = null;
+        String axisToSquareAgainstDomain = null;
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
+
+        //-----------------------------------------------------------------
+        //ROC diagram for each lead time, thresholds in the legend.
+        //-----------------------------------------------------------------
+        if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
+        {
+            inputSlice =
+                    input.sliceByLead( (Integer) inputKeyInstance );
+
+            //Setup the default arguments.
+            final MetricOutputMetadata meta = inputSlice.getMetadata();
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+
+            //Legend title and lead time argument are specific to the plot.
+            final String legendTitle = "Threshold";
+            String legendUnitsText = "";
+            if ( input.hasQuantileThresholds() )
+            {
+                legendUnitsText += " [" + meta.getInputDimension() + "]";
+            }
+            else if ( input.keySetByThreshold().size() > 1 )
+            {
+                legendUnitsText += " [" + meta.getInputDimension() + "]";
+            }
+            arguments.addArgument( "legendTitle", legendTitle );
+            arguments.addArgument( "legendUnitsText", legendUnitsText );
+            arguments.addArgument( "diagramInstanceDescription",
+                                   "at Lead Hour " + inputSlice.getKey( 0 ).getFirstKey().toString() );
+            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+        }
+
+        //-----------------------------------------------------------------
+        //ROC diagram for each threshold, lead times in the legend.
+        //-----------------------------------------------------------------
+        else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+        {
+            inputSlice =
+                    input.sliceByThreshold( (Threshold) inputKeyInstance );
+
+            //Setup the default arguments.
+            final MetricOutputMetadata meta = inputSlice.getMetadata();
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+
+            //Legend title and lead time argument are specific to the plot.
+            arguments.addArgument( "legendTitle", "Lead Time" );
+            arguments.addArgument( "legendUnitsText", " [hours]" );
+            arguments.addArgument( "leadHour", inputSlice.getKey( 0 ).getFirstKey().toString() );
+            arguments.addArgument( "diagramInstanceDescription",
+                                   "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
+                                                                 + " ("
+                                                                 + meta.getInputDimension()
+                                                                 + ")" );
+            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+        }
+
+        //This is an error, since there are only two allowable types of reliability diagrams.
+        else
+        {
+            throw new IllegalArgumentException( "Plot type " + usedPlotType
+                                                + " is invalid for a ROC diagram." );
+        }
+
+        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
+                                                                        inputSlice,
+                                                                        MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
+                                                                        MetricDimension.PROBABILITY_OF_DETECTION,
+                                                                        "Probability of False Detection",
+                                                                        "Probability of Detection" ) );
+        //Diagonal data source added so that it shows up in the legend.
+        dataSources.add( constructConnectedPointsDataSource( 1,
+                                                             0,
+                                                             new Point2D.Double( 0.0, 0.0 ),
+                                                             new Point2D.Double( 1.0, 1.0 ) ) );
+
+
+        //Build the ChartEngine instance.
+        return generateChartEngine( dataSources,
+                                    arguments,
+                                    templateName,
+                                    overrideParametersStr,
+                                    diagonalDataSourceIndices,
+                                    axisToSquareAgainstDomain );
+    }
+
+
+    /**
+     * Constructs a QQ diagram chart.
+     * @param inputKeyInstance The key-instance for which to build the plot.  The key is one of potentially multiple keys within the input provided next.
+     * @param input The metric output to plot.
+     * @param factory The data factory from which arguments will be identified.
+     * @param usedPlotType Name of the resource to load which provides the default template for
+     *            chart construction. May be null to use default template identified in static table.
+     * @param templateName The name of the template to use based on the plot type.  
+     * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
+     *            overrides for the appearance of chart.
+     * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
+     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     */
+    private static WRESChartEngine
+            processQQDiagram(
+                              Object inputKeyInstance,
+                              final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                              final DataFactory factory,
+                              PlotTypeSelection usedPlotType,
+                              String templateName,
+                              String overrideParametersStr )
+                    throws ChartEngineException
+    {
+        final List<XYChartDataSource> dataSources = new ArrayList<>();
+        WRESArgumentProcessor arguments = null;
+        int[] diagonalDataSourceIndices = null;
+        String axisToSquareAgainstDomain = null;
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
+
+        //-----------------------------------------------------------------
+        //QQ diagram for each lead time, thresholds in the legend.
+        //-----------------------------------------------------------------
+        if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
+        {
+            inputSlice =
+                    input.sliceByLead( (Integer) inputKeyInstance );
+
+            //Setup the default arguments.
+            final MetricOutputMetadata meta = inputSlice.getMetadata();
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+
+            //Legend title and lead time argument are specific to the plot.
+            final String legendTitle = "Threshold";
+            String legendUnitsText = "";
+            if ( input.hasQuantileThresholds() )
+            {
+                legendUnitsText += " [" + meta.getInputDimension() + "]";
+            }
+            else if ( input.keySetByThreshold().size() > 1 )
+            {
+                legendUnitsText += " [" + meta.getInputDimension() + "]";
+            }
+            arguments.addArgument( "legendTitle", legendTitle );
+            arguments.addArgument( "legendUnitsText", legendUnitsText );
+            arguments.addArgument( "diagramInstanceDescription",
+                                   "at Lead Hour " + inputSlice.getKey( 0 ).getFirstKey().toString() );
+            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+        }
+
+        //-----------------------------------------------------------------
+        //QQ diagram for each threshold, lead times in the legend.
+        //-----------------------------------------------------------------
+        else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+        {
+            inputSlice =
+                    input.sliceByThreshold( (Threshold) inputKeyInstance );
+
+            //Setup the default arguments.
+            final MetricOutputMetadata meta = inputSlice.getMetadata();
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+
+            //Legend title and lead time argument are specific to the plot.
+            arguments.addArgument( "legendTitle", "Lead Time" );
+            arguments.addArgument( "legendUnitsText", " [hours]" );
+            arguments.addArgument( "leadHour", inputSlice.getKey( 0 ).getFirstKey().toString() );
+            arguments.addArgument( "diagramInstanceDescription",
+                                   "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
+                                                                 + " ("
+                                                                 + meta.getInputDimension()
+                                                                 + ")" );
+            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+        }
+
+        //This is an error, since there are only two allowable types of reliability diagrams.
+        else
+        {
+            throw new IllegalArgumentException( "Plot type " + usedPlotType
+                                                + " is invalid for a QQ diagram." );
+        }
+
+        final MultiVectorOutputDiagramXYChartDataSource dataSource =
+                new MultiVectorOutputDiagramXYChartDataSource( 0,
+                                                               inputSlice,
+                                                               MetricDimension.OBSERVED_QUANTILES,
+                                                               MetricDimension.PREDICTED_QUANTILES,
+                                                               "Observed @variableName@@inputUnitsText@",
+                                                               "Predicted @variableName@@inputUnitsText@" );
+        //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
+        //Also squaring the axes.
+        diagonalDataSourceIndices = new int[] { 1 };
+        axisToSquareAgainstDomain = ChartConstants.YAXIS_XML_STRINGS[ChartConstants.LEFT_YAXIS_INDEX];
+        dataSources.add( dataSource );
+
+        //Build the ChartEngine instance.
+        return generateChartEngine( dataSources,
+                                    arguments,
+                                    templateName,
+                                    overrideParametersStr,
+                                    diagonalDataSourceIndices,
+                                    axisToSquareAgainstDomain );
+    }
+
+
+    /**
+     * Constructs a rank histogram chart.
+     * @param inputKeyInstance The key-instance for which to build the plot.  The key is one of potentially multiple keys within the input provided next.
+     * @param input The metric output to plot.
+     * @param factory The data factory from which arguments will be identified.
+     * @param usedPlotType Name of the resource to load which provides the default template for
+     *            chart construction. May be null to use default template identified in static table.
+     * @param templateName The name of the template to use based on the plot type.  
+     * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
+     *            overrides for the appearance of chart.
+     * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
+     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     */
+    private static WRESChartEngine
+            processRankHistogram(
+                                  Object inputKeyInstance,
+                                  final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                  final DataFactory factory,
+                                  PlotTypeSelection usedPlotType,
+                                  String templateName,
+                                  String overrideParametersStr )
+                    throws ChartEngineException
+    {
+        final List<XYChartDataSource> dataSources = new ArrayList<>();
+        WRESArgumentProcessor arguments = null;
+        int[] diagonalDataSourceIndices = null;
+        String axisToSquareAgainstDomain = null;
+        final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
+
+        //-----------------------------------------------------------------
+        //Rank Histogram diagram for each lead time, thresholds in the legend.
+        //-----------------------------------------------------------------
+        if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
+        {
+            inputSlice =
+                    input.sliceByLead( (Integer) inputKeyInstance );
+
+            //Setup the default arguments.
+            final MetricOutputMetadata meta = inputSlice.getMetadata();
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+
+            //Legend title and lead time argument are specific to the plot.
+            final String legendTitle = "Threshold";
+            String legendUnitsText = "";
+            if ( input.hasQuantileThresholds() )
+            {
+                legendUnitsText += " [" + meta.getInputDimension() + "]";
+            }
+            else if ( input.keySetByThreshold().size() > 1 )
+            {
+                legendUnitsText += " [" + meta.getInputDimension() + "]";
+            }
+            arguments.addArgument( "legendTitle", legendTitle );
+            arguments.addArgument( "legendUnitsText", legendUnitsText );
+            arguments.addArgument( "diagramInstanceDescription",
+                                   "at Lead Hour " + inputSlice.getKey( 0 ).getFirstKey().toString() );
+            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+        }
+
+        //-----------------------------------------------------------------
+        //Rank histogram diagram for each threshold, lead times in the legend.
+        //-----------------------------------------------------------------
+        else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+        {
+            inputSlice =
+                    input.sliceByThreshold( (Threshold) inputKeyInstance );
+
+            //Setup the default arguments.
+            final MetricOutputMetadata meta = inputSlice.getMetadata();
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+
+            //Legend title and lead time argument are specific to the plot.
+            arguments.addArgument( "legendTitle", "Lead Time" );
+            arguments.addArgument( "legendUnitsText", " [hours]" );
+            arguments.addArgument( "leadHour", inputSlice.getKey( 0 ).getFirstKey().toString() );
+            arguments.addArgument( "diagramInstanceDescription",
+                                   "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
+                                                                 + " ("
+                                                                 + meta.getInputDimension()
+                                                                 + ")" );
+            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+        }
+
+        //This is an error, since there are only two allowable types of reliability diagrams.
+        else
+        {
+            throw new IllegalArgumentException( "Plot type " + usedPlotType
+                                                + " is invalid for a rank histogram." );
+        }
+
+        final MultiVectorOutputDiagramXYChartDataSource dataSource =
+                new MultiVectorOutputDiagramXYChartDataSource( 0,
+                                                               inputSlice,
+                                                               MetricDimension.RANK_ORDER,
+                                                               MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                               "Bin Separating Ranked Eensemble Members",
+                                                               "Observed Relative Frequency" )
+                {
+                    @Override
+                    protected
+                            MultiVectorOutputDiagramXYDataset
+                            instantiateXYDataset()
+                    {
+                        return new RankHistogramXYDataset( getInput(),
+                                                           getXConstant(),
+                                                           getYConstant() );
+                    }
+                };
+        dataSources.add( dataSource );
+
+        //Build the ChartEngine instance.
+        return generateChartEngine( dataSources,
+                                    arguments,
+                                    templateName,
+                                    overrideParametersStr,
+                                    diagonalDataSourceIndices,
+                                    axisToSquareAgainstDomain );
+    }
+
+    /**Calls the process methods as appropriate for the given plot type.
      * @param input The metric output to plot.
      * @param factory The data factory from which arguments will be identified.
      * @param userSpecifiedPlotType An optional plot type to generate, where multiple plot types are supported for the
@@ -164,8 +653,7 @@ public abstract class ChartEngineFactory
                                                final PlotTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
                                                final String overrideParametersStr )
-                    throws ChartEngineException,
-                    GenericXMLReadingHandlerException
+                    throws ChartEngineException
     {
         final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
 
@@ -190,349 +678,54 @@ public abstract class ChartEngineFactory
         //For each lead time, do the following....
         for ( final Object keyInstance : keySetValues )
         {
-            final List<XYChartDataSource> dataSources = new ArrayList<>();
-            WRESArgumentProcessor arguments = null;
-            int[] diagonalDataSourceIndices = null;
-            String axisToSquareAgainstDomain = null;
-
-            //=====================
-            //RELIABILITY DIAGRAM
-            //=====================
             if ( input.getMetadata().getMetricID() == MetricConstants.RELIABILITY_DIAGRAM )
             {
-                final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
 
-                //-----------------------------------------------------------------
-                //Reliability diagram for each lead time, thresholds in the legend.
-                //-----------------------------------------------------------------
-                if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
-                {
-
-                    inputSlice = input.sliceByLead( (Integer) keyInstance );
-
-                    //Setup the default arguments.
-                    final MetricOutputMetadata meta = inputSlice.getMetadata();
-                    arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
-
-                    //Legend title and lead time argument are specific to the plot.
-                    final String legendTitle = "Threshold";
-                    String legendUnitsText = "";
-                    if ( input.hasQuantileThresholds() )
-                    {
-                        legendUnitsText += " [" + meta.getInputDimension() + "]";
-                    }
-                    else if ( input.keySetByThreshold().size() > 1 )
-                    {
-                        legendUnitsText += " [" + meta.getInputDimension() + "]";
-                    }
-                    arguments.addArgument( "legendTitle", legendTitle );
-                    arguments.addArgument( "legendUnitsText", legendUnitsText );
-                    arguments.addArgument( "diagramInstanceDescription", "at Lead Hour " + keyInstance );
-                    arguments.addArgument( "plotTitleVariable", "Lead Times" );
-                }
-
-                //-----------------------------------------------------------------
-                //Reliability diagram for each treshold, lead times in the legend.
-                //-----------------------------------------------------------------
-                else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
-                {
-                    inputSlice =
-                            input.sliceByThreshold( (Threshold) keyInstance );
-
-                    //Setup the default arguments.
-                    final MetricOutputMetadata meta = inputSlice.getMetadata();
-                    arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
-
-                    //Legend title and lead time argument are specific to the plot.
-                    arguments.addArgument( "legendTitle", "Lead Time" );
-                    arguments.addArgument( "legendUnitsText", " [hours]" );
-                    arguments.addArgument( "diagramInstanceDescription",
-                                           "for Threshold " + ( (Threshold) keyInstance ).toString()
-                                                                         + " ("
-                                                                         + meta.getInputDimension()
-                                                                         + ")" );
-                    arguments.addArgument( "plotTitleVariable", "Thresholds" );
-                }
-
-                //This is an error, since there are only two allowable types of reliability diagrams.
-                else
-                {
-                    throw new IllegalArgumentException( "Plot type " + usedPlotType
-                                                        + " is invalid for a reliability diagram." );
-                }
-
-
-                dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
-                                                                                inputSlice,
-                                                                                MetricDimension.FORECAST_PROBABILITY,
-                                                                                MetricDimension.OBSERVED_GIVEN_FORECAST_PROBABILITY,
-                                                                                "Forecast Probability",
-                                                                                "Observed Probability Given Forecast Probability" ) );
-                dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 1,
-                                                                                inputSlice,
-                                                                                MetricDimension.FORECAST_PROBABILITY,
-                                                                                MetricDimension.SAMPLE_SIZE,
-                                                                                "Forecast Probability",
-                                                                                "Samples",
-                                                                                1 ) );
-                //Diagonal data source added so that it shows up in the legend.
-                dataSources.add( constructConnectedPointsDataSource( 2,
-                                                                     0,
-                                                                     new Point2D.Double( 0.0, 0.0 ),
-                                                                     new Point2D.Double( 1.0, 1.0 ) ) );
+                final ChartEngine engine =
+                        processReliabilityDiagram( keyInstance,
+                                                   input,
+                                                   factory,
+                                                   usedPlotType,
+                                                   templateName,
+                                                   overrideParametersStr );
+                results.put( keyInstance, engine );
             }
-
-            //=====================
-            //ROC DIAGRAM
-            //=====================
             else if ( input.getMetadata().getMetricID() == MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
             {
-                final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
 
-                //-----------------------------------------------------------------
-                //ROC diagram for each lead time, thresholds in the legend.
-                //-----------------------------------------------------------------
-                if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
-                {
-                    inputSlice =
-                            input.sliceByLead( (Integer) keyInstance );
-
-                    //Setup the default arguments.
-                    final MetricOutputMetadata meta = inputSlice.getMetadata();
-                    arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
-
-                    //Legend title and lead time argument are specific to the plot.
-                    final String legendTitle = "Threshold";
-                    String legendUnitsText = "";
-                    if ( input.hasQuantileThresholds() )
-                    {
-                        legendUnitsText += " [" + meta.getInputDimension() + "]";
-                    }
-                    else if ( input.keySetByThreshold().size() > 1 )
-                    {
-                        legendUnitsText += " [" + meta.getInputDimension() + "]";
-                    }
-                    arguments.addArgument( "legendTitle", legendTitle );
-                    arguments.addArgument( "legendUnitsText", legendUnitsText );
-                    arguments.addArgument( "diagramInstanceDescription",
-                                           "at Lead Hour " + inputSlice.getKey( 0 ).getFirstKey().toString() );
-                    arguments.addArgument( "plotTitleVariable", "Lead Times" );
-                }
-
-                //-----------------------------------------------------------------
-                //ROC diagram for each threshold, lead times in the legend.
-                //-----------------------------------------------------------------
-                else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
-                {
-                    inputSlice =
-                            input.sliceByThreshold( (Threshold) keyInstance );
-
-                    //Setup the default arguments.
-                    final MetricOutputMetadata meta = inputSlice.getMetadata();
-                    arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
-
-                    //Legend title and lead time argument are specific to the plot.
-                    arguments.addArgument( "legendTitle", "Lead Time" );
-                    arguments.addArgument( "legendUnitsText", " [hours]" );
-                    arguments.addArgument( "leadHour", inputSlice.getKey( 0 ).getFirstKey().toString() );
-                    arguments.addArgument( "diagramInstanceDescription",
-                                           "for Threshold " + ( (Threshold) keyInstance ).toString()
-                                                                         + " ("
-                                                                         + meta.getInputDimension()
-                                                                         + ")" );
-                    arguments.addArgument( "plotTitleVariable", "Thresholds" );
-                }
-
-                //This is an error, since there are only two allowable types of reliability diagrams.
-                else
-                {
-                    throw new IllegalArgumentException( "Plot type " + usedPlotType
-                                                        + " is invalid for a ROC diagram." );
-                }
-
-                dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
-                                                                                inputSlice,
-                                                                                MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
-                                                                                MetricDimension.PROBABILITY_OF_DETECTION,
-                                                                                "Probability of False Detection",
-                                                                                "Probability of Detection" ) );
-                //Diagonal data source added so that it shows up in the legend.
-                dataSources.add( constructConnectedPointsDataSource( 1,
-                                                                     0,
-                                                                     new Point2D.Double( 0.0, 0.0 ),
-                                                                     new Point2D.Double( 1.0, 1.0 ) ) );
+                final ChartEngine engine =
+                        processROCDiagram( keyInstance,
+                                           input,
+                                           factory,
+                                           usedPlotType,
+                                           templateName,
+                                           overrideParametersStr );
+                results.put( keyInstance, engine );
             }
-
-            //=====================
-            //QQ DIAGRAM
-            //=====================
-            else if(input.getMetadata().getMetricID() == MetricConstants.QUANTILE_QUANTILE_DIAGRAM)
+            else if ( input.getMetadata().getMetricID() == MetricConstants.QUANTILE_QUANTILE_DIAGRAM )
             {
-                final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
-                
-                //-----------------------------------------------------------------
-                //QQ diagram for each lead time, thresholds in the legend.
-                //-----------------------------------------------------------------
-                if(usedPlotType.equals(PlotTypeSelection.LEAD_THRESHOLD))
-                {
-                    inputSlice =
-                                                                                       input.sliceByLead((Integer)keyInstance);
 
-                    //Setup the default arguments.
-                    final MetricOutputMetadata meta = inputSlice.getMetadata();
-                    arguments = buildDefaultMetricOutputPlotArgumentsProcessor(factory, meta);
-
-                    //Legend title and lead time argument are specific to the plot.
-                    final String legendTitle = "Threshold";
-                    String legendUnitsText = "";
-                    if(input.hasQuantileThresholds())
-                    {
-                        legendUnitsText += " [" + meta.getInputDimension() + "]";
-                    }
-                    else if(input.keySetByThreshold().size() > 1)
-                    {
-                        legendUnitsText += " [" + meta.getInputDimension() + "]";
-                    }
-                    arguments.addArgument("legendTitle", legendTitle);
-                    arguments.addArgument("legendUnitsText", legendUnitsText);
-                    arguments.addArgument("diagramInstanceDescription",
-                                          "at Lead Hour " + inputSlice.getKey(0).getFirstKey().toString());
-                    arguments.addArgument("plotTitleVariable", "Lead Times");
-                }
-
-                //-----------------------------------------------------------------
-                //QQ diagram for each threshold, lead times in the legend.
-                //-----------------------------------------------------------------
-                else if(usedPlotType.equals(PlotTypeSelection.THRESHOLD_LEAD))
-                {
-                    inputSlice =
-                                                                                       input.sliceByThreshold((Threshold)keyInstance);
-
-                    //Setup the default arguments.
-                    final MetricOutputMetadata meta = inputSlice.getMetadata();
-                    arguments = buildDefaultMetricOutputPlotArgumentsProcessor(factory, meta);
-
-                    //Legend title and lead time argument are specific to the plot.
-                    arguments.addArgument("legendTitle", "Lead Time");
-                    arguments.addArgument("legendUnitsText", " [hours]");
-                    arguments.addArgument("leadHour", inputSlice.getKey(0).getFirstKey().toString());
-                    arguments.addArgument("diagramInstanceDescription",
-                                          "for Threshold " + ((Threshold)keyInstance).toString() + " ("
-                                              + meta.getInputDimension() + ")");
-                    arguments.addArgument("plotTitleVariable", "Thresholds");
-                }
-
-                //This is an error, since there are only two allowable types of reliability diagrams.
-                else
-                {
-                    throw new IllegalArgumentException( "Plot type " + usedPlotType
-                                                        + " is invalid for a QQ diagram." );
-                }
-                
-                final MultiVectorOutputDiagramXYChartDataSource dataSource =
-                                                                           new MultiVectorOutputDiagramXYChartDataSource(0,
-                                                                                                                         inputSlice,
-                                                                                                                         MetricDimension.OBSERVED_QUANTILES,
-                                                                                                                         MetricDimension.PREDICTED_QUANTILES,
-                                                                                                                         "Observed @variableName@@inputUnitsText@",
-                                                                                                                         "Predicted @variableName@@inputUnitsText@");
-                //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
-                //Also squaring the axes.
-                diagonalDataSourceIndices = new int[]{1};
-                axisToSquareAgainstDomain = ChartConstants.YAXIS_XML_STRINGS[ChartConstants.LEFT_YAXIS_INDEX];
-                dataSources.add(dataSource);
+                final ChartEngine engine =
+                        processQQDiagram( keyInstance,
+                                          input,
+                                          factory,
+                                          usedPlotType,
+                                          templateName,
+                                          overrideParametersStr );
+                results.put( keyInstance, engine );
             }
-            
-            //=====================
-            //RANK HISTOGRAM DIAGRAM
-            //=====================
             else if ( input.getMetadata().getMetricID() == MetricConstants.RANK_HISTOGRAM )
             {
-                final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
 
-                //-----------------------------------------------------------------
-                //Rank Histogram diagram for each lead time, thresholds in the legend.
-                //-----------------------------------------------------------------
-                if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
-                {
-                    inputSlice =
-                            input.sliceByLead( (Integer) keyInstance );
-
-                    //Setup the default arguments.
-                    final MetricOutputMetadata meta = inputSlice.getMetadata();
-                    arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
-
-                    //Legend title and lead time argument are specific to the plot.
-                    final String legendTitle = "Threshold";
-                    String legendUnitsText = "";
-                    if ( input.hasQuantileThresholds() )
-                    {
-                        legendUnitsText += " [" + meta.getInputDimension() + "]";
-                    }
-                    else if ( input.keySetByThreshold().size() > 1 )
-                    {
-                        legendUnitsText += " [" + meta.getInputDimension() + "]";
-                    }
-                    arguments.addArgument( "legendTitle", legendTitle );
-                    arguments.addArgument( "legendUnitsText", legendUnitsText );
-                    arguments.addArgument( "diagramInstanceDescription",
-                                           "at Lead Hour " + inputSlice.getKey( 0 ).getFirstKey().toString() );
-                    arguments.addArgument( "plotTitleVariable", "Lead Times" );
-                }
-
-                //-----------------------------------------------------------------
-                //Rank histogram diagram for each threshold, lead times in the legend.
-                //-----------------------------------------------------------------
-                else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
-                {
-                    inputSlice =
-                            input.sliceByThreshold( (Threshold) keyInstance );
-
-                    //Setup the default arguments.
-                    final MetricOutputMetadata meta = inputSlice.getMetadata();
-                    arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
-
-                    //Legend title and lead time argument are specific to the plot.
-                    arguments.addArgument( "legendTitle", "Lead Time" );
-                    arguments.addArgument( "legendUnitsText", " [hours]" );
-                    arguments.addArgument( "leadHour", inputSlice.getKey( 0 ).getFirstKey().toString() );
-                    arguments.addArgument( "diagramInstanceDescription",
-                                           "for Threshold " + ( (Threshold) keyInstance ).toString()
-                                                                         + " ("
-                                                                         + meta.getInputDimension()
-                                                                         + ")" );
-                    arguments.addArgument( "plotTitleVariable", "Thresholds" );
-                }
-
-                //This is an error, since there are only two allowable types of reliability diagrams.
-                else
-                {
-                    throw new IllegalArgumentException( "Plot type " + usedPlotType
-                                                        + " is invalid for a rank histogram." );
-                }
-
-                final MultiVectorOutputDiagramXYChartDataSource dataSource =
-                        new MultiVectorOutputDiagramXYChartDataSource( 0,
-                                                                       inputSlice,
-                                                                       MetricDimension.RANK_ORDER,
-                                                                       MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                       "Bin Separating Ranked Eensemble Members",
-                                                                       "Observed Relative Frequency" )
-                        {
-                            @Override
-                            protected
-                                    MultiVectorOutputDiagramXYDataset
-                                    instantiateXYDataset()
-                            {
-                                return new RankHistogramXYDataset( getInput(),
-                                                                   getXConstant(),
-                                                                   getYConstant() );
-                            }
-                        };
-                dataSources.add( dataSource );
+                final ChartEngine engine =
+                        processRankHistogram( keyInstance,
+                                              input,
+                                              factory,
+                                              usedPlotType,
+                                              templateName,
+                                              overrideParametersStr );
+                results.put( keyInstance, engine );
             }
-            
-           
 
             //===================================================
             //Unrecognized plot type in metrics.
@@ -542,18 +735,109 @@ public abstract class ChartEngineFactory
                 throw new IllegalArgumentException( "Unrecognized plot type of " + input.getMetadata().getMetricID()
                                                     + " specified in the metric information." );
             }
-
-            //Build the ChartEngine instance.
-            final ChartEngine engine = generateChartEngine( dataSources,
-                                                            arguments,
-                                                            templateName,
-                                                            overrideParametersStr,
-                                                            diagonalDataSourceIndices,
-                                                            axisToSquareAgainstDomain );
-            results.put( keyInstance, engine );
         }
         return results;
     }
+
+
+    private static WRESChartEngine
+            processBoxPlotErrorsDiagram(
+                                         MapBiKey<Integer, Threshold> inputKeyInstance,
+                                         final MetricOutputMapByLeadThreshold<BoxPlotOutput> input,
+                                         final DataFactory factory,
+                                         PlotTypeSelection usedPlotType,
+                                         String templateName,
+                                         String overrideParametersStr )
+                    throws ChartEngineException
+    {
+        final List<XYChartDataSource> dataSources = new ArrayList<>();
+        WRESArgumentProcessor arguments = null;
+        int[] diagonalDataSourceIndices = null;
+        String axisToSquareAgainstDomain = null;
+
+        if ( input.getMetadata().getMetricID() != MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED
+             && input.getMetadata().getMetricID() != MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST )
+        {
+            throw new IllegalArgumentException( "Unrecognized plot type of " + input.getMetadata().getMetricID()
+                                                + " specified in the metric information." );
+        }
+
+        BoxPlotOutput boxPlotData = input.get( inputKeyInstance );
+        final MetricOutputMetadata meta = boxPlotData.getMetadata();
+        arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+        arguments.addArgument( "diagramInstanceDescription",
+                               "at Lead Hour " + inputKeyInstance.getFirstKey()
+                                                             + " for "
+                                                             + inputKeyInstance.getSecondKey() );
+        arguments.addArgument( "probabilities", HString.buildStringFromArray( boxPlotData.getProbabilities().getDoubles(), ", " ) );
+        arguments.addArgument( "domainUnitsText", meta.getInputDimension().toString() );
+        arguments.addArgument( "rangeUnitsText", meta.getDimension().toString() );
+
+        //Add teh data source
+        dataSources.add( new BoxPlotDiagramXYChartDataSource( 0, boxPlotData ) );
+
+        //Build the ChartEngine instance.
+        return generateChartEngine( dataSources,
+                                    arguments,
+                                    templateName,
+                                    overrideParametersStr,
+                                    diagonalDataSourceIndices,
+                                    axisToSquareAgainstDomain );
+    }
+
+
+    public static ConcurrentMap<Object, ChartEngine>
+            buildBoxPlotChartEngine( final MetricOutputMapByLeadThreshold<BoxPlotOutput> input,
+                                     final DataFactory factory,
+                                     final PlotTypeSelection userSpecifiedPlotType,
+                                     final String userSpecifiedTemplateResourceName,
+                                     final String overrideParametersStr )
+                    throws ChartEngineException
+    {
+        final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
+
+        //Determine used plot type and template name.  Note that if no plot type information is provided for the metric id
+        //and plot type, then an illegal argument exception will be thrown.
+        PlotTypeSelection usedPlotType = PlotTypeSelection.LEAD_THRESHOLD; //Lead time first plot type is the default!!!
+        if ( userSpecifiedPlotType != null )
+        {
+            usedPlotType = userSpecifiedPlotType;
+        }
+        final String templateName =
+                getNonNullMultiVectorOutputPlotTypeInformation( input.getMetadata().getMetricID(),
+                                                                usedPlotType ).getDefaultTemplateName();
+
+        //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
+        Set<MapBiKey<Integer, Threshold>> keySetValues = input.keySet();
+
+        //For each lead time, do the following....
+        for ( final MapBiKey<Integer, Threshold> keyInstance : keySetValues )
+        {
+            if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED
+                 || input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST )
+            {
+
+                final ChartEngine engine = processBoxPlotErrorsDiagram( keyInstance,
+                                                                        input,
+                                                                        factory,
+                                                                        usedPlotType,
+                                                                        templateName,
+                                                                        overrideParametersStr );
+                results.put( keyInstance, engine );
+            }
+
+            //===================================================
+            //Unrecognized plot type in metrics.
+            //===================================================
+            else
+            {
+                throw new IllegalArgumentException( "Unrecognized plot type of " + input.getMetadata().getMetricID()
+                                                    + " specified in the metric information." );
+            }
+        }
+        return results;
+    }
+
 
     /**
      * @param input The metric output to plot.

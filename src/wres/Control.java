@@ -4,12 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,9 +31,9 @@ import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import wres.config.ProjectConfigException;
 import wres.config.Validation;
-import wres.config.generated.Feature;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
+import wres.config.generated.Feature;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.ProjectConfig;
@@ -712,7 +708,6 @@ public class Control implements Function<String[], Integer>
             }
         }
         catch ( ChartEngineException
-                | GenericXMLReadingHandlerException
                 | ChartWritingException
                 | ProjectConfigException e)
         {
