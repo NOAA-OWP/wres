@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -322,9 +323,25 @@ public abstract class BasicSource
         {
             try
             {
-                ingest = !dataExists(filePath, contents);
+                String contentHash = null;
+
+                if (contents != null)
+                {
+                    contentHash = Strings.getMD5Checksum( contents );
+                }
+                else
+                {
+                    contentHash = this.getHash();
+                }
+
+                ingest = !dataExists(filePath, contentHash);
+
+                if (!ingest && !this.projectDetails.hasSource( contentHash, this.getDataSourceConfig() ))
+                {
+                    this.projectDetails.addSource( contentHash, this.getDataSourceConfig() );
+                }
             }
-            catch (SQLException e)
+            catch (SQLException | IOException e)
             {
                 ingest = false;
             }
@@ -386,7 +403,8 @@ public abstract class BasicSource
      */
     protected void setHash(byte[] contents)
     {
-        WRESCallable<String> hasher = new WRESCallable<String>() {
+        WRESCallable<String> hasher = new WRESCallable<String>()
+        {
             @Override
             protected String execute() throws Exception
             {
@@ -444,12 +462,12 @@ public abstract class BasicSource
      * Determines if the hash of the passed in contents are contained within the
      * database
      * @param sourceName The name of the file to hash
-     * @param contents The contents of the file to hash
+     * @param contentHash The hash of the contents to look for
      * @return Whether or not the indicated data lies within the database
      * @throws SQLException Thrown if an error occurs while communicating with
      * the database
      */
-    private boolean dataExists(String sourceName, byte[] contents)
+    private boolean dataExists(String sourceName, String contentHash)
             throws SQLException
     {
         StringBuilder script = new StringBuilder();
@@ -477,10 +495,10 @@ public abstract class BasicSource
         script.append("     INNER JOIN wres.Variable V").append(NEWLINE);
         script.append("         ON VP.variable_id = V.variable_id").append(NEWLINE);
 
-        if (contents != null)
+        if (contentHash != null)
         {
             script.append("     WHERE S.hash = '")
-                  .append( Strings.getMD5Checksum( contents ) )
+                  .append( contentHash )
                   .append("'")
                   .append(NEWLINE);
         }
