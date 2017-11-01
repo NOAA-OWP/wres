@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.TransformerException;
 
@@ -82,6 +83,25 @@ public final class Operations {
         Database.addNewIndexes();
         Executor.complete();
         Database.shutdown();
+    }
+
+    public static void shutdownWithAbandon( long timeOut, TimeUnit timeUnit )
+    {
+        LOGGER.info( "Forcefully shutting down the IO module..." );
+        Database.addNewIndexes();
+        List<Runnable> executorTasks =
+                Executor.shutdownWithAbandon( timeOut / 2, timeUnit );
+        List<Runnable> databaseTasks =
+                Database.shutdownWithAbandon( timeOut / 2, timeUnit );
+
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "IO module was forcefully shut down. "
+                         + "Abandoned around {} executor tasks and "
+                         + "around {} database tasks.",
+                         executorTasks.size(),
+                         databaseTasks.size() );
+        }
     }
 
     public static boolean testConnection()

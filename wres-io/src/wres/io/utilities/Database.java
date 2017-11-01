@@ -9,8 +9,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
@@ -399,6 +401,41 @@ public final class Database {
             CONNECTION_POOL.close();
 		}
 	}
+
+
+    /**
+     * Shuts down after all tasks have completed, or after timeout is reached,
+     * whichever comes first. Tasks may be interrupted and abandoned.
+     * @param timeOut the desired maximum wait, measured in timeUnit
+     * @param timeUnit the unit for timeOut
+     * @return the list of abandoned tasks
+     */
+
+    public static List<Runnable> shutdownWithAbandon( long timeOut,
+                                                      TimeUnit timeUnit )
+    {
+        List<Runnable> abandoned = new ArrayList<>();
+
+        SQL_TASKS.shutdown();
+        try
+        {
+            SQL_TASKS.awaitTermination( timeOut, timeUnit );
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Database shutdownWithAbandon interrupted." );
+            List<Runnable> abandonedDbTasks = SQL_TASKS.shutdownNow();
+            abandoned.addAll( abandonedDbTasks );
+            CONNECTION_POOL.close();
+            Thread.currentThread().interrupt();
+        }
+
+        List<Runnable> abandonedMore = SQL_TASKS.shutdownNow();
+        abandoned.addAll( abandonedMore );
+        CONNECTION_POOL.close();
+
+        return abandoned;
+    }
 
     /**
      * Checks out a database connection

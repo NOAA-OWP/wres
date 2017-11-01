@@ -1,11 +1,17 @@
 package wres.io.concurrency;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.io.config.SystemSettings;
 import wres.util.Internal;
@@ -22,6 +28,8 @@ public final class Executor {
 	private static ThreadPoolExecutor SERVICE = createService();
 
 	private static ExecutorService HIGH_PRIORITY_TASKS = createHighPriorityService();
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( Executor.class );
 
     private Executor()
     {
@@ -112,4 +120,54 @@ public final class Executor {
 			while (!HIGH_PRIORITY_TASKS.isTerminated());
 		}
 	}
+
+
+    /**
+     * Shuts down the executors using a timeout. The caller is giving a holistic
+     * timeout.
+     * @param timeOut the desired maximum wait, measured in timeUnit
+     * @param timeUnit the unit of the maximum wait
+     * @return the list of abandoned tasks as a result of forced shutdown
+     */
+
+    public static List<Runnable> shutdownWithAbandon( long timeOut,
+                                                      TimeUnit timeUnit )
+    {
+        long halfTheTimeout = timeOut / 2;
+        List<Runnable> abandonedTasks = new ArrayList<>();
+
+        SERVICE.shutdown();
+        try
+        {
+            SERVICE.awaitTermination( halfTheTimeout, timeUnit );
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Executor 1 shutdown interrupted." );
+            List<Runnable> abandoned = SERVICE.shutdownNow();
+            abandonedTasks.addAll( abandoned );
+            Thread.currentThread().interrupt();
+        }
+
+        List<Runnable> abandonedOne = SERVICE.shutdownNow();
+        abandonedTasks.addAll( abandonedOne );
+
+        HIGH_PRIORITY_TASKS.shutdown();
+        try
+        {
+            HIGH_PRIORITY_TASKS.awaitTermination( halfTheTimeout, timeUnit );
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Executor 2 shutdown interrupted." );
+            List<Runnable> abandoned = HIGH_PRIORITY_TASKS.shutdownNow();
+            abandonedTasks.addAll( abandoned );
+            Thread.currentThread().interrupt();
+        }
+
+        List<Runnable> abandonedTwo = HIGH_PRIORITY_TASKS.shutdownNow();
+        abandonedTasks.addAll( abandonedTwo );
+
+        return abandonedTasks;
+    }
 }
