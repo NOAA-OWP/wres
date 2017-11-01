@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -393,6 +394,50 @@ public interface DataFactory
     }
 
     /**
+     * Constructs a {@link TimeWindow} that comprises the intersection of two timelines, namely the UTC timeline and
+     * forecast lead time. Each timeline is partitioned within the input parameters, and a {@link TimeWindow} forms
+     * the intersection of each partition, i.e. contains elements that are common to each partition.  
+     * 
+     * @param earliestTime the earliest time
+     * @param latestTime the latest time
+     * @param validTime is true if the earliestTime and latestTime are in valid time, false for issue time
+     * @param earliestLeadSeconds the earliest lead time in seconds
+     * @param latestLeadSeconds the latest lead time in seconds
+     * @return a time window
+     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime or the 
+     *            latestLeadTime is before (i.e. smaller than) the earliestLeadTime.  
+     */
+
+    default TimeWindow ofTimeWindow( Instant earliestTime,
+                                     Instant latestTime,
+                                     boolean validTime,
+                                     int earliestLeadSeconds,
+                                     int latestLeadSeconds )
+    {
+        return TimeWindow.of( earliestTime, latestTime, validTime, earliestLeadSeconds, latestLeadSeconds );
+    }
+
+    /**
+     * <p>Constructs a {@link TimeWindow} that comprises the intersection of two timelines, namely the UTC timeline and
+     * forecast lead time. Here, the forecast lead time is zero.</p>
+     * 
+     * <p>Also see {@link #ofTimeWindow(Instant, Instant, boolean, int, int)}.</p>
+     * 
+     * @param earliestTime the earliest time
+     * @param latestTime the latest time
+     * @param validTime is true if the earliestTime and latestTime are in valid time, false for issue time
+     * @return a time window
+     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
+     */
+
+    default TimeWindow ofTimeWindow( Instant earliestTime,
+                                     Instant latestTime,
+                                     boolean validTime )
+    {
+        return ofTimeWindow( earliestTime, latestTime, validTime, 0, 0 );
+    }
+
+    /**
      * Returns a {@link MetadataFactory} for building {@link Metadata}.
      * 
      * @return an instance of {@link MetadataFactory}
@@ -660,10 +705,10 @@ public interface DataFactory
      */
 
     BoxPlotOutput ofBoxPlotOutput( List<PairOfDoubleAndVectorOfDoubles> output,
-                                  VectorOfDoubles probabilities,
-                                  MetricOutputMetadata meta,
-                                  MetricDimension domainAxisDimension,
-                                  MetricDimension rangeAxisDimension );
+                                   VectorOfDoubles probabilities,
+                                   MetricOutputMetadata meta,
+                                   MetricDimension domainAxisDimension,
+                                   MetricDimension rangeAxisDimension );
 
     /**
      * Returns a {@link MapKey} to map a {@link MetricOutput} by an elementary key.
