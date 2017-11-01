@@ -250,7 +250,7 @@ public class Control implements Function<String[], Integer>
         if(LOGGER.isInfoEnabled())
         {
             // This will NOT work if we are using any other feature format
-            LOGGER.info( "Processing feature '{}'", feature.getLid() );
+            LOGGER.info( "Processing feature '{}'", feature.getLocationId() );
         }
 
         // Sink for the results: the results are added incrementally to an immutable store via a builder
@@ -355,7 +355,7 @@ public class Control implements Function<String[], Integer>
                                           DestinationType.GRAPHIC ) )
         {
             LOGGER.debug( "Beginning to build charts for feature {}...",
-                          feature.getLid() );
+                          feature.getLocationId() );
 
             processCachedCharts( feature,
                                  projectConfigPlus,
@@ -364,7 +364,7 @@ public class Control implements Function<String[], Integer>
                                  MetricOutputGroup.VECTOR );
 
             LOGGER.debug( "Finished building charts for feature {}.",
-                          feature.getLid() );
+                          feature.getLocationId() );
         }
 
         //Generate numerical output
@@ -372,7 +372,7 @@ public class Control implements Function<String[], Integer>
                                           DestinationType.NUMERIC ) )
         {
             LOGGER.debug( "Beginning to write numeric output for feature {}...",
-                          feature.getLid() );
+                          feature.getLocationId() );
 
             try
             {
@@ -397,12 +397,12 @@ public class Control implements Function<String[], Integer>
             }
 
             LOGGER.debug( "Finished writing numeric output for feature {}.",
-                          feature.getLid() );
+                          feature.getLocationId() );
         }
 
         if ( LOGGER.isInfoEnabled() )
         {
-            LOGGER.info( "Completed processing of feature '{}'.", feature.getLid() );
+            LOGGER.info( "Completed processing of feature '{}'.", feature.getLocationId() );
         }
     }
 

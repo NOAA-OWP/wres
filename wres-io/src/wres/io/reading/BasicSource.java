@@ -3,10 +3,7 @@ package wres.io.reading;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -232,9 +229,9 @@ public abstract class BasicSource
         {
             DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, this.filename);
 
-            if (source != null && source.getLocation() != null && !source.getLocation().isEmpty())
+            if (source != null && source.getLocationId() != null && !source.getLocationId().isEmpty())
             {
-                locationID = source.getLocation();
+                locationID = source.getLocationId();
             }
         }
 

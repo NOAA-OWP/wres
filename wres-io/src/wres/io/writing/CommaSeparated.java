@@ -90,7 +90,7 @@ public class CommaSeparated
                 File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( d );
 
                 Path outputPath = Paths.get( outputDirectory.toString(),
-                                             feature.getLid()
+                                             feature.getLocationId()
                                              + ".csv" );
 
                 try ( BufferedWriter w = Files.newBufferedWriter( outputPath,

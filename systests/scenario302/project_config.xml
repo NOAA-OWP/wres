@@ -36,7 +36,7 @@
 
     <pair label="Pairs by location and lead time"> 
         <unit>MM</unit>
-        <feature lid="LGNN5" />
+        <feature locationId="LGNN5" />
         <values minimum="0.00001"/><!-- I think this results in only positive values for both obs and fcst-->
         <grouping>feature,lead_time</grouping>
         <desiredTimeAggregation>
