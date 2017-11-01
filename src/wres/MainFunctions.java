@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -106,13 +107,21 @@ final class MainFunctions
 	// Mapping of String names to corresponding methods
 	private static final Map<String, Function<String[], Integer>> FUNCTIONS = createMap();
 
-	public static void shutdown()
+    static void shutdown()
 	{
 	    ProgressMonitor.deactivate();
 	    LOGGER.info("");
 		LOGGER.info("Shutting down the application...");
 		wres.io.Operations.shutdown();
 	}
+
+    static void shutdownWithAbandon( long timeOut, TimeUnit timeUnit )
+    {
+        ProgressMonitor.deactivate();
+        LOGGER.info("");
+        LOGGER.info( "Forcefully shutting down the application (you may see some errors)..." );
+        wres.io.Operations.shutdownWithAbandon( timeOut, timeUnit );
+    }
 
 	/**
 	 * Determines if there is a method for the requested operation

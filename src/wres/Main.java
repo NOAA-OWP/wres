@@ -6,6 +6,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -58,8 +60,17 @@ public class Main {
 
         FormattedStopwatch watch = new FormattedStopwatch();
 
+        final AtomicInteger exitCode = new AtomicInteger( MainFunctions.FAILURE );
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            MainFunctions.shutdown();
+            if ( exitCode.get() == MainFunctions.SUCCESS )
+            {
+                MainFunctions.shutdown();
+            }
+            else
+            {
+                MainFunctions.shutdownWithAbandon( 6, TimeUnit.SECONDS );
+            }
             LOGGER.info("The function '{}' took {}", operation, watch.getFormattedDuration());
         }));
 
@@ -79,11 +90,9 @@ public class Main {
         long startTime = System.currentTimeMillis();
         long endTime;
 
-        Integer exitCode = null;
-
         try
         {
-            exitCode = MainFunctions.call( operation, cutArgs );
+            exitCode.set( MainFunctions.call( operation, cutArgs ) );
         }
         catch ( Exception e )
         {
@@ -96,25 +105,20 @@ public class Main {
                                      true );
         }
 
-        if (exitCode == null)
-        {
-            exitCode = MainFunctions.FAILURE;
-        }
-
         endTime = System.currentTimeMillis();
         watch.stop();
 
         Operations.logExecution( args,
                                  Main.sqlDateFromMillis( startTime ),
                                  Main.sqlDateFromMillis( endTime ),
-                                 exitCode != 0 );
+                                 exitCode.get() != MainFunctions.SUCCESS );
 
         System.out.println( "Log messages have been written to the file "
                             + System.getProperty("user.home")
                             + "/wres_logs/wres.log (unless otherwise configured"
                             + " in lib/conf/logback.xml)." );
 
-		System.exit(exitCode);
+        System.exit( exitCode.get() );
 	}
 
     public static String getVersion()
