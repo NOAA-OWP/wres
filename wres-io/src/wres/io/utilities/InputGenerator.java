@@ -293,7 +293,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>> {
 
                     int unitID = Database.getValue( resultSet, "measurementunit_id" );
 
-                    if (unitID != desiredMeasurementUnitID)
+                    if ( unitID != desiredMeasurementUnitID
+                         && value != null )
                     {
                         value = UnitConversions.convert(value, unitID, desiredMeasurementUnit);
                     }

@@ -118,16 +118,20 @@ public class DatacardSource extends BasicSource
             //First non-comment, header line.
             if (line != null)
             {
+                boolean useSpecifiedId = false;
+
                 setTimeInterval(line.substring(29, 31));
                 if ( line.length() > 45 )
                 {
                     String locationId = line.substring( 34, 45 );
-                    // Currently using only the first five chars
-                    String lid = locationId.substring( 0, 5 );
+                    // Currently using only the first five chars, trimmed
+                    String lid = locationId.substring( 0, 5 )
+                                           .trim();
                     setCurrentLocationId( lid );
 
                     if ( getSpecifiedLocationID() != null
                          && !getSpecifiedLocationID().isEmpty()
+                         && !lid.isEmpty()
                          && !getSpecifiedLocationID().equalsIgnoreCase( lid ) )
                     {
                         String message = "Location identifier " + lid + " found"
@@ -143,13 +147,27 @@ public class DatacardSource extends BasicSource
                         throw new ProjectConfigException( getDataSourceConfig(),
                                                           message );
                     }
+                    else
+                    {
+                        // There was an empty "timeseries id" in the file, use
+                        // the config.
+                        useSpecifiedId = true;
+                    }
                 }
-                else if ( getSpecifiedLocationID() != null &&
-                          !getSpecifiedLocationID().isEmpty() )
+                else
+                {
+                    // There was no "timeseries id" in the file, use the config.
+                    useSpecifiedId = true;
+                }
+
+                if ( getSpecifiedLocationID() != null
+                     && !getSpecifiedLocationID().isEmpty()
+                     && useSpecifiedId )
                 {
                     setCurrentLocationId( getSpecifiedLocationID() );
                 }
-                else
+                else if ( getCurrentLocationId() == null
+                          || getCurrentLocationId().isEmpty() )
                 {
                     String message = "Could not find location ID in file "
                                      + this.getAbsoluteFilename()
