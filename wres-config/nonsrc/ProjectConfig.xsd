@@ -49,7 +49,7 @@
             <xs:element name="alias" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
-        <xs:attribute name="lid" type="xs:string" />
+        <xs:attribute name="locationId" type="xs:string" />
         <xs:attribute name="comid" type="xs:long" />
         <xs:attribute name="gage_id" type="xs:string" />
         <xs:attribute name="huc" type="xs:string" />
@@ -87,7 +87,7 @@
                             <!-- Can we remove unit below? Shouldn't the unit of
                                  the variable suffice? -Jesse -->
                             <xs:attribute name="unit" type="xs:string" default="" />
-                            <xs:attribute name="location" type="xs:string" default="" />
+                            <xs:attribute name="locationId" type="xs:string" default="" />
                             <xs:attribute name="zoneOffset" type="xs:string" />
                             <!-- missingValue may have multiple comma delimited values like "-999, -996"-->
                             <xs:attribute name="missingValue" type="xs:string" default="-999.0" />

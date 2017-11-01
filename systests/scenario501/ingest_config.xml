@@ -6,19 +6,19 @@
             <type>observations</type>
             <source>../smalldata/DRRC2QINE_FAKE_19850430.xml</source>
             <variable>QINE</variable>
-            <features><location lid="DRRC2" /></features> 
+            <features><location locationId="DRRC2" /></features> 
         </left>
         <right>
             <type>observations</type>
             <source>../data/DOSC1QME.xml</source>
             <variable>QME</variable>
-            <features><location lid="DOSC1" /></features>
+            <features><location locationId="DOSC1" /></features>
         </right>
     </inputs>
 
     <pair>
         <unit>CMS</unit>
-        <feature lid="DRRC2" />
+        <feature locationId="DRRC2" />
         <desiredTimeAggregation>
             <function>avg</function>
             <period>1</period>

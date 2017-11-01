@@ -30,7 +30,7 @@
 
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
-        <feature lid="LGNN5" />
+        <feature locationId="LGNN5" />
         <grouping>feature,lead_time</grouping>       
         <desiredTimeAggregation>
             <function>avg</function>

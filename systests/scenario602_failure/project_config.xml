@@ -15,7 +15,7 @@
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>CMS</unit>
-        <feature lid="TLPT2" />
+        <feature locationId="TLPT2" />
         <leadHours minimum="1" maximum="24" />
         <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
         <desiredTimeAggregation>

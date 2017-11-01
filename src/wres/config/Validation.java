@@ -451,7 +451,7 @@ public class Validation
                                     + "<alias>{}ONE</alias><alias>{}TWO"
                                     + "</alias></feature>.";
 
-        String name = featureConfig.getLid();
+        String name = featureConfig.getLocationId();
         List<String> aliases = featureConfig.getAlias();
 
         if ( name.length() > 0 )

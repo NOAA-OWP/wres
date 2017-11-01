@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.MonthDay;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -79,10 +78,10 @@ public class ConfigHelper
         {
             // build a sql string of feature_ids, using cache to populate as needed
             for ( Feature feature : Collections.where(config.getPair().getFeature(), feature -> {
-                return feature.getLid() != null && !feature.getLid().isEmpty();
+                return feature.getLocationId() != null && !feature.getLocationId().isEmpty();
             } ) )
             {
-                Integer i = Features.getFeatureID( feature.getLid(),
+                Integer i = Features.getFeatureID( feature.getLocationId(),
                                                    feature.getName() );
                 result.add(Integer.toString(i));
             }
@@ -194,14 +193,14 @@ public class ConfigHelper
     {
         StringBuilder clause = new StringBuilder();
 
-        if ( feature.getLid() != null )
+        if ( feature.getLocationId() != null )
         {
             try
             {
                 // TODO: This only works when a) a location is specified and b) an lid is specified
                 // TODO: This needs to work with all other identifiers
                 Integer variablePositionId
-                        = Features.getVariablePositionID( feature.getLid(),
+                        = Features.getVariablePositionID( feature.getLocationId(),
                                                           feature.getName(),
                                                           variableId );
 
@@ -605,12 +604,12 @@ public class ConfigHelper
 
         if ( feature != null )
         {
-            if ( feature.getLid() != null
-                 && !feature.getLid()
+            if ( feature.getLocationId() != null
+                 && !feature.getLocationId()
                             .trim()
                             .isEmpty() )
             {
-                description = feature.getLid();
+                description = feature.getLocationId();
             }
             else if ( feature.getHuc() != null
                       && !feature.getHuc()

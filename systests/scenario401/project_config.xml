@@ -6,10 +6,10 @@
     <inputs>
         <left label="Observations">
             <type>observations</type>
-            <source format="datacard" zoneOffset="CST" unit="CFS" location="GLOO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" unit="CFS" location="ANTO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" unit="CFS" location="ARCT2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" unit="CFS" location="BLUO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="GLOO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="ANTO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="ARCT2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="BLUO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
 
             <existingTimeAggregation>
@@ -34,10 +34,10 @@
 
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
-        <feature lid="GLOO2" />
-        <feature lid="ANTO2" />
-        <feature lid="ARCT2" />
-        <feature lid="BLUO2" />
+        <feature locationId="GLOO2" />
+        <feature locationId="ANTO2" />
+        <feature locationId="ARCT2" />
+        <feature locationId="BLUO2" />
         <leadHours minimum="1" maximum="24" />
         <grouping>feature,lead_time</grouping>       
         <desiredTimeAggregation>

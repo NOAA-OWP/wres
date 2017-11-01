@@ -19,7 +19,7 @@
 
     <pair label="Pairs by location and lead time">
         <unit>CMS</unit>
-        <feature lid="DRRC2" />
+        <feature locationId="DRRC2" />
         <leadHours minimum="1" maximum="24" />
         <grouping>feature,lead_time</grouping>
         <desiredTimeAggregation>
