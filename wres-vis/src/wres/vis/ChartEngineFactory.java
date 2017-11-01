@@ -645,7 +645,6 @@ public abstract class ChartEngineFactory
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
      */
     public static ConcurrentMap<Object, ChartEngine>
             buildMultiVectorOutputChartEngine( final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
