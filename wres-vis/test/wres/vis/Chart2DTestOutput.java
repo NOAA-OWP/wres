@@ -1152,7 +1152,7 @@ public class Chart2DTestOutput extends TestCase
 
             //Metric output metadata
             final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
-                                                                             metaFactory.getDimension(),
+                                                                             metaFactory.getDimension( "INCH" ),
                                                                              metaFactory.getDimension( "INCH" ),
                                                                              MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED,
                                                                              MetricConstants.MAIN,
@@ -1224,7 +1224,7 @@ public class Chart2DTestOutput extends TestCase
 
             //Metric output metadata
             final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
-                                                                             metaFactory.getDimension(),
+                                                                             metaFactory.getDimension( "INCH" ),
                                                                              metaFactory.getDimension( "INCH" ),
                                                                              MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
                                                                              MetricConstants.MAIN,
