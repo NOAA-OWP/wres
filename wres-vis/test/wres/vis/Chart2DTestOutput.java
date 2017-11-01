@@ -429,7 +429,7 @@ public class Chart2DTestOutput extends TestCase
 
     public void test10QQDiagramByThreshold()
     {
-        final String scenarioName = "test8";
+        final String scenarioName = "test10";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
         try
@@ -574,6 +574,128 @@ public class Chart2DTestOutput extends TestCase
         }
     }
 
+
+    public void test13BoxPlotObsByLeadtime()
+    {
+        final String scenarioName = "test13";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+
+        try
+        {
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        }
+        catch ( final IOException e )
+        {
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
+        }
+
+        final MetricOutputMapByLeadThreshold<BoxPlotOutput> results = getBoxPlotErrorsByObservedAndLeadThreshold();
+
+        try
+        {
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
+
+            //Call the factory.
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
+                                                                                                   factory,
+                                                                                                   PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                   null,
+                                                                                                   null );
+
+            //Generate the output file.
+            for ( final Object key : engineMap.keySet() )
+            {
+                MapBiKey<Integer, Threshold> biKey = (MapBiKey<Integer, Threshold>) key;
+
+                int lead = biKey.getFirstKey();
+                Threshold thresh = biKey.getSecondKey();
+
+                String thresholdString = ( thresh.getThreshold() ).toString();
+                if ( Double.isInfinite( thresh.getThreshold() ) )
+                {
+                    thresholdString = "alldata";
+                }
+
+
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
+                                                              + "h."
+                                                              + thresholdString + "."
+                                                              +outputImageFileSuffix ),
+                                                    engineMap.get( key ).buildChart(),
+                                                    800,
+                                                    600 );
+
+            }
+        }
+        catch ( final Throwable t )
+        {
+            t.printStackTrace();
+            fail( "Unexpected exception: " + t.getMessage() );
+        }
+    }
+
+    public void test14BoxPlotObsByLeadtime()
+    {
+        final String scenarioName = "test14";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+
+        try
+        {
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        }
+        catch ( final IOException e )
+        {
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
+        }
+
+        final MetricOutputMapByLeadThreshold<BoxPlotOutput> results = getBoxPlotErrorsByForecastAndLeadThreshold();
+
+        try
+        {
+            //Get an implementation of the factory to use for testing.
+            final DataFactory factory = DefaultDataFactory.getInstance();
+
+            //Call the factory.
+            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
+                                                                                                   factory,
+                                                                                                   PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                   null,
+                                                                                                   null );
+
+            //Generate the output file.
+            for ( final Object key : engineMap.keySet() )
+            {
+                MapBiKey<Integer, Threshold> biKey = (MapBiKey<Integer, Threshold>) key;
+
+                int lead = biKey.getFirstKey();
+                Threshold thresh = biKey.getSecondKey();
+
+                String thresholdString = ( thresh.getThreshold() ).toString();
+                if ( Double.isInfinite( thresh.getThreshold() ) )
+                {
+                    thresholdString = "alldata";
+                }
+
+
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
+                                                              + "h."
+                                                              + thresholdString + "."
+                                                              +outputImageFileSuffix ),
+                                                    engineMap.get( key ).buildChart(),
+                                                    800,
+                                                    600 );
+
+            }
+        }
+        catch ( final Throwable t )
+        {
+            t.printStackTrace();
+            fail( "Unexpected exception: " + t.getMessage() );
+        }
+    }
+    
+    
     /**
      * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
      * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
