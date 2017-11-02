@@ -30,7 +30,6 @@ import ohd.hseb.charter.datasource.instances.DataSetXYChartDataSource;
 import ohd.hseb.charter.datasource.instances.NumericalXYChartDataSource;
 import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
-import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
 import ohd.hseb.util.misc.HString;
 import wres.config.generated.PlotTypeSelection;
@@ -860,7 +859,6 @@ public abstract class ChartEngineFactory
      *            overrides for the appearance of chart.
      * @return a map of {@link ChartEngine} containing the plots
      * @throws ChartEngineException if the ChartEngine fails to construct
-     * @throws GenericXMLReadingHandlerException if the override XML cannot be parsed.
      */
     public static ConcurrentMap<Object, ChartEngine>
             buildVectorOutputChartEngine( final MetricOutputMapByLeadThreshold<VectorOutput> input,
@@ -899,7 +897,6 @@ public abstract class ChartEngineFactory
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
      */
     public static ChartEngine
             buildGenericScalarOutputChartEngine( final MetricOutputMapByLeadThreshold<ScalarOutput> input,
@@ -988,7 +985,6 @@ public abstract class ChartEngineFactory
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
-     * @throws GenericXMLReadingHandlerException If the override XML cannot be parsed.
      */
     public static ChartEngine buildSingleValuedPairsChartEngine( final SingleValuedPairs input,
                                                                  final String userSpecifiedTemplateResourceName,
