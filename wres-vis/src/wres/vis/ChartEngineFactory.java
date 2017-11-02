@@ -775,7 +775,7 @@ public abstract class ChartEngineFactory
                                                              + " for "
                                                              + inputKeyInstance.getSecondKey() );
         arguments.addArgument( "probabilities",
-                               HString.buildStringFromArray( boxPlotData.getProbabilities().getDoubles(), ", " ) );
+                               HString.buildStringFromArray( boxPlotData.getProbabilities().getDoubles(), ", " ).replaceAll( "0.0,", "min," ).replaceAll( "1.0", "max" ) );
         arguments.addArgument( "domainUnitsText", meta.getInputDimension().toString() );
         arguments.addArgument( "rangeUnitsText", meta.getDimension().toString() );
 
