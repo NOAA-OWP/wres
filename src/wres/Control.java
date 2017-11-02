@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
-import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import wres.config.ProjectConfigException;
 import wres.config.Validation;
 import wres.config.generated.DestinationConfig;
@@ -544,7 +543,6 @@ public class Control implements Function<String[], Integer>
             }
         }
         catch( ChartEngineException
-                | GenericXMLReadingHandlerException
                 | ChartWritingException
                 | ProjectConfigException e )
         {
@@ -625,7 +623,6 @@ public class Control implements Function<String[], Integer>
             }
         }
         catch ( ChartEngineException
-                | GenericXMLReadingHandlerException
                 | ChartWritingException
                 | ProjectConfigException e )
         {
