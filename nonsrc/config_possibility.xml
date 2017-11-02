@@ -20,7 +20,7 @@
 
   <pair label="Pairs by location and lead time"> <!-- required for unit -->
     <unit>CMS</unit>
-    <feature lid="DRRC2" />
+    <feature locationId="DRRC2" />
     <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
       <desiredTimeAggregation>
           <function>avg</function>
