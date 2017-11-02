@@ -77,7 +77,8 @@ public abstract class ChartEngineFactory
 
     /**
      * Maintains information about the different {@link MultiVectorOutput} plot types, including defaults and expected
-     * classes.
+     * classes.  For metrics where the plot type is not used, such as box plots, you must put the information using
+     * a {@link PlotTypeSelection#LEAD_THRESHOLD}!  You cannot "put" with a null plot type selection!
      */
     private static Table<MetricConstants, PlotTypeSelection, PlotTypeInformation> multiVectorOutputPlotTypeInfoTable =
             HashBasedTable.create();
@@ -124,22 +125,12 @@ public abstract class ChartEngineFactory
                                                                          MultiVectorOutput.class,
                                                                          "rankHistogramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
-                                                PlotTypeSelection.LEAD_THRESHOLD,
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
-                                                                         BoxPlotOutput.class,
-                                                                         "boxPlotOfErrors.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
-                                                PlotTypeSelection.THRESHOLD_LEAD,
+                                                PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
                                                 new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
                                                                          BoxPlotOutput.class,
                                                                          "boxPlotOfErrors.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED,
-                                                PlotTypeSelection.LEAD_THRESHOLD,
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
-                                                                         BoxPlotOutput.class,
-                                                                         "boxPlotOfErrors.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED,
-                                                PlotTypeSelection.THRESHOLD_LEAD,
+                                                PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
                                                 new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
                                                                          BoxPlotOutput.class,
                                                                          "boxPlotOfErrors.xml" ) );
@@ -147,7 +138,8 @@ public abstract class ChartEngineFactory
 
     /**
      * @param metricId the metric identifier
-     * @param plotType the plot type
+     * @param plotType the plot type.  May be null.  If it is null, {@link PlotTypeSelection#LEAD_THRESHOLD} is used to access
+     *        the map of information; see the map comment for more info.
      * @return {@link PlotTypeInformation} for the provided {@link MetricConstants} metric id and
      *         {@link PlotTypeSelection}. This will throw an {@link IllegalArgumentException} if the combination is not
      *         yet supported in the {@link #multiVectorOutputPlotTypeInfoTable}.
@@ -155,7 +147,13 @@ public abstract class ChartEngineFactory
     public static PlotTypeInformation getNonNullMultiVectorOutputPlotTypeInformation( final MetricConstants metricId,
                                                                                       final PlotTypeSelection plotType )
     {
-        final PlotTypeInformation results = multiVectorOutputPlotTypeInfoTable.get( metricId, plotType );
+        PlotTypeSelection usedPlotType = plotType;
+        if ( plotType == null )
+        {
+            usedPlotType = PlotTypeSelection.LEAD_THRESHOLD;
+        }
+
+        final PlotTypeInformation results = multiVectorOutputPlotTypeInfoTable.get( metricId, usedPlotType );
         if ( results == null )
         {
             throw new IllegalArgumentException( "MultiVectorOutput plot type for metric " + metricId
@@ -641,9 +639,9 @@ public abstract class ChartEngineFactory
      *            chart construction. May be null to use default template identified in static table.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
-     * @return A {@link ChartEngine} that can be used to build the {@link JFreeChart} and output the image. This can be
+     * @return A map of keys to ChartEngine instances.  The instances can be
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
-     *         construct the image file.
+     *         construct the image file.  The keys depend on the provided plot type selection.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
     public static ConcurrentMap<Object, ChartEngine>
@@ -739,12 +737,21 @@ public abstract class ChartEngineFactory
     }
 
 
+    /**
+     * 
+     * @param inputKeyInstance The key that will be used to find the box plot data in the provided input.
+     * @param input Input providing the box plot data.
+     * @param factory Factory used to find metadata for chart arguments.
+     * @param templateName The name of the template to use, if not the standard template.
+     * @param overrideParametersStr An XML string providing override parameters if they were given in the project configuration.
+     * @return A single instance of {@link WRESChartEngine}.
+     * @throws ChartEngineException If the chart could not build for whatever reason.
+     */
     private static WRESChartEngine
             processBoxPlotErrorsDiagram(
                                          MapBiKey<Integer, Threshold> inputKeyInstance,
                                          final MetricOutputMapByLeadThreshold<BoxPlotOutput> input,
                                          final DataFactory factory,
-                                         PlotTypeSelection usedPlotType,
                                          String templateName,
                                          String overrideParametersStr )
                     throws ChartEngineException
@@ -768,7 +775,8 @@ public abstract class ChartEngineFactory
                                "at Lead Hour " + inputKeyInstance.getFirstKey()
                                                              + " for "
                                                              + inputKeyInstance.getSecondKey() );
-        arguments.addArgument( "probabilities", HString.buildStringFromArray( boxPlotData.getProbabilities().getDoubles(), ", " ) );
+        arguments.addArgument( "probabilities",
+                               HString.buildStringFromArray( boxPlotData.getProbabilities().getDoubles(), ", " ) );
         arguments.addArgument( "domainUnitsText", meta.getInputDimension().toString() );
         arguments.addArgument( "rangeUnitsText", meta.getDimension().toString() );
 
@@ -785,26 +793,30 @@ public abstract class ChartEngineFactory
     }
 
 
+    /**
+     * At this time, there is only one plot type available for box plots, so the user specified plot type is not included as an argument.
+     * @param input The metric output to plot.
+     * @param factory The data factory from which arguments will be identified.
+     * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
+     *            chart construction. May be null to use default template identified in static table.
+     * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
+     *            overrides for the appearance of chart.
+     * @return Map where the keys are instances of {@link MapBiKey} with the two keys being an integer and a threshold.
+     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     */
     public static ConcurrentMap<Object, ChartEngine>
             buildBoxPlotChartEngine( final MetricOutputMapByLeadThreshold<BoxPlotOutput> input,
                                      final DataFactory factory,
-                                     final PlotTypeSelection userSpecifiedPlotType,
                                      final String userSpecifiedTemplateResourceName,
                                      final String overrideParametersStr )
                     throws ChartEngineException
     {
         final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
 
-        //Determine used plot type and template name.  Note that if no plot type information is provided for the metric id
-        //and plot type, then an illegal argument exception will be thrown.
-        PlotTypeSelection usedPlotType = PlotTypeSelection.LEAD_THRESHOLD; //Lead time first plot type is the default!!!
-        if ( userSpecifiedPlotType != null )
-        {
-            usedPlotType = userSpecifiedPlotType;
-        }
+
         final String templateName =
                 getNonNullMultiVectorOutputPlotTypeInformation( input.getMetadata().getMetricID(),
-                                                                usedPlotType ).getDefaultTemplateName();
+                                                                null ).getDefaultTemplateName();
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
         Set<MapBiKey<Integer, Threshold>> keySetValues = input.keySet();
@@ -819,7 +831,6 @@ public abstract class ChartEngineFactory
                 final ChartEngine engine = processBoxPlotErrorsDiagram( keyInstance,
                                                                         input,
                                                                         factory,
-                                                                        usedPlotType,
                                                                         templateName,
                                                                         overrideParametersStr );
                 results.put( keyInstance, engine );
@@ -857,8 +868,7 @@ public abstract class ChartEngineFactory
                                           final PlotTypeSelection userSpecifiedPlotType,
                                           final String userSpecifiedTemplateResourceName,
                                           final String overrideParametersStr )
-                    throws ChartEngineException,
-                    GenericXMLReadingHandlerException
+                    throws ChartEngineException
     {
         final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
 
@@ -897,8 +907,7 @@ public abstract class ChartEngineFactory
                                                  final PlotTypeSelection userSpecifiedPlotType,
                                                  final String userSpecifiedTemplateResourceName,
                                                  final String overrideParametersStr )
-                    throws ChartEngineException,
-                    GenericXMLReadingHandlerException
+                    throws ChartEngineException
     {
         //Define the used plot type.
         PlotTypeSelection usedPlotType = PlotTypeSelection.LEAD_THRESHOLD;
@@ -984,8 +993,7 @@ public abstract class ChartEngineFactory
     public static ChartEngine buildSingleValuedPairsChartEngine( final SingleValuedPairs input,
                                                                  final String userSpecifiedTemplateResourceName,
                                                                  final String overrideParametersStr )
-            throws ChartEngineException,
-            GenericXMLReadingHandlerException
+            throws ChartEngineException
     {
 
         String templateName = "singleValuedPairsTemplate.xml";
@@ -1021,7 +1029,15 @@ public abstract class ChartEngineFactory
             if ( !usedStr.isEmpty() )
             {
                 override = new ChartDrawingParameters();
-                XMLTools.readXMLFromString( usedStr, override );
+                try
+                {
+                    XMLTools.readXMLFromString( usedStr, override );
+                }
+                catch ( final Throwable t )
+                {
+                    LOGGER.warn( "Unable to parse XML provided by user for chart drawing: " + t.getMessage() );
+                    LOGGER.trace( "Unable to parse XML provided by user for chart drawing", t );
+                }
             }
         }
 
@@ -1135,7 +1151,8 @@ public abstract class ChartEngineFactory
                                                        final String axisToSquareAgainstDomain )
             throws ChartEngineException
     {
-        //Load the template parameters.
+        //Load the template parameters.  This will first attempt to load them as a system resource on th class path and
+        //then as a file from the file system.  If neither works, it throws an exception.
         final ChartDrawingParameters parameters = new ChartDrawingParameters();
         try
         {
