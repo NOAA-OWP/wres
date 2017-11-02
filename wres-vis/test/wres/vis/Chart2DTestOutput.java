@@ -599,13 +599,13 @@ public class Chart2DTestOutput extends TestCase
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
                                                                                                    factory,
-                                                                                                   PlotTypeSelection.LEAD_THRESHOLD,
                                                                                                    null,
                                                                                                    null );
 
             //Generate the output file.
             for ( final Object key : engineMap.keySet() )
             {
+                @SuppressWarnings( "unchecked" )
                 MapBiKey<Integer, Threshold> biKey = (MapBiKey<Integer, Threshold>) key;
 
                 int lead = biKey.getFirstKey();
@@ -659,13 +659,13 @@ public class Chart2DTestOutput extends TestCase
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
                                                                                                    factory,
-                                                                                                   PlotTypeSelection.LEAD_THRESHOLD,
                                                                                                    null,
                                                                                                    null );
 
             //Generate the output file.
             for ( final Object key : engineMap.keySet() )
             {
+                @SuppressWarnings( "unchecked" )
                 MapBiKey<Integer, Threshold> biKey = (MapBiKey<Integer, Threshold>) key;
 
                 int lead = biKey.getFirstKey();
