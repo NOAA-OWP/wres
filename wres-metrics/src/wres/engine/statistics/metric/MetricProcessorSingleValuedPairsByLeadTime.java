@@ -13,6 +13,7 @@ import java.util.function.Function;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DichotomousPairs;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
@@ -128,6 +129,25 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
         catch ( MetricParameterException e )
         {
             throw new MetricConfigurationException( "Failed to construct one or more metrics.", e );
+        }
+    }
+
+    @Override
+    void validate( ProjectConfig config ) throws MetricConfigurationException
+    {
+        //Check the metrics individually, as some may belong to multiple groups
+        for ( MetricConstants next : metrics )
+        {
+            if ( ! ( next.isInGroup( MetricInputGroup.SINGLE_VALUED )
+                     || next.isInGroup( MetricInputGroup.DICHOTOMOUS ) ) )
+            {
+                throw new MetricConfigurationException( "Cannot configure '" + next
+                                                        + "' for "
+                                                        + MetricInputGroup.SINGLE_VALUED
+                                                        + ": correct the configuration '"
+                                                        + config.getLabel()
+                                                        + "'." );
+            }
         }
     }
 

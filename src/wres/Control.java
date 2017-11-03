@@ -36,8 +36,10 @@ import wres.config.generated.Feature;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.BoxPlotOutput;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MapBiKey;
 import wres.datamodel.MapKey;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -49,6 +51,7 @@ import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.ScalarOutput;
+import wres.datamodel.Threshold;
 import wres.datamodel.VectorOutput;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -452,6 +455,12 @@ public class Control implements Function<String[], Integer>
                                                       processor.getStoredMetricOutput()
                                                                .getMultiVectorOutput() );
                             break;
+                        case BOXPLOT:
+                            processBoxPlotCharts( feature,
+                                                      projectConfigPlus,
+                                                      processor.getStoredMetricOutput()
+                                                               .getBoxPlotOutput() );
+                            break;
                         default:
                             LOGGER.warn( "Unsupported chart type {}.",
                                          nextGroup );
@@ -556,7 +565,7 @@ public class Control implements Function<String[], Integer>
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
-     * @param vectorResults the scalar outputs
+     * @param vectorResults the vector outputs
      * @throws WresProcessingException when an error occurs during processing
      */
 
@@ -636,7 +645,7 @@ public class Control implements Function<String[], Integer>
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
-     * @param multiVectorResults the scalar outputs
+     * @param multiVectorResults the multi-vector outputs
      * @throws WresProcessingException if the processing completed unsuccessfully
      */
 
@@ -711,6 +720,85 @@ public class Control implements Function<String[], Integer>
             throw new WresProcessingException( "Error while generating multi-vector charts:", e );
         }
     }
+    
+    /**
+     * Processes a set of charts associated with {@link BoxPlotOutput} across multiple metrics, forecast lead times,
+     * and thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}.
+     * 
+     * @param feature the feature for which the chart is defined
+     * @param projectConfigPlus the project configuration
+     * @param boxPlotResults the box plot outputs
+     * @throws WresProcessingException if the processing completed unsuccessfully
+     */
+
+    private static void   processBoxPlotCharts( final Feature feature,
+                                              final ProjectConfigPlus projectConfigPlus,
+                                              final MetricOutputMultiMapByLeadThreshold<BoxPlotOutput> boxPlotResults )
+    {
+        //Check for results
+        if ( Objects.isNull( boxPlotResults ) )
+        {
+            LOGGER.warn( "No box-plot outputs from which to generate charts." );
+            return;
+        }
+
+        ProjectConfig config = projectConfigPlus.getProjectConfig();
+
+        // Build charts
+        try
+        {
+            // Build the charts for each metric
+            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<BoxPlotOutput>> e: boxPlotResults.entrySet())
+            {
+                List<DestinationConfig> destinations =
+                        ConfigHelper.getGraphicalDestinations( config );
+
+                for ( DestinationConfig dest : destinations )
+                {
+                    final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+                    // Build the chart engine
+                    final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
+                    String templateResourceName = null;
+                    if(!Objects.isNull(nextConfig))
+                    {
+                        templateResourceName = nextConfig.getTemplateResourceName();
+                    }
+
+                    final Map<MapBiKey<Integer, Threshold>, ChartEngine> engines =
+                            ChartEngineFactory.buildBoxPlotChartEngine( e.getValue(),
+                                                                        DATA_FACTORY,
+                                                                        templateResourceName,
+                                                                        graphicsString );
+                    // Build the outputs
+                    for(final Map.Entry<MapBiKey<Integer, Threshold>, ChartEngine> nextEntry: engines.entrySet())
+                    {
+                        // Build the output file name
+                        File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
+                        Path outputImage = Paths.get( destDir.toString(),
+                                                      ConfigHelper.getFeatureDescription( feature )
+                                                      + "_"
+                                                      + e.getKey()
+                                                      .getKey().name()
+                                                      + "_"
+                                                      + config.getInputs()
+                                                      .getRight()
+                                                      .getVariable()
+                                                      .getValue()
+                                                      + "_"
+                                                      + nextEntry.getKey().getFirstKey()
+                                                      + ".png" );
+                        ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
+                    }
+                }
+            }
+        }
+        catch ( ChartEngineException
+                | ChartWritingException
+                | ProjectConfigException e)
+        {
+            throw new WresProcessingException( "Error while generating multi-vector charts:", e );
+        }
+    }    
 
     /**
      * Get project configurations from command line file args. If there are no command line args, look in System
@@ -849,19 +937,40 @@ public class Control implements Function<String[], Integer>
             MetricOutputMetadata meta = null;
             try
             {
-                if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR )
-                     && configNeedsThisTypeOfOutput( projectConfigPlus.getProjectConfig(),
-                                                     DestinationType.GRAPHIC ) )
+                if ( configNeedsThisTypeOfOutput( projectConfigPlus.getProjectConfig(),
+                                                  DestinationType.GRAPHIC ) )
                 {
-                    processMultiVectorCharts(feature,
-                                             projectConfigPlus,
-                                             input.getMultiVectorOutput());
-                    meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
-                    if(LOGGER.isDebugEnabled())
+                    //Multivector output
+                    if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR ) )
                     {
-                        LOGGER.debug("Completed processing of intermediate metrics results for feature '{}' at lead time {}.",
-                                     meta.getIdentifier().getGeospatialID(),
-                                     meta.getLeadTimeInHours());
+                        processMultiVectorCharts( feature,
+                                                  projectConfigPlus,
+                                                  input.getMultiVectorOutput() );
+                        meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
+                    }
+                    //Box-plot output
+                    if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR ) )
+                    {
+                        processBoxPlotCharts( feature,
+                                              projectConfigPlus,
+                                              input.getBoxPlotOutput() );
+                        meta = input.getBoxPlotOutput().entrySet().iterator().next().getValue().getMetadata();
+                    }
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        if ( Objects.nonNull( meta ) )
+                        {
+                            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' "
+                                          + "at lead time {}.",
+                                          meta.getIdentifier().getGeospatialID(),
+                                          meta.getLeadTimeInHours() );
+                        }
+                        else
+                        {
+                            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' at "
+                                          + "unknown lead time {}.",
+                                          feature.getLocationId() );
+                        }
                     }
                 }
             }

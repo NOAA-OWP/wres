@@ -68,13 +68,23 @@ extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
     MetricOutputMultiMapByLeadThreshold<MatrixOutput> getMatrixOutput() throws InterruptedException, ExecutionException;    
     
     /**
+     * Returns a {@link MetricOutputMultiMap} of {@link BoxPlotOutput} or null if no output exists.
+     * 
+     * @return the matrix output or null
+     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
+     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     */
+
+    MetricOutputMultiMapByLeadThreshold<BoxPlotOutput> getBoxPlotOutput() throws InterruptedException, ExecutionException; 
+    
+    /**
      * Builder.
      */
 
     interface MetricOutputForProjectByLeadThresholdBuilder {
 
         /**
-         * Adds a new scalar result for a collection of metrics to the internal store.
+         * Adds a new {@link ScalarOutput} for a collection of metrics to the internal store.
          * 
          * @param key the key
          * @param result the result
@@ -89,7 +99,7 @@ extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
         }
 
         /**
-         * Adds a new vector result for a collection of metrics to the internal store.
+         * Adds a new {@link VectorOutput} for a collection of metrics to the internal store.
          * 
          * @param key the key
          * @param result the result
@@ -104,7 +114,7 @@ extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
         }
 
         /**
-         * Adds a new multi-vector result for a collection of metrics to the internal store.
+         * Adds a new {@link MultiVectorOutput} for a collection of metrics to the internal store.
          * 
          * @param key the key
          * @param result the result
@@ -119,7 +129,7 @@ extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
         }
 
         /**
-         * Adds a new matrix result for a collection of metrics to the internal store.
+         * Adds a new {@link MatrixOutput} result for a collection of metrics to the internal store.
          * 
          * @param key the key
          * @param result the result
@@ -132,9 +142,24 @@ extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
             addMatrixOutput(key.getFirstKey(), key.getSecondKey(), result);
             return this;
         }
+        
+        /**
+         * Adds a new {@link BoxPlotOutput} for a collection of metrics to the internal store.
+         * 
+         * @param key the key
+         * @param result the result
+         * @return the builder
+         */
+
+        default MetricOutputForProjectByLeadThresholdBuilder addBoxPlotOutput(MapBiKey<Integer, Threshold> key,
+                                                                             Future<MetricOutputMapByMetric<BoxPlotOutput>> result)
+        {
+            addBoxPlotOutput(key.getFirstKey(), key.getSecondKey(), result);
+            return this;
+        }
 
         /**
-         * Adds a new scalar result for a collection of metrics to the internal store.
+         * Adds a new {@link ScalarOutput} for a collection of metrics to the internal store.
          * 
          * @param leadTime the lead time
          * @param threshold the threshold
@@ -147,7 +172,7 @@ extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
                                                                      Future<MetricOutputMapByMetric<ScalarOutput>> result);
 
         /**
-         * Adds a new vector result for a collection of metrics to the internal store.
+         * Adds a new {@link VectorOutput} for a collection of metrics to the internal store.
          * 
          * @param leadTime the lead time
          * @param threshold the threshold
@@ -160,7 +185,7 @@ extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
                                                                      Future<MetricOutputMapByMetric<VectorOutput>> result);
 
         /**
-         * Adds a new multi-vector result for a collection of metrics to the internal store.
+         * Adds a new {@link MultiVectorOutput} for a collection of metrics to the internal store.
          * 
          * @param leadTime the lead time
          * @param threshold the threshold
@@ -173,7 +198,7 @@ extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
                                                                           Future<MetricOutputMapByMetric<MultiVectorOutput>> result);
 
         /**
-         * Adds a new matrix result for a collection of metrics to the internal store.
+         * Adds a new {@link MatrixOutput} for a collection of metrics to the internal store.
          * 
          * @param leadTime the lead time
          * @param threshold the threshold
@@ -185,6 +210,19 @@ extends MetricOutputForProject<MetricOutputMultiMapByLeadThreshold<?>>
                                                                      Threshold threshold,
                                                                      Future<MetricOutputMapByMetric<MatrixOutput>> result);
 
+        /**
+         * Adds a new {@link BoxPlotOutput} for a collection of metrics to the internal store.
+         * 
+         * @param leadTime the lead time
+         * @param threshold the threshold
+         * @param result the result
+         * @return the builder
+         */
+
+        MetricOutputForProjectByLeadThresholdBuilder addBoxPlotOutput(Integer leadTime,
+                                                                     Threshold threshold,
+                                                                     Future<MetricOutputMapByMetric<BoxPlotOutput>> result);
+        
         /**
          * Returns a {@link MetricOutputForProjectByLeadThreshold}.
          * 

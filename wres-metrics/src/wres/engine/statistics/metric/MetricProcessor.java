@@ -137,7 +137,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     final MetricCollection<SingleValuedPairs, MultiVectorOutput> singleValuedMultiVector;
-
+    
     /**
      * The list of metrics associated with the verification project.
      */
@@ -188,6 +188,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         {
             case BIAS_FRACTION:
                 return MetricConstants.BIAS_FRACTION;
+            case BOX_PLOT_OF_ERRORS_BY_FORECAST:
+                return MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST;
+            case BOX_PLOT_OF_ERRORS_BY_OBSERVED:
+                return MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED;
             case BRIER_SCORE:
                 return MetricConstants.BRIER_SCORE;
             case BRIER_SKILL_SCORE:
@@ -285,7 +289,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     public abstract T getStoredMetricOutput();
-
+    
     /**
      * Returns true if a prior call led to the caching of metric outputs.
      * 
@@ -294,6 +298,15 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
 
     public abstract boolean hasStoredMetricOutput();
 
+    /**
+     * Validates the configuration and throws a {@link MetricConfigurationException} if the configuration is invalid.
+     * 
+     * @param config the configuration to validate
+     * @throws MetricConfigurationException if the configuration is invalid
+     */
+
+    abstract void validate( ProjectConfig config ) throws MetricConfigurationException;
+    
     /**
      * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
      * false otherwise.
@@ -592,6 +605,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         }
         //Set the minimum sample size for computing metrics
         minimumSampleSize = 2;
+        //Finally, validate the configuration against the parameters set
+        validate( config );
     }
 
     /**

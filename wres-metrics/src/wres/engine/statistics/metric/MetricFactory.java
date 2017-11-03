@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.BoxPlotOutput;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.DiscreteProbabilityPairs;
@@ -18,6 +19,8 @@ import wres.datamodel.MulticategoryPairs;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.VectorOutput;
+import wres.engine.statistics.metric.BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder;
+import wres.engine.statistics.metric.BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder;
 import wres.engine.statistics.metric.ContinuousRankedProbabilityScore.CRPSBuilder;
 import wres.engine.statistics.metric.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
 import wres.engine.statistics.metric.FrequencyBias.FrequencyBiasBuilder;
@@ -304,6 +307,22 @@ public class MetricFactory
     {
         return ofEnsembleMultiVectorCollection( null, metric );
     }
+    
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * {@link BoxPlotOutput}.
+     * 
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if the metric identifier is not recognized 
+     */
+
+    public MetricCollection<EnsemblePairs, BoxPlotOutput>
+            ofEnsembleBoxPlotCollection( MetricConstants... metric ) throws MetricParameterException
+    {
+        return ofEnsembleBoxPlotCollection( null, metric );
+    }
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
@@ -548,6 +567,30 @@ public class MetricFactory
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
     }
+    
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
+     * {@link BoxPlotOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if the metric identifier is not recognized
+     */
+
+    public MetricCollection<EnsemblePairs, BoxPlotOutput> ofEnsembleBoxPlotCollection( ExecutorService executor,
+                                                                                               MetricConstants... metric )
+            throws MetricParameterException
+    {
+        final MetricCollectionBuilder<EnsemblePairs, BoxPlotOutput> builder = MetricCollectionBuilder.of();
+        for ( MetricConstants next : metric )
+        {
+            builder.add( ofEnsembleBoxPlot( next ) );
+        }
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        return builder.build();
+    }    
 
     /**
      * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link ScalarOutput}.
@@ -797,6 +840,29 @@ public class MetricFactory
     }
 
     /**
+     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link BoxPlotOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if the metric identifier is not recognized
+     */
+
+    public Metric<EnsemblePairs, BoxPlotOutput> ofEnsembleBoxPlot( MetricConstants metric )
+            throws MetricParameterException
+    {
+        switch ( metric )
+        {
+            case BOX_PLOT_OF_ERRORS_BY_OBSERVED:
+                return ofBoxPlotErrorByObserved();
+            case BOX_PLOT_OF_ERRORS_BY_FORECAST:
+                return ofBoxPlotErrorByForecast();
+            default:
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
+        }
+    }
+
+    /**
      * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link MultiVectorOutput}.
      * 
      * @param metric the metric identifier
@@ -815,8 +881,8 @@ public class MetricFactory
             default:
                 throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
-    }
-
+    }    
+    
     /**
      * Return a default {@link BiasFraction} function.
      * 
@@ -1169,6 +1235,30 @@ public class MetricFactory
     {
         return (FrequencyBias) new FrequencyBiasBuilder().setOutputFactory( outputFactory ).build();
     }
+    
+    /**
+     * Return a default {@link BoxPlotErrorByObserved} function.
+     * 
+     * @return a default {@link BoxPlotErrorByObserved} function
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     */
+
+    BoxPlotErrorByObserved ofBoxPlotErrorByObserved() throws MetricParameterException
+    {
+        return (BoxPlotErrorByObserved) new BoxPlotErrorByObservedBuilder().setOutputFactory( outputFactory ).build();
+    }
+    
+    /**
+     * Return a default {@link BoxPlotErrorByForecast} function.
+     * 
+     * @return a default {@link BoxPlotErrorByForecast} function
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     */
+
+    BoxPlotErrorByForecast ofBoxPlotErrorByForecast() throws MetricParameterException
+    {
+        return (BoxPlotErrorByForecast) new BoxPlotErrorByForecastBuilder().setOutputFactory( outputFactory ).build();
+    }    
 
     /**
      * Hidden constructor.
