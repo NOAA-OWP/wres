@@ -157,21 +157,17 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
             {
                 List<Threshold> global = globalThresholds.get( MetricInputGroup.DICHOTOMOUS );
                 double[] sorted = getSortedClimatology( input, global );
-                Map<Threshold, MetricInputSliceException> failures = new HashMap<>();
+                Map<Threshold, MetricCalculationException> failures = new HashMap<>();
                 global.forEach( threshold -> {
                     //Only process discrete thresholds
                     if ( threshold.isFinite() )
                     {
-                        try
+                        Threshold useMe = getThreshold( threshold, sorted );
+                        MetricCalculationException result =
+                                processDichotomousThreshold( leadTime, input, futures, useMe );
+                        if ( !Objects.isNull( result ) )
                         {
-                            Threshold useMe = getThreshold( threshold, sorted );
-                            futures.addScalarOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                     processDichotomousThreshold( useMe, input, dichotomousScalar ) );
-                        }
-                        //Insufficient data for one threshold: log, but allow
-                        catch ( MetricInputSliceException e )
-                        {
-                            failures.put( threshold, e );
+                            failures.put( useMe, result );
                         }
                     }
                 } );
@@ -185,6 +181,38 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
                 throw new MetricCalculationException( unsupportedException );
             }
         }
+    }
+
+    /**
+     * Processes one threshold for metrics that consume {@link DichotomousPairs}, which are mapped from the input pairs,
+     * {@link SingleValuedPairs}, using a configured mapping function, and produce a {@link MetricOutputGroup#SCALAR}. 
+     * 
+     * @param leadTime the lead time
+     * @param input the input pairs
+     * @param futures the metric futures
+     * @param threshold the threshold
+     * @throws MetricCalculationException if the metrics cannot be computed
+     */
+
+    private MetricCalculationException processDichotomousThreshold( Integer leadTime,
+                                                                    SingleValuedPairs input,
+                                                                    MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures,
+                                                                    Threshold threshold )
+    {
+        MetricCalculationException returnMe = null;
+        try
+        {
+            futures.addScalarOutput( dataFactory.getMapKey( leadTime, threshold ),
+                                     processDichotomousThreshold( threshold,
+                                                                  input,
+                                                                  dichotomousScalar ) );
+        }
+        //Insufficient data for one threshold: log, but allow
+        catch ( MetricInputSliceException e )
+        {
+            returnMe = new MetricCalculationException( e.getMessage(), e );
+        }
+        return returnMe;
     }
 
     /**
@@ -205,7 +233,7 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
                                          MetricCollection<DichotomousPairs, T> collection )
                     throws MetricInputSliceException
     {
-        //Check the data
+        //Check the data before transformation
         checkSlice( pairs, threshold );
         //Define a mapper to convert the single-valued pairs to dichotomous pairs
         Function<PairOfDoubles, PairOfBooleans> mapper =
@@ -213,7 +241,35 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
                                             threshold.test( pair.getItemTwo() ) );
         //Slice the pairs
         DichotomousPairs transformed = dataFactory.getSlicer().transformPairs( pairs, mapper );
+        //Check the data after transformation
+        checkDichotomousSlice( transformed, threshold );
         return CompletableFuture.supplyAsync( () -> collection.apply( transformed ), thresholdExecutor );
+    }
+
+    /**
+     * Validates the {@link DichotomousPairs} and throws an exception if the smaller of the number of 
+     * occurrences ({@link VectorOfBooleans#} = 0) or non-occurrences ({@link PairOfDoubles#getItemOne()} = 1) 
+     * is less than the {@link minimumSampleSize}.
+     * 
+     * @param subset the data to validate
+     * @param threshold the threshold used to localize the error message
+     * @throws MetricInputSliceException if the input contains insufficient data for metric calculation 
+     */
+
+    private void checkDichotomousSlice( DichotomousPairs subset, Threshold threshold )
+            throws MetricInputSliceException
+    {
+        long occurrences = subset.getData().stream().filter( a -> a.getBooleans()[0] ).count();
+        double min = Math.min( occurrences, subset.size() - occurrences );
+        if ( min < minimumSampleSize )
+        {
+            throw new MetricInputSliceException( "Failed to compute one or more metrics for threshold '"
+                                                 + threshold
+                                                 + "', as the (smaller of the) number of observed occurrences and "
+                                                 + "non-occurrences was less than the prescribed minimum of '"
+                                                 + minimumSampleSize
+                                                 + "'." );
+        }
     }
 
 }

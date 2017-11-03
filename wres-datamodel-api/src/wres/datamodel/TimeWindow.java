@@ -97,18 +97,17 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     /**
      * Constructs a {@link TimeWindow} where the {@link #earliestLeadSeconds} and {@link #latestLeadSeconds} are both 
-     * zero.
+     * zero and the {@link #validTime} is <code>true</code>.
      * 
      * @param earliestTime the earliest time
      * @param latestTime the latest time
-     * @param validTime is true if the earliestTime and latestTime are in valid time, false for issue time
      * @return a time window
      * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
      */
 
-    public static TimeWindow of( Instant earliestTime, Instant latestTime, boolean validTime )
+    public static TimeWindow of( Instant earliestTime, Instant latestTime )
     {
-        return new TimeWindow( earliestTime, latestTime, validTime, 0, 0 );
+        return new TimeWindow( earliestTime, latestTime, true, 0, 0 );
     }
 
     @Override

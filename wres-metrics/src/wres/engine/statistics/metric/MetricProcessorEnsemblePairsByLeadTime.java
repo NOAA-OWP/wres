@@ -167,7 +167,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
         //Validate the configuration
-        validate(config); 
+        validate( config );
         try
         {
             //Construct the metrics
@@ -304,37 +304,14 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         {
             List<Threshold> global = globalThresholds.get( MetricInputGroup.ENSEMBLE );
             double[] sorted = getSortedClimatology( input, global );
-            Map<Threshold, MetricInputSliceException> failures = new HashMap<>();
+            Map<Threshold, MetricCalculationException> failures = new HashMap<>();
             global.forEach( threshold -> {
                 Threshold useMe = getThreshold( threshold, sorted );
-                try
+                MetricCalculationException result =
+                        processEnsembleThreshold( leadTime, input, futures, outGroup, useMe );
+                if ( !Objects.isNull( result ) )
                 {
-                    if ( outGroup == MetricOutputGroup.SCALAR )
-                    {
-                        futures.addScalarOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                 processEnsembleThreshold( useMe,
-                                                                           input,
-                                                                           ensembleScalar ) );
-                    }
-                    else if ( outGroup == MetricOutputGroup.VECTOR )
-                    {
-                        futures.addVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                 processEnsembleThreshold( useMe,
-                                                                           input,
-                                                                           ensembleVector ) );
-                    }
-                    else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
-                    {
-                        futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                      processEnsembleThreshold( useMe,
-                                                                                input,
-                                                                                ensembleMultiVector ) );
-                    }
-                }
-                //Insufficient data for one threshold: log, but allow
-                catch ( MetricInputSliceException e )
-                {
-                    failures.put( threshold, e );
+                    failures.put( useMe, result );
                 }
             } );
             //Handle any failures
@@ -346,6 +323,57 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
             //Hook for future logic
             throw new MetricCalculationException( unsupportedException );
         }
+    }
+
+    /**
+     * Processes one threshold for metrics that consume {@link EnsemblePairs} and produce a specified 
+     * {@link MetricOutputGroup}. 
+     * 
+     * @param leadTime the lead time
+     * @param input the input pairs
+     * @param futures the metric futures
+     * @param outGroup the metric output type
+     * @param threshold the threshold
+     * @throws MetricCalculationException if the metrics cannot be computed
+     */
+
+    private MetricCalculationException processEnsembleThreshold( Integer leadTime,
+                                                                 EnsemblePairs input,
+                                                                 MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures,
+                                                                 MetricOutputGroup outGroup,
+                                                                 Threshold threshold )
+    {
+        MetricCalculationException returnMe = null;
+        try
+        {
+            if ( outGroup == MetricOutputGroup.SCALAR )
+            {
+                futures.addScalarOutput( dataFactory.getMapKey( leadTime, threshold ),
+                                         processEnsembleThreshold( threshold,
+                                                                   input,
+                                                                   ensembleScalar ) );
+            }
+            else if ( outGroup == MetricOutputGroup.VECTOR )
+            {
+                futures.addVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                                         processEnsembleThreshold( threshold,
+                                                                   input,
+                                                                   ensembleVector ) );
+            }
+            else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
+            {
+                futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                                              processEnsembleThreshold( threshold,
+                                                                        input,
+                                                                        ensembleMultiVector ) );
+            }
+        }
+        //Insufficient data for one threshold: log, but allow
+        catch ( MetricInputSliceException e )
+        {
+            returnMe = new MetricCalculationException( e.getMessage(), e );
+        }
+        return returnMe;
     }
 
     /**
@@ -396,33 +424,17 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         {
             List<Threshold> global = globalThresholds.get( MetricInputGroup.DISCRETE_PROBABILITY );
             double[] sorted = getSortedClimatology( input, global );
-            Map<Threshold, MetricInputSliceException> failures = new HashMap<>();
+            Map<Threshold, MetricCalculationException> failures = new HashMap<>();
             global.forEach( threshold -> {
                 //Only process discrete thresholds
                 if ( threshold.isFinite() )
                 {
-                    try
+                    Threshold useMe = getThreshold( threshold, sorted );
+                    MetricCalculationException result =
+                            processDiscreteProbabilityThreshold( leadTime, input, futures, outGroup, useMe );
+                    if ( !Objects.isNull( result ) )
                     {
-                        Threshold useMe = getThreshold( threshold, sorted );
-                        if ( outGroup == MetricOutputGroup.VECTOR )
-                        {
-                            futures.addVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                     processDiscreteProbabilityThreshold( useMe,
-                                                                                          input,
-                                                                                          discreteProbabilityVector ) );
-                        }
-                        else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
-                        {
-                            futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                          processDiscreteProbabilityThreshold( useMe,
-                                                                                               input,
-                                                                                               discreteProbabilityMultiVector ) );
-                        }
-                    }
-                    //Insufficient data for one threshold: log, but allow
-                    catch ( MetricInputSliceException e )
-                    {
-                        failures.put( threshold, e );
+                        failures.put( useMe, result );
                     }
                 }
             } );
@@ -438,6 +450,52 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
             //Hook for future logic
             throw new MetricCalculationException( unsupportedException );
         }
+    }
+
+    /**
+     * Processes one threshold for metrics that consume {@link DiscreteProbabilityPairs} for a given 
+     * {@link MetricOutputGroup}. The {@link DiscreteProbabilityPairs} are produced from the input 
+     * {@link EnsemblePairs} using a configured transformation. 
+     * 
+     * @param leadTime the lead time
+     * @param input the input pairs
+     * @param futures the metric futures
+     * @param outGroup the metric output type
+     * @param threshold the threshold
+     * @throws MetricCalculationException if the metrics cannot be computed
+     */
+
+    private MetricCalculationException processDiscreteProbabilityThreshold( Integer leadTime,
+                                                                            EnsemblePairs input,
+                                                                            MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures,
+                                                                            MetricOutputGroup outGroup,
+                                                                            Threshold threshold )
+    {
+        MetricCalculationException returnMe = null;
+        try
+        {
+            if ( outGroup == MetricOutputGroup.VECTOR )
+            {
+                futures.addVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                                         processDiscreteProbabilityThreshold( threshold,
+                                                                              input,
+                                                                              discreteProbabilityVector ) );
+            }
+            else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
+            {
+                futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                                              processDiscreteProbabilityThreshold( threshold,
+                                                                                   input,
+                                                                                   discreteProbabilityMultiVector ) );
+            }
+        }
+        //Insufficient data for one threshold: log, but allow
+        catch ( MetricInputSliceException e )
+        {
+            returnMe = new MetricCalculationException( e.getMessage(), e );
+        }
+
+        return returnMe;
     }
 
     /**
@@ -458,10 +516,12 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                                                  MetricCollection<DiscreteProbabilityPairs, T> collection )
                     throws MetricInputSliceException
     {
-        //Slice the pairs
-        checkSlice( pairs, threshold ); //check before transform
+        //Check the slice before transformation
+        checkSlice( pairs, threshold );
         DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
                                                           .transformPairs( pairs, threshold, toDiscreteProbabilities );
+        //Check the slice after transformation
+        checkDiscreteProbabilitySlice( transformed, threshold );
         return CompletableFuture.supplyAsync( () -> collection.apply( transformed ), thresholdExecutor );
     }
 
@@ -495,8 +555,8 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * @param config the configuration to validate
      * @throws MetricConfigurationException if the configuration is invalid
      */
-    
-    private void validate( ProjectConfig config) throws MetricConfigurationException 
+
+    private void validate( ProjectConfig config ) throws MetricConfigurationException
     {
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
@@ -509,5 +569,31 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                                                     + config.getLabel() + "'." );
         }
     }
-    
+
+    /**
+     * Validates the {@link DiscreteProbabilityPairs} and throws an exception if the smaller of the number of 
+     * occurrences ({@link PairOfDoubles#getItemOne()} = 0) or non-occurrences ({@link PairOfDoubles#getItemOne()} = 1) 
+     * is less than the {@link minimumSampleSize}.
+     * 
+     * @param subset the data to validate
+     * @param threshold the threshold used to localize the error message
+     * @throws MetricInputSliceException if the input contains insufficient data for metric calculation 
+     */
+
+    private void checkDiscreteProbabilitySlice( DiscreteProbabilityPairs subset, Threshold threshold )
+            throws MetricInputSliceException
+    {
+        long nonOccurrences = subset.getData().stream().filter( a -> Double.compare( a.getItemOne(), 0 ) == 0 ).count();
+        double min = Math.min( nonOccurrences, subset.size() - nonOccurrences );
+        if ( min < minimumSampleSize )
+        {
+            throw new MetricInputSliceException( "Failed to compute one or more metrics for threshold '"
+                                                 + threshold
+                                                 + "', as the (smaller of the) number of observed occurrences and "
+                                                 + "non-occurrences was less than the prescribed minimum of '"
+                                                 + minimumSampleSize
+                                                 + "'." );
+        }
+    }
+
 }

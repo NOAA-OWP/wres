@@ -692,7 +692,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * {@link #minimumSampleSize}.
      * 
      * @param subset the data to validate
-     * @param threshold the threshold
+     * @param threshold the threshold used to localize the error message
      * @throws MetricInputSliceException if the input contains insufficient data for metric calculation 
      */
 
@@ -700,11 +700,11 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     {
         if ( subset.size() < minimumSampleSize )
         {
-            throw new MetricInputSliceException( "Failed to compute some metrics at threshold '" + threshold
-                                                 + "', as the "
-                                                 + "sample size was smaller than the minimum allowed ("
+            throw new MetricInputSliceException( "Failed to compute one or more metrics for threshold '"
+                                                 + threshold
+                                                 + "', as the sample size was less than the prescribed minimum of '"
                                                  + minimumSampleSize
-                                                 + ")." );
+                                                 + "'." );
         }
     }
 
