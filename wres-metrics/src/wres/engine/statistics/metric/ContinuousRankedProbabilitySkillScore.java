@@ -37,7 +37,6 @@ class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProbabilityS
         //TODO: implement the decomposition
         double numerator = super.apply( s ).getValue( MetricConstants.MAIN );
         double denominator = super.apply( s.getBaselineData() ).getValue( MetricConstants.MAIN );
-        ;
         final double[] result = new double[] { FunctionFactory.skill().applyAsDouble( numerator, denominator ) };
 
         //Metadata

@@ -350,7 +350,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
      * as warnings. However, if all thresholds fail, a {@link MetricCalculationException} is thrown to terminate 
      * further processing, as this indicates a serious failure.
      * 
-     * @param failures a map of failures and associated {@link MetricInputSliceException}
+     * @param failures a map of failures and associated {@link MetricCalculationException}
      * @param thresholdCount the total number of thresholds attempted
      * @param meta the {@link Metadata} used to help focus messaging
      * @param inGroup the {@link MetricInputGroup} consumed by the metrics on which the failure occurred, used to 
@@ -358,7 +358,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
      * @throws a MetricCalculationException if all thresholds fail
      */
 
-    static void handleThresholdFailures( Map<Threshold, MetricInputSliceException> failures,
+    static void handleThresholdFailures( Map<Threshold, MetricCalculationException> failures,
                                          int thresholdCount,
                                          Metadata meta,
                                          MetricInputGroup inGroup )
@@ -437,37 +437,14 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
         {
             List<Threshold> global = globalThresholds.get( MetricInputGroup.SINGLE_VALUED );
             double[] sorted = getSortedClimatology( input, global );
-            Map<Threshold, MetricInputSliceException> failures = new HashMap<>();
+            Map<Threshold, MetricCalculationException> failures = new HashMap<>();
             global.forEach( threshold -> {
                 Threshold useMe = getThreshold( threshold, sorted );
-                try
+                MetricCalculationException result =
+                        processSingleValuedThreshold( leadTime, input, futures, outGroup, useMe );
+                if ( !Objects.isNull( result ) )
                 {
-                    if ( outGroup == MetricOutputGroup.SCALAR )
-                    {
-                        futures.addScalarOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                 processSingleValuedThreshold( useMe,
-                                                                               input,
-                                                                               singleValuedScalar ) );
-                    }
-                    else if ( outGroup == MetricOutputGroup.VECTOR )
-                    {
-                        futures.addVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                 processSingleValuedThreshold( useMe,
-                                                                               input,
-                                                                               singleValuedVector ) );
-                    }
-                    else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
-                    {
-                        futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, useMe ),
-                                                      processSingleValuedThreshold( useMe,
-                                                                                    input,
-                                                                                    singleValuedMultiVector ) );
-                    }
-                }
-                //Insufficient data for one threshold: log, but allow
-                catch ( MetricInputSliceException e )
-                {
-                    failures.put( threshold, e );
+                    failures.put( useMe, result );
                 }
             } );
             //Handle any failures
@@ -479,6 +456,57 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
             //Hook for future logic
             throw new MetricCalculationException( unsupportedException );
         }
+    }
+
+    /**
+     * Processes one threshold for metrics that consume {@link SingleValuedPairs} and produce a specified 
+     * {@link MetricOutputGroup}. 
+     * 
+     * @param leadTime the lead time
+     * @param input the input pairs
+     * @param futures the metric futures
+     * @param outGroup the metric output type
+     * @param threshold the threshold
+     * @throws MetricCalculationException if the metrics cannot be computed
+     */
+
+    private MetricCalculationException processSingleValuedThreshold( Integer leadTime,
+                                                                     SingleValuedPairs input,
+                                                                     MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures,
+                                                                     MetricOutputGroup outGroup,
+                                                                     Threshold threshold )
+    {
+        MetricCalculationException returnMe = null;
+        try
+        {
+            if ( outGroup == MetricOutputGroup.SCALAR )
+            {
+                futures.addScalarOutput( dataFactory.getMapKey( leadTime, threshold ),
+                                         processSingleValuedThreshold( threshold,
+                                                                       input,
+                                                                       singleValuedScalar ) );
+            }
+            else if ( outGroup == MetricOutputGroup.VECTOR )
+            {
+                futures.addVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                                         processSingleValuedThreshold( threshold,
+                                                                       input,
+                                                                       singleValuedVector ) );
+            }
+            else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
+            {
+                futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                                              processSingleValuedThreshold( threshold,
+                                                                            input,
+                                                                            singleValuedMultiVector ) );
+            }
+        }
+        //Insufficient data for one threshold: log, but allow
+        catch ( MetricInputSliceException e )
+        {
+            returnMe = new MetricCalculationException( e.getMessage(), e );
+        }
+        return returnMe;
     }
 
     /**

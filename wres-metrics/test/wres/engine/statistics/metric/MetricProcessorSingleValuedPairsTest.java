@@ -123,14 +123,25 @@ public final class MetricProcessorSingleValuedPairsTest
 
             //Validate a subset of the data            
             processor.getStoredMetricOutput().getScalarOutput().forEach( ( key, value ) -> {
-                assertTrue( "Expected twenty results for the " + key.getKey()
-                            + ": "
-                            + value.size(),
-                            value.size() == 20 );
+                if ( key.getKey() == MetricConstants.CRITICAL_SUCCESS_INDEX )
+                {
+                    assertTrue( "Expected ten results for the " + key.getKey()
+                                + ": "
+                                + value.size(),
+                                value.size() == 10 );
+                }
+                else
+                {
+                    assertTrue( "Expected twenty results for the " + key.getKey()
+                                + ": "
+                                + value.size(),
+                                value.size() == 20 );
+                }
             } );
         }
         catch ( Exception e )
         {
+            e.printStackTrace();
             fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
         }
     }
@@ -326,6 +337,27 @@ public final class MetricProcessorSingleValuedPairsTest
                   + "' "
                   + "with metric-local thresholds that are not supported." );
         }
+        //Check for insufficient data to compute a dichotomous metric
+        String testNine = "testinput/metricProcessorSingleValuedPairsTest/test3ExceptionsNine.xml";
+        try
+        {
+            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testNine ) ).getProjectConfig();
+            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+                    MetricFactory.getInstance( metIn )
+                                 .getMetricProcessorByLeadTime( config,
+                                                                MetricOutputGroup.SCALAR );
+            processor.apply( MetricTestDataFactory.getSingleValuedPairsFour() );
+            fail( "Expected a checked exception on processing the project configuration '" + testNine
+                  + "' with insufficient data." );
+        }
+        catch ( MetricCalculationException e )
+        {
+        }
+        catch ( Exception e )
+        {
+            fail( "Unexpected exception on processing the project configuration '" + testNine
+                  + "' with insufficient data." );
+        }        
     }
 
     /**

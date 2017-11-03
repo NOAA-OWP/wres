@@ -48,8 +48,7 @@ public final class TimeWindowTest
         //Test mid-point of window 
         assertTrue( "Unexpected error in mid-point of time window.",
                     TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                   Instant.parse( "1985-01-10T00:00:00Z" ),
-                                   true )
+                                   Instant.parse( "1985-01-10T00:00:00Z" ) )
                               .getMidPointTime()
                               .equals( Instant.parse( "1985-01-05T12:00:00Z" ) ) );
     }
@@ -68,24 +67,23 @@ public final class TimeWindowTest
                                            0,
                                            0 );
         TimeWindow equalWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                true );
+                                                Instant.parse( "2010-12-31T11:59:59Z" ) );
         assertTrue( "Unexpected inequality between time windows.",
                     window.equals( equalWindow ) );
         assertTrue( "Unexpected equality between time windows on input type.",
                     !window.equals( new Double( 1.0 ) ) );
         assertTrue( "Unexpected equality between time windows on earliest time.",
                     !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:01Z" ),
-                                                   Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                   true ) ) );
+                                                   Instant.parse( "2010-12-31T11:59:59Z" ) ) ) );
         assertTrue( "Unexpected equality between time windows on latest time.",
                     !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                   Instant.parse( "2011-01-01T00:00:00Z" ),
-                                                   true ) ) );
+                                                   Instant.parse( "2011-01-01T00:00:00Z" ) ) ) );
         assertTrue( "Unexpected equality between time windows on reference time.",
                     !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                    Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                   false ) ) );
+                                                   false,
+                                                   0,
+                                                   0 ) ) );
         assertTrue( "Unexpected equality between time windows on earliest lead time.",
                     !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                    Instant.parse( "2010-12-31T11:59:59Z" ),
@@ -114,24 +112,23 @@ public final class TimeWindowTest
                                            0,
                                            0 );
         TimeWindow equalWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                true );
+                                                Instant.parse( "2010-12-31T11:59:59Z" ) );
         assertTrue( "Unexpected hash inequality between time windows.",
                     window.hashCode() == equalWindow.hashCode() );
         assertTrue( "Unexpected hash equality between time windows on input type.",
                     window.hashCode() != Double.hashCode( 1.0 ) );
         assertTrue( "Unexpected hash equality between time windows on earliest time.",
                     window.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:01Z" ),
-                                                                          Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                                          true ) ) );
+                                                                          Instant.parse( "2010-12-31T11:59:59Z" ) ) ) );
         assertTrue( "Unexpected hash equality between time windows on latest time.",
                     window.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                          Instant.parse( "2011-01-01T00:00:00Z" ),
-                                                                          true ) ) );
+                                                                          Instant.parse( "2011-01-01T00:00:00Z" ) ) ) );
         assertTrue( "Unexpected hash equality between time windows on reference time.",
                     window.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                           Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                                          false ) ) );
+                                                                          false,
+                                                                          0,
+                                                                          0 ) ) );
         assertTrue( "Unexpected hash equality between time windows on earliest lead time.",
                     window.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                           Instant.parse( "2010-12-31T11:59:59Z" ),
@@ -220,7 +217,9 @@ public final class TimeWindowTest
         assertTrue( "Current window should have a different reference time system.",
                     window.compareTo( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                     false ) ) > 0 );
+                                                     false,
+                                                     0,
+                                                     0 ) ) > 0 );
         //DIFFERENCES ON EARLIEST LEAD TIME
         assertTrue( "Current window should have an earliest lead time that is earlier.",
                     window.compareTo( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
