@@ -1,4 +1,4 @@
-﻿SELECT 'drop table if exists '||n.nspname ||'.'|| c.relname||';'
+SELECT 'drop table if exists '||n.nspname ||'.'|| c.relname||';'
 FROM pg_catalog.pg_class c
 INNER JOIN pg_catalog.pg_namespace n
 	ON N.oid = C.relnamespace

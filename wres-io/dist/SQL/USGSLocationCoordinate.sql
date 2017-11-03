@@ -1,4 +1,4 @@
-﻿-- Table: public.usgslocationcoordinate
+-- Table: public.usgslocationcoordinate
 
 DROP TABLE IF EXISTS public.usgslocationcoordinate CASCADE;
 

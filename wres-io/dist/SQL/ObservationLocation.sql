@@ -1,4 +1,4 @@
-﻿-- Table: public.observationlocation
+-- Table: public.observationlocation
 
 DROP TABLE IF EXISTS public.observationlocation CASCADE;
 

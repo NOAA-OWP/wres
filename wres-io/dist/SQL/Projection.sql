@@ -1,4 +1,4 @@
-﻿-- Table: public.projection
+-- Table: public.projection
 
 DROP TABLE IF EXISTS public.projection CASCADE;
 

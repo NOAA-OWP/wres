@@ -1,4 +1,4 @@
-﻿-- Table: public.variablenetcdfsource
+-- Table: public.variablenetcdfsource
 
 DROP TABLE IF EXISTS public.variablenetcdfsource CASCADE;
 

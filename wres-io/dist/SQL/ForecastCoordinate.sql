@@ -1,4 +1,4 @@
-﻿-- Table: public.forecastcoordinate
+-- Table: public.forecastcoordinate
 
 DROP TABLE IF EXISTS public.forecastcoordinate CASCADE;
 

@@ -1,4 +1,4 @@
-﻿-- Table: public.nwslocationcoordinate
+-- Table: public.nwslocationcoordinate
 
 DROP TABLE IF EXISTS public.nwslocationcoordinate CASCADE;
 

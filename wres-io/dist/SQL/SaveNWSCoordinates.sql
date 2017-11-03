@@ -1,4 +1,4 @@
-﻿DELETE FROM NWSLocationCoordinate;
+DELETE FROM NWSLocationCoordinate;
 
 INSERT INTO NWSLocationCoordinate(coordinate_id, observationlocation_id)
 SELECT C.coordinate_id, L.observationlocation_id

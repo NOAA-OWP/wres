@@ -1,4 +1,4 @@
-﻿DROP FUNCTION IF EXISTS wres.get_variableposition_id(IN f_id integer, IN v_id integer);
+DROP FUNCTION IF EXISTS wres.get_variableposition_id(IN f_id integer, IN v_id integer);
 
 CREATE OR REPLACE FUNCTION wres.get_variableposition_id(IN f_id integer, IN v_id integer) 
 RETURNS integer AS $BODY$

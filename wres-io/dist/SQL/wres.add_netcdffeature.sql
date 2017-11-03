@@ -1,4 +1,4 @@
-﻿-- Function: wres.add_netcdffeature(integer, integer)
+-- Function: wres.add_netcdffeature(integer, integer)
 
 -- DROP FUNCTION wres.add_netcdffeature(integer, integer);
 
