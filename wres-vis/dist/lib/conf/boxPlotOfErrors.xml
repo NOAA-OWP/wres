@@ -5,7 +5,7 @@
     <!-- One line plot title using arguments populated by chart factory. -->
     <plotTitle>
         <font family="Dialog" size="12" style="1"/>
-        <text>Box Plot of Ensemble Forecast Errors for @locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
+        <text>Box Plot of Ensemble Forecast Errors by @obsOrFcst@ Value for @locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
         </text>
     </plotTitle>
     
@@ -78,7 +78,7 @@
             <horizontalAlignment>CENTER</horizontalAlignment>
             <textAlignment>CENTER</textAlignment>
             <textInsets bottom="0.0" left="0.0" right="0.0" top="0.0"/>
-            <position>BOTTOM</position>
+            <position>TOP</position>
         </subtitle>
     </subtitleList>
 
