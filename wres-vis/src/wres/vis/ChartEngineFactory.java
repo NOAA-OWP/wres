@@ -775,9 +775,19 @@ public abstract class ChartEngineFactory
                                                              + " for "
                                                              + inputKeyInstance.getSecondKey() );
         arguments.addArgument( "probabilities",
-                               HString.buildStringFromArray( boxPlotData.getProbabilities().getDoubles(), ", " ).replaceAll( "0.0,", "min," ).replaceAll( "1.0", "max" ) );
+                               HString.buildStringFromArray( boxPlotData.getProbabilities().getDoubles(), ", " )
+                                      .replaceAll( "0.0,", "min," )
+                                      .replaceAll( "1.0", "max" ) );
         arguments.addArgument( "domainUnitsText", meta.getInputDimension().toString() );
         arguments.addArgument( "rangeUnitsText", meta.getDimension().toString() );
+
+        //Argument identifies observed or forecast for plot title usage (or elsewhere).
+        String obsOrFcstStr = "Observed";
+        if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST )
+        {
+            obsOrFcstStr = "Forecast";
+        }
+        arguments.addArgument( "obsOrFcst", obsOrFcstStr );
 
         //Add teh data source
         dataSources.add( new BoxPlotDiagramXYChartDataSource( 0, boxPlotData ) );
