@@ -74,6 +74,8 @@ public final class MetricFactoryTest
         metF.ofCoefficientOfDetermination();
         metF.ofContinuousRankedProbabilityScore();
         metF.ofContinuousRankedProbabilitySkillScore();
+        metF.ofBoxPlotErrorByObserved();
+        metF.ofBoxPlotErrorByForecast();
     }
 
     /**
@@ -198,13 +200,32 @@ public final class MetricFactoryTest
         {
         }
     }
+    
+    /**
+     * Tests {@link MetricFactory#ofEnsembleBoxPlot(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails 
+     */
+    @Test
+    public void test8OfBoxPlot() throws MetricParameterException
+    {
+        metF.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED );
+        try
+        {
+            metF.ofEnsembleBoxPlot( MetricConstants.MAIN );
+            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+        }
+    }
+    
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedScalarCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails
      */
     @Test
-    public void test8OfSingleValuedScalarCollection() throws MetricParameterException
+    public void test9OfSingleValuedScalarCollection() throws MetricParameterException
     {
         metF.ofSingleValuedScalarCollection( MetricConstants.MEAN_ABSOLUTE_ERROR );
     }
@@ -224,7 +245,7 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test9OfDiscreteProbabilityVectorCollection() throws MetricParameterException
+    public void test10OfDiscreteProbabilityVectorCollection() throws MetricParameterException
     {
         metF.ofDiscreteProbabilityVectorCollection( MetricConstants.BRIER_SCORE );
     }
@@ -234,7 +255,7 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test10OfDichotomousScalarCollection() throws MetricParameterException
+    public void test11OfDichotomousScalarCollection() throws MetricParameterException
     {
         metF.ofDichotomousScalarCollection( MetricConstants.CRITICAL_SUCCESS_INDEX );
         metF.ofDichotomousScalarCollection( MetricConstants.FREQUENCY_BIAS );
@@ -245,7 +266,7 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test11OfSingleValuedMultiVectorCollection() throws MetricParameterException
+    public void test12OfSingleValuedMultiVectorCollection() throws MetricParameterException
     {
         metF.ofSingleValuedMultiVectorCollection( MetricConstants.QUANTILE_QUANTILE_DIAGRAM );
         try
@@ -263,7 +284,7 @@ public final class MetricFactoryTest
      * @throws MetricParameterException 
      */
     @Test
-    public void test12OfDiscreteProbabilityMultiVectorCollection() throws MetricParameterException
+    public void test13OfDiscreteProbabilityMultiVectorCollection() throws MetricParameterException
     {
         metF.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELIABILITY_DIAGRAM );
         metF.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM );
@@ -282,7 +303,7 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test13OfMulticategoryMatrixCollection() throws MetricParameterException
+    public void test14OfMulticategoryMatrixCollection() throws MetricParameterException
     {
         metF.ofMulticategoryMatrixCollection( MetricConstants.CONTINGENCY_TABLE );
     }    
@@ -292,7 +313,7 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test14OfEnsembleScalarCollection() throws MetricParameterException
+    public void test15OfEnsembleScalarCollection() throws MetricParameterException
     {
         metF.ofEnsembleScalarCollection( MetricConstants.SAMPLE_SIZE );
         try
@@ -310,7 +331,7 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test15OfEnsembleVectorCollection() throws MetricParameterException
+    public void test16OfEnsembleVectorCollection() throws MetricParameterException
     {
         metF.ofEnsembleVectorCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
         metF.ofEnsembleVectorCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
@@ -329,7 +350,7 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test16OfEnsembleMultiVectorCollection() throws MetricParameterException
+    public void test17OfEnsembleMultiVectorCollection() throws MetricParameterException
     {
         metF.ofEnsembleMultiVectorCollection( MetricConstants.RANK_HISTOGRAM );
         try
@@ -343,6 +364,24 @@ public final class MetricFactoryTest
     }  
 
     /**
+     * Tests {@link MetricFactory#ofEnsembleBoxPlotCollection(MetricConstants...)}. 
+     * @throws MetricParameterException if the metric construction fails 
+     */
+    @Test
+    public void test17OfEnsembleBoxPlotCollection() throws MetricParameterException
+    {
+        metF.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST );
+        try
+        {
+            metF.ofEnsembleBoxPlotCollection( MetricConstants.MAIN );
+            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+        }        
+    } 
+
+    /**
      * Tests for exceptions in {@link MetricFactory}.
      * 
      * @throws SecurityException if reflection fails
@@ -353,7 +392,7 @@ public final class MetricFactoryTest
      */
 
     @Test
-    public void test17Exceptions() throws InstantiationException,
+    public void test19Exceptions() throws InstantiationException,
             IllegalAccessException,
             InvocationTargetException,
             NoSuchMethodException,
@@ -379,7 +418,7 @@ public final class MetricFactoryTest
      */
 
     @Test
-    public void test18MetricProcessor()
+    public void test20MetricProcessor()
     {
         //Single-valued processor
         String configPathSingleValued = "testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml";

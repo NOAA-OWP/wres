@@ -803,14 +803,14 @@ public abstract class ChartEngineFactory
      * @return Map where the keys are instances of {@link MapBiKey} with the two keys being an integer and a threshold.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
-    public static ConcurrentMap<Object, ChartEngine>
+    public static ConcurrentMap<MapBiKey<Integer, Threshold>, ChartEngine>
             buildBoxPlotChartEngine( final MetricOutputMapByLeadThreshold<BoxPlotOutput> input,
                                      final DataFactory factory,
                                      final String userSpecifiedTemplateResourceName,
                                      final String overrideParametersStr )
                     throws ChartEngineException
     {
-        final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final ConcurrentMap<MapBiKey<Integer, Threshold>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
 
         final String templateName =

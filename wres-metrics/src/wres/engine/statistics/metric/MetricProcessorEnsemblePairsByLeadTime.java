@@ -13,6 +13,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.BoxPlotOutput;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DichotomousPairs;
 import wres.datamodel.DiscreteProbabilityPairs;
@@ -81,6 +82,13 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      */
 
     private final MetricCollection<EnsemblePairs, MultiVectorOutput> ensembleMultiVector;
+
+    /**
+     * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce
+     * {@link BoxPlotOutput}.
+     */
+
+    final MetricCollection<EnsemblePairs, BoxPlotOutput> ensembleBoxPlot;
 
     /**
      * Default function that maps between ensemble pairs and single-valued pairs.
@@ -166,8 +174,6 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
             throws MetricConfigurationException
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
-        //Validate the configuration
-        validate( config );
         try
         {
             //Construct the metrics
@@ -200,13 +206,6 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
             //Ensemble input, vector output
             if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
             {
-                if ( metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
-                     && Objects.isNull( config.getInputs().getBaseline() ) )
-                {
-                    throw new MetricConfigurationException( "Specify a non-null baseline from which to generate the '"
-                                                            + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
-                                                            + "'." );
-                }
                 ensembleVector = metricFactory.ofEnsembleVectorCollection( metricExecutor,
                                                                            getSelectedMetrics( metrics,
                                                                                                MetricInputGroup.ENSEMBLE,
@@ -240,6 +239,18 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
             {
                 ensembleMultiVector = null;
             }
+            //Ensemble input, box-plot output
+            if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ) )
+            {
+                ensembleBoxPlot = metricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
+                                                                             getSelectedMetrics( metrics,
+                                                                                                 MetricInputGroup.ENSEMBLE,
+                                                                                                 MetricOutputGroup.BOXPLOT ) );
+            }
+            else
+            {
+                ensembleBoxPlot = null;
+            }
         }
         catch ( MetricParameterException e )
         {
@@ -252,6 +263,32 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
 
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
         toDiscreteProbabilities = dataFactory.getSlicer()::transformPair;
+    }
+
+    @Override
+    void validate( ProjectConfig config ) throws MetricConfigurationException
+    {
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
+        {
+            throw new MetricConfigurationException( "Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
+                                                    + config.getLabel() + "'." );
+        }
+        if ( hasMetrics( MetricInputGroup.MULTICATEGORY ) )
+        {
+            throw new MetricConfigurationException( "Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
+                                                    + config.getLabel() + "'." );
+        }
+        //Ensemble input, vector output
+        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
+        {
+            if ( metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                 && Objects.isNull( config.getInputs().getBaseline() ) )
+            {
+                throw new MetricConfigurationException( "Specify a non-null baseline from which to generate the '"
+                                                        + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
+                                                        + "'." );
+            }
+        }
     }
 
     /**
@@ -279,6 +316,10 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
         {
             processEnsembleThresholds( leadTime, input, futures, MetricOutputGroup.MULTIVECTOR );
+        }
+        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ) )
+        {
+            processEnsembleThresholds( leadTime, input, futures, MetricOutputGroup.BOXPLOT );
         }
     }
 
@@ -366,6 +407,17 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                                               processEnsembleThreshold( threshold,
                                                                         input,
                                                                         ensembleMultiVector ) );
+            }
+            else if ( outGroup == MetricOutputGroup.BOXPLOT )
+            {
+                //Only process box plots for "all data" threshold
+                if ( !threshold.isFinite() )
+                {
+                    futures.addBoxPlotOutput( dataFactory.getMapKey( leadTime, threshold ),
+                                              processEnsembleThreshold( threshold,
+                                                                        input,
+                                                                        ensembleBoxPlot ) );
+                }
             }
         }
         //Insufficient data for one threshold: log, but allow
@@ -547,27 +599,6 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         EnsemblePairs subset = dataFactory.getSlicer().sliceByLeft( pairs, threshold );
         checkSlice( subset, threshold );
         return CompletableFuture.supplyAsync( () -> collection.apply( subset ), thresholdExecutor );
-    }
-
-    /**
-     * Validates the configuration and throws a {@link MetricConfigurationException} if the configuration is invalid.
-     * 
-     * @param config the configuration to validate
-     * @throws MetricConfigurationException if the configuration is invalid
-     */
-
-    private void validate( ProjectConfig config ) throws MetricConfigurationException
-    {
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
-        {
-            throw new MetricConfigurationException( "Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
-                                                    + config.getLabel() + "'." );
-        }
-        if ( hasMetrics( MetricInputGroup.MULTICATEGORY ) )
-        {
-            throw new MetricConfigurationException( "Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
-                                                    + config.getLabel() + "'." );
-        }
     }
 
     /**

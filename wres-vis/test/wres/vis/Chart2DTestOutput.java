@@ -597,7 +597,7 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
+            final Map<MapBiKey<Integer, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
                                                                                                    factory,
                                                                                                    null,
                                                                                                    null );
@@ -657,7 +657,7 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
+            final Map<MapBiKey<Integer, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
                                                                                                    factory,
                                                                                                    null,
                                                                                                    null );

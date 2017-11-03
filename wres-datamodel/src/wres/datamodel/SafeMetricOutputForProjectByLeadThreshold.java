@@ -64,6 +64,14 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
 
     private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MatrixOutput>>> matrix =
             new ConcurrentHashMap<>();
+    
+    /**
+     * Thread safe map for {@link BoxPlotOutput}.
+     */
+
+    private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
+            new ConcurrentHashMap<>();
+    
 
     @Override
     public boolean hasOutput( MetricOutputGroup outGroup )
@@ -78,6 +86,8 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
                 return !multiVector.isEmpty();
             case MATRIX:
                 return !matrix.isEmpty();
+            case BOXPLOT:
+                return !boxplot.isEmpty();
             default:
                 return false;
         }
@@ -112,6 +122,10 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
                 {
                     addToBuilder( builder, getMatrixOutput() );
                 }
+                if ( next == MetricOutputGroup.BOXPLOT )
+                {
+                    addToBuilder( builder, getBoxPlotOutput() );
+                }
             }
         }
         return builder.build();
@@ -136,6 +150,10 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
         if ( hasOutput( MetricOutputGroup.MATRIX ) )
         {
             returnMe.add( MetricOutputGroup.MATRIX );
+        }
+        if ( hasOutput( MetricOutputGroup.BOXPLOT ) )
+        {
+            returnMe.add( MetricOutputGroup.BOXPLOT );
         }
         return returnMe.toArray( new MetricOutputGroup[returnMe.size()] );
     }
@@ -166,6 +184,13 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
             ExecutionException
     {
         return unwrap( MetricOutputGroup.MATRIX, matrix );
+    }
+    
+    @Override
+    public MetricOutputMultiMapByLeadThreshold<BoxPlotOutput> getBoxPlotOutput() throws InterruptedException,
+            ExecutionException
+    {
+        return unwrap( MetricOutputGroup.BOXPLOT, boxplot );
     }
 
     /**
@@ -203,6 +228,13 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
 
         private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MatrixOutput>>> matrixInternal =
                 new ConcurrentHashMap<>();
+        
+        /**
+         * Thread safe map for {@link BoxPlotOutput}.
+         */
+
+        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplotInternal =
+                new ConcurrentHashMap<>();
 
         @Override
         public MetricOutputForProjectByLeadThresholdBuilder addScalarOutput( Integer leadTime,
@@ -239,6 +271,15 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
             matrixInternal.put( DefaultDataFactory.getInstance().getMapKey( leadTime, threshold ), result );
             return this;
         }
+        
+        @Override
+        public MetricOutputForProjectByLeadThresholdBuilder addBoxPlotOutput( Integer leadTime,
+                                                                             Threshold threshold,
+                                                                             Future<MetricOutputMapByMetric<BoxPlotOutput>> result )
+        {
+            boxplotInternal.put( DefaultDataFactory.getInstance().getMapKey( leadTime, threshold ), result );
+            return this;
+        }
 
         @Override
         public MetricOutputForProjectByLeadThreshold build()
@@ -260,6 +301,7 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
         vector.putAll( builder.vectorInternal );
         multiVector.putAll( builder.multiVectorInternal );
         matrix.putAll( builder.matrixInternal );
+        boxplot.putAll( builder.boxplotInternal );
     }
 
     /**

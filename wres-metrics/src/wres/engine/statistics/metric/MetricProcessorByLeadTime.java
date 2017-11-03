@@ -13,6 +13,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.BoxPlotOutput;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MapBiKey;
 import wres.datamodel.Metadata;
@@ -134,6 +135,13 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
                 new ConcurrentHashMap<>();
 
         /**
+         * Box plot results.
+         */
+
+        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
+                new ConcurrentHashMap<>();
+        
+        /**
          * Returns the results associated with the futures.
          * 
          * @return the metric results
@@ -147,6 +155,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
             scalar.forEach( builder::addScalarOutput );
             vector.forEach( builder::addVectorOutput );
             multivector.forEach( builder::addMultiVectorOutput );
+            boxplot.forEach( builder::addBoxPlotOutput );
             return builder.build();
         }
 
@@ -191,6 +200,13 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
              */
 
             private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
+                    new ConcurrentHashMap<>();
+
+            /**
+             * Box plot results.
+             */
+
+            private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
                     new ConcurrentHashMap<>();
 
             /**
@@ -252,6 +268,21 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
             }
 
             /**
+             * Adds a set of future {@link BoxPlotOutput} to the appropriate internal store.
+             * 
+             * @param key the key
+             * @param value the future result
+             * @return the builder
+             */
+
+            MetricFuturesByLeadTimeBuilder addBoxPlotOutput( MapBiKey<Integer, Threshold> key,
+                                                             Future<MetricOutputMapByMetric<BoxPlotOutput>> value )
+            {
+                boxplot.put( key, value );
+                return this;
+            }
+
+            /**
              * Build the metric futures.
              * 
              * @return the metric futures
@@ -291,6 +322,10 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
                         {
                             multivector.putAll( futures.multivector );
                         }
+                        else if ( nextGroup == MetricOutputGroup.BOXPLOT )
+                        {
+                            boxplot.putAll( futures.boxplot );
+                        }
                     }
                 }
                 return this;
@@ -310,6 +345,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
             scalar.putAll( builder.scalar );
             vector.putAll( builder.vector );
             multivector.putAll( builder.multivector );
+            boxplot.putAll( builder.boxplot );
             dataFactory = builder.dataFactory;
         }
 
