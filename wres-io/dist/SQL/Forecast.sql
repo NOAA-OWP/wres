@@ -1,4 +1,4 @@
-﻿-- Table: public.forecast
+-- Table: public.forecast
 
 DROP TABLE IF EXISTS public.forecast CASCADE;
 

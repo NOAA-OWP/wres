@@ -1,4 +1,4 @@
-﻿-- Table: public.unitconversion
+-- Table: public.unitconversion
 
 DROP TABLE IF EXISTS public.unitconversion CASCADE;
 

@@ -1,4 +1,4 @@
-﻿-- Table: public.indexqueue
+-- Table: public.indexqueue
 
 -- DROP TABLE public.indexqueue;
 

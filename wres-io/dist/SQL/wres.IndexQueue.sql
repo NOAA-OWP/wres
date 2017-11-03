@@ -1,4 +1,4 @@
-﻿-- Table: public.IndexQueue
+-- Table: public.IndexQueue
 
 DROP TABLE IF EXISTS public.IndexQueue;
 

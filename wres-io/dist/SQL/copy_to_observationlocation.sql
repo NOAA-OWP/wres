@@ -1,4 +1,4 @@
-﻿TRUNCATE ObservationLocation RESTART IDENTITY CASCADE;
+TRUNCATE ObservationLocation RESTART IDENTITY CASCADE;
 
 INSERT INTO ObservationLocation 
 (

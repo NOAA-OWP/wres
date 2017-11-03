@@ -1,4 +1,4 @@
-﻿-- Table: public.featureindex
+-- Table: public.featureindex
 
 DROP TABLE IF EXISTS public.featureindex CASCADE;
 

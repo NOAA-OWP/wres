@@ -1,4 +1,4 @@
-﻿-- Table: wres.UnitConversion
+-- Table: wres.UnitConversion
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 

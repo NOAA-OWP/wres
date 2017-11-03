@@ -1,4 +1,4 @@
-﻿-- Table: wres.TimeSeries
+-- Table: wres.TimeSeries
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 

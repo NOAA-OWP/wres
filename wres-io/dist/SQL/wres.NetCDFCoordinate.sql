@@ -1,4 +1,4 @@
-﻿-- Table: wres.NetCDFCoordinate
+-- Table: wres.NetCDFCoordinate
 
 DROP TABLE IF EXISTS wres.NetCDFCoordinate CASCADE;
 
