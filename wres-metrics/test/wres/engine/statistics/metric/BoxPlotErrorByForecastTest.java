@@ -3,6 +3,7 @@ package wres.engine.statistics.metric;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +19,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.ReferenceTime;
+import wres.datamodel.TimeWindow;
 import wres.engine.statistics.metric.BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder;
 
 /**
@@ -46,9 +49,13 @@ public final class BoxPlotErrorByForecastTest
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         values.add( dataF.pairOf( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
         final MetadataFactory metFac = dataF.getMetadataFactory();
+        final TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                 Instant.MAX,
+                                                 ReferenceTime.VALID_TIME,
+                                                 24 );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
                                                   metFac.getDatasetIdentifier( "A", "MAP" ),
-                                                  24 );
+                                                  window );
         EnsemblePairs input = dataF.ofEnsemblePairs( values, meta );
         //Build the metric
         final BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
@@ -63,7 +70,7 @@ public final class BoxPlotErrorByForecastTest
                                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
                                                                    MetricConstants.MAIN,
                                                                    metFac.getDatasetIdentifier( "A", "MAP" ),
-                                                                   24 );
+                                                                   window );
 
         //Compute normally
         final BoxPlotOutput actual = bpe.apply( input );
@@ -102,9 +109,13 @@ public final class BoxPlotErrorByForecastTest
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         values.add( dataF.pairOf( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
         final MetadataFactory metFac = dataF.getMetadataFactory();
+        final TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                 Instant.MAX,
+                                                 ReferenceTime.VALID_TIME,
+                                                 24 );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
                                                   metFac.getDatasetIdentifier( "A", "MAP" ),
-                                                  24 );
+                                                  window );
         EnsemblePairs input = dataF.ofEnsemblePairs( values, meta );
         //Build the metric
         final BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
@@ -119,7 +130,7 @@ public final class BoxPlotErrorByForecastTest
                                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
                                                                    MetricConstants.MAIN,
                                                                    metFac.getDatasetIdentifier( "A", "MAP" ),
-                                                                   24 );
+                                                                   window );
 
         //Compute normally
         final BoxPlotOutput actual = bpe.apply( input );

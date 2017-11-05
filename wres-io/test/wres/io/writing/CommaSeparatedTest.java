@@ -1,9 +1,12 @@
 package wres.io.writing;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -11,8 +14,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
@@ -26,11 +27,13 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MapBiKey;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.MetricOutputMapByMetric;
 import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.ReferenceTime;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
+import wres.datamodel.TimeWindow;
 
 // uncomment these if we figure out what was wrong with powermockito setup
 //@RunWith( PowerMockRunner.class )
@@ -90,12 +93,11 @@ public class CommaSeparatedTest
         DataFactory outputFactory = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = outputFactory.getMetadataFactory();
 
-        MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder
+        MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder
                 outputBuilder =
-                outputFactory.ofMetricOutputForProjectByLeadThreshold();
+                outputFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
-        Integer leadTimeOne = 1;
-        Integer leadTimeTwo = 2;
+        TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, 1 );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
@@ -128,15 +130,15 @@ public class CommaSeparatedTest
                 CompletableFuture.completedFuture( fakeOutputData );
 
         // Fake lead time and threshold
-        MapBiKey<Integer, Threshold> mapKeyByLeadThreshold =
-                outputFactory.getMapKeyByLeadThreshold( leadTimeOne,
+        MapBiKey<TimeWindow, Threshold> mapKeyByLeadThreshold =
+                outputFactory.getMapKeyByTimeThreshold( timeOne,
                                                         Double.NEGATIVE_INFINITY,
                                                         Threshold.Operator.GREATER );
 
         outputBuilder.addScalarOutput( mapKeyByLeadThreshold,
                                        outputMapByMetricFuture );
 
-        MetricOutputForProjectByLeadThreshold output = outputBuilder.build();
+        MetricOutputForProjectByTimeAndThreshold output = outputBuilder.build();
 
         // Construct a fake configuration file.
 

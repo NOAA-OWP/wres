@@ -98,7 +98,7 @@ public class MetricFactory
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public MetricProcessorByLeadTime getMetricProcessorByLeadTime( final ProjectConfig config,
+    public MetricProcessorByTime getMetricProcessorByLeadTime( final ProjectConfig config,
                                                                    final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
@@ -121,7 +121,7 @@ public class MetricFactory
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public MetricProcessorByLeadTime getMetricProcessorByLeadTime( final ProjectConfig config,
+    public MetricProcessorByTime getMetricProcessorByLeadTime( final ProjectConfig config,
                                                                    final ExecutorService thresholdExecutor,
                                                                    final ExecutorService metricExecutor,
                                                                    final MetricOutputGroup... mergeList )
@@ -130,13 +130,13 @@ public class MetricFactory
         switch ( MetricProcessor.getInputType( config ) )
         {
             case SINGLE_VALUED:
-                return new MetricProcessorSingleValuedPairsByLeadTime( outputFactory,
+                return new MetricProcessorSingleValuedPairsByTime( outputFactory,
                                                                        config,
                                                                        thresholdExecutor,
                                                                        metricExecutor,
                                                                        mergeList );
             case ENSEMBLE:
-                return new MetricProcessorEnsemblePairsByLeadTime( outputFactory,
+                return new MetricProcessorEnsemblePairsByTime( outputFactory,
                                                                    config,
                                                                    thresholdExecutor,
                                                                    metricExecutor,

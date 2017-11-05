@@ -23,13 +23,13 @@ public interface Metadata
     } 
     
     /**
-     * Returns true if {@link #getLeadTimeInHours()} returns non-null, false otherwise.
+     * Returns true if {@link #getTimeWindow()} returns non-null, false otherwise.
      * 
-     * @return true if {@link #getLeadTimeInHours()} returns non-null, false otherwise.
+     * @return true if {@link #getTimeWindow()} returns non-null, false otherwise.
      */
-    default boolean hasLeadTime()
+    default boolean hasTimeWindow()
     {
-        return Objects.nonNull(getLeadTimeInHours());
+        return Objects.nonNull(getTimeWindow());
     }      
     
     /**
@@ -49,12 +49,11 @@ public interface Metadata
     DatasetIdentifier getIdentifier();
 
     /**
-     * Returns an optional forecast lead time in hours to associate with the metadata or null. For analysis and 
-     * simulation types, this might be <code>0</code>.
+     * Returns a {@link TimeWindow} associated with the metadata or null.
      * 
      * @return a lead time or null
      */
 
-    Integer getLeadTimeInHours();
+    TimeWindow getTimeWindow();
 
 }

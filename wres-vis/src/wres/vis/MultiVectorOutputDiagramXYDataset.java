@@ -3,22 +3,21 @@ package wres.vis;
 import org.jfree.data.xy.XYDataset;
 
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.MultiVectorOutput;
 
 /**
- * The {@link XYDataset} for use in building the reliability diagram portion of the reliability diagram plot (the other
- * being the sample size portion).
+ * The {@link XYDataset} for use in building a chart that plots a {@link MultiVectorOutput}.
  * 
  * @author Hank.Herr
  */
-public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<MetricOutputMapByLeadThreshold<MultiVectorOutput>, MetricOutputMapByLeadThreshold<MultiVectorOutput>>
+public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<MetricOutputMapByTimeAndThreshold<MultiVectorOutput>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>>
 {
     private static final long serialVersionUID = 4254109136599641286L;
     private final MetricDimension xConstant;
     private final MetricDimension yConstant;
 
-    public MultiVectorOutputDiagramXYDataset(final MetricOutputMapByLeadThreshold<MultiVectorOutput> input, final MetricDimension xConstant, final MetricDimension yConstant)
+    public MultiVectorOutputDiagramXYDataset(final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input, final MetricDimension xConstant, final MetricDimension yConstant)
     {
         super(input);
         this.xConstant = xConstant;
@@ -26,7 +25,7 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Met
     }
 
     @Override
-    protected void preparePlotData(final MetricOutputMapByLeadThreshold<MultiVectorOutput> rawData)
+    protected void preparePlotData(final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> rawData)
     {
         //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
         if((rawData.keySetByFirstKey().size() == 0) || (rawData.keySetBySecondKey().size() == 0))
@@ -84,7 +83,7 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Met
         }
         else if((getPlotData().keySetByFirstKey().size() >= 1) && (getPlotData().keySetBySecondKey().size() == 1))
         {
-            return getPlotData().getKey(series).getFirstKey().toString();
+            return Long.toString( getPlotData().getKey(series).getFirstKey().getLatestLeadTimeInHours() );
         } 
         else
         {

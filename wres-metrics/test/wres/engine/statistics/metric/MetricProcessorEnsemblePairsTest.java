@@ -14,15 +14,15 @@ import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.MetricOutputMapByLeadThreshold;
-import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
+import wres.datamodel.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.VectorOutput;
 import wres.io.config.ProjectConfigPlus;
 
 /**
- * Tests the {@link MetricProcessorEnsemblePairsByLeadTime}.
+ * Tests the {@link MetricProcessorEnsemblePairsByTime}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -34,8 +34,8 @@ public final class MetricProcessorEnsemblePairsTest
     private final DataFactory dataFactory = DefaultDataFactory.getInstance();
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
-     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
+     * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} and application of
+     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -47,25 +47,25 @@ public final class MetricProcessorEnsemblePairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessorEnsemblePairsByLeadTime processor =
-                    (MetricProcessorEnsemblePairsByLeadTime) MetricFactory.getInstance( dataFactory )
+            MetricProcessorEnsemblePairsByTime processor =
+                    (MetricProcessorEnsemblePairsByTime) MetricFactory.getInstance( dataFactory )
                                                                           .getMetricProcessorByLeadTime( config );
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
-            MetricOutputForProjectByLeadThreshold results = processor.apply( pairs );
-            MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.getScalarOutput()
+            MetricOutputForProjectByTimeAndThreshold results = processor.apply( pairs );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.getScalarOutput()
                                                                        .get( MetricConstants.BIAS_FRACTION );
-            MetricOutputMapByLeadThreshold<ScalarOutput> cod =
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> cod =
                     results.getScalarOutput()
                            .get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
-            MetricOutputMapByLeadThreshold<ScalarOutput> rho = results.getScalarOutput()
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.getScalarOutput()
                                                                       .get( MetricConstants.CORRELATION_PEARSONS );
-            MetricOutputMapByLeadThreshold<ScalarOutput> mae = results.getScalarOutput()
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> mae = results.getScalarOutput()
                                                                       .get( MetricConstants.MEAN_ABSOLUTE_ERROR );
-            MetricOutputMapByLeadThreshold<ScalarOutput> me =
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> me =
                     results.getScalarOutput().get( MetricConstants.MEAN_ERROR );
-            MetricOutputMapByLeadThreshold<ScalarOutput> rmse = results.getScalarOutput()
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> rmse = results.getScalarOutput()
                                                                        .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-            MetricOutputMapByLeadThreshold<VectorOutput> crps =
+            MetricOutputMapByTimeAndThreshold<VectorOutput> crps =
                     results.getVectorOutput()
                            .get( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
 
@@ -92,8 +92,8 @@ public final class MetricProcessorEnsemblePairsTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
-     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
+     * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} and application of
+     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test2ApplyWithValueThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -106,17 +106,17 @@ public final class MetricProcessorEnsemblePairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.values() );
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             processor.apply( pairs );
             //Obtain the results
-            MetricOutputMultiMapByLeadThreshold<ScalarOutput> results = processor.getStoredMetricOutput()
+            MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> results = processor.getStoredMetricOutput()
                                                                                  .getScalarOutput();
             //Validate bias
-            MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 0 ),
@@ -142,7 +142,7 @@ public final class MetricProcessorEnsemblePairsTest
                         + bias.getKey( 5 ),
                         bias.getValue( 5 ).getData().equals( -0.056658160809530816 ) );
             //Validate CoD
-            MetricOutputMapByLeadThreshold<ScalarOutput> cod =
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> cod =
                     results.get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
             assertTrue( "Expected results differ from actual results for "
                         + MetricConstants.COEFFICIENT_OF_DETERMINATION
@@ -175,7 +175,7 @@ public final class MetricProcessorEnsemblePairsTest
                         + cod.getKey( 5 ),
                         cod.getValue( 5 ).getData().equals( 0.7492338765733539 ) );
             //Validate rho
-            MetricOutputMapByLeadThreshold<ScalarOutput> rho = results.get( MetricConstants.CORRELATION_PEARSONS );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.get( MetricConstants.CORRELATION_PEARSONS );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
                         + " at "
                         + rho.getKey( 0 ),
@@ -201,7 +201,7 @@ public final class MetricProcessorEnsemblePairsTest
                         + rho.getKey( 5 ),
                         rho.getValue( 5 ).getData().equals( 0.8655829692024641 ) );
             //Validate mae
-            MetricOutputMapByLeadThreshold<ScalarOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
                         + " at "
                         + mae.getKey( 0 ),
@@ -227,7 +227,7 @@ public final class MetricProcessorEnsemblePairsTest
                         + mae.getKey( 5 ),
                         mae.getValue( 5 ).getData().equals( 22.094227646773568 ) );
             //Validate me
-            MetricOutputMapByLeadThreshold<ScalarOutput> me = results.get( MetricConstants.MEAN_ERROR );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> me = results.get( MetricConstants.MEAN_ERROR );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
                         + " at "
                         + me.getKey( 0 ),
@@ -253,7 +253,7 @@ public final class MetricProcessorEnsemblePairsTest
                         + me.getKey( 5 ),
                         me.getValue( 5 ).getData().equals( -4.218543908073952 ) );
             //Validate rmse
-            MetricOutputMapByLeadThreshold<ScalarOutput> rmse = results.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> rmse = results.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
                         + " at "
                         + rmse.getKey( 0 ),
@@ -286,8 +286,8 @@ public final class MetricProcessorEnsemblePairsTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} and application of
-     * {@link MetricProcessorEnsemblePairsByLeadTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
+     * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} and application of
+     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test3ApplyWithProbabilityThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -300,20 +300,20 @@ public final class MetricProcessorEnsemblePairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.SCALAR );
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             processor.apply( pairs );
             //Obtain the results
-            MetricOutputMultiMapByLeadThreshold<ScalarOutput> results = processor.getStoredMetricOutput()
+            MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> results = processor.getStoredMetricOutput()
                                                                                  .getScalarOutput();
 
             //Validate a selection of the outputs only
 
             //Validate bias
-            MetricOutputMapByLeadThreshold<ScalarOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                         + " at "
                         + bias.getKey( 0 ),
@@ -339,7 +339,7 @@ public final class MetricProcessorEnsemblePairsTest
                         + bias.getKey( 5 ),
                         bias.getValue( 5 ).getData().equals( -0.056658160809530816 ) );
             //Validate CoD
-            MetricOutputMapByLeadThreshold<ScalarOutput> cod =
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> cod =
                     results.get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
             assertTrue( "Expected results differ from actual results for "
                         + MetricConstants.COEFFICIENT_OF_DETERMINATION
@@ -372,7 +372,7 @@ public final class MetricProcessorEnsemblePairsTest
                         + cod.getKey( 5 ),
                         cod.getValue( 5 ).getData().equals( 0.7492338765733539 ) );
             //Validate rho
-            MetricOutputMapByLeadThreshold<ScalarOutput> rho = results.get( MetricConstants.CORRELATION_PEARSONS );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.get( MetricConstants.CORRELATION_PEARSONS );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
                         + " at "
                         + rho.getKey( 0 ),
@@ -398,7 +398,7 @@ public final class MetricProcessorEnsemblePairsTest
                         + rho.getKey( 5 ),
                         rho.getValue( 5 ).getData().equals( 0.8655829692024641 ) );
             //Validate mae
-            MetricOutputMapByLeadThreshold<ScalarOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
                         + " at "
                         + mae.getKey( 0 ),
@@ -424,7 +424,7 @@ public final class MetricProcessorEnsemblePairsTest
                         + mae.getKey( 5 ),
                         mae.getValue( 5 ).getData().equals( 22.094227646773568 ) );
             //Validate me
-            MetricOutputMapByLeadThreshold<ScalarOutput> me = results.get( MetricConstants.MEAN_ERROR );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> me = results.get( MetricConstants.MEAN_ERROR );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
                         + " at "
                         + me.getKey( 0 ),
@@ -450,7 +450,7 @@ public final class MetricProcessorEnsemblePairsTest
                         + me.getKey( 5 ),
                         me.getValue( 5 ).getData().equals( -4.218543908073952 ) );
             //Validate rmse
-            MetricOutputMapByLeadThreshold<ScalarOutput> rmse = results.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> rmse = results.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
             assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
                         + " at "
                         + rmse.getKey( 0 ),
@@ -484,7 +484,7 @@ public final class MetricProcessorEnsemblePairsTest
     }
 
     /**
-     * Tests for exceptions associated with a {@link MetricProcessorEnsemblePairsByLeadTime}.
+     * Tests for exceptions associated with a {@link MetricProcessorEnsemblePairsByTime}.
      */
 
     @Test
@@ -497,7 +497,7 @@ public final class MetricProcessorEnsemblePairsTest
             ProjectConfig config =
                     ProjectConfigPlus.from( Paths.get( testOne ) )
                                      .getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.SCALAR );
@@ -514,7 +514,7 @@ public final class MetricProcessorEnsemblePairsTest
             ProjectConfig config =
                     ProjectConfigPlus.from( Paths.get( testTwo ) )
                                      .getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.SCALAR );
@@ -537,7 +537,7 @@ public final class MetricProcessorEnsemblePairsTest
             ProjectConfig config =
                     ProjectConfigPlus.from( Paths.get( testThree ) )
                                      .getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.SCALAR );
@@ -560,7 +560,7 @@ public final class MetricProcessorEnsemblePairsTest
             ProjectConfig config =
                     ProjectConfigPlus.from( Paths.get( testFour ) )
                                      .getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.SCALAR );
@@ -583,7 +583,7 @@ public final class MetricProcessorEnsemblePairsTest
             ProjectConfig config =
                     ProjectConfigPlus.from( Paths.get( testFive ) )
                                      .getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.SCALAR );
@@ -606,7 +606,7 @@ public final class MetricProcessorEnsemblePairsTest
             ProjectConfig config =
                     ProjectConfigPlus.from( Paths.get( testSix ) )
                                      .getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.SCALAR );
@@ -625,7 +625,7 @@ public final class MetricProcessorEnsemblePairsTest
     }
     
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairsByLeadTime} for all valid metrics associated
+     * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} for all valid metrics associated
      * with ensemble inputs.
      */
 
@@ -637,7 +637,7 @@ public final class MetricProcessorEnsemblePairsTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.values() );

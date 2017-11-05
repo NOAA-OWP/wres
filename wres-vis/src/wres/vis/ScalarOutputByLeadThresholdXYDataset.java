@@ -5,12 +5,12 @@ import java.util.List;
 
 import org.jfree.data.xy.AbstractXYDataset;
 
-import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
 
 /**
- * An {@link AbstractXYDataset} that wraps a {@link MetricOutputMapByLeadThreshold} which contains a set of
+ * An {@link AbstractXYDataset} that wraps a {@link MetricOutputMapByTimeAndThreshold} which contains a set of
  * {@link ScalarOutput} for a single verification metric, indexed by forecast lead time and threshold. Slices the data
  * by threshold to form plots by lead time on the domain axis.
  * 
@@ -19,11 +19,11 @@ import wres.datamodel.Threshold;
  * @since 0.1
  */
 
-public class ScalarOutputByLeadThresholdXYDataset extends WRESAbstractXYDataset<List<MetricOutputMapByLeadThreshold<ScalarOutput>>, MetricOutputMapByLeadThreshold<ScalarOutput>>
+public class ScalarOutputByLeadThresholdXYDataset extends WRESAbstractXYDataset<List<MetricOutputMapByTimeAndThreshold<ScalarOutput>>, MetricOutputMapByTimeAndThreshold<ScalarOutput>>
 {
     private static final long serialVersionUID = 2251263309545763140L;
 
-    public ScalarOutputByLeadThresholdXYDataset(final MetricOutputMapByLeadThreshold<ScalarOutput> input)
+    public ScalarOutputByLeadThresholdXYDataset(final MetricOutputMapByTimeAndThreshold<ScalarOutput> input)
     {
         super(input);
 
@@ -41,13 +41,13 @@ public class ScalarOutputByLeadThresholdXYDataset extends WRESAbstractXYDataset<
      * The legend names are handled here with calls to {@link #setOverrideLegendName(int, String)} because the first
      * keys (the thresholds) will otherwise be lost when the data is populated.
      * 
-     * @param rawData the input data must be of type {@link MetricOutputMapByLeadThreshold} with generic
+     * @param rawData the input data must be of type {@link MetricOutputMapByTimeAndThreshold} with generic
      *            {@link ScalarOutput}.
      */
     @Override
-    protected void preparePlotData(final MetricOutputMapByLeadThreshold<ScalarOutput> rawData)
+    protected void preparePlotData(final MetricOutputMapByTimeAndThreshold<ScalarOutput> rawData)
     {
-        final List<MetricOutputMapByLeadThreshold<ScalarOutput>> data = new ArrayList<>();
+        final List<MetricOutputMapByTimeAndThreshold<ScalarOutput>> data = new ArrayList<>();
         for(final Threshold key: rawData.keySetByThreshold())
         {
             data.add(rawData.sliceByThreshold(key));
@@ -64,7 +64,7 @@ public class ScalarOutputByLeadThresholdXYDataset extends WRESAbstractXYDataset<
     @Override
     public Number getX(final int series, final int item)
     {
-        return getPlotData().get(series).getKey(item).getFirstKey();
+        return getPlotData().get(series).getKey(item).getFirstKey().getLatestLeadTimeInHours();
     }
 
     @Override

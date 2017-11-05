@@ -9,8 +9,8 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
-import wres.datamodel.SafeMetricOutputMultiMapByLeadThreshold.SafeMetricOutputMultiMapByLeadThresholdBuilder;
+import wres.datamodel.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
+import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.Threshold.Operator;
 
 /**
@@ -274,41 +274,41 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T>
-            ofMap( final Map<MapBiKey<Integer, Threshold>, T> input )
+    public <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
+            ofMap( final Map<MapBiKey<TimeWindow, Threshold>, T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by lead time and threshold." );
-        final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
-                new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
+                new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
         input.forEach( builder::put );
         return builder.build();
     }
 
     @Override
-    public <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold<T>
-            ofMultiMap( final Map<MapBiKey<Integer, Threshold>, MetricOutputMapByMetric<T>> input )
+    public <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
+            ofMultiMap( final Map<MapBiKey<TimeWindow, Threshold>, MetricOutputMapByMetric<T>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by threshold." );
-        final SafeMetricOutputMultiMapByLeadThresholdBuilder<T> builder =
-                new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
+        final SafeMetricOutputMultiMapByTimeAndThresholdBuilder<T> builder =
+                new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
         input.forEach( builder::put );
         return builder.build();
     }
 
     @Override
-    public <S extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder<S>
+    public <S extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder<S>
             ofMultiMap()
     {
-        return new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
+        return new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
     }
 
     @Override
-    public <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T>
-            combine( final List<MetricOutputMapByLeadThreshold<T>> input )
+    public <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
+            combine( final List<MetricOutputMapByTimeAndThreshold<T>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs to combine." );
-        final SafeMetricOutputMapByLeadThreshold.Builder<T> builder =
-                new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
+                new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
         input.forEach( a -> a.forEach( builder::put ) );
         builder.setOverrideMetadata( input.get( 0 ).getMetadata() );
         return builder.build();
@@ -363,9 +363,9 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public MetricOutputForProjectByLeadThresholdBuilder ofMetricOutputForProjectByLeadThreshold()
+    public MetricOutputForProjectByTimeAndThresholdBuilder ofMetricOutputForProjectByTimeAndThreshold()
     {
-        return new SafeMetricOutputForProjectByLeadThreshold.SafeMetricOutputForProjectByLeadThresholdBuilder();
+        return new SafeMetricOutputForProjectByTimeAndThreshold.SafeMetricOutputForProjectByTimeAndThresholdBuilder();
     }
 
     @Override

@@ -19,14 +19,15 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
 import wres.datamodel.MetricInputSliceException;
 import wres.datamodel.MetricOutput;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.MetricOutputMapByMetric;
 import wres.datamodel.PairOfBooleans;
 import wres.datamodel.PairOfDoubles;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Threshold;
-import wres.engine.statistics.metric.MetricProcessorByLeadTime.MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder;
+import wres.datamodel.TimeWindow;
+import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
@@ -39,7 +40,7 @@ import wres.engine.statistics.metric.MetricProcessorByLeadTime.MetricFuturesByLe
  * @since 0.1
  */
 
-class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTime
+class MetricProcessorSingleValuedPairsByTime extends MetricProcessorByTime
 {
 
     /**
@@ -50,41 +51,41 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
     private final MetricCollection<DichotomousPairs, ScalarOutput> dichotomousScalar;
 
     @Override
-    public MetricOutputForProjectByLeadThreshold apply( MetricInput<?> input )
+    public MetricOutputForProjectByTimeAndThreshold apply( MetricInput<?> input )
     {
         if ( ! ( input instanceof SingleValuedPairs ) )
         {
             throw new MetricCalculationException( "Expected single-valued pairs for metric processing." );
         }
-        Integer leadTime = input.getMetadata().getLeadTimeInHours();
-        Objects.requireNonNull( leadTime, "Expected a non-null forecast lead time in the input metadata." );
+        TimeWindow timeWindow = input.getMetadata().getTimeWindow();
+        Objects.requireNonNull( timeWindow, "Expected a non-null time window in the input metadata." );
 
         //Metric futures 
-        MetricFuturesByLeadTimeBuilder futures = new MetricFuturesByLeadTimeBuilder();
+        MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
         futures.addDataFactory( dataFactory );
 
         //Process the metrics that consume single-valued pairs
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
-            processSingleValuedPairs( leadTime, (SingleValuedPairs) input, futures );
+            processSingleValuedPairs( timeWindow, (SingleValuedPairs) input, futures );
         }
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
-            processDichotomousPairs( leadTime, (SingleValuedPairs) input, futures );
+            processDichotomousPairs( timeWindow, (SingleValuedPairs) input, futures );
         }
 
         // Log
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Completed processing of metrics for feature '{}' at lead time {}.",
+            LOGGER.debug( "Completed processing of metrics for feature '{}' at time window '{}'.",
                           input.getMetadata().getIdentifier().getGeospatialID(),
-                          input.getMetadata().getLeadTimeInHours() );
+                          input.getMetadata().getTimeWindow() );
         }
 
         //Process and return the result       
-        MetricFuturesByLeadTime futureResults = futures.build();
+        MetricFuturesByTime futureResults = futures.build();
         //Add for merge with existing futures, if required
-        addToMergeMap( leadTime, futureResults );
+        addToMergeMap( timeWindow, futureResults );
         return futureResults.getMetricOutput();
     }
 
@@ -102,7 +103,7 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorSingleValuedPairsByLeadTime( final DataFactory dataFactory,
+    MetricProcessorSingleValuedPairsByTime( final DataFactory dataFactory,
                                                 final ProjectConfig config,
                                                 final ExecutorService thresholdExecutor,
                                                 final ExecutorService metricExecutor,
@@ -156,15 +157,15 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
      * {@link SingleValuedPairs}, using a configured mapping function. Skips any thresholds for which
      * {@link Double#isFinite(double)} returns <code>false</code> on the threshold value(s).
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairs( Integer leadTime,
+    private void processDichotomousPairs( TimeWindow timeWindow,
                                           SingleValuedPairs input,
-                                          MetricFuturesByLeadTimeBuilder futures )
+                                          MetricFuturesByTimeBuilder futures )
     {
 
         //Metric-specific overrides are currently unsupported
@@ -184,7 +185,7 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
                     {
                         Threshold useMe = getThreshold( threshold, sorted );
                         MetricCalculationException result =
-                                processDichotomousThreshold( leadTime, input, futures, useMe );
+                                processDichotomousThreshold( timeWindow, input, futures, useMe );
                         if ( !Objects.isNull( result ) )
                         {
                             failures.put( useMe, result );
@@ -207,22 +208,22 @@ class MetricProcessorSingleValuedPairsByLeadTime extends MetricProcessorByLeadTi
      * Processes one threshold for metrics that consume {@link DichotomousPairs}, which are mapped from the input pairs,
      * {@link SingleValuedPairs}, using a configured mapping function, and produce a {@link MetricOutputGroup#SCALAR}. 
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param threshold the threshold
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private MetricCalculationException processDichotomousThreshold( Integer leadTime,
+    private MetricCalculationException processDichotomousThreshold( TimeWindow timeWindow,
                                                                     SingleValuedPairs input,
-                                                                    MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures,
+                                                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                                     Threshold threshold )
     {
         MetricCalculationException returnMe = null;
         try
         {
-            futures.addScalarOutput( dataFactory.getMapKey( leadTime, threshold ),
+            futures.addScalarOutput( dataFactory.getMapKey( timeWindow, threshold ),
                                      processDichotomousThreshold( threshold,
                                                                   input,
                                                                   dichotomousScalar ) );

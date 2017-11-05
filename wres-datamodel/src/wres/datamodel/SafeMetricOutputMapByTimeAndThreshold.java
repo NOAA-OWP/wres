@@ -14,13 +14,13 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
- * Immutable map of {@link MetricOutput} stored by forecast lead time and threshold in their natural order.
+ * Immutable map of {@link MetricOutput} stored by {@link TimeWindow} and {@link Threshold} in their natural order.
  *
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements MetricOutputMapByLeadThreshold<T>
+class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implements MetricOutputMapByTimeAndThreshold<T>
 {
 
     /**
@@ -39,22 +39,22 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
      * Underlying store.
      */
 
-    private final TreeMap<MapBiKey<Integer, Threshold>, T> store;
+    private final TreeMap<MapBiKey<TimeWindow, Threshold>, T> store;
 
     /**
      * Internal array of map keys.
      */
 
-    private final List<MapBiKey<Integer, Threshold>> internal;
+    private final List<MapBiKey<TimeWindow, Threshold>> internal;
 
     @Override
-    public T get( final MapBiKey<Integer, Threshold> key )
+    public T get( final MapBiKey<TimeWindow, Threshold> key )
     {
         return store.get( key );
     }
 
     @Override
-    public MapBiKey<Integer, Threshold> getKey( final int index )
+    public MapBiKey<TimeWindow, Threshold> getKey( final int index )
     {
         return internal.get( index );
     }
@@ -66,7 +66,7 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     }
 
     @Override
-    public boolean containsKey( final MapBiKey<Integer, Threshold> key )
+    public boolean containsKey( final MapBiKey<TimeWindow, Threshold> key )
     {
         return store.containsKey( key );
     }
@@ -84,21 +84,21 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     }
 
     @Override
-    public Set<MapBiKey<Integer, Threshold>> keySet()
+    public Set<MapBiKey<TimeWindow, Threshold>> keySet()
     {
         return Collections.unmodifiableSet( store.keySet() );
     }
 
     @Override
-    public Set<Entry<MapBiKey<Integer, Threshold>, T>> entrySet()
+    public Set<Entry<MapBiKey<TimeWindow, Threshold>, T>> entrySet()
     {
         return Collections.unmodifiableSet( store.entrySet() );
     }
 
     @Override
-    public Set<Integer> keySetByFirstKey()
+    public Set<TimeWindow> keySetByFirstKey()
     {
-        final Set<Integer> returnMe = new TreeSet<>();
+        final Set<TimeWindow> returnMe = new TreeSet<>();
         store.keySet().forEach( a -> returnMe.add( a.getFirstKey() ) );
         return Collections.unmodifiableSet( returnMe );
     }
@@ -118,33 +118,33 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     }
 
     @Override
-    public SortedMap<MapBiKey<Integer, Threshold>, T> subMap( MapBiKey<Integer, Threshold> fromKey,
-                                                              MapBiKey<Integer, Threshold> toKey )
+    public SortedMap<MapBiKey<TimeWindow, Threshold>, T> subMap( MapBiKey<TimeWindow, Threshold> fromKey,
+                                                              MapBiKey<TimeWindow, Threshold> toKey )
     {
-        return (SortedMap<MapBiKey<Integer, Threshold>, T>) Collections.unmodifiableMap( store.subMap( fromKey,
+        return (SortedMap<MapBiKey<TimeWindow, Threshold>, T>) Collections.unmodifiableMap( store.subMap( fromKey,
                                                                                                        toKey ) );
     }
 
     @Override
-    public SortedMap<MapBiKey<Integer, Threshold>, T> headMap( MapBiKey<Integer, Threshold> toKey )
+    public SortedMap<MapBiKey<TimeWindow, Threshold>, T> headMap( MapBiKey<TimeWindow, Threshold> toKey )
     {
-        return (SortedMap<MapBiKey<Integer, Threshold>, T>) Collections.unmodifiableMap( store.headMap( toKey ) );
+        return (SortedMap<MapBiKey<TimeWindow, Threshold>, T>) Collections.unmodifiableMap( store.headMap( toKey ) );
     }
 
     @Override
-    public SortedMap<MapBiKey<Integer, Threshold>, T> tailMap( MapBiKey<Integer, Threshold> fromKey )
+    public SortedMap<MapBiKey<TimeWindow, Threshold>, T> tailMap( MapBiKey<TimeWindow, Threshold> fromKey )
     {
-        return (SortedMap<MapBiKey<Integer, Threshold>, T>) Collections.unmodifiableMap( store.tailMap( fromKey ) );
+        return (SortedMap<MapBiKey<TimeWindow, Threshold>, T>) Collections.unmodifiableMap( store.tailMap( fromKey ) );
     }
 
     @Override
-    public MapBiKey<Integer, Threshold> firstKey()
+    public MapBiKey<TimeWindow, Threshold> firstKey()
     {
         return store.firstKey();
     }
 
     @Override
-    public MapBiKey<Integer, Threshold> lastKey()
+    public MapBiKey<TimeWindow, Threshold> lastKey()
     {
         return store.lastKey();
     }
@@ -152,11 +152,11 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof SafeMetricOutputMapByLeadThreshold ) )
+        if ( ! ( o instanceof SafeMetricOutputMapByTimeAndThreshold ) )
         {
             return false;
         }
-        SafeMetricOutputMapByLeadThreshold<?> in = (SafeMetricOutputMapByLeadThreshold<?>) o;
+        SafeMetricOutputMapByTimeAndThreshold<?> in = (SafeMetricOutputMapByTimeAndThreshold<?>) o;
         return in.metadata.equals( metadata ) && in.store.equals( store );
     }
 
@@ -167,7 +167,7 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     }
 
     @Override
-    public MetricOutputMapWithBiKey<Integer, Threshold, T> sliceByFirst( final Integer first )
+    public MetricOutputMapWithBiKey<TimeWindow, Threshold, T> sliceByFirst( final TimeWindow first )
     {
         if ( Objects.isNull( first ) )
         {
@@ -188,7 +188,7 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     }
 
     @Override
-    public MetricOutputMapWithBiKey<Integer, Threshold, T> sliceBySecond( final Threshold second )
+    public MetricOutputMapWithBiKey<TimeWindow, Threshold, T> sliceBySecond( final Threshold second )
     {
         if ( Objects.isNull( second ) )
         {
@@ -240,8 +240,21 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
     protected static class Builder<T extends MetricOutput<?>>
     {
 
-        private final ConcurrentMap<MapBiKey<Integer, Threshold>, T> store = new ConcurrentSkipListMap<>();
+        /**
+         * The data store.
+         */
+        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, T> store = new ConcurrentSkipListMap<>();
+        
+        /**
+         * The metadata.
+         */
+        
         private MetricOutputMetadata overrideMeta;
+        
+        /**
+         * The reference metadata.
+         */
+        
         private MetricOutputMetadata referenceMetadata;
 
         /**
@@ -252,7 +265,7 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
          * @return the builder
          */
 
-        protected Builder<T> put( final MapBiKey<Integer, Threshold> key, final T value )
+        protected Builder<T> put( final MapBiKey<TimeWindow, Threshold> key, final T value )
         {
             if ( Objects.isNull( referenceMetadata ) )
             {
@@ -281,9 +294,9 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
          * @return the mapping
          */
 
-        protected MetricOutputMapByLeadThreshold<T> build()
+        protected MetricOutputMapByTimeAndThreshold<T> build()
         {
-            return new SafeMetricOutputMapByLeadThreshold<>( this );
+            return new SafeMetricOutputMapByTimeAndThreshold<>( this );
         }
 
     }
@@ -295,7 +308,7 @@ class SafeMetricOutputMapByLeadThreshold<T extends MetricOutput<?>> implements M
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    private SafeMetricOutputMapByLeadThreshold( final Builder<T> builder )
+    private SafeMetricOutputMapByTimeAndThreshold( final Builder<T> builder )
     {
         //Bounds checks
         if ( builder.store.isEmpty() )

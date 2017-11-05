@@ -10,15 +10,15 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
- * Default implementation of a safe map that contains {@link MetricOutputMapByLeadThreshold} for several metrics.
+ * Default implementation of a safe map that contains {@link MetricOutputMapByTimeAndThreshold} for several metrics.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-class SafeMetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>>
-        implements MetricOutputMultiMapByLeadThreshold<S>
+class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
+        implements MetricOutputMultiMapByTimeAndThreshold<S>
 {
 
     /**
@@ -31,16 +31,16 @@ class SafeMetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>>
      * The store of results.
      */
 
-    private final TreeMap<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>> store;
+    private final TreeMap<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<S>> store;
 
     @Override
-    public SafeMetricOutputMultiMapByLeadThresholdBuilder<S> builder()
+    public SafeMetricOutputMultiMapByTimeAndThresholdBuilder<S> builder()
     {
-        return new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
+        return new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
     }
 
     @Override
-    public MetricOutputMapByLeadThreshold<S> get( final MetricConstants metricID )
+    public MetricOutputMapByTimeAndThreshold<S> get( final MetricConstants metricID )
     {
         return store.get( dataFactory.getMapKey( metricID ) );
     }
@@ -52,13 +52,13 @@ class SafeMetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>>
     }
 
     @Override
-    public boolean containsValue( MetricOutputMapByLeadThreshold<S> value )
+    public boolean containsValue( MetricOutputMapByTimeAndThreshold<S> value )
     {
         return store.containsValue( value );
     }
 
     @Override
-    public Collection<MetricOutputMapByLeadThreshold<S>> values()
+    public Collection<MetricOutputMapByTimeAndThreshold<S>> values()
     {
         return Collections.unmodifiableCollection( store.values() );
     }
@@ -76,7 +76,7 @@ class SafeMetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>>
     }
 
     @Override
-    public Set<Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<S>>> entrySet()
+    public Set<Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<S>>> entrySet()
     {
         return Collections.unmodifiableSet( store.entrySet() );
     }
@@ -95,26 +95,26 @@ class SafeMetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>>
         return b.toString();
     }
 
-    protected static class SafeMetricOutputMultiMapByLeadThresholdBuilder<S extends MetricOutput<?>>
-            implements MetricOutputMultiMapByLeadThresholdBuilder<S>
+    protected static class SafeMetricOutputMultiMapByTimeAndThresholdBuilder<S extends MetricOutput<?>>
+            implements MetricOutputMultiMapByTimeAndThresholdBuilder<S>
     {
 
         /**
          * Thread safe map.
          */
 
-        final ConcurrentMap<MapKey<MetricConstants>, SafeMetricOutputMapByLeadThreshold.Builder<S>> internal =
+        final ConcurrentMap<MapKey<MetricConstants>, SafeMetricOutputMapByTimeAndThreshold.Builder<S>> internal =
                 new ConcurrentSkipListMap<>();
 
         @Override
-        public SafeMetricOutputMultiMapByLeadThreshold<S> build()
+        public SafeMetricOutputMultiMapByTimeAndThreshold<S> build()
         {
-            return new SafeMetricOutputMultiMapByLeadThreshold<>( this );
+            return new SafeMetricOutputMultiMapByTimeAndThreshold<>( this );
         }
 
         @Override
-        public MetricOutputMultiMapByLeadThresholdBuilder<S>
-                put( final int leadTime, final Threshold threshold, final MetricOutputMapByMetric<S> result )
+        public MetricOutputMultiMapByTimeAndThresholdBuilder<S>
+                put( final TimeWindow timeWindow, final Threshold threshold, final MetricOutputMapByMetric<S> result )
         {
             if ( Objects.isNull( result ) )
             {
@@ -125,31 +125,31 @@ class SafeMetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>>
                 final MapKey<MetricConstants> check =
                         dataFactory.getMapKey( d.getMetricID() );
                 //Safe put
-                final SafeMetricOutputMapByLeadThreshold.Builder<S> addMe =
-                        new SafeMetricOutputMapByLeadThreshold.Builder<>();
-                addMe.put( dataFactory.getMapKey( leadTime, threshold ), value );
-                final SafeMetricOutputMapByLeadThreshold.Builder<S> checkMe = internal.putIfAbsent( check, addMe );
+                final SafeMetricOutputMapByTimeAndThreshold.Builder<S> addMe =
+                        new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+                addMe.put( dataFactory.getMapKey( timeWindow, threshold ), value );
+                final SafeMetricOutputMapByTimeAndThreshold.Builder<S> checkMe = internal.putIfAbsent( check, addMe );
                 //Add if already exists 
                 if ( !Objects.isNull( checkMe ) )
                 {
-                    checkMe.put( dataFactory.getMapKey( leadTime, threshold ), value );
+                    checkMe.put( dataFactory.getMapKey( timeWindow, threshold ), value );
                 }
             } );
             return this;
         }
 
         @Override
-        public MetricOutputMultiMapByLeadThresholdBuilder<S> put( MapKey<MetricConstants> key,
-                                                                  MetricOutputMapByLeadThreshold<S> result )
+        public MetricOutputMultiMapByTimeAndThresholdBuilder<S> put( MapKey<MetricConstants> key,
+                                                                  MetricOutputMapByTimeAndThreshold<S> result )
         {
             if ( Objects.isNull( result ) )
             {
                 throw new MetricOutputException( "Specify a non-null metric result." );
             }
             //Safe put
-            final SafeMetricOutputMapByLeadThreshold.Builder<S> addMe =
-                    new SafeMetricOutputMapByLeadThreshold.Builder<>();
-            final SafeMetricOutputMapByLeadThreshold.Builder<S> checkMe = internal.putIfAbsent( key, addMe );
+            final SafeMetricOutputMapByTimeAndThreshold.Builder<S> addMe =
+                    new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+            final SafeMetricOutputMapByTimeAndThreshold.Builder<S> checkMe = internal.putIfAbsent( key, addMe );
             //Add if already exists 
             if ( !Objects.isNull( checkMe ) )
             {
@@ -165,7 +165,7 @@ class SafeMetricOutputMultiMapByLeadThreshold<S extends MetricOutput<?>>
      * @param builder the builder
      * @throws MetricOutputException if any of the inputs are invalid
      */
-    private SafeMetricOutputMultiMapByLeadThreshold( final SafeMetricOutputMultiMapByLeadThresholdBuilder<S> builder )
+    private SafeMetricOutputMultiMapByTimeAndThreshold( final SafeMetricOutputMultiMapByTimeAndThresholdBuilder<S> builder )
     {
         //Bounds checks
         if ( builder.internal.isEmpty() )

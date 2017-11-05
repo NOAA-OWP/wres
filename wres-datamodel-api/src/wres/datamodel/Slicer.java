@@ -100,8 +100,8 @@ public interface Slicer
      * @return the input map sliced by component identifier
      */
 
-    Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>>
-            sliceByMetricComponent( MetricOutputMapByLeadThreshold<VectorOutput> input );
+    Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>>
+            sliceByMetricComponent( MetricOutputMapByTimeAndThreshold<VectorOutput> input );
 
     /**
      * Produces a {@link List} of {@link PairOfDoubles} from a {@link List} of {@link PairOfDoubleAndVectorOfDoubles}

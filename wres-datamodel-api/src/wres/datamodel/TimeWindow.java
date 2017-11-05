@@ -2,8 +2,7 @@ package wres.datamodel;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -20,12 +19,16 @@ import java.util.StringJoiner;
  * <li>The earliest time</li>
  * <li>The latest time</li>
  * <li>The reference time system (valid time or issue time)
- * <li>The earliest forecast lead time (in seconds)</li>
- * <li>The latest forecast lead time (in seconds)</li>
+ * <li>The earliest forecast lead time</li>
+ * <li>The latest forecast lead time</li>
+ * <li>The units associated with the lead times</li>
  * </ol>
  * 
  * <p>When describing a sample that does not comprise forecasts, the reference time should be valid time, and the 
  * forecast lead times should be zero.</p>
+ * 
+ * <p>TODO: If a future JDK implements something equivalent to an Interval in joda.time, consider replacing the 
+ * earliest time and latest time with an Interval.</p>
  * 
  * <p><b>Implementation Requirements:</b></p>
  * 
@@ -52,52 +55,78 @@ public final class TimeWindow implements Comparable<TimeWindow>
     private final Instant latestTime;
 
     /**
-     * Is true if the reference time for the {@link #earliestTime} and {@link #latestTime} is valid time (i.e. when an
-     * event occurs), and false is the reference time is forecast issue time (i.e. the basis time for a forecast). 
+     * The reference time system for the {@link #earliestTime} and {@link #latestTime}. 
      */
 
-    private final boolean validTime;
+    private final ReferenceTime referenceTime;
 
     /**
-     * The earliest forecast lead time, in seconds, associated with the time window. If the {@link TimeWindow} does not 
-     * represent a forecast, the {@link #earliestLeadSeconds} and {@link #latestLeadSeconds} should both be zero. 
-     * given in seconds.
+     * The earliest forecast lead time associated with the time window in {@link leadUnits} units. If the 
+     * {@link TimeWindow} does not represent a forecast, the {@link #earliestLead} and {@link #latestLead} should 
+     * both be zero.
      */
 
-    private final int earliestLeadSeconds;
+    private final long earliestLead;
 
     /**
-     * The latest forecast lead time, in seconds, associated with the time window. If the {@link TimeWindow} does not 
-     * represent a forecast, the {@link #earliestLeadSeconds} and {@link #latestLeadSeconds} should both be zero.  
+     * The latest forecast lead time associated with the time window in {@link leadUnits} units. If the 
+     * {@link TimeWindow} does not represent a forecast, the {@link #earliestLead} and {@link #latestLead} should 
+     * both be zero. 
      */
 
-    private final int latestLeadSeconds;
+    private final long latestLead;
+
+    /**
+     * The {@link ChronoUnit} of the {@link #earliestLead} and {@link #latestLead}.
+     */
+
+    private final ChronoUnit leadUnits;
 
     /**
      * Constructs a {@link TimeWindow}.
      * 
      * @param earliestTime the earliest time
      * @param latestTime the latest time
-     * @param validTime is true if the earliestTime and latestTime are in valid time, false for issue time
-     * @param earliestLeadSeconds the earliest lead time in seconds
-     * @param latestLeadSeconds the latest lead time in seconds
+     * @param referenceTime the reference time for the earliestTime and latestTime
+     * @param earliestLead the earliest lead time
+     * @param latestLead the latest lead time
+     * @param leadUnits the lead time units
      * @return a time window
      * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime or the 
-     *            latestLeadTime is before (i.e. smaller than) the earliestLeadTime
+     *            latestLead is before (i.e. smaller than) the earliestLead
      */
 
     public static TimeWindow of( Instant earliestTime,
                                  Instant latestTime,
-                                 boolean validTime,
-                                 int earliestLeadSeconds,
-                                 int latestLeadSeconds )
+                                 ReferenceTime referenceTime,
+                                 long earliestLead,
+                                 long latestLead,
+                                 ChronoUnit leadUnits )
     {
-        return new TimeWindow( earliestTime, latestTime, validTime, earliestLeadSeconds, latestLeadSeconds );
+        return new TimeWindow( earliestTime, latestTime, referenceTime, earliestLead, latestLead, leadUnits );
     }
 
     /**
-     * Constructs a {@link TimeWindow} where the {@link #earliestLeadSeconds} and {@link #latestLeadSeconds} are both 
-     * zero and the {@link #validTime} is <code>true</code>.
+     * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} both 
+     * have the same value and the {@link #leadUnits} are {@link ChronoUnit#HOURS}.
+     * 
+     * @param earliestTime the earliest time
+     * @param latestTime the latest time
+     * @param referenceTime the reference time for the earliestTime and latestTime
+     * @param lead the earliest and latest lead time
+     * @return a time window
+     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
+     */
+
+    public static TimeWindow of( Instant earliestTime, Instant latestTime, ReferenceTime referenceTime, long lead )
+    {
+        return new TimeWindow( earliestTime, latestTime, referenceTime, lead, lead, ChronoUnit.HOURS );
+    }
+
+    /**
+     * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} are both 
+     * zero, the {@link #leadUnits} are {@link ChronoUnit#HOURS} and the {@link #referenceTime} is 
+     * {@link ReferenceTime#VALID_TIME}.
      * 
      * @param earliestTime the earliest time
      * @param latestTime the latest time
@@ -107,7 +136,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public static TimeWindow of( Instant earliestTime, Instant latestTime )
     {
-        return new TimeWindow( earliestTime, latestTime, true, 0, 0 );
+        return new TimeWindow( earliestTime, latestTime, ReferenceTime.VALID_TIME, 0, 0, ChronoUnit.HOURS );
     }
 
     @Override
@@ -123,17 +152,17 @@ public final class TimeWindow implements Comparable<TimeWindow>
         {
             return compare;
         }
-        compare = Boolean.compare( validTime, o.validTime );
+        compare = referenceTime.compareTo( o.referenceTime );
         if ( compare != 0 )
         {
             return compare;
         }
-        compare = Long.compare( earliestLeadSeconds, o.earliestLeadSeconds );
+        compare = Duration.of( earliestLead, leadUnits ).compareTo( Duration.of( o.earliestLead, o.leadUnits ) );
         if ( compare != 0 )
         {
             return compare;
         }
-        return Long.compare( latestLeadSeconds, o.latestLeadSeconds );
+        return Duration.of( latestLead, leadUnits ).compareTo( Duration.of( o.latestLead, o.leadUnits ) );
     }
 
     @Override
@@ -144,10 +173,11 @@ public final class TimeWindow implements Comparable<TimeWindow>
             return false;
         }
         TimeWindow in = (TimeWindow) o;
-        return in.earliestTime.equals( earliestTime ) && in.latestTime.equals( latestTime )
-               && in.validTime == validTime
-               && in.earliestLeadSeconds == earliestLeadSeconds
-               && in.latestLeadSeconds == latestLeadSeconds;
+        boolean timesEqual = in.earliestTime.equals( earliestTime ) && in.latestTime.equals( latestTime )
+                             && in.referenceTime.equals( referenceTime );
+        return timesEqual && in.earliestLead == earliestLead
+               && in.latestLead == latestLead
+               && in.leadUnits.equals( leadUnits );
     }
 
     @Override
@@ -155,20 +185,20 @@ public final class TimeWindow implements Comparable<TimeWindow>
     {
         return Objects.hash( earliestTime,
                              latestTime,
-                             validTime,
-                             Integer.hashCode( earliestLeadSeconds ),
-                             Integer.hashCode( latestLeadSeconds ) );
+                             referenceTime,
+                             Duration.of( earliestLead, leadUnits ),
+                             Duration.of( latestLead, leadUnits ) );
     }
 
     @Override
     public String toString()
     {
         StringJoiner sj = new StringJoiner( ", ", "[", "]" );
-        sj.add( OffsetDateTime.ofInstant( earliestTime, ZoneId.of( "UTC" ) ).toString() )
-          .add( OffsetDateTime.ofInstant( latestTime, ZoneId.of( "UTC" ) ).toString() )
-          .add( Boolean.toString( validTime ) )
-          .add( Integer.toString( earliestLeadSeconds ) )
-          .add( Integer.toString( latestLeadSeconds ) );
+        sj.add( earliestTime.toString() )
+          .add( latestTime.toString() )
+          .add( referenceTime.toString() )
+          .add( Long.toString( earliestLead ) + " " + leadUnits )
+          .add( Long.toString( latestLead ) + " " + leadUnits );
         return sj.toString();
     }
 
@@ -202,102 +232,146 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public Instant getMidPointTime()
     {
-        return earliestTime.plus( Duration.between( earliestTime, latestTime ).dividedBy( 2 ) );
+        return earliestTime.plus( getDuration().dividedBy( 2 ) );
     }
 
     /**
-     * Returns true if the reference time system for the {@link earliestTime} and {@link latestTime} is valid time, 
-     * false if it represents forecast issue time.
+     * Returns the {@link Duration} between the {@link #earliestTime} and the {@link #latestTime}.
      * 
-     * @return true if the times and valid times, false for issue times
+     * @return the duration between the earliest and latest times
      */
 
-    public boolean isValidTime()
+    public Duration getDuration()
     {
-        return validTime;
+        return Duration.between( earliestTime, latestTime );
     }
 
     /**
-     * Returns the earliest forecast lead time in seconds associated with the time window or zero if the time window 
-     * does not describe forecasts.
+     * Returns the reference time system for the {@link earliestTime} and {@link latestTime}.
+     * 
+     * @return the reference time system
+     */
+
+    public ReferenceTime getReferenceTime()
+    {
+        return referenceTime;
+    }
+
+    /**
+     * Returns the earliest forecast lead time in {@link #leadUnits} or zero if the time window does not describe 
+     * forecasts.
      * 
      * @return the earliest lead time
      */
 
-    public int getEarliestLeadTimeInSeconds()
+    public long getEarliestLeadTime( )
     {
-        return earliestLeadSeconds;
+        return earliestLead;
     }
 
     /**
-     * Returns the latest forecast lead time in seconds associated with the time window or zero if the time window 
-     * does not describe forecasts.
+     * Returns the latest forecast lead time in {@link #leadUnits} or zero if the time window does not describe 
+     * forecasts.
      * 
      * @return the latest lead time
      */
 
-    public int getLatestLeadTimeInSeconds()
+    public long getLatestLeadTime( )
     {
-        return latestLeadSeconds;
+        return latestLead;
     }
 
     /**
-     * A convenience method that returns the earliest forecast lead time in decimal hours. See also 
-     * {@link #getEarliestLeadTimeInSeconds()}.
+     * A convenience method that returns the earliest forecast lead time in hours.
      * 
-     * @return the earliest lead time in decimal hours
+     * @return the earliest lead time in hours
      */
 
-    public double getEarliestLeadTimeInDecimalHours()
+    public long getEarliestLeadTimeInHours()
     {
-        return earliestLeadSeconds / 3600.0;
+        return Duration.of( earliestLead, this.leadUnits ).toHours();
     }
 
     /**
-     * A convenience method that returns the latest forecast lead time in decimal hours. See also 
-     * {@link #getLatestLeadTimeInSeconds()}.
+     * A convenience method that returns the latest forecast lead time in hours.
      * 
-     * @return the latest lead time in decimal hours
+     * @return the latest lead time in hours
      */
 
-    public double getLatestLeadTimeInDecimalHours()
+    public long getLatestLeadTimeInHours()
     {
-        return latestLeadSeconds / 3600.0;
+        return Duration.of( latestLead, this.leadUnits ).toHours();
+    }
+    
+    /**
+     * A convenience method that returns the earliest forecast lead time in seconds.
+     * 
+     * @return the earliest lead time in seconds
+     */
+
+    public long getEarliestLeadTimeInSeconds()
+    {
+        return Duration.of( earliestLead, this.leadUnits ).getSeconds();
     }
 
+    /**
+     * A convenience method that returns the latest forecast lead time in seconds.
+     * 
+     * @return the latest lead time in seconds
+     */
+
+    public long getLatestLeadTimeInSeconds()
+    {
+        return Duration.of( latestLead, this.leadUnits ).getSeconds();
+    }    
+    
+    /**
+     * Returns the {@link ChronoUnit} associated with the lead times.
+     * 
+     * @return the units of the lead times
+     */
+
+    public ChronoUnit getLeadUnits()
+    {
+        return leadUnits;
+    }
+    
     /**
      * Hidden constructor.
      * 
      * @param earliestTime the earliest time
      * @param latestTime the latest time
-     * @param validTime is true if the earliestTime and latestTime are in valid time, false for issue time
-     * @param earliestLeadSeconds the earliest lead time in seconds
-     * @param latestLeadSeconds the latest lead time in seconds
+     * @param referenceTime the reference time
+     * @param earliestLead the earliest lead time
+     * @param latestLead the latest lead time
+     * @param leadUnits the units of the lead time
      * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime or the 
      *            latestLeadTime is before (i.e. smaller than) the earliestLeadTime.  
      */
 
     private TimeWindow( Instant earliestTime,
                         Instant latestTime,
-                        boolean validTime,
-                        int earliestLeadSeconds,
-                        int latestLeadSeconds )
+                        ReferenceTime referenceTime,
+                        long earliestLead,
+                        long latestLead,
+                        ChronoUnit leadUnits )
     {
         if ( latestTime.isBefore( earliestTime ) )
         {
             throw new IllegalArgumentException( "Cannot define a time window whose latest time is before its "
                                                 + "earliest time." );
         }
-        if ( latestLeadSeconds < earliestLeadSeconds )
+        if ( Duration.of( latestLead, leadUnits ).compareTo( Duration.of( earliestLead, leadUnits ) ) < 0 )
         {
             throw new IllegalArgumentException( "Cannot define a time window whose latest lead time is before its "
                                                 + "earliest lead time." );
         }
         this.earliestTime = earliestTime;
         this.latestTime = latestTime;
-        this.validTime = validTime;
-        this.earliestLeadSeconds = earliestLeadSeconds;
-        this.latestLeadSeconds = latestLeadSeconds;
+        this.referenceTime = referenceTime;
+        this.earliestLead = earliestLead;
+        this.latestLead = latestLead;
+        this.leadUnits = leadUnits;
     }
 
 }

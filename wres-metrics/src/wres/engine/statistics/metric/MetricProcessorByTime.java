@@ -21,49 +21,50 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInputSliceException;
 import wres.datamodel.MetricOutput;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
+import wres.datamodel.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
 import wres.datamodel.MetricOutputMapByMetric;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Threshold;
+import wres.datamodel.TimeWindow;
 import wres.datamodel.VectorOutput;
 
 /**
- * A {@link MetricProcessor} that processes and stores metric by forecast lead time.
+ * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindow}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOutputForProjectByLeadThreshold>
+public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutputForProjectByTimeAndThreshold>
 {
 
     /**
-     * The metric futures from previous calls, indexed by lead time.
+     * The metric futures from previous calls, indexed by {@link TimeWindow}.
      */
 
-    ConcurrentMap<Integer, MetricFuturesByLeadTime> futures = new ConcurrentSkipListMap<>();
+    ConcurrentMap<TimeWindow, MetricFuturesByTime> futures = new ConcurrentSkipListMap<>();
 
     /**
-     * Returns a {@link MetricOutputForProjectByLeadThreshold} for the last available results or null if
+     * Returns a {@link MetricOutputForProjectByTimeAndThreshold} for the last available results or null if
      * {@link #hasStoredMetricOutput()} returns false.
      * 
-     * @return a {@link MetricOutputForProjectByLeadThreshold} or null
+     * @return a {@link MetricOutputForProjectByTimeAndThreshold} or null
      */
 
     @Override
-    public MetricOutputForProjectByLeadThreshold getStoredMetricOutput()
+    public MetricOutputForProjectByTimeAndThreshold getStoredMetricOutput()
     {
-        MetricOutputForProjectByLeadThreshold returnMe = null;
+        MetricOutputForProjectByTimeAndThreshold returnMe = null;
         if ( hasStoredMetricOutput() )
         {
-            MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder builder =
-                    new MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder();
+            MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
+                    new MetricFuturesByTime.MetricFuturesByTimeBuilder();
             builder.addDataFactory( dataFactory );
-            for ( MetricFuturesByLeadTime future : futures.values() )
+            for ( MetricFuturesByTime future : futures.values() )
             {
                 builder.addFutures( future, mergeList );
             }
@@ -80,33 +81,33 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
     @Override
     public boolean hasStoredMetricOutput()
     {
-        return futures.values().stream().anyMatch( MetricFuturesByLeadTime::hasFutureOutputs );
+        return futures.values().stream().anyMatch( MetricFuturesByTime::hasFutureOutputs );
     }
 
     /**
-     * Adds the input {@link MetricFuturesByLeadTime} to the internal store of existing {@link MetricFuturesByLeadTime} 
+     * Adds the input {@link MetricFuturesByTime} to the internal store of existing {@link MetricFuturesByTime} 
      * defined for this processor.
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param mergeFutures the futures to add
      */
 
-    void addToMergeMap( Integer leadTime, MetricFuturesByLeadTime mergeFutures )
+    void addToMergeMap( TimeWindow timeWindow, MetricFuturesByTime mergeFutures )
     {
         Objects.requireNonNull( mergeFutures, "Specify non-null futures for merging." );
         //Merge futures if cached outputs identified
         if ( willStoreMetricOutput() )
         {
-            futures.put( leadTime, mergeFutures );
+            futures.put( timeWindow, mergeFutures );
         }
     }
 
     /**
      * Store of metric futures for each output type. Use {@link #getMetricOutput()} to obtain the processed
-     * {@link MetricOutputForProjectByLeadThreshold}.
+     * {@link MetricOutputForProjectByTimeAndThreshold}.
      */
 
-    static class MetricFuturesByLeadTime
+    static class MetricFuturesByTime
     {
 
         /**
@@ -119,26 +120,26 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
          * Scalar results.
          */
 
-        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
+        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
                 new ConcurrentHashMap<>();
         /**
          * Vector results.
          */
 
-        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
+        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
                 new ConcurrentHashMap<>();
         /**
          * Multivector results.
          */
 
-        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
+        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
                 new ConcurrentHashMap<>();
 
         /**
          * Box plot results.
          */
 
-        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
+        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
                 new ConcurrentHashMap<>();
         
         /**
@@ -147,10 +148,10 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
          * @return the metric results
          */
 
-        MetricOutputForProjectByLeadThreshold getMetricOutput()
+        MetricOutputForProjectByTimeAndThreshold getMetricOutput()
         {
-            MetricOutputForProjectByLeadThresholdBuilder builder =
-                    dataFactory.ofMetricOutputForProjectByLeadThreshold();
+            MetricOutputForProjectByTimeAndThresholdBuilder builder =
+                    dataFactory.ofMetricOutputForProjectByTimeAndThreshold();
             //Add outputs for current futures
             scalar.forEach( builder::addScalarOutput );
             vector.forEach( builder::addVectorOutput );
@@ -174,7 +175,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
          * A builder for the metric futures.
          */
 
-        static class MetricFuturesByLeadTimeBuilder
+        static class MetricFuturesByTimeBuilder
         {
 
             /**
@@ -187,26 +188,26 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
              * Scalar results.
              */
 
-            private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
+            private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
                     new ConcurrentHashMap<>();
             /**
              * Vector results.
              */
 
-            private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
+            private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
                     new ConcurrentHashMap<>();
             /**
              * Multivector results.
              */
 
-            private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
+            private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
                     new ConcurrentHashMap<>();
 
             /**
              * Box plot results.
              */
 
-            private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
+            private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
                     new ConcurrentHashMap<>();
 
             /**
@@ -216,7 +217,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
              * @return the builder
              */
 
-            MetricFuturesByLeadTimeBuilder addDataFactory( DataFactory dataFactory )
+            MetricFuturesByTimeBuilder addDataFactory( DataFactory dataFactory )
             {
                 this.dataFactory = dataFactory;
                 return this;
@@ -230,7 +231,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
              * @return the builder
              */
 
-            MetricFuturesByLeadTimeBuilder addScalarOutput( MapBiKey<Integer, Threshold> key,
+            MetricFuturesByTimeBuilder addScalarOutput( MapBiKey<TimeWindow, Threshold> key,
                                                             Future<MetricOutputMapByMetric<ScalarOutput>> value )
             {
                 scalar.put( key, value );
@@ -245,7 +246,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
              * @return the builder
              */
 
-            MetricFuturesByLeadTimeBuilder addVectorOutput( MapBiKey<Integer, Threshold> key,
+            MetricFuturesByTimeBuilder addVectorOutput( MapBiKey<TimeWindow, Threshold> key,
                                                             Future<MetricOutputMapByMetric<VectorOutput>> value )
             {
                 vector.put( key, value );
@@ -260,7 +261,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
              * @return the builder
              */
 
-            MetricFuturesByLeadTimeBuilder addMultiVectorOutput( MapBiKey<Integer, Threshold> key,
+            MetricFuturesByTimeBuilder addMultiVectorOutput( MapBiKey<TimeWindow, Threshold> key,
                                                                  Future<MetricOutputMapByMetric<MultiVectorOutput>> value )
             {
                 multivector.put( key, value );
@@ -275,7 +276,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
              * @return the builder
              */
 
-            MetricFuturesByLeadTimeBuilder addBoxPlotOutput( MapBiKey<Integer, Threshold> key,
+            MetricFuturesByTimeBuilder addBoxPlotOutput( MapBiKey<TimeWindow, Threshold> key,
                                                              Future<MetricOutputMapByMetric<BoxPlotOutput>> value )
             {
                 boxplot.put( key, value );
@@ -288,13 +289,13 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
              * @return the metric futures
              */
 
-            MetricFuturesByLeadTime build()
+            MetricFuturesByTime build()
             {
-                return new MetricFuturesByLeadTime( this );
+                return new MetricFuturesByTime( this );
             }
 
             /**
-             * Adds the outputs from an existing {@link MetricFuturesByLeadTime} for the outputs that are included in the merge
+             * Adds the outputs from an existing {@link MetricFuturesByTime} for the outputs that are included in the merge
              * list.
              * 
              * @param futures the input futures
@@ -303,7 +304,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
              * @throws MetricCalculationException if one or more of the {@link MetricOutputGroup} are unsupported
              */
 
-            private MetricFuturesByLeadTimeBuilder addFutures( MetricFuturesByLeadTime futures,
+            private MetricFuturesByTimeBuilder addFutures( MetricFuturesByTime futures,
                                                                MetricOutputGroup[] mergeList )
             {
                 if ( Objects.nonNull( mergeList ) )
@@ -338,7 +339,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
          * @param builder the builder
          */
 
-        private MetricFuturesByLeadTime( MetricFuturesByLeadTimeBuilder builder )
+        private MetricFuturesByTime( MetricFuturesByTimeBuilder builder )
         {
             Objects.requireNonNull( builder.dataFactory,
                                     "Specify a non-null data factory from which to construct the metric futures." );
@@ -356,28 +357,28 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
      * 
      * TODO: collapse this with a generic call to futures.addOutput and take an input collection of metrics
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    void processSingleValuedPairs( Integer leadTime,
+    void processSingleValuedPairs( TimeWindow timeWindow,
                                    SingleValuedPairs input,
-                                   MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures )
+                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures )
     {
 
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) )
         {
-            processSingleValuedThresholds( leadTime, input, futures, MetricOutputGroup.SCALAR );
+            processSingleValuedThresholds( timeWindow, input, futures, MetricOutputGroup.SCALAR );
         }
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ) )
         {
-            processSingleValuedThresholds( leadTime, input, futures, MetricOutputGroup.VECTOR );
+            processSingleValuedThresholds( timeWindow, input, futures, MetricOutputGroup.VECTOR );
         }
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
         {
-            processSingleValuedThresholds( leadTime, input, futures, MetricOutputGroup.MULTIVECTOR );
+            processSingleValuedThresholds( timeWindow, input, futures, MetricOutputGroup.MULTIVECTOR );
         }
     }
 
@@ -408,21 +409,21 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
         {
             // Set the first failure as the cause
             throw new MetricCalculationException( "Failed to compute metrics at all " + thresholdCount
-                                                  + " available thresholds at lead time '"
-                                                  + meta.getLeadTimeInHours()
+                                                  + " available thresholds at time window '"
+                                                  + meta.getTimeWindow()
                                                   + "'as insufficient data was available.",
                                                   failures.get( failures.keySet().iterator().next() ) );
         }
         else
         {
             // Aggregate, and report first instance
-            LOGGER.warn( "WARN: failed to compute {} of {} thresholds at lead time {} for metrics that consume {} "
+            LOGGER.warn( "WARN: failed to compute {} of {} thresholds at time window {} for metrics that consume {} "
                          + "inputs. "
                          +
                          failures.get( failures.keySet().iterator().next() ).getMessage(),
                          failures.size(),
                          thresholdCount,
-                         meta.getLeadTimeInHours(),
+                         meta.getTimeWindow(),
                          inGroup );
         }
     }
@@ -441,7 +442,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorByLeadTime( DataFactory dataFactory,
+    MetricProcessorByTime( DataFactory dataFactory,
                                ProjectConfig config,
                                ExecutorService thresholdExecutor,
                                ExecutorService metricExecutor,
@@ -455,16 +456,16 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
      * Processes all thresholds for metrics that consume {@link SingleValuedPairs} and produce a specified 
      * {@link MetricOutputGroup}. 
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processSingleValuedThresholds( Integer leadTime,
+    private void processSingleValuedThresholds( TimeWindow timeWindow,
                                                 SingleValuedPairs input,
-                                                MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures,
+                                                MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                 MetricOutputGroup outGroup )
     {
         String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
@@ -477,7 +478,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
             global.forEach( threshold -> {
                 Threshold useMe = getThreshold( threshold, sorted );
                 MetricCalculationException result =
-                        processSingleValuedThreshold( leadTime, input, futures, outGroup, useMe );
+                        processSingleValuedThreshold( timeWindow, input, futures, outGroup, useMe );
                 if ( !Objects.isNull( result ) )
                 {
                     failures.put( useMe, result );
@@ -498,7 +499,7 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
      * Processes one threshold for metrics that consume {@link SingleValuedPairs} and produce a specified 
      * {@link MetricOutputGroup}. 
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
@@ -506,9 +507,9 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private MetricCalculationException processSingleValuedThreshold( Integer leadTime,
+    private MetricCalculationException processSingleValuedThreshold( TimeWindow timeWindow,
                                                                      SingleValuedPairs input,
-                                                                     MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures,
+                                                                     MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                                      MetricOutputGroup outGroup,
                                                                      Threshold threshold )
     {
@@ -517,21 +518,21 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
         {
             if ( outGroup == MetricOutputGroup.SCALAR )
             {
-                futures.addScalarOutput( dataFactory.getMapKey( leadTime, threshold ),
+                futures.addScalarOutput( dataFactory.getMapKey( timeWindow, threshold ),
                                          processSingleValuedThreshold( threshold,
                                                                        input,
                                                                        singleValuedScalar ) );
             }
             else if ( outGroup == MetricOutputGroup.VECTOR )
             {
-                futures.addVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                futures.addVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
                                          processSingleValuedThreshold( threshold,
                                                                        input,
                                                                        singleValuedVector ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {
-                futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                futures.addMultiVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
                                               processSingleValuedThreshold( threshold,
                                                                             input,
                                                                             singleValuedMultiVector ) );
@@ -546,8 +547,8 @@ public abstract class MetricProcessorByLeadTime extends MetricProcessor<MetricOu
     }
 
     /**
-     * Builds a metric future for a {@link MetricCollection} that consumes {@link SingleValuedPairs} at a specific lead
-     * time and {@link Threshold}.
+     * Builds a metric future for a {@link MetricCollection} that consumes {@link SingleValuedPairs} at a specific 
+     * {@link TimeWindow} and {@link Threshold}.
      * 
      * @param <T> the type of {@link MetricOutput}
      * @param threshold the threshold

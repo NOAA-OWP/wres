@@ -40,12 +40,13 @@ import wres.datamodel.MapBiKey;
 import wres.datamodel.Metadata;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Threshold;
+import wres.datamodel.TimeWindow;
 import wres.datamodel.VectorOutput;
 
 /**
@@ -65,11 +66,11 @@ public abstract class ChartEngineFactory
     static
     {
         scalarOutputPlotTypeInfoMap.put( PlotTypeSelection.LEAD_THRESHOLD,
-                                         new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                         new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                   ScalarOutput.class,
                                                                   "scalarOutputLeadThresholdTemplate.xml" ) );
         scalarOutputPlotTypeInfoMap.put( PlotTypeSelection.THRESHOLD_LEAD,
-                                         new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                         new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                   ScalarOutput.class,
                                                                   "scalarOutputThresholdLeadTemplate.xml" ) );
     }
@@ -85,52 +86,52 @@ public abstract class ChartEngineFactory
     {
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELIABILITY_DIAGRAM,
                                                 PlotTypeSelection.LEAD_THRESHOLD,
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "reliabilityDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELIABILITY_DIAGRAM,
                                                 PlotTypeSelection.THRESHOLD_LEAD,
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "reliabilityDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                 PlotTypeSelection.LEAD_THRESHOLD,
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "rocDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                 PlotTypeSelection.THRESHOLD_LEAD,
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "rocDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
                                                 PlotTypeSelection.LEAD_THRESHOLD,
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "qqDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
                                                 PlotTypeSelection.THRESHOLD_LEAD,
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "qqDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RANK_HISTOGRAM,
                                                 PlotTypeSelection.LEAD_THRESHOLD,
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "rankHistogramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RANK_HISTOGRAM,
                                                 PlotTypeSelection.THRESHOLD_LEAD,
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "rankHistogramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
                                                 PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          BoxPlotOutput.class,
                                                                          "boxPlotOfErrors.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED,
                                                 PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
-                                                new PlotTypeInformation( MetricOutputMapByLeadThreshold.class,
+                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          BoxPlotOutput.class,
                                                                          "boxPlotOfErrors.xml" ) );
     }
@@ -180,7 +181,7 @@ public abstract class ChartEngineFactory
     private static WRESChartEngine
             processReliabilityDiagram(
                                        Object inputKeyInstance,
-                                       final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                       final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                        final DataFactory factory,
                                        PlotTypeSelection usedPlotType,
                                        String templateName,
@@ -192,7 +193,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> inputSlice;
 
         //-----------------------------------------------------------------
         //Reliability diagram for each lead time, thresholds in the legend.
@@ -200,7 +201,7 @@ public abstract class ChartEngineFactory
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
 
-            inputSlice = input.sliceByLead( (Integer) inputKeyInstance );
+            inputSlice = input.sliceByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
@@ -217,9 +218,10 @@ public abstract class ChartEngineFactory
             {
                 legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
+            Object key = ( (TimeWindow) inputKeyInstance ).getLatestLeadTimeInHours();
             arguments.addArgument( "legendTitle", legendTitle );
             arguments.addArgument( "legendUnitsText", legendUnitsText );
-            arguments.addArgument( "diagramInstanceDescription", "at Lead Hour " + inputKeyInstance );
+            arguments.addArgument( "diagramInstanceDescription", "at Lead Hour " + key );
             arguments.addArgument( "plotTitleVariable", "Lead Times" );
         }
 
@@ -300,7 +302,7 @@ public abstract class ChartEngineFactory
     private static WRESChartEngine
             processROCDiagram(
                                Object inputKeyInstance,
-                               final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                               final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                final DataFactory factory,
                                PlotTypeSelection usedPlotType,
                                String templateName,
@@ -311,7 +313,7 @@ public abstract class ChartEngineFactory
         WRESArgumentProcessor arguments = null;
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> inputSlice;
 
         //-----------------------------------------------------------------
         //ROC diagram for each lead time, thresholds in the legend.
@@ -319,7 +321,7 @@ public abstract class ChartEngineFactory
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
             inputSlice =
-                    input.sliceByLead( (Integer) inputKeyInstance );
+                    input.sliceByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
@@ -336,10 +338,11 @@ public abstract class ChartEngineFactory
             {
                 legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
+            Object key = ( (TimeWindow) inputKeyInstance ).getLatestLeadTimeInHours();
             arguments.addArgument( "legendTitle", legendTitle );
             arguments.addArgument( "legendUnitsText", legendUnitsText );
             arguments.addArgument( "diagramInstanceDescription",
-                                   "at Lead Hour " + inputSlice.getKey( 0 ).getFirstKey().toString() );
+                                   "at Lead Hour " + key );
             arguments.addArgument( "plotTitleVariable", "Lead Times" );
         }
 
@@ -358,7 +361,8 @@ public abstract class ChartEngineFactory
             //Legend title and lead time argument are specific to the plot.
             arguments.addArgument( "legendTitle", "Lead Time" );
             arguments.addArgument( "legendUnitsText", " [hours]" );
-            arguments.addArgument( "leadHour", inputSlice.getKey( 0 ).getFirstKey().toString() );
+            arguments.addArgument( "leadHour",
+                                   Long.toString( inputSlice.getKey( 0 ).getFirstKey().getLatestLeadTimeInHours() ) );
             arguments.addArgument( "diagramInstanceDescription",
                                    "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
                                                                  + " ("
@@ -413,7 +417,7 @@ public abstract class ChartEngineFactory
     private static WRESChartEngine
             processQQDiagram(
                               Object inputKeyInstance,
-                              final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                              final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                               final DataFactory factory,
                               PlotTypeSelection usedPlotType,
                               String templateName,
@@ -424,7 +428,7 @@ public abstract class ChartEngineFactory
         WRESArgumentProcessor arguments = null;
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> inputSlice;
 
         //-----------------------------------------------------------------
         //QQ diagram for each lead time, thresholds in the legend.
@@ -432,7 +436,7 @@ public abstract class ChartEngineFactory
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
             inputSlice =
-                    input.sliceByLead( (Integer) inputKeyInstance );
+                    input.sliceByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
@@ -449,10 +453,11 @@ public abstract class ChartEngineFactory
             {
                 legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
+            Object key = ( (TimeWindow) inputKeyInstance ).getLatestLeadTimeInHours();
             arguments.addArgument( "legendTitle", legendTitle );
             arguments.addArgument( "legendUnitsText", legendUnitsText );
             arguments.addArgument( "diagramInstanceDescription",
-                                   "at Lead Hour " + inputSlice.getKey( 0 ).getFirstKey().toString() );
+                                   "at Lead Hour " + key );
             arguments.addArgument( "plotTitleVariable", "Lead Times" );
         }
 
@@ -471,7 +476,8 @@ public abstract class ChartEngineFactory
             //Legend title and lead time argument are specific to the plot.
             arguments.addArgument( "legendTitle", "Lead Time" );
             arguments.addArgument( "legendUnitsText", " [hours]" );
-            arguments.addArgument( "leadHour", inputSlice.getKey( 0 ).getFirstKey().toString() );
+            arguments.addArgument( "leadHour",
+                                   Long.toString( inputSlice.getKey( 0 ).getFirstKey().getLatestLeadTimeInHours() ) );
             arguments.addArgument( "diagramInstanceDescription",
                                    "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
                                                                  + " ("
@@ -526,7 +532,7 @@ public abstract class ChartEngineFactory
     private static WRESChartEngine
             processRankHistogram(
                                   Object inputKeyInstance,
-                                  final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                  final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                   final DataFactory factory,
                                   PlotTypeSelection usedPlotType,
                                   String templateName,
@@ -537,7 +543,7 @@ public abstract class ChartEngineFactory
         WRESArgumentProcessor arguments = null;
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> inputSlice;
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> inputSlice;
 
         //-----------------------------------------------------------------
         //Rank Histogram diagram for each lead time, thresholds in the legend.
@@ -545,7 +551,7 @@ public abstract class ChartEngineFactory
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
             inputSlice =
-                    input.sliceByLead( (Integer) inputKeyInstance );
+                    input.sliceByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
@@ -562,10 +568,11 @@ public abstract class ChartEngineFactory
             {
                 legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
+            Object key = ( (TimeWindow) inputKeyInstance ).getLatestLeadTimeInHours();
             arguments.addArgument( "legendTitle", legendTitle );
             arguments.addArgument( "legendUnitsText", legendUnitsText );
             arguments.addArgument( "diagramInstanceDescription",
-                                   "at Lead Hour " + inputSlice.getKey( 0 ).getFirstKey().toString() );
+                                   "at Lead Hour " + key );
             arguments.addArgument( "plotTitleVariable", "Lead Times" );
         }
 
@@ -584,7 +591,8 @@ public abstract class ChartEngineFactory
             //Legend title and lead time argument are specific to the plot.
             arguments.addArgument( "legendTitle", "Lead Time" );
             arguments.addArgument( "legendUnitsText", " [hours]" );
-            arguments.addArgument( "leadHour", inputSlice.getKey( 0 ).getFirstKey().toString() );
+            arguments.addArgument( "leadHour",
+                                   Long.toString( inputSlice.getKey( 0 ).getFirstKey().getLatestLeadTimeInHours() ) );
             arguments.addArgument( "diagramInstanceDescription",
                                    "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
                                                                  + " ("
@@ -644,7 +652,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
     public static ConcurrentMap<Object, ChartEngine>
-            buildMultiVectorOutputChartEngine( final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+            buildMultiVectorOutputChartEngine( final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                                final DataFactory factory,
                                                final PlotTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
@@ -665,7 +673,7 @@ public abstract class ChartEngineFactory
                                                                 usedPlotType ).getDefaultTemplateName();
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
-        Set<?> keySetValues = input.keySetByLead();
+        Set<?> keySetValues = input.keySetByTime();
         if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
         {
             keySetValues = input.keySetByThreshold();
@@ -748,8 +756,8 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processBoxPlotErrorsDiagram(
-                                         MapBiKey<Integer, Threshold> inputKeyInstance,
-                                         final MetricOutputMapByLeadThreshold<BoxPlotOutput> input,
+                                         MapBiKey<TimeWindow, Threshold> inputKeyInstance,
+                                         final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
                                          final DataFactory factory,
                                          String templateName,
                                          String overrideParametersStr )
@@ -771,7 +779,7 @@ public abstract class ChartEngineFactory
         final MetricOutputMetadata meta = boxPlotData.getMetadata();
         arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
         arguments.addArgument( "diagramInstanceDescription",
-                               "at Lead Hour " + inputKeyInstance.getFirstKey()
+                               "at Lead Hour " + inputKeyInstance.getFirstKey().getLatestLeadTimeInHours()
                                                              + " for "
                                                              + inputKeyInstance.getSecondKey() );
         arguments.addArgument( "probabilities",
@@ -813,14 +821,14 @@ public abstract class ChartEngineFactory
      * @return Map where the keys are instances of {@link MapBiKey} with the two keys being an integer and a threshold.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
-    public static ConcurrentMap<MapBiKey<Integer, Threshold>, ChartEngine>
-            buildBoxPlotChartEngine( final MetricOutputMapByLeadThreshold<BoxPlotOutput> input,
+    public static ConcurrentMap<MapBiKey<TimeWindow, Threshold>, ChartEngine>
+            buildBoxPlotChartEngine( final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
                                      final DataFactory factory,
                                      final String userSpecifiedTemplateResourceName,
                                      final String overrideParametersStr )
                     throws ChartEngineException
     {
-        final ConcurrentMap<MapBiKey<Integer, Threshold>, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
 
         final String templateName =
@@ -828,10 +836,10 @@ public abstract class ChartEngineFactory
                                                                 null ).getDefaultTemplateName();
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
-        Set<MapBiKey<Integer, Threshold>> keySetValues = input.keySet();
+        Set<MapBiKey<TimeWindow, Threshold>> keySetValues = input.keySet();
 
         //For each lead time, do the following....
-        for ( final MapBiKey<Integer, Threshold> keyInstance : keySetValues )
+        for ( final MapBiKey<TimeWindow, Threshold> keyInstance : keySetValues )
         {
             if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED
                  || input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST )
@@ -871,7 +879,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException if the ChartEngine fails to construct
      */
     public static ConcurrentMap<Object, ChartEngine>
-            buildVectorOutputChartEngine( final MetricOutputMapByLeadThreshold<VectorOutput> input,
+            buildVectorOutputChartEngine( final MetricOutputMapByTimeAndThreshold<VectorOutput> input,
                                           final DataFactory factory,
                                           final PlotTypeSelection userSpecifiedPlotType,
                                           final String userSpecifiedTemplateResourceName,
@@ -880,10 +888,10 @@ public abstract class ChartEngineFactory
     {
         final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
 
-        final Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> slicedInput =
+        final Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> slicedInput =
                 factory.getSlicer()
                        .sliceByMetricComponent( input );
-        for ( final Map.Entry<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> entry : slicedInput.entrySet() )
+        for ( final Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> entry : slicedInput.entrySet() )
         {
             final ChartEngine engine = buildGenericScalarOutputChartEngine( entry.getValue(),
                                                                             factory,
@@ -909,7 +917,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
     public static ChartEngine
-            buildGenericScalarOutputChartEngine( final MetricOutputMapByLeadThreshold<ScalarOutput> input,
+            buildGenericScalarOutputChartEngine( final MetricOutputMapByTimeAndThreshold<ScalarOutput> input,
                                                  final DataFactory factory,
                                                  final PlotTypeSelection userSpecifiedPlotType,
                                                  final String userSpecifiedTemplateResourceName,

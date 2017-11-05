@@ -3,6 +3,7 @@ package wres.io.concurrency;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
@@ -427,11 +428,14 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                 LOGGER.error("The width of the standard window for this project could not be determined.");
             }
         }
-
-        Double lastLead = (windowNumber * windowWidth) + leadOffset;
-        return metadataFactory.getMetadata(dim,
-                                           datasetIdentifier,
-                                           lastLead.intValue());
+        //TODO: this class and other classes in IO need to use java.time rather than
+        //rolling our own (Jbrown @ 5 Nov 2017)
+        Double lastLead = ( windowNumber * windowWidth ) + leadOffset;
+        return metadataFactory.getMetadata( dim,
+                                            datasetIdentifier,
+                                            ConfigHelper.getTimeWindow( this.projectConfig,
+                                                                        lastLead.longValue(),
+                                                                        ChronoUnit.HOURS ) );
     }
 
     private PairOfDoubleAndVectorOfDoubles getPair(String date,

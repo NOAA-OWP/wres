@@ -15,7 +15,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.Threshold.Operator;
 import wres.io.config.ProjectConfigPlus;
 
@@ -197,11 +197,11 @@ public final class MetricProcessorTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> trueProcessor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> trueProcessor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.values() );
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> falseProcessor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> falseProcessor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config );
             //Check for storage
@@ -235,7 +235,7 @@ public final class MetricProcessorTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByLeadThreshold> processor =
+            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.values() );
