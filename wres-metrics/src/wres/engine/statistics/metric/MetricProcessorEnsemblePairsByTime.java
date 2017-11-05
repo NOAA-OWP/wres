@@ -24,7 +24,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricInput;
 import wres.datamodel.MetricInputSliceException;
 import wres.datamodel.MetricOutput;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold;
+import wres.datamodel.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.MetricOutputMapByMetric;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
@@ -33,8 +33,9 @@ import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
+import wres.datamodel.TimeWindow;
 import wres.datamodel.VectorOutput;
-import wres.engine.statistics.metric.MetricProcessorByLeadTime.MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder;
+import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
@@ -47,7 +48,7 @@ import wres.engine.statistics.metric.MetricProcessorByLeadTime.MetricFuturesByLe
  * @since 0.1
  */
 
-class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
+class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
 {
 
     /**
@@ -103,17 +104,17 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
     private final BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> toDiscreteProbabilities;
 
     @Override
-    public MetricOutputForProjectByLeadThreshold apply( MetricInput<?> input )
+    public MetricOutputForProjectByTimeAndThreshold apply( MetricInput<?> input )
     {
         if ( ! ( input instanceof EnsemblePairs ) )
         {
             throw new MetricCalculationException( "Expected ensemble pairs for metric processing." );
         }
-        Integer leadTime = input.getMetadata().getLeadTimeInHours();
-        Objects.requireNonNull( leadTime, "Expected a non-null forecast lead time in the input metadata." );
+        TimeWindow timeWindow = input.getMetadata().getTimeWindow();
+        Objects.requireNonNull( timeWindow, "Expected a non-null time window in the input metadata." );
 
         //Metric futures 
-        MetricFuturesByLeadTimeBuilder futures = new MetricFuturesByLeadTimeBuilder();
+        MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
         futures.addDataFactory( dataFactory );
 
         //Slicer
@@ -122,33 +123,33 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         //Process the metrics that consume ensemble pairs
         if ( hasMetrics( MetricInputGroup.ENSEMBLE ) )
         {
-            processEnsemblePairs( leadTime, (EnsemblePairs) input, futures );
+            processEnsemblePairs( timeWindow, (EnsemblePairs) input, futures );
         }
         //Process the metrics that consume single-valued pairs
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
             SingleValuedPairs singleValued = slicer.transformPairs( (EnsemblePairs) input, toSingleValues );
-            processSingleValuedPairs( leadTime, singleValued, futures );
+            processSingleValuedPairs( timeWindow, singleValued, futures );
         }
         //Process the metrics that consume discrete probability pairs
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY ) )
         {
-            processDiscreteProbabilityPairs( leadTime, (EnsemblePairs) input, futures );
+            processDiscreteProbabilityPairs( timeWindow, (EnsemblePairs) input, futures );
         }
 
         // Log
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Completed processing of metrics for feature '{}' at lead time {}.",
+            LOGGER.debug( "Completed processing of metrics for feature '{}' at time window '{}'.",
                           input.getMetadata().getIdentifier().getGeospatialID(),
-                          input.getMetadata().getLeadTimeInHours() );
+                          input.getMetadata().getTimeWindow() );
         }
 
         //Process and return the result       
-        MetricFuturesByLeadTime futureResults = futures.build();
+        MetricFuturesByTime futureResults = futures.build();
         //Add for merge with existing futures, if required
-        addToMergeMap( leadTime, futureResults );
+        addToMergeMap( timeWindow, futureResults );
         return futureResults.getMetricOutput();
     }
 
@@ -166,7 +167,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorEnsemblePairsByLeadTime( final DataFactory dataFactory,
+    MetricProcessorEnsemblePairsByTime( final DataFactory dataFactory,
                                             final ProjectConfig config,
                                             final ExecutorService thresholdExecutor,
                                             final ExecutorService metricExecutor,
@@ -297,29 +298,29 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * 
      * TODO: collapse this with a generic call to futures.addOutput and take an input collection of metrics
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processEnsemblePairs( Integer leadTime, EnsemblePairs input, MetricFuturesByLeadTimeBuilder futures )
+    private void processEnsemblePairs( TimeWindow timeWindow, EnsemblePairs input, MetricFuturesByTimeBuilder futures )
     {
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCALAR ) )
         {
-            processEnsembleThresholds( leadTime, input, futures, MetricOutputGroup.SCALAR );
+            processEnsembleThresholds( timeWindow, input, futures, MetricOutputGroup.SCALAR );
         }
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
         {
-            processEnsembleThresholds( leadTime, input, futures, MetricOutputGroup.VECTOR );
+            processEnsembleThresholds( timeWindow, input, futures, MetricOutputGroup.VECTOR );
         }
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
         {
-            processEnsembleThresholds( leadTime, input, futures, MetricOutputGroup.MULTIVECTOR );
+            processEnsembleThresholds( timeWindow, input, futures, MetricOutputGroup.MULTIVECTOR );
         }
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ) )
         {
-            processEnsembleThresholds( leadTime, input, futures, MetricOutputGroup.BOXPLOT );
+            processEnsembleThresholds( timeWindow, input, futures, MetricOutputGroup.BOXPLOT );
         }
     }
 
@@ -327,16 +328,16 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * Processes all thresholds for metrics that consume {@link EnsemblePairs} and produce a specified 
      * {@link MetricOutputGroup}. 
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processEnsembleThresholds( Integer leadTime,
+    private void processEnsembleThresholds( TimeWindow timeWindow,
                                             EnsemblePairs input,
-                                            MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures,
+                                            MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                             MetricOutputGroup outGroup )
     {
         String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
@@ -349,7 +350,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
             global.forEach( threshold -> {
                 Threshold useMe = getThreshold( threshold, sorted );
                 MetricCalculationException result =
-                        processEnsembleThreshold( leadTime, input, futures, outGroup, useMe );
+                        processEnsembleThreshold( timeWindow, input, futures, outGroup, useMe );
                 if ( !Objects.isNull( result ) )
                 {
                     failures.put( useMe, result );
@@ -370,7 +371,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * Processes one threshold for metrics that consume {@link EnsemblePairs} and produce a specified 
      * {@link MetricOutputGroup}. 
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
@@ -378,9 +379,9 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private MetricCalculationException processEnsembleThreshold( Integer leadTime,
+    private MetricCalculationException processEnsembleThreshold( TimeWindow timeWindow,
                                                                  EnsemblePairs input,
-                                                                 MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures,
+                                                                 MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                                  MetricOutputGroup outGroup,
                                                                  Threshold threshold )
     {
@@ -389,21 +390,21 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         {
             if ( outGroup == MetricOutputGroup.SCALAR )
             {
-                futures.addScalarOutput( dataFactory.getMapKey( leadTime, threshold ),
+                futures.addScalarOutput( dataFactory.getMapKey( timeWindow, threshold ),
                                          processEnsembleThreshold( threshold,
                                                                    input,
                                                                    ensembleScalar ) );
             }
             else if ( outGroup == MetricOutputGroup.VECTOR )
             {
-                futures.addVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                futures.addVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
                                          processEnsembleThreshold( threshold,
                                                                    input,
                                                                    ensembleVector ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {
-                futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                futures.addMultiVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
                                               processEnsembleThreshold( threshold,
                                                                         input,
                                                                         ensembleMultiVector ) );
@@ -413,7 +414,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                 //Only process box plots for "all data" threshold
                 if ( !threshold.isFinite() )
                 {
-                    futures.addBoxPlotOutput( dataFactory.getMapKey( leadTime, threshold ),
+                    futures.addBoxPlotOutput( dataFactory.getMapKey( timeWindow, threshold ),
                                               processEnsembleThreshold( threshold,
                                                                         input,
                                                                         ensembleBoxPlot ) );
@@ -433,23 +434,23 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * pairs, {@link EnsemblePairs}, using a configured mapping function. Skips any thresholds for which
      * {@link Double#isFinite(double)} returns <code>false</code> on the threshold value(s).
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDiscreteProbabilityPairs( Integer leadTime,
+    private void processDiscreteProbabilityPairs( TimeWindow timeWindow,
                                                   EnsemblePairs input,
-                                                  MetricFuturesByLeadTimeBuilder futures )
+                                                  MetricFuturesByTimeBuilder futures )
     {
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ) )
         {
-            processDiscreteProbabilityThresholds( leadTime, input, futures, MetricOutputGroup.VECTOR );
+            processDiscreteProbabilityThresholds( timeWindow, input, futures, MetricOutputGroup.VECTOR );
         }
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ) )
         {
-            processDiscreteProbabilityThresholds( leadTime, input, futures, MetricOutputGroup.MULTIVECTOR );
+            processDiscreteProbabilityThresholds( timeWindow, input, futures, MetricOutputGroup.MULTIVECTOR );
         }
     }
 
@@ -458,16 +459,16 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * {@link MetricOutputGroup}. The {@link DiscreteProbabilityPairs} are produced from the input 
      * {@link EnsemblePairs} using a configured transformation. 
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDiscreteProbabilityThresholds( Integer leadTime,
+    private void processDiscreteProbabilityThresholds( TimeWindow timeWindow,
                                                        EnsemblePairs input,
-                                                       MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures,
+                                                       MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                        MetricOutputGroup outGroup )
     {
         String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
@@ -483,7 +484,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
                 {
                     Threshold useMe = getThreshold( threshold, sorted );
                     MetricCalculationException result =
-                            processDiscreteProbabilityThreshold( leadTime, input, futures, outGroup, useMe );
+                            processDiscreteProbabilityThreshold( timeWindow, input, futures, outGroup, useMe );
                     if ( !Objects.isNull( result ) )
                     {
                         failures.put( useMe, result );
@@ -509,7 +510,7 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * {@link MetricOutputGroup}. The {@link DiscreteProbabilityPairs} are produced from the input 
      * {@link EnsemblePairs} using a configured transformation. 
      * 
-     * @param leadTime the lead time
+     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
@@ -517,9 +518,9 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private MetricCalculationException processDiscreteProbabilityThreshold( Integer leadTime,
+    private MetricCalculationException processDiscreteProbabilityThreshold( TimeWindow timeWindow,
                                                                             EnsemblePairs input,
-                                                                            MetricFuturesByLeadTime.MetricFuturesByLeadTimeBuilder futures,
+                                                                            MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                                             MetricOutputGroup outGroup,
                                                                             Threshold threshold )
     {
@@ -528,14 +529,14 @@ class MetricProcessorEnsemblePairsByLeadTime extends MetricProcessorByLeadTime
         {
             if ( outGroup == MetricOutputGroup.VECTOR )
             {
-                futures.addVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                futures.addVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
                                          processDiscreteProbabilityThreshold( threshold,
                                                                               input,
                                                                               discreteProbabilityVector ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {
-                futures.addMultiVectorOutput( dataFactory.getMapKey( leadTime, threshold ),
+                futures.addMultiVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
                                               processDiscreteProbabilityThreshold( threshold,
                                                                                    input,
                                                                                    discreteProbabilityMultiVector ) );

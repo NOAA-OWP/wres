@@ -1,6 +1,7 @@
 package wres.datamodel;
 
 import java.io.File;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -16,8 +17,8 @@ import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.SafeMetricOutputForProjectByLeadThreshold.SafeMetricOutputForProjectByLeadThresholdBuilder;
-import wres.datamodel.SafeMetricOutputMapByLeadThreshold.Builder;
+import wres.datamodel.SafeMetricOutputForProjectByTimeAndThreshold.SafeMetricOutputForProjectByTimeAndThresholdBuilder;
+import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.Builder;
 import wres.datamodel.Threshold.Operator;
 
 /**
@@ -31,18 +32,18 @@ public final class DataModelTestDataFactory
 {
 
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for selected
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScalarOutput} comprising the CRPSS for selected
      * thresholds and forecast lead times. Reads the input data from
      * testinput/wres/datamodel/metric/getScalarMetricOutputMapByLeadThresholdOne.xml.
      * 
      * @return an output map of verification scores
      */
 
-    public static MetricOutputMapByLeadThreshold<ScalarOutput> getScalarMetricOutputMapByLeadThresholdOne()
+    public static MetricOutputMapByTimeAndThreshold<ScalarOutput> getScalarMetricOutputMapByLeadThresholdOne()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Builder<ScalarOutput> builder = new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        final Builder<ScalarOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
         try
         {
             //Create the input file
@@ -67,8 +68,13 @@ public final class DataModelTestDataFactory
             while ( d.hasNext() )
             {
                 //Set the lead time
-                final double leadTime = (Double) d.next().getKey();
-                final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
+                final double leadTime = ( (Double) d.next().getKey() );
+                final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                             Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                             ReferenceTime.VALID_TIME,
+                                                             (int) leadTime );
+                final MetricResultByThreshold t =
+                        (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadTimeInHours() );
                 final Iterator<MetricResultKey> e = t.getIterator();
                 //Iterate through the thresholds
                 while ( e.hasNext() )
@@ -80,7 +86,7 @@ public final class DataModelTestDataFactory
                     final Threshold q = outputFactory.getQuantileThreshold( constants[0],
                                                                             probConstants[0],
                                                                             Operator.GREATER );
-                    final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
+                    final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -102,18 +108,18 @@ public final class DataModelTestDataFactory
     }
 
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link VectorOutput} comprising the CRPSS for selected
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link VectorOutput} comprising the CRPSS for selected
      * thresholds and forecast lead times. Reads the input data from
      * testinput/wres/datamodel/metric/getVectorMetricOutputMapByLeadThresholdOne.xml.
      * 
      * @return an output map of verification scores
      */
 
-    public static MetricOutputMapByLeadThreshold<VectorOutput> getVectorMetricOutputMapByLeadThresholdOne()
+    public static MetricOutputMapByTimeAndThreshold<VectorOutput> getVectorMetricOutputMapByLeadThresholdOne()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Builder<VectorOutput> builder = new SafeMetricOutputMapByLeadThreshold.Builder<>();
+        final Builder<VectorOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
         try
         {
             //Create the input file
@@ -139,7 +145,12 @@ public final class DataModelTestDataFactory
             {
                 //Set the lead time
                 final double leadTime = (Double) d.next().getKey();
-                final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
+                final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                             Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                             ReferenceTime.VALID_TIME,
+                                                             (int) leadTime );
+                final MetricResultByThreshold t =
+                        (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadTimeInHours() );
                 final Iterator<MetricResultKey> e = t.getIterator();
                 //Iterate through the thresholds
                 while ( e.hasNext() )
@@ -151,7 +162,7 @@ public final class DataModelTestDataFactory
                     final Threshold q = outputFactory.getQuantileThreshold( constants[0],
                                                                             probConstants[0],
                                                                             Operator.GREATER );
-                    final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
+                    final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -174,16 +185,16 @@ public final class DataModelTestDataFactory
     }
 
     /**
-     * Returns a {@link MetricOutputForProjectByLeadThreshold} with fake data.
+     * Returns a {@link MetricOutputForProjectByTimeAndThreshold} with fake data.
      * 
-     * @return a {@link MetricOutputForProjectByLeadThreshold} with fake data
+     * @return a {@link MetricOutputForProjectByTimeAndThreshold} with fake data
      */
 
-    public static MetricOutputForProjectByLeadThreshold getMetricOutputForProjectByLeadThreshold()
+    public static MetricOutputForProjectByTimeAndThreshold getMetricOutputForProjectByLeadThreshold()
     {
         //Prep
-        SafeMetricOutputForProjectByLeadThresholdBuilder builder =
-                new SafeMetricOutputForProjectByLeadThresholdBuilder();
+        SafeMetricOutputForProjectByTimeAndThresholdBuilder builder =
+                new SafeMetricOutputForProjectByTimeAndThresholdBuilder();
         DataFactory factory = DefaultDataFactory.getInstance();
         MetadataFactory metaFactory = factory.getMetadataFactory();
         final MetricOutputMetadata fakeMeta =
@@ -203,8 +214,12 @@ public final class DataModelTestDataFactory
         //Build the input map
         MetricOutputMapByMetric<ScalarOutput> in = factory.ofMap( fakeData );
 
+        final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                     ReferenceTime.VALID_TIME,
+                                                     1 );
         //Fake lead time and threshold
-        builder.addScalarOutput( factory.getMapKeyByLeadThreshold( 1, 23.0, Operator.GREATER ),
+        builder.addScalarOutput( factory.getMapKeyByTimeThreshold( timeWindow, 23.0, Operator.GREATER ),
                                  CompletableFuture.completedFuture( in ) );
 
         //Return data

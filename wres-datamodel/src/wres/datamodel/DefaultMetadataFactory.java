@@ -51,9 +51,9 @@ public class DefaultMetadataFactory implements MetadataFactory
     }
 
     @Override
-    public Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier, final Integer leadTime)
+    public Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier, final TimeWindow timeWindow)
     {
-        return new MetadataImpl(dim, identifier, leadTime);
+        return new MetadataImpl(dim, identifier, timeWindow);
     }
 
     @Override
@@ -63,14 +63,14 @@ public class DefaultMetadataFactory implements MetadataFactory
                                                   final MetricConstants metricID,
                                                   final MetricConstants componentID,
                                                   final DatasetIdentifier identifier,
-                                                  final Integer leadTime)
+                                                  final TimeWindow timeWindow)
     {
         class MetricOutputMetadataImpl extends MetadataImpl implements MetricOutputMetadata
         {
 
             private MetricOutputMetadataImpl()
             {
-                super(dim, identifier, leadTime);
+                super(dim, identifier, timeWindow);
             }
 
             @Override
@@ -392,7 +392,7 @@ public class DefaultMetadataFactory implements MetadataFactory
     {
         private final Dimension dim;
         private final DatasetIdentifier identifier;
-        private final Integer leadTime;
+        private final TimeWindow timeWindow;
         private static final String DIMNULL = "Specify a non-null dimension from which to construct the metadata.";
         
         private MetadataImpl(final Dimension dim)
@@ -400,7 +400,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             Objects.requireNonNull(dim,DIMNULL);
             this.dim = dim;
             this.identifier = null;
-            this.leadTime = null;
+            this.timeWindow = null;
         }
         
         private MetadataImpl(final Dimension dim, final DatasetIdentifier identifier)
@@ -408,15 +408,15 @@ public class DefaultMetadataFactory implements MetadataFactory
             Objects.requireNonNull(dim,DIMNULL);
             this.dim = dim;
             this.identifier = identifier;
-            this.leadTime = null;
+            this.timeWindow = null;
         }
         
-        private MetadataImpl(final Dimension dim, final DatasetIdentifier identifier, final Integer leadTime)
+        private MetadataImpl(final Dimension dim, final DatasetIdentifier identifier, final TimeWindow timeWindow)
         {
             Objects.requireNonNull(dim,DIMNULL);
             this.dim = dim;
             this.identifier = identifier;
-            this.leadTime = leadTime;
+            this.timeWindow = timeWindow;
         }
 
         @Override
@@ -432,9 +432,9 @@ public class DefaultMetadataFactory implements MetadataFactory
         }
 
         @Override
-        public Integer getLeadTimeInHours()
+        public TimeWindow getTimeWindow()
         {
-            return leadTime;
+            return timeWindow;
         }
 
         @Override
@@ -446,14 +446,14 @@ public class DefaultMetadataFactory implements MetadataFactory
             }
             final Metadata p = (Metadata)o;
             boolean returnMe = p.getDimension().equals(getDimension()) && hasIdentifier() == p.hasIdentifier()
-                && hasLeadTime() == p.hasLeadTime();
+                && hasTimeWindow() == p.hasTimeWindow();
             if(hasIdentifier())
             {
                 returnMe = returnMe && identifier.equals(p.getIdentifier());
             }
-            if(hasLeadTime())
+            if(hasTimeWindow())
             {
-                returnMe = returnMe && leadTime.equals(p.getLeadTimeInHours());
+                returnMe = returnMe && timeWindow.equals(p.getTimeWindow());
             }
             return returnMe;
         }
@@ -462,14 +462,14 @@ public class DefaultMetadataFactory implements MetadataFactory
         public int hashCode()
         {
             int returnMe = getDimension().hashCode() + Boolean.hashCode(hasIdentifier())
-                + Boolean.hashCode(hasLeadTime());
+                + Boolean.hashCode(hasTimeWindow());
             if(hasIdentifier())
             {
                 returnMe += identifier.hashCode();
             }
-            if(hasLeadTime())
+            if(hasTimeWindow())
             {
-                returnMe += leadTime.hashCode();
+                returnMe += timeWindow.hashCode();
             }
             return returnMe;
         }
@@ -488,9 +488,9 @@ public class DefaultMetadataFactory implements MetadataFactory
             {
                 b.append("[");
             }
-            if(hasLeadTime())
+            if(hasTimeWindow())
             {
-                b.append(leadTime).append(",");
+                b.append(timeWindow).append(",");
             }
             b.append(dim).append("]");
             return b.toString();

@@ -59,7 +59,7 @@ public interface MetadataFactory
 
     default Metadata getMetadata(final Metadata input, final Dimension dim)
     {
-        return getMetadata(dim, input.getIdentifier(), input.getLeadTimeInHours());
+        return getMetadata(dim, input.getIdentifier(), input.getTimeWindow());
     }
 
     /**
@@ -174,7 +174,7 @@ public interface MetadataFactory
                                  metricID,
                                  componentID,
                                  metadata.getIdentifier(),
-                                 metadata.getLeadTimeInHours());
+                                 metadata.getTimeWindow());
     }
 
     /**
@@ -217,25 +217,25 @@ public interface MetadataFactory
                                  source.getMetricID(),
                                  componentID,
                                  source.getIdentifier(),
-                                 source.getLeadTimeInHours());
+                                 source.getTimeWindow());
     }
 
     /**
      * Build a {@link Metadata} object with a prescribed {@link Dimension} and an optional {@link DatasetIdentifier} and
-     * lead time.
+     * {@link TimeWindow}.
      * 
      * @param dim the dimension
      * @param identifier an optional dataset identifier (may be null)
-     * @param leadTime an optional lead time (may be null)
+     * @param timeWindow an optional time window (may be null)
      * @return a {@link Metadata} object
      */
 
-    Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier, Integer leadTime);
+    Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier, TimeWindow timeWindow);
 
     /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
      * and the input, {@link MetricConstants} identifiers for the metric and the metric component, respectively, and an
-     * optional {@link DatasetIdentifier} identifier and lead time in hours.
+     * optional {@link DatasetIdentifier} identifier and {@link TimeWindow}.
      * 
      * @param sampleSize the sample size
      * @param dim the output dimension
@@ -243,7 +243,7 @@ public interface MetadataFactory
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
      * @param identifier an optional dataset identifier (may be null)
-     * @param leadTime an optional lead time in hours
+     * @param timeWindow an optional time window (may be null)
      * @return a {@link MetricOutputMetadata} object
      */
 
@@ -253,7 +253,7 @@ public interface MetadataFactory
                                            final MetricConstants metricID,
                                            final MetricConstants componentID,
                                            final DatasetIdentifier identifier,
-                                           final Integer leadTime);
+                                           final TimeWindow timeWindow);
 
     /**
      * Returns a dataset identifier.

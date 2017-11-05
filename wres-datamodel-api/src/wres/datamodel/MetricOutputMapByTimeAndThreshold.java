@@ -3,28 +3,28 @@ package wres.datamodel;
 import java.util.Set;
 
 /**
- * A sorted map of {@link MetricOutput} associated with a single metric. The results are stored by forecast lead time
- * and threshold.
+ * A sorted map of {@link MetricOutput} associated with a single metric. The results are stored by {@link TimeWindow}
+ * and {@link Threshold}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-public interface MetricOutputMapByLeadThreshold<T extends MetricOutput<?>>
-        extends MetricOutputMapWithBiKey<Integer, Threshold, T>
+public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
+        extends MetricOutputMapWithBiKey<TimeWindow, Threshold, T>
 {
 
     /**
      * Slice by forecast lead time.
      * 
-     * @param leadTime the forecast lead time
+     * @param timeWindow the forecast lead time
      * @return the submap
      */
 
-    default MetricOutputMapByLeadThreshold<T> sliceByLead( final Integer leadTime )
+    default MetricOutputMapByTimeAndThreshold<T> sliceByTime( final TimeWindow timeWindow )
     {
-        return (MetricOutputMapByLeadThreshold<T>) sliceByFirst( leadTime );
+        return (MetricOutputMapByTimeAndThreshold<T>) sliceByFirst( timeWindow );
     }
 
     /**
@@ -34,24 +34,24 @@ public interface MetricOutputMapByLeadThreshold<T extends MetricOutput<?>>
      * @return the submap
      */
 
-    default MetricOutputMapByLeadThreshold<T> sliceByThreshold( final Threshold threshold )
+    default MetricOutputMapByTimeAndThreshold<T> sliceByThreshold( final Threshold threshold )
     {
-        return (MetricOutputMapByLeadThreshold<T>) sliceBySecond( threshold );
+        return (MetricOutputMapByTimeAndThreshold<T>) sliceBySecond( threshold );
     }
 
     /**
-     * Return the lead time keys.
+     * Return the {@link TimeWindow} keys.
      * 
-     * @return a view of the lead time keys
+     * @return a view of the time window keys
      */
 
-    default Set<Integer> keySetByLead()
+    default Set<TimeWindow> keySetByTime()
     {
         return keySetByFirstKey();
     }
 
     /**
-     * Return the threshold keys.
+     * Return the {@link Threshold} keys.
      * 
      * @return a view of the threshold keys
      */

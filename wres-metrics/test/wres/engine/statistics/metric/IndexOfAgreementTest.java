@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.time.Instant;
 
 import org.junit.Test;
 
@@ -14,8 +15,10 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.MetricInputException;
 import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.ReferenceTime;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.TimeWindow;
 import wres.engine.statistics.metric.IndexOfAgreement.IndexOfAgreementBuilder;
 
 /**
@@ -52,6 +55,10 @@ public final class IndexOfAgreementTest
             fail( "Unable to read the test data." );
         }
         //Metadata for the output
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                 ReferenceTime.VALID_TIME,
+                                                 24 );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "MM/DAY" ),
@@ -60,7 +67,7 @@ public final class IndexOfAgreementTest
                                                                    metaFac.getDatasetIdentifier( "103.1",
                                                                                                  "QME",
                                                                                                  "NVE" ),
-                                                                   24 );
+                                                                   window );
 
         //Build the metric
         final IndexOfAgreementBuilder b = new IndexOfAgreementBuilder();

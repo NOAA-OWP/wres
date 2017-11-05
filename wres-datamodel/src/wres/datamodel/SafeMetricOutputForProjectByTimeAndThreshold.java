@@ -15,12 +15,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
-import wres.datamodel.SafeMetricOutputMultiMapByLeadThreshold.SafeMetricOutputMultiMapByLeadThresholdBuilder;
+import wres.datamodel.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
+import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 
 /**
  * <p>
- * An immutable implementation of a {@link MetricOutputForProjectByLeadThreshold}.
+ * An immutable implementation of a {@link MetricOutputForProjectByTimeAndThreshold}.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
@@ -28,50 +28,50 @@ import wres.datamodel.SafeMetricOutputMultiMapByLeadThreshold.SafeMetricOutputMu
  * @since 0.1
  */
 
-class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjectByLeadThreshold
+class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForProjectByTimeAndThreshold
 {
 
     /**
      * Default logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( SafeMetricOutputForProjectByLeadThreshold.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( SafeMetricOutputForProjectByTimeAndThreshold.class );
 
     /**
      * Thread safe map for {@link ScalarOutput}.
      */
 
-    private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
+    private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
             new ConcurrentHashMap<>();
 
     /**
      * Thread safe map for {@link VectorOutput}.
      */
 
-    private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
+    private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
             new ConcurrentHashMap<>();
 
     /**
      * Thread safe map for {@link MultiVectorOutput}.
      */
 
-    private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multiVector =
+    private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multiVector =
             new ConcurrentHashMap<>();
 
     /**
      * Thread safe map for {@link MatrixOutput}.
      */
 
-    private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MatrixOutput>>> matrix =
+    private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MatrixOutput>>> matrix =
             new ConcurrentHashMap<>();
-    
+
     /**
      * Thread safe map for {@link BoxPlotOutput}.
      */
 
-    private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
+    private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
             new ConcurrentHashMap<>();
-    
+
 
     @Override
     public boolean hasOutput( MetricOutputGroup outGroup )
@@ -94,13 +94,13 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
     }
 
     @Override
-    public MetricOutputMultiMapByLeadThreshold<MetricOutput<?>> getOutput( MetricOutputGroup... outGroup )
+    public MetricOutputMultiMapByTimeAndThreshold<MetricOutput<?>> getOutput( MetricOutputGroup... outGroup )
             throws InterruptedException,
             ExecutionException
     {
         Objects.requireNonNull( outGroup, "Specify one or more output types to return." );
-        SafeMetricOutputMultiMapByLeadThresholdBuilder<MetricOutput<?>> builder =
-                new SafeMetricOutputMultiMapByLeadThresholdBuilder<>();
+        SafeMetricOutputMultiMapByTimeAndThresholdBuilder<MetricOutput<?>> builder =
+                new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
         //Iterate through the types
         for ( MetricOutputGroup next : outGroup )
         {
@@ -159,35 +159,35 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
     }
 
     @Override
-    public MetricOutputMultiMapByLeadThreshold<ScalarOutput> getScalarOutput() throws InterruptedException,
+    public MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> getScalarOutput() throws InterruptedException,
             ExecutionException
     {
         return unwrap( MetricOutputGroup.SCALAR, scalar );
     }
 
     @Override
-    public MetricOutputMultiMapByLeadThreshold<VectorOutput> getVectorOutput() throws InterruptedException,
+    public MetricOutputMultiMapByTimeAndThreshold<VectorOutput> getVectorOutput() throws InterruptedException,
             ExecutionException
     {
         return unwrap( MetricOutputGroup.VECTOR, vector );
     }
 
     @Override
-    public MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> getMultiVectorOutput() throws InterruptedException,
+    public MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> getMultiVectorOutput() throws InterruptedException,
             ExecutionException
     {
         return unwrap( MetricOutputGroup.MULTIVECTOR, multiVector );
     }
 
     @Override
-    public MetricOutputMultiMapByLeadThreshold<MatrixOutput> getMatrixOutput() throws InterruptedException,
+    public MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> getMatrixOutput() throws InterruptedException,
             ExecutionException
     {
         return unwrap( MetricOutputGroup.MATRIX, matrix );
     }
-    
+
     @Override
-    public MetricOutputMultiMapByLeadThreshold<BoxPlotOutput> getBoxPlotOutput() throws InterruptedException,
+    public MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotOutput() throws InterruptedException,
             ExecutionException
     {
         return unwrap( MetricOutputGroup.BOXPLOT, boxplot );
@@ -197,94 +197,94 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
      * Builder.
      */
 
-    static class SafeMetricOutputForProjectByLeadThresholdBuilder
-            implements MetricOutputForProjectByLeadThresholdBuilder
+    static class SafeMetricOutputForProjectByTimeAndThresholdBuilder
+            implements MetricOutputForProjectByTimeAndThresholdBuilder
     {
 
         /**
          * Thread safe map for {@link ScalarOutput}.
          */
 
-        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalarInternal =
+        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalarInternal =
                 new ConcurrentHashMap<>();
 
         /**
          * Thread safe map for {@link VectorOutput}.
          */
 
-        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vectorInternal =
+        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vectorInternal =
                 new ConcurrentHashMap<>();
 
         /**
          * Thread safe map for {@link MultiVectorOutput}.
          */
 
-        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multiVectorInternal =
+        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multiVectorInternal =
                 new ConcurrentHashMap<>();
 
         /**
          * Thread safe map for {@link MatrixOutput}.
          */
 
-        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<MatrixOutput>>> matrixInternal =
+        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MatrixOutput>>> matrixInternal =
                 new ConcurrentHashMap<>();
-        
+
         /**
          * Thread safe map for {@link BoxPlotOutput}.
          */
 
-        private final ConcurrentMap<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplotInternal =
+        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplotInternal =
                 new ConcurrentHashMap<>();
 
         @Override
-        public MetricOutputForProjectByLeadThresholdBuilder addScalarOutput( Integer leadTime,
-                                                                             Threshold threshold,
-                                                                             Future<MetricOutputMapByMetric<ScalarOutput>> result )
+        public MetricOutputForProjectByTimeAndThresholdBuilder addScalarOutput( TimeWindow timeWindow,
+                                                                                Threshold threshold,
+                                                                                Future<MetricOutputMapByMetric<ScalarOutput>> result )
         {
-            scalarInternal.put( DefaultDataFactory.getInstance().getMapKey( leadTime, threshold ), result );
+            scalarInternal.put( DefaultDataFactory.getInstance().getMapKey( timeWindow, threshold ), result );
             return this;
         }
 
         @Override
-        public MetricOutputForProjectByLeadThresholdBuilder addVectorOutput( Integer leadTime,
-                                                                             Threshold threshold,
-                                                                             Future<MetricOutputMapByMetric<VectorOutput>> result )
+        public MetricOutputForProjectByTimeAndThresholdBuilder addVectorOutput( TimeWindow timeWindow,
+                                                                                Threshold threshold,
+                                                                                Future<MetricOutputMapByMetric<VectorOutput>> result )
         {
-            vectorInternal.put( DefaultDataFactory.getInstance().getMapKey( leadTime, threshold ), result );
+            vectorInternal.put( DefaultDataFactory.getInstance().getMapKey( timeWindow, threshold ), result );
             return this;
         }
 
         @Override
-        public MetricOutputForProjectByLeadThresholdBuilder addMultiVectorOutput( Integer leadTime,
-                                                                                  Threshold threshold,
-                                                                                  Future<MetricOutputMapByMetric<MultiVectorOutput>> result )
+        public MetricOutputForProjectByTimeAndThresholdBuilder addMultiVectorOutput( TimeWindow timeWindow,
+                                                                                     Threshold threshold,
+                                                                                     Future<MetricOutputMapByMetric<MultiVectorOutput>> result )
         {
-            multiVectorInternal.put( DefaultDataFactory.getInstance().getMapKey( leadTime, threshold ), result );
+            multiVectorInternal.put( DefaultDataFactory.getInstance().getMapKey( timeWindow, threshold ), result );
             return this;
         }
 
         @Override
-        public MetricOutputForProjectByLeadThresholdBuilder addMatrixOutput( Integer leadTime,
-                                                                             Threshold threshold,
-                                                                             Future<MetricOutputMapByMetric<MatrixOutput>> result )
+        public MetricOutputForProjectByTimeAndThresholdBuilder addMatrixOutput( TimeWindow timeWindow,
+                                                                                Threshold threshold,
+                                                                                Future<MetricOutputMapByMetric<MatrixOutput>> result )
         {
-            matrixInternal.put( DefaultDataFactory.getInstance().getMapKey( leadTime, threshold ), result );
-            return this;
-        }
-        
-        @Override
-        public MetricOutputForProjectByLeadThresholdBuilder addBoxPlotOutput( Integer leadTime,
-                                                                             Threshold threshold,
-                                                                             Future<MetricOutputMapByMetric<BoxPlotOutput>> result )
-        {
-            boxplotInternal.put( DefaultDataFactory.getInstance().getMapKey( leadTime, threshold ), result );
+            matrixInternal.put( DefaultDataFactory.getInstance().getMapKey( timeWindow, threshold ), result );
             return this;
         }
 
         @Override
-        public MetricOutputForProjectByLeadThreshold build()
+        public MetricOutputForProjectByTimeAndThresholdBuilder addBoxPlotOutput( TimeWindow timeWindow,
+                                                                                 Threshold threshold,
+                                                                                 Future<MetricOutputMapByMetric<BoxPlotOutput>> result )
         {
-            return new SafeMetricOutputForProjectByLeadThreshold( this );
+            boxplotInternal.put( DefaultDataFactory.getInstance().getMapKey( timeWindow, threshold ), result );
+            return this;
+        }
+
+        @Override
+        public MetricOutputForProjectByTimeAndThreshold build()
+        {
+            return new SafeMetricOutputForProjectByTimeAndThreshold( this );
         }
 
     }
@@ -295,7 +295,7 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
      * @param builder the builder
      */
 
-    private SafeMetricOutputForProjectByLeadThreshold( SafeMetricOutputForProjectByLeadThresholdBuilder builder )
+    private SafeMetricOutputForProjectByTimeAndThreshold( SafeMetricOutputForProjectByTimeAndThresholdBuilder builder )
     {
         scalar.putAll( builder.scalarInternal );
         vector.putAll( builder.vectorInternal );
@@ -311,12 +311,12 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
      * @param addMe the metric output collection
      */
 
-    private void addToBuilder( MetricOutputMultiMapByLeadThresholdBuilder<MetricOutput<?>> builder,
-                               MetricOutputMultiMapByLeadThreshold<?> addMe )
+    private void addToBuilder( MetricOutputMultiMapByTimeAndThresholdBuilder<MetricOutput<?>> builder,
+                               MetricOutputMultiMapByTimeAndThreshold<?> addMe )
     {
         DataFactory d = DefaultDataFactory.getInstance();
         addMe.forEach( ( key, value ) -> {
-            Map<MapBiKey<Integer, Threshold>, MetricOutput<?>> map = new TreeMap<>();
+            Map<MapBiKey<TimeWindow, Threshold>, MetricOutput<?>> map = new TreeMap<>();
             value.forEach( map::put );
             builder.put( key, d.ofMap( map ) );
         } );
@@ -333,8 +333,8 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
      * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
      */
 
-    private <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold<T> unwrap( MetricOutputGroup outGroup,
-                                                                                       Map<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<T>>> wrapped )
+    private <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T> unwrap( MetricOutputGroup outGroup,
+                                                                                          Map<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<T>>> wrapped )
             throws InterruptedException,
             ExecutionException
     {
@@ -343,8 +343,8 @@ class SafeMetricOutputForProjectByLeadThreshold implements MetricOutputForProjec
             return null;
         }
         DataFactory d = DefaultDataFactory.getInstance();
-        Map<MapBiKey<Integer, Threshold>, MetricOutputMapByMetric<T>> unwrapped = new HashMap<>();
-        for ( Map.Entry<MapBiKey<Integer, Threshold>, Future<MetricOutputMapByMetric<T>>> next : wrapped.entrySet() )
+        Map<MapBiKey<TimeWindow, Threshold>, MetricOutputMapByMetric<T>> unwrapped = new HashMap<>();
+        for ( Map.Entry<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<T>>> next : wrapped.entrySet() )
         {
             try
             {

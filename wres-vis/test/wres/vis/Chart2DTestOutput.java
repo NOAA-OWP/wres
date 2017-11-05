@@ -2,6 +2,8 @@ package wres.vis;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -34,13 +36,15 @@ import wres.datamodel.MapBiKey;
 import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.MetricOutputMetadata;
 import wres.datamodel.MultiVectorOutput;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.ReferenceTime;
 import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.TimeWindow;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.VectorOutput;
 
@@ -70,7 +74,7 @@ public class Chart2DTestOutput extends TestCase
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByLeadThreshold<ScalarOutput> input = getMetricOutputMapByLeadThresholdOne();
+        final MetricOutputMapByTimeAndThreshold<ScalarOutput> input = getMetricOutputMapByLeadThresholdOne();
 
         try
         {
@@ -104,7 +108,7 @@ public class Chart2DTestOutput extends TestCase
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByLeadThreshold<ScalarOutput> input = getMetricOutputMapByLeadThresholdTwo();
+        final MetricOutputMapByTimeAndThreshold<ScalarOutput> input = getMetricOutputMapByLeadThresholdTwo();
 
         try
         {
@@ -145,7 +149,7 @@ public class Chart2DTestOutput extends TestCase
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getReliabilityDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = getReliabilityDiagramByLeadThreshold();
 
 //DEBUG OUTPUT:
 //        results42.forEach((key,result)-> {
@@ -170,7 +174,8 @@ public class Chart2DTestOutput extends TestCase
             //Generate the output file.
             for ( final Object lead : engineMap.keySet() )
             {
-                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
+                Object key = ( (TimeWindow) lead ).getLatestLeadTimeInHours();
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                               + "h."
                                                               + outputImageFileSuffix ),
                                                     engineMap.get( lead ).buildChart(),
@@ -202,7 +207,7 @@ public class Chart2DTestOutput extends TestCase
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getReliabilityDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = getReliabilityDiagramByLeadThreshold();
 
         try
         {
@@ -253,7 +258,7 @@ public class Chart2DTestOutput extends TestCase
         }
 
         //Construct some single-valued pairs
-        final MetricOutputMapByLeadThreshold<VectorOutput> input = getVectorMetricOutputMapByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<VectorOutput> input = getVectorMetricOutputMapByLeadThreshold();
 
         try
         {
@@ -299,7 +304,7 @@ public class Chart2DTestOutput extends TestCase
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
 
         try
         {
@@ -316,7 +321,8 @@ public class Chart2DTestOutput extends TestCase
             //Generate the output file.
             for ( final Object lead : engineMap.keySet() )
             {
-                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
+                Object key = ( (TimeWindow) lead ).getLatestLeadTimeInHours();
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                               + "h."
                                                               + outputImageFileSuffix ),
                                                     engineMap.get( lead ).buildChart(),
@@ -346,7 +352,7 @@ public class Chart2DTestOutput extends TestCase
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = getROCDiagramByLeadThreshold();
 
         try
         {
@@ -394,7 +400,7 @@ public class Chart2DTestOutput extends TestCase
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
 
         try
         {
@@ -411,7 +417,8 @@ public class Chart2DTestOutput extends TestCase
             //Generate the output file.
             for ( final Object lead : engineMap.keySet() )
             {
-                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
+                Object key = ( (TimeWindow) lead ).getLatestLeadTimeInHours();
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                               + "h."
                                                               + outputImageFileSuffix ),
                                                     engineMap.get( lead ).buildChart(),
@@ -441,7 +448,7 @@ public class Chart2DTestOutput extends TestCase
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = getQQDiagramByLeadThreshold();
 
         try
         {
@@ -488,7 +495,7 @@ public class Chart2DTestOutput extends TestCase
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getRankHistogramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = getRankHistogramByLeadThreshold();
 
         try
         {
@@ -505,7 +512,8 @@ public class Chart2DTestOutput extends TestCase
             //Generate the output file.
             for ( final Object lead : engineMap.keySet() )
             {
-                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
+                Object key = ( (TimeWindow) lead ).getLatestLeadTimeInHours();
+                ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                               + "h."
                                                               + outputImageFileSuffix ),
                                                     engineMap.get( lead ).buildChart(),
@@ -535,7 +543,7 @@ public class Chart2DTestOutput extends TestCase
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByLeadThreshold<MultiVectorOutput> results = getRankHistogramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = getRankHistogramByLeadThreshold();
 
         try
         {
@@ -589,7 +597,7 @@ public class Chart2DTestOutput extends TestCase
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByLeadThreshold<BoxPlotOutput> results = getBoxPlotErrorsByObservedAndLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> results = getBoxPlotErrorsByObservedAndLeadThreshold();
 
         try
         {
@@ -597,19 +605,17 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<MapBiKey<Integer, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
+            final Map<MapBiKey<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
                                                                                                    factory,
                                                                                                    null,
                                                                                                    null );
 
             //Generate the output file.
-            for ( final Object key : engineMap.keySet() )
+            for ( final MapBiKey<TimeWindow, Threshold> key : engineMap.keySet() )
             {
-                @SuppressWarnings( "unchecked" )
-                MapBiKey<Integer, Threshold> biKey = (MapBiKey<Integer, Threshold>) key;
-
-                int lead = biKey.getFirstKey();
-                Threshold thresh = biKey.getSecondKey();
+                
+                long lead = key.getFirstKey().getEarliestLeadTimeInHours();
+                Threshold thresh = key.getSecondKey();
 
                 String thresholdString = ( thresh.getThreshold() ).toString();
                 if ( Double.isInfinite( thresh.getThreshold() ) )
@@ -649,7 +655,7 @@ public class Chart2DTestOutput extends TestCase
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByLeadThreshold<BoxPlotOutput> results = getBoxPlotErrorsByForecastAndLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> results = getBoxPlotErrorsByForecastAndLeadThreshold();
 
         try
         {
@@ -657,26 +663,22 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<MapBiKey<Integer, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
+            final Map<MapBiKey<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
                                                                                                    factory,
                                                                                                    null,
                                                                                                    null );
 
             //Generate the output file.
-            for ( final Object key : engineMap.keySet() )
+            for ( final MapBiKey<TimeWindow, Threshold> key : engineMap.keySet() )
             {
-                @SuppressWarnings( "unchecked" )
-                MapBiKey<Integer, Threshold> biKey = (MapBiKey<Integer, Threshold>) key;
-
-                int lead = biKey.getFirstKey();
-                Threshold thresh = biKey.getSecondKey();
+                long lead = key.getFirstKey().getLatestLeadTimeInHours();
+                Threshold thresh = key.getSecondKey();
 
                 String thresholdString = ( thresh.getThreshold() ).toString();
                 if ( Double.isInfinite( thresh.getThreshold() ) )
                 {
                     thresholdString = "alldata";
                 }
-
 
                 ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
                                                               + "h."
@@ -697,18 +699,18 @@ public class Chart2DTestOutput extends TestCase
     
     
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
      * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
      * and slices.
      * 
      * @return an output map of verification scores
      */
 
-    public static MetricOutputMapByLeadThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdOne()
+    public static MetricOutputMapByTimeAndThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdOne()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
-        final MetricOutputMapByLeadThreshold<ScalarOutput> full = getScalarMetricOutputMapByLeadThreshold();
-        final List<MetricOutputMapByLeadThreshold<ScalarOutput>> combine = new ArrayList<>();
+        final MetricOutputMapByTimeAndThreshold<ScalarOutput> full = getScalarMetricOutputMapByLeadThreshold();
+        final List<MetricOutputMapByTimeAndThreshold<ScalarOutput>> combine = new ArrayList<>();
         final double[][] allow =
                 new double[][] { { Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY }, { 0.5, 2707.5 },
                                  { 0.95, 13685.0 }, { 0.99, 26648.0 } };
@@ -722,37 +724,40 @@ public class Chart2DTestOutput extends TestCase
     }
 
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
      * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
      * and slices.
      * 
      * @return an output map of verification scores
      */
-    public static MetricOutputMapByLeadThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdTwo()
+    public static MetricOutputMapByTimeAndThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdTwo()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
-        final MetricOutputMapByLeadThreshold<ScalarOutput> full = getScalarMetricOutputMapByLeadThreshold();
-        final List<MetricOutputMapByLeadThreshold<ScalarOutput>> combine = new ArrayList<>();
+        final MetricOutputMapByTimeAndThreshold<ScalarOutput> full = getScalarMetricOutputMapByLeadThreshold();
+        final List<MetricOutputMapByTimeAndThreshold<ScalarOutput>> combine = new ArrayList<>();
         final int[] allow = new int[] { 42, 258, 474, 690 };
         for ( final int next : allow )
         {
-            combine.add( full.sliceByLead( next ) );
+            combine.add( full.sliceByTime( TimeWindow.of( Instant.MIN,
+                                                          Instant.MAX,
+                                                          ReferenceTime.VALID_TIME,
+                                                          next) ) );
         }
         return outputFactory.combine( combine );
     }
 
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link ScalarOutput} comprising the CRPSS for various
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScalarOutput} comprising the CRPSS for various
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
      * 
      * @return an output map of verification scores
      */
-    private static MetricOutputMapByLeadThreshold<ScalarOutput> getScalarMetricOutputMapByLeadThreshold()
+    private static MetricOutputMapByTimeAndThreshold<ScalarOutput> getScalarMetricOutputMapByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<Integer, Threshold>, ScalarOutput> rawData = new TreeMap<>();
+        final Map<MapBiKey<TimeWindow, Threshold>, ScalarOutput> rawData = new TreeMap<>();
 
         try
         {
@@ -790,7 +795,13 @@ public class Chart2DTestOutput extends TestCase
                     final Threshold q = outputFactory.getQuantileThreshold( constants[0],
                                                                             probConstants[0],
                                                                             Operator.GREATER );
-                    final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
+                    TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                       Instant.MAX,
+                                                       ReferenceTime.VALID_TIME,
+                                                       (int) leadTime,
+                                                       (int) leadTime,
+                                                       ChronoUnit.HOURS );
+                    final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -811,17 +822,17 @@ public class Chart2DTestOutput extends TestCase
     }
 
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link VectorOutput} comprising the CRPSS for various
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link VectorOutput} comprising the CRPSS for various
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
      * 
      * @return an output map of verification scores
      */
-    private static MetricOutputMapByLeadThreshold<VectorOutput> getVectorMetricOutputMapByLeadThreshold()
+    private static MetricOutputMapByTimeAndThreshold<VectorOutput> getVectorMetricOutputMapByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<Integer, Threshold>, VectorOutput> rawData = new TreeMap<>();
+        final Map<MapBiKey<TimeWindow, Threshold>, VectorOutput> rawData = new TreeMap<>();
 
         try
         {
@@ -859,7 +870,13 @@ public class Chart2DTestOutput extends TestCase
                     final Threshold q = outputFactory.getQuantileThreshold( constants[0],
                                                                             probConstants[0],
                                                                             Operator.GREATER );
-                    final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
+                    TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                       Instant.MAX,
+                                                       ReferenceTime.VALID_TIME,
+                                                       (int) leadTime,
+                                                       (int) leadTime,
+                                                       ChronoUnit.HOURS );
+                    final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -880,18 +897,18 @@ public class Chart2DTestOutput extends TestCase
     }
 
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link MultiVectorOutput} that contains the components of the
      * reliability diagram (forecast probabilities, observed given forecast probabilities, and sample sizes) for various
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getReliabilityDiagramByLeadThreshold.xml.
      * 
      * @return an output map of reliability diagrams
      */
-    private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getReliabilityDiagramByLeadThreshold()
+    private static MetricOutputMapByTimeAndThreshold<MultiVectorOutput> getReliabilityDiagramByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<MapBiKey<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -949,7 +966,13 @@ public class Chart2DTestOutput extends TestCase
                     //Read only selected quantiles
                     if ( allowed.contains( q ) )
                     {
-                        final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
+                        TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                           Instant.MAX,
+                                                           ReferenceTime.VALID_TIME,
+                                                           (int) leadTime,
+                                                           (int) leadTime,
+                                                           ChronoUnit.HOURS );
+                        final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, q );
 
                         //Build the result
                         final MetricResult result = t.getResult( f );
@@ -996,7 +1019,7 @@ public class Chart2DTestOutput extends TestCase
     }
 
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link MultiVectorOutput} that contains the components of the
      * Relative Operating Characteristic (ROC) diagram (probability of detection and probability of false detection) for
      * various thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getROCDiagramByLeadThreshold.xml.
@@ -1004,11 +1027,11 @@ public class Chart2DTestOutput extends TestCase
      * @return an output map of ROC diagrams
      */
 
-    private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getROCDiagramByLeadThreshold()
+    private static MetricOutputMapByTimeAndThreshold<MultiVectorOutput> getROCDiagramByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<MapBiKey<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -1057,7 +1080,13 @@ public class Chart2DTestOutput extends TestCase
                     //Read only selected quantiles
                     if ( allowed.contains( q ) )
                     {
-                        final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
+                        TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                           Instant.MAX,
+                                                           ReferenceTime.VALID_TIME,
+                                                           (int) leadTime,
+                                                           (int) leadTime,
+                                                           ChronoUnit.HOURS );
+                        final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, q );
 
                         //Build the result
                         final MetricResult result = t.getResult( f );
@@ -1095,7 +1124,7 @@ public class Chart2DTestOutput extends TestCase
     }
 
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link MultiVectorOutput} that contains the components of the
      * Rank Histogram (rank position, which represents the number of gaps between ensemble members plus one) and 
      * the relative frequency of observations that fall within each gap. The results include various thresholds and 
      * forecast lead times. Reads the input data from testinput/chart2DTest/getRankHistogramByLeadThreshold.xml.
@@ -1103,11 +1132,11 @@ public class Chart2DTestOutput extends TestCase
      * @return an output map of rank histograms
      */
 
-    private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getRankHistogramByLeadThreshold()
+    private static MetricOutputMapByTimeAndThreshold<MultiVectorOutput> getRankHistogramByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<MapBiKey<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         try
         {
             //Create the input file
@@ -1151,8 +1180,13 @@ public class Chart2DTestOutput extends TestCase
                     final Threshold q = outputFactory.getQuantileThreshold( constants[0],
                                                                             probConstants[0],
                                                                             Operator.GREATER );
-
-                    final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, q );
+                    TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                       Instant.MAX,
+                                                       ReferenceTime.VALID_TIME,
+                                                       (int) leadTime,
+                                                       (int) leadTime,
+                                                       ChronoUnit.HOURS );
+                    final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, q );
 
                     //Build the result
                     final MetricResult result = t.getResult( f );
@@ -1189,18 +1223,18 @@ public class Chart2DTestOutput extends TestCase
     }
 
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link MultiVectorOutput} that contains the components of the
      * Quantile-Quantile Diagram (predicted quantiles and observed quantiles) for various thresholds and forecast lead
      * times. Reads the input data from testinput/chart2DTest/getQQDiagramByLeadThreshold.xml.
      * 
      * @return an output map of QQ diagrams
      */
 
-    private static MetricOutputMapByLeadThreshold<MultiVectorOutput> getQQDiagramByLeadThreshold()
+    private static MetricOutputMapByTimeAndThreshold<MultiVectorOutput> getQQDiagramByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<Integer, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<MapBiKey<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         try
         {
             //Create the input file
@@ -1229,7 +1263,13 @@ public class Chart2DTestOutput extends TestCase
 
                 //Set the lead time
                 final double leadTime = (Double) d.next().getKey();
-                final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, threshold );
+                TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                   Instant.MAX,
+                                                   ReferenceTime.VALID_TIME,
+                                                   (int) leadTime,
+                                                   (int) leadTime,
+                                                   ChronoUnit.HOURS );
+                final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, threshold );
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] qq = t.getResult().toArray();
 
@@ -1252,18 +1292,18 @@ public class Chart2DTestOutput extends TestCase
     }
 
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link BoxPlotOutput} that contains a box plot of forecast
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link BoxPlotOutput} that contains a box plot of forecast
      * errors against observed value for a single threshold (all data) and for several forecast lead times. 
      * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml.
      * 
      * @return an output map of verification scores
      */
 
-    private static MetricOutputMapByLeadThreshold<BoxPlotOutput> getBoxPlotErrorsByObservedAndLeadThreshold()
+    private static MetricOutputMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotErrorsByObservedAndLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<Integer, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
+        final Map<MapBiKey<TimeWindow, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
         try
         {
             //Create the input file
@@ -1291,7 +1331,13 @@ public class Chart2DTestOutput extends TestCase
             {
                 //Set the lead time
                 final double leadTime = (Double) d.next().getKey();
-                final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, threshold );
+                TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                   Instant.MAX,
+                                                   ReferenceTime.VALID_TIME,
+                                                   (int) leadTime,
+                                                   (int) leadTime,
+                                                   ChronoUnit.HOURS );
+                final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, threshold );
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] bp = t.getResult().toArray();
                 //Thresholds in the first row
@@ -1324,18 +1370,18 @@ public class Chart2DTestOutput extends TestCase
     }
     
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} of {@link BoxPlotOutput} that contains a box plot of forecast
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link BoxPlotOutput} that contains a box plot of forecast
      * errors against observed value for a single threshold (all data) and for several forecast lead times. 
      * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml.
      * 
      * @return an output map of verification scores
      */
 
-    private static MetricOutputMapByLeadThreshold<BoxPlotOutput> getBoxPlotErrorsByForecastAndLeadThreshold()
+    private static MetricOutputMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotErrorsByForecastAndLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<Integer, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
+        final Map<MapBiKey<TimeWindow, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
         try
         {
             //Create the input file
@@ -1363,7 +1409,13 @@ public class Chart2DTestOutput extends TestCase
             {
                 //Set the lead time
                 final double leadTime = (Double) d.next().getKey();
-                final MapBiKey<Integer, Threshold> key = outputFactory.getMapKey( (int) leadTime, threshold );
+                TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                   Instant.MAX,
+                                                   ReferenceTime.VALID_TIME,
+                                                   (int) leadTime,
+                                                   (int) leadTime,
+                                                   ChronoUnit.HOURS );
+                final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, threshold );
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] bp = t.getResult().toArray();
                 //Thresholds in the first row

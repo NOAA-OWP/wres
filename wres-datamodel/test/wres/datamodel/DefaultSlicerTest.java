@@ -585,16 +585,16 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#sliceByMetricComponent(MetricOutputMapByLeadThreshold)}.
+     * Tests the {@link Slicer#sliceByMetricComponent(MetricOutputMapByTimeAndThreshold)}.
      */
 
     @Test
     public void test14SliceByMetricComponent()
     {
         //Obtain input and slice
-        MetricOutputMapByLeadThreshold<VectorOutput> toSlice =
+        MetricOutputMapByTimeAndThreshold<VectorOutput> toSlice =
                 DataModelTestDataFactory.getVectorMetricOutputMapByLeadThresholdOne();
-        Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> sliced =
+        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> sliced =
                 slicer.sliceByMetricComponent( toSlice );
 
         //Check the results

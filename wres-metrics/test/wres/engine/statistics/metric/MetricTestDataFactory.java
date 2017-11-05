@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -20,7 +21,9 @@ import wres.datamodel.MetadataFactory;
 import wres.datamodel.MulticategoryPairs;
 import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.PairOfDoubles;
+import wres.datamodel.ReferenceTime;
 import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.TimeWindow;
 import wres.datamodel.VectorOfBooleans;
 
 /**
@@ -140,9 +143,13 @@ public final class MetricTestDataFactory
             }
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                 ReferenceTime.VALID_TIME,
+                                                 1 );
         final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"),
-                                                 1);
+                                                 window);
         return metIn.ofSingleValuedPairs(values, meta);
     }
 
@@ -171,9 +178,13 @@ public final class MetricTestDataFactory
             }
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                 ReferenceTime.VALID_TIME,
+                                                 24 );
         final Metadata meta = metFac.getMetadata(metFac.getDimension("MM/DAY"),
                                                  metFac.getDatasetIdentifier("103.1", "QME", "NVE"),
-                                                 24);
+                                                 window);
         return metIn.ofSingleValuedPairs(values, meta);
     }
 
@@ -191,9 +202,13 @@ public final class MetricTestDataFactory
         final List<PairOfDoubles> values = new ArrayList<>();
         values.add(metIn.pairOf(22.9, 22.8));
         final MetadataFactory metFac = metIn.getMetadataFactory();
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                 ReferenceTime.VALID_TIME,
+                                                 24 );
         final Metadata meta = metFac.getMetadata(metFac.getDimension("MM/DAY"),
                                                  metFac.getDatasetIdentifier("A", "MAP"),
-                                                 24);
+                                                 window);
         return metIn.ofSingleValuedPairs(values, meta);
     }    
     
@@ -223,9 +238,13 @@ public final class MetricTestDataFactory
             }
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                 ReferenceTime.VALID_TIME,
+                                                 24 );
         final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"),
-                                                 24);
+                                                 window);
         return metIn.ofEnsemblePairs(values, meta, metIn.vectorOf(climatology.toArray(new Double[climatology.size()])));
     }
     
@@ -243,9 +262,13 @@ public final class MetricTestDataFactory
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         values.add(metIn.pairOf(22.9, new double[]{22.8,23.9}));
         final MetadataFactory metFac = metIn.getMetadataFactory();
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                 ReferenceTime.VALID_TIME,
+                                                 24 );
         final Metadata meta = metFac.getMetadata(metFac.getDimension("MM/DAY"),
                                                  metFac.getDatasetIdentifier("A", "MAP"),
-                                                 24);
+                                                 window);
         return metIn.ofEnsemblePairs(values, meta);
     }    
 

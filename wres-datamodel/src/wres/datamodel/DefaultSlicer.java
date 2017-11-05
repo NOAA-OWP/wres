@@ -172,18 +172,18 @@ class DefaultSlicer implements Slicer
     }
 
     @Override
-    public Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>>
-            sliceByMetricComponent( MetricOutputMapByLeadThreshold<VectorOutput> input )
+    public Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>>
+            sliceByMetricComponent( MetricOutputMapByTimeAndThreshold<VectorOutput> input )
     {
         Objects.requireNonNull( input, NULL_INPUT );
-        Map<MetricConstants, Map<MapBiKey<Integer, Threshold>, ScalarOutput>> sourceMap =
+        Map<MetricConstants, Map<MapBiKey<TimeWindow, Threshold>, ScalarOutput>> sourceMap =
                 new EnumMap<>( MetricConstants.class );
         MetadataFactory metaFac = dataFac.getMetadataFactory();
         input.forEach( ( key, value ) -> {
             List<MetricConstants> components = value.getOutputTemplate().getMetricComponents();
             for ( MetricConstants next : components )
             {
-                Map<MapBiKey<Integer, Threshold>, ScalarOutput> nextMap = null;
+                Map<MapBiKey<TimeWindow, Threshold>, ScalarOutput> nextMap = null;
                 if ( sourceMap.containsKey( next ) )
                 {
                     nextMap = sourceMap.get( next );
@@ -199,7 +199,7 @@ class DefaultSlicer implements Slicer
             }
         } );
         //Build the scalar results
-        Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> returnMe =
+        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> returnMe =
                 new EnumMap<>( MetricConstants.class );
         sourceMap.forEach( ( key, value ) -> returnMe.put( key, dataFac.ofMap( value ) ) );
         return returnMe;
@@ -303,12 +303,6 @@ class DefaultSlicer implements Slicer
         return dataFac.pairOf( pair.getItemOne(), pair.getItemTwo()[0] );
     }
 
-    
-    public static void main(String[] args) 
-    {
-        new DefaultSlicer().getQuantileFunction( new double[]{} ).applyAsDouble( 1.0 );
-    }
-    
     @Override
     public DoubleUnaryOperator getQuantileFunction( double[] sorted )
     {

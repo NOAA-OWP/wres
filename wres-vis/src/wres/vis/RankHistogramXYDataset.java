@@ -1,14 +1,14 @@
 package wres.vis;
 
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricOutputMapByLeadThreshold;
+import wres.datamodel.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.MultiVectorOutput;
 
 public class RankHistogramXYDataset extends MultiVectorOutputDiagramXYDataset
 {
     private static final long serialVersionUID = -798561678672865289L;
 
-    public RankHistogramXYDataset( final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+    public RankHistogramXYDataset( final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                           final MetricDimension xConstant,
                                           final MetricDimension yConstant )
     {
