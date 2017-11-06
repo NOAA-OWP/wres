@@ -1,9 +1,9 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.DichotomousPairs;
-import wres.datamodel.MatrixOutput;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.ScalarOutput;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * The Probability of Detection (PoD) measures the fraction of observed occurrences that were hits.

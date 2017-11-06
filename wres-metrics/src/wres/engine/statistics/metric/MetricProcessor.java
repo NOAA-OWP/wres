@@ -22,21 +22,21 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.DataFactory;
-import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricInput;
-import wres.datamodel.MetricInputSliceException;
-import wres.datamodel.MetricOutput;
-import wres.datamodel.MetricOutputForProject;
-import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.PairedInput;
-import wres.datamodel.ScalarOutput;
-import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.VectorOutput;
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.MetricInputSliceException;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairedInput;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputForProject;
+import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
 
 /**
  * <p>

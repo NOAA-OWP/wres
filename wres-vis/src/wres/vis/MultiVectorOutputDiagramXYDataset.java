@@ -3,8 +3,8 @@ package wres.vis;
 import org.jfree.data.xy.XYDataset;
 
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiVectorOutput;
 
 /**
  * The {@link XYDataset} for use in building a chart that plots a {@link MultiVectorOutput}.

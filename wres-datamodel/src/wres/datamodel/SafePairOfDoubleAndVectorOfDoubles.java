@@ -5,6 +5,8 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+
 class SafePairOfDoubleAndVectorOfDoubles
 implements PairOfDoubleAndVectorOfDoubles
 {

@@ -22,16 +22,16 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.MapBiKey;
-import wres.datamodel.MapKey;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.MetricOutputMultiMapByTimeAndThreshold;
-import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
-import wres.datamodel.TimeWindow;
-import wres.datamodel.VectorOutput;
+import wres.datamodel.outputs.MapBiKey;
+import wres.datamodel.outputs.MapKey;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 
 /**

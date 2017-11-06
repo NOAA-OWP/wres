@@ -1,10 +1,10 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.MatrixOfDoubles;
-import wres.datamodel.MatrixOutput;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MulticategoryPairs;
-import wres.datamodel.ScalarOutput;
+import wres.datamodel.inputs.pairs.MulticategoryPairs;
+import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * The Peirce Skill Score is a categorical measure of the average accuracy of a predictand for a multi-category event,

@@ -2,6 +2,8 @@ package wres.datamodel;
 
 import org.junit.Test;
 
+import wres.datamodel.inputs.MetricInputSliceException;
+
 /**
  * Tests the {@link MetricInputSliceException}.
  * 

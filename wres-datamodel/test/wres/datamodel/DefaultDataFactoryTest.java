@@ -9,12 +9,14 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.Pair;
-import wres.datamodel.PairOfBooleans;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.inputs.pairs.Pair;
+import wres.datamodel.inputs.pairs.PairOfBooleans;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link DefaultDataFactory}.

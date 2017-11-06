@@ -1,6 +1,8 @@
 package wres.datamodel;
 
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.metadata.Metadata;
 
 /**
  * An abstract builder for building an immutable {@link MetricInput} with associated {@link Metadata}.

@@ -8,8 +8,11 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.SafeEnsemblePairs.EnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link SafeEnsemblePairs}.

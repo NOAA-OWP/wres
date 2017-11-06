@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
 
 /**
  * The mean absolute error applies to continuous variables and is the average unsigned difference between a

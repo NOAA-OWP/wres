@@ -7,8 +7,8 @@ import java.util.function.BiPredicate;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.ToDoubleFunction;
 
-import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
 
 /**
  * A factory class for constructing elementary functions.

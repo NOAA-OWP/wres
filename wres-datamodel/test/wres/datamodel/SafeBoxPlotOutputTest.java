@@ -10,6 +10,11 @@ import java.util.Objects;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MetricOutputException;
+import wres.datamodel.outputs.MetricOutputMetadata;
 
 /**
  * Tests the {@link SafeBoxPlotOutput}.

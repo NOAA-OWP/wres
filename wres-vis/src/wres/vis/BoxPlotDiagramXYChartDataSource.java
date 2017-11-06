@@ -1,6 +1,6 @@
 package wres.vis;
 
-import wres.datamodel.BoxPlotOutput;
+import wres.datamodel.outputs.BoxPlotOutput;
 
 /**
  * 

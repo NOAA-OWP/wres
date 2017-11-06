@@ -6,6 +6,18 @@ import java.util.function.BiFunction;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 
+import wres.datamodel.inputs.MetricInputSliceException;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfBooleans;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
+
 /**
  * A utility class for slicing/dicing and transforming datasets associated with verification metrics.
  * 

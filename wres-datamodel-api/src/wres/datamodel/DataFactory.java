@@ -7,9 +7,37 @@ import java.util.Map;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
-import wres.datamodel.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.MulticategoryPairs;
+import wres.datamodel.inputs.pairs.Pair;
+import wres.datamodel.inputs.pairs.PairOfBooleans;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MapBiKey;
+import wres.datamodel.outputs.MapKey;
+import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputException;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * A factory class for producing datasets associated with verification metrics.
