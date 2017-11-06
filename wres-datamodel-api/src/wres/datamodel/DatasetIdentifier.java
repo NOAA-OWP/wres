@@ -2,6 +2,9 @@ package wres.datamodel;
 
 import java.util.Objects;
 
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.outputs.MetricOutput;
+
 /**
  * A class that uniquely identifies a {@link MetricInput} or a {@link MetricOutput} to a user.
  * 

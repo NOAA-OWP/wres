@@ -1,5 +1,8 @@
 package wres.datamodel;
 
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.outputs.MetricOutput;
+
 /**
  * A class that stores the dimension associated with a {@link MetricInput} or a {@link MetricOutput}.
  * 

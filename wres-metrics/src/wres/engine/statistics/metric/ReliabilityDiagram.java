@@ -9,13 +9,13 @@ import java.util.function.Consumer;
 
 import org.apache.commons.math3.util.Precision;
 
-import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.PairOfDoubles;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.MultiVectorOutput;
 
 /**
  * <p>

@@ -3,9 +3,9 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.MetricInput;
-import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.VectorOutput;
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.outputs.VectorOutput;
 
 /**
  * A generic implementation of an error score for {@link SingleValuedPairs} that is decomposable.

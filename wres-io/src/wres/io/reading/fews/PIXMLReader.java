@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
+
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
@@ -36,8 +37,8 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.TimeSeries;
 import wres.io.data.details.ProjectDetails;
+import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestException;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.reading.XMLReader;
@@ -99,6 +100,8 @@ public final class PIXMLReader extends XMLReader
 	 * Constructor for a reader that may be for forecasts or observations
 	 * @param filename The path to the file to read
 	 * @param isForecast Whether or not the reader is for forecast data
+	 * @param hash the hash code for the source
+	 * @param projectDetails the project details
 	 */
     @Internal(exclusivePackage = "wres.io")
 	public PIXMLReader(String filename, boolean isForecast, String hash, ProjectDetails projectDetails)

@@ -36,7 +36,7 @@
   <outputs>
     <valueThresholds>
       <applyTo>left</applyTo>
-      <commaSeparatedValues>0.5,1000000</commaSeparatedValues>
+      <commaSeparatedValues>1.0</commaSeparatedValues>
       <operator>greater than</operator>
     </valueThresholds>	
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->

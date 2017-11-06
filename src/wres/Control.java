@@ -38,22 +38,27 @@ import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.MapKey;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricInput;
-import wres.datamodel.MetricOutput;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.MetricOutputMapByLeadThreshold;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
-import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.ScalarOutput;
-import wres.datamodel.VectorOutput;
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MapBiKey;
+import wres.datamodel.outputs.MapKey;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.time.TimeWindow;
+import wres.datamodel.Threshold;
+import wres.engine.statistics.metric.ConfigMapper;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
-import wres.engine.statistics.metric.MetricProcessorByLeadTime;
+import wres.engine.statistics.metric.MetricProcessorByTime;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
@@ -144,15 +149,11 @@ public class Control implements Function<String[], Integer>
         pairExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
 
-        String projectRawConfig = "";
-
         try
         {
             // Iterate through the configurations
             for(final ProjectConfigPlus projectConfigPlus: projectConfiggies)
             {
-                projectRawConfig = projectConfigPlus.getRawConfig();
-
                 // Process the next configuration
                 processProjectConfig( projectConfigPlus,
                                       pairExecutor,
@@ -256,7 +257,7 @@ public class Control implements Function<String[], Integer>
         // Some output types are processed at the end of the pipeline, others after each input is processed
         // Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR
         // TODO: support additional processor types
-        MetricProcessorByLeadTime processor = null;
+        MetricProcessorByTime processor = null;
         try
         {
             processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessorByLeadTime(projectConfig,
@@ -345,7 +346,7 @@ public class Control implements Function<String[], Integer>
      */
 
     private static void   processCachedProducts( ProjectConfigPlus projectConfigPlus,
-                                               MetricProcessorByLeadTime processor,
+                                               MetricProcessorByTime processor,
                                                Feature feature )
     {
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -417,7 +418,7 @@ public class Control implements Function<String[], Integer>
 
     private static void   processCachedCharts( final Feature feature,
                                                final ProjectConfigPlus projectConfigPlus,
-                                               final MetricProcessorByLeadTime processor,
+                                               final MetricProcessorByTime processor,
                                                final MetricOutputGroup... outGroup)
     {
         if(!processor.hasStoredMetricOutput())
@@ -452,6 +453,12 @@ public class Control implements Function<String[], Integer>
                                                       processor.getStoredMetricOutput()
                                                                .getMultiVectorOutput() );
                             break;
+                        case BOXPLOT:
+                            processBoxPlotCharts( feature,
+                                                      projectConfigPlus,
+                                                      processor.getStoredMetricOutput()
+                                                               .getBoxPlotOutput() );
+                            break;
                         default:
                             LOGGER.warn( "Unsupported chart type {}.",
                                          nextGroup );
@@ -478,7 +485,7 @@ public class Control implements Function<String[], Integer>
 
     /**
      * Processes a set of charts associated with {@link ScalarOutput} across multiple metrics, forecast lead times, and
-     * thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}.
+     * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
@@ -488,7 +495,7 @@ public class Control implements Function<String[], Integer>
 
     private static void   processScalarCharts( final Feature feature,
                                                final ProjectConfigPlus projectConfigPlus,
-                                               final MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarResults)
+                                               final MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> scalarResults)
     {
 
         //Check for results
@@ -503,7 +510,7 @@ public class Control implements Function<String[], Integer>
         // Build charts
         try
         {
-            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<ScalarOutput>> e: scalarResults.entrySet())
+            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<ScalarOutput>> e: scalarResults.entrySet())
             {
                 List<DestinationConfig> destinations =
                         ConfigHelper.getGraphicalDestinations( config );
@@ -552,17 +559,17 @@ public class Control implements Function<String[], Integer>
 
     /**
      * Processes a set of charts associated with {@link VectorOutput} across multiple metrics, forecast lead times, and
-     * thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}. these.
+     * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}. these.
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
-     * @param vectorResults the scalar outputs
+     * @param vectorResults the vector outputs
      * @throws WresProcessingException when an error occurs during processing
      */
 
     private static void   processVectorCharts( final Feature feature,
                                                final ProjectConfigPlus projectConfigPlus,
-                                               final MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorResults)
+                                               final MetricOutputMultiMapByTimeAndThreshold<VectorOutput> vectorResults)
     {
         //Check for results
         if(Objects.isNull(vectorResults))
@@ -576,7 +583,7 @@ public class Control implements Function<String[], Integer>
         // Build charts
         try
         {
-            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<VectorOutput>> e: vectorResults.entrySet())
+            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<VectorOutput>> e: vectorResults.entrySet())
             {
                 List<DestinationConfig> destinations =
                         ConfigHelper.getGraphicalDestinations( config );
@@ -632,17 +639,17 @@ public class Control implements Function<String[], Integer>
 
     /**
      * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, forecast lead times,
-     * and thresholds, stored in a {@link MetricOutputMultiMapByLeadThreshold}.
+     * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
-     * @param multiVectorResults the scalar outputs
+     * @param multiVectorResults the multi-vector outputs
      * @throws WresProcessingException if the processing completed unsuccessfully
      */
 
     private static void   processMultiVectorCharts( final Feature feature,
                                                     final ProjectConfigPlus projectConfigPlus,
-                                                    final MetricOutputMultiMapByLeadThreshold<MultiVectorOutput> multiVectorResults)
+                                                    final MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> multiVectorResults)
     {
         //Check for results
         if(Objects.isNull(multiVectorResults))
@@ -657,7 +664,7 @@ public class Control implements Function<String[], Integer>
         try
         {
             // Build the charts for each metric
-            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByLeadThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
+            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
             {
                 List<DestinationConfig> destinations =
                         ConfigHelper.getGraphicalDestinations( config );
@@ -685,6 +692,13 @@ public class Control implements Function<String[], Integer>
                     for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
                     {
                         // Build the output file name
+                        // TODO: adopt a more general naming convention as the pipelines expand
+                        // For now, the only supported temporal pipeline is per lead time
+                        Object key = nextEntry.getKey();
+                        if( key instanceof TimeWindow ) 
+                        {
+                            key = ( (TimeWindow) key ).getLatestLeadTimeInHours();
+                        }
                         File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
                         Path outputImage = Paths.get( destDir.toString(),
                                                       ConfigHelper.getFeatureDescription( feature )
@@ -697,7 +711,7 @@ public class Control implements Function<String[], Integer>
                                                       .getVariable()
                                                       .getValue()
                                                       + "_"
-                                                      + nextEntry.getKey()
+                                                      + key
                                                       + ".png" );
                         ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
                     }
@@ -711,6 +725,88 @@ public class Control implements Function<String[], Integer>
             throw new WresProcessingException( "Error while generating multi-vector charts:", e );
         }
     }
+    
+    /**
+     * Processes a set of charts associated with {@link BoxPlotOutput} across multiple metrics, forecast lead times,
+     * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature for which the chart is defined
+     * @param projectConfigPlus the project configuration
+     * @param boxPlotResults the box plot outputs
+     * @throws WresProcessingException if the processing completed unsuccessfully
+     */
+
+    private static void   processBoxPlotCharts( final Feature feature,
+                                              final ProjectConfigPlus projectConfigPlus,
+                                              final MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> boxPlotResults )
+    {
+        //Check for results
+        if ( Objects.isNull( boxPlotResults ) )
+        {
+            LOGGER.warn( "No box-plot outputs from which to generate charts." );
+            return;
+        }
+
+        ProjectConfig config = projectConfigPlus.getProjectConfig();
+
+        // Build charts
+        try
+        {
+            // Build the charts for each metric
+            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<BoxPlotOutput>> e: boxPlotResults.entrySet())
+            {
+                List<DestinationConfig> destinations =
+                        ConfigHelper.getGraphicalDestinations( config );
+
+                for ( DestinationConfig dest : destinations )
+                {
+                    final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
+                    // Build the chart engine
+                    final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
+                    String templateResourceName = null;
+                    if(!Objects.isNull(nextConfig))
+                    {
+                        templateResourceName = nextConfig.getTemplateResourceName();
+                    }
+
+                    final Map<MapBiKey<TimeWindow, Threshold>, ChartEngine> engines =
+                            ChartEngineFactory.buildBoxPlotChartEngine( e.getValue(),
+                                                                        DATA_FACTORY,
+                                                                        templateResourceName,
+                                                                        graphicsString );
+                    // Build the outputs
+                    for(final Map.Entry<MapBiKey<TimeWindow, Threshold>, ChartEngine> nextEntry: engines.entrySet())
+                    {
+                        // Build the output file name
+                        File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
+                        // TODO: adopt a more general naming convention as the pipelines expand
+                        // For now, the only temporal pipeline is by lead time
+                        long key = nextEntry.getKey().getFirstKey().getLatestLeadTimeInHours();
+                        Path outputImage = Paths.get( destDir.toString(),
+                                                      ConfigHelper.getFeatureDescription( feature )
+                                                      + "_"
+                                                      + e.getKey()
+                                                      .getKey().name()
+                                                      + "_"
+                                                      + config.getInputs()
+                                                      .getRight()
+                                                      .getVariable()
+                                                      .getValue()
+                                                      + "_"
+                                                      + key
+                                                      + ".png" );
+                        ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
+                    }
+                }
+            }
+        }
+        catch ( ChartEngineException
+                | ChartWritingException
+                | ProjectConfigException e)
+        {
+            throw new WresProcessingException( "Error while generating multi-vector charts:", e );
+        }
+    }    
 
     /**
      * Get project configurations from command line file args. If there are no command line args, look in System
@@ -794,7 +890,7 @@ public class Control implements Function<String[], Integer>
                 {
                     LOGGER.debug("Completed processing of pairs for feature '{}' at lead time {}.",
                                 nextInput.getMetadata().getIdentifier().getGeospatialID(),
-                                nextInput.getMetadata().getLeadTimeInHours());
+                                nextInput.getMetadata().getTimeWindow());
                 }
             }
             catch(final InterruptedException e)
@@ -815,7 +911,7 @@ public class Control implements Function<String[], Integer>
      * A task the processes an intermediate set of results.
      */
 
-    private static class IntermediateResultProcessor implements Consumer<MetricOutputForProjectByLeadThreshold>
+    private static class IntermediateResultProcessor implements Consumer<MetricOutputForProjectByTimeAndThreshold>
     {
 
         /**
@@ -844,24 +940,45 @@ public class Control implements Function<String[], Integer>
         }
 
         @Override
-        public void accept(final MetricOutputForProjectByLeadThreshold input)
+        public void accept(final MetricOutputForProjectByTimeAndThreshold input)
         {
             MetricOutputMetadata meta = null;
             try
             {
-                if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR )
-                     && configNeedsThisTypeOfOutput( projectConfigPlus.getProjectConfig(),
-                                                     DestinationType.GRAPHIC ) )
+                if ( configNeedsThisTypeOfOutput( projectConfigPlus.getProjectConfig(),
+                                                  DestinationType.GRAPHIC ) )
                 {
-                    processMultiVectorCharts(feature,
-                                             projectConfigPlus,
-                                             input.getMultiVectorOutput());
-                    meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
-                    if(LOGGER.isDebugEnabled())
+                    //Multivector output
+                    if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR ) )
                     {
-                        LOGGER.debug("Completed processing of intermediate metrics results for feature '{}' at lead time {}.",
-                                     meta.getIdentifier().getGeospatialID(),
-                                     meta.getLeadTimeInHours());
+                        processMultiVectorCharts( feature,
+                                                  projectConfigPlus,
+                                                  input.getMultiVectorOutput() );
+                        meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
+                    }
+                    //Box-plot output
+                    if ( input.hasOutput( MetricOutputGroup.BOXPLOT ) )
+                    {
+                        processBoxPlotCharts( feature,
+                                              projectConfigPlus,
+                                              input.getBoxPlotOutput() );
+                        meta = input.getBoxPlotOutput().entrySet().iterator().next().getValue().getMetadata();
+                    }
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        if ( Objects.nonNull( meta ) )
+                        {
+                            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' "
+                                          + "at lead time {}.",
+                                          meta.getIdentifier().getGeospatialID(),
+                                          meta.getTimeWindow() );
+                        }
+                        else
+                        {
+                            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' at "
+                                          + "unknown lead time {}.",
+                                          feature.getLocationId() );
+                        }
                     }
                 }
             }
@@ -967,7 +1084,7 @@ public class Control implements Function<String[], Integer>
         final Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter(a -> {
             try
             {
-                return metric.equals(MetricProcessor.fromMetricConfigName(a.getName()));
+                return metric.equals(ConfigMapper.from(a.getName()));
             }
             catch(final MetricConfigurationException e)
             {

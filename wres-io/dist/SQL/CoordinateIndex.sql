@@ -1,4 +1,4 @@
-﻿-- Table: public.coordinateindex
+-- Table: public.coordinateindex
 
 DROP TABLE IF EXISTS public.coordinateindex CASCADE;
 

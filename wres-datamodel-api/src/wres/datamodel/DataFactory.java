@@ -1,14 +1,43 @@
 package wres.datamodel;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold.MetricOutputForProjectByLeadThresholdBuilder;
-import wres.datamodel.MetricOutputMultiMapByLeadThreshold.MetricOutputMultiMapByLeadThresholdBuilder;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.MulticategoryPairs;
+import wres.datamodel.inputs.pairs.Pair;
+import wres.datamodel.inputs.pairs.PairOfBooleans;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MapBiKey;
+import wres.datamodel.outputs.MapKey;
+import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputException;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * A factory class for producing datasets associated with verification metrics.
@@ -22,39 +51,39 @@ public interface DataFactory
 {
 
     /**
-     * Convenience method that returns a {@link MapBiKey} to map a {@link MetricOutput} by forecast lead time and
+     * Convenience method that returns a {@link MapBiKey} to map a {@link MetricOutput} by {@link TimeWindow} and
      * {@link Threshold}.
      * 
-     * @param leadTime the forecast lead time
+     * @param timeWindow the time window
      * @param threshold the threshold value
      * @param condition the threshold condition
      * @return a map key
      */
 
-    default MapBiKey<Integer, Threshold> getMapKeyByLeadThreshold( final Integer leadTime,
+    default MapBiKey<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
                                                                    final Double threshold,
                                                                    final Operator condition )
     {
-        return getMapKey( leadTime, getThreshold( threshold, condition ) );
+        return getMapKey( timeWindow, getThreshold( threshold, condition ) );
     }
 
     /**
-     * Convenience method that returns a {@link MapBiKey} to map a {@link MetricOutput} by forecast lead time and
+     * Convenience method that returns a {@link MapBiKey} to map a {@link MetricOutput} by {@link TimeWindow} and
      * {@link Threshold}.
      * 
-     * @param leadTime the forecast lead time
+     * @param timeWindow the time window
      * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
      * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
      * @param condition the threshold condition
      * @return a map key
      */
 
-    default MapBiKey<Integer, Threshold> getMapKeyByLeadThreshold( final Integer leadTime,
+    default MapBiKey<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
                                                                    final Double threshold,
                                                                    final Double thresholdUpper,
                                                                    final Operator condition )
     {
-        return getMapKey( leadTime, getThreshold( threshold, thresholdUpper, condition ) );
+        return getMapKey( timeWindow, getThreshold( threshold, thresholdUpper, condition ) );
     }
 
     /**
@@ -400,9 +429,10 @@ public interface DataFactory
      * 
      * @param earliestTime the earliest time
      * @param latestTime the latest time
-     * @param validTime is true if the earliestTime and latestTime are in valid time, false for issue time
-     * @param earliestLeadSeconds the earliest lead time in seconds
-     * @param latestLeadSeconds the latest lead time in seconds
+     * @param referenceTime the reference time system
+     * @param earliestLead the earliest lead time
+     * @param latestLead the latest lead time
+     * @param leadUnits the lead time units
      * @return a time window
      * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime or the 
      *            latestLeadTime is before (i.e. smaller than) the earliestLeadTime.  
@@ -410,31 +440,32 @@ public interface DataFactory
 
     default TimeWindow ofTimeWindow( Instant earliestTime,
                                      Instant latestTime,
-                                     boolean validTime,
-                                     int earliestLeadSeconds,
-                                     int latestLeadSeconds )
+                                     ReferenceTime referenceTime,
+                                     int earliestLead,
+                                     int latestLead,
+                                     ChronoUnit leadUnits )
     {
-        return TimeWindow.of( earliestTime, latestTime, validTime, earliestLeadSeconds, latestLeadSeconds );
+        return TimeWindow.of( earliestTime, latestTime, referenceTime, earliestLead, latestLead, leadUnits );
     }
 
     /**
      * <p>Constructs a {@link TimeWindow} that comprises the intersection of two timelines, namely the UTC timeline and
      * forecast lead time. Here, the forecast lead time is zero.</p>
      * 
-     * <p>Also see {@link #ofTimeWindow(Instant, Instant, boolean, int, int)}.</p>
+     * <p>Also see {@link #ofTimeWindow(Instant, Instant, ReferenceTime, int, int, ChronoUnit)}.</p>
      * 
      * @param earliestTime the earliest time
      * @param latestTime the latest time
-     * @param validTime is true if the earliestTime and latestTime are in valid time, false for issue time
+     * @param referenceTime the reference time system
      * @return a time window
      * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
      */
 
     default TimeWindow ofTimeWindow( Instant earliestTime,
                                      Instant latestTime,
-                                     boolean validTime )
+                                     ReferenceTime referenceTime )
     {
-        return ofTimeWindow( earliestTime, latestTime, validTime, 0, 0 );
+        return ofTimeWindow( earliestTime, latestTime, referenceTime, 0, 0, ChronoUnit.HOURS );
     }
 
     /**
@@ -774,46 +805,46 @@ public interface DataFactory
                                     final Operator condition );
 
     /**
-     * Returns a {@link MetricOutputMapByLeadThreshold} from the raw map of inputs.
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} from the raw map of inputs.
      * 
      * @param <T> the type of output
      * @param input the map of metric outputs
-     * @return a {@link MetricOutputMapByLeadThreshold} of metric outputs
+     * @return a {@link MetricOutputMapByTimeAndThreshold} of metric outputs
      */
 
-    <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T>
-            ofMap( final Map<MapBiKey<Integer, Threshold>, T> input );
+    <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
+            ofMap( final Map<MapBiKey<TimeWindow, Threshold>, T> input );
 
     /**
-     * Returns a {@link MetricOutputMultiMapByLeadThreshold} from a map of inputs by lead time and {@link Threshold}.
+     * Returns a {@link MetricOutputMultiMapByTimeAndThreshold} from a map of inputs by {@link TimeWindow} and {@link Threshold}.
      * 
      * @param <T> the type of output
-     * @param input the input map of metric outputs by lead time and threshold
+     * @param input the input map of metric outputs by time window and threshold
      * @return a map of metric outputs by lead time and threshold for several metrics
      */
 
-    <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThreshold<T>
-            ofMultiMap( final Map<MapBiKey<Integer, Threshold>, MetricOutputMapByMetric<T>> input );
+    <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
+            ofMultiMap( final Map<MapBiKey<TimeWindow, Threshold>, MetricOutputMapByMetric<T>> input );
 
     /**
-     * Returns a builder for a {@link MetricOutputMultiMapByLeadThreshold} that allows for the incremental addition of
-     * {@link MetricOutputMapByLeadThreshold} as they are computed.
+     * Returns a builder for a {@link MetricOutputMultiMapByTimeAndThreshold} that allows for the incremental addition of
+     * {@link MetricOutputMapByTimeAndThreshold} as they are computed.
      * 
      * @param <T> the type of output
-     * @return a {@link MetricOutputMultiMapByLeadThresholdBuilder} for a map of metric outputs by lead time and
+     * @return a {@link MetricOutputMultiMapByTimeAndThresholdBuilder} for a map of metric outputs by time window and
      *         threshold
      */
 
-    <T extends MetricOutput<?>> MetricOutputMultiMapByLeadThresholdBuilder<T> ofMultiMap();
+    <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThresholdBuilder<T> ofMultiMap();
 
     /**
-     * Returns a builder for a {@link MetricOutputForProjectByLeadThreshold}.
+     * Returns a builder for a {@link MetricOutputForProjectByTimeAndThreshold}.
      * 
-     * @return a {@link MetricOutputForProjectByLeadThresholdBuilder} for a map of metric outputs by lead time and
+     * @return a {@link MetricOutputForProjectByTimeAndThresholdBuilder} for a map of metric outputs by time window and
      *         threshold
      */
 
-    MetricOutputForProjectByLeadThresholdBuilder ofMetricOutputForProjectByLeadThreshold();
+    MetricOutputForProjectByTimeAndThresholdBuilder ofMetricOutputForProjectByTimeAndThreshold();
 
     /**
      * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.
@@ -826,15 +857,15 @@ public interface DataFactory
     <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( final List<T> input );
 
     /**
-     * Combines a list of {@link MetricOutputMapByLeadThreshold} into a single map.
+     * Combines a list of {@link MetricOutputMapByTimeAndThreshold} into a single map.
      * 
      * @param <T> the type of output
      * @param input the list of input maps
-     * @return a combined {@link MetricOutputMapByLeadThreshold} of metric outputs
+     * @return a combined {@link MetricOutputMapByTimeAndThreshold} of metric outputs
      */
 
-    <T extends MetricOutput<?>> MetricOutputMapByLeadThreshold<T>
-            combine( final List<MetricOutputMapByLeadThreshold<T>> input );
+    <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
+            combine( final List<MetricOutputMapByTimeAndThreshold<T>> input );
 
     /**
      * Helper that checks for the equality of two double values using a prescribed number of significant digits.

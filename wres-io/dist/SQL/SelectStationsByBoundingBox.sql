@@ -1,4 +1,4 @@
-﻿SELECT L.*
+SELECT L.*
 FROM Coordinate C
 INNER JOIN NWSLocationCoordinate NLC
 	ON NLC.coordinate_id = C.coordinate_id

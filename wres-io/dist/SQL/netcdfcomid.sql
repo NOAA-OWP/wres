@@ -1,4 +1,4 @@
-﻿-- Table: netcdfcomid
+-- Table: netcdfcomid
 
 DROP INDEX IF EXISTS netcdfcomid_idx;
 DROP TABLE IF EXISTS netcdfcomid;

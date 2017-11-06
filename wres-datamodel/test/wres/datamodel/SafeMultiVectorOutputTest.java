@@ -9,6 +9,10 @@ import java.util.Map;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.MetricOutputException;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.MultiVectorOutput;
 
 /**
  * Tests the {@link SafeMultiVectorOutput}.

@@ -1,8 +1,8 @@
 package wres.vis;
 
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricOutputMapByLeadThreshold;
-import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiVectorOutput;
 
 /**
  * A chart data source for the reliability portion (top subplot) of a reliability diagram for which a diagram for each
@@ -14,7 +14,7 @@ import wres.datamodel.MultiVectorOutput;
  */
 public class MultiVectorOutputDiagramXYChartDataSource
 extends
-    WRESXYChartDataSource<MetricOutputMapByLeadThreshold<MultiVectorOutput>>
+    WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<MultiVectorOutput>>
 {
     private final MetricDimension xConstant;
     private final MetricDimension yConstant;
@@ -29,7 +29,7 @@ extends
      * @param rangeTitle the range axis title
      */
     public MultiVectorOutputDiagramXYChartDataSource(final int orderIndex,
-                                               final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                               final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                                final MetricDimension xConstant,
                                                final MetricDimension yConstant,
                                                final String domainTitle,
@@ -56,7 +56,7 @@ extends
      * @param subPlotIndex the index for the sub-plot
      */
     public MultiVectorOutputDiagramXYChartDataSource(final int orderIndex,
-                                               final MetricOutputMapByLeadThreshold<MultiVectorOutput> input,
+                                               final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                                final MetricDimension xConstant,
                                                final MetricDimension yConstant,
                                                final String domainTitle,

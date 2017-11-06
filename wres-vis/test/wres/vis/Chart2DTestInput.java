@@ -17,10 +17,10 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.Metadata;
-import wres.datamodel.MetadataFactory;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 
 public class Chart2DTestInput extends TestCase
 {

@@ -3,6 +3,7 @@ package wres.io.concurrency;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
@@ -24,12 +25,12 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
-import wres.datamodel.Metadata;
-import wres.datamodel.MetadataFactory;
-import wres.datamodel.MetricInput;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
@@ -400,11 +401,14 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                 LOGGER.error("The width of the standard window for this project could not be determined.");
             }
         }
-
-        Double lastLead = (windowNumber * windowWidth) + leadOffset;
-        return metadataFactory.getMetadata(dim,
-                                           datasetIdentifier,
-                                           lastLead.intValue());
+        //TODO: this class and other classes in IO need to use java.time rather than
+        //rolling our own (Jbrown @ 5 Nov 2017)
+        Double lastLead = ( windowNumber * windowWidth ) + leadOffset;
+        return metadataFactory.getMetadata( dim,
+                                            datasetIdentifier,
+                                            ConfigHelper.getTimeWindow( this.projectConfig,
+                                                                        lastLead.longValue(),
+                                                                        ChronoUnit.HOURS ) );
     }
 
     private PairOfDoubleAndVectorOfDoubles getPair(String date,

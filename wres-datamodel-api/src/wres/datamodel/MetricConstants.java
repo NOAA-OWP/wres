@@ -7,6 +7,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
+
 /**
  * Metric constants. The metric identifiers are grouped by metric input/output type, as defined by the
  * {@link MetricInputGroup} and {@link MetricOutputGroup}, respectively.

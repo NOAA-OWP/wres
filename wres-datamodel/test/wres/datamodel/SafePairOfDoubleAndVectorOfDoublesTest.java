@@ -2,6 +2,8 @@ package wres.datamodel;
 
 import org.junit.Test;
 
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 

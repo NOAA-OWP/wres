@@ -1,4 +1,4 @@
-﻿-- Table: wres.variableposition
+-- Table: wres.variableposition
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 

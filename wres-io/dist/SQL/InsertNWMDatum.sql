@@ -1,4 +1,4 @@
-﻿INSERT INTO public.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text)
+INSERT INTO public.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text)
 WITH max AS
 (
 	SELECT MAX(srid) + 1 AS srid

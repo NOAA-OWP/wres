@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.PairOfBooleans;
+
 /**
  * Immutable store of verification pairs associated with a dichotomous input, i.e. a single event whose outcome is
  * recorded as occurring (true) or not occurring (false). The event is not defined as part of the input. A dichotomous

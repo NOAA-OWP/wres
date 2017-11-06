@@ -46,6 +46,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	 * @param path The path to the file on the file system
 	 * @param outputTime The time in which the information was generated
 	 * @param lead the lead time
+	 * @param hash the hash code for the source file
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */
@@ -126,6 +127,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	 * @param path The path to the file on the file system
 	 * @param outputTime The time in which the information was generation
 	 * @param lead the lead time
+	 * @param hash the hash code for the source file
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */

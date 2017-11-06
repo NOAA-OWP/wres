@@ -10,6 +10,9 @@ import org.junit.Test;
 
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.SafeDichotomousPairs.DichotomousPairsBuilder;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link SafeDichotomousPairs}.

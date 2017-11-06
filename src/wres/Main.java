@@ -28,6 +28,8 @@ public class Main {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
+    private static final Version version = new Version();
+
 	/**
 	 * Executes and times the requested operation with the given parameters
 	 * @param args Arguments from the command line of the format {@code action <parameter 1, parameter 2, etc>}"
@@ -123,19 +125,7 @@ public class Main {
 
     public static String getVersion()
     {
-        // Empty object for only getting version of the software
-        Package toGetVersion = (new MainFunctions()).getClass().getPackage();
-
-        if (toGetVersion != null && toGetVersion.getImplementationVersion() != null)
-        {
-            // When running from a released zip, the version should show up.
-            return "WRES version " + toGetVersion.getImplementationVersion();
-        }
-        else
-        {
-            // When running from source, this will be the expected outcome.
-            return "WRES version is unknown, probably developer version.";
-        }
+        return version.toString();
     }
 
 

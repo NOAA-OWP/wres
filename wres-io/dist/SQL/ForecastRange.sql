@@ -1,4 +1,4 @@
-﻿-- Table: public.forecastrange
+-- Table: public.forecastrange
 
 DROP TABLE IF EXISTS public.forecastrange CASCADE;
 

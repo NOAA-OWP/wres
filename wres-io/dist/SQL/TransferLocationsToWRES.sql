@@ -1,4 +1,4 @@
-﻿INSERT INTO wres.Feature (comid, lid, gage_id, rfc, st, st_code, feature_name, latitude, longitude)
+INSERT INTO wres.Feature (comid, lid, gage_id, rfc, st, st_code, feature_name, latitude, longitude)
 SELECT 	comid, 
 	lid, 
 	gage_id, 

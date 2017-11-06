@@ -1,4 +1,4 @@
-﻿-- Enumeration: Operating Member
+-- Enumeration: Operating Member
 
 DO $$
 BEGIN

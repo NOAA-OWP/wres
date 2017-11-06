@@ -1,4 +1,4 @@
-﻿
+
 -- The valid date on the observation is incremented by 6 hours due to it being recorded in CST instead of UTC
 
 WITH forecasts AS												-- Gather all necessary forecasts

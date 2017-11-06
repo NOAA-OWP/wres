@@ -541,13 +541,10 @@ public class Validation
 
         if ( season != null )
         {
-            MonthDay earliest = MonthDay.of( 1, 1 );
-            MonthDay latest = MonthDay.of( 12, 31 );
-
             try
             {
-                earliest = MonthDay.of( season.getEarliestMonth(),
-                                        season.getEarliestDay() );
+                MonthDay.of( season.getEarliestMonth(),
+                             season.getEarliestDay() );
             }
             catch ( DateTimeException dte )
             {
@@ -569,8 +566,8 @@ public class Validation
 
             try
             {
-                latest = MonthDay.of( season.getLatestMonth(),
-                                      season.getLatestDay() );
+                MonthDay.of( season.getLatestMonth(),
+                             season.getLatestDay() );
             }
             catch ( DateTimeException dte )
             {

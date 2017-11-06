@@ -6,10 +6,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.DateTimeException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
@@ -31,6 +33,10 @@ import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.PairConfig;
+import wres.config.generated.PairConfig.Dates;
+import wres.config.generated.PairConfig.IssuedDates;
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
@@ -110,9 +116,9 @@ public class ConfigHelper
 
     /**
      *
-     * @param projectConfig
-     * @param currentLead
-     * @return
+     * @param projectConfig the project configuration
+     * @param currentLead the current lead time
+     * @return the lead time in hours
      * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
      */
     public static int getLead(ProjectConfig projectConfig, int currentLead) throws InvalidPropertiesFormatException {
@@ -156,6 +162,7 @@ public class ConfigHelper
      * @param windowNumber The indicator of the window whose lead description needs.  In the simplest case, the first
      *                     window could represent 'lead = 1' while the third 'lead = 3'. In more complicated cases,
      *                     the first window could be '40 &gt; lead AND lead &ge; 1' and the second '80 &gt; lead AND lead &ge; 40'
+     * @param offset The offset                    
      * @return A description of what a window number means in terms of lead times
      * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
      */
@@ -639,6 +646,7 @@ public class ConfigHelper
      *
      * @param projectConfig the configuration object to send a message about
      * @param message the identifier for the message to send
+     * @return true if the caller should log
      */
     private static boolean messageSendPutIfAbsent(ProjectConfig projectConfig,
                                                       String message)
@@ -888,6 +896,56 @@ public class ConfigHelper
         return result;
     }
 
+    /**
+     * Returns a {@link TimeWindow} from the input configuration using the specified lead time to form the interval
+     * on the forecast horizon. The earliest and latest times on the UTC timeline are determined by whichever of the
+     * following is available (in this order): 
+     * 
+     * <ol>
+     * <li>The valid times in {@link Dates#getEarliest()} and {@link Dates#getLatest()}; or</li>
+     * <li>The issue times in {@link IssuedDates#getEarliest()} and the {@link IssuedDates#getLatest()}; or</li>
+     * <li>The earliest and latest possible dates on the UTC timeline in valid time, namely {@link Instant#MIN} and 
+     * {@link Instant#MAX}, respectively.</li>
+     * </ol>
+     * 
+     * @param config the project configuration
+     * @param lead the earliest and latest lead time
+     * @param leadUnits the lead time units
+     * @return a time window 
+     * @throws NullPointerException if the config is null
+     */
+
+    public static TimeWindow getTimeWindow( ProjectConfig config, long lead, ChronoUnit leadUnits )
+    {
+        Objects.requireNonNull( config );
+        Dates dates = config.getPair().getDates();
+        IssuedDates issueDates = config.getPair().getIssuedDates();
+        //Valid dates available
+        if ( Objects.nonNull( dates ) )
+        {
+            return TimeWindow.of( Instant.parse( dates.getEarliest() ),
+                                  Instant.parse( dates.getLatest() ),
+                                  ReferenceTime.VALID_TIME,
+                                  lead,
+                                  lead,
+                                  leadUnits );
+        }
+        //Issue dates available
+        else if ( Objects.nonNull( issueDates ) )
+        {
+            return TimeWindow.of( Instant.parse( issueDates.getEarliest() ),
+                                  Instant.parse( issueDates.getLatest() ),
+                                  ReferenceTime.ISSUE_TIME,
+                                  lead,
+                                  lead,
+                                  leadUnits );
+        }
+        //No dates available
+        else
+        {
+            return TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, lead, lead, leadUnits );
+        }
+    }
 
     /**
      * Get the time zone offset from a datasource config or null if not found.
@@ -953,7 +1011,7 @@ public class ConfigHelper
         HADT ( "-0900" ),
         HAST ( "-1000" );
 
-        private final ZoneOffset zoneOffset;
+        private transient final ZoneOffset zoneOffset;
 
         ConusZoneId( String zoneOffset )
         {
@@ -1051,7 +1109,8 @@ public class ConfigHelper
             s.append( " )" );
         }
 
-        LOGGER.trace( s.toString() );
+        LOGGER.trace( "{}", s );
+
         return s.toString();
     }
 

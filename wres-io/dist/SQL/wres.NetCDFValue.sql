@@ -1,4 +1,4 @@
-﻿-- Table: wres.NetCDFValue
+-- Table: wres.NetCDFValue
 
 CREATE SCHEMA IF NOT EXISTS wres;
 

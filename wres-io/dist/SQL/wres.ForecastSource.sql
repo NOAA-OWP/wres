@@ -1,4 +1,4 @@
-﻿-- Table: wres.ForecastSource
+-- Table: wres.ForecastSource
 -- This should eventually become somethine like 'wres.TimeSeriesSource'
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;

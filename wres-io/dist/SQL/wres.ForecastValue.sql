@@ -1,4 +1,4 @@
-﻿-- Table: wres.ForecastValue
+-- Table: wres.ForecastValue
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
