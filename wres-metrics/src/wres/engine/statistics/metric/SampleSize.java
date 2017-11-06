@@ -4,9 +4,9 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.MetricInput;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.ScalarOutput;
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * Constructs a {@link Metric} that returns the {@link MetricInput#size()}.

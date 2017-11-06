@@ -13,18 +13,18 @@ import java.util.Objects;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.DichotomousPairs;
-import wres.datamodel.DiscreteProbabilityPairs;
-import wres.datamodel.EnsemblePairs;
-import wres.datamodel.Metadata;
-import wres.datamodel.MetadataFactory;
-import wres.datamodel.MulticategoryPairs;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.ReferenceTime;
-import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.TimeWindow;
 import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.MulticategoryPairs;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * Factory class for generating test datasets for metric calculations.

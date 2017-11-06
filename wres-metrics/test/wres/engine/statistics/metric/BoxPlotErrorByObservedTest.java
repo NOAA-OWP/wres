@@ -9,19 +9,19 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.BoxPlotOutput;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.EnsemblePairs;
-import wres.datamodel.Metadata;
-import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.ReferenceTime;
-import wres.datamodel.TimeWindow;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder;
 
 /**

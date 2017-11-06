@@ -2,7 +2,7 @@ package wres.engine.statistics.metric;
 
 import java.util.function.ToDoubleFunction;
 
-import wres.datamodel.PairOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
 
 /**
  * Interface for a class of function that applies to a {@link PairOfDoubles} and returns a <code>double</code>.

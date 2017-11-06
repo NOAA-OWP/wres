@@ -7,6 +7,11 @@ import java.time.Instant;
 import org.junit.Test;
 
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.outputs.MapBiKey;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * Tests the {@link SafeMetricOutputMapByTimeAndThreshold}.

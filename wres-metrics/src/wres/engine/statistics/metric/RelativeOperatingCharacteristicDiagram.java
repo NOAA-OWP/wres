@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.outputs.MultiVectorOutput;
 
 /**
  * Computes the Relative Operating Characteristic (ROC; also known as the Receiver Operating Characteristic), which

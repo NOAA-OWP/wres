@@ -1,5 +1,8 @@
 package wres.datamodel;
 
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+
 /**
  * Immutable store of verification pairs for two probabilistic variables that are defined for a common, discrete, event.
  * 

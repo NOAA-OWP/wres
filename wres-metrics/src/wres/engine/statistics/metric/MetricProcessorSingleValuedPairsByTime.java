@@ -12,21 +12,21 @@ import java.util.function.Function;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DichotomousPairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricInput;
-import wres.datamodel.MetricInputSliceException;
-import wres.datamodel.MetricOutput;
-import wres.datamodel.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.MetricOutputMapByMetric;
-import wres.datamodel.PairOfBooleans;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.ScalarOutput;
-import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.MetricInputSliceException;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.PairOfBooleans;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.time.TimeWindow;
 import wres.datamodel.Threshold;
-import wres.datamodel.TimeWindow;
 import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
 /**

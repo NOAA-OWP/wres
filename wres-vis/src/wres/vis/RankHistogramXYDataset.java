@@ -1,8 +1,8 @@
 package wres.vis;
 
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiVectorOutput;
 
 public class RankHistogramXYDataset extends MultiVectorOutputDiagramXYDataset
 {

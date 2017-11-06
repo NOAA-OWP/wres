@@ -5,6 +5,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.MulticategoryPairs;
+import wres.datamodel.metadata.Metadata;
+
 /**
  * Immutable store of verification pairs associated with the outcome (true or false) of a multi-category event. The
  * categorical outcomes may be ordered or unordered. For multi-category pairs with <b>more</b> than two possible

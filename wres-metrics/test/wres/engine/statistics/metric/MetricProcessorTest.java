@@ -12,7 +12,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.io.config.ProjectConfigPlus;
 
 /**

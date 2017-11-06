@@ -4,6 +4,10 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.VectorOutput;
+
 /**
  * Tests the {@link SafeVectorOutput}.
  * 

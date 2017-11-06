@@ -7,16 +7,16 @@ import java.util.Objects;
 import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DichotomousPairs;
-import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutput;
-import wres.datamodel.MetricOutputMapByMetric;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.ScalarOutput;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.Slicer;
 
 /**

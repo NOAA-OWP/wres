@@ -2,6 +2,10 @@ package wres.datamodel;
 
 import java.util.Objects;
 
+import wres.datamodel.outputs.MetricOutputException;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.ScalarOutput;
+
 /**
  * An immutable scalar outputs associated with a metric.
  * 

@@ -4,6 +4,12 @@ import java.util.HashMap;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.time.TimeWindow;
+
 /**
  * A factory class for constructing {@link Metadata} and associated objects.
  * 

@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 
 /**
  * <p>

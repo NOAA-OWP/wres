@@ -6,13 +6,13 @@ import java.util.function.Function;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Dimension;
-import wres.datamodel.Metadata;
-import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricInput;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutput;
-import wres.datamodel.MetricOutputMetadata;
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputMetadata;
 
 /**
  * <p>

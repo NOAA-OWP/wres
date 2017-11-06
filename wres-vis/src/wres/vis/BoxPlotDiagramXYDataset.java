@@ -2,7 +2,7 @@ package wres.vis;
 
 import org.jfree.data.xy.XYDataset;
 
-import wres.datamodel.BoxPlotOutput;
+import wres.datamodel.outputs.BoxPlotOutput;
 
 /**
  * The {@link XYDataset} for use in building the reliability diagram portion of the reliability diagram plot (the other

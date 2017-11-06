@@ -13,23 +13,23 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.BoxPlotOutput;
 import wres.datamodel.DataFactory;
-import wres.datamodel.MapBiKey;
-import wres.datamodel.Metadata;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricInputSliceException;
-import wres.datamodel.MetricOutput;
-import wres.datamodel.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
-import wres.datamodel.MetricOutputMapByMetric;
-import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.ScalarOutput;
-import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.inputs.MetricInputSliceException;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MapBiKey;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
+import wres.datamodel.time.TimeWindow;
 import wres.datamodel.Threshold;
-import wres.datamodel.TimeWindow;
-import wres.datamodel.VectorOutput;
 
 /**
  * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindow}.

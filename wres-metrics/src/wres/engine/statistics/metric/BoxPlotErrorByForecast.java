@@ -4,12 +4,12 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.ToDoubleFunction;
 
-import wres.datamodel.BoxPlotOutput;
 import wres.datamodel.DataFactory;
-import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 

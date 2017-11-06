@@ -17,9 +17,9 @@ import java.util.stream.Collectors;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricInput;
-import wres.datamodel.MetricOutput;
-import wres.datamodel.MetricOutputMapByMetric;
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputMapByMetric;
 
 /**
  * <p>

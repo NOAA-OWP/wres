@@ -100,6 +100,7 @@ public final class PIXMLReader extends XMLReader
 	 * Constructor for a reader that may be for forecasts or observations
 	 * @param filename The path to the file to read
 	 * @param isForecast Whether or not the reader is for forecast data
+	 * @param hash the hash code for the source
 	 * @param projectDetails the project details
 	 */
     @Internal(exclusivePackage = "wres.io")

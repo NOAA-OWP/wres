@@ -29,24 +29,24 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import ohd.hseb.hefs.utils.tools.FileTools;
 import wres.config.generated.PlotTypeSelection;
-import wres.datamodel.BoxPlotOutput;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.MapBiKey;
-import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.ReferenceTime;
-import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.TimeWindow;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MapBiKey;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.VectorOutput;
 
 /**
  * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit

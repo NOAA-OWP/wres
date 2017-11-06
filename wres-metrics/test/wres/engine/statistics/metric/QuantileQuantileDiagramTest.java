@@ -11,13 +11,13 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.QuantileQuantileDiagram.QuantileQuantileDiagramBuilder;
 
 /**

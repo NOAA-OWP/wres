@@ -8,8 +8,11 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.PairOfDoubles;
 import wres.datamodel.SafeSingleValuedPairs.SingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link SafeSingleValuedPairs}.

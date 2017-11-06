@@ -10,13 +10,13 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.DiscreteProbabilityPairs;
-import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.MultiVectorOutput;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.ReliabilityDiagram.ReliabilityDiagramBuilder;
 
 /**

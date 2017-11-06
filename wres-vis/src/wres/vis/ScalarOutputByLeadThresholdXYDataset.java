@@ -5,9 +5,9 @@ import java.util.List;
 
 import org.jfree.data.xy.AbstractXYDataset;
 
-import wres.datamodel.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link MetricOutputMapByTimeAndThreshold} which contains a set of

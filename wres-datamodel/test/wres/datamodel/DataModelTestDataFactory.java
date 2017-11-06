@@ -20,6 +20,16 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.SafeMetricOutputForProjectByTimeAndThreshold.SafeMetricOutputForProjectByTimeAndThresholdBuilder;
 import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.Builder;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.MapBiKey;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * Factory class for generating test datasets for metric calculations.

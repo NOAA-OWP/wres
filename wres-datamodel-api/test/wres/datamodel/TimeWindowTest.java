@@ -9,6 +9,9 @@ import java.util.Objects;
 
 import org.junit.Test;
 
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
+
 /**
  * Tests the {@link TimeWindow}.
  * 

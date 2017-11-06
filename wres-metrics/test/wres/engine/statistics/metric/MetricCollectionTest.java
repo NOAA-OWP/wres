@@ -14,14 +14,14 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.DichotomousPairs;
-import wres.datamodel.DiscreteProbabilityPairs;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricOutputMapByMetric;
-import wres.datamodel.MulticategoryPairs;
-import wres.datamodel.ScalarOutput;
-import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.VectorOutput;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.inputs.pairs.MulticategoryPairs;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 
 /**

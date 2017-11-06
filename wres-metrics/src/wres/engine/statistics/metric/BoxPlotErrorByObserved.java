@@ -2,11 +2,11 @@ package wres.engine.statistics.metric;
 
 import java.util.Arrays;
 
-import wres.datamodel.BoxPlotOutput;
-import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.Slicer;
 
 /**
