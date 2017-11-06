@@ -42,13 +42,6 @@ public final class ScriptGenerator
         StringBuilder script = new StringBuilder();
         Integer variableID = ConfigHelper.getVariableID(dataSourceConfig);
 
-        String earliestDate = projectDetails.getEarliestDate();
-        String latestDate = projectDetails.getLatestDate();
-        String earliestIssueDate = null;
-        String latestIssueDate = null;
-        String zeroDate = projectDetails.getZeroDate( dataSourceConfig );
-        Integer leadOffset = projectDetails.getLeadOffset( feature );
-
         String variablePositionClause = ConfigHelper.getVariablePositionClause(feature, variableID, "");
 
         Integer timeShift = null;
@@ -60,6 +53,7 @@ public final class ScriptGenerator
 
         if (ConfigHelper.isForecast(dataSourceConfig))
         {
+            Integer leadOffset = projectDetails.getLeadOffset( feature );
             script.append("SELECT (TS.initialization_date + INTERVAL '1 HOUR' * lead");
 
             if (timeShift != null)
@@ -83,8 +77,7 @@ public final class ScriptGenerator
                   .append( NEWLINE );
             script.append( ConfigHelper.getSeasonQualifier( projectDetails,
                                                             "TS.initialization_date",
-                                                            timeShift ) )
-                  .append( NEWLINE );
+                                                            timeShift ) );
 
             String ensembleClause = constructEnsembleClause(dataSourceConfig);
 
@@ -93,25 +86,25 @@ public final class ScriptGenerator
                 script.append(ensembleClause);
             }
 
-            if (earliestIssueDate != null)
+            if (projectDetails.getEarliestIssueDate() != null)
             {
-                script.append("     AND TS.initialization_date >= ")
-                      .append(earliestIssueDate)
-                      .append("            ")
+                script.append("     AND TS.initialization_date >= '")
+                      .append(projectDetails.getEarliestIssueDate())
+                      .append("'            ")
                       .append("-- Limit results to values that were forecasted on or after the given date")
                       .append(NEWLINE);
             }
 
-            if (latestIssueDate != null)
+            if (projectDetails.getLatestIssueDate() != null)
             {
-                script.append("     AND TS.initialization_date <= ")
-                      .append(latestIssueDate)
-                      .append("            ")
+                script.append("     AND TS.initialization_date <= '")
+                      .append(projectDetails.getLatestIssueDate())
+                      .append("'            ")
                       .append("-- Limit results to values that were forecasted on or before the given date")
                       .append(NEWLINE);
             }
 
-            if (earliestDate != null)
+            if ( projectDetails.getEarliestDate() != null)
             {
                 script.append("     AND TS.initialization_date + INTERVAL '1 hour' * lead");
 
@@ -120,13 +113,13 @@ public final class ScriptGenerator
                     script.append(" + INTERVAL '1 hour' * ").append(timeShift);
                 }
 
-                script.append(" >= ").append(earliestDate)
-                      .append("         ")
+                script.append(" >= '").append(projectDetails.getEarliestDate())
+                      .append("'         ")
                       .append("-- Limit the forecasts to values on or after this date")
                       .append(NEWLINE);
             }
 
-            if (latestDate != null)
+            if ( projectDetails.getLatestDate() != null)
             {
                 script.append("     AND TS.initialization_date + INTERVAL '1 hour' * lead");
 
@@ -135,8 +128,8 @@ public final class ScriptGenerator
                     script.append(" + INTERVAL '1 hour' *").append(timeShift);
                 }
 
-                script.append(" <= ").append(latestDate)
-                      .append("         ")
+                script.append(" <= '").append(projectDetails.getLatestDate())
+                      .append("'         ")
                       .append("-- Limit the forecasts to values on or before this date")
                       .append(NEWLINE);
             }
@@ -169,6 +162,8 @@ public final class ScriptGenerator
         }
         else
         {
+
+            String zeroDate = projectDetails.getZeroDate( dataSourceConfig );
             List<Integer> sourceIds;
             int windowPeriod = Time.unitsToHours( projectDetails.getAggregationUnit(),
                                                  projectDetails.getAggregationPeriod()).intValue();
@@ -221,7 +216,7 @@ public final class ScriptGenerator
 
             script.append(NEWLINE);
 
-            if (latestDate != null)
+            if (projectDetails.getLatestDate() != null)
             {
                 script.append("     AND O.observation_time");
 
@@ -229,16 +224,15 @@ public final class ScriptGenerator
                     script.append(" + INTERVAL '1 hour' * ").append(timeShift);
                 }
 
-                script.append(" <= ").append(latestDate)
-                      .append("            ")
+                script.append(" <= '").append(projectDetails.getLatestDate())
+                      .append("'            ")
                       .append("-- Only retrieve observations on or before this date")
                       .append(NEWLINE);
             }
 
             script.append( ConfigHelper.getSeasonQualifier( projectDetails,
                                                             "O.observation_time",
-                                                            timeShift ) )
-                  .append( NEWLINE );
+                                                            timeShift ) );
         }
 
         script.append(";");

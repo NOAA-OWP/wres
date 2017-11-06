@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.MetricInput;
+import wres.datamodel.inputs.MetricInput;
 import wres.io.utilities.NoDataException;
 import wres.util.NotImplementedException;
 import wres.util.Strings;
@@ -35,6 +35,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
     @Override
     public Iterator<Future<MetricInput<?>>> iterator()
     {
+        // TODO: Evaluate what kind of MetricInputIterator to return.
         BackToBackMetricInputIterator iterator = null;
         try {
             iterator =  new BackToBackMetricInputIterator( this.projectConfig,

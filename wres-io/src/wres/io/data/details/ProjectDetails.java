@@ -326,7 +326,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         if (this.projectConfig.getPair().getDates() != null &&
             this.projectConfig.getPair().getDates().getEarliest() != null)
         {
-            earliestDate = "'" + this.projectConfig.getPair().getDates().getEarliest() + "'";
+            earliestDate = this.projectConfig.getPair().getDates().getEarliest();
         }
 
         return earliestDate;
@@ -339,7 +339,33 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         if (this.projectConfig.getPair().getDates() != null &&
                 this.projectConfig.getPair().getDates().getLatest() != null)
         {
-            latestDate = "'" + this.projectConfig.getPair().getDates().getLatest() + "'";
+            latestDate = this.projectConfig.getPair().getDates().getLatest();
+        }
+
+        return latestDate;
+    }
+
+    public String getEarliestIssueDate()
+    {
+        String earliestDate = null;
+
+        if (this.projectConfig.getPair().getIssuedDates() != null &&
+                this.projectConfig.getPair().getIssuedDates().getEarliest() != null)
+        {
+            earliestDate = this.projectConfig.getPair().getIssuedDates().getEarliest();
+        }
+
+        return earliestDate;
+    }
+
+    public String getLatestIssueDate()
+    {
+        String latestDate = null;
+
+        if (this.projectConfig.getPair().getIssuedDates() != null &&
+            this.projectConfig.getPair().getIssuedDates().getLatest() != null)
+        {
+            latestDate = this.projectConfig.getPair().getIssuedDates().getLatest();
         }
 
         return latestDate;

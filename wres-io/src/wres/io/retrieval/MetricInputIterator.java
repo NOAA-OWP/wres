@@ -18,7 +18,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.MetricInput;
+import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.VectorOfDoubles;
 import wres.io.concurrency.InputRetriever;
 import wres.io.config.ConfigHelper;
@@ -44,7 +44,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private final ProjectDetails projectDetails;
     private NavigableMap<String, Double> leftHandMap;
     private VectorOfDoubles climatology;
-    private String zeroDate;
     private String earliestObservationDate;
 
     protected int getWindowNumber()
@@ -269,9 +268,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     Double convertedValue = conversions.get(measurementUnitID).convert( observedValue );
 
                     if (convertedValue != null &&
-                        !convertedValue.isNaN() &&
-                        convertedValue >= this.getProjectDetails().getMinimumValue() &&
-                        convertedValue <= this.getProjectDetails().getMaximumValue())
+                        !convertedValue.isNaN()  )
                     {
                         awaitingAggregations.add( conversions.get(
                                 measurementUnitID ).convert( observedValue ) );
@@ -432,7 +429,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                              .getLeadOffset( this.getFeature() ) );
                 retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
                 retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-                retriever.setZeroDate( this.getZeroDate() );
 
                 nextInput = Database.submit(retriever);
             }
@@ -483,16 +479,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     {
         return ( this.getWindowNumber() * this.getProjectDetails().getWindowWidth()) +
                this.getProjectDetails().getLeadOffset( this.getFeature() );
-    }
-
-    protected String getZeroDate() throws SQLException
-    {
-        if (this.getSimulation() != null && this.zeroDate == null)
-        {
-            this.zeroDate = this.getProjectDetails().getZeroDate( this.getSimulation() );
-        }
-
-        return this.zeroDate;
     }
 
     protected String getEarliestObservationDate() throws SQLException
