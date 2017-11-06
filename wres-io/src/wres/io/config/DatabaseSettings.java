@@ -29,7 +29,7 @@ final class DatabaseSettings {
 
 	private String url = "localhost";
 	private String username = "wres";
-	private String password = "wres";
+	private String password;
 	private String port = "5432";
 	private String databaseName = "wres";
 	private String databaseType = "postgresql";
@@ -326,7 +326,7 @@ final class DatabaseSettings {
 		string_rep += System.lineSeparator();
 		string_rep += "\t";
 		string_rep += "Password:\t";
-		string_rep += String.valueOf(password);
+		string_rep += "(REDACTED)";
 		string_rep += System.lineSeparator();
 		string_rep += "\t";
 		string_rep += "Database Name:\t";
