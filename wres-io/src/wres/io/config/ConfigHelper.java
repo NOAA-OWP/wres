@@ -908,33 +908,32 @@ public class ConfigHelper
      * {@link Instant#MAX}, respectively.</li>
      * </ol>
      * 
-     * @param config the project configuration
+     * @param projectDetails the project configuration
      * @param lead the earliest and latest lead time
      * @param leadUnits the lead time units
      * @return a time window 
-     * @throws NullPointerException if the config is null
+     * @throws NullPointerException if the projectDetails is null
      */
 
-    public static TimeWindow getTimeWindow( ProjectConfig config, long lead, ChronoUnit leadUnits )
+    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, ChronoUnit leadUnits )
     {
-        Objects.requireNonNull( config );
-        Dates dates = config.getPair().getDates();
-        IssuedDates issueDates = config.getPair().getIssuedDates();
+        Objects.requireNonNull( projectDetails );
+
         //Valid dates available
-        if ( Objects.nonNull( dates ) )
+        if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null)
         {
-            return TimeWindow.of( Instant.parse( dates.getEarliest() ),
-                                  Instant.parse( dates.getLatest() ),
+            return TimeWindow.of( Instant.parse( projectDetails.getEarliestDate() ),
+                                  Instant.parse( projectDetails.getLatestDate() ),
                                   ReferenceTime.VALID_TIME,
                                   lead,
                                   lead,
                                   leadUnits );
         }
         //Issue dates available
-        else if ( Objects.nonNull( issueDates ) )
+        else if ( projectDetails.getEarliestIssueDate() != null && projectDetails.getLatestIssueDate() != null )
         {
-            return TimeWindow.of( Instant.parse( issueDates.getEarliest() ),
-                                  Instant.parse( issueDates.getLatest() ),
+            return TimeWindow.of( Instant.parse( projectDetails.getEarliestIssueDate() ),
+                                  Instant.parse( projectDetails.getLatestIssueDate() ),
                                   ReferenceTime.ISSUE_TIME,
                                   lead,
                                   lead,
@@ -1107,6 +1106,7 @@ public class ConfigHelper
                       + latest.getDayOfMonth() );
 
             s.append( " )" );
+            s.append(System.lineSeparator());
         }
 
         LOGGER.trace( "{}", s );

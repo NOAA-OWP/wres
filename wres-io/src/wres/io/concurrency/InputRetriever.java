@@ -19,8 +19,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.TimeAggregationConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
@@ -100,11 +98,6 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             throw error;
         }
         return input;
-    }
-
-    public void setZeroDate(String zeroDate)
-    {
-        this.zeroDate = zeroDate;
     }
 
     private MetricInput<?> createInput() throws NoDataException
@@ -406,7 +399,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         Double lastLead = ( windowNumber * windowWidth ) + leadOffset;
         return metadataFactory.getMetadata( dim,
                                             datasetIdentifier,
-                                            ConfigHelper.getTimeWindow( this.projectConfig,
+                                            ConfigHelper.getTimeWindow( this.projectDetails,
                                                                         lastLead.longValue(),
                                                                         ChronoUnit.HOURS ) );
     }
@@ -433,10 +426,10 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             return null;
         }
 
-        double leftAggregation = Collections.aggregate(leftValues,
+        Double leftAggregation = Collections.aggregate(leftValues,
                                                        this.projectDetails.getAggregationFunction());
 
-        if (Double.compare( leftAggregation, Double.NaN ) == 0)
+        if ( leftAggregation.isNaN())
         {
             LOGGER.debug("The left value aggregated to NaN and could not form a pair from the dates '{}' to '{}'.",
                          firstDate,
@@ -484,7 +477,6 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private VectorOfDoubles climatology;
     private List<PairOfDoubleAndVectorOfDoubles> primaryPairs;
     private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;
-    private String zeroDate;
 
     @Override
     protected Logger getLogger()

@@ -38,6 +38,16 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
         String earliestDate = this.getProjectDetails().getEarliestDate();
         String latestDate = this.getProjectDetails().getLatestDate();
 
+        if (earliestDate != null)
+        {
+            earliestDate = "'" + earliestDate + "'";
+        }
+
+        if (latestDate != null)
+        {
+            latestDate = "'" + latestDate + "'";
+        }
+
         Integer timeShift = null;
 
         String variablepositionClause = ConfigHelper.getVariablePositionClause(this.getFeature(), leftVariableID, "");
