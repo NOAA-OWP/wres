@@ -3,8 +3,10 @@ package wres.io.data.details;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,14 +15,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DestinationConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
+import wres.io.utilities.ScriptGenerator;
 import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
@@ -35,6 +41,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectDetails.class );
 
+    public static final String LEFT_MEMBER = "'left'";
+    public static final String RIGHT_MEMBER = "'right'";
+    public static final String BASELINE_MEMBER = "'baseline'";
+
     private Integer projectID = null;
     private final ProjectConfig projectConfig;
 
@@ -45,6 +55,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private final Map<Integer, String> leftHashes = new ConcurrentHashMap<>(  );
     private final Map<Integer, String> rightHashes = new ConcurrentHashMap<>(  );
     private final Map<Integer, String> baselineHashes = new ConcurrentHashMap<>(  );
+    private final Map<Feature, Integer> lastLeads = new ConcurrentHashMap<>(  );
+    private final Map<Feature, Integer> leadOffsets = new ConcurrentHashMap<>(  );
 
     private final List<Integer> leftSources = new ArrayList<>(  );
     private final List<Integer> rightSources = new ArrayList<>(  );
@@ -53,12 +65,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private Integer leftVariableID = null;
     private Integer rightVariableID = null;
     private Integer baselineVariableID = null;
-
-    private Integer lastLead = null;
-
-    public static final String LEFT_MEMBER = "'left'";
-    public static final String RIGHT_MEMBER = "'right'";
-    public static final String BASELINE_MEMBER = "'baseline'";
 
     private final int inputCode;
 
@@ -285,6 +291,196 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         return shift;
+    }
+
+    public Double getMaximumValue()
+    {
+        Double maximum = Double.MAX_VALUE;
+
+        if (this.projectConfig.getPair().getValues() != null &&
+            this.projectConfig.getPair().getValues().getMaximum() != null)
+        {
+            maximum = this.projectConfig.getPair().getValues().getMaximum();
+        }
+
+        return maximum;
+    }
+
+    public Double getMinimumValue()
+    {
+        Double minimum = -Double.MAX_VALUE;
+
+        if (this.projectConfig.getPair().getValues() != null &&
+            this.projectConfig.getPair().getValues().getMinimum() != null)
+        {
+            minimum = this.projectConfig.getPair().getValues().getMinimum();
+        }
+
+        return minimum;
+    }
+
+    public String getEarliestDate()
+    {
+        String earliestDate = null;
+
+        if (this.projectConfig.getPair().getDates() != null &&
+            this.projectConfig.getPair().getDates().getEarliest() != null)
+        {
+            earliestDate = "'" + this.projectConfig.getPair().getDates().getEarliest() + "'";
+        }
+
+        return earliestDate;
+    }
+
+    public String getLatestDate()
+    {
+        String latestDate = null;
+
+        if (this.projectConfig.getPair().getDates() != null &&
+                this.projectConfig.getPair().getDates().getLatest() != null)
+        {
+            latestDate = "'" + this.projectConfig.getPair().getDates().getLatest() + "'";
+        }
+
+        return latestDate;
+    }
+
+    public boolean specifiesSeason()
+    {
+        return this.projectConfig.getPair().getSeason() != null;
+    }
+
+    public MonthDay getEarliestDayInSeason()
+    {
+        MonthDay earliest = null;
+
+        PairConfig.Season season = this.projectConfig.getPair().getSeason();
+
+        if (season != null)
+        {
+            earliest = MonthDay.of(season.getEarliestMonth(), season.getEarliestDay());
+        }
+
+        return earliest;
+    }
+
+    public MonthDay getLatestDayInSeason()
+    {
+        MonthDay latest = null;
+
+        PairConfig.Season season = this.projectConfig.getPair().getSeason();
+
+        if (season != null)
+        {
+            latest = MonthDay.of(season.getLatestMonth(), season.getLatestDay());
+        }
+
+        return latest;
+    }
+
+    public Integer getAggregationPeriod()
+    {
+        Integer period = null;
+
+        if (this.projectConfig.getPair().getDesiredTimeAggregation() != null)
+        {
+            period = this.projectConfig.getPair().getDesiredTimeAggregation().getPeriod();
+        }
+
+        return period;
+    }
+
+    public String getAggregationUnit()
+    {
+        String unit = null;
+
+        if (this.projectConfig.getPair().getDesiredTimeAggregation() != null)
+        {
+            unit = this.projectConfig.getPair()
+                                     .getDesiredTimeAggregation()
+                                     .getUnit()
+                                     .value();
+        }
+
+        return unit;
+    }
+
+    public String getAggregationFunction()
+    {
+        String function = null;
+
+        if (this.projectConfig.getPair().getDesiredTimeAggregation() != null)
+        {
+            function = this.projectConfig.getPair()
+                                         .getDesiredTimeAggregation()
+                                         .getFunction()
+                                         .value();
+        }
+
+        return function;
+    }
+
+    public String getDesiredMeasurementUnit()
+    {
+        return String.valueOf(this.projectConfig.getPair().getUnit());
+    }
+
+    public List<DestinationConfig> getPairDestinations()
+    {
+        return ConfigHelper.getPairDestinations( this.projectConfig );
+    }
+
+    public Integer getLeadOffset(Feature feature)
+            throws SQLException, InvalidPropertiesFormatException,
+            NoDataException
+    {
+        boolean offsetIsMissing = !this.leadOffsets.containsKey( feature );
+
+        if ( offsetIsMissing && ConfigHelper.isSimulation( this.getRight() ))
+        {
+            this.leadOffsets.put(feature, 0);
+        }
+        else if (offsetIsMissing)
+        {
+            Integer leadOffset = ConfigHelper.getLeadOffset( this.projectConfig,
+                                                          feature);
+
+            if (leadOffset == null)
+            {
+                String message = "A valid offset for matching lead values could not be determined. ";
+                message += "The first acceptable lead time is ";
+                message += String.valueOf(
+                        ConfigHelper.getMinimumLeadHour( this.projectConfig )
+                );
+
+                if ( ConfigHelper.isMaximumLeadHourSpecified( this.projectConfig ) )
+                {
+                    message += ", the last acceptable lead time is ";
+                    message += String.valueOf(
+                            ConfigHelper.getMaximumLeadHour( this.projectConfig )
+                    );
+                    message += ",";
+                }
+
+                message += " and the size of each evaluation window is ";
+                message += String.valueOf(this.getAggregationPeriod());
+                message += " ";
+                message += String.valueOf(this.getAggregationPeriod());
+                message += "s. ";
+
+                message += "A full evaluation window could not be found ";
+                message += "between the left hand data and the right ";
+                message += "data that fits within these parameters.";
+
+                throw new NoDataException( message );
+            }
+            else
+            {
+                this.leadOffsets.put( feature, leadOffset );
+            }
+        }
+
+        return this.leadOffsets.get( feature );
     }
 
     public String getProjectName()
@@ -730,27 +926,32 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public Integer getLastLead(Feature feature) throws SQLException
     {
-        if (this.lastLead == null)
+        boolean leadIsMissing = !this.lastLeads.containsKey( feature );
+
+        if (leadIsMissing)
         {
             String script = "";
 
             if ( ConfigHelper.isForecast( this.getRight() ) )
             {
-                script += "SELECT FV.lead AS last_lead" + NEWLINE;
-                script += "FROM wres.ForecastValue FV" + NEWLINE;
-                script += "INNER JOIN wres.TimeSeries TS" + NEWLINE;
-                script +=
-                        "    ON TS.timeseries_id = FV.timeseries_id" + NEWLINE;
-                script += "INNER JOIN wres.ForecastSource FS" + NEWLINE;
-                script += "    ON FS.forecast_id = TS.timeseries_id" + NEWLINE;
-                script += "INNER JOIN wres.ProjectSource PS" + NEWLINE;
-                script += "   ON PS.source_id = FS.source_id" + NEWLINE;
-                script += "WHERE PS.project_id = " + this.getId() + NEWLINE;
-                script += "    AND  " +
+                script += "SELECT MAX(FV.lead) AS last_lead" + NEWLINE;
+                script += "FROM wres.TimeSeries TS" + NEWLINE;
+                script += "INNER JOIN wres.ForecastValue FV" + NEWLINE;
+                script += "    ON TS.timeseries_id = FV.timeseries_id" + NEWLINE;
+                script += "WHERE " +
                           ConfigHelper.getVariablePositionClause( feature,
                                                                   this.getRightVariableID(),
                                                                   "TS" ) +
                           NEWLINE;
+                script += "    AND EXISTS (" + NEWLINE;
+                script += "        SELECT 1" + NEWLINE;
+                script += "        FROM wres.ProjectSource PS" + NEWLINE;
+                script += "        INNER JOIN wres.ForecastSource FS" + NEWLINE;
+                script += "            ON FS.source_id = PS.source_id" + NEWLINE;
+                script += "        WHERE PS.project_id = " + this.getId() + NEWLINE;
+                script += "            AND PS.inactive_time IS NULL" + NEWLINE;
+                script += "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
+                script += "    )";
 
                 if ( ConfigHelper.isMaximumLeadHourSpecified( this.projectConfig ) )
                 {
@@ -765,10 +966,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                               + ConfigHelper.getMinimumLeadHour( this.projectConfig )
                               + NEWLINE;
                 }
-
-                script += "GROUP BY FV.lead" + NEWLINE;
-                script += "ORDER BY last_lead DESC" + NEWLINE;
-                script += "LIMIT 1";
             }
             else
             {
@@ -787,10 +984,38 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             script += ";";
 
 
-            this.lastLead = Database.getResult( script, "last_lead" );
+            this.lastLeads.put(feature, Database.getResult( script, "last_lead" ));
         }
 
-        return this.lastLead;
+        return this.lastLeads.get(feature);
+    }
+
+    public Integer getLead(int windowNumber)
+            throws InvalidPropertiesFormatException
+    {
+        return ConfigHelper.getLead( this.projectConfig, windowNumber );
+    }
+
+    public Integer getMinimumLeadHour()
+    {
+        return ConfigHelper.getMinimumLeadHour( this.projectConfig );
+    }
+
+    public int getWindowWidth() throws InvalidPropertiesFormatException
+    {
+        return ConfigHelper.getWindowWidth( this.projectConfig ).intValue();
+    }
+
+    public String getZeroDate(DataSourceConfig sourceConfig) throws SQLException
+    {
+        String script = ScriptGenerator.generateZeroDateScript( this.projectConfig,
+                                                                sourceConfig );
+        return "'" + Database.getResult( script, "zero_date" ) + "'";
+    }
+
+    public boolean usesProbabilityThresholds()
+    {
+        return ConfigHelper.usesProbabilityThresholds( this.projectConfig );
     }
 
     @Override

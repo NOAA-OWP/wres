@@ -24,8 +24,8 @@ import wres.util.Strings;
  * Created by ctubbs on 7/19/17.
  */
 @Internal(exclusivePackage = "wres.io")
-public final class ZippedPIXMLIngest extends WRESRunnable {
-
+public final class ZippedPIXMLIngest extends WRESRunnable
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedPIXMLIngest.class);
 
     private final byte[] content;
@@ -33,7 +33,6 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
     private final List<Feature> specifiedFeatures;
     private final DataSourceConfig dataSourceConfig;
     private final DataSourceConfig.Source sourceConfig;
-    private final Future<String> futureHash;
     private final ProjectDetails projectDetails;
 
     @Internal(exclusivePackage = "wres.io")
@@ -50,31 +49,6 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
         this.sourceConfig = sourceConfig;
         this.specifiedFeatures = specifiedFeatures;
         this.projectDetails = projectDetails;
-
-        WRESCallable<String> hasher = new WRESCallable<String>()
-        {
-            @Override
-            protected Logger getLogger()
-            {
-                return null;
-            }
-
-            @Override
-            protected String execute() throws Exception
-            {
-                return Strings.getMD5Checksum( contentToHash );
-            }
-
-            private byte[] contentToHash;
-
-            public WRESCallable<String> init(byte[] contentToHash)
-            {
-                this.contentToHash = contentToHash;
-                return this;
-            }
-        }.init( content );
-
-        this.futureHash = Executor.submit( hasher );
     }
 
     @Override
@@ -82,7 +56,7 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
     {
         try
         {
-            String hash = this.futureHash.get();
+            String hash = Strings.getMD5Checksum( content );
 
             if ( !DataSources.hasSource(hash))
             {
@@ -105,11 +79,7 @@ public final class ZippedPIXMLIngest extends WRESRunnable {
                 this.projectDetails.addSource( hash, this.dataSourceConfig );
             }
         }
-        catch ( InterruptedException ie )
-        {
-            Thread.currentThread().interrupt();
-        }
-        catch ( SQLException | IOException | ExecutionException e )
+        catch ( SQLException | IOException  e )
         {
             throw new RuntimeException( "Failed to ingest", e );
         }

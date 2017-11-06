@@ -25,7 +25,7 @@ import wres.io.reading.IngestException;
 import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
-import wres.io.utilities.InputGenerator;
+import wres.io.retrieval.InputGenerator;
 import wres.util.Strings;
 
 public final class Operations {

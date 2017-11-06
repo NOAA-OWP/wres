@@ -32,6 +32,7 @@ import wres.datamodel.PairOfDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
+import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
@@ -49,10 +50,10 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
     @Internal(exclusivePackage = "wres.io")
-    public InputRetriever (ProjectConfig projectConfig,
+    public InputRetriever (ProjectDetails projectDetails,
                            BiFunction<String, String, List<Double>> getLeftValues)
     {
-        this.projectConfig = projectConfig;
+        this.projectDetails = projectDetails;
         this.getLeftValues = getLeftValues;
     }
 
@@ -79,10 +80,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     @Override
     public MetricInput<?> execute() throws Exception
     {
-        this.primaryPairs = this.createPairs(this.projectConfig.getInputs().getRight());
+        this.primaryPairs = this.createPairs(this.projectDetails.getRight());
 
-        if (ConfigHelper.hasBaseline(this.projectConfig)) {
-            this.baselinePairs = this.createPairs(this.projectConfig.getInputs().getBaseline());
+        if (this.projectDetails.hasBaseline())
+        {
+            this.baselinePairs = this.createPairs(this.projectDetails.getBaseline());
         }
 
         MetricInput<?> input;
@@ -108,11 +110,11 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     {
         MetricInput<?> input;
 
-        DatasourceType dataType = this.projectConfig.getInputs().getRight().getType();
+        DatasourceType dataType = this.projectDetails.getRight().getType();
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
-        Metadata metadata = this.buildMetadata(factory, this.projectConfig.getInputs().getRight());
+        Metadata metadata = this.buildMetadata(factory, this.projectDetails.getRight());
         Metadata baselineMetadata = null;
 
         if (this.primaryPairs.size() == 0)
@@ -120,17 +122,14 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             throw new NoDataException( "No data could be retrieved for Metric calculation for window " +
                                        this.progress +
                                        " for " +
-                                       this.projectConfig.getInputs()
-                                                               .getRight()
-                                                               .getVariable()
-                                                               .getValue() +
+                                       this.projectDetails.getRightVariableName() +
                                        " at " +
                                        ConfigHelper.getFeatureDescription( this.feature ) );
         }
 
-        if (this.baselineExists())
+        if (this.projectDetails.hasBaseline())
         {
-            baselineMetadata = this.buildMetadata(factory, this.projectConfig.getInputs().getBaseline());
+            baselineMetadata = this.buildMetadata(factory, this.projectDetails.getBaseline());
         }
 
         if (dataType == DatasourceType.ENSEMBLE_FORECASTS)
@@ -158,20 +157,19 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private String getLoadScript(DataSourceConfig dataSourceConfig)
-            throws SQLException, InvalidPropertiesFormatException
+            throws SQLException, InvalidPropertiesFormatException,
+            NoDataException
     {
         String loadScript;
 
-        if (ConfigHelper.isRight( dataSourceConfig, this.projectConfig ))
+        if ( this.projectDetails.getRight().equals(dataSourceConfig))
         {
             if (this.rightLoadScript == null)
             {
-                this.rightLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectConfig,
+                this.rightLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectDetails,
                                                                                      dataSourceConfig,
                                                                                      this.feature,
-                                                                                     this.progress,
-                                                                                     this.zeroDate,
-                                                                                     this.leadOffset);
+                                                                                     this.progress);
             }
             loadScript = this.rightLoadScript;
         }
@@ -179,12 +177,10 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             if (this.baselineLoadScript == null)
             {
-                this.baselineLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectConfig,
+                this.baselineLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectDetails,
                                                                                         dataSourceConfig,
                                                                                         this.feature,
-                                                                                        this.progress,
-                                                                                        this.zeroDate,
-                                                                                        this.leadOffset);
+                                                                                        this.progress);
             }
             loadScript = this.baselineLoadScript;
         }
@@ -311,38 +307,14 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
                 Double[] measurements = (Double[])resultSet.getArray("measurements").getArray();
 
-                double minimum = Double.MAX_VALUE * -1.0;
-                double maximum = Double.MAX_VALUE;
-
-                if ( this.projectConfig.getPair()
-                                       .getValues() != null )
-                {
-                    if ( this.projectConfig.getPair()
-                                           .getValues()
-                                           .getMinimum() != null )
-                    {
-                        minimum = this.projectConfig.getPair()
-                                                    .getValues()
-                                                    .getMinimum();
-                    }
-
-                    if ( this.projectConfig.getPair()
-                                           .getValues()
-                                           .getMaximum() != null )
-                    {
-                        maximum = this.projectConfig.getPair()
-                                                    .getValues()
-                                                    .getMaximum();
-                    }
-                }
-
                 for (int measurementIndex = 0; measurementIndex < measurements.length; ++measurementIndex)
                 {
-                    UnitConversions.Conversion conversion = null;
+                    UnitConversions.Conversion conversion;
                     Integer measurementUnitID = resultSet.getInt( "measurementunit_id" );
                     if (!conversionMap.containsKey( measurementUnitID ))
                     {
-                        conversion = UnitConversions.getConversion( measurementUnitID, this.projectConfig.getPair().getUnit() );
+                        conversion = UnitConversions.getConversion( measurementUnitID,
+                                                                    this.projectDetails.getDesiredMeasurementUnit());
                         conversionMap.put( measurementUnitID, conversion );
                     }
                     else
@@ -360,7 +332,8 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                     // The value needs to be added if it was null because it indicates
                     // missing source data which will need to be handled.
                     if (convertedMeasurement == null ||
-                        (convertedMeasurement >= minimum && maximum >= convertedMeasurement))
+                        (convertedMeasurement >= this.projectDetails.getMinimumValue() &&
+                         this.projectDetails.getMaximumValue() >= convertedMeasurement))
                     {
                         rightValues.putIfAbsent( measurementIndex, new ArrayList<>() );
                         rightValues.get(measurementIndex).add( convertedMeasurement );
@@ -397,7 +370,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private Metadata buildMetadata (DataFactory dataFactory, DataSourceConfig sourceConfig)
     {
         MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
-        Dimension dim = metadataFactory.getDimension(String.valueOf(this.projectConfig.getPair().getUnit()));
+        Dimension dim = metadataFactory.getDimension( this.projectDetails.getDesiredMeasurementUnit());
 
         String geospatialIdentifier = ConfigHelper.getFeatureDescription(this.feature);
         String variableIdentifier = sourceConfig.getVariable().getValue();
@@ -419,7 +392,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             try
             {
-                windowWidth = ConfigHelper.getWindowWidth( this.projectConfig );
+                windowWidth = this.projectDetails.getWindowWidth() * 1.0;
             }
             catch ( InvalidPropertiesFormatException e )
             {
@@ -444,13 +417,9 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             throw new NoDataException( "No values could be retrieved to pair with with any possible set of left values ." );
         }
 
-        String aggFunction = this.getDesiredAggregation()
-                                 .getFunction()
-                                 .value();
-
         String firstDate = Time.minus( date,
-                                       this.getDesiredAggregation().getUnit().value(),
-                                       this.getDesiredAggregation().getPeriod());
+                                       this.projectDetails.getAggregationUnit(),
+                                       this.projectDetails.getAggregationPeriod());
 
         List<Double> leftValues = this.getLeftValues.apply( firstDate, date );
 
@@ -461,7 +430,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         }
 
         double leftAggregation = Collections.aggregate(leftValues,
-                                                       aggFunction);
+                                                       this.projectDetails.getAggregationFunction());
 
         if (Double.compare( leftAggregation, Double.NaN ) == 0)
         {
@@ -476,7 +445,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         byte memberIndex = 0;
         for (List<Double> values : rightValues.values())
         {
-            rightAggregation[memberIndex] = Collections.aggregate( values, aggFunction );
+            rightAggregation[memberIndex] = Collections.aggregate( values, this.projectDetails.getAggregationFunction() );
             memberIndex++;
         }
 
@@ -488,8 +457,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             throws ProjectConfigException
     {
 
-        List<DestinationConfig> destinationConfigs =
-                ConfigHelper.getPairDestinations( this.projectConfig );
+        List<DestinationConfig> destinationConfigs = this.projectDetails.getPairDestinations();
 
         for ( DestinationConfig dest : destinationConfigs )
         {
@@ -502,27 +470,17 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         }
     }
 
-    private TimeAggregationConfig getDesiredAggregation()
-    {
-        return this.projectConfig.getPair().getDesiredTimeAggregation();
-    }
-
     private String baselineLoadScript;
     private String rightLoadScript;
     private int leadOffset;
     private int progress;
-    private final ProjectConfig projectConfig;
+    private final ProjectDetails projectDetails;
     private Feature feature;
     private final BiFunction<String, String, List<Double>> getLeftValues;
     private VectorOfDoubles climatology;
     private List<PairOfDoubleAndVectorOfDoubles> primaryPairs;
     private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;
     private String zeroDate;
-
-    private Boolean baselineExists()
-    {
-        return this.projectConfig.getInputs().getBaseline() != null;
-    }
 
     @Override
     protected Logger getLogger()
