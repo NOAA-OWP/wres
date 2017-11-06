@@ -152,27 +152,25 @@ public class ConfigHelper
 
     /**
      *
-     * @param projectConfig The configuration that controls how windows are calculated
+     * @param projectDetails The configuration that controls how windows are calculated
      * @param windowNumber The indicator of the window whose lead description needs.  In the simplest case, the first
      *                     window could represent 'lead = 1' while the third 'lead = 3'. In more complicated cases,
      *                     the first window could be '40 &gt; lead AND lead &ge; 1' and the second '80 &gt; lead AND lead &ge; 40'
      * @return A description of what a window number means in terms of lead times
      * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
      */
-    public static String getLeadQualifier(ProjectConfig projectConfig,
+    public static String getLeadQualifier(ProjectDetails projectDetails,
                                           int windowNumber,
                                           int offset)
             throws InvalidPropertiesFormatException
     {
         String qualifier;
 
-        TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( projectConfig );
-
-        if (!(timeAggregationConfig.getPeriod() == 1 && timeAggregationConfig.getUnit() == DurationUnit.HOUR)) {
-
-            // We perform -1 on beginning and not +1 on end because this is 1s indexed, which throws us off
-            int beginning = getLead( projectConfig, windowNumber );
-            int end = getLead( projectConfig, windowNumber + 1 );
+        if (!(projectDetails.getAggregationPeriod() == 1 &&
+              projectDetails.getAggregationUnit().equalsIgnoreCase( DurationUnit.HOUR.toString() )))
+        {
+            int beginning = projectDetails.getLead( windowNumber );
+            int end = projectDetails.getLead( windowNumber + 1 );
 
             qualifier = String.valueOf(end + offset);
             qualifier += " >= lead AND lead > ";
@@ -181,9 +179,9 @@ public class ConfigHelper
         else
         {
             // We add the plus one because the value yielded by
-            // getLead(projectConfig, windowNumber) grants us the first exclusive
+            // getLead(projectDetails, windowNumber) grants us the first exclusive
             // value, not the first inclusive value
-            qualifier = "lead = " + (getLead(projectConfig, windowNumber) + 1);
+            qualifier = "lead = " + ( projectDetails.getLead(windowNumber) + 1);
         }
 
         return qualifier;
@@ -367,6 +365,68 @@ public class ConfigHelper
         offset = Database.getResult(script.toString(), "offset");
 
         return offset;
+    }
+
+    public static int getValueCount(ProjectDetails projectDetails,
+                                    DataSourceConfig dataSourceConfig,
+                                    Feature feature) throws SQLException
+    {
+        final String NEWLINE = System.lineSeparator();
+        Integer variableId;
+        String member;
+
+        if (projectDetails.getRight().equals( dataSourceConfig ))
+        {
+            variableId = projectDetails.getRightVariableID();
+            member = ProjectDetails.RIGHT_MEMBER;
+        }
+        else if (projectDetails.getLeft().equals( dataSourceConfig ))
+        {
+            variableId = projectDetails.getLeftVariableID();
+            member = ProjectDetails.LEFT_MEMBER;
+        }
+        else
+        {
+            variableId = projectDetails.getBaselineVariableID();
+            member = ProjectDetails.BASELINE_MEMBER;
+        }
+
+        String variablePositionClause = ConfigHelper.getVariablePositionClause( feature, variableId, "");
+
+        StringBuilder script = new StringBuilder("SELECT COUNT(*)::int").append(NEWLINE);
+
+        if (ConfigHelper.isForecast( dataSourceConfig ))
+        {
+            script.append("FROM wres.TimeSeries TS").append(NEWLINE);
+            script.append("INNER JOIN wres.ForecastValue FV").append(NEWLINE);
+            script.append("    ON TS.timeseries_id = FV.timeseries_id").append(NEWLINE);
+            script.append("WHERE ").append(variablePositionClause).append(NEWLINE);
+            script.append("    EXISTS (").append(NEWLINE);
+            script.append("        SELECT 1").append(NEWLINE);
+            script.append("        FROM wres.ForecastSource FS").append(NEWLINE);
+            script.append("        INNER JOIN wres.ProjectSource PS").append(NEWLINE);
+            script.append("            ON FS.source_id = PS.source_id").append(NEWLINE);
+            script.append("        WHERE PS.project_id = ").append(projectDetails.getId()).append(NEWLINE);
+            script.append("            AND PS.member = ").append(member).append(NEWLINE);
+            script.append("            AND PS.inactive_time IS NULL").append(NEWLINE);
+            script.append("            AND FS.forecast_id = TS.timeseries_id").append(NEWLINE);
+            script.append("    );");
+        }
+        else
+        {
+            script.append("FROM wres.Observation O").append(NEWLINE);
+            script.append("WHERE ").append(variablePositionClause).append(NEWLINE);
+            script.append("    AND EXISTS (").append(NEWLINE);
+            script.append("        SELECT 1").append(NEWLINE);
+            script.append("        FROM wres.ProjectSource PS").append(NEWLINE);
+            script.append("        WHERE PS.project_id = ").append(projectDetails.getId()).append(NEWLINE);
+            script.append("            AND PS.member = ").append(member).append(NEWLINE);
+            script.append("            AND PS.source_id = O.source_id").append(NEWLINE);
+            script.append("            AND PS.inactive_time IS NULL").append(NEWLINE);
+            script.append("    );");
+        }
+
+        return Database.getResult( script.toString(), "count" );
     }
 
     public static boolean isForecast(DataSourceConfig dataSource)
@@ -912,23 +972,21 @@ public class ConfigHelper
      * clause, filtering by season specified in the configuration passed in.
      * <br>
      * Caller is responsible for saying which column to compare to.
-     * @param projectConfig the configuration, non-null
+     * @param projectDetails the configuration, non-null
      * @param databaseColumnName the column name with a date or time to use
      * @param timeShift the amount of time to shift, null otherwise
      * @return a where clause sql snippet or empty string if no season
-     * @throws NullPointerException when projectConfig or databaseColumnName is null
+     * @throws NullPointerException when projectDetails or databaseColumnName is null
      * @throws DateTimeException when the values in the season are invalid
      */
 
-    public static String getSeasonQualifier( ProjectConfig projectConfig,
+    public static String getSeasonQualifier( ProjectDetails projectDetails,
                                              String databaseColumnName,
                                              Integer timeShift)
     {
-        Objects.requireNonNull( projectConfig, "projectConfig needs to exist" );
+        Objects.requireNonNull( projectDetails, "projectDetails needs to exist" );
         Objects.requireNonNull( databaseColumnName, "databaseColumnName needs to exist" );
         StringBuilder s = new StringBuilder();
-        PairConfig.Season season = projectConfig.getPair()
-                                                .getSeason();
 
         // This admittedly makeshift MONTH_MULTIPLIIER is to put the month in
         // the most significant place in a unified "month and day" integer.
@@ -939,12 +997,10 @@ public class ConfigHelper
         // found, by all means, eliminate the MONTH_MULTIPLIER.
         final int MONTH_MULTIPLIER = 100;
 
-        if ( season != null )
+        if ( projectDetails.specifiesSeason() )
         {
-            MonthDay earliest = MonthDay.of( season.getEarliestMonth(),
-                                             season.getEarliestDay() );
-            MonthDay latest = MonthDay.of( season.getLatestMonth(),
-                                           season.getLatestDay() );
+            MonthDay earliest = projectDetails.getEarliestDayInSeason();
+            MonthDay latest = projectDetails.getLatestDayInSeason();
 
             s.append( "     AND ( " );
             s.append( MONTH_MULTIPLIER );

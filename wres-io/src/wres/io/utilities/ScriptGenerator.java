@@ -32,70 +32,26 @@ public final class ScriptGenerator
     private static final String NEWLINE = System.lineSeparator();
 
     // TODO: Convert function to its own class
-    public static String generateLoadDatasourceScript(final ProjectConfig projectConfig,
+    public static String generateLoadDatasourceScript(final ProjectDetails projectDetails,
                                                       final DataSourceConfig dataSourceConfig,
                                                       final Feature feature,
-                                                      final int progress,
-                                                      final String zeroDate,
-                                                      final int leadOffset)
-            throws SQLException, InvalidPropertiesFormatException
+                                                      final int progress)
+            throws SQLException, InvalidPropertiesFormatException,
+            NoDataException
     {
         StringBuilder script = new StringBuilder();
         Integer variableID = ConfigHelper.getVariableID(dataSourceConfig);
 
-        String earliestDate = null;
-        String latestDate = null;
+        String earliestDate = projectDetails.getEarliestDate();
+        String latestDate = projectDetails.getLatestDate();
         String earliestIssueDate = null;
         String latestIssueDate = null;
+        String zeroDate = projectDetails.getZeroDate( dataSourceConfig );
+        Integer leadOffset = projectDetails.getLeadOffset( feature );
 
         String variablePositionClause = ConfigHelper.getVariablePositionClause(feature, variableID, "");
-        ProjectDetails projectDetails = Projects.getProject( projectConfig );
 
         Integer timeShift = null;
-
-        if ( projectConfig.getPair()
-                          .getDates() != null )
-        {
-            if ( projectConfig.getPair()
-                              .getDates()
-                              .getEarliest() != null )
-            {
-                earliestDate = "'" + projectConfig.getPair()
-                                                  .getDates()
-                                                  .getEarliest() + "'";
-            }
-
-            if ( projectConfig.getPair()
-                              .getDates()
-                              .getLatest() != null )
-            {
-                latestDate = "'" + projectConfig.getPair()
-                                                .getDates()
-                                                .getLatest() + "'";
-            }
-        }
-
-        if ( projectConfig.getPair()
-                          .getIssuedDates() != null )
-        {
-            if ( projectConfig.getPair()
-                              .getIssuedDates()
-                              .getEarliest() != null )
-            {
-                earliestIssueDate = "'" + projectConfig.getPair()
-                                                       .getIssuedDates()
-                                                       .getEarliest() + "'";
-            }
-
-            if ( projectConfig.getPair()
-                              .getIssuedDates()
-                              .getLatest() != null )
-            {
-                latestIssueDate = "'" + projectConfig.getPair()
-                                                     .getIssuedDates()
-                                                     .getLatest() + "'";
-            }
-        }
 
         if (dataSourceConfig.getTimeShift() != null && dataSourceConfig.getTimeShift().getWidth() != 0)
         {
@@ -113,7 +69,7 @@ public final class ScriptGenerator
 
             script.append(")::text AS value_date,").append(NEWLINE);
             script.append("     FV.lead - ")
-                  .append(ConfigHelper.getLead(projectConfig, progress - 1) + leadOffset)
+                  .append( projectDetails.getLead( progress - 1 ) + leadOffset)
                   .append(" AS agg_hour,")
                   .append(NEWLINE);
             script.append("     ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements,").append(NEWLINE);
@@ -123,9 +79,9 @@ public final class ScriptGenerator
             script.append("     ON FV.timeseries_id = TS.timeseries_id").append(NEWLINE);
             script.append("WHERE ").append(variablePositionClause).append(NEWLINE);
             script.append("     AND ")
-                  .append(ConfigHelper.getLeadQualifier(projectConfig, progress, leadOffset))
+                  .append(ConfigHelper.getLeadQualifier(projectDetails, progress, leadOffset))
                   .append( NEWLINE );
-            script.append( ConfigHelper.getSeasonQualifier( projectConfig,
+            script.append( ConfigHelper.getSeasonQualifier( projectDetails,
                                                             "TS.initialization_date",
                                                             timeShift ) )
                   .append( NEWLINE );
@@ -193,7 +149,7 @@ public final class ScriptGenerator
             script.append("         WHERE PS.project_id = ").append(projectDetails.getId()).append(NEWLINE);
             script.append("             AND PS.member = ");
 
-            if (ConfigHelper.isRight( dataSourceConfig, projectConfig) )
+            if ( projectDetails.getRight().equals(dataSourceConfig) )
             {
                 script.append(ProjectDetails.RIGHT_MEMBER);
             }
@@ -214,19 +170,14 @@ public final class ScriptGenerator
         else
         {
             List<Integer> sourceIds;
-            int windowPeriod = Time.unitsToHours(projectConfig.getPair()
-                                                              .getDesiredTimeAggregation()
-                                                              .getUnit()
-                                                              .value(),
-                                                 projectConfig.getPair()
-                                                              .getDesiredTimeAggregation()
-                                                              .getPeriod()).intValue();
+            int windowPeriod = Time.unitsToHours( projectDetails.getAggregationUnit(),
+                                                 projectDetails.getAggregationPeriod()).intValue();
 
-            if (ConfigHelper.isLeft( dataSourceConfig, projectConfig ))
+            if (projectDetails.getLeft().equals(dataSourceConfig))
             {
                 sourceIds = projectDetails.getLeftSources();
             }
-            else if ( ConfigHelper.isRight( dataSourceConfig, projectConfig ))
+            else if (projectDetails.getRight().equals( dataSourceConfig))
             {
                 sourceIds = projectDetails.getRightSources();
             }
@@ -284,7 +235,7 @@ public final class ScriptGenerator
                       .append(NEWLINE);
             }
 
-            script.append( ConfigHelper.getSeasonQualifier( projectConfig,
+            script.append( ConfigHelper.getSeasonQualifier( projectDetails,
                                                             "O.observation_time",
                                                             timeShift ) )
                   .append( NEWLINE );
