@@ -54,6 +54,7 @@ import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
 import wres.datamodel.TimeWindow;
 import wres.datamodel.VectorOutput;
+import wres.engine.statistics.metric.ConfigMapper;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricProcessor;
@@ -1087,7 +1088,7 @@ public class Control implements Function<String[], Integer>
         final Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter(a -> {
             try
             {
-                return metric.equals(MetricProcessor.fromMetricConfigName(a.getName()));
+                return metric.equals(ConfigMapper.from(a.getName()));
             }
             catch(final MetricConfigurationException e)
             {

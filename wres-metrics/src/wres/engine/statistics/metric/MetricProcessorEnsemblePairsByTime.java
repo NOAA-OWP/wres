@@ -168,10 +168,10 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      */
 
     MetricProcessorEnsemblePairsByTime( final DataFactory dataFactory,
-                                            final ProjectConfig config,
-                                            final ExecutorService thresholdExecutor,
-                                            final ExecutorService metricExecutor,
-                                            final MetricOutputGroup... mergeList )
+                                        final ProjectConfig config,
+                                        final ExecutorService thresholdExecutor,
+                                        final ExecutorService metricExecutor,
+                                        final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
@@ -280,15 +280,13 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
                                                     + config.getLabel() + "'." );
         }
         //Ensemble input, vector output
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
+        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR )
+             && metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+             && Objects.isNull( config.getInputs().getBaseline() ) )
         {
-            if ( metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
-                 && Objects.isNull( config.getInputs().getBaseline() ) )
-            {
-                throw new MetricConfigurationException( "Specify a non-null baseline from which to generate the '"
-                                                        + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
-                                                        + "'." );
-            }
+            throw new MetricConfigurationException( "Specify a non-null baseline from which to generate the '"
+                                                    + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
+                                                    + "'." );
         }
     }
 
@@ -409,17 +407,15 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
                                                                         input,
                                                                         ensembleMultiVector ) );
             }
-            else if ( outGroup == MetricOutputGroup.BOXPLOT )
+            //Only process box plots for "all data" threshold
+            else if ( outGroup == MetricOutputGroup.BOXPLOT && !threshold.isFinite() )
             {
-                //Only process box plots for "all data" threshold
-                if ( !threshold.isFinite() )
-                {
-                    futures.addBoxPlotOutput( dataFactory.getMapKey( timeWindow, threshold ),
-                                              processEnsembleThreshold( threshold,
-                                                                        input,
-                                                                        ensembleBoxPlot ) );
-                }
+                futures.addBoxPlotOutput( dataFactory.getMapKey( timeWindow, threshold ),
+                                          processEnsembleThreshold( threshold,
+                                                                    input,
+                                                                    ensembleBoxPlot ) );
             }
+
         }
         //Insufficient data for one threshold: log, but allow
         catch ( MetricInputSliceException e )

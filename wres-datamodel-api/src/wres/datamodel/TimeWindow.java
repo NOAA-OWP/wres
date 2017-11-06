@@ -289,7 +289,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public long getEarliestLeadTimeInHours()
     {
-        return Duration.of( earliestLead, this.leadUnits ).toHours();
+        return Duration.of( earliestLead, leadUnits ).toHours();
     }
 
     /**
@@ -300,7 +300,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public long getLatestLeadTimeInHours()
     {
-        return Duration.of( latestLead, this.leadUnits ).toHours();
+        return Duration.of( latestLead, leadUnits ).toHours();
     }
     
     /**
@@ -311,7 +311,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public long getEarliestLeadTimeInSeconds()
     {
-        return Duration.of( earliestLead, this.leadUnits ).getSeconds();
+        return Duration.of( earliestLead, leadUnits ).getSeconds();
     }
 
     /**
@@ -322,7 +322,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public long getLatestLeadTimeInSeconds()
     {
-        return Duration.of( latestLead, this.leadUnits ).getSeconds();
+        return Duration.of( latestLead, leadUnits ).getSeconds();
     }    
     
     /**
