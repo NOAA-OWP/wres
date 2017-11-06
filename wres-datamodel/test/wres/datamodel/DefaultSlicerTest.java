@@ -14,6 +14,17 @@ import java.util.function.Function;
 import org.junit.Test;
 
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.inputs.MetricInputSliceException;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfBooleans;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
 
 /**
  * Tests the {@link DefaultSlicer}.
@@ -585,16 +596,16 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#sliceByMetricComponent(MetricOutputMapByLeadThreshold)}.
+     * Tests the {@link Slicer#sliceByMetricComponent(MetricOutputMapByTimeAndThreshold)}.
      */
 
     @Test
     public void test14SliceByMetricComponent()
     {
         //Obtain input and slice
-        MetricOutputMapByLeadThreshold<VectorOutput> toSlice =
+        MetricOutputMapByTimeAndThreshold<VectorOutput> toSlice =
                 DataModelTestDataFactory.getVectorMetricOutputMapByLeadThresholdOne();
-        Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> sliced =
+        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> sliced =
                 slicer.sliceByMetricComponent( toSlice );
 
         //Check the results

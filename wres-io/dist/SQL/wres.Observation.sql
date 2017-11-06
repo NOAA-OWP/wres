@@ -1,4 +1,4 @@
-﻿-- Table: wres.Observation
+-- Table: wres.Observation
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 

@@ -5,10 +5,10 @@ import java.util.Objects;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.ScalarOutput;
-import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * A generic implementation of an error score that cannot be decomposed. For scores that can be computed in a single-pass,

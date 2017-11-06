@@ -5,6 +5,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
+
+import wres.datamodel.outputs.MapKey;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputException;
+import wres.datamodel.outputs.MetricOutputMapByMetric;
+
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;

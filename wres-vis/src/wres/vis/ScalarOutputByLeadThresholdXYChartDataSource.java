@@ -1,7 +1,7 @@
 package wres.vis;
 
-import wres.datamodel.MetricOutputMapByLeadThreshold;
-import wres.datamodel.ScalarOutput;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * A chart data source for a single verification metric, indexed by forecast lead time and threshold.
@@ -10,7 +10,7 @@ import wres.datamodel.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-public class ScalarOutputByLeadThresholdXYChartDataSource extends WRESXYChartDataSource<MetricOutputMapByLeadThreshold<ScalarOutput>>
+public class ScalarOutputByLeadThresholdXYChartDataSource extends WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<ScalarOutput>>
 {
     /**
      * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
@@ -18,7 +18,7 @@ public class ScalarOutputByLeadThresholdXYChartDataSource extends WRESXYChartDat
      * @param input The data for which to display a chart.
      */
     public ScalarOutputByLeadThresholdXYChartDataSource(final int orderIndex,
-                                                        final MetricOutputMapByLeadThreshold<ScalarOutput> input)
+                                                        final MetricOutputMapByTimeAndThreshold<ScalarOutput> input)
     {
         super(orderIndex, input, input.keySetByThreshold().size());
 

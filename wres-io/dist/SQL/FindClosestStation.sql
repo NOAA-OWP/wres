@@ -1,4 +1,4 @@
-﻿-- Local Point: 87.5692 LON, 33.2098 LAT (Tuscaloosa, AL)
+-- Local Point: 87.5692 LON, 33.2098 LAT (Tuscaloosa, AL)
 
 WITH closest AS
 (

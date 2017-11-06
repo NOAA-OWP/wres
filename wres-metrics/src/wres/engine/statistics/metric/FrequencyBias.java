@@ -1,9 +1,9 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.DichotomousPairs;
-import wres.datamodel.MatrixOutput;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.ScalarOutput;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * Measures the predicted fraction of occurrences against the observed fraction of occurrences. A ratio of 1.0 

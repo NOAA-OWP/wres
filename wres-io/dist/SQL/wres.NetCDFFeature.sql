@@ -1,4 +1,4 @@
-﻿-- Table: wres.netcdffeature
+-- Table: wres.netcdffeature
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 

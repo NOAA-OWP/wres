@@ -3,11 +3,11 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.PairOfDoubles;
-import wres.datamodel.ScalarOutput;
-import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * <p>The {@link IndexOfAgreement} was proposed by Willmot (1981) to measure the errors of the model predictions 

@@ -4,18 +4,21 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.time.Instant;
 
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.SingleValuedPairs;
-import wres.datamodel.VectorOutput;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder;
 
 /**
@@ -52,6 +55,10 @@ public final class KlingGuptaEfficiencyTest
             fail( "Unable to read the test data." );
         }
         //Metadata for the output
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                 ReferenceTime.VALID_TIME,
+                                                 24 );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "MM/DAY" ),
@@ -60,7 +67,7 @@ public final class KlingGuptaEfficiencyTest
                                                                    metaFac.getDatasetIdentifier( "103.1",
                                                                                                  "QME",
                                                                                                  "NVE" ),
-                                                                   24 );
+                                                                   window );
 
         //Build the metric
         final KlingGuptaEfficiencyBuilder b = new KlingGuptaEfficiencyBuilder();
@@ -85,7 +92,7 @@ public final class KlingGuptaEfficiencyTest
                     + ".",
                     actual.equals( expected ) );
     }
-    
+
     /**
      * Constructs a {@link KlingGuptaEfficiency} and checks for exceptional cases.
      * @throws MetricParameterException if the metric construction fails
@@ -109,6 +116,6 @@ public final class KlingGuptaEfficiencyTest
         catch ( MetricInputException e )
         {
         }
-    }    
+    }
 
 }

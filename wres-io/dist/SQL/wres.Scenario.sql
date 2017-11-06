@@ -1,4 +1,4 @@
-﻿-- Table: wres.scenario
+-- Table: wres.scenario
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 

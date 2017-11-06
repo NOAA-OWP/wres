@@ -1,4 +1,4 @@
-﻿-- Table: public.forecastresult
+-- Table: public.forecastresult
 
 DROP TABLE IF EXISTS public.forecastresult CASCADE;
 

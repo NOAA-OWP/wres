@@ -2,11 +2,11 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.VectorOutput;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.VectorOutput;
 
 /**
  * <p>
@@ -37,7 +37,6 @@ class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProbabilityS
         //TODO: implement the decomposition
         double numerator = super.apply( s ).getValue( MetricConstants.MAIN );
         double denominator = super.apply( s.getBaselineData() ).getValue( MetricConstants.MAIN );
-        ;
         final double[] result = new double[] { FunctionFactory.skill().applyAsDouble( numerator, denominator ) };
 
         //Metadata

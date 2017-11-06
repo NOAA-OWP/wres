@@ -12,7 +12,7 @@ ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario
 
 startsec=$(date +%s)
 
-./runtest.sh scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* >> $logFileName
+./runtest.sh scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* >> $logFileName
 
 endsec=$(date +%s)
 

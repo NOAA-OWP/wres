@@ -1,4 +1,4 @@
-﻿-- Table: wres.Variable
+-- Table: wres.Variable
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 

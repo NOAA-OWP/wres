@@ -10,14 +10,14 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.EnsemblePairs;
-import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.VectorOutput;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.VectorOutput;
 import wres.engine.statistics.metric.ContinuousRankedProbabilityScore.CRPSBuilder;
 
 /**

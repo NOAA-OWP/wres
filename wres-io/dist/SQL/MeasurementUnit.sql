@@ -1,4 +1,4 @@
-﻿-- Table: public.measurementunit
+-- Table: public.measurementunit
 
 DROP TABLE IF EXISTS public.measurementunit;
 

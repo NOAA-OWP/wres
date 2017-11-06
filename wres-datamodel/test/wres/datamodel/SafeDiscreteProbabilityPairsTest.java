@@ -5,8 +5,10 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.PairOfDoubles;
 import wres.datamodel.SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link SafeDiscreteProbabilityPairs}.

@@ -1,4 +1,4 @@
-﻿-- Table: public.netcdfsource
+-- Table: public.netcdfsource
 
 DROP TABLE IF EXISTS public.netcdfsource CASCADE;
 

@@ -30,7 +30,7 @@ import ucar.nc2.Variable;
 
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.MetricInput;
+import wres.datamodel.inputs.MetricInput;
 import wres.io.Operations;
 import wres.io.concurrency.Downloader;
 import wres.io.concurrency.Executor;

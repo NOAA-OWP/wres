@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import wres.datamodel.BoxPlotOutput;
-import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.VectorOfDoubles;
 
 /**

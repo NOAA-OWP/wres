@@ -22,15 +22,16 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.MapBiKey;
-import wres.datamodel.MapKey;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricOutputForProjectByLeadThreshold;
-import wres.datamodel.MetricOutputMapByLeadThreshold;
-import wres.datamodel.MetricOutputMultiMapByLeadThreshold;
-import wres.datamodel.ScalarOutput;
 import wres.datamodel.Threshold;
-import wres.datamodel.VectorOutput;
+import wres.datamodel.outputs.MapBiKey;
+import wres.datamodel.outputs.MapKey;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
 
 /**
@@ -59,7 +60,7 @@ public class CommaSeparated
 
     public static void writeOutputFiles( ProjectConfig projectConfig,
                                          Feature feature,
-                                         MetricOutputForProjectByLeadThreshold storedMetricOutput )
+                                         MetricOutputForProjectByTimeAndThreshold storedMetricOutput )
             throws IOException, ProjectConfigException
     {
         Objects.requireNonNull( storedMetricOutput,
@@ -119,7 +120,7 @@ public class CommaSeparated
 
     private static SortedMap<Integer, StringJoiner> getNumericRows(
             DestinationConfig d,
-            MetricOutputForProjectByLeadThreshold storedMetricOutput )
+            MetricOutputForProjectByTimeAndThreshold storedMetricOutput )
             throws IOException
     {
         DecimalFormat formatter = null;
@@ -133,8 +134,8 @@ public class CommaSeparated
 
         SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
 
-        MetricOutputMultiMapByLeadThreshold<ScalarOutput> scalarOutput = null;
-        MetricOutputMultiMapByLeadThreshold<VectorOutput> vectorOutput = null;
+        MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> scalarOutput = null;
+        MetricOutputMultiMapByTimeAndThreshold<VectorOutput> vectorOutput = null;
 
         try
         {
@@ -180,7 +181,7 @@ public class CommaSeparated
      */
 
     private static SortedMap<Integer, StringJoiner> getScalarRows(
-            MetricOutputMultiMapByLeadThreshold<ScalarOutput> output,
+            MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> output,
             DecimalFormat formatter )
     {
         SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
@@ -188,7 +189,7 @@ public class CommaSeparated
 
         headerRow.add( "LEAD" + HEADER_DELIMITER + "HOUR" );
         for ( Map.Entry<MapKey<MetricConstants>,
-                MetricOutputMapByLeadThreshold<ScalarOutput>> m
+                MetricOutputMapByTimeAndThreshold<ScalarOutput>> m
                 : output.entrySet() )
         {
             String name = m.getKey().getKey().toString();
@@ -198,8 +199,12 @@ public class CommaSeparated
                 String column = name + HEADER_DELIMITER + t;
                 headerRow.add( column );
 
-                for ( Integer leadTime : m.getValue().keySetByLead() )
+                for ( TimeWindow timeWindow : m.getValue().keySetByTime() )
                 {
+                    //TODO: allow for the full specification of a time window in the 
+                    //output, including for a lead time that is not an integer number 
+                    //of hours
+                    int leadTime = (int) timeWindow.getLatestLeadTimeInHours();                    
                     if ( rows.get( leadTime ) == null )
                     {
                         StringJoiner row = new StringJoiner( "," );
@@ -211,9 +216,9 @@ public class CommaSeparated
 
                     // To maintain rectangular CSV output, construct keys using
                     // both dimensions. If we do not find a value, use NA.
-                    MapBiKey<Integer,Threshold> key =
+                    MapBiKey<TimeWindow,Threshold> key =
                             DefaultDataFactory.getInstance()
-                                              .getMapKey( leadTime, t );
+                                              .getMapKey( timeWindow, t );
 
                     ScalarOutput value = m.getValue()
                                           .get( key );
@@ -261,23 +266,23 @@ public class CommaSeparated
 
     private static void appendVectorColumns(
             SortedMap<Integer, StringJoiner> existingRows,
-            MetricOutputMultiMapByLeadThreshold<VectorOutput> output,
+            MetricOutputMultiMapByTimeAndThreshold<VectorOutput> output,
             DecimalFormat formatter )
     {
         StringJoiner headerRow = existingRows.get( Integer.MIN_VALUE );
 
         for ( Map.Entry<MapKey<MetricConstants>,
-                MetricOutputMapByLeadThreshold<VectorOutput>> m
+                MetricOutputMapByTimeAndThreshold<VectorOutput>> m
                 : output.entrySet() )
         {
-            Map<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> helper
+            Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> helper
                     = DefaultDataFactory.getInstance()
                                         .getSlicer()
                                         .sliceByMetricComponent( m.getValue() );
 
             String outerName = m.getKey().getKey().toString();
 
-            for ( Map.Entry<MetricConstants, MetricOutputMapByLeadThreshold<ScalarOutput>> e
+            for ( Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> e
                     : helper.entrySet() )
             {
                 String name = outerName + HEADER_DELIMITER + e.getKey()
@@ -288,26 +293,31 @@ public class CommaSeparated
                     String column = name + HEADER_DELIMITER + t;
                     headerRow.add( column );
 
-                    for ( Integer leadTime : m.getValue().keySetByLead() )
+                    for ( TimeWindow timeWindow : m.getValue().keySetByTime() )
                     {
-                        StringJoiner row = existingRows.get( leadTime );
+                        //TODO: assume a time window is an integer number of hours
+                        //until this writer can handle more general windows
+                        StringJoiner row = existingRows.get( (int) timeWindow.getLatestLeadTimeInHours() );
 
                         if ( row == null )
                         {
+                            //TODO: make this error message generic when the 
+                            //writer can handle more general time windows, 
+                            //i.e. call TimeWindow.toString()
                             String message = "Expected MetricOutput to have "
                                              + "consistent dimensions between the "
                                              + "vector and scalar outputs. When "
                                              + "looking for leadtime "
-                                             + leadTime
+                                             + timeWindow.getLatestLeadTimeInHours()
                                              + ", could not find it in scalar output.";
                             throw new IllegalStateException( message );
                         }
 
                         // To maintain rectangular CSV output, construct keys using
                         // both dimensions. If we do not find a value, use NA.
-                        MapBiKey<Integer, Threshold> key =
+                        MapBiKey<TimeWindow, Threshold> key =
                                 DefaultDataFactory.getInstance()
-                                                  .getMapKey( leadTime, t );
+                                                  .getMapKey( timeWindow, t );
 
                         ScalarOutput value = e.getValue()
                                               .get( key );

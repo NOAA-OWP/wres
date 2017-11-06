@@ -5,6 +5,9 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.outputs.MetricOutputException;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.VectorOutput;
 
 /**
  * An immutable vector of outputs associated with a metric. The number of outputs, as well as the individual outputs and

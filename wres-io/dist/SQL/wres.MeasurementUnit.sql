@@ -1,4 +1,4 @@
-﻿-- Table: wres.MeasurementUnit
+-- Table: wres.MeasurementUnit
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 

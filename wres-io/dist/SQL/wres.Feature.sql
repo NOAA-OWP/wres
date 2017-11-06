@@ -1,4 +1,4 @@
-﻿-- Table: wres.feature
+-- Table: wres.feature
 
 CREATE SCHEMA IF NOT EXISTS wres;
 

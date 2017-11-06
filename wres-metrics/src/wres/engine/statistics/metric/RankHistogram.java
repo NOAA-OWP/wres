@@ -11,13 +11,13 @@ import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricInputException;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.Slicer;
 
 /**

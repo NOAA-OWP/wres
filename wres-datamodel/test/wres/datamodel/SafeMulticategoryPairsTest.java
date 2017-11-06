@@ -10,6 +10,9 @@ import org.junit.Test;
 
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.SafeMulticategoryPairs.MulticategoryPairsBuilder;
+import wres.datamodel.inputs.pairs.MulticategoryPairs;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link SafeMulticategoryPairs}.

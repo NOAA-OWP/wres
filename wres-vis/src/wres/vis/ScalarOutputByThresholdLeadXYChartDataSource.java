@@ -1,7 +1,7 @@
 package wres.vis;
 
-import wres.datamodel.MetricOutputMapByLeadThreshold;
-import wres.datamodel.ScalarOutput;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * A chart data source for a single verification metric, indexed by threshold and forecast lead time.
@@ -10,7 +10,7 @@ import wres.datamodel.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-public class ScalarOutputByThresholdLeadXYChartDataSource extends WRESXYChartDataSource<MetricOutputMapByLeadThreshold<ScalarOutput>>
+public class ScalarOutputByThresholdLeadXYChartDataSource extends WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<ScalarOutput>>
 {
     /**
      * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
@@ -18,9 +18,9 @@ public class ScalarOutputByThresholdLeadXYChartDataSource extends WRESXYChartDat
      * @param input The data for which to display a chart.
      */
     public ScalarOutputByThresholdLeadXYChartDataSource(final int orderIndex,
-                                                        final MetricOutputMapByLeadThreshold<ScalarOutput> input)
+                                                        final MetricOutputMapByTimeAndThreshold<ScalarOutput> input)
     {
-        super(orderIndex, input, input.keySetByLead().size());
+        super(orderIndex, input, input.keySetByTime().size());
 
         //TODO Need to ensure that the arguments used below are standard arguments created in the factory that generates images!
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("THRESHOLD VALUE@inputUnitsText@");

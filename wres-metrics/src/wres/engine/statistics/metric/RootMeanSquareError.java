@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.ScalarOutput;
-import wres.datamodel.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * As with the MSE, the Root Mean Square Error (RMSE) or Root Mean Square Deviation (RMSD) is a measure of accuracy.

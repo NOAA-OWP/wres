@@ -1,4 +1,4 @@
-﻿-- Table: public.executionlog
+-- Table: public.executionlog
 
 DROP TABLE IF EXISTS public.executionlog;
 

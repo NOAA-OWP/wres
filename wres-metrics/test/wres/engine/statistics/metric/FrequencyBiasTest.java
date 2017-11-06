@@ -6,12 +6,12 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.DichotomousPairs;
-import wres.datamodel.MetadataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.MetricOutputMetadata;
-import wres.datamodel.ScalarOutput;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.FrequencyBias.FrequencyBiasBuilder;
 
 /**

@@ -165,29 +165,19 @@ public final class Operations {
             // contents of the first file into the "project" field. Maybe there
             // is an improvement that can be made, but this should cover the
             // common case of a single file in the args.
-            StringBuilder project = new StringBuilder();
+            String project = "";
 
             for ( String arg : arguments )
             {
                 Path path = Paths.get( arg );
-                if ( Files.isRegularFile( path ) )
+
+                if ( path.toFile()
+                         .isFile() )
                 {
-                    try
-                    {
-                        for ( String line : Files.readAllLines( path ) )
-                        {
-                            project.append( line );
-                            project.append( System.lineSeparator() );
-                        }
-                        // Since this is an xml column, only go for first file.
-                        break;
-                    }
-                    catch ( IOException ioe )
-                    {
-                        LOGGER.warn( "While attempting to read path {} while logging executions",
-                                     path,
-                                     ioe );
-                    }
+                    project = Operations.getFileContents( path );
+
+                    // Since this is an xml column, only go for first file.
+                    break;
                 }
             }
 
@@ -223,4 +213,31 @@ public final class Operations {
         }
     }
 
+    /**
+     * Return the contents of a file as a String
+     * @param path a path that has already been verified as being a file
+     * @return the contents of the file at path
+     */
+
+    private static String getFileContents( Path path )
+    {
+        StringBuilder project = new StringBuilder();
+
+        try
+        {
+            for ( String line : Files.readAllLines( path ) )
+            {
+                project.append( line );
+                project.append( System.lineSeparator() );
+            }
+        }
+        catch ( IOException ioe )
+        {
+            LOGGER.warn( "While attempting to read path {} while logging executions",
+                         path,
+                         ioe );
+        }
+
+        return project.toString();
+    }
 }

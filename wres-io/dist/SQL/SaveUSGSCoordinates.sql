@@ -1,4 +1,4 @@
-﻿DELETE FROM USGSLocationCoordinate;
+DELETE FROM USGSLocationCoordinate;
 
 INSERT INTO USGSLocationCoordinate(coordinate_id, observationlocation_id)
 SELECT C.coordinate_id, L.observationlocation_id

@@ -4,6 +4,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
+
 /**
  * Immutable implementation of a store of verification pairs that comprise two single-valued, continuous numerical,
  * variables.

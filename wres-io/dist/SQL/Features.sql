@@ -1,4 +1,4 @@
-﻿
+
 TRUNCATE wres.Feature RESTART IDENTITY CASCADE;
 --
 

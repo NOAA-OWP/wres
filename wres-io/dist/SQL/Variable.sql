@@ -1,4 +1,4 @@
-﻿-- Table: public.variable
+-- Table: public.variable
 
 DROP TABLE IF EXISTS public.variable CASCADE;
 

@@ -1,4 +1,4 @@
-﻿
+
 WITH forecast_measurements AS (
 	SELECT DISTINCT forecast_id, lead_time, array_agg(FR.measurement) OVER (PARTITION BY forecast_id, lead_time) AS measurements
 	FROM ForecastResult FR

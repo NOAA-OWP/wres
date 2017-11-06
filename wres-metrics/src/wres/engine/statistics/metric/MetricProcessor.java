@@ -21,23 +21,22 @@ import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
-import wres.config.generated.ThresholdOperator;
 import wres.datamodel.DataFactory;
-import wres.datamodel.EnsemblePairs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricInput;
-import wres.datamodel.MetricInputSliceException;
-import wres.datamodel.MetricOutput;
-import wres.datamodel.MetricOutputForProject;
-import wres.datamodel.MultiVectorOutput;
-import wres.datamodel.PairedInput;
-import wres.datamodel.ScalarOutput;
-import wres.datamodel.SingleValuedPairs;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.VectorOutput;
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.MetricInputSliceException;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairedInput;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputForProject;
+import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.VectorOutput;
 
 /**
  * <p>
@@ -137,7 +136,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     final MetricCollection<SingleValuedPairs, MultiVectorOutput> singleValuedMultiVector;
-
+    
     /**
      * The list of metrics associated with the verification project.
      */
@@ -169,115 +168,6 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     private static final int DECIMALS = 5;
 
     /**
-     * Maps between metric identifiers in {@link MetricConfigName} and those in {@link MetricConstants}. Returns a
-     * null type for {@link MetricConfigName#ALL_VALID}.
-     * 
-     * @param translate the input {@link MetricConfigName}
-     * @return the corresponding {@link MetricConstants}.
-     * @throws MetricConfigurationException if the input name is unrecognized
-     */
-
-    public static MetricConstants fromMetricConfigName( MetricConfigName translate ) throws MetricConfigurationException
-    {
-        if ( Objects.isNull( translate ) )
-        {
-            throw new MetricConfigurationException( "One or more metric identifiers in the project configuration could "
-                                                    + "not be mapped to a supported metric identifier." );
-        }
-        switch ( translate )
-        {
-            case BIAS_FRACTION:
-                return MetricConstants.BIAS_FRACTION;
-            case BRIER_SCORE:
-                return MetricConstants.BRIER_SCORE;
-            case BRIER_SKILL_SCORE:
-                return MetricConstants.BRIER_SKILL_SCORE;
-            case COEFFICIENT_OF_DETERMINATION:
-                return MetricConstants.COEFFICIENT_OF_DETERMINATION;
-            case CONTINGENCY_TABLE:
-                return MetricConstants.CONTINGENCY_TABLE;
-            case CORRELATION_PEARSONS:
-                return MetricConstants.CORRELATION_PEARSONS;
-            case CRITICAL_SUCCESS_INDEX:
-                return MetricConstants.CRITICAL_SUCCESS_INDEX;
-            case EQUITABLE_THREAT_SCORE:
-                return MetricConstants.EQUITABLE_THREAT_SCORE;
-            case FREQUENCY_BIAS:
-                return MetricConstants.FREQUENCY_BIAS;
-            case MEAN_ABSOLUTE_ERROR:
-                return MetricConstants.MEAN_ABSOLUTE_ERROR;
-            case CONTINUOUS_RANKED_PROBABILITY_SCORE:
-                return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE;
-            case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
-                return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
-            case INDEX_OF_AGREEMENT:
-                return MetricConstants.INDEX_OF_AGREEMENT;
-            case KLING_GUPTA_EFFICIENCY:
-                return MetricConstants.KLING_GUPTA_EFFICIENCY;
-            case MEAN_ERROR:
-                return MetricConstants.MEAN_ERROR;
-            case MEAN_SQUARE_ERROR:
-                return MetricConstants.MEAN_SQUARE_ERROR;
-            case MEAN_SQUARE_ERROR_SKILL_SCORE:
-                return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE;
-            case PEIRCE_SKILL_SCORE:
-                return MetricConstants.PEIRCE_SKILL_SCORE;
-            case PROBABILITY_OF_DETECTION:
-                return MetricConstants.PROBABILITY_OF_DETECTION;
-            case QUANTILE_QUANTILE_DIAGRAM:
-                return MetricConstants.QUANTILE_QUANTILE_DIAGRAM;
-            case PROBABILITY_OF_FALSE_DETECTION:
-                return MetricConstants.PROBABILITY_OF_FALSE_DETECTION;
-            case RANK_HISTOGRAM:
-                return MetricConstants.RANK_HISTOGRAM;
-            case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
-                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
-            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
-                return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE;
-            case RELIABILITY_DIAGRAM:
-                return MetricConstants.RELIABILITY_DIAGRAM;
-            case ROOT_MEAN_SQUARE_ERROR:
-                return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
-            case SAMPLE_SIZE:
-                return MetricConstants.SAMPLE_SIZE;
-            case ALL_VALID:
-                return null;
-            default:
-                throw new MetricConfigurationException( "Unrecognized metric identifier in project configuration '"
-                                                        + translate + "'." );
-        }
-    }
-
-    /**
-     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
-     * 
-     * @param translate the input {@link ThresholdOperator}
-     * @return the corresponding {@link Operator}.
-     * @throws MetricConfigurationException if the operator name is unrecognized
-     */
-
-    public static Operator fromThresholdOperator( ThresholdOperator translate ) throws MetricConfigurationException
-    {
-        Objects.requireNonNull( translate,
-                                "One or more metric identifiers in the project configuration could not be mapped "
-                                           + "to a supported metric identifier." );
-        switch ( translate )
-        {
-            case LESS_THAN:
-                return Operator.LESS;
-            case GREATER_THAN:
-                return Operator.GREATER;
-            case LESS_THAN_OR_EQUAL_TO:
-                return Operator.LESS_EQUAL;
-            case GREATER_THAN_OR_EQUAL_TO:
-                return Operator.GREATER_EQUAL;
-            default:
-                throw new MetricConfigurationException( "Unrecognized threshold operator in project configuration '"
-                                                        + translate + "'." );
-        }
-    }
-
-    /**
      * Returns a {@link MetricOutputForProject} for the last available results or null if
      * {@link #hasStoredMetricOutput()} returns false.
      * 
@@ -285,7 +175,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     public abstract T getStoredMetricOutput();
-
+    
     /**
      * Returns true if a prior call led to the caching of metric outputs.
      * 
@@ -294,6 +184,15 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
 
     public abstract boolean hasStoredMetricOutput();
 
+    /**
+     * Validates the configuration and throws a {@link MetricConfigurationException} if the configuration is invalid.
+     * 
+     * @param config the configuration to validate
+     * @throws MetricConfigurationException if the configuration is invalid
+     */
+
+    abstract void validate( ProjectConfig config ) throws MetricConfigurationException;
+    
     /**
      * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
      * false otherwise.
@@ -424,7 +323,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         {
             for ( MetricConfigName metric : metricsConfig )
             {
-                metrics.add( fromMetricConfigName( metric ) );
+                metrics.add( ConfigMapper.from( metric ) );
             }
         }
         return metrics;
@@ -592,6 +491,8 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         }
         //Set the minimum sample size for computing metrics
         minimumSampleSize = 2;
+        //Finally, validate the configuration against the parameters set
+        validate( config );
     }
 
     /**
@@ -692,7 +593,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * {@link #minimumSampleSize}.
      * 
      * @param subset the data to validate
-     * @param threshold the threshold
+     * @param threshold the threshold used to localize the error message
      * @throws MetricInputSliceException if the input contains insufficient data for metric calculation 
      */
 
@@ -700,11 +601,11 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     {
         if ( subset.size() < minimumSampleSize )
         {
-            throw new MetricInputSliceException( "Failed to compute some metrics at threshold '" + threshold
-                                                 + "', as the "
-                                                 + "sample size was smaller than the minimum allowed ("
+            throw new MetricInputSliceException( "Failed to compute one or more metrics for threshold '"
+                                                 + threshold
+                                                 + "', as the sample size was less than the prescribed minimum of '"
                                                  + minimumSampleSize
-                                                 + ")." );
+                                                 + "'." );
         }
     }
 
@@ -788,7 +689,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         //Add probability thresholds
         if ( Objects.nonNull( outputs.getProbabilityThresholds() ) )
         {
-            Operator oper = fromThresholdOperator( outputs.getProbabilityThresholds().getOperator() );
+            Operator oper = ConfigMapper.from( outputs.getProbabilityThresholds().getOperator() );
             String values = outputs.getProbabilityThresholds().getCommaSeparatedValues();
             List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, true );
             globalThresholds.addAll( thresholds );
@@ -797,7 +698,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         //Add real-valued thresholds
         if ( Objects.nonNull( outputs.getValueThresholds() ) )
         {
-            Operator oper = fromThresholdOperator( outputs.getValueThresholds().getOperator() );
+            Operator oper = ConfigMapper.from( outputs.getValueThresholds().getOperator() );
             String values = outputs.getValueThresholds().getCommaSeparatedValues();
             List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, false );
             globalThresholds.addAll( thresholds );
@@ -861,7 +762,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
-                MetricConstants name = fromMetricConfigName( metric.getName() );
+                MetricConstants name = ConfigMapper.from( metric.getName() );
                 if ( Objects.nonNull( metric.getProbabilityThresholds() )
                      || Objects.nonNull( metric.getValueThresholds() ) )
                 {

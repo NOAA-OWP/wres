@@ -1,4 +1,4 @@
-﻿-- Table: wres.Source
+-- Table: wres.Source
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
