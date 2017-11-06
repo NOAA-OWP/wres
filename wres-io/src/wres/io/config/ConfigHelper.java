@@ -1053,7 +1053,8 @@ public class ConfigHelper
             s.append( " )" );
         }
 
-        LOGGER.trace( s.toString() );
+        LOGGER.trace( "{}", s );
+
         return s.toString();
     }
 
