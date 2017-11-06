@@ -149,15 +149,11 @@ public class Control implements Function<String[], Integer>
         pairExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
 
-        String projectRawConfig = "";
-
         try
         {
             // Iterate through the configurations
             for(final ProjectConfigPlus projectConfigPlus: projectConfiggies)
             {
-                projectRawConfig = projectConfigPlus.getRawConfig();
-
                 // Process the next configuration
                 processProjectConfig( projectConfigPlus,
                                       pairExecutor,
