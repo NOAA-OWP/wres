@@ -32,15 +32,14 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.MetricConfig;
-import wres.config.generated.PairConfig;
 import wres.config.generated.PairConfig.Dates;
 import wres.config.generated.PairConfig.IssuedDates;
-import wres.datamodel.time.ReferenceTime;
-import wres.datamodel.time.TimeWindow;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
 import wres.config.generated.TimeAggregationMode;
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Projects;
 import wres.io.data.caching.Variables;
@@ -897,9 +896,9 @@ public class ConfigHelper
     }
 
     /**
-     * Returns a {@link TimeWindow} from the input configuration using the specified lead time to form the interval
+     * <p>Returns a {@link TimeWindow} from the input configuration using the specified lead time to form the interval
      * on the forecast horizon. The earliest and latest times on the UTC timeline are determined by whichever of the
-     * following is available (in this order): 
+     * following is available (in this order):</p> 
      * 
      * <ol>
      * <li>The valid times in {@link Dates#getEarliest()} and {@link Dates#getLatest()}; or</li>
@@ -908,11 +907,16 @@ public class ConfigHelper
      * {@link Instant#MAX}, respectively.</li>
      * </ol>
      * 
+     * <p>Dates are parsed using {@link Instant#parse(CharSequence)} and an exception is thrown if the dates do not meet 
+     * the associated formatting requirement. Validation of dates should be conducted at the earliest 
+     * opportunity, which may be well before this point.</p>
+     * 
      * @param projectDetails the project configuration
      * @param lead the earliest and latest lead time
      * @param leadUnits the lead time units
      * @return a time window 
-     * @throws NullPointerException if the projectDetails is null
+     * @throws NullPointerException if the config is null
+     * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
      */
 
     public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, ChronoUnit leadUnits )
