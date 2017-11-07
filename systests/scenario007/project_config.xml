@@ -21,7 +21,7 @@
         <unit>CMS</unit>
         <feature locationId="DRRC2" />
         <leadHours minimum="1" maximum="24" />
-        <issuedDates earliest="01-01-1985 00:00:00" latest="06-01-1985 00:00:00"/>
+        <issuedDates earliest="1985-01-01T00:00:00Z" latest="1985-06-01T00:00:00Z"/>
         <grouping>feature,lead_time</grouping>
         <desiredTimeAggregation>
             <function>avg</function>
