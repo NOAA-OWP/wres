@@ -191,9 +191,9 @@ public final class ScriptGenerator
 
             script.append(")::text AS value_date,").append(NEWLINE);
             // TODO: revisit "extract(epoch...", could agg_hour be simply "0"?
-            script.append("     (EXTRACT(epoch FROM O.observation_time - '")
+            script.append("     (EXTRACT(epoch FROM O.observation_time - ")
                   .append(zeroDate)
-                  .append("')/3600)::int % ")
+                  .append(")/3600)::int % ")
                   .append(windowPeriod)
                   .append(" AS agg_hour,")
                   .append(NEWLINE);
@@ -203,9 +203,9 @@ public final class ScriptGenerator
             script.append("     AND O.source_id = ")
                   .append(Collections.formAnyStatement( sourceIds, "int" ))
                   .append(NEWLINE);
-            script.append("     AND '")
+            script.append("     AND ")
                   .append(zeroDate)
-                  .append("' <= ")
+                  .append(" <= ")
                   .append("O.observation_time");
 
             if (timeShift != null)
@@ -224,8 +224,8 @@ public final class ScriptGenerator
                     script.append(" + INTERVAL '1 hour' * ").append(timeShift);
                 }
 
-                script.append(" <= '").append(projectDetails.getLatestDate())
-                      .append("'            ")
+                script.append(" <= ").append(projectDetails.getLatestDate())
+                      .append("            ")
                       .append("-- Only retrieve observations on or before this date")
                       .append(NEWLINE);
             }

@@ -197,6 +197,10 @@ project(':wres-io')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+        compile 'org.glassfish.jersey.core:jersey-common:2.26'
+        compile 'org.glassfish.jersey.core:jersey-client:2.26'
+        compile 'org.glassfish.jersey.inject:jersey-hk2:2.26'
+        compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.26'
 
         compile('edu.ucar:cdm:4.6.8')
         {

@@ -41,6 +41,7 @@ import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.reading.ReaderFactory;
 import wres.io.reading.SourceType;
+import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.Database;
 import wres.io.retrieval.InputGenerator;
 import wres.util.NetCDF;
@@ -169,9 +170,30 @@ final class MainFunctions
 		prototypes.put("killconnections", killWRESConnections());
 		prototypes.put("testchecksum", testChecksum());
 		prototypes.put( "savepairs", savePairs() );
+		prototypes.put( "loadfromusgs", loadFromUSGS());
 
 		return prototypes;
 	}
+
+	public static Function<String[], Integer> loadFromUSGS()
+    {
+        return (final String[] args) -> {
+            Integer result = FAILURE;
+            try
+            {
+
+                USGSReader
+                        loader = new USGSReader(  );
+                loader.saveObservation();
+                result = SUCCESS;
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+            return result;
+        };
+    }
 
 	private static Function<String[], Integer> killWRESConnections()
     {
