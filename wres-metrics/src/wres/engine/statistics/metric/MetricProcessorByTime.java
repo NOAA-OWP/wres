@@ -16,6 +16,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Threshold;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -23,13 +24,12 @@ import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
 import wres.datamodel.time.TimeWindow;
-import wres.datamodel.Threshold;
 
 /**
  * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindow}.
@@ -411,7 +411,7 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
             throw new MetricCalculationException( "Failed to compute metrics at all " + thresholdCount
                                                   + " available thresholds at time window '"
                                                   + meta.getTimeWindow()
-                                                  + "'as insufficient data was available.",
+                                                  + "' as insufficient data was available.",
                                                   failures.get( failures.keySet().iterator().next() ) );
         }
         else
