@@ -25,27 +25,37 @@ public class PairWriter extends WRESCallable<Boolean>
     private static final Object PAIR_OUTPUT_LOCK = new Object();
     private static final String OUTPUT_HEADER = "Feature,Date,Window,Left,Right";
     private static final String DELIMITER = ",";
+    private static final String PAIR_FILENAME = "/pairs.csv";
+    private static final String BASELINE_FILENAME = "/baseline_pairs.csv";
 
     /** Guarded by PAIR_OUTPUT_LOCK */
     private static boolean headerHasBeenWritten = false;
+
+    /** Guarded by BASELINE_PAIR_OUTPUT_LOCK */
+    private static boolean baselineHeaderHasBeenWritten = false;
 
     private final DestinationConfig destinationConfig;
     private final String date;
     private final Feature feature;
     private final int windowNum;
     private final PairOfDoubleAndVectorOfDoubles pair;
+    private final boolean isBaseline;
 
+    // TODO: This needs to be cleaned up; this is far too many parameters
+    // Maybe required setters?
     public PairWriter( DestinationConfig destinationConfig,
                        String date,
                        Feature feature,
                        int windowNum,
-                       PairOfDoubleAndVectorOfDoubles pair )
+                       PairOfDoubleAndVectorOfDoubles pair,
+                       boolean isBaseline)
     {
         this.destinationConfig = destinationConfig;
         this.date = date;
         this.feature = feature;
         this.windowNum = windowNum;
         this.pair = pair;
+        this.isBaseline = isBaseline;
     }
 
     @Override
@@ -57,8 +67,16 @@ public class PairWriter extends WRESCallable<Boolean>
         File directoryFromDestinationConfig =
                 ConfigHelper.getDirectoryFromDestinationConfig( this.getDestinationConfig() );
 
-        String actualFileDestination = directoryFromDestinationConfig.getCanonicalPath()
-                + "/pairs.csv";
+        String actualFileDestination = directoryFromDestinationConfig.getCanonicalPath();
+
+        if (this.isBaseline)
+        {
+            actualFileDestination += BASELINE_FILENAME;
+        }
+        else
+        {
+            actualFileDestination += PAIR_FILENAME;
+        }
 
         DecimalFormat formatter = null;
         String configuredFormat = this.getDestinationConfig().getDecimalFormat();
@@ -71,7 +89,8 @@ public class PairWriter extends WRESCallable<Boolean>
 
         synchronized ( PAIR_OUTPUT_LOCK )
         {
-            if ( !PairWriter.headerHasBeenWritten )
+            if ( (!this.isBaseline && !PairWriter.headerHasBeenWritten) ||
+                 (this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten) )
             {
                 Files.deleteIfExists( Paths.get( actualFileDestination) );
             }
@@ -80,7 +99,14 @@ public class PairWriter extends WRESCallable<Boolean>
                                                          true );
                   BufferedWriter writer = new BufferedWriter( fileWriter ) )
             {
-                if ( !PairWriter.headerHasBeenWritten )
+                if ( this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten)
+                {
+                    writer.write( OUTPUT_HEADER );
+                    writer.newLine();
+
+                    PairWriter.baselineHeaderHasBeenWritten = true;
+                }
+                else if ( !this.isBaseline && !PairWriter.headerHasBeenWritten )
                 {
                     writer.write( OUTPUT_HEADER );
                     writer.newLine();
