@@ -729,6 +729,7 @@ public final class PIXMLReader extends XMLReader
                                          this.getZoneOffset() );
             this.currentTimeSeries =
                     new TimeSeries( this.projectDetails.getId(),
+									this.projectDetails.getInputName( this.getDataSourceConfig() ),
 									this.getSourceID(),
                                     forecastFullDateTime.format( FORMATTER ) );
         }

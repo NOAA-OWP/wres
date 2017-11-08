@@ -169,6 +169,26 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.getInputCode();
     }
 
+    public String getInputName(DataSourceConfig dataSourceConfig)
+    {
+        String name = null;
+
+        if (dataSourceConfig.equals( this.getLeft() ))
+        {
+            name = ProjectDetails.LEFT_MEMBER;
+        }
+        else if (dataSourceConfig.equals( this.getRight() ))
+        {
+            name = ProjectDetails.RIGHT_MEMBER;
+        }
+        else if (dataSourceConfig.equals( this.getBaseline() ))
+        {
+            name = ProjectDetails.BASELINE_MEMBER;
+        }
+
+        return name;
+    }
+
     public DataSourceConfig getLeft()
     {
         return this.projectConfig.getInputs().getLeft();

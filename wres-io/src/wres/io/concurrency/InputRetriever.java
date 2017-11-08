@@ -453,7 +453,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private void writePair(String date, PairOfDoubleAndVectorOfDoubles pair, DataSourceConfig dataSourceConfig)
             throws ProjectConfigException
     {
-
+        boolean isBaseline = dataSourceConfig.equals( this.projectDetails.getBaseline() );
         List<DestinationConfig> destinationConfigs = this.projectDetails.getPairDestinations();
 
         for ( DestinationConfig dest : destinationConfigs )
@@ -462,7 +462,8 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                date,
                                                this.feature,
                                                this.progress,
-                                               pair );
+                                               pair,
+                                               isBaseline );
             Executor.submitHighPriorityTask(saver);
         }
     }
