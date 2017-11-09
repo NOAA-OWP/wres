@@ -24,7 +24,7 @@
         <right label="HEFS">
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/abrfcExample/LGNN5_precip_5yrs.tgz</source>
+                recursive="false" unit="">../data/abrfcExample/LGNN5_precip_1yr.tgz</source>
             <variable>MAPX</variable>
 
 <!-- See the note above. -->   
@@ -40,6 +40,7 @@
     <pair label="Pairs by location and lead time"> 
         <unit>MM</unit>
         <feature locationId="LGNN5" />
+        <leadHours minimum="1" maximum="48" />
         <grouping>feature,lead_time</grouping>
         <desiredTimeAggregation>
             <function>sum</function>
@@ -67,12 +68,9 @@
         <destination type="numeric" decimalFormat="0.000000">
             <path>output</path>
         </destination>
-<!--
         <destination type="pairs" decimalFormat="0.000000">
             <path>output</path>
         </destination>
--->
-
         <destination type="graphic">
             <path>output/</path>
             <graphical width="800" height="600">

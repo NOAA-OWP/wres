@@ -18,7 +18,7 @@
         <right label="HEFS" >
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/abrfcExample/LGNN5_hefs_flow_5yrs.tgz</source>
+                recursive="false" unit="">../data/abrfcExample/LGNN5_hefs_flow_1yr.tgz</source>
             <variable>QINE</variable>
             <existingTimeAggregation>
                 <function>avg</function>
