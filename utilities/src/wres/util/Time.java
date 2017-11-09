@@ -7,6 +7,7 @@ import java.time.temporal.ChronoField;
 import java.util.Arrays;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 /**
@@ -15,12 +16,6 @@ import java.util.TreeMap;
  */
 public final class Time
 {
-    
-    /**
-     * The global format for time is {@value}
-     */
-    public final static String TIME_FORMAT = "HH:mm:ss";
-    
     /**
      * The global format for dates is {@value}
      */
@@ -34,14 +29,6 @@ public final class Time
      * hours to get the total number of seconds contained.
      */
     public static final Map<String, Double> HOUR_CONVERSION = mapTimeToHours();
-
-    /**
-     * A mapping of time zone abbreviations to their offsets in relation to UTC
-     * <br><br>
-     * The offset is expressed as a Long to accomadate date manipulation functions
-     * without type conversions.
-     */
-    public static final Map<String, Long> TIMEZONE_OFFSET = mapTimeOffsets();
     
     private static Map<String, Double> mapTimeToHours()
     {
@@ -57,31 +44,6 @@ public final class Time
         
         return mapping;
     }
-
-    /**
-     * @return A date insensitive mapping between time zone abbreviations and their offsets in relation to UTC
-     */
-    private static Map<String, Long> mapTimeOffsets()
-    {
-        Map<String, Long> mapping = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-
-        mapping.put("utc", 0L);
-        mapping.put("gmt", 0L);
-        mapping.put("EDT", -4L);
-        mapping.put("EST", -5L);
-        mapping.put("CDT", -5L);
-        mapping.put("CST", -6L);
-        mapping.put("mdt", -6L);
-        mapping.put("mst", -7L);
-        mapping.put("pdt", -7L);
-        mapping.put("pst", -8L);
-        mapping.put("akdt", -8L);
-        mapping.put("akst", -9L);
-        mapping.put("hadt", -9L);
-        mapping.put("hast", -10L);
-
-        return mapping;
-    }
     
     /**
      * Determines if the passed in string represents a date combined with a time
@@ -90,7 +52,7 @@ public final class Time
      */
     public static boolean isTimestamp(String possibleTimestamp)
     {
-        return possibleTimestamp != null && (
+        return Strings.hasValue( possibleTimestamp ) && (
                 possibleTimestamp.matches("\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.?\\d*") ||
                 Arrays.asList("epoch", "infinity", "-infinity", "now", "today", "tomorrow", "yesterday").contains(possibleTimestamp));
     }
@@ -162,6 +124,8 @@ public final class Time
      */
     public static OffsetDateTime convertStringToDate(String datetime)
     {
+        Objects.requireNonNull( datetime );
+
         OffsetDateTime date = null;
 
         datetime = datetime.trim();
@@ -181,7 +145,7 @@ public final class Time
         else if (datetime.equalsIgnoreCase("today"))
         {
             date = OffsetDateTime.now();
-            date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
+            date = date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
         }
         else if (datetime.equalsIgnoreCase("tomorrow"))
         {
@@ -211,7 +175,9 @@ public final class Time
 
             date = OffsetDateTime.parse(datetime);
         }
-        
+
+        Objects.requireNonNull( date );
+
         return date;
     }
     
@@ -246,46 +212,10 @@ public final class Time
      */
     public static String normalize(String date)
     {
+        Objects.requireNonNull( date );
+
         OffsetDateTime absoluteDate = Time.convertStringToDate(date);
         return Time.convertDateToString(absoluteDate);
-    }
-    
-    /**
-     * Gets the number of hours to offset a unit of time depending on the
-     * time zone of interest
-     * @param timeZone The string representation of a time zone
-     * @return A Long representation of offset in UTC
-     */
-    public static Long zoneOffsetHours(final String timeZone)
-    {
-    	Long offsetHr = null;
-    	
-    	 if (TIMEZONE_OFFSET.containsKey(timeZone))
-    	 {
-    		 offsetHr = TIMEZONE_OFFSET.get(timeZone);
-    	 }
-    	 
-    	 return offsetHr;
-    }
-
-    /**
-     * Adds the specified unit of time to a parsed time stamp
-     * @param time The timestamp to add to
-     * @param unit The unit of time to add
-     * @param amount The amount of the unit to add
-     * @return A string detailing the updated time stamp
-     * @throws InvalidPropertiesFormatException Thrown if the amount to
-     * add could not be determined from the unit description
-     */
-    public static String plus( String time, String unit, double amount)
-            throws InvalidPropertiesFormatException
-    {
-        // Convert to hours, then convert to seconds
-        Double amountToAdd = Time.unitsToHours( unit, amount ) * 3600;
-        OffsetDateTime actualTime = convertStringToDate( time );
-        return convertDateToString(
-                actualTime.plusSeconds( amountToAdd.longValue() )
-        );
     }
 
     /**
@@ -300,11 +230,19 @@ public final class Time
     public static String minus(String time, String unit, double amount)
             throws InvalidPropertiesFormatException
     {
+        if (time == null)
+        {
+            throw new IllegalArgumentException( String.valueOf( amount ) +
+                                                " " + String.valueOf(unit) +
+                                                " could not be removed from " +
+                                                "a nonexistent time.");
+        }
+
         // Convert to hours, then convert to seconds
-        Double amountToAdd = Time.unitsToHours( unit, amount ) * 3600;
+        Double amountToSubtract = Time.unitsToHours( unit, amount ) * 3600;
         OffsetDateTime actualTime = convertStringToDate( time );
         return convertDateToString(
-                actualTime.minusSeconds( amountToAdd.longValue() )
+                actualTime.minusSeconds( amountToSubtract.longValue() )
         );
     }
 }

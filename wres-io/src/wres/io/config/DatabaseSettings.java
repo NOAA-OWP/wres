@@ -9,6 +9,7 @@ import wres.util.Strings;
 
 import javax.xml.stream.XMLStreamReader;
 import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -87,13 +88,15 @@ final class DatabaseSettings {
 		this.applySystemPropertyOverrides();
 	}
 
-	private void testConnection() throws Exception {
+	private void testConnection() throws SQLException
+    {
         Connection connection = null;
+        Statement test = null;
 
         try {
             Class.forName(DRIVER_MAPPING.get(getDatabaseType()));
             connection = DriverManager.getConnection(this.getConnectionString(), this.username, this.password);
-            Statement test = connection.createStatement();
+            test = connection.createStatement();
             test.execute("SELECT 1;");
         }
         catch (SQLException sqlError)
@@ -106,16 +109,22 @@ final class DatabaseSettings {
             message += "3) The correct password for your user in the database" + System.lineSeparator();
             message += "4) An active connection to a network that may reach the requested database server" + System.lineSeparator() + System.lineSeparator();
             message += "The application will now exit.";
-            throw new SQLException(message);
+            throw new SQLException(message, sqlError);
         }
         catch (ClassNotFoundException classError)
         {
             String message = "The specified database type of '" +
                     this.getDatabaseType() +
                     "' is not valid and a connection could not be created. Shutting down...";
-            throw new IllegalArgumentException(message, classError);
+            throw new SQLException( message, classError);
         }
-        finally {
+        finally
+		{
+			if (test != null)
+			{
+				test.close();
+			}
+
             if (connection != null)
             {
                 connection.close();

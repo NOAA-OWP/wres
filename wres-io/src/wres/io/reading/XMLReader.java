@@ -80,7 +80,14 @@ public class XMLReader
 		try
 		{
 			reader = createReader();
-			
+
+			if (reader == null)
+            {
+                throw new XMLStreamException( "A reader for the XML named '" +
+                                              this.getFilename() +
+                                              "' could not be created." );
+            }
+
 			while (reader.hasNext())
 			{
 				parseElement(reader);

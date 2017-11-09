@@ -1,4 +1,4 @@
-package wres.io.reading.ucar;
+package wres.io.reading.netcdf;
 
 import java.io.IOException;
 import java.nio.file.Paths;

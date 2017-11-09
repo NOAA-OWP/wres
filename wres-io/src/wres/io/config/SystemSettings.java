@@ -85,11 +85,92 @@ public final class SystemSettings extends XMLReader
 	{
 		try
 		{
-			String value;
-
 			if (reader.getEventType() == XMLStreamConstants.START_ELEMENT)
 			{
-				if (reader.getLocalName().equalsIgnoreCase("database"))
+			    String value;
+			    switch (reader.getLocalName().toLowerCase())
+                {
+                    case "database":
+                        databaseConfiguration = new DatabaseSettings(reader);
+                        break;
+                    case "maximum_thread_count":
+                        value = XML.getXMLText( reader );
+                        if (value != null && Strings.isNumeric( value ))
+                        {
+                            this.maximumThreadCount = Integer.parseInt( value );
+                        }
+                        break;
+                    case "pool_object_lifespan":
+                        value = XML.getXMLText( reader );
+                        if (value != null && Strings.isNumeric( value ))
+                        {
+                            this.poolObjectLifespan = Integer.parseInt(value);
+                        }
+                        break;
+                    case "maximum_inserts":
+                        value = XML.getXMLText( reader );
+                        if (value != null && Strings.isNumeric( value ))
+                        {
+                            this.maximumInserts = Integer.parseInt(value);
+                        }
+                        break;
+                    case "maximum_copies":
+                        value = XML.getXMLText( reader );
+                        if (value != null && Strings.isNumeric( value ))
+                        {
+                            this.maximumCopies = Integer.parseInt(value);
+                        }
+                        break;
+                    case "update_frequency":
+                        value = XML.getXMLText( reader );
+                        if (value != null && Strings.isNumeric( value ))
+                        {
+                            ProgressMonitor.setUpdateFrequency(Long.parseLong( value ));
+                        }
+                        break;
+                    case "fetch_size":
+                        value = XML.getXMLText( reader );
+                        if (value != null && Strings.isNumeric( value ))
+                        {
+                            this.fetchSize = Integer.parseInt(value);
+                        }
+                        break;
+                    case "update_progress_monitor":
+                        ProgressMonitor.setShouldUpdate(Strings.isTrue(XML.getXMLText(reader)));
+                        break;
+                    case "default_chart_width":
+                        value = XML.getXMLText( reader );
+                        if (value != null && Strings.isNumeric( value ))
+                        {
+                            this.defaultChartWidth = Integer.parseInt(value);
+                        }
+                        break;
+                    case "default_chart_height":
+                        value = XML.getXMLText( reader );
+                        if (value != null && Strings.isNumeric( value ))
+                        {
+                            this.defaultChartHeight = Integer.parseInt(value);
+                        }
+                        break;
+                    case "netcdf_repo_url":
+                        String URL = XML.getXMLText(reader);
+                        if (Strings.hasValue(URL))
+                        {
+                            this.remoteNetCDFURL = URL;
+                        }
+                        break;
+                    case "netcdf_store_path":
+                        String path = XML.getXMLText( reader );
+                        if ( Strings.hasValue( path ) && Strings.isValidPathFormat( path ))
+                        {
+                            this.netcdfStorePath = path;
+                        }
+                        break;
+                }
+
+                // TODO: Remove once it is confirmed that the switch statement is ok
+
+				/*if (reader.getLocalName().equalsIgnoreCase("database"))
 				{
 					databaseConfiguration = new DatabaseSettings(reader);
                 }
@@ -162,7 +243,7 @@ public final class SystemSettings extends XMLReader
 					{
 						this.netcdfStorePath = path;
 					}
-				}
+				}*/
 			}
 		}
         catch ( XMLStreamException xse )

@@ -58,49 +58,6 @@ final class MainFunctions
 	public static final Integer SUCCESS = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFunctions.class);
 
-    // TODO: This is a dumb location/process for storing the path to a project. This needs to be refactored.
-    private static String PROJECT_PATH = "";
-
-    // TODO: Again, a dumb way of handling this; we need a solution for storing the project config as a string to send
-    // to the execution log.
-    public static void setProjectPath(String projectPath)
-    {
-        synchronized (PROJECT_PATH)
-        {
-            MainFunctions.PROJECT_PATH = projectPath;
-        }
-    }
-
-    @Deprecated
-    public static String getRawProject()
-    {
-        File projectFile = null;
-
-        if (PROJECT_PATH != null)
-        {
-            projectFile = new File(PROJECT_PATH);
-        }
-
-        String rawProject = null;
-
-        if (projectFile != null && projectFile.exists() && projectFile.isFile())
-        {
-            try {
-                StringBuilder projectBuilder = new StringBuilder();
-                Files.lines(projectFile.toPath().toAbsolutePath()).forEach((String line) -> {
-                    projectBuilder.append(line).append(System.lineSeparator());
-                });
-                rawProject = projectBuilder.toString();
-            }
-            catch (IOException e) {
-                LOGGER.error(Strings.getStackTrace(e));
-            }
-
-        }
-
-        return rawProject;
-    }
-
 	// Mapping of String names to corresponding methods
 	private static final Map<String, Function<String[], Integer>> FUNCTIONS = createMap();
 
@@ -313,7 +270,7 @@ final class MainFunctions
                 try
                 {
                     ProjectConfig projectConfig = ProjectConfigPlus.from( Paths.get( args[0] ) ).getProjectConfig();
-                    MainFunctions.setProjectPath( args[0] );
+
                     Feature feature = projectConfig.getPair()
                                                    .getFeature()
                                                    .get( 0 );
@@ -856,13 +813,13 @@ final class MainFunctions
 
 	        if (args.length > 0)
             {
-                PROJECT_PATH = args[0];
+                String projectPath = args[0];
 
                 ProjectConfig projectConfig;
 
                 try
                 {
-                    projectConfig = ConfigHelper.read(PROJECT_PATH);
+                    projectConfig = ConfigHelper.read(projectPath);
                     Operations.ingest(projectConfig);
                 }
                 catch ( IOException e )

@@ -212,24 +212,22 @@ public final class Strings {
         return algorithm;
     }
 
-    public static String rtrim(String s)
+    public static String rtrim(String string)
 	{
-		int    idx = 0;
-		String ret = null;
-
-		if(s != null)
+		if( Strings.hasValue( string ))
 		{
-		    idx = s.length()-1;
+			int whitespaceIndex = string.length() - 1;
 		    
-		    while (idx > 0 && Character.isWhitespace(s.charAt(idx)))
+		    while (whitespaceIndex >= 0 &&
+				   Character.isWhitespace(string.charAt(whitespaceIndex)))
 			{
-			    idx--;
+			    whitespaceIndex--;
 			}
 		    
-		    ret = s.substring(0, idx+1);
+		    string = string.substring(0, whitespaceIndex + 1);
 		}
 	
-		return ret;
+		return string;
 	}
 
 	public static boolean isValidPathFormat(final String path)

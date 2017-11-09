@@ -1,4 +1,4 @@
-package wres.io.reading.ucar;
+package wres.io.reading.netcdf;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -15,7 +15,6 @@ import wres.io.reading.BasicSource;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.NetCDF;
-import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 

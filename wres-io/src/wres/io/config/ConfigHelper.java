@@ -122,8 +122,8 @@ public class ConfigHelper
      */
     public static int getLead(ProjectConfig projectConfig, int currentLead) throws InvalidPropertiesFormatException {
         TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( projectConfig );
-        return Time.unitsToHours(timeAggregationConfig.getUnit().name(),
-                                 currentLead * timeAggregationConfig.getPeriod()).intValue();
+        double count = 1.0 * currentLead * timeAggregationConfig.getPeriod();
+        return Time.unitsToHours(timeAggregationConfig.getUnit().name(), count).intValue();
     }
 
     public static Integer getVariableID(DataSourceConfig dataSourceConfig) throws SQLException

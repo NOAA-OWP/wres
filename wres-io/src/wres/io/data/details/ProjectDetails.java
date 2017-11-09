@@ -20,6 +20,7 @@ import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.TimeAggregationConfig;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -31,6 +32,7 @@ import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
+import wres.util.Time;
 
 /**
  * Wrapper object linking a project configuration and the data needed to form
@@ -1039,7 +1041,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public Integer getLead(int windowNumber)
             throws InvalidPropertiesFormatException
     {
-        return ConfigHelper.getLead( this.projectConfig, windowNumber );
+        TimeAggregationConfig
+                timeAggregationConfig = ConfigHelper.getTimeAggregation( projectConfig );
+        return Time.unitsToHours( timeAggregationConfig.getUnit().name(),
+                                  1.0 * windowNumber * timeAggregationConfig.getPeriod()).intValue();
     }
 
     public Integer getMinimumLeadHour()

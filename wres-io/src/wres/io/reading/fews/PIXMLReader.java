@@ -343,6 +343,15 @@ public final class PIXMLReader extends XMLReader
 			}
 		}
 
+		if (!Strings.hasValue( value ))
+        {
+            LOGGER.debug( "The event at {} {} in '{}' didn't have a value to save.",
+                          String.valueOf(dateText),
+                          String.valueOf( timeText ),
+                          this.getFilename());
+            return;
+        }
+
         LocalDateTime dateTime = LocalDateTime.of( localDate, localTime );
         if (isForecast)
         {
@@ -710,7 +719,8 @@ public final class PIXMLReader extends XMLReader
 	private int getTimeSeriesID()
             throws SQLException
     {
-		if (currentTimeSeriesID == null) {
+		if (currentTimeSeriesID == null)
+		{
 			this.getCurrentTimeSeries().setEnsembleID(getEnsembleID());
             this.getCurrentTimeSeries().setMeasurementUnitID(getMeasurementID());
             this.getCurrentTimeSeries().setVariablePositionID(getVariablePositionID());
@@ -926,6 +936,11 @@ public final class PIXMLReader extends XMLReader
      */
     protected String getValueToSave(String value)
     {
+        if (!Strings.hasValue( value ))
+        {
+            return "\\N";
+        }
+
         value = value.trim();
 
         if (Strings.hasValue(value) &&
@@ -933,7 +948,7 @@ public final class PIXMLReader extends XMLReader
             this.getSpecifiedMissingValue() != null)
         {
             Double val = Double.parseDouble( value );
-            if ( this.getSpecifiedMissingValue().equals( val ) || Precision.equals(val, this.getSpecifiedMissingValue(), EPSILON))
+            if ( val.equals( this.getSpecifiedMissingValue() ) || Precision.equals(val, this.getSpecifiedMissingValue(), EPSILON))
             {
                 value = "\\N";
             }

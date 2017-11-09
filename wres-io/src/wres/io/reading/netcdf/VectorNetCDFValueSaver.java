@@ -1,4 +1,4 @@
-package wres.io.reading.ucar;
+package wres.io.reading.netcdf;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -68,7 +67,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
         @Override
         public boolean equals( Object obj )
         {
-            return this.hashCode() == obj.hashCode();
+            return !Objects.isNull( obj ) && this.hashCode() == obj.hashCode();
         }
 
         @Override

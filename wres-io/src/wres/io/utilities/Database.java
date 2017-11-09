@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.SystemSettings;
+import wres.io.reading.IngestException;
 import wres.util.FormattedStopwatch;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -315,8 +316,8 @@ public final class Database {
     /**
      * Loops through all stored ingest tasks and ensures that they all complete
      */
-	public static void completeAllIngestTasks()
-	{
+	public static void completeAllIngestTasks() throws IngestException
+    {
 	    if (LOGGER.isTraceEnabled())
         {
             LOGGER.trace( "Now completing all issued ingest tasks..." );
@@ -347,9 +348,12 @@ public final class Database {
 				ProgressMonitor.completeStep();
 			}
 		}
-		catch (InterruptedException e) {
+		catch (InterruptedException e)
+        {
 		    LOGGER.error("Ingest task completion was interrupted.");
 			LOGGER.error(Strings.getStackTrace(e));
+			throw new IngestException( "The ingest could not be completed; " +
+                                       "the operation was interupted." );
 		}
 
 		if (shouldAnalyze)
