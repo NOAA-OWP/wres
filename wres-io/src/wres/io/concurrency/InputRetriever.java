@@ -11,8 +11,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 
-import javax.sql.DataSource;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +35,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
+import wres.io.writing.PairWriter;
 import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.Strings;
