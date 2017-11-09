@@ -5,7 +5,6 @@
     <inputs>
         <left label="">
             <type>simulations</type>
-<!-- Hank: Why is missingValue attribute needed?  PI-XML specifies missing within the file itself. -->
             <source all="true" format="PI-XML" missingValue="-999.0" 
                 recursive="true" unit="">../data/DRRC2QINE.xml</source>
             <variable>QINE</variable>
@@ -14,7 +13,7 @@
         <right label="HEFS">
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/drrc2ForecastsOneYear/</source>
+                recursive="false" unit="">../data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
 
         </right>
@@ -51,9 +50,7 @@
             <path>output</path>
         </destination>
         <destination type="graphic">
-<!-- Hank: Why is the slash at the end needed?  This appears to be a pathPrefix.  I would prefer a simple directory name.  Regardless, path is not a good name. -->
-            <path>output/</path>
-            <!--Optional: -->
+            <path>output</path>
             <graphical width="800" height="600">
                 <plotType>lead threshold</plotType>
             </graphical>
@@ -61,11 +58,6 @@
     </outputs>
 
 </project>
-
-<!-- Value Thresholds -->
-
-        <!-- <valueThresholds> <applyTo>left</applyTo> <commaSeparatedValues>0.5,1,2,5,10,15,20,25</commaSeparatedValues> 
-            <operator>greater than or equal to</operator> </valueThresholds> -->
 
 <!-- Other Metric Options: -->
 <!-- <metric><name>all valid</name></metric> -->

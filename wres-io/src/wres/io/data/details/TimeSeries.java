@@ -250,7 +250,6 @@ public final class TimeSeries
             {
                 String partitionNumberWord = partitionNumber.toString();
 
-                int low = (lead / FORECASTVALUE_PARTITION_SPAN) * FORECASTVALUE_PARTITION_SPAN;
                 String highCheck = null;
                 String lowCheck = null;
 
@@ -260,7 +259,6 @@ public final class TimeSeries
                 {
                     partitionNumberWord = "Negative_"
                                           + String.valueOf( Math.abs( partitionNumber ));
-                    low -= FORECASTVALUE_PARTITION_SPAN;
                     lowCheck = "lead > " + String.valueOf((partitionNumber - 1) * FORECASTVALUE_PARTITION_SPAN);
                     highCheck = "lead <= " + String.valueOf( partitionNumber * FORECASTVALUE_PARTITION_SPAN );
 				}

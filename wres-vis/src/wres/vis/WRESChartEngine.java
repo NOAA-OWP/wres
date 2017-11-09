@@ -109,14 +109,14 @@ public class WRESChartEngine extends ChartEngine
         final JFreeChart chart = super.buildChart();
 
         //Add diagonal lines to indicated subplots using default appearance.
-        for(final Integer subPlotIndex: subplotIndexToParameters.keySet())
+        for(final Map.Entry<Integer, SeriesDrawingParameters> entry: subplotIndexToParameters.entrySet())
         {
-            final SeriesDrawingParameters diagonalDrawingParametrs = subplotIndexToParameters.get(subPlotIndex);
+            final SeriesDrawingParameters diagonalDrawingParametrs = entry.getValue();
             final BasicStroke stroke = new BasicStroke(diagonalDrawingParametrs.getLineWidth());
             
             //This will draw  to the edge.  If the chart is to be viewed and zoomed, we may want to select arbitrarily
             //larger bounds or redraw the diagonal with every chart resize.
-            ChartTools.addDiagonalLineToEdge(chart, subPlotIndex, stroke, diagonalDrawingParametrs.getLineColor());
+            ChartTools.addDiagonalLineToEdge(chart, entry.getKey(), stroke, diagonalDrawingParametrs.getLineColor());
         }
 
         //square the axes.

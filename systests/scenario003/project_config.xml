@@ -12,7 +12,7 @@
         <right label="HEFS">
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/drrc2ForecastsOneYear/</source>
+                recursive="false" unit="">../data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
         </right>
     </inputs>
@@ -30,14 +30,17 @@
     </pair>
 
     <outputs>
-        <probabilityThresholds>
-            <applyTo>left</applyTo>
-            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
-            <operator>greater than or equal to</operator>
-        </probabilityThresholds>
+        <valueThresholds> 
+            <applyTo>left</applyTo> 
+            <commaSeparatedValues>0.5,1,2,5,10,15,20,25</commaSeparatedValues> 
+            <operator>greater than or equal to</operator> 
+        </valueThresholds>
         <metric><name>all valid</name></metric>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output/</path>
+            <path>output</path>
+        </destination>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output</path>
         </destination>
         <destination type="graphic">
             <path>output/</path>
