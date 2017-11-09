@@ -14,6 +14,14 @@ public class WRESTools
 {
 
     /**
+     * Hiding constructor.
+     */
+    private WRESTools()
+    {
+        
+    }
+    
+    /**
      * Uses, as a starting point, {@link DefaultDrawingSupplier#DEFAULT_PAINT_SEQUENCE}.  If that array of colors is no smaller than
      * than the number of series, then it just applies each color to the corresponding series in the provided parameters.
      * Otherwise, it calls {@link ColorTools#buildColorPalette(int, Color...)} to build a list BASED on that list in order to 

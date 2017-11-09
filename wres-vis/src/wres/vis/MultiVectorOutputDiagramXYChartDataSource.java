@@ -39,8 +39,8 @@ extends
 
         this.xConstant=xConstant;
         this.yConstant=yConstant;
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle(domainTitle);//("Forecast Probability");
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle(rangeTitle);//("Observed Probability Given Forecast Probability");
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle(domainTitle);
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle(rangeTitle);
         WRESTools.applyDefaultJFreeChartColorSequence(getDefaultFullySpecifiedDataSourceDrawingParameters());
     }
 

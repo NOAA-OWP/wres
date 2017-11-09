@@ -24,7 +24,6 @@ public class RankHistogramXYDataset extends MultiVectorOutputDiagramXYDataset
     @Override
     public Number getStartX( int arg0, int arg1 )
     {
-        // TODO Auto-generated method stub
         return getX( arg0, arg1 ).doubleValue() - 0.35;
     }
 

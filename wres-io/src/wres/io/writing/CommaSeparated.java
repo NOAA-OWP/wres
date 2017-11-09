@@ -14,7 +14,6 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.StringJoiner;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
@@ -26,6 +25,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MapKey;
+import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
@@ -142,13 +142,9 @@ public class CommaSeparated
             scalarOutput = storedMetricOutput.getScalarOutput();
             vectorOutput = storedMetricOutput.getVectorOutput();
         }
-        catch ( InterruptedException ie )
+        catch ( final MetricOutputAccessException e )
         {
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException ee )
-        {
-            throw new IOException( "While getting numeric output", ee );
+            throw new IOException( "While getting numeric output:", e );
         }
 
         if ( scalarOutput != null ) // currently requiring some scalar output
