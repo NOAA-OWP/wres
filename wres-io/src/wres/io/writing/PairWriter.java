@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.List;
 import java.util.StringJoiner;
 
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ public class PairWriter extends WRESCallable<Boolean>
     private final String date;
     private final Feature feature;
     private final int windowNum;
-    private final PairOfDoubleAndVectorOfDoubles pair;
+    private final List<PairOfDoubleAndVectorOfDoubles> pairs;
     private final boolean isBaseline;
 
     // TODO: This needs to be cleaned up; this is far too many parameters
@@ -48,14 +49,14 @@ public class PairWriter extends WRESCallable<Boolean>
                        String date,
                        Feature feature,
                        int windowNum,
-                       PairOfDoubleAndVectorOfDoubles pair,
+                       List<PairOfDoubleAndVectorOfDoubles> pairs,
                        boolean isBaseline)
     {
         this.destinationConfig = destinationConfig;
         this.date = date;
         this.feature = feature;
         this.windowNum = windowNum;
-        this.pair = pair;
+        this.pairs = pairs;
         this.isBaseline = isBaseline;
     }
 
@@ -115,56 +116,59 @@ public class PairWriter extends WRESCallable<Boolean>
                     PairWriter.headerHasBeenWritten = true;
                 }
 
-                StringJoiner line = new StringJoiner( DELIMITER );
-                StringJoiner arrayJoiner = new StringJoiner( DELIMITER );
-
-                line.add( ConfigHelper.getFeatureDescription( this.getFeature() ) );
-                line.add( this.getDate() );
-
-                // Convert from 0 index to 1 index for easier representation
-                // i.e. first window, second, third, ...
-                // instead of: zeroth window, first, second, third, ...
-                line.add( String.valueOf( this.getWindowNum() + 1 ) );
-
-                double left = this.getPair().getItemOne();
-
-                if (Double.compare( left, Double.NaN ) == 0)
+                for (PairOfDoubleAndVectorOfDoubles pair : this.getPairs() )
                 {
-                    line.add("NaN");
-                }
-                else if ( formatter != null )
-                {
-                    line.add( formatter.format( left ) );
-                }
-                else
-                {
-                    line.add( String.valueOf( left ) );
-                }
+                    StringJoiner line = new StringJoiner( DELIMITER );
+                    StringJoiner arrayJoiner = new StringJoiner( DELIMITER );
 
-                double[] rightValues = this.getPair().getItemTwo();
+                    line.add( ConfigHelper.getFeatureDescription( this.getFeature() ) );
+                    line.add( this.getDate() );
 
-                Arrays.sort( rightValues );
+                    // Convert from 0 index to 1 index for easier representation
+                    // i.e. first window, second, third, ...
+                    // instead of: zeroth window, first, second, third, ...
+                    line.add( String.valueOf( this.getWindowNum() + 1 ) );
 
-                for ( Double rightValue : rightValues )
-                {
-                    if (rightValue.isNaN())
+                    double left = pair.getItemOne();
+
+                    if ( Double.compare( left, Double.NaN ) == 0 )
                     {
-                        arrayJoiner.add( "NaN" );
+                        line.add( "NaN" );
                     }
                     else if ( formatter != null )
                     {
-                        arrayJoiner.add( formatter.format( rightValue ) );
+                        line.add( formatter.format( left ) );
                     }
                     else
                     {
-                        arrayJoiner.add( String.valueOf( rightValue ) );
+                        line.add( String.valueOf( left ) );
                     }
+
+                    double[] rightValues = pair.getItemTwo();
+
+                    Arrays.sort( rightValues );
+
+                    for ( Double rightValue : rightValues )
+                    {
+                        if ( rightValue.isNaN() )
+                        {
+                            arrayJoiner.add( "NaN" );
+                        }
+                        else if ( formatter != null )
+                        {
+                            arrayJoiner.add( formatter.format( rightValue ) );
+                        }
+                        else
+                        {
+                            arrayJoiner.add( String.valueOf( rightValue ) );
+                        }
+                    }
+
+                    line.add( arrayJoiner.toString() );
+
+                    writer.write( line.toString() );
+                    writer.newLine();
                 }
-
-                line.add( arrayJoiner.toString() );
-
-                writer.write( line.toString() );
-                writer.newLine();
 
                 success = true;
             }
@@ -230,8 +234,8 @@ public class PairWriter extends WRESCallable<Boolean>
         return this.windowNum;
     }
 
-    public PairOfDoubleAndVectorOfDoubles getPair()
+    public List<PairOfDoubleAndVectorOfDoubles> getPairs()
     {
-        return this.pair;
+        return this.pairs;
     }
 }

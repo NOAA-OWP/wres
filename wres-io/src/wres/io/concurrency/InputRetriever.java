@@ -379,6 +379,8 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             }
         }
 
+        writePairs( date, pairs, dataSourceConfig );
+
         return pairs;
     }
 
@@ -394,7 +396,6 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             PairOfDoubleAndVectorOfDoubles pair = this.getPair( date, rightValues );
             if (pair != null)
             {
-                writePair( date, pair, dataSourceConfig );
                 pairs.add( pair );
             }
         }
@@ -490,7 +491,9 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         return DefaultDataFactory.getInstance().pairOf( leftAggregation, rightAggregation );
     }
 
-    private void writePair(String date, PairOfDoubleAndVectorOfDoubles pair, DataSourceConfig dataSourceConfig)
+    private void writePairs( String date,
+                             List<PairOfDoubleAndVectorOfDoubles> pairs,
+                             DataSourceConfig dataSourceConfig )
             throws ProjectConfigException
     {
         boolean isBaseline = dataSourceConfig.equals( this.projectDetails.getBaseline() );
@@ -502,7 +505,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                date,
                                                this.feature,
                                                this.progress,
-                                               pair,
+                                               pairs,
                                                isBaseline );
             Executor.submitHighPriorityTask(saver);
         }
