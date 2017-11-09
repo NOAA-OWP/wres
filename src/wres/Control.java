@@ -40,11 +40,13 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Threshold;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMetadata;
@@ -53,7 +55,6 @@ import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
 import wres.datamodel.time.TimeWindow;
-import wres.datamodel.Threshold;
 import wres.engine.statistics.metric.ConfigMapper;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -472,14 +473,13 @@ public class Control implements Function<String[], Integer>
                 }
             }
         }
-        catch(final InterruptedException e)
+        catch ( final MetricOutputAccessException e )
         {
-            LOGGER.warn( "Interrupted while processing charts.", e );
-            Thread.currentThread().interrupt();
-        }
-        catch(final ExecutionException e)
-        {
-            throw new WresProcessingException( "Error while processing charts:", e);
+            if ( Thread.currentThread().isInterrupted() )
+            {
+                LOGGER.warn( "Interrupted while processing charts.", e );
+            }
+            throw new WresProcessingException( "Error while processing charts:", e );
         }
     }
 
@@ -895,7 +895,7 @@ public class Control implements Function<String[], Integer>
             }
             catch(final InterruptedException e)
             {
-                LOGGER.warn( "Interrupted while processing pairs.", e );
+                LOGGER.warn( "Interrupted while processing pairs:", e );
                 Thread.currentThread().interrupt();
             }
             catch( ExecutionException e )
@@ -982,16 +982,13 @@ public class Control implements Function<String[], Integer>
                     }
                 }
             }
-            catch( InterruptedException ie)
+            catch ( final MetricOutputAccessException e )
             {
-                LOGGER.warn( "Interrupted while processing intermediate results" );
-                Thread.currentThread().interrupt();
-            }
-            catch ( ExecutionException ee )
-            {
-                throw new WresProcessingException(
-                        "While processing intermediate results: ",
-                        ee );
+                if ( Thread.currentThread().isInterrupted() )
+                {
+                    LOGGER.warn( "Interrupted while processing intermediate results:", e );
+                }
+                throw new WresProcessingException( "Error while processing intermediate results:", e );
             }
         }
     }
@@ -1003,14 +1000,11 @@ public class Control implements Function<String[], Integer>
      */
     private static class WresProcessingException extends RuntimeException
     {
+        private static final long serialVersionUID = 6988169716259295343L;
+
         WresProcessingException( String message, Throwable cause )
         {
             super( message, cause );
-        }
-
-        WresProcessingException( String message )
-        {
-            super( message );
         }
     }
 

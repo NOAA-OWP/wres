@@ -1,11 +1,9 @@
 package wres.datamodel.outputs;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import wres.datamodel.MetricConstants;
-import wres.datamodel.Threshold;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Threshold;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -35,53 +33,47 @@ public interface MetricOutputForProjectByTimeAndThreshold
      * Returns a {@link MetricOutputMultiMap} of {@link ScalarOutput} or null if no output exists.
      * 
      * @return the scalar output or null
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> getScalarOutput() throws InterruptedException, ExecutionException;
+    MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> getScalarOutput() throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link VectorOutput} or null if no output exists.
      * 
      * @return the vector output or null
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    MetricOutputMultiMapByTimeAndThreshold<VectorOutput> getVectorOutput() throws InterruptedException, ExecutionException;
+    MetricOutputMultiMapByTimeAndThreshold<VectorOutput> getVectorOutput() throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MultiVectorOutput} or null if no output exists.
      * 
      * @return the multi-vector output or null
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
     MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> getMultiVectorOutput()
-            throws InterruptedException, ExecutionException;
+            throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MatrixOutput} or null if no output exists.
      * 
      * @return the matrix output or null
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> getMatrixOutput() throws InterruptedException, ExecutionException;
+    MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> getMatrixOutput() throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link BoxPlotOutput} or null if no output exists.
      * 
      * @return the matrix output or null
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotOutput()
-            throws InterruptedException, ExecutionException;
+    MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotOutput() throws MetricOutputAccessException;
 
     /**
      * Builder.
@@ -99,7 +91,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         default MetricOutputForProjectByTimeAndThresholdBuilder addScalarOutput( MapBiKey<TimeWindow, Threshold> key,
-                                                                              Future<MetricOutputMapByMetric<ScalarOutput>> result )
+                                                                                 Future<MetricOutputMapByMetric<ScalarOutput>> result )
         {
             addScalarOutput( key.getFirstKey(), key.getSecondKey(), result );
             return this;
@@ -114,7 +106,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         default MetricOutputForProjectByTimeAndThresholdBuilder addVectorOutput( MapBiKey<TimeWindow, Threshold> key,
-                                                                              Future<MetricOutputMapByMetric<VectorOutput>> result )
+                                                                                 Future<MetricOutputMapByMetric<VectorOutput>> result )
         {
             addVectorOutput( key.getFirstKey(), key.getSecondKey(), result );
             return this;
@@ -128,8 +120,9 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addMultiVectorOutput( MapBiKey<TimeWindow, Threshold> key,
-                                                                                   Future<MetricOutputMapByMetric<MultiVectorOutput>> result )
+        default MetricOutputForProjectByTimeAndThresholdBuilder
+                addMultiVectorOutput( MapBiKey<TimeWindow, Threshold> key,
+                                      Future<MetricOutputMapByMetric<MultiVectorOutput>> result )
         {
             addMultiVectorOutput( key.getFirstKey(), key.getSecondKey(), result );
             return this;
@@ -144,7 +137,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         default MetricOutputForProjectByTimeAndThresholdBuilder addMatrixOutput( MapBiKey<TimeWindow, Threshold> key,
-                                                                              Future<MetricOutputMapByMetric<MatrixOutput>> result )
+                                                                                 Future<MetricOutputMapByMetric<MatrixOutput>> result )
         {
             addMatrixOutput( key.getFirstKey(), key.getSecondKey(), result );
             return this;
@@ -159,7 +152,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         default MetricOutputForProjectByTimeAndThresholdBuilder addBoxPlotOutput( MapBiKey<TimeWindow, Threshold> key,
-                                                                               Future<MetricOutputMapByMetric<BoxPlotOutput>> result )
+                                                                                  Future<MetricOutputMapByMetric<BoxPlotOutput>> result )
         {
             addBoxPlotOutput( key.getFirstKey(), key.getSecondKey(), result );
             return this;
@@ -175,8 +168,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addScalarOutput( TimeWindow timeWindow,
-                                                                      Threshold threshold,
-                                                                      Future<MetricOutputMapByMetric<ScalarOutput>> result );
+                                                                         Threshold threshold,
+                                                                         Future<MetricOutputMapByMetric<ScalarOutput>> result );
 
         /**
          * Adds a new {@link VectorOutput} for a collection of metrics to the internal store.
@@ -188,8 +181,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addVectorOutput( TimeWindow timeWindow,
-                                                                      Threshold threshold,
-                                                                      Future<MetricOutputMapByMetric<VectorOutput>> result );
+                                                                         Threshold threshold,
+                                                                         Future<MetricOutputMapByMetric<VectorOutput>> result );
 
         /**
          * Adds a new {@link MultiVectorOutput} for a collection of metrics to the internal store.
@@ -201,8 +194,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addMultiVectorOutput( TimeWindow timeWindow,
-                                                                           Threshold threshold,
-                                                                           Future<MetricOutputMapByMetric<MultiVectorOutput>> result );
+                                                                              Threshold threshold,
+                                                                              Future<MetricOutputMapByMetric<MultiVectorOutput>> result );
 
         /**
          * Adds a new {@link MatrixOutput} for a collection of metrics to the internal store.
@@ -214,8 +207,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addMatrixOutput( TimeWindow timeWindow,
-                                                                      Threshold threshold,
-                                                                      Future<MetricOutputMapByMetric<MatrixOutput>> result );
+                                                                         Threshold threshold,
+                                                                         Future<MetricOutputMapByMetric<MatrixOutput>> result );
 
         /**
          * Adds a new {@link BoxPlotOutput} for a collection of metrics to the internal store.
@@ -227,8 +220,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addBoxPlotOutput( TimeWindow timeWindow,
-                                                                       Threshold threshold,
-                                                                       Future<MetricOutputMapByMetric<BoxPlotOutput>> result );
+                                                                          Threshold threshold,
+                                                                          Future<MetricOutputMapByMetric<BoxPlotOutput>> result );
 
         /**
          * Returns a {@link MetricOutputForProjectByTimeAndThreshold}.
