@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.concurrent.Future;
 
@@ -360,9 +361,9 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             if (ConfigHelper.isForecast( this.getRight() ))
             {
                 int nextWindowNumber = this.getWindowNumber() + 1;
-                double beginning = this.getProjectDetails().getLead(nextWindowNumber) +
+                int beginning = this.getProjectDetails().getLead(nextWindowNumber) +
                                    this.getProjectDetails().getLeadOffset( this.getFeature() );
-                double end = this.getProjectDetails().getLead(nextWindowNumber + 1) +
+                int end = this.getProjectDetails().getLead(nextWindowNumber + 1) +
                              this.getProjectDetails().getLeadOffset( this.getFeature() );
 
                 next = beginning < this.getProjectDetails().getLastLead( this.getFeature() ) &&
@@ -439,23 +440,12 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             }
         }
 
+        if (nextInput == null)
+        {
+            throw new NoSuchElementException( "There are no more windows to evaluate" );
+        }
+
         return nextInput;
-    }
-
-    protected DataSourceConfig getSimulation()
-    {
-        DataSourceConfig simulation = null;
-
-        if (!ConfigHelper.isForecast( this.getRight()))
-        {
-            simulation = this.getRight();
-        }
-        else if (!ConfigHelper.isForecast( this.getBaseline() ))
-        {
-            simulation = this.getBaseline();
-        }
-
-        return simulation;
     }
 
     protected DataSourceConfig getLeft()

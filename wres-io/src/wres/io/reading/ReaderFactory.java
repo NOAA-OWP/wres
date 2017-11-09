@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import wres.config.generated.Format;
 import wres.io.reading.fews.FEWSSource;
-import wres.io.reading.ucar.NetCDFSource;
+import wres.io.reading.netcdf.NetCDFSource;
 import wres.util.Internal;
 import wres.util.Strings;
 

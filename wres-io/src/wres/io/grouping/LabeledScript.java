@@ -13,46 +13,52 @@ public final class LabeledScript implements Comparable<LabeledScript>
      * @param label the label
      * @param script the script
      */
-    public LabeledScript(String label, String script) {
-        this.label = label;
-        this.script = script;
+    public LabeledScript(String label, String script)
+    {
+        pair = new DualString( label, script );
     }
 
     public String getLabel()
     {
-        return this.label;
+        return this.pair.getFirst();
     }
 
     public String getScript() {
-        return this.script;
+        return this.pair.getSecond();
     }
     
     @Override
     public String toString()
     {
-        return "Label: " + this.label + System.lineSeparator() +
+        return "Label: " + String.valueOf(this.getLabel()) + System.lineSeparator() +
                "Script:" + System.lineSeparator() +
-               this.script + System.lineSeparator();
+               String.valueOf(this.getScript()) + System.lineSeparator();
     }
     
     @Override
     public int hashCode()
     {
-        return Objects.hash(this.label, this.script);
+        return pair.hashCode();
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        return !Objects.isNull( obj ) && obj.hashCode() == this.hashCode();
     }
 
     @Override
     public int compareTo(final LabeledScript other)
     {
-        int equality = this.label.compareTo(other.label);
-        if (equality == 0)
+        int equality = 1;
+
+        if (other != null)
         {
-            equality = this.script.compareTo(other.script);
+            equality = this.pair.compareTo( other.pair );
         }
 
         return equality;
     }
-    
-    private final String script;
-    private final String label;
+
+    private final DualString pair;
 }

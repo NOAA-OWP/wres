@@ -72,7 +72,7 @@ public class FormattedStopwatch {
 		
 		if (milliseconds > 1000)
 		{
-		    seconds = milliseconds / 1000.0;
+			seconds = Time.secondsFromMilliseconds( milliseconds );
 		}
 
 		if (hours > 0)

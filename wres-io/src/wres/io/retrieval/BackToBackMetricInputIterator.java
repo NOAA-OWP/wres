@@ -246,7 +246,7 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
             }
 
             double windowWidth = this.getProjectDetails().getWindowWidth();
-            double windowSpan = last - start;
+            double windowSpan = (double)(last - start);
 
             count = ((Double)Math.ceil( windowSpan / windowWidth)).intValue();
         }

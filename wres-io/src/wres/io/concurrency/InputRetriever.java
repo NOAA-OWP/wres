@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 
+import javax.sql.DataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +78,46 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         this.leadOffset = leadOffset;
     }
 
+    private UnitConversions.Conversion getConversion(int measurementUnitID)
+    {
+        if (this.conversionMap == null)
+        {
+            this.conversionMap = new TreeMap<>(  );
+        }
+
+        if (!this.conversionMap.containsKey( measurementUnitID ))
+        {
+            this.conversionMap.put(measurementUnitID,
+                                   UnitConversions.getConversion( measurementUnitID,
+                                                                  this.projectDetails.getDesiredMeasurementUnit() ));
+        }
+
+        return this.conversionMap.get( measurementUnitID );
+    }
+
+    private Double convertMeasurement(Double value, int measurementUnitID)
+    {
+        Double convertedMeasurement = null;
+        UnitConversions.Conversion conversion = this.getConversion( measurementUnitID );
+
+        if (value != null && !value.isNaN() && conversion != null)
+        {
+            convertedMeasurement = conversion.convert( value );
+        }
+        else
+        {
+            convertedMeasurement = Double.NaN;
+        }
+
+        if (convertedMeasurement < this.projectDetails.getMinimumValue() ||
+                convertedMeasurement > this.projectDetails.getMaximumValue())
+        {
+            convertedMeasurement = Double.NaN;
+        }
+
+        return convertedMeasurement;
+    }
+
     @Override
     public MetricInput<?> execute() throws Exception
     {
@@ -132,12 +174,12 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         }
         else
         {
-            List<PairOfDoubles> primary = factory.getSlicer().transformPairs(this.primaryPairs, factory.getSlicer()::transformPair);
+            List<PairOfDoubles> primary = convertToPairOfDoubles( this.primaryPairs );
             List<PairOfDoubles> baseline = null;
 
             if (this.baselinePairs != null && this.baselinePairs.size() > 0)
             {
-                baseline = factory.getSlicer().transformPairs(this.baselinePairs, factory.getSlicer()::transformPair);
+                baseline = convertToPairOfDoubles( this.baselinePairs );
             }
 
             input = factory.ofSingleValuedPairs(primary,
@@ -148,6 +190,23 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         }
 
         return input;
+    }
+
+    private List<PairOfDoubles> convertToPairOfDoubles(List<PairOfDoubleAndVectorOfDoubles> multiValuedPairs)
+    {
+        List<PairOfDoubles> pairs = new ArrayList<>(  );
+
+        DataFactory factory = DefaultDataFactory.getInstance();
+
+        for (PairOfDoubleAndVectorOfDoubles pair : multiValuedPairs)
+        {
+            for (double pairedValue : pair.getItemTwo())
+            {
+                pairs.add(factory.pairOf( pair.getItemOne(), pairedValue ));
+            }
+        }
+
+        return pairs;
     }
 
     private String getLoadScript(DataSourceConfig dataSourceConfig)
@@ -283,14 +342,9 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                  * we are using the agg_hour method instead of the more
                  * straight forward process.
                  */
-                if (rightValues.size() > 0 && aggHour != null && resultSet.getInt( "agg_hour" ) <= aggHour)
+                if (aggHour != null && resultSet.getInt( "agg_hour" ) <= aggHour)
                 {
-                    PairOfDoubleAndVectorOfDoubles pair = this.getPair( date, rightValues );
-                    if (pair != null)
-                    {
-                        writePair( date, pair, dataSourceConfig );
-                        pairs.add( pair );
-                    }
+                    pairs = this.addPair( pairs, date, rightValues, dataSourceConfig );
 
                     rightValues = new TreeMap<>(  );
                 }
@@ -303,47 +357,15 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
 
                 for (int measurementIndex = 0; measurementIndex < measurements.length; ++measurementIndex)
                 {
-                    UnitConversions.Conversion conversion;
                     Integer measurementUnitID = resultSet.getInt( "measurementunit_id" );
-                    if (!conversionMap.containsKey( measurementUnitID ))
-                    {
-                        conversion = UnitConversions.getConversion( measurementUnitID,
-                                                                    this.projectDetails.getDesiredMeasurementUnit());
-                        conversionMap.put( measurementUnitID, conversion );
-                    }
-                    else
-                    {
-                        conversion = conversionMap.get( measurementUnitID );
-                    }
-
-                    Double convertedMeasurement = null;
-
-                    if (measurements[measurementIndex] != null)
-                    {
-                        convertedMeasurement = conversion.convert( measurements[measurementIndex] );
-                    }
-
-                    // The value needs to be added if it was null because it indicates
-                    // missing source data which will need to be handled.
-                    if (convertedMeasurement == null ||
-                        (convertedMeasurement >= this.projectDetails.getMinimumValue() &&
-                         this.projectDetails.getMaximumValue() >= convertedMeasurement))
-                    {
-                        rightValues.putIfAbsent( measurementIndex, new ArrayList<>() );
-                        rightValues.get(measurementIndex).add( convertedMeasurement );
-                    }
+                    rightValues.putIfAbsent( measurementIndex, new ArrayList<>() );
+                    rightValues.get(measurementIndex)
+                               .add( this.convertMeasurement( measurements[measurementIndex],
+                                                              measurementUnitID ) );
                 }
             }
 
-            if (rightValues.size() > 0)
-            {
-                PairOfDoubleAndVectorOfDoubles pair = this.getPair( date, rightValues );
-                if (pair != null)
-                {
-                    writePair( date, pair, dataSourceConfig );
-                    pairs.add( pair );
-                }
-            }
+            pairs = this.addPair( pairs, date, rightValues, dataSourceConfig );
         }
         finally
         {
@@ -358,6 +380,25 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             }
         }
 
+        return pairs;
+    }
+
+    private List<PairOfDoubleAndVectorOfDoubles> addPair( List<PairOfDoubleAndVectorOfDoubles> pairs,
+                                                          String date,
+                                                          Map<Integer, List<Double>> rightValues,
+                                                          DataSourceConfig dataSourceConfig)
+            throws ProjectConfigException, NoDataException,
+            InvalidPropertiesFormatException
+    {
+        if (rightValues.size() > 0)
+        {
+            PairOfDoubleAndVectorOfDoubles pair = this.getPair( date, rightValues );
+            if (pair != null)
+            {
+                writePair( date, pair, dataSourceConfig );
+                pairs.add( pair );
+            }
+        }
         return pairs;
     }
 
@@ -478,6 +519,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
     private VectorOfDoubles climatology;
     private List<PairOfDoubleAndVectorOfDoubles> primaryPairs;
     private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;
+    private Map<Integer, UnitConversions.Conversion> conversionMap;
 
     @Override
     protected Logger getLogger()
