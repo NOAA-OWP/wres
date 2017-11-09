@@ -17,7 +17,7 @@
         <unit>CMS</unit>
         <feature locationId="TLPT2" />
         <leadHours minimum="1" maximum="24" />
-        <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
+        <grouping>feature,lead_time</grouping>
         <desiredTimeAggregation>
             <function>avg</function>
             <period>1</period>
@@ -44,7 +44,6 @@
         </destination>
         <destination type="graphic">
             <path>output/</path>
-            <!--Optional: -->
             <graphical width="800" height="600">
                 <plotType>lead threshold</plotType>
             </graphical>
@@ -53,24 +52,3 @@
 
 </project>
 
-<!-- Value Thresholds -->
-
-        <!-- <valueThresholds> <applyTo>left</applyTo> <commaSeparatedValues>0.5,1,2,5,10,15,20,25</commaSeparatedValues> 
-            <operator>greater than or equal to</operator> </valueThresholds> -->
-
-<!-- Other Metric Options: -->
-<!-- <metric><name>all valid</name></metric> -->
-<!-- <metric><name>correlation pearsons</name></metric> -->
-<!-- <metric><name>mean absolute error</name></metric> -->
-<!-- <metric><name>bias fraction</name></metric> -->
-<!-- <metric><name>coefficient of determination</name></metric> -->
-<!-- <metric><name>root mean square error</name></metric> -->
-<!-- <metric><name>mean square error</name></metric> -->
-<!-- <metric><name>mean square error skill score</name></metric> -->
-<!-- <metric><name>brier skill score</name></metric> -->
-<!-- <metric><name>rank histogram</name></metric> -->
-<!-- <metric><name>relative operating characteristic diagram</name></metric> -->
-<!-- <metric><name>relative operating characteristic score</name></metric> -->
-<!-- <metric><name>continuous ranked probability score</name></metric> -->
-<!-- <metric><name>continuous ranked probability skill score</name></metric> -->
-<!-- <metric><name>sample size</name></metric> -->
