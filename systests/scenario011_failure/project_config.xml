@@ -14,7 +14,7 @@
         <right label="HEFS">
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/drrc2ForecastsOneYear/</source>
+                recursive="false" unit="">../data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
 
         </right>
