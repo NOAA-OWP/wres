@@ -276,16 +276,7 @@ public class Control implements Function<String[], Integer>
         InputGenerator metricInputs;
 
         // Build an InputGenerator for the next feature
-        if ( projectConfig.getInputs().getBaseline() != null )
-        {
-            metricInputs = Operations.getInputs( projectConfig,
-                                                 feature );
-        }
-        else
-        {
-            metricInputs = Operations.getInputs( projectConfig,
-                                                 feature );
-        }
+        metricInputs = Operations.getInputs( projectConfig, feature );
 
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
