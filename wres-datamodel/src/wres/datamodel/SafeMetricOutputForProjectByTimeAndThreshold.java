@@ -23,10 +23,10 @@ import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.time.TimeWindow;
 
 /**
@@ -117,25 +117,23 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
         {
             if ( hasOutput( next ) )
             {
-                if ( next == MetricOutputGroup.SCALAR )
+                switch ( next )
                 {
-                    addToBuilder( builder, getScalarOutput() );
-                }
-                if ( next == MetricOutputGroup.VECTOR )
-                {
-                    addToBuilder( builder, getVectorOutput() );
-                }
-                if ( next == MetricOutputGroup.MULTIVECTOR )
-                {
-                    addToBuilder( builder, getMultiVectorOutput() );
-                }
-                if ( next == MetricOutputGroup.MATRIX )
-                {
-                    addToBuilder( builder, getMatrixOutput() );
-                }
-                if ( next == MetricOutputGroup.BOXPLOT )
-                {
-                    addToBuilder( builder, getBoxPlotOutput() );
+                    case SCALAR:
+                        addToBuilder( builder, getScalarOutput() );
+                        break;
+                    case VECTOR:
+                        addToBuilder( builder, getVectorOutput() );
+                        break;
+                    case MULTIVECTOR:
+                        addToBuilder( builder, getMultiVectorOutput() );
+                        break;
+                    case MATRIX:
+                        addToBuilder( builder, getMatrixOutput() );
+                        break;
+                    case BOXPLOT:
+                        addToBuilder( builder, getBoxPlotOutput() );
+                        break;
                 }
             }
         }
