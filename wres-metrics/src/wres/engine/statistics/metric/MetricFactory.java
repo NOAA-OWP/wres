@@ -99,7 +99,7 @@ public class MetricFactory
      */
 
     public MetricProcessorByTime getMetricProcessorByLeadTime( final ProjectConfig config,
-                                                                   final MetricOutputGroup... mergeList )
+                                                               final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
         return getMetricProcessorByLeadTime( config, null, null, mergeList );
@@ -122,25 +122,25 @@ public class MetricFactory
      */
 
     public MetricProcessorByTime getMetricProcessorByLeadTime( final ProjectConfig config,
-                                                                   final ExecutorService thresholdExecutor,
-                                                                   final ExecutorService metricExecutor,
-                                                                   final MetricOutputGroup... mergeList )
+                                                               final ExecutorService thresholdExecutor,
+                                                               final ExecutorService metricExecutor,
+                                                               final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
         switch ( MetricProcessor.getInputType( config ) )
         {
             case SINGLE_VALUED:
                 return new MetricProcessorSingleValuedPairsByTime( outputFactory,
-                                                                       config,
-                                                                       thresholdExecutor,
-                                                                       metricExecutor,
-                                                                       mergeList );
-            case ENSEMBLE:
-                return new MetricProcessorEnsemblePairsByTime( outputFactory,
                                                                    config,
                                                                    thresholdExecutor,
                                                                    metricExecutor,
                                                                    mergeList );
+            case ENSEMBLE:
+                return new MetricProcessorEnsemblePairsByTime( outputFactory,
+                                                               config,
+                                                               thresholdExecutor,
+                                                               metricExecutor,
+                                                               mergeList );
             default:
                 throw new MetricConfigurationException( "Unsupported input type in the project configuration '"
                                                         + config
@@ -307,7 +307,7 @@ public class MetricFactory
     {
         return ofEnsembleMultiVectorCollection( null, metric );
     }
-    
+
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
      * {@link BoxPlotOutput}.
@@ -567,7 +567,7 @@ public class MetricFactory
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
     }
-    
+
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
      * {@link BoxPlotOutput}.
@@ -580,7 +580,7 @@ public class MetricFactory
      */
 
     public MetricCollection<EnsemblePairs, BoxPlotOutput> ofEnsembleBoxPlotCollection( ExecutorService executor,
-                                                                                               MetricConstants... metric )
+                                                                                       MetricConstants... metric )
             throws MetricParameterException
     {
         final MetricCollectionBuilder<EnsemblePairs, BoxPlotOutput> builder = MetricCollectionBuilder.of();
@@ -590,7 +590,7 @@ public class MetricFactory
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
-    }    
+    }
 
     /**
      * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link ScalarOutput}.
@@ -664,12 +664,13 @@ public class MetricFactory
     public Metric<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVector( MetricConstants metric )
             throws MetricParameterException
     {
-        switch ( metric )
+        if ( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.equals( metric ) )
         {
-            case QUANTILE_QUANTILE_DIAGRAM:
-                return ofQuantileQuantileDiagram();
-            default:
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+            return ofQuantileQuantileDiagram();
+        }
+        else
+        {
+            throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
 
@@ -742,12 +743,13 @@ public class MetricFactory
     public Metric<MulticategoryPairs, ScalarOutput> ofMulticategoryScalar( MetricConstants metric )
             throws MetricParameterException
     {
-        switch ( metric )
+        if ( MetricConstants.PEIRCE_SKILL_SCORE.equals( metric ) )
         {
-            case PEIRCE_SKILL_SCORE:
-                return ofPeirceSkillScoreMulti();
-            default:
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+            return ofPeirceSkillScoreMulti();
+        }
+        else
+        {
+            throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
 
@@ -786,12 +788,13 @@ public class MetricFactory
     public Metric<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrix( MetricConstants metric )
             throws MetricParameterException
     {
-        switch ( metric )
+        if ( MetricConstants.CONTINGENCY_TABLE.equals( metric ) )
         {
-            case CONTINGENCY_TABLE:
-                return ofContingencyTable();
-            default:
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+            return ofContingencyTable();
+        }
+        else
+        {
+            throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
 
@@ -807,12 +810,13 @@ public class MetricFactory
     public Metric<EnsemblePairs, ScalarOutput> ofEnsembleScalar( MetricConstants metric )
             throws MetricParameterException
     {
-        switch ( metric )
+        if ( MetricConstants.SAMPLE_SIZE.equals( metric ) )
         {
-            case SAMPLE_SIZE:
-                return ofSampleSize();
-            default:
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+            return ofSampleSize();
+        }
+        else
+        {
+            throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
 
@@ -874,15 +878,16 @@ public class MetricFactory
     public Metric<EnsemblePairs, MultiVectorOutput> ofEnsembleMultiVector( MetricConstants metric )
             throws MetricParameterException
     {
-        switch ( metric )
+        if ( MetricConstants.RANK_HISTOGRAM.equals( metric ) )
         {
-            case RANK_HISTOGRAM:
-                return ofRankHistogram();
-            default:
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+            return ofRankHistogram();
         }
-    }    
-    
+        else
+        {
+            throw new IllegalArgumentException( error + " '" + metric + "'." );
+        }
+    }
+
     /**
      * Return a default {@link BiasFraction} function.
      * 
@@ -1235,7 +1240,7 @@ public class MetricFactory
     {
         return (FrequencyBias) new FrequencyBiasBuilder().setOutputFactory( outputFactory ).build();
     }
-    
+
     /**
      * Return a default {@link BoxPlotErrorByObserved} function.
      * 
@@ -1247,7 +1252,7 @@ public class MetricFactory
     {
         return (BoxPlotErrorByObserved) new BoxPlotErrorByObservedBuilder().setOutputFactory( outputFactory ).build();
     }
-    
+
     /**
      * Return a default {@link BoxPlotErrorByForecast} function.
      * 
@@ -1258,7 +1263,7 @@ public class MetricFactory
     BoxPlotErrorByForecast ofBoxPlotErrorByForecast() throws MetricParameterException
     {
         return (BoxPlotErrorByForecast) new BoxPlotErrorByForecastBuilder().setOutputFactory( outputFactory ).build();
-    }    
+    }
 
     /**
      * Hidden constructor.

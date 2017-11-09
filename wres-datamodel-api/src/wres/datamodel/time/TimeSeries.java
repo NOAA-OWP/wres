@@ -77,16 +77,7 @@ public interface TimeSeries<T>
      */
     
     Iterator<List<T>> leadTimeIterator();    
-    
-    /**
-     * Returns true if the {@link TimeSeries} has a regular spacing of times with no missing times. In this context,
-     * regularity applies to the time-step associated with each atomic time-series. Also see {#getRegularDuration()}.
-     * 
-     * @return true if the time-series is regular, false otherwise
-     */
-    
-    boolean isRegular();
-    
+
     /**
      * Returns <code>true</code> if the {@link TimeSeries} contains atomic time-series with more than one basis/issue 
      * time (and hence more than one lead time), <code>false/</code> otherwise (e.g. for observations and non-forecast 
@@ -99,13 +90,22 @@ public interface TimeSeries<T>
     
     /**
      * Returns true if the {@link TimeSeries} contains multiple atomic time-series, each with a separate issue/basis
-     * time, false otherwise. To obtain the 
+     * time, false otherwise. Use {@link #basisTimeIterator()} to iterate over the atomic time-series.
      * 
      * @return true if the time-series contains more than one atomic time-series
      */
     
     boolean hasMultipleTimeSeries();
-
+    
+    /**
+     * Returns true if the {@link TimeSeries} has a regular spacing of times with no missing times. In this context,
+     * regularity applies to the time-step associated with each atomic time-series. Also see {#getRegularDuration()}.
+     * 
+     * @return true if the time-series is regular, false otherwise
+     */
+    
+    boolean isRegular();    
+    
     /**
      * Returns the {@link Duration} between elements in a regular {@link TimeSeries} or null if this is an irregular 
      * {@link TimeSeries}. Also see {@link #isRegular()}. When {@link #isRegular()} returns <code>true</code>, all 

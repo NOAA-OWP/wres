@@ -1,9 +1,7 @@
 package wres.datamodel.outputs;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 
 /**
@@ -34,47 +32,52 @@ public interface MetricOutputForProject<T extends MetricOutputMultiMap<?>>
      * @return true if results are available for the input, false otherwise
      */
 
-    boolean hasOutput(MetricOutputGroup outGroup);
+    boolean hasOutput( MetricOutputGroup outGroup );
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link ScalarOutput} or null if no output exists.
      * 
      * @return the scalar output or null
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    MetricOutputMultiMap<ScalarOutput> getScalarOutput() throws InterruptedException, ExecutionException;
+    MetricOutputMultiMap<ScalarOutput> getScalarOutput() throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link VectorOutput} or null if no output exists.
      * 
      * @return the vector output or null
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    MetricOutputMultiMap<VectorOutput> getVectorOutput() throws InterruptedException, ExecutionException;
+    MetricOutputMultiMap<VectorOutput> getVectorOutput() throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MultiVectorOutput} or null if no output exists.
      * 
      * @return the multi-vector output or null
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    MetricOutputMultiMap<MultiVectorOutput> getMultiVectorOutput() throws InterruptedException, ExecutionException;
+    MetricOutputMultiMap<MultiVectorOutput> getMultiVectorOutput() throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MatrixOutput} or null if no output exists.
      * 
      * @return the matrix output or null
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    MetricOutputMultiMap<MatrixOutput> getMatrixOutput() throws InterruptedException, ExecutionException;
+    MetricOutputMultiMap<MatrixOutput> getMatrixOutput() throws MetricOutputAccessException;
+
+    /**
+     * Returns a {@link MetricOutputMultiMap} of {@link BoxPlotOutput} or null if no output exists.
+     * 
+     * @return the matrix output or null
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     */
+
+    MetricOutputMultiMap<BoxPlotOutput> getBoxPlotOutput() throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} for a prescribed array of {@link MetricOutputGroup} or null if no output
@@ -82,11 +85,10 @@ public interface MetricOutputForProject<T extends MetricOutputMultiMap<?>>
      * 
      * @param outGroup the array of {@link MetricOutputGroup}
      * @return the metric output or null
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    T getOutput(MetricOutputGroup... outGroup) throws InterruptedException, ExecutionException;
+    T getOutput( MetricOutputGroup... outGroup ) throws MetricOutputAccessException;
 
     /**
      * Returns all {@link MetricOutputGroup} for which outputs are available.
