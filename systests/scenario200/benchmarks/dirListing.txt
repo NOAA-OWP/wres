@@ -1,3 +1,4 @@
 DOSC1.csv
 DOSC1_MEAN_ERROR_SQIN.png
 DOSC1_SAMPLE_SIZE_SQIN.png
+pairs.csv
