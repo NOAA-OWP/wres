@@ -1,4 +1,4 @@
-package wres.io.concurrency;
+package wres.io.writing;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -17,6 +17,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 
 public class PairWriter extends WRESCallable<Boolean>
