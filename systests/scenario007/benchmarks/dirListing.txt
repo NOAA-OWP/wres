@@ -1,3 +1,4 @@
 DRRC2.csv
 DRRC2_MEAN_ERROR_SQIN.png
 DRRC2_SAMPLE_SIZE_SQIN.png
+pairs.csv
