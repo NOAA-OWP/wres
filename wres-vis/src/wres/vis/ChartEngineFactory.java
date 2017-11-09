@@ -3,7 +3,7 @@ package wres.vis;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,6 +37,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.Threshold;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -47,7 +48,6 @@ import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
 import wres.datamodel.time.TimeWindow;
-import wres.datamodel.Threshold;
 
 /**
  * Factory to use in order to construct a wres-vis chart.
@@ -62,7 +62,7 @@ public abstract class ChartEngineFactory
      * Maintains information about the different {@link ScalarOutput} plot types, including defaults and expected
      * classes.
      */
-    private static HashMap<PlotTypeSelection, PlotTypeInformation> scalarOutputPlotTypeInfoMap = new HashMap<>();
+    private static EnumMap<PlotTypeSelection, PlotTypeInformation> scalarOutputPlotTypeInfoMap = new EnumMap<>(PlotTypeSelection.class);
     static
     {
         scalarOutputPlotTypeInfoMap.put( PlotTypeSelection.LEAD_THRESHOLD,
@@ -136,6 +136,14 @@ public abstract class ChartEngineFactory
                                                                          "boxPlotOfErrors.xml" ) );
     }
 
+    
+    /**
+     * Per SonarLint, hiding the public constructor.
+     */
+    private ChartEngineFactory()
+    {
+    }
+    
     /**
      * @param metricId the metric identifier
      * @param plotType the plot type.  May be null.  If it is null, {@link PlotTypeSelection#LEAD_THRESHOLD} is used to access
@@ -210,11 +218,7 @@ public abstract class ChartEngineFactory
             //Legend title and lead time argument are specific to the plot.
             final String legendTitle = "Threshold";
             String legendUnitsText = "";
-            if ( input.hasQuantileThresholds() )
-            {
-                legendUnitsText += " [" + meta.getInputDimension() + "]";
-            }
-            else if ( input.keySetByThreshold().size() > 1 )
+            if (( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ))
             {
                 legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
@@ -330,11 +334,7 @@ public abstract class ChartEngineFactory
             //Legend title and lead time argument are specific to the plot.
             final String legendTitle = "Threshold";
             String legendUnitsText = "";
-            if ( input.hasQuantileThresholds() )
-            {
-                legendUnitsText += " [" + meta.getInputDimension() + "]";
-            }
-            else if ( input.keySetByThreshold().size() > 1 )
+            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ))
             {
                 legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
@@ -445,11 +445,7 @@ public abstract class ChartEngineFactory
             //Legend title and lead time argument are specific to the plot.
             final String legendTitle = "Threshold";
             String legendUnitsText = "";
-            if ( input.hasQuantileThresholds() )
-            {
-                legendUnitsText += " [" + meta.getInputDimension() + "]";
-            }
-            else if ( input.keySetByThreshold().size() > 1 )
+            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ) )
             {
                 legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
@@ -560,11 +556,7 @@ public abstract class ChartEngineFactory
             //Legend title and lead time argument are specific to the plot.
             final String legendTitle = "Threshold";
             String legendUnitsText = "";
-            if ( input.hasQuantileThresholds() )
-            {
-                legendUnitsText += " [" + meta.getInputDimension() + "]";
-            }
-            else if ( input.keySetByThreshold().size() > 1 )
+            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ) )
             {
                 legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
@@ -668,9 +660,13 @@ public abstract class ChartEngineFactory
         {
             usedPlotType = userSpecifiedPlotType;
         }
-        final String templateName =
+        String templateName =
                 getNonNullMultiVectorOutputPlotTypeInformation( input.getMetadata().getMetricID(),
                                                                 usedPlotType ).getDefaultTemplateName();
+        if (userSpecifiedTemplateResourceName != null)
+        {
+            templateName = userSpecifiedTemplateResourceName;
+        }
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
         Set<?> keySetValues = input.keySetByTime();
@@ -830,10 +826,13 @@ public abstract class ChartEngineFactory
     {
         final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
-
-        final String templateName =
+        String templateName =
                 getNonNullMultiVectorOutputPlotTypeInformation( input.getMetadata().getMetricID(),
                                                                 null ).getDefaultTemplateName();
+        if (userSpecifiedTemplateResourceName != null)
+        {
+            templateName = userSpecifiedTemplateResourceName;
+        }
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
         Set<MapBiKey<TimeWindow, Threshold>> keySetValues = input.keySet();
@@ -946,7 +945,11 @@ public abstract class ChartEngineFactory
 
         //Build the source.
         XYChartDataSource source = null;
-        final String templateName = scalarOutputPlotTypeInfoMap.get( usedPlotType ).getDefaultTemplateName();
+        String templateName = scalarOutputPlotTypeInfoMap.get( usedPlotType ).getDefaultTemplateName();
+        if (userSpecifiedTemplateResourceName != null)
+        {
+            templateName = userSpecifiedTemplateResourceName;
+        }
 
         //Lead-threshold is the default.  This is for plots with the lead time on the domain axis and threshold in the legend.
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
@@ -956,11 +959,7 @@ public abstract class ChartEngineFactory
             //Legend title.
             final String legendTitle = "Thresholds";
             String legendUnitsText = "";
-            if ( input.hasQuantileThresholds() )
-            {
-                legendUnitsText += " [" + meta.getInputDimension() + "]";
-            }
-            else if ( input.keySetByThreshold().size() > 1 )
+            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ) )
             {
                 legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
@@ -983,14 +982,12 @@ public abstract class ChartEngineFactory
         }
 
         //Build the ChartEngine instance.
-        final ChartEngine engine = generateChartEngine( Lists.newArrayList( source ),
+        return generateChartEngine( Lists.newArrayList( source ),
                                                         arguments,
                                                         templateName,
                                                         overrideParametersStr,
                                                         null,
                                                         null );
-
-        return engine;
     }
 
     /**
@@ -1047,7 +1044,7 @@ public abstract class ChartEngineFactory
                 {
                     XMLTools.readXMLFromString( usedStr, override );
                 }
-                catch ( final Throwable t )
+                catch ( final Exception t )
                 {
                     LOGGER.warn( "Unable to parse XML provided by user for chart drawing: " + t.getMessage() );
                     LOGGER.trace( "Unable to parse XML provided by user for chart drawing", t );
@@ -1056,12 +1053,10 @@ public abstract class ChartEngineFactory
         }
 
         //Build the ChartEngine instance.
-        final ChartEngine engine = ChartTools.buildChartEngine( Lists.newArrayList( source ),
+        return ChartTools.buildChartEngine( Lists.newArrayList( source ),
                                                                 arguments,
                                                                 templateName,
                                                                 override );
-
-        return engine;
     }
 
     /**
@@ -1172,13 +1167,13 @@ public abstract class ChartEngineFactory
         {
             XMLTools.readXMLFromResource( templateName, parameters );
         }
-        catch ( final Throwable t )
+        catch ( final Exception t )
         {
             try
             {
                 XMLTools.readXMLFromFile( new File( templateName ), parameters );
             }
-            catch ( final Throwable t2 )
+            catch ( final Exception t2 )
             {
                 throw new ChartEngineException( "Unable to load default chart drawing parameters from resource or file with name '"
                                                 + templateName + "': " + t2.getMessage() );
@@ -1197,7 +1192,7 @@ public abstract class ChartEngineFactory
                 {
                     XMLTools.readXMLFromString( usedStr, override );
                 }
-                catch ( final Throwable t )
+                catch ( final Exception t )
                 {
                     LOGGER.warn( "Unable to parse XML provided by user for chart drawing: " + t.getMessage() );
                     LOGGER.trace( "Unable to parse XML provided by user for chart drawing", t );
