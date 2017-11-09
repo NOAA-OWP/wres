@@ -40,7 +40,7 @@ public abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYData
     /**
      * Generic storage container for the data to plot which is derived from the raw data passed into constructor.
      */
-    private T plotData;
+    private transient T plotData;
 
     /**
      * Records overrides for the default legend entries for the different series to plot. This is what allows the
