@@ -11,9 +11,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -42,12 +39,6 @@ import wres.datamodel.time.TimeWindow;
 
 class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForProjectByTimeAndThreshold
 {
-
-    /**
-     * Default logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( SafeMetricOutputForProjectByTimeAndThreshold.class );
 
     /**
      * Thread safe map for {@link ScalarOutput}.
