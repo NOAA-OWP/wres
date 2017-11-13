@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,6 @@ import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
 import wres.io.writing.PairWriter;
-import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.Strings;
 import wres.util.Time;
@@ -379,9 +379,12 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             }
         }
 
-        writePairs( date, pairs, dataSourceConfig );
+        List<PairOfDoubleAndVectorOfDoubles> unmodifiablePairs =
+                Collections.unmodifiableList( pairs );
 
-        return pairs;
+        writePairs( date, unmodifiablePairs, dataSourceConfig );
+
+        return unmodifiablePairs;
     }
 
     private List<PairOfDoubleAndVectorOfDoubles> addPair( List<PairOfDoubleAndVectorOfDoubles> pairs,
@@ -467,8 +470,9 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             return null;
         }
 
-        Double leftAggregation = Collections.aggregate(leftValues,
-                                                       this.projectDetails.getAggregationFunction());
+        Double leftAggregation =
+                wres.util.Collections.aggregate( leftValues,
+                                                 this.projectDetails.getAggregationFunction() );
 
         if ( leftAggregation.isNaN())
         {
@@ -483,11 +487,14 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
         byte memberIndex = 0;
         for (List<Double> values : rightValues.values())
         {
-            rightAggregation[memberIndex] = Collections.aggregate( values, this.projectDetails.getAggregationFunction() );
+            rightAggregation[memberIndex] =
+                    wres.util.Collections.aggregate( values,
+                                                     this.projectDetails.getAggregationFunction() );
             memberIndex++;
         }
 
-        rightAggregation = Collections.shrink(rightAggregation, Double.NaN);
+        rightAggregation = wres.util.Collections.shrink( rightAggregation,
+                                                         Double.NaN );
         return DefaultDataFactory.getInstance().pairOf( leftAggregation, rightAggregation );
     }
 

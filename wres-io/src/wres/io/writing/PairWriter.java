@@ -214,27 +214,27 @@ public class PairWriter extends WRESCallable<Boolean>
         return LOGGER;
     }
 
-    public DestinationConfig getDestinationConfig()
+    private DestinationConfig getDestinationConfig()
     {
         return this.destinationConfig;
     }
 
-    public String getDate()
+    private String getDate()
     {
         return this.date;
     }
 
-    public Feature getFeature()
+    private Feature getFeature()
     {
         return this.feature;
     }
 
-    public int getWindowNum()
+    private int getWindowNum()
     {
         return this.windowNum;
     }
 
-    public List<PairOfDoubleAndVectorOfDoubles> getPairs()
+    private List<PairOfDoubleAndVectorOfDoubles> getPairs()
     {
         return this.pairs;
     }
