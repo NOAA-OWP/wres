@@ -539,6 +539,12 @@ public final class PIXMLReader extends XMLReader
 			else if (reader.isStartElement())
 			{
 				localName = reader.getLocalName();
+
+				if ( this.isForecast )
+				{
+					parseForecastHeaderElements( reader, localName );
+				}
+
 				if (localName.equalsIgnoreCase("locationId"))
 				{
 					//	If we are at the tag for the location id, save it to the location metadata
@@ -558,34 +564,6 @@ public final class PIXMLReader extends XMLReader
 				{
 					//	If we are at the tag for the name of the station, save it to the location
 					currentStationName = XML.getXMLText(reader);
-				}
-				else if(this.isForecast && localName.equalsIgnoreCase("ensembleId"))
-				{
-				    currentTimeSeriesID = null;
-					currentEnsembleID = null;
-					//	If we are at the tag for the name of the ensemble, save it to the ensemble
-					currentEnsembleName = XML.getXMLText(reader);
-				}
-				else if(this.isForecast && localName.equalsIgnoreCase("qualifierId"))
-				{
-				    currentTimeSeriesID = null;
-					currentEnsembleID = null;
-					
-					//	If we are at the tag for the ensemble qualifier, save it to the ensemble
-					//current_ensemble.qualifierID = tag_value(reader);
-					currentQualifierID = XML.getXMLText(reader);
-				}
-				else if(this.isForecast && localName.equalsIgnoreCase("ensembleMemberIndex"))
-				{
-				    currentTimeSeriesID = null;
-					currentEnsembleID = null;
-					
-					//	If we are at the tag for the ensemble member, save it to the ensemble
-					currentEnsembleMemberID = XML.getXMLText(reader);
-				}
-				else if(this.isForecast && localName.equalsIgnoreCase("forecastDate"))
-				{
-                    this.forecastDate = PIXMLReader.parseDateTime( reader );
 				}
 				else if(localName.equalsIgnoreCase("units"))
 				{
@@ -638,6 +616,48 @@ public final class PIXMLReader extends XMLReader
 			reader.next();
 		}
 	}
+
+
+    /**
+     * Helper to read forecast-specific tags out of the header.
+     * @param reader an xml reader positioned inside the header of PI-XML
+     * @param localName the name of the tag the reader is currently on
+     */
+
+    private void parseForecastHeaderElements( XMLStreamReader reader,
+                                              String localName )
+            throws XMLStreamException, InvalidInputDataException
+    {
+        if ( localName.equalsIgnoreCase("ensembleId") )
+        {
+            currentTimeSeriesID = null;
+            currentEnsembleID = null;
+            //    If we are at the tag for the name of the ensemble, save it to the ensemble
+            currentEnsembleName = XML.getXMLText(reader);
+        }
+        else if ( localName.equalsIgnoreCase("qualifierId") )
+        {
+            currentTimeSeriesID = null;
+            currentEnsembleID = null;
+
+            //    If we are at the tag for the ensemble qualifier, save it to the ensemble
+            //current_ensemble.qualifierID = tag_value(reader);
+            currentQualifierID = XML.getXMLText(reader);
+        }
+        else if ( localName.equalsIgnoreCase("ensembleMemberIndex") )
+        {
+            currentTimeSeriesID = null;
+            currentEnsembleID = null;
+
+            //    If we are at the tag for the ensemble member, save it to the ensemble
+            currentEnsembleMemberID = XML.getXMLText(reader);
+        }
+        else if ( localName.equalsIgnoreCase("forecastDate") )
+        {
+            this.forecastDate = PIXMLReader.parseDateTime( reader );
+        }
+    }
+
 
 	/**
 	 * Reads the date and time from an XML reader that stores the date and time in separate attributes
