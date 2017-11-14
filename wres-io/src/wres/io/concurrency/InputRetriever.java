@@ -493,9 +493,18 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
             memberIndex++;
         }
 
-        rightAggregation = wres.util.Collections.shrink( rightAggregation,
-                                                         Double.NaN );
-        return DefaultDataFactory.getInstance().pairOf( leftAggregation, rightAggregation );
+        List<Double> validAggregations = new ArrayList<>();
+
+        for (Double value : rightAggregation)
+        {
+            if (value != null && !Double.isNaN( value ))
+            {
+                validAggregations.add( value );
+            }
+        }
+
+        return DefaultDataFactory.getInstance().pairOf( leftAggregation,
+                                                        validAggregations.toArray( new Double[validAggregations.size()] ) );
     }
 
     private void writePairs( String date,

@@ -5,6 +5,7 @@ import java.io.IOException;
 import wres.config.generated.Format;
 import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.netcdf.NetCDFSource;
+import wres.io.reading.usgs.USGSReader;
 import wres.util.Internal;
 import wres.util.Strings;
 
@@ -18,17 +19,14 @@ public class ReaderFactory {
     
 	public static BasicSource getReader(String filename) throws IOException
 	{
-		SourceType type_of_file = getFiletype(filename);
+		SourceType typeOfFile = getFiletype(filename);
 		
 		BasicSource source = null;
 
-		switch (type_of_file) {
+		switch (typeOfFile)
+        {
 			case DATACARD:
 				source = new wres.io.reading.datacard.DatacardSource(filename);
-				break;
-			case ASCII:
-				// TODO: Implement new ASCII reader that adheres to new schema
-				//source = new wres.io.reading.misc.ASCIISource(filename);
 				break;
             case ARCHIVE:
                 source = new ZippedSource(filename);
@@ -39,6 +37,9 @@ public class ReaderFactory {
 			case PI_XML:
 				source = new FEWSSource(filename);
 				break;
+            case USGS:
+                source = new USGSReader();
+                break;
 			default:
 				String message = "The file '%s' is not a valid data file.";
 				throw new IOException(String.format(message, filename));
@@ -52,11 +53,10 @@ public class ReaderFactory {
 		SourceType type;
 		
 		filename = filename.toLowerCase();
-		if (filename.endsWith(".asc"))
-		{
-			type = SourceType.ASCII;
-		}
-		else if (filename.endsWith("tar.gz") || filename.endsWith(".tgz"))
+
+		// Can't do switch because of the PIXML logic
+
+		if (filename.endsWith("tar.gz") || filename.endsWith(".tgz"))
 		{
 			type = SourceType.ARCHIVE;
 		}
@@ -68,6 +68,10 @@ public class ReaderFactory {
 		{
 			type = SourceType.PI_XML;
 		}
+		else if (filename.equalsIgnoreCase( "usgs" ))
+        {
+            type = SourceType.USGS;
+        }
 		else
 		{
 			type = SourceType.DATACARD;
@@ -80,34 +84,26 @@ public class ReaderFactory {
     {
         SourceType type;
 
-        String formatType = "";
-
-        if (fileFormat != null)
-        {
-            formatType = fileFormat.value().toString().toLowerCase();
-        }
-
-        if (formatType.equalsIgnoreCase("PI-XML") ||
-			formatType.equalsIgnoreCase( "PI_XML" ))
-        {
-            type = SourceType.PI_XML;
-        }
-        else if (formatType.equalsIgnoreCase("datacard"))
-        {
-            type = SourceType.DATACARD;
-        }
-        else if (formatType.equalsIgnoreCase("netcdf"))
-        {
-            type = SourceType.NETCDF;
-        }
-        else if (formatType.equalsIgnoreCase("archive"))
-        {
-            type = SourceType.ARCHIVE;
-        }
-        else
-        {
-            type = SourceType.UNDEFINED;
-        }
+        switch (fileFormat)
+		{
+			case PI_XML:
+				type = SourceType.PI_XML;
+				break;
+            case DATACARD:
+                type = SourceType.DATACARD;
+                break;
+            case NET_CDF:
+                type = SourceType.NETCDF;
+                break;
+            case ARCHIVE:
+                type = SourceType.ARCHIVE;
+                break;
+            case USGS:
+                type = SourceType.USGS;
+                break;
+            default:
+                type = SourceType.UNDEFINED;
+		}
 
         return type;
     }

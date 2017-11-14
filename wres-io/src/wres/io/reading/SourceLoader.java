@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
@@ -91,7 +92,25 @@ public class SourceLoader
         ProgressMonitor.increment();
 
         if (config != null) {
-            for (DataSourceConfig.Source source : config.getSource()) {
+            for (DataSourceConfig.Source source : config.getSource())
+            {
+                if ( source.getFormat() == Format.USGS)
+                {
+                    if (ConfigHelper.isForecast( config ))
+                    {
+                        throw new IllegalArgumentException( "USGS data cannot be used to supply forecasts." );
+                    }
+
+                    savingFiles.add(Executor.execute( new ObservationSaver( "usgs",
+                                                                            this.projectDetails,
+                                                                            config,
+                                                                            source,
+                                                                            this.projectConfig
+                                                                                    .getPair()
+                                                                                    .getFeature() ) ));
+                    continue;
+                }
+
                 Path sourcePath = Paths.get(source.getValue());
 
                 if (!Files.exists( sourcePath ))

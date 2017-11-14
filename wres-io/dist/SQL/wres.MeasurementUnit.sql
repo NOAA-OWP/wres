@@ -1,4 +1,4 @@
--- Table: wres.MeasurementUnit
+﻿-- Table: wres.MeasurementUnit
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
@@ -32,4 +32,13 @@ ALTER TABLE wres.measurementunit
 	('MM'),
 	('CM'),
 	('m3 s-1'),
-	('kg m{-2}');
+	('kg m{-2}'),
+	('%'),
+	('ft/sec'),
+	('gal/min'),
+	('mgd'),
+	('m/sec'),
+	('ft3/day'),
+	('ac-ft'),
+	('mph'),
+	('l/sec');

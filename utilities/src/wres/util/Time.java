@@ -1,5 +1,6 @@
 package wres.util;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -19,7 +20,7 @@ public final class Time
     /**
      * The global format for dates is {@value}
      */
-    public final static String DATE_FORMAT = "yyyy-MM-dd[ [HH][:mm][:ss][.SSSSSS]";
+    public final static String DATE_FORMAT = "yyyy-MM-dd[ [HH][:mm][:ss]";
 
     /**
      * Mapping between common date indicators to their conversion multipliers
@@ -53,7 +54,7 @@ public final class Time
     public static boolean isTimestamp(String possibleTimestamp)
     {
         return Strings.hasValue( possibleTimestamp ) && (
-                possibleTimestamp.matches("\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.?\\d*") ||
+                possibleTimestamp.matches("\\d\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d\\d:\\d\\d:\\d\\d\\.?\\d*") ||
                 Arrays.asList("epoch", "infinity", "-infinity", "now", "today", "tomorrow", "yesterday").contains(possibleTimestamp));
     }
     
@@ -96,24 +97,6 @@ public final class Time
     {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
         return datetime.format(formatter);
-    }
-
-    /**
-     * Converts a parsed date to an actual date and time object, modified by
-     * a parsed hourly offset
-     * @param datetime The string representation of the original time
-     * @param offset The string representation of an hourly offset
-     * @return A date and time object for the parsed date modified by a parsed offset
-     */
-    public static OffsetDateTime convertStringToDate(String datetime, String offset) {
-        OffsetDateTime date = convertStringToDate(datetime);
-        
-        if (date != null && Strings.isNumeric(offset))
-        {
-            date = date.plusHours(Integer.parseInt(offset));
-        }
-        
-        return date;
     }
 
     /**
@@ -179,6 +162,14 @@ public final class Time
         Objects.requireNonNull( date );
 
         return date;
+    }
+
+    public static String convertStringDateTimeToDate(String datetime)
+    {
+        OffsetDateTime actualDateTime = Time.convertStringToDate( datetime );
+        LocalDate actualDate = actualDateTime.toLocalDate();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
+        return actualDate.format(formatter);
     }
     
     public static Double unitsToHours(String unit, double count) throws InvalidPropertiesFormatException {
