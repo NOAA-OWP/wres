@@ -124,6 +124,19 @@ public final class Variables extends Cache<VariableDetails, String>
 		return name;
 	}
 
+	public static VariableDetails getByName(String name) throws SQLException
+	{
+		VariableDetails details = null;
+
+		if (Variables.getCache().hasID( name ))
+		{
+			Integer id = Variables.getCache().getID( name );
+			details = Variables.getCache().get( id );
+		}
+
+		return details;
+	}
+
 	public static String getVariablePositionPartitionName(Integer variableID)
     {
         if (variableID == null || variableID < 0)

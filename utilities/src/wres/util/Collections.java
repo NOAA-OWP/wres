@@ -260,25 +260,6 @@ public final class Collections
         return has_object;
     }
 
-    @SuppressWarnings("unchecked")
-    public static <U> U[] removeAll (final U[] array, Predicate<U> filter)
-    {
-        if (array.length == 0)
-        {
-            return array;
-        }
-        List<U> copy = Arrays.asList(array);
-        copy.removeIf(filter);
-        return (U[])copy.toArray();
-    }
-
-    public static <U> U[] shrink(final U[] array, final U...ignorableValues)
-    {
-        return Collections.removeAll( array,
-                                      (U value) -> value == null ||
-                                                   Collections.contains( ignorableValues, value ) );
-    }
-
     /**
      * Finds a key matching up with an indicated value
      * @param mapping The mapping between keys and values

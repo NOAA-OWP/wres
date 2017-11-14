@@ -41,6 +41,7 @@ import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.reading.ReaderFactory;
 import wres.io.reading.SourceType;
+import wres.io.reading.usgs.USGSParameterReader;
 import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.Database;
 import wres.io.retrieval.InputGenerator;
@@ -128,9 +129,38 @@ final class MainFunctions
 		prototypes.put("testchecksum", testChecksum());
 		prototypes.put( "savepairs", savePairs() );
 		prototypes.put( "loadfromusgs", loadFromUSGS());
+		prototypes.put( "loadusgsparameters", loadUSGSParameters());
 
 		return prototypes;
 	}
+
+	private static Function<String[], Integer> loadUSGSParameters()
+    {
+        return (final String[] args) -> {
+            Integer result = FAILURE;
+
+            if (args.length >= 1)
+            {
+                USGSParameterReader reader = new USGSParameterReader( args[0] );
+                try
+                {
+                    reader.read();
+                    result = SUCCESS;
+                }
+                catch ( IOException e )
+                {
+                    LOGGER.error( Strings.getStackTrace( e ) );
+                }
+            }
+            else
+            {
+                LOGGER.error("The path to the USGS parameter definition CSV is required.");
+                LOGGER.error("usage: loadUSGSParameters parameters.csv");
+            }
+
+            return result;
+        };
+    }
 
 	public static Function<String[], Integer> loadFromUSGS()
     {

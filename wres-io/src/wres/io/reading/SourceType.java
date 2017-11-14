@@ -14,6 +14,7 @@ public enum SourceType {
 	DATACARD,
 	NETCDF,
 	PI_XML,
+	USGS,
 	ARCHIVE,
 	UNDEFINED
 }

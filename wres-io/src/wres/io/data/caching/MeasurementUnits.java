@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.MeasurementDetails;
 import wres.io.utilities.Database;
+import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.Strings;
 
@@ -61,6 +62,11 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 
 	    return ID;
 	}
+
+	public static String getNameByID(Integer ID)
+    {
+        return Collections.getKeyByValue(MeasurementUnits.getCache().getKeyIndex(), ID);
+    }
 
 	@Override
 	protected int getMaxDetails() {
