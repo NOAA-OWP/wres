@@ -53,7 +53,7 @@ public class ConfigHelperTest
         PowerMockito.spy(Features.class);
 
         // anyString() will return FALSE if the arg is null... need to use any() matcher!!
-        doReturn(1, 2,3).when(Features.class, "getFeatureID", any(), any());
+        doReturn(1, 2,3).when(Features.class, "getFeatureID", any());
 
         String expected = "feature_id in (1,2,3)";
 

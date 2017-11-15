@@ -2,6 +2,7 @@ package wres.util;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
@@ -137,7 +138,7 @@ public final class Time
         }
         else if (datetime.equalsIgnoreCase("now"))
         {
-            date = OffsetDateTime.now();
+            date = OffsetDateTime.now(ZoneId.of( "UTC" ));
         }
         else if (datetime.equalsIgnoreCase("yesterday"))
         {
@@ -206,6 +207,7 @@ public final class Time
         Objects.requireNonNull( date );
 
         OffsetDateTime absoluteDate = Time.convertStringToDate(date);
+        absoluteDate = absoluteDate.withOffsetSameInstant( ZoneOffset.UTC );
         return Time.convertDateToString(absoluteDate);
     }
 

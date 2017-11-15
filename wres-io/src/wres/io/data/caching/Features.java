@@ -1,10 +1,13 @@
 package wres.io.data.caching;
 
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.Feature;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
@@ -15,7 +18,7 @@ import wres.util.Strings;
  * @author Christopher Tubbs
  */
 @Internal(exclusivePackage = "wres.io")
-public class Features extends Cache<FeatureDetails, String>
+public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Features.class);
@@ -39,25 +42,57 @@ public class Features extends Cache<FeatureDetails, String>
 		}
 	}
 
-	public static boolean exists(String locationId) throws SQLException
+    @Override
+    Map<FeatureDetails.FeatureKey, Integer> getKeyIndex()
+    {
+        if (this.keyIndex == null)
+        {
+            // Fuzzy selection is required, so a LinkedHashMap cannot be used here
+            this.keyIndex = new TreeMap<>(  );
+        }
+        return this.keyIndex;
+    }
+
+    public static boolean lidExists( String lid) throws SQLException
 	{
-		LOGGER.trace( "Checking if a location named '{}' has been defined...", locationId );
-		boolean exists = getCache().hasID( locationId );
+		LOGGER.trace( "Checking if a location named '{}' has been defined...", lid );
+
+		boolean exists = Features.getCache().hasID( FeatureDetails.keyOfLid( lid ) );
 
 		if (!exists)
 		{
-            String script = "SELECT EXISTS (" + NEWLINE +
-                            "		SELECT 1" + NEWLINE +
-                            "		FROM wres.Feature" + NEWLINE +
-                            "		WHERE lid = '" + locationId + "'" + NEWLINE
-                            +
-                            ");";
+			String script = "SELECT EXISTS (" + NEWLINE +
+							"		SELECT 1" + NEWLINE +
+							"		FROM wres.Feature" + NEWLINE +
+							"		WHERE lid = '" + lid + "'" + NEWLINE
+							+
+							");";
 
-            exists = Database.getResult( script, "exists");
+			exists = Database.getResult( script, "exists");
 		}
 
 		return exists;
 	}
+
+	public static boolean gageIDExists(String gageID) throws SQLException
+    {
+        LOGGER.trace( "Checking if a gage with an id of {} has been defined...", gageID);
+
+        boolean exists = Features.getCache().hasID( FeatureDetails.keyOfGageID( gageID ) );
+
+        if (!exists)
+        {
+            String script = "SELECT EXISTS (" + NEWLINE +
+                            "    SELECT 1" + NEWLINE +
+                            "    FROM wres.Feature" + NEWLINE +
+                            "    WHERE gage_id = '" + gageID + "'" + NEWLINE +
+                            ");";
+
+            exists = Database.getResult(script, "exists");
+        }
+
+        return exists;
+    }
 	
 	/**
 	 * Returns the ID of a Feature from the global cache based on a full Feature specification
@@ -65,78 +100,107 @@ public class Features extends Cache<FeatureDetails, String>
 	 * @return The ID for the specified feature
 	 * @throws SQLException Thrown if the ID could not be retrieved from the Database
 	 */
-	public static Integer getFeatureID(FeatureDetails detail) throws SQLException {
+	public static Integer getFeatureID(FeatureDetails detail) throws SQLException
+	{
 	    LOGGER.trace("getFeatureID - args {}", detail);
 		return getCache().getID(detail);
 	}
-	
-	/**
-	 * Returns the ID of a Feature from the global cache based on its LID and name
-	 * @param lid The location ID of the Feature
-	 * @param stationName The name of the feature
-	 * @return The ID of the Feature
-	 * @throws SQLException Thrown if the ID could not be loaded from the database
-	 */
-	public static Integer getFeatureID(String lid, String stationName) throws SQLException {
-        LOGGER.trace("getFeatureID - args {} ; {}", lid, stationName);
-		FeatureDetails detail = new FeatureDetails();
-		detail.setLID(lid);
-		detail.featureName = stationName;
-		return getFeatureID(detail);
-	}
-	
-	/**
-	 * Returns the ID of the variable position that a Feature in the global cache is tied to in the Database
-	 * @param lid The location ID of the feature to look for
-	 * @param stationName The name of the Feature to look for
-	 * @param variableID The ID of the variable to look for
-	 * @return The ID of the found variable position
-	 * @throws SQLException Thrown if the variable position could not be loaded from the database
-	 */
-	public static Integer getVariablePositionID(String lid, String stationName, Integer variableID) throws SQLException {
-        LOGGER.trace("getVariablePositionID - ars {} ; {} ; {}", lid, stationName, variableID);
-        return getCache().getVarPosID(lid, stationName, variableID);
-	}
-    
-    /**
-     * Returns the ID of the variable position from the instanced cache that a Feature is tied to in the Database
-     * @param lid The location ID of the feature to look for
-     * @param stationName The name of the Feature to look for
-     * @param variableID The ID of the variable to look for
-     * @return The ID of the found variable position
-     * @throws SQLException Thrown if the variable position could not be loaded from the database
-     */
-	private Integer getVarPosID(String lid, String stationName, Integer variableID) throws SQLException {
-        LOGGER.trace("getVarPosID - args {} ; {} ; {}", lid, stationName, variableID);
-		if (!this.getKeyIndex().containsKey(lid))
-		{
-			FeatureDetails detail = new FeatureDetails();
-			detail.setLID(lid);
-			detail.featureName = stationName;
-			getID(detail);
-		}
 
-		FeatureDetails detail;
+	public static Integer getFeatureID( FeatureDetails.FeatureKey key) throws SQLException
+    {
+        if (!Features.getCache().hasID( key ))
+        {
+            Features.getCache().addElement( new FeatureDetails( key ) );
+        }
 
-		try
-		{
-	        detail = this.getDetails().get(this.getKeyIndex().get(lid));
-		}
-		catch (NullPointerException error)
-		{
-		    LOGGER.error("");
-			LOGGER.error("A variable position could not be retrieved with the parameters of:");
-			LOGGER.error("\tLID: " + lid);
-			LOGGER.error("\tStation Name: " + stationName);
-			LOGGER.error("\tVariableID: " + variableID);
-			LOGGER.error("");
-			LOGGER.error(Strings.getStackTrace(error));
-			LOGGER.error("");
-            throw error;
-		}
+        return Features.getCache().getID( key );
+    }
 
-		return detail.getVariablePositionID(variableID);
-	}
+    public static Integer getFeatureID( Integer comid, String lid, String gageID, String huc)
+            throws SQLException
+    {
+        return Features.getFeatureID( new FeatureDetails.FeatureKey( comid, lid, gageID, huc ));
+    }
+
+    public static Integer getFeatureIDByLocation(String lid, String featureName)
+            throws SQLException
+    {
+        LOGGER.trace("getFeatureID - args {} ; {}", lid, featureName);
+        FeatureDetails detail = new FeatureDetails();
+        detail.setLid( lid);
+        detail.featureName = featureName;
+        return getFeatureID(detail);
+    }
+
+    public static Integer getFeatureIDByGageID(String gageID)
+            throws SQLException
+    {
+        return getFeatureID( FeatureDetails.keyOfGageID( gageID ) );
+    }
+
+    public static Integer getFeatureID(Feature feature) throws SQLException
+    {
+        FeatureDetails details = new FeatureDetails(  );
+        details.setLid( feature.getLocationId() );
+
+        if (feature.getComid() != null)
+        {
+            details.setComid( feature.getComid().intValue() );
+        }
+
+        details.setGageID( feature.getGageId() );
+        details.setHuc( feature.getHuc() );
+        details.setFeatureName( feature.getName() );
+
+        return getFeatureID( details );
+    }
+
+    public static FeatureDetails getDetails(Feature feature) throws SQLException
+    {
+        Integer ID = Features.getFeatureID( feature );
+        return Features.getCache().get( ID );
+    }
+
+    public static FeatureDetails getDetails(Integer comid, String lid, String gageID, String huc)
+            throws SQLException
+    {
+        Integer ID = Features.getFeatureID( comid, lid, gageID, huc );
+        return Features.getCache().get( ID );
+    }
+
+    public static FeatureDetails getDetailsByLID(String lid) throws SQLException
+    {
+        return Features.getDetails( null, lid, null, null );
+    }
+
+    public static FeatureDetails getDetailsByGageID(String gageID) throws SQLException
+    {
+        return Features.getDetails( null, null, gageID, null );
+    }
+
+    public static Integer getVariablePositionID(Integer comid, String lid, String gageID, String huc, Integer variableID)
+            throws SQLException
+    {
+        return Features.getDetails( comid, lid, gageID, huc ).getVariablePositionID( variableID );
+    }
+
+    public static Integer getVariablePositionIDByLID(String lid, Integer variableID)
+            throws SQLException
+    {
+        return Features.getDetailsByLID( lid ).getVariablePositionID( variableID );
+    }
+
+    public static Integer getVariablePositionIDByGageID(String gageID, Integer variableID)
+            throws SQLException
+    {
+        return Features.getDetailsByGageID( gageID ).getVariablePositionID( variableID );
+    }
+
+    public static Integer getVariablePositionID(Feature feature, Integer variableID)
+            throws SQLException
+    {
+        return Features.getDetails( feature ).getVariablePositionID( variableID );
+    }
 	
 	@Override
 	protected int getMaxDetails() {

@@ -312,6 +312,7 @@
 
     <xs:simpleType name="timeAggregationFunction">
         <xs:restriction base="xs:string">
+            <xs:enumeration value="none" />
             <xs:enumeration value="sum" />
             <xs:enumeration value="avg" />
             <xs:enumeration value="max" />

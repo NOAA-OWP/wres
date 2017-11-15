@@ -323,6 +323,10 @@ public final class PIXMLReader extends XMLReader
         // object allocation method. The date time allocation method doubles
         // the processing time for small data sets and increases
         // super linearly and increases the memory footprint.
+        // "startDate" is required and it is always the date and time of the
+        // first event.  The initial lead time can then be calculated by determining
+        // the distance between the forecast date and the start date, then offsetting
+        // it by the time step
 		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
 		{
 			localName = reader.getAttributeLocalName(attributeIndex);
@@ -547,6 +551,7 @@ public final class PIXMLReader extends XMLReader
 
 				if (localName.equalsIgnoreCase("locationId"))
 				{
+				    // TODO: Set the LID on a FeatureDetails object; don't just store the LID
 					//	If we are at the tag for the location id, save it to the location metadata
 					this.currentLID = XML.getXMLText(reader);
 
@@ -554,7 +559,7 @@ public final class PIXMLReader extends XMLReader
 					{
 					    String shortendID = currentLID.substring(0, 5);
 
-					    if (Features.exists( shortendID ))
+					    if (Features.lidExists( shortendID ))
 						{
 							this.currentLID = shortendID;
 						}
@@ -562,6 +567,7 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if (localName.equalsIgnoreCase("stationName"))
 				{
+				    // TODO: Set the featureName on a FeatureDetails object; don't just store the stationName
 					//	If we are at the tag for the name of the station, save it to the location
 					currentStationName = XML.getXMLText(reader);
 				}
@@ -612,6 +618,15 @@ public final class PIXMLReader extends XMLReader
 					currentVariableID = Variables.getVariableID(currentVariableName,
 																currentMeasurementUnitID);
 				}
+				else if (localName.equalsIgnoreCase( "lat" ) || localName.equalsIgnoreCase( "y" ))
+                {
+                    // TODO: Store the value as the Latitude on a FeatureDetails Object
+                }
+                else if (localName.equalsIgnoreCase( "lon" ) || localName.equalsIgnoreCase( "x" ))
+                {
+                    // TODO: Store the value as the Longitude on a FeatureDetails Object
+                }
+
 			}
 			reader.next();
 		}
@@ -628,7 +643,8 @@ public final class PIXMLReader extends XMLReader
                                               String localName )
             throws XMLStreamException, InvalidInputDataException
     {
-        if ( localName.equalsIgnoreCase("ensembleId") )
+        if ( localName.equalsIgnoreCase("ensembleId") ||
+			 localName.equalsIgnoreCase( "ensembleMemberId" ) )
         {
             currentTimeSeriesID = null;
             currentEnsembleID = null;
@@ -723,10 +739,13 @@ public final class PIXMLReader extends XMLReader
 	 * @throws SQLException Thrown if the ID of the position could not be loaded from the cache
 	 */
 	private int getVariablePositionID() throws SQLException {
-		if (currentVariablePositionID == null) {
-			currentVariablePositionID = Features.getVariablePositionID(currentLID,
-                                                                       currentStationName,
-                                                                       getVariableID());
+		if (currentVariablePositionID == null)
+		{
+		    // TODO: This needs to rely on a FeatureDetails object, not an LID
+            //       If we store additional information, new values become easier
+            //       to use
+			currentVariablePositionID = Features.getVariablePositionIDByLID( currentLID,
+                                                                             getVariableID());
 		}
 		return currentVariablePositionID;
 	}

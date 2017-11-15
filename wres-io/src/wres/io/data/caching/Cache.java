@@ -2,6 +2,7 @@ package wres.io.data.caching;
 
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -18,12 +19,12 @@ import wres.util.Internal;
 abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
     static final String NEWLINE = System.lineSeparator();
 
-	private LinkedHashMap<U, Integer> keyIndex;
+	Map<U, Integer> keyIndex;
 	private ConcurrentMap<Integer, T> details;
 	private static final Object DETAIL_LOCK = new Object();
 	private static final Object KEY_LOCK = new Object();
 
-	final LinkedHashMap<U, Integer> getKeyIndex()
+	Map<U, Integer> getKeyIndex()
     {
         if (keyIndex == null)
         {

@@ -1,8 +1,13 @@
 package wres.io.reading.usgs;
 
 import java.io.IOException;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Stack;
 
 import org.slf4j.Logger;
 import javax.ws.rs.client.Client;
@@ -15,14 +20,23 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
+import wres.io.concurrency.StatementRunner;
+import wres.io.config.SystemSettings;
+import wres.io.data.caching.DataSources;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.USGSParameters;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.VariableDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.usgs.waterml.Response;
 import wres.io.reading.usgs.waterml.timeseries.TimeSeries;
+import wres.io.reading.usgs.waterml.timeseries.TimeSeriesValue;
+import wres.io.reading.usgs.waterml.timeseries.TimeSeriesValues;
+import wres.io.utilities.Database;
+import wres.util.Collections;
+import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.Time;
 
@@ -36,19 +50,116 @@ public class USGSReader extends BasicSource
     private static final String INSTANTANEOUS_VALUE = "iv";
     private static final String DAILY_VALUE = "dv";
 
+    private static final String EARLIEST_DATE = "epoch";
+    private static final String LATEST_DATE = "now";
+
+    private static final String UPSERT =
+            "WITH upsert AS" + System.lineSeparator() +
+            "(" + System.lineSeparator() +
+            "    UPDATE wres.Observation" + System.lineSeparator() +
+            "        SET observed_value = ?" + System.lineSeparator() +
+            "    WHERE variableposition_id = ?" + System.lineSeparator() +
+            "        AND observation_time = ?" + System.lineSeparator() +
+            "        AND source_id = ?" + System.lineSeparator() +
+            "    RETURNING *" + System.lineSeparator() +
+            ")" + System.lineSeparator() +
+            "INSERT INTO wres.Observation (" + System.lineSeparator() +
+            "    variableposition_id," + System.lineSeparator() +
+            "    observation_time," + System.lineSeparator() +
+            "    observed_value," + System.lineSeparator() +
+            "    source_id" + System.lineSeparator() +
+            ")" + System.lineSeparator() +
+            "SELECT ?, ?, ?, ?" + System.lineSeparator() +
+            "WHERE NOT EXISTS (" + System.lineSeparator() +
+            "    SELECT 1" + System.lineSeparator() +
+            "    FROM upsert U" + System.lineSeparator() +
+            "    WHERE U.variableposition_id = ?" + System.lineSeparator() +
+            "        AND U.observation_time = ?" + System.lineSeparator() +
+            "        AND U.source_id = ?" + System.lineSeparator() +
+            ");" + System.lineSeparator();
+
+    private class UpsertValue
+    {
+        public UpsertValue(String observationTime, Double value)
+        {
+            this.observationTime = observationTime;
+            this.value = value;
+        }
+
+        public void addToUpsert( PreparedStatement upsertStatement)
+                throws SQLException
+        {
+            String hash = Strings.getMD5Checksum(
+                    (USGSReader.USGS_URL + "/" + getValueType() ).getBytes()
+            );
+
+            Integer sourceID = DataSources.getSourceID(USGSReader.USGS_URL,
+                                                       null,
+                                                       null,
+                                                       hash);
+
+            upsertStatement.setDouble( 1, this.value );
+            upsertStatement.setInt( 2, getVariablePositionID() );
+            upsertStatement.setString( 3, this.observationTime );
+            upsertStatement.setInt( 4, sourceID );
+
+            upsertStatement.setInt( 5, getVariablePositionID() );
+            upsertStatement.setString( 6, this.observationTime );
+            upsertStatement.setDouble( 7, this.value );
+            upsertStatement.setInt( 8, sourceID );
+
+            upsertStatement.setInt( 9, getVariablePositionID() );
+            upsertStatement.setString( 10, this.observationTime );
+            upsertStatement.setInt( 11, sourceID );
+
+            upsertStatement.addBatch();
+        }
+
+        public Object[] getParameters() throws SQLException
+        {
+            String hash = Strings.getMD5Checksum(
+                    (USGSReader.USGS_URL + "/" + getValueType() ).getBytes()
+            );
+
+            Integer sourceID = DataSources.getSourceID(USGSReader.USGS_URL,
+                                                       null,
+                                                       null,
+                                                       hash);
+
+            return new Object[] {
+                    this.value,
+                    getVariablePositionID(),
+                    this.observationTime,
+                    sourceID,
+                    getVariablePositionID(),
+                    this.observationTime,
+                    this.value,
+                    sourceID,
+                    getVariablePositionID(),
+                    this.observationTime,
+                    sourceID
+            };
+        }
+
+        private final String observationTime;
+        private final Double value;
+    }
+
     @Override
     public void saveObservation() throws IOException
     {
         this.load();
 
-        if (this.response == null && this.response.getValue().getTimeSeries().length == 0)
+        if (this.response == null ||
+            Collections.exists(this.response.getValue().getTimeSeries(), (TimeSeries series) ->
+                    series.getValues() == null || series.getValues().length == 0 ))
         {
-            throw new IOException( "USGS data could not be loaded and ingested." );
+            throw new IOException( "No USGS data could be loaded with the given configuration." );
         }
 
         for (TimeSeries series : this.response.getValue().getTimeSeries())
         {
-
+            this.readSeries( series );
         }
     }
 
@@ -65,19 +176,8 @@ public class USGSReader extends BasicSource
                 throw new IOException( "An existing time aggregation must be defined to ingest USGS data." );
             }
 
-            switch (this.dataSourceConfig.getExistingTimeAggregation().getUnit())
-            {
-                case INSTANT:
-                    webTarget = webTarget.path( INSTANTANEOUS_VALUE );
-                    break;
-                case DAY:
-                    webTarget = webTarget.path( DAILY_VALUE);
-                    break;
-                default:
-                    throw new IOException( "An aggregation type of '" +
-                                           this.dataSourceConfig.getExistingTimeAggregation().getUnit() +
-                                           "' is not currently allowable for USGS data." );
-            }
+            // Determines if we use the daily REST service or the instantaenous REST service
+            webTarget = webTarget.path( this.getValueType() );
 
             // Not necessary, but aids with debugging
             webTarget = webTarget.queryParam( "indent", "on" );
@@ -92,7 +192,7 @@ public class USGSReader extends BasicSource
             // We use "all" because we could theoretically need historical data
             // from now defunct sites
             webTarget = webTarget.queryParam( "siteStatus", "all" );
-            webTarget = webTarget.queryParam( "parameterCd", this.getParameter().getParameterCode());
+            webTarget = webTarget.queryParam( "parameterCd", this.getParameterCode());
 
             requestURL = webTarget.getUri().toURL().toString();
 
@@ -120,6 +220,7 @@ public class USGSReader extends BasicSource
 
     // This is specifically for gages; we also need to support selecting by
     // latitude and longitude (WGS84; that is what is used by USGS)
+    // TODO: It may make sense to do a gage at a time in order to fire off shorter requests more often
     private String getGageID()
     {
         String ID = null;
@@ -146,12 +247,19 @@ public class USGSReader extends BasicSource
 
     private String getParameterCode() throws SQLException, IngestException
     {
+        if (this.parameterCode == null)
+        {
+            // If the user uses the explicit USGS code, use that and bypass everything else
+            if (this.getDataSourceConfig().getVariable().getValue().matches( "\\d\\d\\d\\d\\d" ))
+            {
+                this.parameterCode = this.getDataSourceConfig().getVariable().getValue();
+            }
+            else
+            {
+                this.parameterCode = this.getParameter().getParameterCode();
+            }
+        }
         return this.getParameter().getParameterCode();
-        // Currently just returning what was in the config. Eventually, this
-        // needs to be translated to the code without requiring the user to
-        // know it up front. i.e. user says "discharge", the desired unit is
-        // 'CFS', so it offers up "00060"
-        //return this.getDataSourceConfig().getVariable().getValue();
     }
 
     private USGSParameters.USGSParameter getParameter()
@@ -160,39 +268,68 @@ public class USGSReader extends BasicSource
         if (this.parameter == null)
         {
             String variableName = this.getDataSourceConfig().getVariable().getValue();
-            String unit = null;
 
-            if (this.getDataSourceConfig().getVariable().getUnit() != null)
+            // If someone enters a variable of the form "Discharge, cubic feet per second",
+            // we should go ahead and try to find the data by the description of the variable
+            if (variableName.matches( ".+,.+" ))
             {
-                unit = this.getDataSourceConfig().getVariable().getUnit();
+                this.parameter = USGSParameters.getParameterByDescription( variableName );
             }
             else
             {
-                VariableDetails
-                        currentDetails = Variables.getByName( variableName );
+                String unit;
+                String aggregation;
 
-                if (currentDetails != null && currentDetails.measurementunitId != null)
+                if ( this.getDataSourceConfig().getVariable().getUnit()
+                     != null )
                 {
-                    unit = MeasurementUnits.getNameByID( currentDetails.measurementunitId );
+                    unit = this.getDataSourceConfig().getVariable().getUnit();
                 }
-            }
+                else
+                {
+                    unit = this.getProjectDetails().getDesiredMeasurementUnit();
 
-            if (unit != null)
-            {
-                this.parameter =  USGSParameters.getParameter( variableName,
-                                                               unit,
-                                                               this.getDataSourceConfig()
-                                                                   .getExistingTimeAggregation()
-                                                                   .getFunction()
-                                                                   .value() );
-            }
-            else
-            {
-                String message = "Not enough information was supplied to find " +
-                                 "the requested USGS values. A variable name and " +
-                                 "measurement are both required to find the right" +
-                                 "data.";
-                throw new IngestException( message );
+                    VariableDetails
+                            currentDetails =
+                            Variables.getByName( variableName );
+
+                    if ( currentDetails != null
+                         && currentDetails.measurementunitId != null )
+                    {
+                        unit =
+                                MeasurementUnits.getNameByID( currentDetails.measurementunitId );
+                    }
+                }
+
+                if ( this.getDataSourceConfig()
+                         .getExistingTimeAggregation()
+                         .getUnit() == DurationUnit.INSTANT )
+                {
+                    aggregation = "instant";
+                }
+                else
+                {
+                    aggregation = this.getDataSourceConfig()
+                                      .getExistingTimeAggregation()
+                                      .getFunction()
+                                      .value();
+                }
+
+                if ( unit != null )
+                {
+                    this.parameter = USGSParameters.getParameter( variableName,
+                                                                  unit,
+                                                                  aggregation );
+                }
+                else
+                {
+                    String message =
+                            "Not enough information was supplied to find " +
+                            "the requested USGS values. A variable name and " +
+                            "measurement are both required to find the right" +
+                            "data.";
+                    throw new IngestException( message );
+                }
             }
         }
 
@@ -203,29 +340,33 @@ public class USGSReader extends BasicSource
     {
         if (this.startDate == null)
         {
-            Objects.requireNonNull( this.getProjectDetails().getEarliestDate(),
-                                    "A start date must be defined for USGS data." );
 
             if (this.dataSourceConfig.getExistingTimeAggregation() == null)
             {
                 throw new IOException( "An existing time aggregation must be defined to ingest USGS data." );
             }
 
+            if (this.getProjectDetails().getEarliestDate() == null)
+            {
+                this.startDate = EARLIEST_DATE;
+            }
+            else
+            {
+                this.startDate = this.getProjectDetails().getEarliestDate();
+            }
+
+            this.startDate = Time.normalize( this.startDate );
+
             switch (this.dataSourceConfig.getExistingTimeAggregation().getUnit())
             {
-                case INSTANT:
-                    this.startDate = Time.normalize( this.getProjectDetails().getEarliestDate());
-                    // The space inbetween the date and time needs to be split with a T
-                    this.startDate = this.startDate.replaceAll( " ", "T" );
-                    break;
                 case DAY:
                     // No time or time zone information is allowed
                     this.startDate = Time.convertStringDateTimeToDate( this.startDate );
                     break;
                 default:
-                    throw new IOException( "An aggregation type of '" +
-                                           this.dataSourceConfig.getExistingTimeAggregation().getUnit() +
-                                           "' is not currently allowable for USGS data." );
+                    // The space inbetween the date and time needs to be split with a T
+                    this.startDate = this.startDate.replaceAll( " ", "T" );
+                    break;
             }
         }
         return this.startDate;
@@ -235,37 +376,99 @@ public class USGSReader extends BasicSource
     {
         if (this.endDate == null)
         {
-            Objects.requireNonNull( this.getProjectDetails().getLatestDate(),
-                                    "An end date must be defined for USGS data." );
-
             if (this.dataSourceConfig.getExistingTimeAggregation() == null)
             {
                 throw new IOException( "An existing time aggregation must be defined to ingest USGS data." );
             }
 
+            if (this.getProjectDetails().getEarliestDate() == null)
+            {
+                this.endDate = LATEST_DATE;
+            }
+            else
+            {
+                this.endDate = this.getProjectDetails().getLatestDate();
+            }
+
+            this.endDate = Time.normalize( this.endDate );
+
             switch (this.dataSourceConfig.getExistingTimeAggregation().getUnit())
             {
-                case INSTANT:
-                    this.endDate = Time.normalize( this.getProjectDetails().getLatestDate());
-                    // The space inbetween the date and time needs to be split with a T
-                    this.endDate = this.endDate.replaceAll( " ", "T" );
-                    break;
                 case DAY:
                     // No time or time zone information is allowed
                     this.endDate = Time.convertStringDateTimeToDate( this.endDate );
                     break;
                 default:
-                    throw new IOException( "An aggregation type of '" +
-                                           this.dataSourceConfig.getExistingTimeAggregation().getUnit() +
-                                           "' is not currently allowable for USGS data." );
+                    // The space inbetween the date and time needs to be split with a T
+                    this.endDate = this.endDate.replaceAll( " ", "T" );
+                    break;
             }
         }
         return this.endDate;
     }
 
-    private void readSeries(TimeSeries series)
+    private String getValueType()
     {
-        return;
+        String valueType;
+
+        if (this.dataSourceConfig.getExistingTimeAggregation().getUnit() == DurationUnit.DAY)
+        {
+            valueType = DAILY_VALUE;
+        }
+        else
+        {
+            valueType = INSTANTANEOUS_VALUE;
+        }
+
+        return valueType;
+    }
+
+    private Integer getVariablePositionID()
+    {
+        if (this.variablePositionID == null)
+        {
+            // TODO: Implement feature/variableposition logic for non-lid info
+            //FeatureDetails details = new FeatureDetails();
+        }
+
+        return this.variablePositionID;
+    }
+
+    private void addValue(String observationTime, Double value)
+            throws SQLException
+    {
+        this.upsertValues.add(
+                new UpsertValue( Time.normalize( observationTime ),
+                                 value )
+        );
+
+        if ( this.upsertValues.size() >= SystemSettings.maximumDatabaseInsertStatements())
+        {
+            List<Object[]> values = new ArrayList<>(  );
+
+            while (!upsertValues.empty())
+            {
+                values.add( upsertValues.pop().getParameters() );
+            }
+
+            StatementRunner statement = new StatementRunner( USGSReader.UPSERT, values );
+            statement.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+            Database.storeIngestTask(Database.execute( statement ));
+
+            ProgressMonitor.increment();
+        }
+    }
+
+    // TODO: This needs to compensate for many locations in a file
+    private void readSeries(TimeSeries series) //throws SQLException
+    {
+        /*for (TimeSeriesValues valueSet : series.getValues())
+        {
+            for (TimeSeriesValue value : valueSet.getValue())
+            {
+                this.addValue( value.getDateTime(), value.getValue() );
+            }
+        }*/
     }
 
     // This should be transformed from the feature table if the lid or anything
@@ -280,15 +483,15 @@ public class USGSReader extends BasicSource
 
     private String startDate;
     private String endDate;
+    private Integer variablePositionID;
+
+    private Stack<UpsertValue> upsertValues = new Stack<>();
 
     // "00060" corresponds to a specific type of discharge. We need a list and
     // a way to transform user specifications about variable, time aggregation,
     // and measurement to find the correct code from the config
-    private String parameterCode = "00060";
+    private String parameterCode;
 
     private USGSParameters.USGSParameter parameter;
-
-    // This should actually be "active"
-    private String siteStatus = "all";
     private Response response;
 }
