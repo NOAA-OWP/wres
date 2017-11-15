@@ -763,6 +763,24 @@ public final class Database {
 		return (U)resultSet.getObject( fieldName);
 	}
 
+	public static boolean hasColumn(ResultSet resultSet, String columnName)
+	{
+		boolean columnExists = false;
+
+		// If the column exists, it will just return the index, otherwise it errors.
+		try
+		{
+			columnExists = resultSet.findColumn( columnName ) > -1;
+		}
+		catch (SQLException e)
+		{
+			LOGGER.trace( "The column '{}' was not found in the result set.",
+						  columnName );
+		}
+
+		return columnExists;
+	}
+
     /**
      * Populates the passed in collection with values of the indicated data type
      * originating from the column with the name of the passed in fieldLabel

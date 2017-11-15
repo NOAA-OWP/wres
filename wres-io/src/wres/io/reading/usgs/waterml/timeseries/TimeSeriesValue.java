@@ -2,14 +2,14 @@ package wres.io.reading.usgs.waterml.timeseries;
 
 public class TimeSeriesValue
 {
-    String value;
+    Double value;
 
-    public String getValue()
+    public Double getValue()
     {
         return value;
     }
 
-    public void setValue( String value )
+    public void setValue( Double value )
     {
         this.value = value;
     }

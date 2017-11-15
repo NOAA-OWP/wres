@@ -82,6 +82,11 @@ public class ReaderFactory {
 
 	public static SourceType getFileType (Format fileFormat)
     {
+    	if (fileFormat == null)
+		{
+			return SourceType.UNDEFINED;
+		}
+
         SourceType type;
 
         switch (fileFormat)

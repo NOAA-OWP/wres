@@ -43,6 +43,7 @@ import wres.datamodel.time.TimeWindow;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Projects;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Collections;
@@ -86,8 +87,7 @@ public class ConfigHelper
                 return feature.getLocationId() != null && !feature.getLocationId().isEmpty();
             } ) )
             {
-                Integer i = Features.getFeatureID( feature.getLocationId(),
-                                                   feature.getName() );
+                Integer i = Features.getFeatureID( feature );
                 result.add(Integer.toString(i));
             }
         }
@@ -197,30 +197,23 @@ public class ConfigHelper
     {
         StringBuilder clause = new StringBuilder();
 
-        if ( feature.getLocationId() != null )
+        try
         {
-            try
+            Integer variablePositionId = Features.getVariablePositionID( feature, variableId );
+
+            if (variablePositionId != null)
             {
-                // TODO: This only works when a) a location is specified and b) an lid is specified
-                // TODO: This needs to work with all other identifiers
-                Integer variablePositionId
-                        = Features.getVariablePositionID( feature.getLocationId(),
-                                                          feature.getName(),
-                                                          variableId );
-
-                if (variablePositionId != null)
+                if (Strings.hasValue( alias ))
                 {
-                    if (Strings.hasValue( alias ))
-                    {
-                        clause.append(alias).append(".");
-                    }
-
-                    clause.append("variableposition_id = ").append(variablePositionId);
+                    clause.append(alias).append(".");
                 }
+
+                clause.append("variableposition_id = ").append(variablePositionId);
             }
-            catch (Exception e) {
-                LOGGER.error(Strings.getStackTrace(e));
-            }
+        }
+        catch (Exception e)
+        {
+            LOGGER.error(Strings.getStackTrace(e));
         }
 
         return clause.toString();

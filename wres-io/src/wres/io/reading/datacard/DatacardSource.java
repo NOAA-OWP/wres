@@ -485,9 +485,8 @@ public class DatacardSource extends BasicSource
 	{
 		if(variablePositionID  == null)
 		{
-            variablePositionID = Features.getVariablePositionID( this.getCurrentLocationId(),
-                                                                 null,
-                                                                 getVariableID() );
+            variablePositionID = Features.getVariablePositionIDByLID( this.getCurrentLocationId(),
+																	  getVariableID() );
 		}
 		
 		return variablePositionID  ;

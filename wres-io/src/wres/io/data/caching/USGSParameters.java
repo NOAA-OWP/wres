@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import wres.io.utilities.Database;
 import wres.util.Strings;
@@ -76,7 +77,9 @@ public class USGSParameters
         @Override
         public int hashCode()
         {
-            return Objects.hash(name, measurementUnit, aggregation);
+            return Objects.hash(name.toLowerCase(),
+                                measurementUnit.toLowerCase(),
+                                aggregation.toLowerCase());
         }
 
         @Override
@@ -190,7 +193,7 @@ public class USGSParameters
             {
                 if (USGSParameters.parameterStore == null)
                 {
-                    USGSParameters.parameterStore = new ConcurrentHashMap<>(  );
+                    USGSParameters.parameterStore = new ConcurrentSkipListMap<>(  );
                     USGSParameters.init();
                 }
             }
@@ -256,6 +259,23 @@ public class USGSParameters
         }
 
         return parameter;
+    }
+
+    public static USGSParameter getParameterByDescription(String description)
+            throws SQLException
+    {
+        USGSParameter matchingParameter = null;
+
+        for (USGSParameter parameter : USGSParameters.getParameterStore().values())
+        {
+            if (parameter.getDescription().equalsIgnoreCase( description ))
+            {
+                matchingParameter = parameter;
+                break;
+            }
+        }
+
+        return matchingParameter;
     }
 
     public static String getCode(String parameterName, String measurementUnit, String aggregationMethod)
