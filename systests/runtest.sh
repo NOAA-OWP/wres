@@ -139,6 +139,10 @@ for scenarioName in $*; do
         diff --brief $fileName ../$benchDirName/$fileName | tee /dev/stderr
     done
 
+    #Compare files by calling the script.
+    cd $executeDir
+    ../determinePairsDiff.sh
+
     endsec=$(date +%s)
     echo "$echoPrefix Test completed in $(($endsec - $startsec)) seconds" | tee /dev/stderr
 
