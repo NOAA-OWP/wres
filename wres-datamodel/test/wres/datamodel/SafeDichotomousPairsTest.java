@@ -44,7 +44,7 @@ public final class SafeDichotomousPairsTest
         final Metadata meta = metaFac.getMetadata(metaFac.getDimension(),
                                                   metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
 
-        final DichotomousPairs p = (DichotomousPairs)b.setData(values).setMetadata(meta).build();
+        final DichotomousPairs p = (DichotomousPairs)b.addData(values).setMetadata(meta).build();
 
         //Check category count
         assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);
@@ -55,7 +55,7 @@ public final class SafeDichotomousPairsTest
         {
             values.clear();
             values.add(d.vectorOf(new boolean[]{true, false, false, true, false, false}));
-            b.setData(values).build();
+            b.addData(values).build();
             fail("Expected a checked exception on invalid inputs.");
         }
         catch(final Exception e)
@@ -67,7 +67,7 @@ public final class SafeDichotomousPairsTest
         {
             values.clear();
             values.add(d.vectorOf(new boolean[]{true, false, true, false}));
-            b.setData(values).build();
+            b.addData(values).build();
         }
         catch(final Exception e)
         {

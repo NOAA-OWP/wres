@@ -41,11 +41,11 @@ public final class SafeEnsemblePairsTest
             values.add(metIn.pairOf(1, new double[]{1,2,3,4}));
         }
         final Metadata meta = metaFac.getMetadata();
-        EnsemblePairs p = (EnsemblePairs)b.setData(values).setMetadata(meta).build();
+        EnsemblePairs p = (EnsemblePairs)b.addData(values).setMetadata(meta).build();
 
         //Check dataset count
         assertTrue("Expected a dataset without a baseline [false," + p.hasBaseline() + "].", !p.hasBaseline());
-        p = (EnsemblePairs)b.setDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
+        p = (EnsemblePairs)b.addDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
         //Check that a returned dataset contains the expected number of pairs
         assertTrue("Expected a main dataset with ten pairs [10," + p.getData().size() + "].",
                    p.getData().size() == 10);
@@ -63,7 +63,7 @@ public final class SafeEnsemblePairsTest
             values.clear();
             values.add(null);
             final EnsemblePairsBuilder c = new EnsemblePairsBuilder();
-            c.setData(values).setMetadata(meta).build();
+            c.addData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: null pair.");
         }
         catch(final Exception e)
@@ -73,7 +73,7 @@ public final class SafeEnsemblePairsTest
         try
         {
             final EnsemblePairsBuilder c = new EnsemblePairsBuilder();
-            c.setData(null).setMetadata(meta).build();
+            c.addData(null).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: null pair list.");
         }
         catch(final Exception e)

@@ -42,7 +42,7 @@ public interface PairedInput<S> extends MetricInput<List<S>>, Iterable<S>
     }
 
     /**
-     * Returns the baseline data as a {@link MetricInput}.
+     * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined.
      * 
      * @return the baseline
      */

@@ -1,6 +1,5 @@
 package wres.datamodel;
 
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.metadata.Metadata;
 
@@ -33,13 +32,13 @@ abstract class MetricInputBuilder<S>
     Metadata baselineMeta;         
     
     /**
-     * Sets the input.
+     * Adds input data, appending to any existing data, as necessary.
      * 
      * @param mainInput the input
      * @return the builder
      */
 
-    abstract MetricInputBuilder<S> setData(S mainInput);
+    abstract MetricInputBuilder<S> addData(S mainInput);
 
     /**
      * Sets the metadata associated with the input.
@@ -55,13 +54,14 @@ abstract class MetricInputBuilder<S>
     }
     
     /**
-     * Sets the input for a baseline, which is used to calculate skill.
+     * Adds input data for a baseline, which is used to calculate skill, appending to any existing baseline data, as
+     * necessary.
      * 
      * @param baselineInput the input for the baseline
      * @return the builder
      */
 
-    abstract MetricInputBuilder<S> setDataForBaseline(S baselineInput);    
+    abstract MetricInputBuilder<S> addDataForBaseline(S baselineInput);    
     
     /**
      * Sets the metadata associated with the baseline input.
