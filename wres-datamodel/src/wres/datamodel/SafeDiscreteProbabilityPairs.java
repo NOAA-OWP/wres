@@ -16,6 +16,10 @@ class SafeDiscreteProbabilityPairs extends SafeSingleValuedPairs implements Disc
     @Override
     public DiscreteProbabilityPairs getBaselineData()
     {
+        if ( !hasBaseline() )
+        {
+            return null;
+        }
         final DataFactory metIn = DefaultDataFactory.getInstance();
         return metIn.ofDiscreteProbabilityPairs(getDataForBaseline(),getMetadataForBaseline());
     }     

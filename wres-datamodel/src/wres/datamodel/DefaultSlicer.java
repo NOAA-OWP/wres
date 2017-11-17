@@ -413,7 +413,7 @@ class DefaultSlicer implements Slicer
             return bd.doubleValue();
         };
     }
-
+    
     /**
      * Hidden constructor.
      */

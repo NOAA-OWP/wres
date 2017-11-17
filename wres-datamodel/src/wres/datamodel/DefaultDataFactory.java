@@ -90,9 +90,9 @@ public class DefaultDataFactory implements DataFactory
                                                 VectorOfDoubles climatology )
     {
         final SafeDichotomousPairs.DichotomousPairsBuilder b = new SafeDichotomousPairs.DichotomousPairsBuilder();
-        return (DichotomousPairs) b.setData( pairs )
+        return (DichotomousPairs) b.addData( pairs )
                                    .setMetadata( mainMeta )
-                                   .setDataForBaseline( basePairs )
+                                   .addDataForBaseline( basePairs )
                                    .setMetadataForBaseline( baselineMeta )
                                    .setClimatology( climatology )
                                    .build();
@@ -121,9 +121,9 @@ public class DefaultDataFactory implements DataFactory
     {
         final SafeMulticategoryPairs.MulticategoryPairsBuilder b =
                 new SafeMulticategoryPairs.MulticategoryPairsBuilder();
-        return (MulticategoryPairs) b.setData( pairs )
+        return (MulticategoryPairs) b.addData( pairs )
                                      .setMetadata( mainMeta )
-                                     .setDataForBaseline( basePairs )
+                                     .addDataForBaseline( basePairs )
                                      .setMetadataForBaseline( baselineMeta )
                                      .setClimatology( climatology )
                                      .build();
@@ -138,9 +138,9 @@ public class DefaultDataFactory implements DataFactory
     {
         final SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
                 new SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
-        return (DiscreteProbabilityPairs) b.setData( pairs )
+        return (DiscreteProbabilityPairs) b.addData( pairs )
                                            .setMetadata( mainMeta )
-                                           .setDataForBaseline( basePairs )
+                                           .addDataForBaseline( basePairs )
                                            .setMetadataForBaseline( baselineMeta )
                                            .setClimatology( climatology )
                                            .build();
@@ -155,8 +155,8 @@ public class DefaultDataFactory implements DataFactory
     {
         final SafeSingleValuedPairs.SingleValuedPairsBuilder b = new SafeSingleValuedPairs.SingleValuedPairsBuilder();
         return (SingleValuedPairs) b.setMetadata( mainMeta )
-                                    .setData( pairs )
-                                    .setDataForBaseline( basePairs )
+                                    .addData( pairs )
+                                    .addDataForBaseline( basePairs )
                                     .setMetadataForBaseline( baselineMeta )
                                     .setClimatology( climatology )
                                     .build();
@@ -171,8 +171,8 @@ public class DefaultDataFactory implements DataFactory
     {
         final SafeEnsemblePairs.EnsemblePairsBuilder b = new SafeEnsemblePairs.EnsemblePairsBuilder();
         return (EnsemblePairs) b.setMetadata( mainMeta )
-                                .setData( pairs )
-                                .setDataForBaseline( basePairs )
+                                .addData( pairs )
+                                .addDataForBaseline( basePairs )
                                 .setMetadataForBaseline( baselineMeta )
                                 .setClimatology( climatology )
                                 .build();

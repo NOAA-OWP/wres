@@ -65,6 +65,10 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     @Override
     public SingleValuedPairs getBaselineData()
     {
+        if ( !hasBaseline() )
+        {
+            return null;
+        }
         return DefaultDataFactory.getInstance().ofSingleValuedPairs( baselineInput, baselineMeta );
     }
 
@@ -91,12 +95,12 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     {
         return climatology;
     }
-    
+
     @Override
     public Iterator<PairOfDoubles> iterator()
     {
         return mainInput.iterator();
-    }    
+    }
 
     /**
      * A {@link MetricInputBuilder} to build the metric input.
@@ -108,24 +112,38 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         /**
          * Pairs.
          */
-        private List<PairOfDoubles> mainInput;
+        List<PairOfDoubles> mainInput;
 
         /**
          * Pairs for baseline.
          */
-        private List<PairOfDoubles> baselineInput;
+        List<PairOfDoubles> baselineInput;
 
         @Override
-        public SingleValuedPairsBuilder setData( final List<PairOfDoubles> mainInput )
+        public SingleValuedPairsBuilder addData( final List<PairOfDoubles> mainInput )
         {
-            this.mainInput = mainInput;
+            if ( Objects.nonNull( this.mainInput ) && Objects.nonNull( mainInput ) )
+            {
+                this.mainInput.addAll( mainInput );
+            }
+            else
+            {
+                this.mainInput = mainInput;
+            }
             return this;
         }
 
         @Override
-        public SingleValuedPairsBuilder setDataForBaseline( final List<PairOfDoubles> baselineInput )
+        public SingleValuedPairsBuilder addDataForBaseline( final List<PairOfDoubles> baselineInput )
         {
-            this.baselineInput = baselineInput;
+            if ( Objects.nonNull( this.baselineInput ) && Objects.nonNull( baselineInput ) )
+            {
+                this.baselineInput.addAll( baselineInput );
+            }
+            else
+            {
+                this.baselineInput = baselineInput;
+            }
             return this;
         }
 
@@ -190,9 +208,9 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         if ( Objects.nonNull( climatology ) && climatology.size() == 0 )
         {
             throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
-                                                + "pairs." );
+                                            + "pairs." );
         }
-        
+
     }
 
 }

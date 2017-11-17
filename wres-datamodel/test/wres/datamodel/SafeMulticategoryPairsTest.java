@@ -42,7 +42,7 @@ public final class SafeMulticategoryPairsTest
         }
         final Metadata meta = metaFac.getMetadata(metaFac.getDimension(),
                                                   metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
-        MulticategoryPairs p = (MulticategoryPairs)b.setData(values).setMetadata(meta).build();
+        MulticategoryPairs p = (MulticategoryPairs)b.addData(values).setMetadata(meta).build();
 
         //Check category count
         assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);
@@ -52,12 +52,12 @@ public final class SafeMulticategoryPairsTest
         final MulticategoryPairsBuilder bn = new MulticategoryPairsBuilder();
         values.clear();
         values.add(metIn.vectorOf(new boolean[]{true, false, true, false}));
-        final MulticategoryPairs q = (MulticategoryPairs)bn.setData(values).setMetadata(meta).build();
+        final MulticategoryPairs q = (MulticategoryPairs)bn.addData(values).setMetadata(meta).build();
         assertTrue("Unexpected category count on inputs [2," + q.getCategoryCount() + "].", q.getCategoryCount() == 2);
         //Check for no baseline
         assertTrue("Expected a dataset without a baseline [false," + p.hasBaseline() + "].", !p.hasBaseline());
         //Check for baseline
-        p = (MulticategoryPairs)b.setDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
+        p = (MulticategoryPairs)b.addDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
         assertTrue("Expected a dataset with a baseline [true," + p.hasBaseline() + "].", p.hasBaseline());
         //Check the metadata
         final Metadata t = metaFac.getMetadata();
@@ -72,7 +72,7 @@ public final class SafeMulticategoryPairsTest
             values.clear();
             values.add(metIn.vectorOf(new boolean[]{true, false, false, true, false, true}));
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            c.setData(values).setMetadata(meta).build();
+            c.addData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: duplicate predicted outcome.");
         }
         catch(final Exception e)
@@ -84,7 +84,7 @@ public final class SafeMulticategoryPairsTest
             values.clear();
             values.add(metIn.vectorOf(new boolean[]{true, true, false, true, false, false}));
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            c.setData(values).setMetadata(meta).build();
+            c.addData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: duplicate observed outcome.");
         }
         catch(final Exception e)
@@ -96,7 +96,7 @@ public final class SafeMulticategoryPairsTest
             values.clear();
             values.add(null);
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            c.setData(values).setMetadata(meta).build();
+            c.addData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: null pair.");
         }
         catch(final Exception e)
@@ -109,7 +109,7 @@ public final class SafeMulticategoryPairsTest
             values.clear();
             values.add(metIn.vectorOf(new boolean[]{true, false, false, true, false, false}));
             values.add(metIn.vectorOf(new boolean[]{true, false, false, false, true, false, false, false}));
-            c.setData(values).setMetadata(meta).build();
+            c.addData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: one or more pairs with a varying number of "
                 + "categories.");
         }
@@ -122,7 +122,7 @@ public final class SafeMulticategoryPairsTest
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
             values.clear();
             values.add(metIn.vectorOf(new boolean[]{true, false, false, false, true, false, false}));
-            c.setData(values).setMetadata(meta).build();
+            c.addData(values).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: observations and predictions have "
                 + "different numbers of categories.");
         }
@@ -134,7 +134,7 @@ public final class SafeMulticategoryPairsTest
         try
         {
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
-            c.setData(null).setMetadata(meta).build();
+            c.addData(null).setMetadata(meta).build();
             fail("Expected a checked exception on invalid inputs: null pair list.");
         }
         catch(final Exception e)
@@ -147,7 +147,7 @@ public final class SafeMulticategoryPairsTest
             values.clear();
             final MulticategoryPairsBuilder c = new MulticategoryPairsBuilder();
             values.add(metIn.vectorOf(new boolean[]{true, false, true, false}));
-            c.setData(values).setMetadata(meta).build();
+            c.addData(values).setMetadata(meta).build();
         }
         catch(final Exception e)
         {

@@ -67,6 +67,10 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     @Override
     public MulticategoryPairs getBaselineData()
     {
+        if ( !hasBaseline() )
+        {
+            return null;
+        }
         return DefaultDataFactory.getInstance().ofMulticategoryPairs(baselineInput, baselineMeta);
     }
 
@@ -130,14 +134,14 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         private List<VectorOfBooleans> baselineInput; 
         
         @Override
-        public MulticategoryPairsBuilder setData(final List<VectorOfBooleans> mainInput)
+        public MulticategoryPairsBuilder addData(final List<VectorOfBooleans> mainInput)
         {
             this.mainInput = mainInput;
             return this;
         }
 
         @Override
-        public MulticategoryPairsBuilder setDataForBaseline(final List<VectorOfBooleans> baselineInput)
+        public MulticategoryPairsBuilder addDataForBaseline(final List<VectorOfBooleans> baselineInput)
         {
             this.baselineInput = baselineInput;
             return this;

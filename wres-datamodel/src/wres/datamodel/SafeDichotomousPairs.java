@@ -23,6 +23,10 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
     @Override
     public DichotomousPairs getBaselineData()
     {
+        if ( !hasBaseline() )
+        {
+            return null;
+        }
         final DataFactory metIn = DefaultDataFactory.getInstance();
         return metIn.ofDichotomousPairs( getDataForBaseline(), getMetadataForBaseline() );
     }
@@ -61,7 +65,7 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
                 List<VectorOfBooleans> mainIn = new ArrayList<>();
                 mainInput.forEach( pair -> mainIn.add( d.vectorOf( new boolean[] { pair.getItemOne(),
                                                                                    pair.getItemTwo() } ) ) );
-                setData( mainIn );
+                addData( mainIn );
             }
             return this;
         }
@@ -81,7 +85,7 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
                 List<VectorOfBooleans> baseIn = new ArrayList<>();
                 baselineInput.forEach( pair -> baseIn.add( d.vectorOf( new boolean[] { pair.getItemOne(),
                                                                                        pair.getItemTwo() } ) ) );
-                setDataForBaseline( baseIn );
+                addDataForBaseline( baseIn );
             }
             return this;
         }

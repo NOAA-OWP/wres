@@ -15,7 +15,7 @@ public interface SingleValuedPairs extends PairedInput<PairOfDoubles>
 {
     
     /**
-     * Returns the baseline data as a {@link MetricInput}. 
+     * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined. 
      * 
      * @return the baseline
      */

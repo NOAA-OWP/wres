@@ -64,6 +64,10 @@ class SafeEnsemblePairs implements EnsemblePairs
     @Override
     public EnsemblePairs getBaselineData()
     {
+        if ( !hasBaseline() )
+        {
+            return null;
+        }
         return DefaultDataFactory.getInstance().ofEnsemblePairs( baselineInput, baselineMeta );
     }
 
@@ -90,12 +94,12 @@ class SafeEnsemblePairs implements EnsemblePairs
     {
         return climatology;
     }
-    
+
     @Override
     public Iterator<PairOfDoubleAndVectorOfDoubles> iterator()
     {
         return mainInput.iterator();
-    }      
+    }
 
     /**
      * A {@link MetricInputBuilder} to build the metric input.
@@ -115,16 +119,30 @@ class SafeEnsemblePairs implements EnsemblePairs
         private List<PairOfDoubleAndVectorOfDoubles> baselineInput;
 
         @Override
-        public EnsemblePairsBuilder setData( final List<PairOfDoubleAndVectorOfDoubles> mainInput )
+        public EnsemblePairsBuilder addData( final List<PairOfDoubleAndVectorOfDoubles> mainInput )
         {
-            this.mainInput = mainInput;
+            if ( Objects.nonNull( this.mainInput ) && Objects.nonNull( mainInput ) )
+            {
+                this.mainInput.addAll( mainInput );
+            }
+            else
+            {
+                this.mainInput = mainInput;
+            }
             return this;
         }
 
         @Override
-        public EnsemblePairsBuilder setDataForBaseline( final List<PairOfDoubleAndVectorOfDoubles> baselineInput )
+        public EnsemblePairsBuilder addDataForBaseline( final List<PairOfDoubleAndVectorOfDoubles> baselineInput )
         {
-            this.baselineInput = baselineInput;
+            if ( Objects.nonNull( this.baselineInput ) && Objects.nonNull( baselineInput ) )
+            {
+                this.baselineInput.addAll( baselineInput );
+            }
+            else
+            {
+                this.baselineInput = baselineInput;
+            }
             return this;
         }
 
@@ -192,7 +210,7 @@ class SafeEnsemblePairs implements EnsemblePairs
         if ( Objects.nonNull( climatology ) && climatology.size() == 0 )
         {
             throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
-                                                + "pairs." );
+                                            + "pairs." );
         }
         //Check contents
         checkEachPair( mainInput, baselineInput );

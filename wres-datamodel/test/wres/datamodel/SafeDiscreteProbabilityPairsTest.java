@@ -38,7 +38,7 @@ public final class SafeDiscreteProbabilityPairsTest
         final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
         final Metadata meta = metaFac.getMetadata(metaFac.getDimension(),
                                                   metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
-        b.setData(values).setMetadata(meta).build();
+        b.addData(values).setMetadata(meta).build();
     }
 
 }
