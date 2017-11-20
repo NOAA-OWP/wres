@@ -11,6 +11,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 
@@ -88,7 +89,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             return null;
         }
         RegularTimeSeriesOfSingleValuedPairsBuilder builder = new RegularTimeSeriesOfSingleValuedPairsBuilder();
-        builder.setTimeStep( timeStep );
+        builder.setTimeStep( timeStep ).setMetadata( getMetadataForBaseline() );
         List<PairOfDoubles> baselineData = getDataForBaseline();
         int start = 0;
         for ( Instant next : basisTimesBaseline )
@@ -124,14 +125,13 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         //Iterate through the lead times and append to the builder
         //Throw an exception if attempting to construct an irregular time-series
         RegularTimeSeriesOfSingleValuedPairsBuilder builder = new RegularTimeSeriesOfSingleValuedPairsBuilder();
-        builder.setTimeStep( timeStep );
         Integer step = null;
         int sinceLast = 0;
         for ( TimeSeries<PairOfDoubles> a : leadTimeIterator() )
         {
             sinceLast++;
             RegularTimeSeriesOfSingleValuedPairs next = (RegularTimeSeriesOfSingleValuedPairs) a;
-            if ( duration.test( next.getLeadTimes().first() ) )
+            if ( duration.test( a.getLeadTimes().first() ) )
             {
                 if ( Objects.isNull( step ) )
                 {
@@ -146,12 +146,15 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                 sinceLast = 0;
             }
         }
-
+        
         //Nothing to build
         if ( Objects.isNull( step ) )
         {
             return null;
         }
+        //Set regular time-step of filtered data
+        builder.setTimeStep( timeStep.multipliedBy( step ) );
+
         //Build if something to build
         return builder.build();
     }
@@ -171,7 +174,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             }
         }
         //Build if something to build
-        if ( !builder.mainInput.isEmpty() )
+        if ( Objects.nonNull( builder.mainInput ) )
         {
             return builder.build();
         }
@@ -221,6 +224,27 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             return ( basisTimes ).iterator().next();
         }
         return new TreeSet<>( basisTimes ).first();
+    }
+
+    @Override
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
+        if ( basisTimes.size() > 1 )
+        {
+            for ( TimeSeries<PairOfDoubles> next : basisTimeIterator() )
+            {
+                joiner.add( next.toString() );
+            }
+        }
+        else
+        {
+            for ( Pair<Instant, PairOfDoubles> next : timeIterator() )
+            {
+                joiner.add( next.toString() );
+            }
+        }
+        return joiner.toString();
     }
 
     /**
@@ -277,7 +301,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             if ( basisTimes.contains( basisTime ) )
             {
                 int index = basisTimes.indexOf( basisTime );
-                mainInput.addAll( index, values );
+                int insertAt = timeStepCount.get( index ) * ( index + 1 );
+                mainInput.addAll( insertAt, values );
                 timeStepCount.set( index, timeStepCount.get( index ) + values.size() );
             }
             else
@@ -306,7 +331,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             if ( basisTimesBaseline.contains( basisTime ) )
             {
                 int index = basisTimesBaseline.indexOf( basisTime );
-                baselineInput.addAll( index, values );
+                int insertAt = timeStepCountBaseline.get( index ) * ( index + 1 );
+                baselineInput.addAll( insertAt, values );
                 timeStepCountBaseline.set( index, timeStepCountBaseline.get( index ) + values.size() );
             }
             else
@@ -337,14 +363,17 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                                                 + timeStep
                                                 + "'." );
             }
+            setTimeStep( timeSeries.getRegularDuration() );
             //Add the main data
             for ( TimeSeries<PairOfDoubles> a : timeSeries.basisTimeIterator() )
             {
                 RegularTimeSeriesOfSingleValuedPairs next = (RegularTimeSeriesOfSingleValuedPairs) a;
                 addData( next.getEarliestBasisTime(), next.getData() );
+                setMetadata( next.getMetadata() );
                 if ( next.hasBaseline() )
                 {
                     addDataForBaseline( next.getEarliestBasisTime(), next.getDataForBaseline() );
+                    setMetadataForBaseline( next.getMetadataForBaseline() );
                 }
             }
             return this;
@@ -389,15 +418,14 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         //Validate additional parameters
         if ( Objects.isNull( this.timeStep ) )
         {
-            throw new MetricInputException( "Specify a non-null baseline input and associated metadata or leave both "
-                                            + "null." );
+            throw new MetricInputException( "Specify a non-null timestep for the time-series." );
         }
         //Check the number of timesteps
         Set<Integer> times = new HashSet<>( b.timeStepCount );
         if ( times.size() > 1 )
         {
             throw new MetricInputException( "Cannot construct a regular time-series whose atomic time-series contain "
-                                            + "a variable number of times." );
+                                            + "a variable number of times: " + times.toString() + "." );
         }
         Set<Integer> baselineTimes = new HashSet<>( b.timeStepCountBaseline );
         if ( baselineTimes.size() > 1 )
@@ -405,7 +433,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             throw new MetricInputException( "Cannot construct a regular time-series whose atomic baseline time-series "
                                             + "contain a variable number of times." );
         }
-        if ( b.timeStepCountBaseline.get( 0 ) != this.timeStepCount )
+        if ( hasBaseline() && b.timeStepCountBaseline.get( 0 ) != this.timeStepCount )
         {
             throw new MetricInputException( "The number of times in the baseline does not match the number of times in "
                                             + "the main time-series ["
@@ -460,11 +488,13 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         int start = returned * timeStepCount;
                         builder.setTimeStep( timeStep );
                         builder.addData( nextTime, data.subList( start, start + timeStepCount ) );
+                        builder.setMetadata( getMetadata() );
                         if ( hasBaseline() && basisTimesBaseline.contains( nextTime ) )
                         {
                             int startBase = basisTimesBaseline.indexOf( nextTime ) * timeStepCount;
-                            builder.addData( nextTime,
-                                             baselineData.subList( startBase, startBase + timeStepCount ) );
+                            builder.addDataForBaseline( nextTime,
+                                                        baselineData.subList( startBase, startBase + timeStepCount ) );
+                            builder.setMetadataForBaseline( getMetadataForBaseline() );
                         }
                         returned++;
                         return builder.build();
@@ -516,7 +546,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         }
                         RegularTimeSeriesOfSingleValuedPairsBuilder builder =
                                 new RegularTimeSeriesOfSingleValuedPairsBuilder();
-                        builder.setTimeStep( timeStep );
+                        builder.setTimeStep( timeStep.multipliedBy( returned + 1 ) );
+                        builder.setMetadata( getMetadata() );
                         int start = 0;
                         for ( Instant next : basisTimes )
                         {
@@ -536,6 +567,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                                 builder.addDataForBaseline( next, subset );
                                 start += timeStepCount;
                             }
+                            builder.setMetadataForBaseline( getMetadataForBaseline() );
                         }
                         returned++;
                         return builder.build();
@@ -586,19 +618,26 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         }
                         Pair<Instant, PairOfDoubles> returnMe = new Pair<Instant, PairOfDoubles>()
                         {
+                            int returnedSoFar = returned; //Current step, before incremented
 
                             @Override
                             public Instant getItemOne()
                             {
-                                int basisIndex = (int) Math.floor( ( (double) returned ) / timeStepCount );
-                                int residual = returned - ( basisIndex * timeStepCount );
-                                return basisTimes.get( basisIndex ).plus( timeStep.multipliedBy( residual ) );
+                                int basisIndex = (int) Math.floor( ( (double) returnedSoFar ) / timeStepCount );
+                                int residual = returnedSoFar - ( basisIndex * timeStepCount );
+                                return basisTimes.get( basisIndex ).plus( timeStep.multipliedBy( residual + 1 ) );
                             }
 
                             @Override
                             public PairOfDoubles getItemTwo()
                             {
-                                return data.get( returned );
+                                return data.get( returnedSoFar );
+                            }
+
+                            @Override
+                            public String toString()
+                            {
+                                return getItemOne() + "," + getItemTwo().getItemOne() + "," + getItemTwo().getItemTwo();
                             }
 
                         };
