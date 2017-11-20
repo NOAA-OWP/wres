@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -126,9 +127,9 @@ class SafeSingleValuedPairs implements SingleValuedPairs
             {
                 this.mainInput.addAll( mainInput );
             }
-            else
+            else if ( Objects.nonNull( mainInput ) )
             {
-                this.mainInput = mainInput;
+                this.mainInput = new ArrayList<>( mainInput );
             }
             return this;
         }
@@ -140,9 +141,9 @@ class SafeSingleValuedPairs implements SingleValuedPairs
             {
                 this.baselineInput.addAll( baselineInput );
             }
-            else
+            else if ( Objects.nonNull( baselineInput ) )
             {
-                this.baselineInput = baselineInput;
+                this.baselineInput = new ArrayList<>( baselineInput );
             }
             return this;
         }
