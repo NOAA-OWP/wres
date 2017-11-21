@@ -79,4 +79,11 @@ class SafePairOfDoubles implements PairOfDoubles
     {
         return Objects.hash(itemOne, itemTwo);
     }
+    
+    @Override
+    public String toString()
+    {
+        return itemOne+","+itemTwo;
+    }
+    
 }

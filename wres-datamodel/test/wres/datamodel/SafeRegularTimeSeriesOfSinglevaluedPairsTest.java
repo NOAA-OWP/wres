@@ -14,7 +14,7 @@ import java.util.StringJoiner;
 
 import org.junit.Test;
 
-import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.RegularTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.Pair;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -45,7 +45,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         List<PairOfDoubles> first = new ArrayList<>();
         List<PairOfDoubles> second = new ArrayList<>();
         List<PairOfDoubles> third = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -93,7 +93,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         List<PairOfDoubles> first = new ArrayList<>();
         List<PairOfDoubles> second = new ArrayList<>();
         List<PairOfDoubles> third = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -146,7 +146,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
     {
         //Build a time-series with one basis time
         List<PairOfDoubles> first = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -169,7 +169,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
     {
         //Build a time-series with one basis time
         List<PairOfDoubles> first = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -195,7 +195,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
     {
         //Build a time-series with one basis time
         List<PairOfDoubles> values = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -221,7 +221,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
     {
         //Build a time-series with two basis times
         List<PairOfDoubles> values = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -247,7 +247,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
     {
         //Build a time-series with two basis times
         List<PairOfDoubles> values = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -275,7 +275,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
     {
         //Build a time-series with two basis times
         List<PairOfDoubles> values = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -306,7 +306,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
     {
         //Build a time-series with two basis times
         List<PairOfDoubles> values = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -354,7 +354,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         List<PairOfDoubles> second = new ArrayList<>();
         List<PairOfDoubles> third = new ArrayList<>();
 
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -371,7 +371,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         //Build the first ts
         RegularTimeSeriesOfSingleValuedPairs ts = b.build();
         //Add the first time-series and then append a second and third
-        RegularTimeSeriesOfSingleValuedPairsBuilder c = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder c = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         c.addTimeSeries( ts );
         second.add( metIn.pairOf( 4, 4 ) );
         second.add( metIn.pairOf( 5, 5 ) );
@@ -409,7 +409,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         List<PairOfDoubles> first = new ArrayList<>();
         List<PairOfDoubles> second = new ArrayList<>();
         List<PairOfDoubles> third = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -459,7 +459,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         List<PairOfDoubles> first = new ArrayList<>();
         List<PairOfDoubles> second = new ArrayList<>();
         List<PairOfDoubles> third = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -508,8 +508,8 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         List<PairOfDoubles> first = new ArrayList<>();
         List<PairOfDoubles> second = new ArrayList<>();
         List<PairOfDoubles> third = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
-        RegularTimeSeriesOfSingleValuedPairsBuilder c = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder c = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -575,7 +575,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         //Check for a baseline that is inconsistent with the main forecast
         try
         {
-            new RegularTimeSeriesOfSingleValuedPairsBuilder().addData( firstBasisTime, first )
+            new SafeRegularTimeSeriesOfSingleValuedPairsBuilder().addData( firstBasisTime, first )
                                                              .addDataForBaseline( thirdBasisTime, third )
                                                              .setTimeStep( Duration.ofDays( 1 ) )
                                                              .setMetadata( meta )
@@ -588,7 +588,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         }
 
         //Check for exceptions on the iterators
-        RegularTimeSeriesOfSingleValuedPairsBuilder d = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder d = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         RegularTimeSeriesOfSingleValuedPairs ts =
                 (RegularTimeSeriesOfSingleValuedPairs) d.addData( firstBasisTime, first )
                                                         .setTimeStep( Duration.ofDays( 1 ) )
@@ -675,7 +675,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         try
         {
             List<PairOfDoubles> values = new ArrayList<>();
-            RegularTimeSeriesOfSingleValuedPairsBuilder e = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+            SafeRegularTimeSeriesOfSingleValuedPairsBuilder e = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
             Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
             values.add( metIn.pairOf( 1, 1 ) );
             values.add( metIn.pairOf( 2, 2 ) );
@@ -700,7 +700,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
     public void test13ToString()
     {
         List<PairOfDoubles> values = new ArrayList<>();
-        RegularTimeSeriesOfSingleValuedPairsBuilder b = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );

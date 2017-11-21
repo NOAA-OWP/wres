@@ -98,10 +98,10 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     }
 
     /**
-     * A {@link MetricInputBuilder} to build the metric input.
+     * A {@link DefaultPairedInputBuilder} to build the metric input.
      */
 
-    static class SingleValuedPairsBuilder extends MetricInputBuilder<List<PairOfDoubles>>
+    static class SingleValuedPairsBuilder extends DefaultPairedInputBuilder<PairOfDoubles>
     {
 
         /**

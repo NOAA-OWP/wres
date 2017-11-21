@@ -88,7 +88,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         {
             return null;
         }
-        RegularTimeSeriesOfSingleValuedPairsBuilder builder = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         builder.setTimeStep( timeStep ).setMetadata( getMetadataForBaseline() );
         List<PairOfDoubles> baselineData = getDataForBaseline();
         int start = 0;
@@ -124,7 +124,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         Objects.requireNonNull( duration, "Provide a non-null predicate on which to filter lead time." );
         //Iterate through the lead times and append to the builder
         //Throw an exception if attempting to construct an irregular time-series
-        RegularTimeSeriesOfSingleValuedPairsBuilder builder = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        RegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         Integer step = null;
         int sinceLast = 0;
         for ( TimeSeries<PairOfDoubles> a : leadTimeIterator() )
@@ -146,7 +146,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                 sinceLast = 0;
             }
         }
-        
+
         //Nothing to build
         if ( Objects.isNull( step ) )
         {
@@ -163,7 +163,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     public TimeSeries<PairOfDoubles> filterByBasisTime( Predicate<Instant> basisTime )
     {
         Objects.requireNonNull( basisTime, "Provide a non-null predicate on which to filter basis time." );
-        RegularTimeSeriesOfSingleValuedPairsBuilder builder = new RegularTimeSeriesOfSingleValuedPairsBuilder();
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         builder.setTimeStep( timeStep );
         //Add the filtered data
         for ( TimeSeries<PairOfDoubles> a : basisTimeIterator() )
@@ -248,10 +248,11 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     }
 
     /**
-     * A {@link MetricInputBuilder} to build the metric input.
+     * A {@link DefaultPairedInputBuilder} to build the metric input.
      */
 
-    static class RegularTimeSeriesOfSingleValuedPairsBuilder extends SingleValuedPairsBuilder
+    static class SafeRegularTimeSeriesOfSingleValuedPairsBuilder extends SingleValuedPairsBuilder
+            implements RegularTimeSeriesOfSingleValuedPairsBuilder
     {
 
         /**
@@ -293,8 +294,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
          * @return the builder
          */
 
-        RegularTimeSeriesOfSingleValuedPairsBuilder addData( Instant basisTime,
-                                                             List<PairOfDoubles> values )
+        public SafeRegularTimeSeriesOfSingleValuedPairsBuilder addData( Instant basisTime,
+                                                                        List<PairOfDoubles> values )
         {
             Objects.requireNonNull( basisTime, "Enter a non-null basis time for the time-series." );
             //Does basis time already exist?
@@ -323,8 +324,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
          * @return the builder
          */
 
-        RegularTimeSeriesOfSingleValuedPairsBuilder addDataForBaseline( Instant basisTime,
-                                                                        List<PairOfDoubles> values )
+        public SafeRegularTimeSeriesOfSingleValuedPairsBuilder addDataForBaseline( Instant basisTime,
+                                                                                   List<PairOfDoubles> values )
         {
             Objects.requireNonNull( basisTime, "Enter a non-null basis time for the baseline time-series." );
             //Does basis time already exist?
@@ -352,7 +353,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
          * @throws MetricInputException if the specified input is inconsistent with any existing input
          */
 
-        RegularTimeSeriesOfSingleValuedPairsBuilder addTimeSeries( RegularTimeSeriesOfSingleValuedPairs timeSeries )
+        public SafeRegularTimeSeriesOfSingleValuedPairsBuilder
+                addTimeSeries( RegularTimeSeriesOfSingleValuedPairs timeSeries )
         {
             //Validate where possible
             if ( Objects.nonNull( timeStep ) && !timeSeries.getRegularDuration().equals( timeStep ) )
@@ -385,7 +387,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
          * @param timeStep the time-step of the regular time-series
          */
 
-        RegularTimeSeriesOfSingleValuedPairsBuilder setTimeStep( Duration timeStep )
+        public SafeRegularTimeSeriesOfSingleValuedPairsBuilder setTimeStep( Duration timeStep )
         {
             this.timeStep = timeStep;
             return this;
@@ -405,7 +407,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
      * @throws MetricInputException if the pairs are invalid
      */
 
-    SafeRegularTimeSeriesOfSingleValuedPairs( final RegularTimeSeriesOfSingleValuedPairsBuilder b )
+    SafeRegularTimeSeriesOfSingleValuedPairs( final SafeRegularTimeSeriesOfSingleValuedPairsBuilder b )
     {
         super( b );
         this.timeStep = b.timeStep;
@@ -482,8 +484,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         {
                             throw new NoSuchElementException( " No more basis times to iterate." );
                         }
-                        RegularTimeSeriesOfSingleValuedPairsBuilder builder =
-                                new RegularTimeSeriesOfSingleValuedPairsBuilder();
+                        SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder =
+                                new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
                         Instant nextTime = iterator.next();
                         int start = returned * timeStepCount;
                         builder.setTimeStep( timeStep );
@@ -544,8 +546,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         {
                             throw new NoSuchElementException( " No more lead times to iterate." );
                         }
-                        RegularTimeSeriesOfSingleValuedPairsBuilder builder =
-                                new RegularTimeSeriesOfSingleValuedPairsBuilder();
+                        SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder =
+                                new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
                         builder.setTimeStep( timeStep.multipliedBy( returned + 1 ) );
                         builder.setMetadata( getMetadata() );
                         int start = 0;

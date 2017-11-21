@@ -97,10 +97,10 @@ class SafeEnsemblePairs implements EnsemblePairs
     }
 
     /**
-     * A {@link MetricInputBuilder} to build the metric input.
+     * A {@link DefaultPairedInputBuilder} to build the metric input.
      */
 
-    static class EnsemblePairsBuilder extends MetricInputBuilder<List<PairOfDoubleAndVectorOfDoubles>>
+    static class EnsemblePairsBuilder extends DefaultPairedInputBuilder<PairOfDoubleAndVectorOfDoubles>
     {
 
         /**
