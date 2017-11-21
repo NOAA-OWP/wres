@@ -75,6 +75,9 @@ public class TimeSeriesDemo
         System.out.println( timeSeries.getDurations() );
 //[PT6H, PT12H, PT18H]      
 
+        //And the regular timestep
+        System.out.println( timeSeries.getRegularDuration() );
+//PT6H        
         //Add another atomic time-series to the builder and rebuild
         Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
         List<PairOfDoubles> secondValues = new ArrayList<>();
