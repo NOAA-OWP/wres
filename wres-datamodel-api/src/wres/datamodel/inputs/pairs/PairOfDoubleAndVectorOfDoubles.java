@@ -1,9 +1,8 @@
 package wres.datamodel.inputs.pairs;
 
 /**
- * Tuple of primitive double and primitive double[] Attempt to model the case of tuple of data looking like: [obs_val1,
- * [fc1_val1, fc1_val2 ... fc1_valn] Length of second element can be found from the second element. It is just an array
- * of primitive doubles.
+ * Pair of primitive double and primitive double[]. Models the case of a pair that comprises: {obs_val1,
+ * [fc1_val1, fc1_val2, ..., fc1_valn]}.
  *
  * @author jesse
  */
@@ -22,7 +21,7 @@ extends Comparable<PairOfDoubleAndVectorOfDoubles>
     /**
      * Return the second value.
      * 
-     * @return in the above example, [fc_val1, fc1_val2 ... fc1_valn] value
+     * @return in the above example, [fc_val1, fc1_val2, ..., fc1_valn] value
      */
 
     double[] getItemTwo();

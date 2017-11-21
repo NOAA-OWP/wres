@@ -7,13 +7,13 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.Slicer;
 
 /**
  * Computes Pearson's product-moment correlation coefficient between the left and right sides of the {SingleValuedPairs}
@@ -48,7 +48,7 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
             Slicer slicer = d.getSlicer();
             Metadata in = s.getMetadata();
             //Set the metadata explicitly since this class implements Collectable and getID() may be overridden
-            MetricOutputMetadata meta = mF.getOutputMetadata(s.size(),
+            MetricOutputMetadata meta = mF.getOutputMetadata(s.getData().size(),
                                                              mF.getDimension(),
                                                              in.getDimension(),
                                                              MetricConstants.CORRELATION_PEARSONS,

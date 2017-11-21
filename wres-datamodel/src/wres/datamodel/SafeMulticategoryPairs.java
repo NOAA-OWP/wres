@@ -85,12 +85,6 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     {
         return baselineMeta;
     }
-
-    @Override
-    public int size()
-    {
-        return mainInput.size();
-    }
     
     @Override
     public VectorOfDoubles getClimatology()

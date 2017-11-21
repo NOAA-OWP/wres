@@ -15,6 +15,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Threshold;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -26,7 +27,6 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.time.TimeWindow;
-import wres.datamodel.Threshold;
 import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
 /**
@@ -104,10 +104,10 @@ class MetricProcessorSingleValuedPairsByTime extends MetricProcessorByTime
      */
 
     MetricProcessorSingleValuedPairsByTime( final DataFactory dataFactory,
-                                                final ProjectConfig config,
-                                                final ExecutorService thresholdExecutor,
-                                                final ExecutorService metricExecutor,
-                                                final MetricOutputGroup... mergeList )
+                                            final ProjectConfig config,
+                                            final ExecutorService thresholdExecutor,
+                                            final ExecutorService metricExecutor,
+                                            final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
@@ -281,7 +281,7 @@ class MetricProcessorSingleValuedPairsByTime extends MetricProcessorByTime
             throws MetricInputSliceException
     {
         long occurrences = subset.getData().stream().filter( a -> a.getBooleans()[0] ).count();
-        double min = Math.min( occurrences, subset.size() - occurrences );
+        double min = Math.min( occurrences, subset.getData().size() - occurrences );
         if ( min < minimumSampleSize )
         {
             throw new MetricInputSliceException( "Failed to compute one or more metrics for threshold '"
