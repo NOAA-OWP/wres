@@ -83,7 +83,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
     }
 
     /**
-     * Tests the {@link SafeRegularTimeSeriesOfSingleValuedPairs#leadTimeIterator()} method.
+     * Tests the {@link SafeRegularTimeSeriesOfSingleValuedPairs#durationIterator()} method.
      */
 
     @Test
@@ -121,7 +121,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
                                                         .build();
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<PairOfDoubles> next : ts.leadTimeIterator() )
+        for ( TimeSeries<PairOfDoubles> next : ts.durationIterator() )
         {
             for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
             {
@@ -267,7 +267,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
     }
 
     /**
-     * Tests the {@link SafeRegularTimeSeriesOfSingleValuedPairs#getLeadTimes()} method.
+     * Tests the {@link SafeRegularTimeSeriesOfSingleValuedPairs#getDurations()} method.
      */
 
     @Test
@@ -287,14 +287,14 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
         b.addData( nextBasisTime, values );
         //Check dataset count
-        assertTrue( "Expected a time-series with three lead times.", b.build().getLeadTimes().size() == 3 );
+        assertTrue( "Expected a time-series with three lead times.", b.build().getDurations().size() == 3 );
         //Check the lead times
         assertTrue( "First lead time missing from time-series.",
-                    b.build().getLeadTimes().contains( Duration.ofDays( 1 ) ) );
+                    b.build().getDurations().contains( Duration.ofDays( 1 ) ) );
         assertTrue( "Second lead time missing from time-series.",
-                    b.build().getLeadTimes().contains( Duration.ofDays( 2 ) ) );
+                    b.build().getDurations().contains( Duration.ofDays( 2 ) ) );
         assertTrue( "Third lead time missing from time-series.",
-                    b.build().getLeadTimes().contains( Duration.ofDays( 3 ) ) );
+                    b.build().getDurations().contains( Duration.ofDays( 3 ) ) );
     }
 
     /**
@@ -326,12 +326,12 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
 
         //Check dataset dimensions
         assertTrue( "Expected a time-series with one basis time and three lead times.",
-                    baseline.getLeadTimes().size() == 3 && baseline.getBasisTimes().size() == 1 );
+                    baseline.getDurations().size() == 3 && baseline.getBasisTimes().size() == 1 );
 
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( TimeSeries<PairOfDoubles> next : baseline.leadTimeIterator() )
+        for ( TimeSeries<PairOfDoubles> next : baseline.durationIterator() )
         {
             for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
             {
@@ -385,7 +385,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         RegularTimeSeriesOfSingleValuedPairs tsAppend = c.build();
         //Check dataset dimensions
         assertTrue( "Expected a time-series with one basis time and three lead times.",
-                    tsAppend.getLeadTimes().size() == 9 && tsAppend.getBasisTimes().size() == 1 );
+                    tsAppend.getDurations().size() == 9 && tsAppend.getBasisTimes().size() == 1 );
         //Check dataset
         //Iterate and test
         int nextValue = 1;
@@ -448,7 +448,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
     }
 
     /**
-     * Tests the {@link SafeRegularTimeSeriesOfSingleValuedPairs#filterByLeadTime(java.util.function.Predicate)} 
+     * Tests the {@link SafeRegularTimeSeriesOfSingleValuedPairs#filterByDuration(java.util.function.Predicate)} 
      * method.
      */
 
@@ -486,15 +486,15 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         //Iterate and test
         TimeSeries<PairOfDoubles> filtered =
                 ts.filterByBasisTime( p -> p.equals( secondBasisTime ) )
-                  .filterByLeadTime( q -> q.equals( Duration.ofDays( 3 ) ) );
-        assertTrue( "Unexpected number of lead times in filtered time-series.", filtered.getLeadTimes().size() == 1 );
+                  .filterByDuration( q -> q.equals( Duration.ofDays( 3 ) ) );
+        assertTrue( "Unexpected number of lead times in filtered time-series.", filtered.getDurations().size() == 1 );
         assertTrue( "Unexpected lead time in the filtered time-series.",
-                    filtered.getLeadTimes().first().equals( Duration.ofDays( 3 ) ) );
+                    filtered.getDurations().first().equals( Duration.ofDays( 3 ) ) );
         assertTrue( "Unexpected value in the filtered time-series.",
                     filtered.timeIterator().iterator().next().getItemTwo().equals( metIn.pairOf( 6, 6 ) ) );
         //Check for nullity on none filter
         assertTrue( "Expected nullity on filtering lead times.",
-                    Objects.isNull( ts.filterByLeadTime( p -> p.equals( Duration.ofDays( 4 ) ) ) ) );
+                    Objects.isNull( ts.filterByDuration( p -> p.equals( Duration.ofDays( 4 ) ) ) ) );
 
     }
 
@@ -606,7 +606,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         }
         try
         {
-            Iterator<TimeSeries<PairOfDoubles>> it = ts.leadTimeIterator().iterator();
+            Iterator<TimeSeries<PairOfDoubles>> it = ts.durationIterator().iterator();
             it.forEachRemaining( a -> a.equals( null ) );
             it.next();
             fail( "Expected a checked exception on iterating a time-series with no more lead times left." );
@@ -636,7 +636,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         }
         try
         {
-            Iterator<TimeSeries<PairOfDoubles>> it = ts.leadTimeIterator().iterator();
+            Iterator<TimeSeries<PairOfDoubles>> it = ts.durationIterator().iterator();
             it.next();
             it.remove();
             fail( "Expected a checked exception on attempting to remove a lead time from an immutable time-series." );
@@ -665,7 +665,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         }
         try
         {
-            ts.filterByLeadTime( null );
+            ts.filterByDuration( null );
             fail( "Expected a checked exception on attempting to filter by lead times with a null filter." );
         }
         catch ( NullPointerException e )
@@ -683,7 +683,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
             values.add( metIn.pairOf( 4, 4 ) );
             values.add( metIn.pairOf( 5, 5 ) );
             e.addData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
-            e.build().filterByLeadTime( a-> a.equals( Duration.ofDays( 2 ) ) || a.equals( Duration.ofDays( 5 ) ) );
+            e.build().filterByDuration( a-> a.equals( Duration.ofDays( 2 ) ) || a.equals( Duration.ofDays( 5 ) ) );
             fail( "Expected a checked exception on attempting to build an irregular time-series via a filter." );
         }
         catch ( UnsupportedOperationException e )
