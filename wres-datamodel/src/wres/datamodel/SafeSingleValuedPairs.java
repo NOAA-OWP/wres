@@ -86,12 +86,6 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     }
 
     @Override
-    public int size()
-    {
-        return mainInput.size();
-    }
-
-    @Override
     public VectorOfDoubles getClimatology()
     {
         return climatology;

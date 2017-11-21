@@ -85,12 +85,6 @@ class SafeEnsemblePairs implements EnsemblePairs
     }
 
     @Override
-    public int size()
-    {
-        return mainInput.size();
-    }
-
-    @Override
     public VectorOfDoubles getClimatology()
     {
         return climatology;
