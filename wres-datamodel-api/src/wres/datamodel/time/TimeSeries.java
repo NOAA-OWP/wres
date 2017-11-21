@@ -22,7 +22,7 @@ import wres.datamodel.inputs.pairs.Pair;
  * <p>A {@link TimeSeries} may be regular or irregular. A {@link TimeSeries} is regular iif each time is separated by 
  * exactly the same {@link Duration}, there are no missing times between the earliest and latest times, and the number
  * of times in each atomic time-series is constant; by implication a regular {@link TimeSeries} cannot contain more
- * than one value with the same time and basis time. If the timeline is viewed as a function of a time unit, a regular 
+ * than one value with the same time and basis time. If the timeline is viewed as a function of unit time, a regular 
  * time-series is a linear function whose first derivative is the regular timestep.</p>
  * 
  * <p>A duration is defined as the {@link Duration} between the basis time and the (valid) time associated with a 
