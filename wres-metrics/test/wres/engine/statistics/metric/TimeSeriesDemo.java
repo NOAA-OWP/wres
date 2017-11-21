@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.inputs.pairs.Pair;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs.RegularTimeSeriesOfSingleValuedPairsBuilder;
@@ -71,7 +72,7 @@ public class TimeSeriesDemo
 //[1985-01-01T00:00:00Z]
         //Print the difference between the basis times and valid times, aka "lead times" for a forecast dataset
         //in ISO-8601. P qualifies a timespan, T separates date and time, H represents hour.
-        System.out.println( timeSeries.getLeadTimes() );
+        System.out.println( timeSeries.getDurations() );
 //[PT6H, PT12H, PT18H]      
 
         //Add another atomic time-series to the builder and rebuild
@@ -91,8 +92,26 @@ public class TimeSeriesDemo
 //1985-01-01T18:00:00Z,5.0,6.0
 //1985-01-02T06:00:00Z,7.0,8.0
 //1985-01-02T12:00:00Z,9.0,10.0
-//1985-01-02T18:00:00Z,11.0,12.0        
+//1985-01-02T18:00:00Z,11.0,12.0     
+        
+        //Iterate the atomic time-series unconditionally
+        for ( Pair<Instant,PairOfDoubles> next : timeSeries.timeIterator() )
+        {
+            System.out.println( next + System.lineSeparator() );
+        }        
 
+//1985-01-01T06:00:00Z,1.0,2.0
+//
+//1985-01-01T12:00:00Z,3.0,4.0
+//
+//1985-01-01T18:00:00Z,5.0,6.0
+//
+//1985-01-02T06:00:00Z,7.0,8.0
+//
+//1985-01-02T12:00:00Z,9.0,10.0
+//
+//1985-01-02T18:00:00Z,11.0,12.0        
+        
         //Iterate the atomic time-series by issue date/time
         for ( TimeSeries<PairOfDoubles> next : timeSeries.basisTimeIterator() )
         {
@@ -106,8 +125,8 @@ public class TimeSeriesDemo
 //1985-01-02T12:00:00Z,9.0,10.0
 //1985-01-02T18:00:00Z,11.0,12.0
 
-        //Iterate the atomic time-series by lead time
-        for ( TimeSeries<PairOfDoubles> next : timeSeries.leadTimeIterator() )
+        //Iterate the atomic time-series by duration
+        for ( TimeSeries<PairOfDoubles> next : timeSeries.durationIterator() )
         {
             System.out.println( next + System.lineSeparator() );
         }
@@ -130,18 +149,18 @@ public class TimeSeriesDemo
 //1985-01-02T12:00:00Z,9.0,10.0
 //1985-01-02T18:00:00Z,11.0,12.0        
 
-        //Slice the time-series to obtain the atomic time-series with a lead time of 12 hours only
+        //Slice the time-series to obtain the atomic time-series with a duration of 12 hours only
         TimeSeries<PairOfDoubles> filteredTwo =
-                timeSeries.filterByLeadTime( a -> a.equals( Duration.ofHours( 12 ) ) );
+                timeSeries.filterByDuration( a -> a.equals( Duration.ofHours( 12 ) ) );
         System.out.println( filteredTwo );
 //1985-01-01T12:00:00Z,3.0,4.0
 //1985-01-02T12:00:00Z,9.0,10.0
 
         //Slice the time-series to obtain the atomic time-series with an issue time of 1985-01-02T00:00:00Z 
-        //and a lead time of 12 hours (i.e. filter chaining)
+        //and a duration of 12 hours (i.e. filter chaining)
         TimeSeries<PairOfDoubles> filteredThree =
                 timeSeries.filterByBasisTime( a -> a.equals( Instant.parse( "1985-01-02T00:00:00Z" ) ) )
-                          .filterByLeadTime( b -> b.equals( Duration.ofHours( 12 ) ) );
+                          .filterByDuration( b -> b.equals( Duration.ofHours( 12 ) ) );
         System.out.println( filteredThree );
 //1985-01-02T12:00:00Z,9.0,10.0
 
@@ -149,8 +168,8 @@ public class TimeSeriesDemo
         MetricFactory metFac = MetricFactory.getInstance( dataFactory );
         MeanError me = metFac.ofMeanError();
 
-        //Compute the mean error by lead time
-        for ( TimeSeries<PairOfDoubles> next : timeSeries.leadTimeIterator() )
+        //Compute the mean error by duration
+        for ( TimeSeries<PairOfDoubles> next : timeSeries.durationIterator() )
         {
             System.out.println( me.apply( (SingleValuedPairs) next ) );
         }
@@ -162,7 +181,7 @@ public class TimeSeriesDemo
         //time-step), for which there is currently no concrete implementation
         try
         {
-            timeSeries.filterByLeadTime( a -> a.equals( Duration.ofHours( 12 ) )
+            timeSeries.filterByDuration( a -> a.equals( Duration.ofHours( 12 ) )
                                               || a.equals( Duration.ofHours( 18 ) ) );
         }
         catch ( UnsupportedOperationException e )

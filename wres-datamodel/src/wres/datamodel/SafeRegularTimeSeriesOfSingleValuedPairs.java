@@ -113,13 +113,13 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     }
 
     @Override
-    public Iterable<TimeSeries<PairOfDoubles>> leadTimeIterator()
+    public Iterable<TimeSeries<PairOfDoubles>> durationIterator()
     {
         return leadTimeIterator;
     }
 
     @Override
-    public TimeSeries<PairOfDoubles> filterByLeadTime( Predicate<Duration> duration )
+    public TimeSeries<PairOfDoubles> filterByDuration( Predicate<Duration> duration )
     {
         Objects.requireNonNull( duration, "Provide a non-null predicate on which to filter lead time." );
         //Iterate through the lead times and append to the builder
@@ -127,11 +127,11 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         RegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         Integer step = null;
         int sinceLast = 0;
-        for ( TimeSeries<PairOfDoubles> a : leadTimeIterator() )
+        for ( TimeSeries<PairOfDoubles> a : durationIterator() )
         {
             sinceLast++;
             RegularTimeSeriesOfSingleValuedPairs next = (RegularTimeSeriesOfSingleValuedPairs) a;
-            if ( duration.test( a.getLeadTimes().first() ) )
+            if ( duration.test( a.getDurations().first() ) )
             {
                 if ( Objects.isNull( step ) )
                 {
@@ -188,7 +188,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     }
 
     @Override
-    public SortedSet<Duration> getLeadTimes()
+    public SortedSet<Duration> getDurations()
     {
         SortedSet<Duration> returnMe = new TreeSet<>();
         for ( long i = 0; i < timeStepCount; i++ )
