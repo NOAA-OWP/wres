@@ -139,7 +139,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                 }
                 else if ( step != sinceLast )
                 {
-                    throw new UnsupportedOperationException( "The filtered view of lead times attempted to build "
+                    throw new UnsupportedOperationException( "The filtered view of durations attempted to build "
                                                              + "an irregular time-series, which is not supported." );
                 }
                 builder.addTimeSeries( next );
