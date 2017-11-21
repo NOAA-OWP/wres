@@ -1,16 +1,17 @@
 package wres.datamodel;
 
-import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.pairs.PairedInput;
+import wres.datamodel.inputs.pairs.PairedInput.PairedInputBuilder;
 import wres.datamodel.metadata.Metadata;
 
 /**
- * An abstract builder for building an immutable {@link MetricInput} with associated {@link Metadata}.
+ * An abstract builder for building an immutable {@link PairedInput} with associated {@link Metadata}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-abstract class MetricInputBuilder<S>
+abstract class DefaultPairedInputBuilder<S> implements PairedInputBuilder<S>
 {
 
     /**
@@ -30,15 +31,6 @@ abstract class MetricInputBuilder<S>
      */
 
     Metadata baselineMeta;         
-    
-    /**
-     * Adds input data, appending to any existing data, as necessary.
-     * 
-     * @param mainInput the input
-     * @return the builder
-     */
-
-    abstract MetricInputBuilder<S> addData(S mainInput);
 
     /**
      * Sets the metadata associated with the input.
@@ -47,21 +39,11 @@ abstract class MetricInputBuilder<S>
      * @return the builder
      */
 
-    MetricInputBuilder<S> setMetadata(Metadata mainMeta)
+    public DefaultPairedInputBuilder<S> setMetadata(Metadata mainMeta)
     {
         this.mainMeta = mainMeta;
         return this;
     }
-    
-    /**
-     * Adds input data for a baseline, which is used to calculate skill, appending to any existing baseline data, as
-     * necessary.
-     * 
-     * @param baselineInput the input for the baseline
-     * @return the builder
-     */
-
-    abstract MetricInputBuilder<S> addDataForBaseline(S baselineInput);    
     
     /**
      * Sets the metadata associated with the baseline input.
@@ -70,7 +52,7 @@ abstract class MetricInputBuilder<S>
      * @return the builder
      */
 
-    MetricInputBuilder<S> setMetadataForBaseline(Metadata baselineMeta) 
+    public DefaultPairedInputBuilder<S> setMetadataForBaseline(Metadata baselineMeta) 
     {
         this.baselineMeta = baselineMeta;
         return this;
@@ -83,17 +65,9 @@ abstract class MetricInputBuilder<S>
      * @return the builder
      */
 
-    MetricInputBuilder<S> setClimatology(VectorOfDoubles climatology) {
+    public DefaultPairedInputBuilder<S> setClimatology(VectorOfDoubles climatology) {
         this.climatology = climatology;
         return this;
     }
-
-    /**
-     * Builds the metric input.
-     * 
-     * @return the metric input
-     */
-
-    abstract MetricInput<S> build();    
     
 }
